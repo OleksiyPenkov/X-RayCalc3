@@ -40,7 +40,7 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1000
+    ExplicitWidth = 1350
     ExplicitHeight = 714
     BarSize = (
       258
@@ -233,7 +233,6 @@ object frmMain: TfrmMain
       BorderOuter = fsFlatRounded
       Color = 15987699
       TabOrder = 0
-      ExplicitLeft = 350
       object Pages: TRzPageControl
         Left = 2
         Top = 544
@@ -245,12 +244,12 @@ object frmMain: TfrmMain
         TabIndex = 0
         TabOrder = 0
         ExplicitTop = 543
-        ExplicitWidth = 728
+        ExplicitWidth = 734
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitWidth = 728
+          ExplicitWidth = 730
           object chGradients: TChart
             AlignWithMargins = True
             Left = 3
@@ -268,7 +267,7 @@ object frmMain: TfrmMain
             Align = alClient
             BevelOuter = bvNone
             TabOrder = 0
-            ExplicitWidth = 722
+            ExplicitWidth = 724
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object Series1: TPointSeries
@@ -286,7 +285,10 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 728
+          ExplicitHeight = 0
           object Chart1: TChart
             AlignWithMargins = True
             Left = 3
@@ -322,7 +324,10 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 728
+          ExplicitHeight = 0
           object Chart2: TChart
             AlignWithMargins = True
             Left = 3
@@ -368,7 +373,7 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 1
-        ExplicitWidth = 732
+        ExplicitWidth = 734
         ToolbarControls = (
           btnDataLoad
           btnDataPaste
@@ -472,7 +477,8 @@ object frmMain: TfrmMain
         BevelOuter = bvLowered
         Color = clCream
         TabOrder = 2
-        ExplicitWidth = 726
+        ExplicitWidth = 728
+        ExplicitHeight = 450
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -493,7 +499,7 @@ object frmMain: TfrmMain
         FlatColor = clSkyBlue
         TabOrder = 3
         ExplicitTop = 490
-        ExplicitWidth = 722
+        ExplicitWidth = 728
         DesignSize = (
           732
           50)
@@ -672,7 +678,7 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
-          ExplicitLeft = 583
+          ExplicitLeft = 585
         end
         object cbMinLimit: TRzComboBox
           Left = 670
@@ -693,7 +699,7 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
-          ExplicitLeft = 660
+          ExplicitLeft = 666
         end
       end
     end
