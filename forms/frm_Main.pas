@@ -220,6 +220,11 @@ type
     function DataName(Data: PProjectData): string;
     function ModelName(Data: PProjectData): string;
     procedure CreateDefaultProject;
+    procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
+    procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
+    procedure RecoverProjectTree(const ActiveID: Integer);
+    procedure RecoverDataCurves(const LinkedID: integer);
+    procedure CreateDataCurve(const Data: PProjectData);
     { Private declarations }
   public
     { Public declarations }
@@ -499,18 +504,9 @@ begin
   Result := Format('%sdata_%d.dat', [FProjectDir, Data.ID])
 end;
 
-procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
-var
-  INF: TMemIniFile;
 
-  Node, First: PVirtualNode;
-  Data: PProjectData;
-  s: string;
-
-  LinkedID, ActiveID: Integer;
+procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
 begin
-  FIgnoreFocusChange := True;
-
   FProjectFileName := FileName;
   FProjectName := ExtractFileName(FileName);
   FProjectDir := IncludeTrailingPathDelimiter(Settings.TempPath + FProjectName);
@@ -529,7 +525,13 @@ begin
   unZip.OpenArchive(FileName);
   unZip.ExtractFiles('*.*');
   unZip.CloseArchive;
+end;
 
+
+procedure TfrmMain.LoadProjectParams(var LinkedID, ActiveID: Integer);
+var
+  INF: TMemIniFile;
+begin
   INF := TMemIniFile.Create(FProjectDir + PARAMETERS_FILE_NAME);
   try
     edN.Text := INF.ReadString('PARAMS', 'N', '1000');
@@ -553,7 +555,24 @@ begin
   finally
     INF.Free;
   end;
+end;
 
+
+procedure TfrmMain.CreateDataCurve(const Data: PProjectData);
+begin
+  Data.Curve := TLineSeries.Create(Chart);
+  Data.Curve.Title := Data.Title;
+  Chart.AddSeries(Data.Curve);
+  Data.Curve.Color := Data.Color;
+  Data.Curve.LinePen.Width := 2;
+  Data.Curve.Visible := Data.Visible;
+end;
+
+procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);
+var
+  Node, First: PVirtualNode;
+  Data: PProjectData;
+begin
   // восстанавливаем дерево проектов
   Project.LoadFromFile(FProjectDir + PROJECT_FILE_NAME);
 
@@ -582,13 +601,8 @@ begin
         FLastModel := Node;
         LastData := Data;
       end;
+      CreateDataCurve(Data);
 
-      Data.Curve := TLineSeries.Create(Chart);
-      Data.Curve.Title := Data.Title;
-      Chart.AddSeries(Data.Curve);
-      Data.Curve.Color := Data.Color;
-      Data.Curve.LinePen.Width := 2;
-      Data.Curve.Visible := Data.Visible;
       if Data.ID > FLastID then
         FLastID := Data.ID;
     end;
@@ -603,6 +617,24 @@ begin
 
   inc(FLastID);
 
+  if FActiveModel = nil then
+  begin
+    Project.FocusedNode := First;
+    Project.Selected[First] := True;
+  end
+  else
+  begin
+    Project.FocusedNode := LastNode;
+    Project.Selected[LastNode] := True;
+  end;
+end;
+
+procedure TfrmMain.RecoverDataCurves(const LinkedID: integer);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  s: string;
+begin
   FActiveData := nil;
 
   Node := Project.GetFirstChild(FDataRoot);
@@ -617,11 +649,7 @@ begin
       if Data.ID = LinkedID then
         FLinkedData := Data;
 
-      Data.Curve := TLineSeries.Create(Chart);
-      Data.Curve.Title := Data.Title;
-      Data.Curve.Color := Data.Color;
-      Data.Curve.Visible := Data.Visible;
-      Data.Curve.LinePen.Width := 2;
+      CreateDataCurve(Data);
       SeriesFromFile(Data.Curve, DataName(Data), s);
       Chart.AddSeries(Data.Curve);
     end
@@ -629,22 +657,21 @@ begin
       Project.DeleteNode(Node);
     Node := Project.GetNext(Node);
   end;
+end;
 
-
-
-  if FActiveModel = nil then
-  begin
-    Project.FocusedNode := First;
-    Project.Selected[First] := True;
-  end
-  else
-  begin
-    Project.FocusedNode := LastNode;
-    Project.Selected[LastNode] := True;
-  end;
+procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
+var
+  LinkedID, ActiveID: Integer;
+begin
+  FIgnoreFocusChange := True;
+  PrepareProjectFolder(FileName, Clear);
+  LoadProjectParams(LinkedID, ActiveID);
+  RecoverProjectTree(ActiveID);
+  RecoverDataCurves(LinkedID);
 
   FIgnoreFocusChange := False;
   Project.Repaint;
+
 end;
 
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
@@ -712,8 +739,6 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
-
-
 end;
 
 
