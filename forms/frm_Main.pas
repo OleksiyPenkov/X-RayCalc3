@@ -9,7 +9,8 @@ uses
   Vcl.StdCtrls, RzEdit, VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs,
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
   Vcl.ImgList, System.Actions, Vcl.ActnList, Vcl.RibbonLunaStyleActnCtrls,
-  Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types;
+  Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
+  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib;
 
 type
   TfrmMain = class(TForm)
@@ -174,6 +175,7 @@ type
     rgPolarisation: TRadioGroup;
     edN: TEdit;
     rgCalcMode: TRadioGroup;
+    IdCompressorZLib1: TIdCompressorZLib;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -199,6 +201,7 @@ type
       TextType: TVSTTextType);
     procedure ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Stream: TStream);
+    procedure FormDestroy(Sender: TObject);
   private
     FProjectDir: string;
     FProjectName: string;
@@ -236,7 +239,7 @@ var
 implementation
 
 uses
-  System.IniFiles,  unit_settings, unit_helpers, unit_consts;
+  System.IniFiles,  unit_settings, unit_helpers, unit_consts, unit_XRCStructure, unit_XRCLayerControl;
 
 {$R *.dfm}
 
@@ -443,7 +446,6 @@ begin
   Data.ParentStackName := GetString;
   Stream.Read(Data.Form, SizeOf(Data.Form));
   Stream.Read(Data.Subj, SizeOf(Data.Subj));
-
 end;
 
 procedure TfrmMain.ProjectPaintText(Sender: TBaseVirtualTree;
@@ -743,7 +745,12 @@ end;
 
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+var
+  Data: TLayerData;
 begin
+  Structure := TXRCStructure.Create(StructurePanel);
+  Structure.Parent := StructurePanel;
+
   FormatSettings.DecimalSeparator := '.';
   Project.NodeDataSize := SizeOf(TProjectData);
 
@@ -763,6 +770,21 @@ begin
   end
   else
     CreateDefaultProject;
+
+
+  Data.Material := 'MoSi2';
+  Data.H := 35; Data.s := 3; Data.r := 2.33;
+
+  Structure.AddStack(1, 'Top');
+  Structure.AddLayer(0, Data);
+  Structure.AddStack(50, 'Main');
+  Structure.AddLayer(1, Data);
+end;
+
+procedure TfrmMain.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(Structure);
+  FreeAndNil(Settings);
 end;
 
 procedure TfrmMain.rgCalcModeClick(Sender: TObject);

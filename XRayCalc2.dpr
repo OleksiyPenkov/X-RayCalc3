@@ -7,7 +7,10 @@ uses
   math_complex in 'math\math_complex.pas',
   unit_settings in 'units\unit_settings.pas',
   unit_helpers in 'units\unit_helpers.pas',
-  unit_consts in 'units\unit_consts.pas';
+  unit_consts in 'units\unit_consts.pas',
+  unit_XRCStructure in 'components\unit_XRCStructure.pas',
+  unit_XRCLayerControl in 'components\unit_XRCLayerControl.pas',
+  unit_XRCStackControl in 'components\unit_XRCStackControl.pas';
 
 {$R *.res}
 

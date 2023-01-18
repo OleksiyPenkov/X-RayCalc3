@@ -114,6 +114,9 @@
         <DCCReference Include="units\unit_settings.pas"/>
         <DCCReference Include="units\unit_helpers.pas"/>
         <DCCReference Include="units\unit_consts.pas"/>
+        <DCCReference Include="components\unit_XRCStructure.pas"/>
+        <DCCReference Include="components\unit_XRCLayerControl.pas"/>
+        <DCCReference Include="components\unit_XRCStackControl.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -140,7 +143,7 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="4">
-                <DeployFile LocalName="Win32\Debug\XRayCalc2.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="OUT\BIN\XRayCalc2.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>XRayCalc2.exe</RemoteName>
                         <Overwrite>true</Overwrite>
