@@ -117,6 +117,7 @@
         <DCCReference Include="components\unit_XRCStructure.pas"/>
         <DCCReference Include="components\unit_XRCLayerControl.pas"/>
         <DCCReference Include="components\unit_XRCStackControl.pas"/>
+        <DCCReference Include="components\unit_SMessages.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

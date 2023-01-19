@@ -10,7 +10,7 @@ uses
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
   Vcl.ImgList, System.Actions, Vcl.ActnList, Vcl.RibbonLunaStyleActnCtrls,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
-  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib;
+  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages;
 
 type
   TfrmMain = class(TForm)
@@ -231,6 +231,8 @@ type
     { Private declarations }
   public
     { Public declarations }
+    procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
+    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
   end;
 
 var
@@ -746,7 +748,7 @@ end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
-  Data: TLayerData;
+  Data1, Data2, Data3: TLayerData;
 begin
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
@@ -772,13 +774,25 @@ begin
     CreateDefaultProject;
 
 
-  Data.Material := 'MoSi2';
-  Data.H := 35; Data.s := 3; Data.r := 2.33;
+  Data1.Material := 'Si';
+  Data1.H := 28; Data1.s := 2.5; Data1.r := 10.2;
+
+  Data2.Material := 'MoSi2';
+  Data2.H := 10; Data2.s := 3; Data2.r := 6.2;
+
+  Data3.Material := 'Mo';
+  Data3.H := 28; Data3.s := 2.5; Data3.r := 10.2;
+
+  Structure.AddSubstrate('SiO2', 2.33, 3);
 
   Structure.AddStack(1, 'Top');
-  Structure.AddLayer(0, Data);
+  Structure.AddLayer(0, Data1);
+
   Structure.AddStack(50, 'Main');
-  Structure.AddLayer(1, Data);
+  Structure.AddLayer(1, Data2);
+  Structure.AddLayer(1, Data3);
+  Structure.AddLayer(1, Data2);
+  Structure.AddLayer(1, Data1);
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -801,6 +815,20 @@ begin
         pnlWaveParams.Enabled := True;
       end;
   end;
+end;
+
+procedure TfrmMain.WMStackClick(var Msg: TMessage);
+var
+  ID: Integer;
+begin
+  ID := Msg.WParam;
+
+  Structure.Select(ID);
+end;
+
+procedure TfrmMain.WMStackDblClick(var Msg: TMessage);
+begin
+
 end;
 
 end.

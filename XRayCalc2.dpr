@@ -10,7 +10,8 @@ uses
   unit_consts in 'units\unit_consts.pas',
   unit_XRCStructure in 'components\unit_XRCStructure.pas',
   unit_XRCLayerControl in 'components\unit_XRCLayerControl.pas',
-  unit_XRCStackControl in 'components\unit_XRCStackControl.pas';
+  unit_XRCStackControl in 'components\unit_XRCStackControl.pas',
+  unit_SMessages in 'components\unit_SMessages.pas';
 
 {$R *.res}
 

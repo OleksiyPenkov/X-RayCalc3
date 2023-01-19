@@ -28,6 +28,7 @@ type
       FHandler: HWND;
 
       FLinked : TXRCLayerControl;
+      FSubstrate: boolean;
 
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
@@ -38,10 +39,12 @@ type
       function GetCheckBox: TRzCheckBox;
       procedure SetCheckBox(const Value: TRzCheckBox);
       function GetLinkChecked: Boolean;
+      procedure SetSubstrate(const Value: boolean);
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
 
+      property Substrate: boolean read FSubstrate write SetSubstrate;
     published
       property Increment: Double write SetIncrement;
       property Enabled: Boolean read GetEnabled write SetEnabled;
@@ -63,7 +66,6 @@ begin
   inherited Create(AOwner);
   Parent := AOwner as TWinControl;
   FHandler := Handler;
-
 
   FOnset := True;
   FData  := Data;
@@ -107,7 +109,7 @@ begin
   //Thickness
   Thickness.Name := 'Thickness';
   Thickness.Parent := Self;
-  Thickness.Left := 118;
+  Thickness.Left := 110;
   Thickness.Top := 11;
   Thickness.Width := 65;
   Thickness.Height := 21;
@@ -119,7 +121,7 @@ begin
   //Sigma
   Sigma.Name := 'Sigma';
   Sigma.Parent := Self;
-  Sigma.Left := 189;
+  Sigma.Left := 180;
   Sigma.Top := 11;
   Sigma.Width := 65;
   Sigma.Height := 21;
@@ -132,7 +134,7 @@ begin
   //Rho
   Rho.Name := 'Rho';
   Rho.Parent := Self;
-  Rho.Left := 260;
+  Rho.Left := 250;
   Rho.Top := 11;
   Rho.Width := 65;
   Rho.Height := 21;
@@ -164,6 +166,8 @@ begin
   Rho.OnChange := ValueChange;
   Sigma.OnChange := ValueChange;
   Thickness.OnChange := ValueChange;
+
+  FSubstrate := False;
 end;
 
 procedure TXRCLayerControl.DecreaseThickness;
@@ -232,6 +236,14 @@ begin
   FLinked := Value;
 end;
 
+
+procedure TXRCLayerControl.SetSubstrate(const Value: boolean);
+begin
+  FSubstrate := Value;
+  Thickness.Visible := not FSubstrate;
+  FLinkCheckBox.Visible := not FSubstrate;
+  Color := clLtGray;
+end;
 
 procedure TXRCLayerControl.ValueChange;
 var

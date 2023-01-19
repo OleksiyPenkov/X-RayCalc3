@@ -12,22 +12,36 @@ type
   TXRCStack = class (TRzPanel)
     private
       lblLayers: TRzLabel;
-      RzSeparator1: TRzSeparator;
+      RzSeparator: TRzSeparator;
 
 
       Layers: array of TXRCLayerControl;
+      FID: Integer;
 
 
       procedure ClearLayers;
+      procedure SetSelected(const Value: Boolean);
+
+    protected
+      { Protected declarations }
+      procedure FOnClick(Sender: TObject);
+      procedure FOnDoubleClick(Sender: TObject);
     public
       constructor Create(AOwner: TComponent; const Title: string; const N: integer);
       destructor  Destroy; override;
 
       procedure AddLayer(const Data: TLayerData);
+      procedure AddSubstrate(const Material: string; rho, s: single);
+
+      property Selected: Boolean write SetSelected;
+      property ID: Integer read FID write FID;
     published
   end;
 
 implementation
+
+uses
+  unit_SMessages;
 
 { TXRCStack }
 
@@ -40,6 +54,33 @@ begin
 
   Layers[Count] := TXRCLayerControl.Create(Self, 0, Data);
   Layers[Count].Parent := Self;
+
+  if (Count mod 2) = 0 then Layers[Count].Color := $00FFE3C1
+    else Layers[Count].Color := $00FFD29B;
+
+  ClientHeight := 45 + (Count + 1) * (Layers[Count].Height + 3);
+
+  lblLayers.Top := 1;
+  Layers[Count].Top := ClientHeight - 10;
+end;
+
+procedure TXRCStack.AddSubstrate(const Material: string; rho, s: single);
+var
+  Data: TLayerData;
+begin
+  SetLength(Layers, 1);
+  Data.Material := Material;
+  Data.H := 1E8;
+  Data.r := rho;
+  Data.s := s;
+
+
+  Layers[0] := TXRCLayerControl.Create(Self, 0, Data);
+  Layers[0].Parent := Self;
+  Layers[0].Substrate := True;
+
+  RzSeparator.Visible := False;
+  lblLayers.Caption   := '';
 end;
 
 procedure TXRCStack.ClearLayers;
@@ -73,7 +114,7 @@ begin
   lblLayers := TRzLabel.Create(Self);
 
   //RzSeparator1
-  RzSeparator1 := TRzSeparator.Create(Self);
+  RzSeparator := TRzSeparator.Create(Self);
 
   //lblLayers
   lblLayers.Name := 'lblLayers';
@@ -88,18 +129,44 @@ begin
   lblLayers.ParentFont := False;
 
   //RzSeparator1
-  RzSeparator1.Name := 'RzSeparator1';
-  RzSeparator1.Parent := Self;
-  RzSeparator1.AlignWithMargins := True;
-  RzSeparator1.ShowGradient := True;
-  RzSeparator1.Align := alBottom;
-  RzSeparator1.Color := 16765595;
+  RzSeparator.Name := 'RzSeparator1';
+  RzSeparator.Parent := Self;
+  RzSeparator.AlignWithMargins := True;
+  RzSeparator.ShowGradient := True;
+  RzSeparator.Align := alBottom;
+  RzSeparator.Color := 16765595;
+
+  OnClick := FOnClick;
+  OnDblClick := FOnDoubleClick;
 end;
 
 destructor TXRCStack.Destroy;
 begin
   ClearLayers;
   inherited;
+end;
+
+procedure TXRCStack.FOnClick(Sender: TObject);
+begin
+  if RzSeparator.Visible  then StackClick(FID);
+end;
+
+procedure TXRCStack.FOnDoubleClick(Sender: TObject);
+begin
+  StackDoubleClick(FID);
+end;
+
+procedure TXRCStack.SetSelected(const Value: Boolean);
+begin
+  if Value then
+  begin
+    BorderColor := clBlue; //clHighlight;
+    BorderWidth := 2;
+  end
+  else begin
+    BorderColor := clBtnFace;
+    BorderWidth := 0;
+  end;
 end;
 
 end.
