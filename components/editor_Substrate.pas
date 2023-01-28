@@ -28,13 +28,11 @@ type
     edMaterial: TRzButtonEdit;
     edRo: TJvCalcEdit;
     edSigma: TJvCalcEdit;
-    procedure FormShow(Sender: TObject);
-    procedure btnOKClick(Sender: TObject);
   private
     { Private declarations }
   public
     { Public declarations }
-//    Data : PRowData;
+    procedure Edit(var Material, Sigma, rho: string);
   end;
 
 var
@@ -44,20 +42,18 @@ implementation
 
 {$R *.dfm}
 
-procedure TedtrSubstrate.btnOKClick(Sender: TObject);
+procedure TedtrSubstrate.Edit;
 begin
-//  Data.Text := edMaterial.Text;
-//  Data.S := edSigma.Text;
-//  Data.R := edRo.Text;
+  edMaterial.Text := Material;
+  edSigma.Text := Sigma;
+  edRo.Text := rho;
+  if ShowModal = mrOk then
+  begin
+    Material := edMaterial.Text;
+    Sigma := edSigma.Text;
+    rho := edRo.Text;
+  end;
 end;
 
-procedure TedtrSubstrate.FormShow(Sender: TObject);
-begin
-//  edMaterial.Text := Data.Text;
-//  edSigma.Text := Data.S;
-//  edRo.Text := Data.R;
-
-  ActiveControl := edMaterial;
-end;
 
 end.

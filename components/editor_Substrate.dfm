@@ -3,8 +3,8 @@ object edtrSubstrate: TedtrSubstrate
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Substrate'
-  ClientHeight = 117
-  ClientWidth = 266
+  ClientHeight = 105
+  ClientWidth = 258
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,24 +12,25 @@ object edtrSubstrate: TedtrSubstrate
   Font.Name = 'Tahoma'
   Font.Style = []
   Position = poMainFormCenter
-  OnShow = FormShow
   TextHeight = 13
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 73
-    Width = 260
+    Top = 61
+    Width = 252
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
+    Color = 15987699
     TabOrder = 0
+    ExplicitTop = 73
+    ExplicitWidth = 260
     object btnOK: TRzBitBtn
       Left = 11
       Top = 10
       Width = 93
       TabOrder = 0
       TabStop = False
-      OnClick = btnOKClick
       Kind = bkOK
     end
     object btnCancel: TRzBitBtn
@@ -45,11 +46,14 @@ object edtrSubstrate: TedtrSubstrate
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 260
-    Height = 64
+    Width = 252
+    Height = 52
     Align = alClient
     BorderOuter = fsFlatRounded
+    Color = 15987699
     TabOrder = 1
+    ExplicitWidth = 260
+    ExplicitHeight = 64
     object Label1: TLabel
       Left = 9
       Top = 10

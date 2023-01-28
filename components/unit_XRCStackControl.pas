@@ -19,6 +19,7 @@ type
       FID: Integer;
       FN: Integer;
       FTitle: string;
+      FSubstrate: Boolean;
 
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
@@ -85,6 +86,8 @@ begin
 
   RzSeparator.Visible := False;
   lblLayers.Caption   := '';
+
+  FSubstrate := True;
 end;
 
 procedure TXRCStack.ClearLayers;
@@ -172,9 +175,14 @@ end;
 
 procedure TXRCStack.FOnDoubleClick(Sender: TObject);
 begin
-//  StackDoubleClick(FID);
-  edtrStack.Edit(FTitle, FN);
-  UpdateInfo;
+  if not FSubstrate then
+  begin
+    edtrStack.Edit(FTitle, FN);
+    UpdateInfo;
+  end
+  else begin
+    Layers[0].Edit;
+  end;
 end;
 
 procedure TXRCStack.SetSelected(const Value: Boolean);

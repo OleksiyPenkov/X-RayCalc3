@@ -40,11 +40,14 @@ type
       procedure SetCheckBox(const Value: TRzCheckBox);
       function GetLinkChecked: Boolean;
       procedure SetSubstrate(const Value: boolean);
+      procedure InternalOnDblClick(Sender: TObject);
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
 
       property Substrate: boolean read FSubstrate write SetSubstrate;
+
+      procedure Edit;
     published
       property Increment: Double write SetIncrement;
       property Enabled: Boolean read GetEnabled write SetEnabled;
@@ -58,6 +61,9 @@ type
   end;
 
 implementation
+
+uses
+  editor_Substrate;
 
 { TXRCLayerControl }
 
@@ -167,6 +173,9 @@ begin
   Sigma.OnChange := ValueChange;
   Thickness.OnChange := ValueChange;
 
+  Self.OnDblClick := InternalOnDblClick;
+  Name.OnDblClick := InternalOnDblClick;
+
   FSubstrate := False;
 end;
 
@@ -186,6 +195,22 @@ begin
   FreeAndNil(FLinkCheckBox);
 
   inherited Destroy;
+end;
+
+procedure TXRCLayerControl.Edit;
+var
+  S1, S2: string;
+begin
+  if FSubstrate then
+  begin
+    S1 := Sigma.Text;
+    S2 := Rho.Text;
+
+    edtrSubstrate.Edit(FData.Material, S1, S2);
+
+    Sigma.Text := S1;
+    Rho.Text   := S2;
+  end;
 end;
 
 procedure TXRCLayerControl.SetCheckBox(const Value: TRzCheckBox);
@@ -222,6 +247,11 @@ end;
 procedure TXRCLayerControl.IncreaseThickness;
 begin
   Thickness.Value := Thickness.Value + Thickness.Increment;
+end;
+
+procedure TXRCLayerControl.InternalOnDblClick(Sender: TObject);
+begin
+  Edit;
 end;
 
 procedure TXRCLayerControl.SetIncrement(const Value: Double);
