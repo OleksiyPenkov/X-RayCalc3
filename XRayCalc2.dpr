@@ -11,7 +11,9 @@ uses
   unit_XRCStructure in 'components\unit_XRCStructure.pas',
   unit_XRCLayerControl in 'components\unit_XRCLayerControl.pas',
   unit_XRCStackControl in 'components\unit_XRCStackControl.pas',
-  unit_SMessages in 'components\unit_SMessages.pas';
+  unit_SMessages in 'components\unit_SMessages.pas',
+  editor_Stack in 'components\editor_Stack.pas' {edtrStack},
+  editor_Substrate in 'components\editor_Substrate.pas' {edtrSubstrate};
 
 {$R *.res}
 
@@ -19,5 +21,7 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
+  Application.CreateForm(TedtrStack, edtrStack);
+  Application.CreateForm(TedtrSubstrate, edtrSubstrate);
   Application.Run;
 end.

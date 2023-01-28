@@ -31,6 +31,7 @@ type
       procedure AddStack(const N: Integer; const Title: string);
       procedure AddSubstrate(const Material: string; rho, s: single);
       procedure Select(const ID: Integer);
+      procedure EditStack(const ID: Integer);
     published
 
   end;
@@ -153,7 +154,7 @@ begin
   Label4.Top := 6;
   Label4.Width := 65;
   Label4.Height := 16;
-  Label4.Caption := #961' (g/cm'#179') N';
+  Label4.Caption := #961' (g/cm'#179')  N';
   Label4.Font.Color := clWindowText;
   Label4.Font.Height := -13;
   Label4.Font.Name := 'Tahoma';
@@ -180,6 +181,11 @@ destructor TXRCStructure.Destroy;
 begin
   FreeAndNil(Substrate);
   inherited Destroy;
+end;
+
+procedure TXRCStructure.EditStack;
+begin
+  Stacks[ID].Edit;
 end;
 
 procedure TXRCStructure.Select(const ID: Integer);

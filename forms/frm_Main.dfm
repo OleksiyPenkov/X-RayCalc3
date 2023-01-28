@@ -41,8 +41,6 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1350
-    ExplicitHeight = 714
     BarSize = (
       258
       0
@@ -199,7 +197,6 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
-        ExplicitTop = 621
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 5
@@ -500,8 +497,6 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 3
-        ExplicitTop = 490
-        ExplicitWidth = 722
         DesignSize = (
           726
           50)

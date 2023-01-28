@@ -232,7 +232,7 @@ type
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
-    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
+//    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
   end;
 
 var
@@ -822,13 +822,15 @@ var
   ID: Integer;
 begin
   ID := Msg.WParam;
-
   Structure.Select(ID);
 end;
 
-procedure TfrmMain.WMStackDblClick(var Msg: TMessage);
-begin
-
-end;
+//procedure TfrmMain.WMStackDblClick(var Msg: TMessage);
+//var
+//  ID: Integer;
+//begin
+//  ID := Msg.WParam;
+//  Structure.EditStack(ID);
+//end;
 
 end.

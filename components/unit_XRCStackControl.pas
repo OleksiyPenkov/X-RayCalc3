@@ -17,10 +17,12 @@ type
 
       Layers: array of TXRCLayerControl;
       FID: Integer;
-
+      FN: Integer;
+      FTitle: string;
 
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
+    procedure UpdateInfo;
 
     protected
       { Protected declarations }
@@ -35,13 +37,15 @@ type
 
       property Selected: Boolean write SetSelected;
       property ID: Integer read FID write FID;
+
+      procedure Edit;
     published
   end;
 
 implementation
 
 uses
-  unit_SMessages;
+  unit_SMessages, editor_Stack;
 
 { TXRCStack }
 
@@ -93,9 +97,18 @@ begin
   SetLength(Layers, 0);
 end;
 
+procedure TXRCStack.UpdateInfo;
+begin
+  Caption := FTitle;
+  lblLayers.Caption := IntToStr(FN);
+end;
+
 constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
 begin
   inherited Create(AOwner);
+  FN := N;
+  FTitle := Title;
+
   Parent := AOwner as TWinControl;
   Top := 5;
   Align := alTop;
@@ -106,7 +119,7 @@ begin
   BorderOuter := fsNone;
   BorderHighlight := clTeal;
   BorderWidth := 2;
-  Caption := Title;
+
 //  Font.Color := clNavy;
 //  Font.Style := [fsBold];
 
@@ -123,7 +136,6 @@ begin
   lblLayers.Margins.Left := 50;
   lblLayers.Align := alTop;
   lblLayers.Alignment := taRightJustify;
-  lblLayers.Caption := IntToStr(N);
   lblLayers.Font.Color := clNavy;
   lblLayers.Font.Style := [fsBold];
   lblLayers.ParentFont := False;
@@ -138,12 +150,19 @@ begin
 
   OnClick := FOnClick;
   OnDblClick := FOnDoubleClick;
+
+  UpdateInfo;
 end;
 
 destructor TXRCStack.Destroy;
 begin
   ClearLayers;
   inherited;
+end;
+
+procedure TXRCStack.Edit;
+begin
+
 end;
 
 procedure TXRCStack.FOnClick(Sender: TObject);
@@ -153,7 +172,9 @@ end;
 
 procedure TXRCStack.FOnDoubleClick(Sender: TObject);
 begin
-  StackDoubleClick(FID);
+//  StackDoubleClick(FID);
+  edtrStack.Edit(FTitle, FN);
+  UpdateInfo;
 end;
 
 procedure TXRCStack.SetSelected(const Value: Boolean);
