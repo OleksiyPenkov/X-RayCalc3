@@ -1,6 +1,7 @@
 program XRayCalc2;
 
 uses
+  FastMM4,
   Vcl.Forms,
   frm_Main in 'forms\frm_Main.pas' {frmMain},
   unit_Types in 'units\unit_Types.pas',
@@ -16,6 +17,7 @@ uses
   editor_Substrate in 'components\editor_Substrate.pas' {edtrSubstrate};
 
 {$R *.res}
+{$INCLUDE FastMM4Options.inc}
 
 begin
   Application.Initialize;

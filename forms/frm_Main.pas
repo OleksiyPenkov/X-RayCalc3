@@ -202,6 +202,7 @@ type
     procedure ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Stream: TStream);
     procedure FormDestroy(Sender: TObject);
+    procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     FProjectDir: string;
     FProjectName: string;
@@ -390,6 +391,15 @@ begin
 //  Tree.LoadFromFile(ModelName(Data));
   FActiveModel := Data;
   Project.Repaint;
+end;
+
+procedure TfrmMain.ProjectFreeNode(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  Data: PProjectData;
+begin
+  Data := Sender.GetNodeData(Node);
+  Finalize(Data^);
 end;
 
 procedure TfrmMain.ProjectGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -797,6 +807,7 @@ end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
+  Project.Clear;
   FreeAndNil(Structure);
   FreeAndNil(Settings);
 end;

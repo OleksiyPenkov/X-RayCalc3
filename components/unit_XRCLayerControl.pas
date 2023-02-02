@@ -187,13 +187,6 @@ end;
 destructor TXRCLayerControl.Destroy;
 begin
   FLinked := nil;
-
-  FreeAndNil(Name);
-  FreeAndNil(Thickness);
-  FreeAndNil(Sigma);
-  FreeAndNil(Rho);
-  FreeAndNil(FLinkCheckBox);
-
   inherited Destroy;
 end;
 

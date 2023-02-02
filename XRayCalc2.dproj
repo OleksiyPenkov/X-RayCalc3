@@ -107,7 +107,6 @@
         </DelphiCompile>
         <DCCReference Include="forms\frm_Main.pas">
             <Form>frmMain</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="units\unit_Types.pas"/>
         <DCCReference Include="math\math_complex.pas"/>
@@ -120,11 +119,9 @@
         <DCCReference Include="components\unit_SMessages.pas"/>
         <DCCReference Include="components\editor_Stack.pas">
             <Form>edtrStack</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="components\editor_Substrate.pas">
             <Form>edtrSubstrate</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

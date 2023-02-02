@@ -159,7 +159,7 @@ end;
 
 destructor TXRCStack.Destroy;
 begin
-  ClearLayers;
+//  ClearLayers;
   inherited;
 end;
 

@@ -179,7 +179,7 @@ end;
 
 destructor TXRCStructure.Destroy;
 begin
-  FreeAndNil(Substrate);
+//  FreeAndNil(Substrate);
   inherited Destroy;
 end;
 

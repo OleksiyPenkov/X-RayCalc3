@@ -41,6 +41,8 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
+    ExplicitWidth = 1350
+    ExplicitHeight = 714
     BarSize = (
       258
       0
@@ -158,7 +160,6 @@ object frmMain: TfrmMain
         Header.ParentFont = False
         NodeAlignment = naFromTop
         ParentFont = False
-        RootNodeCount = 5
         TabOrder = 1
         TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
         TreeOptions.PaintOptions = [toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toFullVertGridLines]
@@ -168,6 +169,7 @@ object frmMain: TfrmMain
         OnChange = ProjectChange
         OnDblClick = ProjectDblClick
         OnFocusChanging = ProjectFocusChanging
+        OnFreeNode = ProjectFreeNode
         OnGetText = ProjectGetText
         OnPaintText = ProjectPaintText
         OnHeaderDrawQueryElements = ProjectHeaderDrawQueryElements
@@ -178,7 +180,7 @@ object frmMain: TfrmMain
         Columns = <
           item
             Position = 0
-            Width = 62
+            Width = 58
           end
           item
             Position = 1
@@ -197,6 +199,7 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
+        ExplicitTop = 621
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 5
@@ -247,10 +250,7 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
           ExplicitWidth = 724
-          ExplicitHeight = 0
           object chGradients: TChart
             AlignWithMargins = True
             Left = 3
@@ -286,10 +286,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Chart1: TChart
             AlignWithMargins = True
             Left = 3
@@ -324,10 +320,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Chart2: TChart
             AlignWithMargins = True
             Left = 3
@@ -497,6 +489,8 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 3
+        ExplicitTop = 490
+        ExplicitWidth = 722
         DesignSize = (
           726
           50)
@@ -696,6 +690,7 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
+          ExplicitLeft = 660
         end
       end
     end
@@ -927,8 +922,8 @@ object frmMain: TfrmMain
           object cb2Theta: TRzCheckBox
             Left = 139
             Top = 40
-            Width = 33
-            Height = 18
+            Width = 37
+            Height = 19
             Caption = '2q'
             Checked = True
             Font.Charset = DEFAULT_CHARSET
