@@ -23,7 +23,7 @@ type
 
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
-    procedure UpdateInfo;
+      procedure UpdateInfo;
 
     protected
       { Protected declarations }
@@ -113,8 +113,8 @@ begin
   FTitle := Title;
 
   Parent := AOwner as TWinControl;
-  Top := 5;
-  Align := alTop;
+//  Top := 10;
+//  Align := alNone;
   Height := 80;
 
   Alignment := taLeftJustify;

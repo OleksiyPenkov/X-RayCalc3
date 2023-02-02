@@ -2023,11 +2023,13 @@ object frmMain: TfrmMain
       Category = 'Period'
       Caption = 'Add'
       ImageIndex = 9
+      OnExecute = PeriodAddExecute
     end
     object PeriodInsert: TAction
       Category = 'Period'
       Caption = 'Insert'
       ImageIndex = 8
+      OnExecute = PeriodInsertExecute
     end
     object PeriodDelete: TAction
       Category = 'Period'

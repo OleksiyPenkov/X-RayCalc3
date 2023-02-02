@@ -3,8 +3,8 @@ object edtrStack: TedtrStack
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Stack properties'
-  ClientHeight = 94
-  ClientWidth = 286
+  ClientHeight = 96
+  ClientWidth = 312
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,14 +17,14 @@ object edtrStack: TedtrStack
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 280
-    Height = 41
+    Width = 306
+    Height = 43
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 272
-    ExplicitHeight = 29
+    ExplicitWidth = 264
+    ExplicitHeight = 17
     object Label1: TLabel
       Left = 9
       Top = 13
@@ -40,7 +40,7 @@ object edtrStack: TedtrStack
       Caption = 'N'
     end
     object edN: TRzNumericEdit
-      Left = 212
+      Left = 233
       Top = 10
       Width = 65
       Height = 21
@@ -61,15 +61,15 @@ object edtrStack: TedtrStack
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 50
-    Width = 280
+    Top = 52
+    Width = 306
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 38
-    ExplicitWidth = 272
+    ExplicitTop = 26
+    ExplicitWidth = 264
     object btnOK: TRzBitBtn
       Left = 18
       Top = 10
@@ -79,7 +79,7 @@ object edtrStack: TedtrStack
       Kind = bkOK
     end
     object RzBitBtn2: TRzBitBtn
-      Left = 173
+      Left = 199
       Top = 10
       Width = 99
       ParentColor = True

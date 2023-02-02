@@ -203,6 +203,8 @@ type
       Stream: TStream);
     procedure FormDestroy(Sender: TObject);
     procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure PeriodAddExecute(Sender: TObject);
+    procedure PeriodInsertExecute(Sender: TObject);
   private
     FProjectDir: string;
     FProjectName: string;
@@ -229,6 +231,7 @@ type
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure CreateDataCurve(const Data: PProjectData);
+    procedure CreateDummyStructure;
     { Private declarations }
   public
     { Public declarations }
@@ -242,7 +245,7 @@ var
 implementation
 
 uses
-  System.IniFiles,  unit_settings, unit_helpers, unit_consts, unit_XRCStructure, unit_XRCLayerControl;
+  System.IniFiles, unit_settings, unit_helpers, unit_consts, unit_XRCStructure, unit_XRCLayerControl, editor_Stack;
 
 {$R *.dfm}
 
@@ -519,6 +522,28 @@ begin
 end;
 
 
+procedure TfrmMain.PeriodAddExecute(Sender: TObject);
+var
+  Name: string;
+  N   : Integer;
+begin
+  N := 1;
+  edtrStack.Edit(Name, N);
+  if Name <> '' then
+     Structure.AddStack(N, Name);
+end;
+
+procedure TfrmMain.PeriodInsertExecute(Sender: TObject);
+var
+  Name: string;
+  N   : Integer;
+begin
+  N := 1;
+  edtrStack.Edit(Name, N);
+  if Name <> '' then
+     Structure.InsertStack(N, Name);
+end;
+
 procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
 begin
   FProjectFileName := FileName;
@@ -753,12 +778,35 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
+  Structure.AddSubstrate('SiO2', 2.33, 3);
 end;
 
+procedure TfrmMain.CreateDummyStructure;
+var
+  Data1, Data2, Data3: TLayerData;
+begin
+  Data1.Material := 'Si';
+  Data1.H := 28; Data1.s := 2.5; Data1.r := 10.2;
+
+  Data2.Material := 'MoSi2';
+  Data2.H := 10; Data2.s := 3; Data2.r := 6.2;
+
+  Data3.Material := 'Mo';
+  Data3.H := 28; Data3.s := 2.5; Data3.r := 10.2;
+
+  Structure.AddStack(1, 'Top');
+  Structure.AddLayer(0, Data1);
+
+  Structure.AddStack(50, 'Main');
+  Structure.AddLayer(1, Data2);
+  Structure.AddLayer(1, Data3);
+  Structure.AddLayer(1, Data2);
+  Structure.AddLayer(1, Data1);
+end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
-  Data1, Data2, Data3: TLayerData;
+  Value: string;
 begin
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
@@ -772,37 +820,24 @@ begin
 
   if ParamCount <> 0 then
   begin
-    if FileExists(ParamStr(1)) then
-    begin
-      FProjectFileName := ParamStr(1);
-      LoadProject(FProjectFileName, True);
-    end
-    else
-      CreateDefaultProject;
+     if FindCmdLineSwitch('f', Value, True, [clstValueNextParam]) then
+      begin
+        if FileExists(ParamStr(1)) then
+        begin
+          FProjectFileName := Value;
+          LoadProject(FProjectFileName, True);
+        end
+        else
+          CreateDefaultProject;
+     end;
+     if FindCmdLineSwitch('d') then
+     begin
+       CreateDefaultProject;
+       CreateDummyStructure;
+     end;
   end
   else
     CreateDefaultProject;
-
-
-  Data1.Material := 'Si';
-  Data1.H := 28; Data1.s := 2.5; Data1.r := 10.2;
-
-  Data2.Material := 'MoSi2';
-  Data2.H := 10; Data2.s := 3; Data2.r := 6.2;
-
-  Data3.Material := 'Mo';
-  Data3.H := 28; Data3.s := 2.5; Data3.r := 10.2;
-
-  Structure.AddSubstrate('SiO2', 2.33, 3);
-
-  Structure.AddStack(1, 'Top');
-  Structure.AddLayer(0, Data1);
-
-  Structure.AddStack(50, 'Main');
-  Structure.AddLayer(1, Data2);
-  Structure.AddLayer(1, Data3);
-  Structure.AddLayer(1, Data2);
-  Structure.AddLayer(1, Data1);
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -834,6 +869,7 @@ var
 begin
   ID := Msg.WParam;
   Structure.Select(ID);
+//  PeriodInsert.Enabled := (ID > 0);
 end;
 
 //procedure TfrmMain.WMStackDblClick(var Msg: TMessage);

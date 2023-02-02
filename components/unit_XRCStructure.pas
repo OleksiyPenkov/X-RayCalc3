@@ -22,6 +22,7 @@ type
       Substrate: TXRCStack;
 
       FSelectedStack : Integer;
+    procedure RealignStacks;
 
     public
       constructor Create(AOwner: TComponent);
@@ -29,6 +30,7 @@ type
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
+      procedure InsertStack(const N: Integer; const Title: string);
       procedure AddSubstrate(const Material: string; rho, s: single);
       procedure Select(const ID: Integer);
       procedure EditStack(const ID: Integer);
@@ -49,24 +51,54 @@ begin
   Stacks[StackID].AddLayer(Data);
 end;
 
+procedure TXRCStructure.RealignStacks;
+var
+  i, count: Integer;
+  top: Integer;
+
+begin
+  Count := Length(Stacks) - 1;
+  Substrate.Align := alNone;
+
+  for I := 0 to Count do
+  begin
+    Stacks[i].Align := alNone;
+  end;
+
+  for I := 0 to Count do
+  begin
+    Stacks[i].Top := i * 80;
+    Stacks[i].Align := alTop;
+  end;
+
+  Substrate.Top := ClientHeight - 5;
+  Substrate.Align := alTop;
+
+  Visible := True;
+end;
+
 procedure TXRCStructure.AddStack(const N: Integer; const Title: string);
 var
   Count: Integer;
 begin
+  Visible := False;
   Count := Length(Stacks);
-  SetLength(Stacks, Count + 1);
 
-  Substrate.Align := alBottom;
+  SetLength(Stacks, Count + 1);
   Stacks[Count] := TXRCStack.Create(Box, Title, N);
   Stacks[Count].ID := Count;
 
-  Substrate.Align := alTop;
+  RealignStacks;
 end;
 
 procedure TXRCStructure.AddSubstrate(const Material: string; rho,
   s: single);
 begin
   Substrate := TXRCStack.Create(Box, 'Substrate', 1);
+  Substrate.Top  := 0;
+  Substrate.Left := 0;
+  Substrate.Width := ClientWidth;
+
   Substrate.AddSubstrate(Material, rho, s);
 end;
 
@@ -186,6 +218,30 @@ end;
 procedure TXRCStructure.EditStack;
 begin
   Stacks[ID].Edit;
+end;
+
+procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
+var
+  i, count, pos: Integer;
+begin
+  Visible := False;
+  Count := Length(Stacks);
+
+  if FSelectedStack <> -1 then Pos := FSelectedStack
+    else Pos := count;
+
+  SetLength(Stacks, count + 1);
+
+  for i := Count  downto Pos + 1 do
+  begin
+    Stacks[i] := Stacks[i - 1];
+    Stacks[i] .ID := i;
+  end;
+
+  Stacks[Pos] := TXRCStack.Create(Box, Title, N);
+  Stacks[Pos].ID := Pos;
+
+  RealignStacks;
 end;
 
 procedure TXRCStructure.Select(const ID: Integer);

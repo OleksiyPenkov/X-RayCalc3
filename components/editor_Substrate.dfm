@@ -3,8 +3,8 @@ object edtrSubstrate: TedtrSubstrate
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Substrate'
-  ClientHeight = 105
-  ClientWidth = 258
+  ClientHeight = 93
+  ClientWidth = 250
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,8 +16,8 @@ object edtrSubstrate: TedtrSubstrate
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 61
-    Width = 252
+    Top = 49
+    Width = 244
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
@@ -46,8 +46,8 @@ object edtrSubstrate: TedtrSubstrate
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 252
-    Height = 52
+    Width = 244
+    Height = 40
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
