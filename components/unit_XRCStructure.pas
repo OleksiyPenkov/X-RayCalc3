@@ -5,7 +5,8 @@ interface
 uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
   VCL.Forms, unit_XRCLayerControl, unit_XRCStackControl,
-  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface;
+  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface,
+  unit_materials, unit_Types;
 
 type
 
@@ -22,8 +23,7 @@ type
       Substrate: TXRCStack;
 
       FSelectedStack : Integer;
-    procedure RealignStacks;
-
+      procedure RealignStacks;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
@@ -34,6 +34,8 @@ type
       procedure AddSubstrate(const Material: string; rho, s: single);
       procedure Select(const ID: Integer);
       procedure EditStack(const ID: Integer);
+
+      function Model: TLayeredModel;
     published
 
   end;
@@ -61,9 +63,7 @@ begin
   Substrate.Align := alNone;
 
   for I := 0 to Count do
-  begin
     Stacks[i].Align := alNone;
-  end;
 
   for I := 0 to Count do
   begin
@@ -242,6 +242,20 @@ begin
   Stacks[Pos].ID := Pos;
 
   RealignStacks;
+end;
+
+function TXRCStructure.Model: TLayeredModel;
+var
+  i, k, j: Integer;
+begin
+  Result := TLayeredModel.Create;
+  Result.Init;
+
+  for I := 0 to High(Stacks) do
+    for j := 1  to Stacks[i].N do
+        Result.AddLayers(Stacks[i].Layers);
+
+  Result.AddSubstrate(Substrate.Layers);
 end;
 
 procedure TXRCStructure.Select(const ID: Integer);

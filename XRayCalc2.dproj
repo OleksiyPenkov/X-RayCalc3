@@ -124,6 +124,9 @@
         <DCCReference Include="components\editor_Substrate.pas">
             <Form>edtrSubstrate</Form>
         </DCCReference>
+        <DCCReference Include="math\unit_calc.pas"/>
+        <DCCReference Include="math\unit_materials.pas"/>
+        <DCCReference Include="math\math_globals.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

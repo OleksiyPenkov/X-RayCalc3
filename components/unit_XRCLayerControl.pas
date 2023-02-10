@@ -8,13 +8,6 @@ uses
   Messages, Winapi.Windows, unit_consts;
 
 type
-
-  TLayerData = record
-    Material: string;
-    H, s, r: single;
-  end;
-
-
   TXRCLayerControl = class (TRzPanel)
     private
       Name: TRzLabel;
@@ -55,6 +48,8 @@ type
       property Onset: Boolean read FOnSet write FOnSet;
       property CheckBox:TRzCheckBox read GetCheckBox write SetCheckBox;
       property Checked: Boolean read GetLinkChecked;
+
+      property Data: TLayerData read FData;
 
       procedure IncreaseThickness;
       procedure DecreaseThickness;

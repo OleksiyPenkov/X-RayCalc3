@@ -66,7 +66,7 @@ type
 
   // Calculation data types
 
-  TLayer = record
+  TCalcLayer = record
     Name: string;
     e: TComplex; { Epsilon }
     L, s, ro: single; { Thickness, sigma}
@@ -76,7 +76,7 @@ type
   end;
 
 
-  TLayers = array of TLayer;
+  TCalcLayers = array of TCalcLayer;
 
   TFunctionRec = record
     f: (fNone, fLine, fExp, fParabolic, fFiting);
@@ -96,8 +96,14 @@ type
     Name: string;
     ro, am, tl: single;
     f: TComplex;
-    H, s: TFunctionRec;
   end;
+
+  TLayerData = record
+    Material: string;
+    H, s, r: single;
+  end;
+
+  TLayersData = array of TLayerData;
 
   TDataPoint = record
     t, r: single;

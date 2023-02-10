@@ -10,7 +10,7 @@ uses
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
   Vcl.ImgList, System.Actions, Vcl.ActnList, Vcl.RibbonLunaStyleActnCtrls,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
-  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages;
+  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages, unit_calc;
 
 type
   TfrmMain = class(TForm)
@@ -176,6 +176,10 @@ type
     edN: TEdit;
     rgCalcMode: TRadioGroup;
     IdCompressorZLib1: TIdCompressorZLib;
+    rzspcr5: TRzSpacer;
+    btnClac: TRzToolButton;
+    btnCalcAll: TRzToolButton;
+    spnTime: TRzStatusPane;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -205,6 +209,7 @@ type
     procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure PeriodAddExecute(Sender: TObject);
     procedure PeriodInsertExecute(Sender: TObject);
+    procedure CalcRunExecute(Sender: TObject);
   private
     FProjectDir: string;
     FProjectName: string;
@@ -221,6 +226,7 @@ type
 
     FLastID: integer;
     IsFolder, IsItem, IsData, IsModel, IsExtension: Boolean;
+    StartTime: TDateTime;
 
     procedure LoadProject(const FileName: string; Clear: Boolean);
     function DataName(Data: PProjectData): string;
@@ -232,6 +238,10 @@ type
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure CreateDataCurve(const Data: PProjectData);
     procedure CreateDummyStructure;
+    procedure FinalizeCalc(Calc: TCalc);
+    procedure GetThreadParams(var CD: TThreadParams);
+    procedure PlotResults(Calc: TCalc);
+    procedure PrintMax;
     { Private declarations }
   public
     { Public declarations }
@@ -596,6 +606,154 @@ begin
   end;
 end;
 
+procedure TfrmMain.GetThreadParams(var CD: TThreadParams);
+var
+  StartT, EndT: single;
+begin
+  StartTime := Now;
+
+  Screen.Cursor := crHourGlass;
+  FActiveModel.Curve.BeginUpdate;
+
+  CalcRun.Enabled := False;
+
+  StartT := StrToFloat(edStartTeta.Text);
+  EndT := StrToFloat(edEndTeta.Text);
+
+  if cb2Theta.Checked then
+    CD.k := 2
+  else
+    CD.k := 1;
+
+  if rgPolarisation.ItemIndex = 0 then
+    CD.P := cmS
+  else
+    CD.P := cmSP;
+
+  case rgCalcMode.ItemIndex of
+    0:begin
+        CD.Mode := cmTheta;
+        CD.Lambda := StrToFloat(edLambda.Text);
+        CD.StartT := StartT;
+        CD.EndT   := EndT;
+        CD.DT     := StrToFloat(edWidth.Text);
+      end;
+
+    1:
+      begin
+//        ThreadsRunning := 1;
+//        SetLength(FResults, 1);
+//        CD.Mode := cmLambda;
+//        CD.Theta := StrToFloat(edTheta.Text);
+//        CD.StartL := StrToFloat(edStartL.Text);
+//        CD.EndL := StrToFloat(edEndL.Text);
+//        CD.DW := StrToFloat(edDL.Text);
+      end;
+  end;
+
+  CD.RF := rfError;
+  CD.N := StrToInt(edN.Text);
+ end;
+
+procedure TfrmMain.PrintMax;
+var
+  X, Y, mx, x1, x2, my, RI, OldX: single;
+  i: Integer;
+begin
+  if FActiveModel.Curve.Count = 0 then
+    Exit;
+
+  my := 0;
+  x1 := Chart.BottomAxis.Minimum;
+  x2 := Chart.BottomAxis.Maximum;
+  RI := 0;
+  OldX := FActiveModel.Curve.XValue[1];
+  for i := 2 to FActiveModel.Curve.Count - 2 do
+  begin
+    X := FActiveModel.Curve.XValue[i];
+    Y := FActiveModel.Curve.YValue[i];
+    if (X > x1) and (X < x2) and (Y > my) then
+    begin
+      RI := RI + Y * abs(OldX - X);
+      my := Y;
+      mx := X;
+    end;
+    OldX := X;
+  end;
+
+  if my < 0.01 then
+  begin
+    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2);
+    Chart.LeftAxis.AxisValuesFormat := '0.00e-0';
+  end
+  else
+  begin
+    StatusRMax.Caption := FloatToStrF(my, ffFixed, 4, 3);
+    Chart.LeftAxis.AxisValuesFormat := '0.000';
+  end;
+
+  StatusMaxX.Caption := FloatToStrF(mx, ffFixed, 5, 4);
+  StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
+end;
+
+ procedure TfrmMain.PlotResults(Calc: TCalc);
+var
+  j: Integer;
+begin
+  FActiveModel.Curve.Clear;
+  for j := 0 to High(Calc.Results) do
+      FActiveModel.Curve.AddXY(Calc.Results[j].t, Calc.Results[j].R);
+end;
+
+procedure TfrmMain.FinalizeCalc(Calc: TCalc);
+var
+  Hour, Min, Sec, MSec: Word;
+begin
+  PlotResults(Calc);
+  DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
+  spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
+  FActiveModel.Curve.EndUpdate;
+  FActiveModel.Curve.Repaint;
+  StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
+  Screen.Cursor := crDefault;
+  CalcRun.Enabled := True;
+  PrintMax;
+end;
+
+procedure TfrmMain.CalcRunExecute(Sender: TObject);
+var
+  CD: TThreadParams;
+  Calc: TCalc;
+begin
+  if (FActiveModel = nil) then
+    Exit;
+  GetThreadParams(CD);
+  try
+    Calc := TCalc.Create;
+
+    if (FLinkedData <> nil) and FActiveData.Curve.Visible then
+       Calc.ExpValues := SeriesToData(FLinkedData.Curve);
+
+    try
+      Calc.Params := CD;
+      Calc.Limit := StrToFloat(cbMinLimit.Text);
+      Calc.Model := Structure.Model;
+      Calc.Run;
+    except
+      on E: exception do
+      begin
+        ShowMessage(E.Message);
+        FActiveModel.Curve.EndUpdate;
+        FActiveModel.Curve.Repaint;
+        Screen.Cursor := crDefault;
+        CalcRun.Enabled := True;
+      end;
+    end;
+    FinalizeCalc(Calc);
+  finally
+    Calc.Free;
+  end;
+end;
 
 procedure TfrmMain.CreateDataCurve(const Data: PProjectData);
 begin
@@ -778,7 +936,7 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
-  Structure.AddSubstrate('SiO2', 2.33, 3);
+  Structure.AddSubstrate('SiO2', 2.2, 5);
 end;
 
 procedure TfrmMain.CreateDummyStructure;
@@ -786,18 +944,18 @@ var
   Data1, Data2, Data3: TLayerData;
 begin
   Data1.Material := 'Si';
-  Data1.H := 28; Data1.s := 2.5; Data1.r := 10.2;
+  Data1.H := 28; Data1.s := 2.5; Data1.r := 2.3;
 
   Data2.Material := 'MoSi2';
   Data2.H := 10; Data2.s := 3; Data2.r := 6.2;
 
   Data3.Material := 'Mo';
-  Data3.H := 28; Data3.s := 2.5; Data3.r := 10.2;
+  Data3.H := 28; Data3.s := 2.5; Data3.r := 10;
 
   Structure.AddStack(1, 'Top');
   Structure.AddLayer(0, Data1);
 
-  Structure.AddStack(50, 'Main');
+  Structure.AddStack(5, 'Main');
   Structure.AddLayer(1, Data2);
   Structure.AddLayer(1, Data3);
   Structure.AddLayer(1, Data2);

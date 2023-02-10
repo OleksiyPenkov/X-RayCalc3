@@ -14,7 +14,10 @@ uses
   unit_XRCStackControl in 'components\unit_XRCStackControl.pas',
   unit_SMessages in 'components\unit_SMessages.pas',
   editor_Stack in 'components\editor_Stack.pas' {edtrStack},
-  editor_Substrate in 'components\editor_Substrate.pas' {edtrSubstrate};
+  editor_Substrate in 'components\editor_Substrate.pas' {edtrSubstrate},
+  unit_calc in 'math\unit_calc.pas',
+  unit_materials in 'math\unit_materials.pas',
+  math_globals in 'math\math_globals.pas';
 
 {$R *.res}
 {$INCLUDE FastMM4Options.inc}

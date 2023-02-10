@@ -5,7 +5,7 @@ interface
 uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
   VCL.Forms, RzBckgnd, unit_XRCLayerControl,
-  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface;
+  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface, unit_Types;
 
 type
 
@@ -15,7 +15,7 @@ type
       RzSeparator: TRzSeparator;
 
 
-      Layers: array of TXRCLayerControl;
+      FLayers: array of TXRCLayerControl;
       FID: Integer;
       FN: Integer;
       FTitle: string;
@@ -24,6 +24,7 @@ type
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
       procedure UpdateInfo;
+    function GetLayersData: TLayersData;
 
     protected
       { Protected declarations }
@@ -38,8 +39,9 @@ type
 
       property Selected: Boolean write SetSelected;
       property ID: Integer read FID write FID;
-
+      property N:integer read FN;
       procedure Edit;
+      property Layers: TLayersData read GetLayersData;
     published
   end;
 
@@ -54,35 +56,35 @@ procedure TXRCStack.AddLayer(const Data: TLayerData);
 var
   Count: Integer;
 begin
-  Count := Length(Layers);
-  SetLength(Layers, Count + 1);
+  Count := Length(FLayers);
+  SetLength(FLayers, Count + 1);
 
-  Layers[Count] := TXRCLayerControl.Create(Self, 0, Data);
-  Layers[Count].Parent := Self;
+  FLayers[Count] := TXRCLayerControl.Create(Self, 0, Data);
+  FLayers[Count].Parent := Self;
 
-  if (Count mod 2) = 0 then Layers[Count].Color := $00FFE3C1
-    else Layers[Count].Color := $00FFD29B;
+  if (Count mod 2) = 0 then FLayers[Count].Color := $00FFE3C1
+    else FLayers[Count].Color := $00FFD29B;
 
-  ClientHeight := 45 + (Count + 1) * (Layers[Count].Height + 3);
+  ClientHeight := 45 + (Count + 1) * (FLayers[Count].Height + 3);
 
   lblLayers.Top := 1;
-  Layers[Count].Top := ClientHeight - 10;
+  FLayers[Count].Top := ClientHeight - 10;
 end;
 
 procedure TXRCStack.AddSubstrate(const Material: string; rho, s: single);
 var
   Data: TLayerData;
 begin
-  SetLength(Layers, 1);
+  SetLength(FLayers, 1);
   Data.Material := Material;
   Data.H := 1E8;
   Data.r := rho;
   Data.s := s;
 
 
-  Layers[0] := TXRCLayerControl.Create(Self, 0, Data);
-  Layers[0].Parent := Self;
-  Layers[0].Substrate := True;
+  FLayers[0] := TXRCLayerControl.Create(Self, 0, Data);
+  FLayers[0].Parent := Self;
+  FLayers[0].Substrate := True;
 
   RzSeparator.Visible := False;
   lblLayers.Caption   := '';
@@ -94,10 +96,10 @@ procedure TXRCStack.ClearLayers;
 var
   i: Integer;
 begin
-  for I := 0 to High(Layers) do
-     FreeAndNil(Layers[i]);
+  for I := 0 to High(FLayers) do
+     FreeAndNil(FLayers[i]);
 
-  SetLength(Layers, 0);
+  SetLength(FLayers, 0);
 end;
 
 procedure TXRCStack.UpdateInfo;
@@ -181,8 +183,17 @@ begin
     UpdateInfo;
   end
   else begin
-    Layers[0].Edit;
+    FLayers[0].Edit;
   end;
+end;
+
+function TXRCStack.GetLayersData: TLayersData;
+var
+  i: Integer;
+begin
+  SetLength(Result, Length(FLayers));
+  for i := 0 to High(FLayers) do
+    Result[i] := FLayers[i].Data;
 end;
 
 procedure TXRCStack.SetSelected(const Value: Boolean);
