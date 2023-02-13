@@ -23,7 +23,9 @@ type
       Substrate: TXRCStack;
 
       FSelectedStack : Integer;
+    FIncrement: single;
       procedure RealignStacks;
+    procedure SetIncrement(const Value: single);
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
@@ -37,7 +39,7 @@ type
 
       function Model: TLayeredModel;
     published
-
+      property Increment: single read FIncrement write SetIncrement;
   end;
 
 var
@@ -247,13 +249,17 @@ end;
 function TXRCStructure.Model: TLayeredModel;
 var
   i, k, j: Integer;
+  StackLayers: TLayersData;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
   for I := 0 to High(Stacks) do
-    for j := 1  to Stacks[i].N do
-        Result.AddLayers(Stacks[i].Layers);
+  begin
+    StackLayers := Stacks[i].Layers;
+    for j := 0  to Stacks[i].N do
+        Result.AddLayers(StackLayers);
+  end;
 
   Result.AddSubstrate(Substrate.Layers);
 end;
@@ -273,6 +279,15 @@ begin
 
     FSelectedStack := ID;
   end;
+end;
+
+procedure TXRCStructure.SetIncrement(const Value: single);
+var
+  i: Integer;
+begin
+  FIncrement := Value;
+ for I := 0 to High(Stacks) do
+       Stacks[i].Increment := Value;
 end;
 
 end.

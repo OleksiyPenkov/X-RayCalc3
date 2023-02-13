@@ -814,11 +814,24 @@ object frmMain: TfrmMain
         BevelOuter = bvNone
         TabOrder = 1
         object Label5: TLabel
-          Left = 192
-          Top = 136
+          Left = 198
+          Top = 120
           Width = 82
           Height = 13
           Caption = 'Number of points'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object Label6: TLabel
+          Left = 198
+          Top = 147
+          Width = 49
+          Height = 13
+          Caption = 'Increment'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
           Font.Height = -11
@@ -838,12 +851,12 @@ object frmMain: TfrmMain
           object Label1: TLabel
             Left = 3
             Top = 40
-            Width = 14
-            Height = 16
+            Width = 16
+            Height = 19
             Caption = 'q2'
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -851,12 +864,12 @@ object frmMain: TfrmMain
           object Label2: TLabel
             Left = 3
             Top = 14
-            Width = 14
-            Height = 16
+            Width = 16
+            Height = 19
             Caption = 'q1'
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -864,12 +877,12 @@ object frmMain: TfrmMain
           object Label3: TLabel
             Left = 80
             Top = 14
-            Width = 6
-            Height = 16
+            Width = 8
+            Height = 19
             Caption = 'l'
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -877,12 +890,12 @@ object frmMain: TfrmMain
           object Label4: TLabel
             Left = 75
             Top = 40
-            Width = 15
-            Height = 16
+            Width = 17
+            Height = 19
             Caption = 'Dq'
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -891,11 +904,11 @@ object frmMain: TfrmMain
             Left = 19
             Top = 13
             Width = 50
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -906,11 +919,11 @@ object frmMain: TfrmMain
             Left = 19
             Top = 40
             Width = 50
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -921,11 +934,11 @@ object frmMain: TfrmMain
             Left = 96
             Top = 39
             Width = 37
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -936,11 +949,11 @@ object frmMain: TfrmMain
             Left = 96
             Top = 13
             Width = 73
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -950,13 +963,13 @@ object frmMain: TfrmMain
           object cb2Theta: TRzCheckBox
             Left = 139
             Top = 40
-            Width = 37
-            Height = 19
+            Width = 39
+            Height = 21
             Caption = '2q'
             Checked = True
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -978,13 +991,13 @@ object frmMain: TfrmMain
           object Label9: TLabel
             Left = 8
             Top = 40
-            Width = 13
-            Height = 16
+            Width = 16
+            Height = 19
             Caption = 'l2'
             Enabled = False
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -992,13 +1005,13 @@ object frmMain: TfrmMain
           object Label10: TLabel
             Left = 7
             Top = 17
-            Width = 13
-            Height = 16
+            Width = 16
+            Height = 19
             Caption = 'l1'
             Enabled = False
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -1006,13 +1019,13 @@ object frmMain: TfrmMain
           object Label11: TLabel
             Left = 83
             Top = 14
-            Width = 7
-            Height = 16
+            Width = 8
+            Height = 19
             Caption = 'q'
             Enabled = False
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -1020,13 +1033,13 @@ object frmMain: TfrmMain
           object Label12: TLabel
             Left = 80
             Top = 41
-            Width = 14
-            Height = 16
+            Width = 17
+            Height = 19
             Caption = 'Dl'
             Enabled = False
             Font.Charset = GREEK_CHARSET
             Font.Color = clBlack
-            Font.Height = -13
+            Font.Height = -15
             Font.Name = 'Symbol'
             Font.Style = []
             ParentFont = False
@@ -1035,12 +1048,12 @@ object frmMain: TfrmMain
             Left = 23
             Top = 13
             Width = 47
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Enabled = False
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -1051,12 +1064,12 @@ object frmMain: TfrmMain
             Left = 23
             Top = 39
             Width = 47
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Enabled = False
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -1067,12 +1080,12 @@ object frmMain: TfrmMain
             Left = 97
             Top = 13
             Width = 40
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Enabled = False
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -1083,12 +1096,12 @@ object frmMain: TfrmMain
             Left = 97
             Top = 40
             Width = 40
-            Height = 21
+            Height = 22
             Alignment = taRightJustify
             Enabled = False
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -12
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
@@ -1117,14 +1130,14 @@ object frmMain: TfrmMain
           TabOrder = 2
         end
         object edN: TEdit
-          Left = 283
-          Top = 133
+          Left = 289
+          Top = 117
           Width = 42
-          Height = 21
+          Height = 22
           Alignment = taRightJustify
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -11
+          Font.Height = -12
           Font.Name = 'Tahoma'
           Font.Style = []
           NumbersOnly = True
@@ -1152,6 +1165,31 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 4
           OnClick = rgCalcModeClick
+        end
+        object cbIncrement: TRzComboBox
+          Left = 253
+          Top = 144
+          Width = 76
+          Height = 23
+          TabOrder = 5
+          Text = '0.1'
+          OnChange = cbIncrementChange
+          Items.Strings = (
+            '10'
+            '5'
+            '1'
+            '0.1'
+            '0.01'
+            '0.001')
+          ItemIndex = 3
+          Values.Strings = (
+            '10'
+            '5'
+            '1'
+            '0.25'
+            '0.1'
+            '0.01'
+            '0.001')
         end
       end
     end

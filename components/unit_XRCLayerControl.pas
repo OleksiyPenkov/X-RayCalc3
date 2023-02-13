@@ -34,6 +34,7 @@ type
       function GetLinkChecked: Boolean;
       procedure SetSubstrate(const Value: boolean);
       procedure InternalOnDblClick(Sender: TObject);
+      function AddSpinEdit(const index, Left, Max: integer): TRzSpinEdit;
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
@@ -58,9 +59,31 @@ type
 implementation
 
 uses
-  editor_Substrate;
+  editor_Substrate, unit_SMessages;
 
 { TXRCLayerControl }
+
+function TXRCLayerControl.AddSpinEdit(const index, Left, Max: integer):TRzSpinEdit;
+begin
+  Result := TRzSpinEdit.Create(Self);
+
+  Result.Parent := Self;
+  Result.Left := Left;
+  Result.Top := 11;
+  Result.Width := 65;
+  Result.Height := 21;
+  Result.Decimals := 2;
+  Result.Increment := 0.1;
+  Result.Max := Max;
+  Result.Min := 0;
+  Result.AllowKeyEdit := True;
+  Result.IntegersOnly := False;
+  Result.CheckRange := True;
+  Result.Tag := Index;
+
+  Result.OnChange := ValueChange
+end;
+
 
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
 begin
@@ -70,7 +93,7 @@ begin
 
   FOnset := True;
   FData  := Data;
-  FOnset := False;
+
 
   AlignWithMargins := True;
   Align := alTop;
@@ -81,13 +104,13 @@ begin
   Name := TRzLabel.Create(Self);
 
   //Thickness
-  Thickness := TRzSpinEdit.Create(Self);
+  Thickness := AddSpinEdit(1, 110, 99999);
 
   //Sigma
-  Sigma := TRzSpinEdit.Create(Self);
+  Sigma := AddSpinEdit(2, 180, 50);
 
   //Rho
-  Rho := TRzSpinEdit.Create(Self);
+  Rho := AddSpinEdit(3, 250, 30);
 
   //RzCheckBox1
   FLinkCheckBox := TRzCheckBox.Create(Self);
@@ -107,45 +130,6 @@ begin
   Name.Font.Style := [fsBold];
   Name.ParentFont := False;
 
-  //Thickness
-  Thickness.Name := 'Thickness';
-  Thickness.Parent := Self;
-  Thickness.Left := 110;
-  Thickness.Top := 11;
-  Thickness.Width := 65;
-  Thickness.Height := 21;
-  Thickness.Decimals := 2;
-  Thickness.Increment := 0.1;
-  Thickness.Max := 9999;
-  Thickness.TabOrder := 0;
-
-  //Sigma
-  Sigma.Name := 'Sigma';
-  Sigma.Parent := Self;
-  Sigma.Left := 180;
-  Sigma.Top := 11;
-  Sigma.Width := 65;
-  Sigma.Height := 21;
-  Sigma.Decimals := 2;
-  Sigma.Increment := 0.1;
-  Sigma.Max := 20;
-  Sigma.TabOrder := 1;
-
-
-  //Rho
-  Rho.Name := 'Rho';
-  Rho.Parent := Self;
-  Rho.Left := 250;
-  Rho.Top := 11;
-  Rho.Width := 65;
-  Rho.Height := 21;
-  Rho.ButtonWidth := 20;
-  Rho.Decimals := 2;
-  Rho.Increment := 0.1;
-  Rho.Max := 30;
-  Rho.TabOrder := 2;
-
-
   //Link
   FLinkCheckBox.Name := '';
   FLinkCheckBox.Parent := Self;
@@ -163,15 +147,11 @@ begin
 
   FLinked := nil;
 
-
-  Rho.OnChange := ValueChange;
-  Sigma.OnChange := ValueChange;
-  Thickness.OnChange := ValueChange;
-
   Self.OnDblClick := InternalOnDblClick;
   Name.OnDblClick := InternalOnDblClick;
 
   FSubstrate := False;
+  FOnset := False;
 end;
 
 procedure TXRCLayerControl.DecreaseThickness;
@@ -278,12 +258,15 @@ begin
     FLinked.OnSet := False;
   end;
 
-//  FData.H := Thickness.Text;
-//  FData.s := Sigma.Text;
-//  FData.r := Rho.Text;
+   case (Sender as TRzSpinEdit).Tag of
+     1: FData.H := (Sender as TRzSpinEdit).Value;
+     2: FData.s := (Sender as TRzSpinEdit).Value;
+     3: FData.r := (Sender as TRzSpinEdit).Value;
+   end;
 
   FOnSet := FOnSetOld;
-  if not FOnSet then PostMessage(FHandler, WM_RECALC, 0, 0);
+  if not FOnSet then
+     SendRecalcMessage;
 end;
 
 end.

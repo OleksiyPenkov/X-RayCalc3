@@ -12,9 +12,11 @@ const
 
   WM_STR_STACK_CLICK = WM_STR_BASE + 0;
   WM_STR_STACKDBLCLICK = WM_STR_BASE + 1;
+  WM_RECALC = WM_STR_BASE + 2;
 
   procedure StackClick(ID: integer);
   procedure StackDoubleClick(ID: integer);
+  procedure SendRecalcMessage;
 
 implementation
 
@@ -37,6 +39,16 @@ begin
     Application.MainFormHandle,
     WM_STR_STACKDBLCLICK,
     ID,
+    0
+  );
+end;
+
+procedure SendRecalcMessage;
+begin
+  PostMessage(
+    Application.MainFormHandle,
+    WM_RECALC,
+    0,
     0
   );
 end;

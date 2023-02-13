@@ -25,6 +25,7 @@ type
       procedure SetSelected(const Value: Boolean);
       procedure UpdateInfo;
     function GetLayersData: TLayersData;
+    procedure SetIncrement(const Value: Single);
 
     protected
       { Protected declarations }
@@ -42,6 +43,7 @@ type
       property N:integer read FN;
       procedure Edit;
       property Layers: TLayersData read GetLayersData;
+      property Increment:Single write SetIncrement;
     published
   end;
 
@@ -194,6 +196,14 @@ begin
   SetLength(Result, Length(FLayers));
   for i := 0 to High(FLayers) do
     Result[i] := FLayers[i].Data;
+end;
+
+procedure TXRCStack.SetIncrement(const Value: Single);
+var
+  i: Integer;
+begin
+  for i := 0 to High(FLayers) do
+    FLayers[i].Increment := Value;
 end;
 
 procedure TXRCStack.SetSelected(const Value: Boolean);

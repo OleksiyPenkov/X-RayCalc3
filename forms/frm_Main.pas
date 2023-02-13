@@ -180,6 +180,8 @@ type
     btnClac: TRzToolButton;
     btnCalcAll: TRzToolButton;
     spnTime: TRzStatusPane;
+    Label6: TLabel;
+    cbIncrement: TRzComboBox;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -210,6 +212,7 @@ type
     procedure PeriodAddExecute(Sender: TObject);
     procedure PeriodInsertExecute(Sender: TObject);
     procedure CalcRunExecute(Sender: TObject);
+    procedure cbIncrementChange(Sender: TObject);
   private
     FProjectDir: string;
     FProjectName: string;
@@ -247,6 +250,7 @@ type
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
 //    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
+    procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
   end;
 
 var
@@ -285,6 +289,11 @@ end;
 function TfrmMain.ModelName(Data: PProjectData): string;
 begin
   Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
+end;
+
+procedure TfrmMain.OnMyMessage(var Msg: TMessage);
+begin
+  CalcRunExecute(Self);
 end;
 
 procedure TfrmMain.ProjectAdvancedHeaderDraw(Sender: TVTHeader;
@@ -1019,6 +1028,11 @@ begin
         pnlWaveParams.Enabled := True;
       end;
   end;
+end;
+
+procedure TfrmMain.cbIncrementChange(Sender: TObject);
+begin
+  Structure.Increment := StrToFloat(cbIncrement.Value);
 end;
 
 procedure TfrmMain.WMStackClick(var Msg: TMessage);

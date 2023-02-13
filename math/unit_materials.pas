@@ -149,15 +149,19 @@ end;
 procedure TLayeredModel.PrepareLayers;
 var
   i: Integer;
-  c: Single;
+  c, ro: Single;
 begin
   for I := 1 to High(FLayers) - 1 do
   begin
     AddMaterial(FLayers[i].Name, FLambda);
+    if FLayers[i].ro <> 0 then
+      ro := FLayers[i].ro
+    else
+      ro := FMaterials[CurrentMaterial].ro;   // use default falue for density
 
     with FLayers[i] do
     begin
-      c := kk * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+      c := kk * ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
       e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
       e.im := FMaterials[CurrentMaterial].f.im * c;
     end;
@@ -199,6 +203,7 @@ end;
 
 procedure TLayeredModel.Init;
 begin
+  SetLength(FLayers, 0);
   SetLength(FLayers, 1);
 
   FLayers[0].L := 1E10;
