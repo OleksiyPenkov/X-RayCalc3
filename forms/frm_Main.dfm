@@ -121,82 +121,6 @@ object frmMain: TfrmMain
           Action = ProjectItemDelete
         end
       end
-      object Project: TVirtualStringTree
-        AlignWithMargins = True
-        Left = 5
-        Top = 34
-        Width = 242
-        Height = 582
-        Align = alClient
-        ButtonFillMode = fmTransparent
-        ButtonStyle = bsTriangle
-        Color = clWhite
-        Colors.BorderColor = clSkyBlue
-        Colors.DisabledColor = clGray
-        Colors.DropMarkColor = 15385233
-        Colors.DropTargetColor = 15385233
-        Colors.DropTargetBorderColor = 15385233
-        Colors.FocusedSelectionColor = 15385233
-        Colors.FocusedSelectionBorderColor = 15385233
-        Colors.GridLineColor = clSkyBlue
-        Colors.HeaderHotColor = clBlack
-        Colors.HotColor = clBlack
-        Colors.SelectionRectangleBlendColor = 15385233
-        Colors.SelectionRectangleBorderColor = 15385233
-        Colors.SelectionTextColor = clBlack
-        Colors.TreeLineColor = 9471874
-        Colors.UnfocusedColor = clGray
-        Colors.UnfocusedSelectionColor = clSkyBlue
-        Colors.UnfocusedSelectionBorderColor = clSkyBlue
-        DefaultNodeHeight = 25
-        DragMode = dmAutomatic
-        DragType = dtVCL
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -13
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        Header.AutoSizeIndex = 0
-        Header.Background = 16765595
-        Header.Font.Charset = DEFAULT_CHARSET
-        Header.Font.Color = clWindowText
-        Header.Font.Height = -13
-        Header.Font.Name = 'Tahoma'
-        Header.Font.Style = [fsBold]
-        Header.Height = 23
-        Header.MainColumn = 1
-        Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoOwnerDraw, hoShowSortGlyphs, hoVisible]
-        Header.ParentFont = False
-        NodeAlignment = naFromTop
-        ParentFont = False
-        TabOrder = 1
-        TreeOptions.MiscOptions = [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
-        TreeOptions.PaintOptions = [toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toFullVertGridLines]
-        TreeOptions.SelectionOptions = [toFullRowSelect, toRightClickSelect]
-        OnAdvancedHeaderDraw = ProjectAdvancedHeaderDraw
-        OnAfterCellPaint = ProjectAfterCellPaint
-        OnChange = ProjectChange
-        OnDblClick = ProjectDblClick
-        OnFocusChanging = ProjectFocusChanging
-        OnFreeNode = ProjectFreeNode
-        OnGetText = ProjectGetText
-        OnPaintText = ProjectPaintText
-        OnHeaderDrawQueryElements = ProjectHeaderDrawQueryElements
-        OnLoadNode = ProjectLoadNode
-        OnSaveNode = ProjectSaveNode
-        Touch.InteractiveGestures = [igPan, igPressAndTap]
-        Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-        Columns = <
-          item
-            Position = 0
-            Width = 58
-          end
-          item
-            Position = 1
-            Text = 'Project Items'
-            Width = 180
-          end>
-      end
       object RzPanel5: TRzPanel
         AlignWithMargins = True
         Left = 5
@@ -207,7 +131,7 @@ object frmMain: TfrmMain
         BorderOuter = fsFlatRounded
         Color = 15987699
         FlatColor = clSkyBlue
-        TabOrder = 2
+        TabOrder = 1
         ExplicitTop = 621
         object mmDescription: TRzMemo
           AlignWithMargins = True
@@ -259,7 +183,10 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 724
+          ExplicitHeight = 0
           object chGradients: TChart
             AlignWithMargins = True
             Left = 3
@@ -295,6 +222,10 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Chart1: TChart
             AlignWithMargins = True
             Left = 3
@@ -329,6 +260,10 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Chart2: TChart
             AlignWithMargins = True
             Left = 3
@@ -699,7 +634,6 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
-          ExplicitLeft = 660
         end
       end
     end
@@ -963,7 +897,7 @@ object frmMain: TfrmMain
           object cb2Theta: TRzCheckBox
             Left = 139
             Top = 40
-            Width = 39
+            Width = 35
             Height = 21
             Caption = '2q'
             Checked = True

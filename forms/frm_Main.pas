@@ -10,7 +10,7 @@ uses
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
   Vcl.ImgList, System.Actions, Vcl.ActnList, Vcl.RibbonLunaStyleActnCtrls,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
-  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages, unit_calc;
+  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages, unit_calc, unit_XRCProjectTree;
 
 type
   TfrmMain = class(TForm)
@@ -30,7 +30,6 @@ type
     RzToolbar1: TRzToolbar;
     btnProjectAddFolder: TRzToolButton;
     btnModelCreate: TRzToolButton;
-    Project: TVirtualStringTree;
     RzPanel5: TRzPanel;
     mmDescription: TRzMemo;
     ActionManager: TActionManager;
@@ -186,8 +185,6 @@ type
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure ProjectAdvancedHeaderDraw(Sender: TVTHeader;
-      var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
     procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree;
       TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
       CellRect: TRect);
@@ -196,24 +193,14 @@ type
     procedure ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
       NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
       var Allowed: Boolean);
-    procedure ProjectGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-    procedure ProjectHeaderDrawQueryElements(Sender: TVTHeader;
-      var PaintInfo: THeaderPaintInfo; var Elements: THeaderPaintElements);
-    procedure ProjectLoadNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Stream: TStream);
-    procedure ProjectPaintText(Sender: TBaseVirtualTree;
-      const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      TextType: TVSTTextType);
-    procedure ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Stream: TStream);
     procedure FormDestroy(Sender: TObject);
-    procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure PeriodAddExecute(Sender: TObject);
     procedure PeriodInsertExecute(Sender: TObject);
     procedure CalcRunExecute(Sender: TObject);
     procedure cbIncrementChange(Sender: TObject);
   private
+    Project : TXRCProjectTree;
+
     FProjectDir: string;
     FProjectName: string;
     FProjectFileName: string;
@@ -231,6 +218,7 @@ type
     IsFolder, IsItem, IsData, IsModel, IsExtension: Boolean;
     StartTime: TDateTime;
 
+    procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
     function DataName(Data: PProjectData): string;
     function ModelName(Data: PProjectData): string;
@@ -296,16 +284,54 @@ begin
   CalcRunExecute(Self);
 end;
 
-procedure TfrmMain.ProjectAdvancedHeaderDraw(Sender: TVTHeader;
-  var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
+
+procedure TfrmMain.CreateProjectTree;
 begin
-  if hpeBackground in Elements then
+  Project := TXRCProjectTree.Create(RzPanel1);
+  Project.Parent := RzPanel1;
+
+  Project.OnChange := ProjectChange;
+  Project.OnDblClick := ProjectDblClick;
+  Project.OnFocusChanging := ProjectFocusChanging;
+  Project.OnAfterCellPaint := ProjectAfterCellPaint;
+end;
+
+
+procedure TfrmMain.ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  if FIgnoreFocusChange then
+    Exit;
+
+  LastNode := Project.GetFirstSelected;
+  LastData := Project.GetNodeData(LastNode);
+
+  if LastData = nil then
   begin
-    PaintInfo.TargetCanvas.Brush.Color := clSkyBlue; // <-- your color here
-    if Assigned(PaintInfo.Column) then
-      DrawFrameControl(PaintInfo.TargetCanvas.Handle, PaintInfo.PaintRectangle, DFC_BUTTON, DFCS_FLAT or DFCS_ADJUSTRECT); // <-- I think, that this keeps the style of the header background, but I'm not sure about that
-    PaintInfo.TargetCanvas.FillRect(PaintInfo.PaintRectangle);
+    IsItem := False;
+    IsData := False;
+    IsModel := False;
+    IsFolder := False;
+    IsExtension := False;
+    Exit;
   end;
+
+  IsItem := LastData.RowType = prItem;
+  IsExtension := LastData.RowType = prExtension;
+  IsFolder := LastData.RowType = prFolder;
+  IsData := LastData.Group = gtData;
+  IsModel := (LastData.Group = gtModel) and IsItem;
+
+
+  if IsItem and IsData then
+    FActiveData := LastData;
+
+  if IsModel then
+     FLastModel := LastNode;
+end;
+
+procedure TfrmMain.ProjectDblClick(Sender: TObject);
+begin
+//  EditProjectItem;
 end;
 
 procedure TfrmMain.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
@@ -355,43 +381,6 @@ begin
   end;
 end;
 
-procedure TfrmMain.ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
-begin
-  if FIgnoreFocusChange then
-    Exit;
-
-  LastNode := Project.GetFirstSelected;
-  LastData := Project.GetNodeData(LastNode);
-
-  if LastData = nil then
-  begin
-    IsItem := False;
-    IsData := False;
-    IsModel := False;
-    IsFolder := False;
-    IsExtension := False;
-    Exit;
-  end;
-
-  IsItem := LastData.RowType = prItem;
-  IsExtension := LastData.RowType = prExtension;
-  IsFolder := LastData.RowType = prFolder;
-  IsData := LastData.Group = gtData;
-  IsModel := (LastData.Group = gtModel) and IsItem;
-
-
-  if IsItem and IsData then
-    FActiveData := LastData;
-
-  if IsModel then
-     FLastModel := LastNode;
-end;
-
-procedure TfrmMain.ProjectDblClick(Sender: TObject);
-begin
-//  EditProjectItem;
-end;
-
 procedure TfrmMain.ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
   NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
   var Allowed: Boolean);
@@ -413,126 +402,6 @@ begin
 //  Tree.LoadFromFile(ModelName(Data));
   FActiveModel := Data;
   Project.Repaint;
-end;
-
-procedure TfrmMain.ProjectFreeNode(Sender: TBaseVirtualTree;
-  Node: PVirtualNode);
-var
-  Data: PProjectData;
-begin
-  Data := Sender.GetNodeData(Node);
-  Finalize(Data^);
-end;
-
-procedure TfrmMain.ProjectGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-var
-  Data: PProjectData;
-begin
-  Data := Project.GetNodeData(Node);
-  case Column of
-    1:
-      CellText := Data.Title;
-    0:
-      CellText := '';
-  end;
-end;
-
-procedure TfrmMain.ProjectHeaderDrawQueryElements(Sender: TVTHeader;
-  var PaintInfo: THeaderPaintInfo; var Elements: THeaderPaintElements);
-begin
-  Elements := [hpeBackground];
-end;
-
-procedure TfrmMain.ProjectLoadNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Stream: TStream);
-var
-  Data: PProjectData;
-  size: Integer;
-  StrBuffer: PChar;
-
-  function GetString: string;
-  begin
-    Stream.Read(size, SizeOf(size));
-    StrBuffer := AllocMem(size);
-    Stream.Read(StrBuffer^, size);
-    Result := (StrBuffer);
-    FreeMem(StrBuffer);
-  end;
-
-begin
-  Data := Project.GetNodeData(Node);
-  Stream.Read(Data.ID, SizeOf(Data.ID));
-  Data.Title := GetString;
-  Stream.Read(Data.RowType, SizeOf(Data.RowType));
-  Stream.Read(Data.Group, SizeOf(Data.Group));
-  Stream.Read(Data.Active, SizeOf(Data.Active));
-  Stream.Read(Data.Visible, SizeOf(Data.Visible));
-  Data.Description := GetString;
-  Stream.Read(Data.Color, SizeOf(Data.Color));
-
-  if FProjectVersion < 1 then Exit;
-
-  Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-  Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-  Stream.Read(Data.Rate, SizeOf(Data.Rate));
-  Data.ParentLayerName := GetString;
-  Data.ParentStackName := GetString;
-  Stream.Read(Data.Form, SizeOf(Data.Form));
-  Stream.Read(Data.Subj, SizeOf(Data.Subj));
-end;
-
-procedure TfrmMain.ProjectPaintText(Sender: TBaseVirtualTree;
-  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  TextType: TVSTTextType);
-var
-  Data: PProjectData;
-begin
-  Data := Project.GetNodeData(Node);
-  if Data.RowType = prGroup then
-    TargetCanvas.Font.Style := [fsBold];
-  if Data.RowType = prFolder then
-    TargetCanvas.Font.Style := [fsBold, fsItalic];
-  if (Data.RowType <> prGroup) and  not Data.Enabled then
-    TargetCanvas.Font.Color := clGray;
-end;
-
-procedure TfrmMain.ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Stream: TStream);
-var
-  Data: PProjectData;
-  size: Integer;
-
-  procedure WriteString(const s: string);
-  begin
-    size := ByteLength(s) + 1;
-    Stream.Write(size, SizeOf(size));
-    Stream.Write(PChar(s)^, size);
-  end;
-
-begin
-  Data := Project.GetNodeData(Node);
-  if Data = Nil then
-    Exit;
-
-  if Data.RowType = prItem then
-    Data.Visible := Data.Curve.Visible;
-
-  Stream.Write(Data.ID, SizeOf(Data.ID));
-  WriteString(Data.Title);
-  Stream.Write(Data.RowType, SizeOf(Data.RowType));
-  Stream.Write(Data.Group, SizeOf(Data.Group));
-  Stream.Write(Data.Active, SizeOf(Data.Active));
-  Stream.Write(Data.Visible, SizeOf(Data.Visible));
-  WriteString(Data.Description);
-  Stream.Write(Data.Color, SizeOf(Data.Color));
-  Stream.Write(Data.Enabled, SizeOf(Data.Enabled));
-  Stream.Write(Data.ExtType, SizeOf(Data.ExtType));
-  Stream.Write(Data.Rate, SizeOf(Data.Rate));
-  WriteString(Data.ParentLayerName);
-  WriteString(Data.ParentStackName);
-  Stream.Write(Data.Form, SizeOf(Data.Form));
-  Stream.Write(Data.Subj, SizeOf(Data.Subj));
 end;
 
 function TfrmMain.DataName(Data: PProjectData): string;
@@ -780,6 +649,7 @@ var
   Data: PProjectData;
 begin
   // восстанавливаем дерево проектов
+  Project.Version := FProjectVersion;
   Project.LoadFromFile(FProjectDir + PROJECT_FILE_NAME);
 
   FModelsRoot := Project.GetFirst;
@@ -975,6 +845,8 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
 begin
+  CreateProjectTree;
+
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
 

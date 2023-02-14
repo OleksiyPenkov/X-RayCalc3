@@ -17,7 +17,8 @@ uses
   editor_Substrate in 'components\editor_Substrate.pas' {edtrSubstrate},
   unit_calc in 'math\unit_calc.pas',
   unit_materials in 'math\unit_materials.pas',
-  math_globals in 'math\math_globals.pas';
+  math_globals in 'math\math_globals.pas',
+  unit_XRCProjectTree in 'components\unit_XRCProjectTree.pas';
 
 {$R *.res}
 {$INCLUDE FastMM4Options.inc}

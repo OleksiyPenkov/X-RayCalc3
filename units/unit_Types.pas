@@ -22,7 +22,7 @@ type
     Title: string;
     Group: TProjectGroupType;
     Description: string;
-
+    Data: string;
     function IsModel:Boolean;
 
     case RowType: TProjRowType of

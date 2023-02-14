@@ -4,7 +4,7 @@
         <ProjectVersion>19.5</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -127,6 +127,7 @@
         <DCCReference Include="math\unit_calc.pas"/>
         <DCCReference Include="math\unit_materials.pas"/>
         <DCCReference Include="math\math_globals.pas"/>
+        <DCCReference Include="components\unit_XRCProjectTree.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
