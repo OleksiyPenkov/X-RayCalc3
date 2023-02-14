@@ -24,6 +24,8 @@ type
 
       FSelectedStack : Integer;
       FIncrement: single;
+      FVisibility: boolean;
+
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       procedure Clean;
@@ -80,13 +82,14 @@ begin
   Substrate.Top := ClientHeight - 5;
   Substrate.Align := alTop;
 
-  Visible := True;
+  Visible := FVisibility;
 end;
 
 procedure TXRCStructure.AddStack(const N: Integer; const Title: string);
 var
   Count: Integer;
 begin
+  FVisibility := Visible;
   Visible := False;
   Count := Length(Stacks);
 
