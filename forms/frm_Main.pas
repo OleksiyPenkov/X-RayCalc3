@@ -302,6 +302,14 @@ begin
   if FIgnoreFocusChange then
     Exit;
 
+  LastData := Project.GetNodeData(LastNode);
+  if LastData <> nil then
+  begin
+    IsModel := (LastData.Group = gtModel) and IsItem;
+    if IsModel then
+      LastData.Data := Structure.ToString;
+  end;
+
   LastNode := Project.GetFirstSelected;
   LastData := Project.GetNodeData(LastNode);
 

@@ -44,6 +44,7 @@ type
       procedure Edit;
       property Layers: TLayersData read GetLayersData;
       property Increment:Single write SetIncrement;
+      property Title: string read FTitle;
     published
   end;
 

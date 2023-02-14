@@ -6,7 +6,7 @@ uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
   VCL.Forms, unit_XRCLayerControl, unit_XRCStackControl,
   RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface,
-  unit_materials, unit_Types;
+  unit_materials, unit_Types, System.JSON;
 
 type
 
@@ -38,6 +38,9 @@ type
       procedure EditStack(const ID: Integer);
 
       function Model: TLayeredModel;
+
+      function ToString: string;
+      procedure FromString(const S: string);
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -222,6 +225,11 @@ begin
   Stacks[ID].Edit;
 end;
 
+procedure TXRCStructure.FromString(const S: string);
+begin
+
+end;
+
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   i, count, pos: Integer;
@@ -275,7 +283,7 @@ begin
   end
   else begin
     for I := 0 to High(Stacks) do
-       Stacks[i].Selected := (ID = i);
+      Stacks[i].Selected := (ID = i);
 
     FSelectedStack := ID;
   end;
@@ -286,8 +294,45 @@ var
   i: Integer;
 begin
   FIncrement := Value;
- for I := 0 to High(Stacks) do
-       Stacks[i].Increment := Value;
+  for I := 0 to High(Stacks) do
+    Stacks[i].Increment := Value;
+end;
+
+function TXRCStructure.ToString: string;
+var
+  i, j: Integer;
+  Data: TLayerData;
+  JStstructure, JLayer, JStack : TJSONObject;
+  JStacks, JLayers : TJSONArray;
+begin
+  JStstructure := TJSONObject.Create;
+
+  JStacks :=  TJSONArray.Create;
+  for I := 0 to High(Stacks) do
+  begin
+    JStack :=  TJSONObject.Create;
+    JStack.AddPair('T', Stacks[i].Title);
+    JStack.AddPair('N', Stacks[i].N);
+
+    JLayers := TJSONArray.Create;
+    for j := 0 to High(Stacks[i].Layers) do
+    begin
+      Data := Stacks[i].Layers[j];
+
+      JLayer := TJSONObject.Create;
+      JLayer.AddPair('M', Data.Material);
+      JLayer.AddPair('H', Data.H);
+      JLayer.AddPair('s', Data.s);
+      JLayer.AddPair('r', Data.r);
+
+      JLayers.Add(JLayer);
+    end;
+    JStack.AddPair('Layers', JLayers);
+    JStacks.Add(JStack);
+  end;
+  JStstructure.AddPair('Stacks', JStacks);
+  Result := JStstructure.ToString;
+  FreeAndNil(JStstructure);
 end;
 
 end.

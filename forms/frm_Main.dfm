@@ -183,10 +183,7 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
           ExplicitWidth = 724
-          ExplicitHeight = 0
           object chGradients: TChart
             AlignWithMargins = True
             Left = 3
@@ -222,10 +219,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Chart1: TChart
             AlignWithMargins = True
             Left = 3
@@ -260,10 +253,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Chart2: TChart
             AlignWithMargins = True
             Left = 3
@@ -634,6 +623,7 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
+          ExplicitLeft = 660
         end
       end
     end
@@ -897,7 +887,7 @@ object frmMain: TfrmMain
           object cb2Theta: TRzCheckBox
             Left = 139
             Top = 40
-            Width = 35
+            Width = 39
             Height = 21
             Caption = '2q'
             Checked = True
