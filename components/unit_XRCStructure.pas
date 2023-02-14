@@ -23,9 +23,10 @@ type
       Substrate: TXRCStack;
 
       FSelectedStack : Integer;
-    FIncrement: single;
+      FIncrement: single;
       procedure RealignStacks;
-    procedure SetIncrement(const Value: single);
+      procedure SetIncrement(const Value: single);
+      procedure Clean;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
@@ -105,6 +106,17 @@ begin
   Substrate.Width := ClientWidth;
 
   Substrate.AddSubstrate(Material, rho, s);
+end;
+
+procedure TXRCStructure.Clean;
+var
+  i: Integer;
+begin
+  for I := 0 to High(Stacks) do
+     Stacks[i].Free;
+  Finalize(Stacks);
+
+  Substrate.Free;
 end;
 
 constructor TXRCStructure.Create(AOwner: TComponent);
@@ -225,11 +237,6 @@ begin
   Stacks[ID].Edit;
 end;
 
-procedure TXRCStructure.FromString(const S: string);
-begin
-
-end;
-
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   i, count, pos: Integer;
@@ -302,37 +309,91 @@ function TXRCStructure.ToString: string;
 var
   i, j: Integer;
   Data: TLayerData;
-  JStstructure, JLayer, JStack : TJSONObject;
+  JStstructure, JLayer, JStack, JSub : TJSONObject;
   JStacks, JLayers : TJSONArray;
 begin
   JStstructure := TJSONObject.Create;
-
-  JStacks :=  TJSONArray.Create;
-  for I := 0 to High(Stacks) do
-  begin
-    JStack :=  TJSONObject.Create;
-    JStack.AddPair('T', Stacks[i].Title);
-    JStack.AddPair('N', Stacks[i].N);
-
-    JLayers := TJSONArray.Create;
-    for j := 0 to High(Stacks[i].Layers) do
+  try
+    JStacks :=  TJSONArray.Create;
+    for I := 0 to High(Stacks) do
     begin
-      Data := Stacks[i].Layers[j];
+      JStack :=  TJSONObject.Create;
+      JStack.AddPair('T', Stacks[i].Title);
+      JStack.AddPair('N', Stacks[i].N);
 
-      JLayer := TJSONObject.Create;
-      JLayer.AddPair('M', Data.Material);
-      JLayer.AddPair('H', Data.H);
-      JLayer.AddPair('s', Data.s);
-      JLayer.AddPair('r', Data.r);
+      JLayers := TJSONArray.Create;
+      for j := 0 to High(Stacks[i].Layers) do
+      begin
+        Data := Stacks[i].Layers[j];
 
-      JLayers.Add(JLayer);
+        JLayer := TJSONObject.Create;
+        JLayer.AddPair('M', Data.Material);
+        JLayer.AddPair('H', Data.H);
+        JLayer.AddPair('s', Data.s);
+        JLayer.AddPair('r', Data.r);
+
+        JLayers.Add(JLayer);
+      end;
+      JStack.AddPair('Layers', JLayers);
+      JStacks.Add(JStack);
     end;
-    JStack.AddPair('Layers', JLayers);
-    JStacks.Add(JStack);
+
+    Data := Substrate.Layers[0];
+    JSub := TJSONObject.Create;
+    JSub.AddPair('M', Data.Material);
+    JSub.AddPair('s', Data.s);
+    JSub.AddPair('r', Data.r);
+
+    JStstructure.AddPair('Stacks', JStacks);
+    JStstructure.AddPair('Subs', JSub);
+    Result := JStstructure.ToString;
+  finally
+    FreeAndNil(JStstructure);
   end;
-  JStstructure.AddPair('Stacks', JStacks);
-  Result := JStstructure.ToString;
-  FreeAndNil(JStstructure);
 end;
+
+procedure TXRCStructure.FromString(const S: string);
+var
+  i, j: Integer;
+  Data: TLayerData;
+  JStstructure: TJSONObject;
+  JLayer, JStack, JSub : TJSONValue;
+  JStacks, JLayers : TJSONArray;
+begin
+  Visible := False;
+  Clean;
+
+  JStstructure := TJSonObject.ParseJSONValue(S) as TJSonObject;
+
+  try
+    JSub := JStstructure.Get('Subs').JsonValue;
+    AddSubstrate(JSub.GetValue<string>('M'), JSub.GetValue<single>('s'), JSub.GetValue<single>('r'));
+
+    JStacks := JStstructure.Get('Stacks').JsonValue as TJSONArray;
+    for I := 0 to JStacks.Count - 1 do
+    begin
+      JStack := JStacks.Items[i];
+      AddStack(JStack.GetValue<integer>('N'), JStack.GetValue<string>('T'));
+      JLayers := JStack.GetValue<TJsonArray>('Layers');
+
+      for j := 0 to JLayers.Count - 1 do
+      begin
+        JLayer := JLayers.Items[j];
+        Data.Material := JLayer.GetValue<string>('M');
+        Data.H := JLayer.GetValue<single>('H');
+        Data.s := JLayer.GetValue<single>('s');
+        Data.r := JLayer.GetValue<single>('r');
+
+        Stacks[i].AddLayer(Data);
+      end;
+    end;
+
+  finally
+    FreeAndNil(JStstructure);
+  end;
+
+  Visible := True;
+end;
+
 
 end.

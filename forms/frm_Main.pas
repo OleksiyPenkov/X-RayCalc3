@@ -334,7 +334,11 @@ begin
     FActiveData := LastData;
 
   if IsModel then
+  begin
      FLastModel := LastNode;
+     if LastData.Data <> '' then
+        Structure.FromString(LastData.Data);
+  end;
 end;
 
 procedure TfrmMain.ProjectDblClick(Sender: TObject);
