@@ -24,8 +24,8 @@ type
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
       procedure UpdateInfo;
-    function GetLayersData: TLayersData;
-    procedure SetIncrement(const Value: Single);
+      function GetLayersData: TLayersData;
+      procedure SetIncrement(const Value: Single);
 
     protected
       { Protected declarations }

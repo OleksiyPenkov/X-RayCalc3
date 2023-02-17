@@ -2026,6 +2026,7 @@ object frmMain: TfrmMain
       Category = 'Period'
       Caption = 'Delete'
       ImageIndex = 10
+      OnExecute = PeriodDeleteExecute
     end
     object LayerCopy: TAction
       Category = 'Layer'

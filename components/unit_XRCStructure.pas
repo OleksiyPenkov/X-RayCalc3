@@ -29,9 +29,12 @@ type
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       procedure Clean;
+      function GetSelected: Integer;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
+
+      property Selected: Integer read GetSelected;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
@@ -39,6 +42,7 @@ type
       procedure AddSubstrate(const Material: string; rho, s: single);
       procedure Select(const ID: Integer);
       procedure EditStack(const ID: Integer);
+      procedure DeleteStack(const ID: Integer);
 
       function Model: TLayeredModel;
 
@@ -229,6 +233,15 @@ begin
   FSelectedStack := -1;
 end;
 
+procedure TXRCStructure.DeleteStack(const ID: Integer);
+begin
+  if ID > -1 then
+  begin
+    Stacks[ID].Free;
+    Delete(Stacks, ID, 1);
+  end;
+end;
+
 destructor TXRCStructure.Destroy;
 begin
 //  FreeAndNil(Substrate);
@@ -250,13 +263,7 @@ begin
   if FSelectedStack <> -1 then Pos := FSelectedStack
     else Pos := count;
 
-  SetLength(Stacks, count + 1);
-
-  for i := Count  downto Pos + 1 do
-  begin
-    Stacks[i] := Stacks[i - 1];
-    Stacks[i] .ID := i;
-  end;
+  Insert(Nil, Stacks, pos);
 
   Stacks[Pos] := TXRCStack.Create(Box, Title, N);
   Stacks[Pos].ID := Pos;
@@ -398,5 +405,10 @@ begin
   Visible := True;
 end;
 
+
+function TXRCStructure.GetSelected: Integer;
+begin
+  Result := FSelectedStack;
+end;
 
 end.

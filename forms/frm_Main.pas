@@ -198,6 +198,7 @@ type
     procedure PeriodInsertExecute(Sender: TObject);
     procedure CalcRunExecute(Sender: TObject);
     procedure cbIncrementChange(Sender: TObject);
+    procedure PeriodDeleteExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -431,6 +432,11 @@ begin
   edtrStack.Edit(Name, N);
   if Name <> '' then
      Structure.AddStack(N, Name);
+end;
+
+procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
+begin
+  Structure.DeleteStack(Structure.Selected);
 end;
 
 procedure TfrmMain.PeriodInsertExecute(Sender: TObject);
