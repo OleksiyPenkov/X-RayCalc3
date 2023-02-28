@@ -23,6 +23,7 @@ function ClearDir(const DirectoryName: string; Full: boolean = False): boolean;
 
 procedure SeriesToClipboard(Series: TLineSeries);
 procedure SeriesToFile(Series: TLineSeries; const FileName: string);
+function SeriesToString(Series: TLineSeries): string;
 
 procedure SeriesFromClipboard(Series: TLineSeries);
 procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr: string); forward;
@@ -165,7 +166,7 @@ var
   i: integer;
   Max: single;
 begin
-  // нормировка
+  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
   Series.XValues.Sort;
   if Cmpr(Series.XValue[0], -0.01) and Cmpr(Series.XValue[1], -0.005) then
   begin
@@ -183,7 +184,7 @@ var
   Max: single;
 begin
   AutoNormalisation(Series);
-  // ищем место склейки
+  // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
   for I := 0 to Series.Count - 2 do
   begin
     Max := Series.YValue[i + 1] / Series.YValue[i];
@@ -194,7 +195,7 @@ begin
       Break;
     end;
   end;
-  // нормировка
+  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
   for I := Pos to Series.Count - 1 do
     Series.YValue[i] := Series.YValue[i] / Max;
 end;
@@ -291,6 +292,19 @@ begin
   try
     SeriesToText(MyStringList, Series);
     Clipboard.AsText := MyStringList.Text;
+  finally
+    MyStringList.Free;
+  end;
+end;
+
+function SeriesToString(Series: TLineSeries): string;
+var
+  MyStringList: TStringList;
+begin
+  MyStringList := TStringList.Create;
+  try
+    SeriesToText(MyStringList, Series);
+    Result := MyStringList.Text;
   finally
     MyStringList.Free;
   end;

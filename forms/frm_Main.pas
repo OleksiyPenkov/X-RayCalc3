@@ -10,7 +10,8 @@ uses
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
   Vcl.ImgList, System.Actions, Vcl.ActnList, Vcl.RibbonLunaStyleActnCtrls,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
-  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages, unit_calc, unit_XRCProjectTree;
+  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages,
+  unit_calc, unit_XRCProjectTree, RzRadGrp;
 
 type
   TfrmMain = class(TForm)
@@ -171,9 +172,7 @@ type
     edEndL: TEdit;
     edTheta: TEdit;
     edDL: TEdit;
-    rgPolarisation: TRadioGroup;
     edN: TEdit;
-    rgCalcMode: TRadioGroup;
     IdCompressorZLib1: TIdCompressorZLib;
     rzspcr5: TRzSpacer;
     btnClac: TRzToolButton;
@@ -181,6 +180,26 @@ type
     spnTime: TRzStatusPane;
     Label6: TLabel;
     cbIncrement: TRzComboBox;
+    rgCalcMode: TRzRadioGroup;
+    rgPolarisation: TRzRadioGroup;
+    dlgSaveResult: TSaveDialog;
+    dlgLoadData: TOpenDialog;
+    dlgSaveProject: TSaveDialog;
+    dlgExport: TSaveDialog;
+    pmProject: TPopupMenu;
+    pmiNorm: TMenuItem;
+    Auto1: TMenuItem;
+    Manual1: TMenuItem;
+    pmiVisible: TMenuItem;
+    pmiLinked: TMenuItem;
+    pmiEnabled: TMenuItem;
+    N1: TMenuItem;
+    Properties1: TMenuItem;
+    N5: TMenuItem;
+    pmCopytoclipboard: TMenuItem;
+    pmExporttofile: TMenuItem;
+    btnResultSave: TRzToolButton;
+    btnBtnCopy: TRzToolButton;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -199,6 +218,12 @@ type
     procedure CalcRunExecute(Sender: TObject);
     procedure cbIncrementChange(Sender: TObject);
     procedure PeriodDeleteExecute(Sender: TObject);
+    procedure DataPasteExecute(Sender: TObject);
+    procedure DataCopyClpbrdExecute(Sender: TObject);
+    procedure DataExportExecute(Sender: TObject);
+    procedure ResultSaveExecute(Sender: TObject);
+    procedure ResultCopyExecute(Sender: TObject);
+    procedure DataLoadExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -248,7 +273,7 @@ var
 implementation
 
 uses
-  System.IniFiles, unit_settings, unit_helpers, unit_consts, unit_XRCStructure, unit_XRCLayerControl, editor_Stack;
+  System.IniFiles, System.DateUtils, unit_settings, unit_helpers, unit_consts, unit_XRCStructure, unit_XRCLayerControl, editor_Stack;
 
 {$R *.dfm}
 
@@ -417,11 +442,84 @@ begin
   Project.Repaint;
 end;
 
+procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
+begin
+  SeriesToClipboard(FActiveData.Curve);
+end;
+
+procedure TfrmMain.DataExportExecute(Sender: TObject);
+begin
+  if dlgSaveResult.Execute then
+      SeriesToFile(FActiveData.Curve, dlgSaveResult.FileName);
+end;
+
+procedure TfrmMain.DataLoadExecute(Sender: TObject);
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  if not dlgLoadData.Execute then
+    Exit;
+
+  Node := Project.GetFirstSelected;
+  if Node = nil then
+    Node := FDataRoot;
+
+  Data := Project.GetNodeData(Node);
+  if (Data.RowType = prFolder) and (Data.Group = gtData) then
+    Node := Project.AddChild(Node)
+  else
+    Node := Project.AddChild(FDataRoot);
+
+  Data := Project.GetNodeData(Node);
+  Data.ID := FLastID;
+  inc(FLastID);
+  Data.Title := ExtractFileName(dlgLoadData.FileName);
+  Data.Group := gtData;
+  Data.RowType := prItem;
+  Data.Curve := TLineSeries.Create(Chart);
+  Data.Curve.Title := Data.Title;
+  Data.Color := Data.Curve.Color;
+  Data.Curve.LinePen.Width := 2;
+
+  SeriesFromFile(Data.Curve, dlgLoadData.FileName, Data.Description);
+  Chart.AddSeries(Data.Curve);
+
+  SeriesToFile(Data.Curve, DataName(Data));
+
+  FActiveData := Data;
+  Project.Expanded[FDataRoot] := True;
+
+end;
+
 function TfrmMain.DataName(Data: PProjectData): string;
 begin
   Result := Format('%sdata_%d.dat', [FProjectDir, Data.ID])
 end;
 
+
+procedure TfrmMain.DataPasteExecute(Sender: TObject);
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Node := Project.AddChild(FDataRoot);
+  Data := Project.GetNodeData(Node);
+
+  Data.ID := DateTimeToUnix(Now);
+  Data.Title := 'Data ' + IntToStr(Node.Index + 1) + '.dat';
+  Data.Group := gtData;
+  Data.RowType := prItem;
+  Data.Curve := TLineSeries.Create(Chart);
+  Data.Curve.Title := Data.Title;
+  Data.Color := Data.Curve.Color;
+  Data.Curve.LinePen.Width := 2;
+  Project.Expanded[FDataRoot] := True;
+
+  SeriesFromClipboard(Data.Curve);
+  Chart.AddSeries(Data.Curve);
+  SeriesToFile(Data.Curve, DataName(Data));
+end;
 
 procedure TfrmMain.PeriodAddExecute(Sender: TObject);
 var
@@ -723,6 +821,17 @@ begin
   end;
 end;
 
+procedure TfrmMain.ResultCopyExecute(Sender: TObject);
+begin
+  SeriesToClipboard(FActiveModel.Curve);
+end;
+
+procedure TfrmMain.ResultSaveExecute(Sender: TObject);
+begin
+  if dlgSaveResult.Execute then
+    SeriesToFile(FActiveModel.Curve, dlgSaveResult.FileName);
+end;
+
 procedure TfrmMain.RecoverDataCurves(const LinkedID: integer);
 var
   Node: PVirtualNode;
@@ -931,7 +1040,7 @@ var
 begin
   ID := Msg.WParam;
   Structure.Select(ID);
-//  PeriodInsert.Enabled := (ID > 0);
+  PeriodInsert.Enabled := (ID > 0);
 end;
 
 //procedure TfrmMain.WMStackDblClick(var Msg: TMessage);
