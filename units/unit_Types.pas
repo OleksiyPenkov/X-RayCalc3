@@ -17,6 +17,8 @@ type
   TGradientForm = (gtLine, gtExp, gtSin, gtCos);
   TGradientSubject = (gsL, gsS, gsRo);
 
+  PLineSeries = ^TLineSeries;
+
   PProjectData = ^TProjectdata;
   TProjectData = record
     Title: string;
@@ -30,7 +32,7 @@ type
         ();
       prItem:
         (ID: integer;
-         Curve: TLineSeries;
+         Curve: PLineSeries;
          Color: TColor;
          Active: boolean;
          Visible: boolean);

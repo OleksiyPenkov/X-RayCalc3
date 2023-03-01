@@ -1,13 +1,21 @@
-unit unit_XRCProjectTree;
+﻿unit unit_XRCProjectTree;
 
 interface
 
 uses
-System.SysUtils, WinApi.Windows, System.Types, System.Classes, Vcl.Controls, VCL.ComCtrls,
-Vcl.Graphics, VirtualTrees,   VirtualTrees.Types,
+  System.SysUtils,
+  WinApi.Windows,
+  System.Types,
+  System.Classes,
+  Vcl.Controls,
+  VCL.ComCtrls,
+  Vcl.Graphics,
+  VirtualTrees,
+  VirtualTrees.Types,
   VirtualTrees.Colors,
   VirtualTrees.DragImage,
-  VirtualTrees.Header, unit_Types;
+  VirtualTrees.Header,
+  unit_Types;
 
 type
 
@@ -161,16 +169,25 @@ procedure TXRCProjectTree.ProjectLoadNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Stream: TStream);
 var
   Data: PProjectData;
-  size: Integer;
-  StrBuffer: PChar;
 
   function GetString: string;
+  var
+    size: Integer;
+    StrBuffer: PChar;
+    Dumb: byte;
   begin
     Stream.Read(size, SizeOf(size));
-    StrBuffer := AllocMem(size);
-    Stream.Read(StrBuffer^, size);
-    Result := (StrBuffer);
-    FreeMem(StrBuffer);
+    if Size > 1 then
+    begin
+      StrBuffer := AllocMem(size);
+      Stream.Read(StrBuffer^, size);
+      Result := (StrBuffer);
+      FreeMem(StrBuffer);
+    end
+    else begin
+      Stream.Read(Dumb, 1);
+      Result := '';
+    end;
   end;
 
 begin
@@ -231,10 +248,6 @@ begin
   Data := Sender.GetNodeData(Node);
   if Data = Nil then
     Exit;
-
-  if Data.RowType = prItem then
-    Data.Visible := Data.Curve.Visible;
-
   Stream.Write(Data.ID, SizeOf(Data.ID));
   WriteString(Data.Title);
   Stream.Write(Data.RowType, SizeOf(Data.RowType));

@@ -424,7 +424,20 @@ object frmMain: TfrmMain
           5
           5
           5)
-        ColorPaletteIndex = 13
+        ColorPaletteIndex = -2
+        ColorPalette = (
+          255
+          8404992
+          32768
+          16711680
+          128
+          8388608
+          4210688
+          16711935
+          8421376
+          8388736
+          32896
+          0)
       end
       object RzPanel3: TRzPanel
         AlignWithMargins = True
@@ -652,8 +665,6 @@ object frmMain: TfrmMain
       BorderOuter = fsFlatRounded
       Color = 15987699
       TabOrder = 1
-      ExplicitLeft = 740
-      ExplicitTop = 0
       object RzToolbar2: TRzToolbar
         Left = 2
         Top = 2
@@ -1098,7 +1109,9 @@ object frmMain: TfrmMain
           Height = 42
           BorderOuter = fsFlatRounded
           Caption = 'Mode'
+          Color = 15987699
           Columns = 2
+          ItemHeight = 17
           ItemIndex = 0
           Items.Strings = (
             'by angle'
@@ -1115,6 +1128,7 @@ object frmMain: TfrmMain
           Caption = 'Polarization'
           Color = 15987699
           Columns = 2
+          ItemHeight = 17
           ItemIndex = 0
           Items.Strings = (
             's-type'
@@ -1989,6 +2003,7 @@ object frmMain: TfrmMain
       Caption = 'Save project'
       ImageIndex = 2
       ShortCut = 16467
+      OnExecute = FileSaveExecute
     end
     object FilePrint: TAction
       Category = 'Project'
@@ -2109,6 +2124,7 @@ object frmMain: TfrmMain
       Caption = 'Save project As ...'
       ImageIndex = 2
       ShortCut = 113
+      OnExecute = FileSaveAsExecute
     end
     object CalcTest: TAction
       Category = 'Calc'

@@ -1,4 +1,4 @@
-unit unit_XRCStackControl;
+﻿unit unit_XRCStackControl;
 
 interface
 

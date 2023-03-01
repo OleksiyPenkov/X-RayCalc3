@@ -1,4 +1,4 @@
-unit unit_XRCStructure;
+﻿unit unit_XRCStructure;
 
 interface
 
@@ -182,7 +182,7 @@ begin
   Label2.Top := 6;
   Label2.Width := 35;
   Label2.Height := 16;
-  Label2.Caption := 'H ('#197')';
+  Label2.Caption := 'H (Å)';
   Label2.Font.Color := clWindowText;
   Label2.Font.Height := -13;
   Label2.Font.Name := 'Tahoma';
@@ -196,7 +196,7 @@ begin
   Label3.Top := 6;
   Label3.Width := 35;
   Label3.Height := 16;
-  Label3.Caption := #963' ('#197')';
+  Label3.Caption := 'σ (Å)';
   Label3.Font.Color := clWindowText;
   Label3.Font.Height := -13;
   Label3.Font.Name := 'Tahoma';
@@ -210,7 +210,7 @@ begin
   Label4.Top := 6;
   Label4.Width := 65;
   Label4.Height := 16;
-  Label4.Caption := #961' (g/cm'#179')  N';
+  Label4.Caption := 'ρ (g/cm³)  N';
   Label4.Font.Color := clWindowText;
   Label4.Font.Height := -13;
   Label4.Font.Name := 'Tahoma';
