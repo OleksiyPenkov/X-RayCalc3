@@ -26,6 +26,7 @@ type
       procedure UpdateInfo;
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
+      function GetMaterialsList: TMaterialsList;
 
     protected
       { Protected declarations }
@@ -45,7 +46,7 @@ type
       property Layers: TLayersData read GetLayersData;
       property Increment:Single write SetIncrement;
       property Title: string read FTitle;
-    published
+      property Materials: TMaterialsList read GetMaterialsList;
   end;
 
 implementation
@@ -197,6 +198,19 @@ begin
   SetLength(Result, Length(FLayers));
   for i := 0 to High(FLayers) do
     Result[i] := FLayers[i].Data;
+end;
+
+function TXRCStack.GetMaterialsList: TMaterialsList;
+var
+  i: integer;
+begin
+  SetLength(Result, Length(FLayers));
+  for i := 0 to High(FLayers) do
+  begin
+    Result[i].Name := FLayers[i].Data.Material;
+    Result[i].StackID := FID;
+    Result[i].LayerID := i + 1;
+  end;
 end;
 
 procedure TXRCStack.SetIncrement(const Value: Single);

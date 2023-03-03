@@ -10,12 +10,15 @@ uses
   Vcl.Menus, RzTabs, Vcl.ToolWin, Vcl.ComCtrls, RzButton, VirtualTrees,
   Vcl.StdCtrls, RzEdit, VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs,
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
-  Vcl.ImgList, System.Actions, Vcl.ActnList, Vcl.RibbonLunaStyleActnCtrls,
+  Vcl.ImgList, System.Actions, Vcl.ActnList,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
-  IdBaseComponent, IdZLibCompressorBase, IdCompressorZLib, unit_SMessages,
-  unit_calc, unit_XRCProjectTree, RzRadGrp;
+  unit_SMessages,
+  unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
+  unit_materials, VCLTee.TeeFunci;
 
 type
+  TSeriesList = array of TLineSeries;
+
   TfrmMain = class(TForm)
     mmMain: TMainMenu;
     File1: TMenuItem;
@@ -110,14 +113,8 @@ type
     pnlMain: TRzPanel;
     Pages: TRzPageControl;
     tsThickness: TRzTabSheet;
-    chGradients: TChart;
-    Series1: TPointSeries;
     tsRoughness: TRzTabSheet;
-    Chart1: TChart;
-    PointSeries1: TPointSeries;
     tsDensity: TRzTabSheet;
-    Chart2: TChart;
-    PointSeries2: TPointSeries;
     ChartToolBar: TRzToolbar;
     btnDataLoad: TRzToolButton;
     btnDataPaste: TRzToolButton;
@@ -175,7 +172,6 @@ type
     edTheta: TEdit;
     edDL: TEdit;
     edN: TEdit;
-    IdCompressorZLib1: TIdCompressorZLib;
     rzspcr5: TRzSpacer;
     btnClac: TRzToolButton;
     btnCalcAll: TRzToolButton;
@@ -202,6 +198,9 @@ type
     pmExporttofile: TMenuItem;
     btnResultSave: TRzToolButton;
     btnBtnCopy: TRzToolButton;
+    chThickness: TChart;
+    chRoughness: TChart;
+    chDensity: TChart;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -248,7 +247,10 @@ type
     IsFolder, IsItem, IsData, IsModel, IsExtension: Boolean;
     StartTime: TDateTime;
 
-    FSeriesList: array of TLineSeries;
+    FSeriesList: TSeriesList ;
+    FThicknessSeries: TSeriesList ;
+    FRoughnessSeries: TSeriesList ;
+    FDensitySeries: TSeriesList ;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -267,6 +269,8 @@ type
     procedure SaveProject(const FileName: string);
     procedure SaveData;
     procedure AddCurve(var Data: PProjectData);
+    procedure PlotDistributions(Model: TLayeredModel);
+    procedure PrepareDistributionCharts;
     { Private declarations }
   public
     { Public declarations }
@@ -287,8 +291,8 @@ uses
   unit_settings,
   unit_helpers,
   unit_consts,
-  unit_XRCStructure,
   unit_XRCLayerControl,
+  unit_XRCStructure,
   editor_Stack;
 
 {$R *.dfm}
@@ -516,7 +520,7 @@ begin
   Count := Length(FSeriesList);
   SetLength(FSeriesList, Count + 1);
   FSeriesList[Count] := TLineSeries.Create(Chart);
-  Chart.AddSeries(FSeriesList[Count]);
+  FSeriesList[Count].ParentChart := Chart;
 
   Data.Curve := @FSeriesList[Count];
   Data.Curve^.Title := Data.Title;
@@ -524,8 +528,6 @@ begin
   Data.Curve^.LinePen.Width := 2;
   Data.Visible := True;
   Data.Curve^.Visible := Data.Visible;
-
-  Project.Repaint;
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);
@@ -740,6 +742,64 @@ begin
   PrintMax;
 end;
 
+procedure TfrmMain.PrepareDistributionCharts;
+var
+  Materials: TMaterialsList;
+  i: integer;
+
+  procedure InitSereis(Series: TLineSeries);
+  begin
+    Series.LinePen.Width := 2;
+    Series.Stairs := True;
+    Series.Pointer.Visible := True;
+    Series.Pointer.Size := 2;
+  end;
+
+  procedure CreateSeries(Chart: TChart; var SeriesList: TSeriesList);
+  var
+    i: integer;
+  begin
+    Chart.SeriesList.Clear;
+    SetLength(SeriesList, High(Materials) + 1);
+
+    for I := 0 to High(Materials) do
+    begin
+      SeriesList[i] := TLineSeries.Create(Chart);
+      SeriesList[i].Title := Materials[i].Name;
+      SeriesList[i].ParentChart := Chart;
+      InitSereis(SeriesList[i]);
+    end;
+  end;
+
+begin
+  Materials := Structure.Materials;
+
+
+  CreateSeries(chThickness, FThicknessSeries);
+  CreateSeries(chRoughness, FRoughnessSeries);
+  CreateSeries(chDensity, FDensitySeries);
+
+end;
+
+procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
+var
+  i, j: integer;
+begin
+  for i := 0 to High(FThicknessSeries) do
+  begin
+    FThicknessSeries[i].Clear;
+    FRoughnessSeries[i].Clear;
+    FDensitySeries[i].Clear;
+  end;
+
+  for i := 1 to High(Model.Layers) - 1 do
+  begin
+    FThicknessSeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].L);
+    FRoughnessSeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].s);
+    FDensitySeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].ro);
+  end;
+end;
+
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
 var
   CD: TThreadParams;
@@ -758,6 +818,7 @@ begin
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
+      PlotDistributions(Calc.Model);
       Calc.Run;
     except
       on E: exception do
@@ -890,7 +951,6 @@ begin
 
   FIgnoreFocusChange := False;
   Project.Repaint;
-
 end;
 
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
@@ -1055,22 +1115,25 @@ end;
 
 procedure TfrmMain.CreateDummyStructure;
 var
-  Data1, Data2, Data3: TLayerData;
+  Data1, Data2, Data3, Data4: TLayerData;
 begin
   Data1.Material := 'Si';
-  Data1.H := 28; Data1.s := 2.5; Data1.r := 2.3;
+  Data1.H := 23; Data1.s := 2.5; Data1.r := 2.3;
 
   Data2.Material := 'MoSi2';
-  Data2.H := 10; Data2.s := 3; Data2.r := 6.2;
+  Data2.H := 6; Data2.s := 3; Data2.r := 6.2;
 
   Data3.Material := 'Mo';
-  Data3.H := 28; Data3.s := 2.5; Data3.r := 10;
+  Data3.H := 14; Data3.s := 2.5; Data3.r := 10;
+
+  Data4.Material := 'MoSi2';
+  Data4.H := 12; Data2.s := 3; Data2.r := 6.2;
 
   Structure.AddStack(1, 'Top');
   Structure.AddLayer(0, Data1);
 
   Structure.AddStack(5, 'Main');
-  Structure.AddLayer(1, Data2);
+  Structure.AddLayer(1, Data4);
   Structure.AddLayer(1, Data3);
   Structure.AddLayer(1, Data2);
   Structure.AddLayer(1, Data1);
@@ -1108,6 +1171,7 @@ begin
      begin
        CreateDefaultProject;
        CreateDummyStructure;
+       PrepareDistributionCharts;
      end;
   end
   else

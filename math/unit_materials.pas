@@ -17,7 +17,6 @@ uses
   math_globals;
 
 type
-
   TLayeredModel = class
   private
     FMaterials: array of TMaterial;
@@ -38,19 +37,19 @@ type
     function FindMaterial(const Name: string): TMaterial;
     procedure AddMaterial(const AName: string; Lambda: single);
     function GetLayers: TCalcLayers;
-  published
+  public
     constructor Create;
     destructor Free;
     procedure Init;
 
-    procedure AddLayers(const Data: TLayersData);
+    procedure AddLayers(const PeriodNo: integer;  Data: TLayersData);
     procedure AddSubstrate(const Data: TLayersData);
 
     procedure ExportToFile(const FileName: string);
     procedure Generate(const Lambda: Single);
 
     property Layers: TCalcLayers read GetLayers;
-    property TotalD:Single read FTotalD;
+    property TotalD: Single read FTotalD;
   end;
 
 
@@ -66,7 +65,7 @@ const
 
 { TLayeredModel }
 
-procedure TLayeredModel.AddLayers(const Data: TLayersData);
+procedure TLayeredModel.AddLayers;
 var
   i: Integer;
 begin
@@ -74,6 +73,9 @@ begin
 
   for I := 0 to High(Data) do
   begin
+    FLayers[CurrentLayer + i].PeriodNo := PeriodNo;
+    FLayers[CurrentLayer + i].LayerID  := i;
+
     FLayers[CurrentLayer + i].Name := Data[i].Material;
     FLayers[CurrentLayer + i].L    := Data[i].H;
     FLayers[CurrentLayer + i].s    := Data[i].s / 1.41;

@@ -45,6 +45,7 @@ type
       procedure DeleteStack(const ID: Integer);
 
       function Model: TLayeredModel;
+      function Materials: TMaterialsList;
 
       function ToString: string;
       procedure FromString(const S: string);
@@ -271,6 +272,17 @@ begin
   RealignStacks;
 end;
 
+function TXRCStructure.Materials: TMaterialsList;
+var
+  i: integer;
+begin
+  SetLength(Result, 0);
+  for I := 0 to High(Stacks) do
+  begin
+    Result := Result + Stacks[i].Materials;
+  end;
+end;
+
 function TXRCStructure.Model: TLayeredModel;
 var
   i, k, j: Integer;
@@ -283,7 +295,7 @@ begin
   begin
     StackLayers := Stacks[i].Layers;
     for j := 0  to Stacks[i].N do
-        Result.AddLayers(StackLayers);
+      Result.AddLayers(j, StackLayers);
   end;
 
   Result.AddSubstrate(Substrate.Layers);
@@ -404,7 +416,6 @@ begin
 
   Visible := True;
 end;
-
 
 function TXRCStructure.GetSelected: Integer;
 begin

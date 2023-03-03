@@ -184,15 +184,16 @@ object frmMain: TfrmMain
           Color = 15987699
           Caption = 'Thickness'
           ExplicitWidth = 724
-          object chGradients: TChart
+          object chThickness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
             Width = 722
             Height = 132
             Cursor = crCross
-            Legend.Alignment = laTop
-            Legend.Visible = False
+            Legend.TopPos = 0
+            MarginRight = 0
+            MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
@@ -200,34 +201,27 @@ object frmMain: TfrmMain
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
+            Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 718
+            ExplicitLeft = 6
+            ExplicitTop = 6
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
-            object Series1: TPointSeries
-              HoverElement = [heCurrent]
-              ClickableLine = False
-              Pointer.InflateMargins = True
-              Pointer.Style = psRectangle
-              XValues.Name = 'X'
-              XValues.Order = loAscending
-              YValues.Name = 'Y'
-              YValues.Order = loNone
-            end
           end
         end
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          object Chart1: TChart
+          object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
             Width = 722
             Height = 132
             Cursor = crCross
-            Legend.Alignment = laTop
-            Legend.Visible = False
+            Legend.TopPos = 0
+            MarginRight = 0
+            MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
@@ -235,33 +229,27 @@ object frmMain: TfrmMain
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
+            Color = 16773087
             TabOrder = 0
+            ExplicitLeft = 6
+            ExplicitTop = 6
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
-            object PointSeries1: TPointSeries
-              HoverElement = [heCurrent]
-              ClickableLine = False
-              Pointer.InflateMargins = True
-              Pointer.Style = psRectangle
-              XValues.Name = 'X'
-              XValues.Order = loAscending
-              YValues.Name = 'Y'
-              YValues.Order = loNone
-            end
           end
         end
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          object Chart2: TChart
+          object chDensity: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
             Width = 722
             Height = 132
             Cursor = crCross
-            Legend.Alignment = laTop
-            Legend.Visible = False
+            Legend.TopPos = 0
+            MarginRight = 0
+            MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
@@ -269,19 +257,12 @@ object frmMain: TfrmMain
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
+            Color = 16773087
             TabOrder = 0
+            ExplicitLeft = 6
+            ExplicitTop = 6
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
-            object PointSeries2: TPointSeries
-              HoverElement = [heCurrent]
-              ClickableLine = False
-              Pointer.InflateMargins = True
-              Pointer.Style = psRectangle
-              XValues.Name = 'X'
-              XValues.Order = loAscending
-              YValues.Name = 'Y'
-              YValues.Order = loNone
-            end
           end
         end
       end
@@ -7847,10 +7828,6 @@ object frmMain: TfrmMain
   object UnZip: TAbUnZipper
     Left = 354
     Top = 86
-  end
-  object IdCompressorZLib1: TIdCompressorZLib
-    Left = 1111
-    Top = 435
   end
   object dlgSaveResult: TSaveDialog
     DefaultExt = 'dat'

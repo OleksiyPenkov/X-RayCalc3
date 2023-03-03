@@ -15,7 +15,7 @@ type
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
   TExtentionType = (etNone, etGradient, etProfile);
   TGradientForm = (gtLine, gtExp, gtSin, gtCos);
-  TGradientSubject = (gsL, gsS, gsRo);
+  TParameterType = (gsL, gsS, gsRo);
 
   PLineSeries = ^TLineSeries;
 
@@ -44,7 +44,7 @@ type
                ParentStackName: string [40];
                Rate: single;
                Form: TGradientForm;
-               Subj: TGradientSubject;
+               Subj: TParameterType;
                );
             etProfile:
               ();
@@ -74,7 +74,7 @@ type
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
     RF, r: TComplex; { Френелевский коэф. }
-    LID: byte;
+    LayerID, PeriodNo: integer;
   end;
 
 
@@ -88,7 +88,7 @@ type
   TGradientRec = record
     Rate: single;
     Form: TGradientForm;
-    Subj: TGradientSubject;
+    Subj: TParameterType;
     ParentPeriod: string;
     ParentLayer: string;
   end;
@@ -103,6 +103,7 @@ type
   TLayerData = record
     Material: string;
     H, s, r: single;
+    StackID: integer;
   end;
 
   TLayersData = array of TLayerData;
@@ -112,6 +113,21 @@ type
   end;
 
   TDataArray = array of TDataPoint;
+
+  TDistrtibution = record
+    Name: string;
+    DType: TParameterType;
+    Values: array of single;
+  end;
+
+  TDistributions = array of TDistrtibution;
+
+
+  TMaterialsList = array of record
+                        Name: string;
+                     StackID: integer;
+                     LayerID: integer;
+                   end;
 
 implementation
 
