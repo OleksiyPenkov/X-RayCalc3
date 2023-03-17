@@ -11,10 +11,8 @@ object edtrLayer: TedtrLayer
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poMainFormCenter
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object RzPanel1: TRzPanel
     AlignWithMargins = True
@@ -24,8 +22,10 @@ object edtrLayer: TedtrLayer
     Height = 62
     Align = alClient
     BorderOuter = fsFlatRounded
-    ParentColor = True
+    Color = 15987699
     TabOrder = 0
+    ExplicitWidth = 344
+    ExplicitHeight = 50
     object Label1: TLabel
       Left = 9
       Top = 10
@@ -79,9 +79,8 @@ object edtrLayer: TedtrLayer
       Height = 21
       Text = ''
       TabOrder = 0
-      OnKeyDown = edMaterialKeyDown
-      AltBtnWidth = 15
-      ButtonWidth = 15
+      AltBtnNumGlyphs = 1
+      ButtonNumGlyphs = 1
       OnButtonClick = edMaterialButtonClick
     end
     object edRo: TJvCalcEdit
@@ -92,7 +91,6 @@ object edtrLayer: TedtrLayer
       ButtonFlat = True
       TabOrder = 3
       DecimalPlacesAlwaysShown = False
-      OnKeyDown = edMaterialKeyDown
     end
     object edH: TJvCalcEdit
       Left = 41
@@ -102,7 +100,6 @@ object edtrLayer: TedtrLayer
       ButtonFlat = True
       TabOrder = 1
       DecimalPlacesAlwaysShown = False
-      OnKeyDown = edMaterialKeyDown
     end
     object edSigma: TJvCalcEdit
       Left = 150
@@ -112,7 +109,6 @@ object edtrLayer: TedtrLayer
       ButtonFlat = True
       TabOrder = 2
       DecimalPlacesAlwaysShown = False
-      OnKeyDown = edMaterialKeyDown
     end
   end
   object RzPanel2: TRzPanel
@@ -123,8 +119,10 @@ object edtrLayer: TedtrLayer
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
-    ParentColor = True
+    Color = 15987699
     TabOrder = 1
+    ExplicitTop = 59
+    ExplicitWidth = 344
     object btnOK: TRzBitBtn
       Left = 201
       Top = 10
@@ -153,7 +151,6 @@ object edtrLayer: TedtrLayer
       ParentColor = True
       TabOrder = 0
       TabStop = False
-      OnClick = btnNextClick
     end
     object btnNext: TRzBitBtn
       Tag = 1
@@ -164,7 +161,6 @@ object edtrLayer: TedtrLayer
       ParentColor = True
       TabOrder = 1
       TabStop = False
-      OnClick = btnNextClick
     end
   end
 end

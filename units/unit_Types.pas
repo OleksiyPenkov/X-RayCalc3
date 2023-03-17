@@ -32,7 +32,7 @@ type
         ();
       prItem:
         (ID: integer;
-         Curve: PLineSeries;
+         CurveID: integer;
          Color: TColor;
          Active: boolean;
          Visible: boolean);

@@ -201,6 +201,8 @@ type
     chThickness: TChart;
     chRoughness: TChart;
     chDensity: TChart;
+    RzSpacer1: TRzSpacer;
+    BtnDown: TRzToolButton;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -227,6 +229,13 @@ type
     procedure DataLoadExecute(Sender: TObject);
     procedure FileSaveExecute(Sender: TObject);
     procedure FileSaveAsExecute(Sender: TObject);
+    procedure LayerAddExecute(Sender: TObject);
+    procedure ActionManagerChange(Sender: TObject);
+    procedure LayerInsertExecute(Sender: TObject);
+    procedure LayerDeleteExecute(Sender: TObject);
+    procedure LayerCutExecute(Sender: TObject);
+    procedure LayerPasteExecute(Sender: TObject);
+    procedure DataNormExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -293,13 +302,13 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack;
+  editor_Stack, editor_Layer;
 
 {$R *.dfm}
 
 procedure TfrmMain.btnChartScaleClick(Sender: TObject);
 begin
-//  if (FActiveModel.Curve^.Count = 0) and (FActiveData = nil) then
+//  if (FSeriesList[FActiveModel.CurveID].Count = 0) and (FActiveData = nil) then
 //    Exit;
 
   if Chart.LeftAxis.Logarithmic then
@@ -464,13 +473,13 @@ end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FActiveData.Curve^);
+  SeriesToClipboard(FSeriesList[FActiveData.CurveID]);
 end;
 
 procedure TfrmMain.DataExportExecute(Sender: TObject);
 begin
   if dlgSaveResult.Execute then
-      SeriesToFile(FActiveData.Curve^, dlgSaveResult.FileName);
+      SeriesToFile(FSeriesList[FActiveModel.CurveID], dlgSaveResult.FileName);
 end;
 
 procedure TfrmMain.DataLoadExecute(Sender: TObject);
@@ -500,8 +509,8 @@ begin
 
   AddCurve(Data);
 
-  SeriesFromFile(Data.Curve^, dlgLoadData.FileName, Data.Description);
-  SeriesToFile(Data.Curve^, DataName(Data));
+  SeriesFromFile(FSeriesList[Data.CurveID], dlgLoadData.FileName, Data.Description);
+  SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
 
   FActiveData := Data;
   Project.Expanded[FDataRoot] := True;
@@ -513,6 +522,22 @@ begin
   Result := Format('%sdata_%d.dat', [FProjectDir, Data.ID])
 end;
 
+procedure TfrmMain.DataNormExecute(Sender: TObject);
+var
+  s: string;
+begin
+  s := InputBox('Data normalization', 'Coefficient', '');
+  if s <> '' then
+  begin
+    Normalize(StrToFloat(s), FSeriesList[FActiveData.CurveID]);
+  end;
+end;
+
+procedure TfrmMain.ActionManagerChange(Sender: TObject);
+begin
+  FActiveModel.Data := Structure.ToString;
+end;
+
 procedure TfrmMain.AddCurve(var Data: PProjectData);
 var
   Count: integer;
@@ -522,12 +547,12 @@ begin
   FSeriesList[Count] := TLineSeries.Create(Chart);
   FSeriesList[Count].ParentChart := Chart;
 
-  Data.Curve := @FSeriesList[Count];
-  Data.Curve^.Title := Data.Title;
-  Data.Color := Data.Curve^.Color;
-  Data.Curve^.LinePen.Width := 2;
+  FSeriesList[Count].Title := Data.Title;
+  Data.Color := FSeriesList[Count].Color;
+  FSeriesList[Count].LinePen.Width := 2;
   Data.Visible := True;
-  Data.Curve^.Visible := Data.Visible;
+  FSeriesList[Count].Visible := Data.Visible;
+  Data.CurveID := Count;
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);
@@ -545,8 +570,8 @@ begin
 
   AddCurve(Data);
 
-  SeriesFromClipboard(Data.Curve^);
-  SeriesToFile(Data.Curve^, DataName(Data));
+  SeriesFromClipboard(FSeriesList[Data.CurveID]);
+  SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
 end;
 
 procedure TfrmMain.PeriodAddExecute(Sender: TObject);
@@ -558,11 +583,13 @@ begin
   edtrStack.Edit(Name, N);
   if Name <> '' then
      Structure.AddStack(N, Name);
+
 end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
 begin
   Structure.DeleteStack(Structure.Selected);
+  FActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.PeriodInsertExecute(Sender: TObject);
@@ -574,6 +601,7 @@ begin
   edtrStack.Edit(Name, N);
   if Name <> '' then
      Structure.InsertStack(N, Name);
+  FActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
@@ -635,7 +663,7 @@ begin
   StartTime := Now;
 
   Screen.Cursor := crHourGlass;
-  FActiveModel.Curve^.BeginUpdate;
+  FSeriesList[FActiveModel.CurveID].BeginUpdate;
 
   CalcRun.Enabled := False;
 
@@ -682,18 +710,18 @@ var
   X, Y, mx, x1, x2, my, RI, OldX: single;
   i: Integer;
 begin
-  if FActiveModel.Curve^.Count = 0 then
+  if FSeriesList[FActiveModel.CurveID].Count = 0 then
     Exit;
 
   my := 0;
   x1 := Chart.BottomAxis.Minimum;
   x2 := Chart.BottomAxis.Maximum;
   RI := 0;
-  OldX := FActiveModel.Curve^.XValue[1];
-  for i := 2 to FActiveModel.Curve^.Count - 2 do
+  OldX := FSeriesList[FActiveModel.CurveID].XValue[1];
+  for i := 2 to FSeriesList[FActiveModel.CurveID].Count - 2 do
   begin
-    X := FActiveModel.Curve^.XValue[i];
-    Y := FActiveModel.Curve^.YValue[i];
+    X := FSeriesList[FActiveModel.CurveID].XValue[i];
+    Y := FSeriesList[FActiveModel.CurveID].YValue[i];
     if (X > x1) and (X < x2) and (Y > my) then
     begin
       RI := RI + Y * abs(OldX - X);
@@ -722,9 +750,9 @@ end;
 var
   j: Integer;
 begin
-  FActiveModel.Curve^.Clear;
+  FSeriesList[FActiveModel.CurveID].Clear;
   for j := 0 to High(Calc.Results) do
-      FActiveModel.Curve^.AddXY(Calc.Results[j].t, Calc.Results[j].R);
+      FSeriesList[FActiveModel.CurveID].AddXY(Calc.Results[j].t, Calc.Results[j].R);
 end;
 
 procedure TfrmMain.FinalizeCalc(Calc: TCalc);
@@ -734,8 +762,8 @@ begin
   PlotResults(Calc);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
-  FActiveModel.Curve^.EndUpdate;
-  FActiveModel.Curve^.Repaint;
+  FSeriesList[FActiveModel.CurveID].EndUpdate;
+  FSeriesList[FActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
   CalcRun.Enabled := True;
@@ -811,8 +839,8 @@ begin
   try
     Calc := TCalc.Create;
 
-    if (FLinkedData <> nil) and FActiveData.Curve^.Visible then
-       Calc.ExpValues := SeriesToData(FLinkedData.Curve^);
+    if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
 
     try
       Calc.Params := CD;
@@ -824,8 +852,8 @@ begin
       on E: exception do
       begin
         ShowMessage(E.Message);
-        FActiveModel.Curve^.EndUpdate;
-        FActiveModel.Curve^.Repaint;
+        FSeriesList[FActiveModel.CurveID].EndUpdate;
+        FSeriesList[FActiveModel.CurveID].Repaint;
         Screen.Cursor := crDefault;
         CalcRun.Enabled := True;
       end;
@@ -896,17 +924,19 @@ begin
     Project.FocusedNode := LastNode;
     Project.Selected[LastNode] := True;
   end;
+
+  Structure.FromString(FActiveModel.Data);
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FActiveModel.Curve^);
+  SeriesToClipboard(FSeriesList[FActiveModel.CurveID]);
 end;
 
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
 begin
   if dlgSaveResult.Execute then
-    SeriesToFile(FActiveModel.Curve^, dlgSaveResult.FileName);
+    SeriesToFile(FSeriesList[FActiveModel.CurveID], dlgSaveResult.FileName);
 end;
 
 procedure TfrmMain.RecoverDataCurves(const LinkedID: integer);
@@ -930,13 +960,42 @@ begin
         FLinkedData := Data;
 
       AddCurve(Data);
-      SeriesFromFile(Data.Curve^, DataName(Data), s);
-      Chart.AddSeries(Data.Curve^);
+      SeriesFromFile(FSeriesList[Data.CurveID], DataName(Data), s);
+      Chart.AddSeries(FSeriesList[Data.CurveID]);
     end
     else
       Project.DeleteNode(Node);
     Node := Project.GetNext(Node);
   end;
+end;
+
+procedure TfrmMain.LayerAddExecute(Sender: TObject);
+var
+  Data: TLayerData;
+begin
+  if edtrLayer.ShowModal = mrOk then
+    Structure.AddLayer(Structure.Selected, edtrLayer.Data);
+  FActiveModel.Data := Structure.ToString;
+end;
+
+procedure TfrmMain.LayerCutExecute(Sender: TObject);
+begin
+  FActiveModel.Data := Structure.ToString;
+end;
+
+procedure TfrmMain.LayerDeleteExecute(Sender: TObject);
+begin
+  FActiveModel.Data := Structure.ToString;
+end;
+
+procedure TfrmMain.LayerInsertExecute(Sender: TObject);
+begin
+  FActiveModel.Data := Structure.ToString;
+end;
+
+procedure TfrmMain.LayerPasteExecute(Sender: TObject);
+begin
+  FActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
@@ -951,6 +1010,7 @@ begin
 
   FIgnoreFocusChange := False;
   Project.Repaint;
+  PrepareDistributionCharts;
 end;
 
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
@@ -989,7 +1049,10 @@ begin
     if FLinkedData <> nil then
       INF.WriteInteger('STATE', 'LinkedData', FLinkedData.ID);
     if FActiveModel <> nil then
+    begin
       INF.WriteInteger('STATE', 'ActiveModel', FActiveModel.ID);
+      FActiveModel.Data := Structure.ToString;
+    end;
 
     INF.UpdateFile;
 
@@ -1022,7 +1085,7 @@ begin
     Data := Project.GetNodeData(Node);
     if (Data.RowType = prItem) and (Data.Group =  gtData) then
     begin
-      SeriesToFile(Data.Curve^, DataName(Data));
+      SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
     end;
     Node := Project.GetNext(Node);
   end;
@@ -1087,16 +1150,14 @@ begin
 
   // добавляем модель
   PL := Project.AddChild(PG, Nil);
-  PD := Project.GetNodeData(PL);
-  PD.ID := FLastID;
+  FActiveModel := Project.GetNodeData(PL);
+  FActiveModel.ID := FLastID;
   inc(FLastID);
-  PD.Title := 'Model 1';
-  PD.Group := gtModel;
-  PD.RowType := prItem;
+  FActiveModel.Title := 'Model 1';
+  FActiveModel.Group := gtModel;
+  FActiveModel.RowType := prItem;
 
-  AddCurve(PD);
-  FActiveModel := PD; // делаем ее дефолтной
-
+  AddCurve(FActiveModel);
 
 //  Tree.SaveToFile(ModelName(PD)); // сохраняем модель
   Project.Expanded[PG] := True;

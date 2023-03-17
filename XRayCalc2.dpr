@@ -18,7 +18,8 @@ uses
   unit_calc in 'math\unit_calc.pas',
   unit_materials in 'math\unit_materials.pas',
   math_globals in 'math\math_globals.pas',
-  unit_XRCProjectTree in 'components\unit_XRCProjectTree.pas';
+  unit_XRCProjectTree in 'components\unit_XRCProjectTree.pas',
+  editor_Layer in 'components\editor_Layer.pas' {edtrLayer};
 
 {$R *.res}
 
@@ -28,5 +29,6 @@ begin
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TedtrStack, edtrStack);
   Application.CreateForm(TedtrSubstrate, edtrSubstrate);
+  Application.CreateForm(TedtrLayer, edtrLayer);
   Application.Run;
 end.

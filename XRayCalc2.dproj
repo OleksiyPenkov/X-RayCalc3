@@ -91,7 +91,6 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-d</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -128,6 +127,10 @@
         <DCCReference Include="math\unit_materials.pas"/>
         <DCCReference Include="math\math_globals.pas"/>
         <DCCReference Include="components\unit_XRCProjectTree.pas"/>
+        <DCCReference Include="components\editor_Layer.pas">
+            <Form>edtrLayer</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
