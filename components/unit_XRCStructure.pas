@@ -49,6 +49,7 @@ type
 
       function ToString: string;
       procedure FromString(const S: string);
+      function ToFitStructure(const dev: single): TFitPeriodicStructure;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -325,6 +326,39 @@ begin
   FIncrement := Value;
   for I := 0 to High(Stacks) do
     Stacks[i].Increment := Value;
+end;
+
+function TXRCStructure.ToFitStructure(const dev: single): TFitPeriodicStructure;
+var
+  i, j: integer;
+  D: single;
+begin
+
+  SetLength(Result.Stacks, Length(Stacks));
+
+  for I := 0 to High(Stacks) do
+  begin
+    Result.Stacks[i].ID := Stacks[i].ID;
+    Result.Stacks[i].N := Stacks[i].N;
+
+    SetLength(Result.Stacks[i].Layers, Length(Stacks[i].Layers));
+
+    D := 0;
+    for j := 0 to High(Stacks[i].Layers) do
+    begin
+      Result.Stacks[i].Layers[j].ID := j;
+      Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
+      Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, dev);
+      Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, dev);
+      Result.Stacks[i].Layers[j].r.Init(Stacks[i].Layers[j].r, dev);
+      D := D + Stacks[i].Layers[j].H;
+    end;
+    Result.Stacks[i].D := D;
+  end;
+
+  Result.Subs.Material := Substrate.Layers[0].Material;
+  Result.Subs.s.Init(Substrate.Layers[0].s, dev);
+  Result.Subs.r.Init(Substrate.Layers[0].r, dev);
 end;
 
 function TXRCStructure.ToString: string;

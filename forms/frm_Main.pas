@@ -204,6 +204,8 @@ type
     RzSpacer1: TRzSpacer;
     BtnDown: TRzToolButton;
     RzStatusPane7: TRzStatusPane;
+    RzSpacer2: TRzSpacer;
+    BtnExecute: TRzToolButton;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -243,6 +245,7 @@ type
     procedure pmiVisibleClick(Sender: TObject);
     procedure pmiEnabledClick(Sender: TObject);
     procedure Properties1Click(Sender: TObject);
+    procedure actAutoFittingExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -309,7 +312,7 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack, editor_Layer;
+  editor_Stack, editor_Layer, unit_FitHelpers;
 
 {$R *.dfm}
 
@@ -561,6 +564,74 @@ begin
     Normalize(StrToFloat(s), FSeriesList[FActiveData.CurveID]);
   end;
 end;
+
+procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
+const
+  Population = 50;
+var
+  CD: TThreadParams;
+  Calc: TCalc;
+  i: integer;
+  Models: array [0..(Population - 1)] of TFitPeriodicStructure;
+  LastChisqr: single;
+  Best: integer;
+begin
+  Randomize;
+  
+  if (FActiveModel = nil) then
+    Exit;
+  GetThreadParams(CD);
+  try
+    Calc := TCalc.Create;
+
+    if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
+    else
+      Exit;
+
+    try
+      Calc.Params := CD;
+      Calc.Limit := StrToFloat(cbMinLimit.Text);
+
+      Models[0] := Structure.ToFitStructure(0.3);
+      for I := 1 to High(Models) do
+        Models[i] := SeedPeriodicModel(Models[0]);        
+
+
+      for I := 0 to High(Models) do
+      begin
+        Calc.Model := ExpandPeriodicFitModel(Models[i]);
+        Calc.Run;
+
+        Calc.CalcChiSquare;
+        LastChisqr := Calc.ChiSQR;
+        spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
+        if Calc.ChiSQR < LastChisqr then
+        begin
+          LastChisqr  := Calc.ChiSQR;
+          Best := i;
+        end;
+
+      end;
+
+      Calc.Model := ExpandPeriodicFitModel(Models[Best]);
+      Calc.Run;
+      spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
+
+    except
+      on E: exception do
+      begin
+        ShowMessage(E.Message);
+        FSeriesList[FActiveModel.CurveID].EndUpdate;
+        FSeriesList[FActiveModel.CurveID].Repaint;
+        Screen.Cursor := crDefault;
+        CalcRun.Enabled := True;
+      end;
+    end;
+    FinalizeCalc(Calc);
+  finally
+    Calc.Free;
+  end;end;
 
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
 begin

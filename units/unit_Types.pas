@@ -129,6 +129,33 @@ type
                      LayerID: integer;
                    end;
 
+  // Fitting data types
+
+  TFitValue = record
+    V, min, max: single;
+    procedure Init(const Val, dev: single); overload;
+    procedure Init(const Val, AMin, AMax: single); overload;
+    procedure Seed;
+  end;
+
+  TFitLayer = record
+    ID: integer;
+    Material : string;
+    H, s, r: TFitValue;
+  end;
+
+  TFitStack = record
+    ID: integer;
+    N: integer;
+    D: single;
+    Layers: array of TFitLayer;
+  end;
+
+  TFitPeriodicStructure = record
+    Stacks: array of TFitStack;
+    Subs: TFitLayer;
+  end;
+
 implementation
 
 { TProjectData }
@@ -136,6 +163,27 @@ implementation
 function TProjectData.IsModel: Boolean;
 begin
   Result := (Group = gtModel) and (RowType = prItem);
+end;
+
+{ TFitValue }
+
+procedure TFitValue.Init(const Val, AMin, AMax: single);
+begin
+  V := Val;
+  min := AMin;
+  max := AMax;
+end;
+
+procedure TFitValue.Seed;
+begin
+  V := Min + Random * (Max - min);
+end;
+
+procedure TFitValue.Init(const Val, dev: single);
+begin
+  V   := Val;
+  min := V * (1 - dev);
+  max := V * (1 + dev);
 end;
 
 end.
