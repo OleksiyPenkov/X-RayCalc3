@@ -50,6 +50,8 @@ type
       FTree: TVirtualStringTree;
       FGradientChart: TChart;
       FTotalD: single;
+      FChiSQR: single;
+
       FModel: PVirtualNode;
       FHasGradients: Boolean;
 
@@ -66,12 +68,14 @@ type
       constructor Create;
       destructor Free;
       procedure Run;
+      function CalcChiSquare: Single;
 
-      property Params: TThreadParams write FParams;
+     property Params: TThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
       property Results: TDataArray read FResult;
       property TotalD: single read FTotalD;
+      property ChiSQR: single read FChiSQR;
       property Model: TLayeredModel read FLayeredModel write FLayeredModel;
   end;
 
@@ -82,6 +86,17 @@ uses
   math_globals;
 
   { TCalc }
+
+function TCalc.CalcChiSquare: Single;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for I := 0 to High(FResult) do
+    Result := Result + Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
+
+  FChiSQR := Result;
+end;
 
 procedure TCalc.PrepareWorkers;
 var

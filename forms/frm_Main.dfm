@@ -224,7 +224,7 @@ object frmMain: TfrmMain
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
-            Color = 16773087
+            Color = 15925239
             TabOrder = 0
             ExplicitWidth = 718
             DefaultCanvas = 'TGDIPlusCanvas'
@@ -615,8 +615,8 @@ object frmMain: TfrmMain
           Caption = '0.00'
         end
         object spChiSqr: TRzStatusPane
-          Left = 384
-          Top = 12
+          Left = 392
+          Top = 5
           Width = 89
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
@@ -624,7 +624,21 @@ object frmMain: TfrmMain
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
+          Alignment = taCenter
           Caption = '0.00'
+        end
+        object RzStatusPane7: TRzStatusPane
+          Left = 364
+          Top = 5
+          Width = 25
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+          Alignment = taRightJustify
+          Caption = #967'2'
         end
         object btnChartScale: TRzBitBtn
           Left = 583
@@ -8064,29 +8078,35 @@ object frmMain: TfrmMain
       Caption = 'Normalize'
       object Auto1: TMenuItem
         Action = DataNormAuto
+        OnClick = Auto1Click
       end
       object Manual1: TMenuItem
         Action = DataNormMan
+        OnClick = Manual1Click
       end
     end
     object pmiVisible: TMenuItem
       AutoCheck = True
       Caption = 'Visible'
+      OnClick = pmiVisibleClick
     end
     object pmiLinked: TMenuItem
       AutoCheck = True
       Caption = 'Linked'
+      OnClick = pmiLinkedClick
     end
     object pmiEnabled: TMenuItem
       AutoCheck = True
       Caption = 'Enabled'
       ShortCut = 114
+      OnClick = pmiEnabledClick
     end
     object N1: TMenuItem
       Caption = '-'
     end
     object Properties1: TMenuItem
       Caption = 'Properties'
+      OnClick = Properties1Click
     end
     object N5: TMenuItem
       Caption = '-'

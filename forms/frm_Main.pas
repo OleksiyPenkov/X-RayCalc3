@@ -203,6 +203,7 @@ type
     chDensity: TChart;
     RzSpacer1: TRzSpacer;
     BtnDown: TRzToolButton;
+    RzStatusPane7: TRzStatusPane;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -236,6 +237,12 @@ type
     procedure LayerCutExecute(Sender: TObject);
     procedure LayerPasteExecute(Sender: TObject);
     procedure DataNormExecute(Sender: TObject);
+    procedure pmiLinkedClick(Sender: TObject);
+    procedure Auto1Click(Sender: TObject);
+    procedure Manual1Click(Sender: TObject);
+    procedure pmiVisibleClick(Sender: TObject);
+    procedure pmiEnabledClick(Sender: TObject);
+    procedure Properties1Click(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -329,6 +336,22 @@ begin
   end;
 end;
 
+procedure TfrmMain.Manual1Click(Sender: TObject);
+//var
+//  Form: TedtrManualNorm;
+begin
+//  try
+//    Form := TedtrManualNorm.Create(frmMain);
+//    if Form.ShowModal = mrOk then
+//    begin
+//      ManualMerge(Form.edPos.Value, Form.edK.Value, FActiveData.Curve);
+//      SeriesToFile(FActiveData.Curve, DataName(FActiveData));
+//    end;
+//  finally
+//    Form.Free
+//  end;
+end;
+
 function TfrmMain.ModelName(Data: PProjectData): string;
 begin
   Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
@@ -349,6 +372,7 @@ begin
   Project.OnDblClick := ProjectDblClick;
   Project.OnFocusChanging := ProjectFocusChanging;
   Project.OnAfterCellPaint := ProjectAfterCellPaint;
+  Project.PopupMenu := pmProject;
 end;
 
 
@@ -471,6 +495,11 @@ begin
   Project.Repaint;
 end;
 
+procedure TfrmMain.Properties1Click(Sender: TObject);
+begin
+//  EditProjectItem;
+end;
+
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
   SeriesToClipboard(FSeriesList[FActiveData.CurveID]);
@@ -553,6 +582,12 @@ begin
   Data.Visible := True;
   FSeriesList[Count].Visible := Data.Visible;
   Data.CurveID := Count;
+end;
+
+procedure TfrmMain.Auto1Click(Sender: TObject);
+begin
+  AutoMerge(FSeriesList[FActiveData.CurveID]);
+  SeriesToFile(FSeriesList[FActiveData.CurveID], DataName(FActiveData));
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);
@@ -755,6 +790,28 @@ begin
       FSeriesList[FActiveModel.CurveID].AddXY(Calc.Results[j].t, Calc.Results[j].R);
 end;
 
+procedure TfrmMain.pmiEnabledClick(Sender: TObject);
+begin
+  LastData.Enabled := not LastData.Enabled;
+  Project.Repaint;
+end;
+
+procedure TfrmMain.pmiLinkedClick(Sender: TObject);
+begin
+  if not pmiLinked.Checked then
+    FLinkedData := nil
+  else
+    FLinkedData := LastData;
+
+  Project.Repaint;
+end;
+
+procedure TfrmMain.pmiVisibleClick(Sender: TObject);
+begin
+//  LastData.CurveID.Visible := not LastData.Curve.Visible;
+  Project.Repaint;
+end;
+
 procedure TfrmMain.FinalizeCalc(Calc: TCalc);
 var
   Hour, Min, Sec, MSec: Word;
@@ -848,6 +905,14 @@ begin
       Calc.Model := Structure.Model;
       PlotDistributions(Calc.Model);
       Calc.Run;
+      if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+      begin
+        Calc.CalcChiSquare;
+        spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
+      end
+      else
+        spChiSqr.Caption := '';
+
     except
       on E: exception do
       begin
@@ -1220,10 +1285,12 @@ begin
   begin
      if FindCmdLineSwitch('f', Value, True, [clstValueNextParam]) then
       begin
-        if FileExists(ParamStr(1)) then
+        if FileExists(Value) then
         begin
           FProjectFileName := Value;
           LoadProject(FProjectFileName, True);
+          if FindCmdLineSwitch('a') then
+            CalcRunExecute(frmMain);
         end
         else
           CreateDefaultProject;
