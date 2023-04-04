@@ -571,10 +571,6 @@ const
 var
   CD: TThreadParams;
   Calc: TCalc;
-  i: integer;
-  Models: array [0..(Population - 1)] of TFitPeriodicStructure;
-  LastChisqr: single;
-  Best: integer;
 begin
   Randomize;
   
@@ -593,31 +589,11 @@ begin
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
 
-      Models[0] := Structure.ToFitStructure(0.3);
-      for I := 1 to High(Models) do
-        Models[i] := SeedPeriodicModel(Models[0]);        
-
-
-      for I := 0 to High(Models) do
-      begin
-        Calc.Model := ExpandPeriodicFitModel(Models[i]);
-        Calc.Run;
-
-        Calc.CalcChiSquare;
-        LastChisqr := Calc.ChiSQR;
-        spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-        if Calc.ChiSQR < LastChisqr then
-        begin
-          LastChisqr  := Calc.ChiSQR;
-          Best := i;
-        end;
-
-      end;
-
-      Calc.Model := ExpandPeriodicFitModel(Models[Best]);
+      AutoFit(Structure.ToFitStructure(0.2), Calc);
       Calc.Run;
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
 
+      
     except
       on E: exception do
       begin
@@ -631,7 +607,8 @@ begin
     FinalizeCalc(Calc);
   finally
     Calc.Free;
-  end;end;
+  end;
+end;
 
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
 begin
