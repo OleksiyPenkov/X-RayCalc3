@@ -152,7 +152,6 @@ object frmMain: TfrmMain
         Height = 82
         Align = alBottom
         BorderOuter = fsFlatRounded
-        Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 1
         ExplicitTop = 621
@@ -170,7 +169,6 @@ object frmMain: TfrmMain
           ReadOnly = True
           TabOrder = 0
           StyleName = 'Windows'
-          FocusColor = 16765595
           FrameHotColor = cl3DDkShadow
           FrameHotStyle = fsNone
           FrameVisible = True

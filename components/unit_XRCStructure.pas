@@ -73,7 +73,7 @@ var
 
 begin
   Count := Length(Stacks) - 1;
-  Substrate.Align := alNone;
+  Substrate.Align := alBottom;
 
   for I := 0 to Count do
     Stacks[i].Align := alNone;
