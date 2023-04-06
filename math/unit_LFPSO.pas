@@ -16,13 +16,18 @@ type
   TLFPSO_Periodic = class
     private
       FLayersCount: integer;
-      FStructure: TFitPeriodicStructure;
+      FStructure: TFitPeriodicStructure;  // initial (input) structure
 
-      X, V, Pi : TPopulation;
-      Xmax : TPopulation;
-      Xmin : TPopulation;
+      X, V, Pi : TPopulation;  // solutions and velocityes
+      Xmax : TPopulation; // 1 column for upper boundary
+      Xmin : TPopulation; // 1 column for lower boundary
 
-      Vmax, VMin: TPopulation;
+      Vmax, VMin: TPopulation; // 1 column for min/max velocity
+
+      pbest: TSolution; // best local solution
+      gbest: TSolution; // best global solution
+
+      FGlobalBestChiSquare: single;
 
       FNMax: integer;
       FPopulation: integer;
@@ -37,6 +42,7 @@ type
       function GetStructure: TFitPeriodicStructure;
       procedure SetStructure(const Inp: TFitPeriodicStructure);
       function FindTheBest(var Calc: TCalc): integer;
+    procedure UpdatePSO(const t: integer);
 
     public
       constructor Create(const NMax, Population: integer);
@@ -114,6 +120,11 @@ begin
 
 end;
 
+procedure TLFPSO_Periodic.UpdatePSO(const t: integer);
+begin
+
+end;
+
 procedure TLFPSO_Periodic.NormalizeD; // keep D for every periodic stack constant
 var
   i, j: integer;
@@ -163,19 +174,34 @@ begin
       Result := i;
     end;
   end;
+
+  pbest := X[Result];
+
+  if FGlobalBestChiSquare > MinChisqr then
+  begin
+    FGlobalBestChiSquare := MinChisqr;
+    gbest := X[Result];
+  end;
+
 end;
 
 procedure TLFPSO_Periodic.Run;
 var
   t, BestX: integer;
 begin
+  FGlobalBestChiSquare := 1e12;
+
   Seed;
   InitVelocity;
   BestX := FindTheBest(Calc);
 
   for t := 1 to FNMax do
   begin
-    UpdateLFPSO(t);
+    if Random(1) < 0.5 then
+      UpdatePSO(t)
+    else
+      UpdateLFPSO(t);
+
     BestX := FindTheBest(Calc);
   end;
   Calc.Model := ExpandPeriodicFitModel(XtoStructure(BestX));
