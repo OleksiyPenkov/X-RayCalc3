@@ -585,14 +585,15 @@ begin
       Exit;
 
     try
-      LFPSO := TLFPSO_Periodic.Create(10, 3);
+      LFPSO := TLFPSO_Periodic.Create(1, 20);
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
 
-      LFPSO.Structure := Structure.ToFitStructure(0.2);
+      LFPSO.Structure := Structure.ToFitStructure(0.5);
       LFPSO.Run(Calc);
 
       Calc.Run;
+      Calc.CalcChiSquare;
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
 
     except

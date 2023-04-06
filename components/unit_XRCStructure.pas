@@ -410,16 +410,20 @@ end;
 
 procedure TXRCStructure.FromString(const S: string);
 var
-  i, j: Integer;
+  i, j, p: Integer;
   Data: TLayerData;
   JStstructure: TJSONObject;
   JLayer, JStack, JSub : TJSONValue;
   JStacks, JLayers : TJSONArray;
+  ts: string;
 begin
   Visible := False;
   Clean;
 
-  JStstructure := TJSonObject.ParseJSONValue(S) as TJSonObject;
+  p := pos('}}', s);
+  ts := copy(S, 1, p + 1);
+
+  JStstructure := TJSonObject.ParseJSONValue(ts) as TJSonObject;
 
   try
     JSub := JStstructure.Get('Subs').JsonValue;
