@@ -154,6 +154,7 @@ type
   TFitPeriodicStructure = record
     Stacks: array of TFitStack;
     Subs: TFitLayer;
+    function Total: integer;
   end;
 
 implementation
@@ -184,6 +185,17 @@ begin
   V   := Val;
   min := V * (1 - dev);
   max := V * (1 + dev);
+end;
+
+{ TFitPeriodicStructure }
+
+function TFitPeriodicStructure.Total: integer;
+var
+  i: integer;
+begin
+  Result := 0;
+  for I := 0 to High(Stacks) do
+    Result := Result + Length(Stacks[i].Layers);
 end;
 
 end.

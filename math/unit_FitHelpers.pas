@@ -8,7 +8,6 @@ uses
   // fitting
   procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
 
-
   // models conversion
 
   function ExpandPeriodicFitModel(const Inp: TFitPeriodicStructure): TLayeredModel;

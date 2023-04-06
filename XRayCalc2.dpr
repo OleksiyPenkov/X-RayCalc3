@@ -20,7 +20,8 @@ uses
   math_globals in 'math\math_globals.pas',
   unit_XRCProjectTree in 'components\unit_XRCProjectTree.pas',
   editor_Layer in 'components\editor_Layer.pas' {edtrLayer},
-  unit_FitHelpers in 'math\unit_FitHelpers.pas';
+  unit_FitHelpers in 'math\unit_FitHelpers.pas',
+  unit_LFPSO in 'math\unit_LFPSO.pas';
 
 {$R *.res}
 

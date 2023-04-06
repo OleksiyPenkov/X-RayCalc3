@@ -133,6 +133,7 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="math\unit_FitHelpers.pas"/>
+        <DCCReference Include="math\unit_LFPSO.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

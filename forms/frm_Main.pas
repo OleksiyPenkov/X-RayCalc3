@@ -312,7 +312,7 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack, editor_Layer, unit_FitHelpers;
+  editor_Stack, editor_Layer, unit_FitHelpers, unit_LFPSO;
 
 {$R *.dfm}
 
@@ -566,14 +566,13 @@ begin
 end;
 
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
-const
-  Population = 50;
 var
   CD: TThreadParams;
   Calc: TCalc;
+  LFPSO: TLFPSO_Periodic;
 begin
   Randomize;
-  
+
   if (FActiveModel = nil) then
     Exit;
   GetThreadParams(CD);
@@ -586,14 +585,16 @@ begin
       Exit;
 
     try
+      LFPSO := TLFPSO_Periodic.Create(10, 3);
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
 
-      AutoFit(Structure.ToFitStructure(0.2), Calc);
+      LFPSO.Structure := Structure.ToFitStructure(0.2);
+      LFPSO.Run(Calc);
+
       Calc.Run;
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
 
-      
     except
       on E: exception do
       begin
@@ -607,6 +608,7 @@ begin
     FinalizeCalc(Calc);
   finally
     Calc.Free;
+    LFPSO.Free;
   end;
 end;
 
