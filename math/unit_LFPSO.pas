@@ -15,10 +15,12 @@ type
 
   TLFPSO_Periodic = class
     private
+      FCalcConditions: TThreadParams;
+
       FLayersCount: integer;
       FStructure: TFitPeriodicStructure;  // initial (input) structure
 
-      X, V, Pi : TPopulation;  // solutions and velocityes
+      X, V : TPopulation;  // solutions and velocityes
       Xmax : TPopulation; // 1 column for upper boundary
       Xmin : TPopulation; // 1 column for lower boundary
 
@@ -27,10 +29,14 @@ type
       pbest: TSolution; // best local solution
       gbest: TSolution; // best global solution
 
-      FGlobalBestChiSquare: single;
+      FLastBestChiSqr  : single;
+      FLastWorseChiSQR : single;
+      FGlobalBestChiSqr: single;
 
-      FNMax: integer;
+
+      FTMax: integer;
       FPopulation: integer;
+      FData: TDataArray;
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -41,8 +47,11 @@ type
 
       function GetStructure: TFitPeriodicStructure;
       procedure SetStructure(const Inp: TFitPeriodicStructure);
-      function FindTheBest(var Calc: TCalc): integer;
-    procedure UpdatePSO(const t: integer);
+      function FindTheBest: integer;
+      procedure UpdatePSO(const t: integer);
+      function GetResult: TLayeredModel;
+      function GBestStructure: TFitPeriodicStructure;
+      function LevyWalk(const X, gBest: single): single;
 
     public
       constructor Create(const NMax, Population: integer);
@@ -50,12 +59,16 @@ type
 
 
       property Structure: TFitPeriodicStructure read GetStructure write SetStructure;
-      procedure Run(var Calc: TCalc);
+      property Result : TLayeredModel read GetResult;
+       property ExpValues: TDataArray read FData write FData;
+
+      procedure Run(CalcConditions: TThreadParams);
+
   end;
 
 implementation
 
-uses unit_FitHelpers;
+uses unit_FitHelpers, Forms, System.SysUtils, System.Math;
 
 const
   c1min = 1;
@@ -64,33 +77,86 @@ const
   c2max = 2;
   w_max = 0.9;
   w_min = 0.4;
-  k = 0.1;
-  u = 3.999;
   MaxC = 10;
   a = 0.5;
+  eps = 0;
 
 { Supplementary}
 
-function MultiplyVector(const X: TPopulation; v: single): TPopulation;
+function Gamma( x : extended) : extended;
+const COF : array [0..14] of extended =
+                (  0.999999999999997092, // may as well include this in the array
+                  57.1562356658629235,
+                 -59.5979603554754912,
+                  14.1360979747417471,
+                 -0.491913816097620199,
+                  0.339946499848118887e-4,
+                  0.465236289270485756e-4,
+                 -0.983744753048795646e-4,
+                  0.158088703224912494e-3,
+                 -0.210264441724104883e-3,
+                  0.217439618115212643e-3,
+                 -0.164318106536763890e-3,
+                  0.844182239838527433e-4,
+                 -0.261908384015814087e-4,
+                  0.368991826595316234e-5);
+const
+  K = 2.5066282746310005;
+  PI_OVER_K = PI / K;
+var
+  j : integer;
+  tmp, w, ser : extended;
+  reflect : boolean;
+begin
+  reflect := (x < 0.5);
+  if reflect then w := 1.0 - x else w := x;
+  tmp := w + 5.2421875;
+  tmp := (w + 0.5)*Ln(tmp) - tmp;
+  ser := COF[0];
+  for j := 1 to 14 do ser := ser + COF[j]/(w + j);
+  try
+    if reflect then
+      result := PI_OVER_K * w * Exp(-tmp) / (Sin(PI*x) * ser)
+    else
+      result := K * Exp(tmp) * ser / w;
+  except
+    raise Exception.CreateFmt(
+        'Gamma(%g) is undefined or out of floating-point range', [x]);
+  end;
+end;
+
+
+procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
 var
   i, j, k: integer;
 begin
-  for I := 1 to High(X) do // for every member of the population
+  for I := 0 to High(X) do // for every member of the population
     for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[0][j]) do // for every layer
-        Result[i][j][k] := X[I][j][k] * v;
+      for k := 0 to High(X[i][j]) do // for every layer
+        Result[i][j][k] := X[i][j][k] * v;
+end;
+
+function Omega(const t, TMax: integer): single;
+begin
+  Result := 0.1 + 0.8 * (1 - t / Tmax);
+end;
+
+function RS: integer;
+begin
+  Result := 1 - Random(2);
+  if Result = 0 then
+       Result := 1;
 end;
 
 { TLFPSO }
 
 constructor TLFPSO_Periodic.Create;
 begin
-  FNMax := NMax;
+  FTMax := NMax;
   FPopulation := Population;
 
   SetLength(X, Population);
   SetLength(V, Population);
-  SetLength(Pi, Population);
 
   SetLength(Xmax, 1);
   SetLength(Xmin, 1);
@@ -104,25 +170,99 @@ begin
   inherited;
 end;
 
+function TLFPSO_Periodic.GetResult: TLayeredModel;
+begin
+  Result := ExpandPeriodicFitModel(GBestStructure);
+end;
+
 function TLFPSO_Periodic.GetStructure: TFitPeriodicStructure;
 begin
 
 end;
 
 procedure TLFPSO_Periodic.InitVelocity;
+var
+  i, j, k: integer;
 begin
-  VMax := MultiplyVector(Xmax, k);
-  Vmin := MultiplyVector(Vmax, -1);
+  MultiplyVector(Xmax, 0.1, Vmax);
+  MultiplyVector(Vmax, -1, Vmin);
+
+  for i := 0 to High(V) do // for every member of the population
+    for j := 1 to 3 do // for H, s, rho
+      for k := 0 to High(V[i][j]) do // for every layer
+        V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
+end;
+
+function TLFPSO_Periodic.LevyWalk(const X, gBest: single): single;
+const
+  beta = 1.5;
+var
+  dX, Y, S: single;
+  num, den, sigma_u: single;
+  u, v, z: single;
+begin
+  num := gamma(1 + beta) * sin(pi * beta / 2); // used for Numerator
+  den := gamma(( 1 + beta)/2) * beta * power(2, (beta-1)/2); // used for Denominator
+  sigma_u := power(num / den, 1 / beta); // Standard deviation
+
+  u := Random * sigma_u;
+  v := Random;
+  z := u/ abs(power(v, 1/ beta));
+
+  S := 0.01 * z * (X - gBest);
+  dX := X * S;
+  Result := dX * Random;
 end;
 
 procedure TLFPSO_Periodic.UpdateLFPSO(const t: integer);
+var
+  i, j, k: integer;
+  c1, c2: single;
 begin
+  c1 := c1min + (c1max - c1min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c2 := c2min + (c2max - c2min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+
+  for i := 1 to High(X) do // for every member of the population
+  begin
+    for j := 1 to 3 do // for H, s, rho
+      for k := 0 to High(X[I][j]) do // for every layer
+      begin
+        V[i][j][k] := RS * (Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
+                      c1 * Random * (pbest[j][k] - X[i][j][k]) +
+                      c2 * Random * (gbest[j][k] - X[i][j][k]));
+
+        if V[i][j][k] > Vmax[0][j][k] then V[i][j][k] := Vmax[0][j][k];
+        if V[i][j][k] < Vmin[0][j][k] then V[i][j][k] := Vmin[0][j][k];
+
+        X[i][j][k] := X[i][j][k] + V[i][j][k];
+      end;
+  end;
 
 end;
 
 procedure TLFPSO_Periodic.UpdatePSO(const t: integer);
+var
+  i, j, k: integer;
+  c1, c2: single;
 begin
+  c1 := c1min + (c1max - c1min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c2 := c2min + (c2max - c2min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
 
+  for i := 1 to High(X) do // for every member of the population
+  begin
+    for j := 1 to 3 do // for H, s, rho
+      for k := 0 to High(X[I][j]) do // for every layer
+      begin
+        V[i][j][k] := RS * (Omega(t, FTMax) * V[i][j][k]  +
+                      c1 * Random * (pbest[j][k] - X[i][j][k]) +
+                      c2 * Random * (gbest[j][k] - X[i][j][k]));
+
+        if V[i][j][k] > Vmax[0][j][k] then V[i][j][k] := Vmax[0][j][k];
+        if V[i][j][k] < Vmin[0][j][k] then V[i][j][k] := Vmin[0][j][k];
+
+        X[i][j][k] := X[i][j][k] + V[i][j][k];
+      end;
+  end;
 end;
 
 procedure TLFPSO_Periodic.NormalizeD; // keep D for every periodic stack constant
@@ -157,54 +297,71 @@ begin
   end;
 end;
 
-function TLFPSO_Periodic.FindTheBest(var Calc: TCalc): integer;
+function TLFPSO_Periodic.FindTheBest: integer;
 var
   i: integer;
-  MinChisqr: single;
+  Calc: TCalc;
 begin
-  MinChisqr := 1e12;
-  for i := 0 to High(X) do
-  begin
-    Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
-    Calc.Run;
-    Calc.CalcChiSquare;
-    if Calc.ChiSQR < MinChisqr then
+  FLastBestChiSqr  := 1e12;
+  FLastWorseChiSQR := 0;
+
+    for i := 0 to High(X) do
     begin
-      MinChisqr  := Calc.ChiSQR;
-      Result := i;
+      try
+        Calc := TCalc.Create;
+        Calc.Params := FCalcConditions;
+        Calc.ExpValues := FData;
+
+
+        Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
+        Calc.Run;
+        Calc.CalcChiSquare;
+        if Calc.ChiSQR < FLastBestChiSqr then
+        begin
+          FLastBestChiSqr  := Calc.ChiSQR;
+          Result := i;
+        end;
+        if Calc.ChiSQR > FLastWorseChiSQR then
+          FLastWorseChiSQR :=  Calc.ChiSQR;
+      finally
+        FreeAndNil(Calc);
+        Application.ProcessMessages;
+      end;
     end;
-  end;
 
-  pbest := X[Result];
+    pbest := X[Result];
 
-  if FGlobalBestChiSquare > MinChisqr then
-  begin
-    FGlobalBestChiSquare := MinChisqr;
-    gbest := X[Result];
-  end;
+    if FGlobalBestChiSqr > FLastBestChiSqr then
+    begin
+      FGlobalBestChiSqr := FLastBestChiSqr;
+      gbest := X[Result];
+    end;
 
 end;
 
 procedure TLFPSO_Periodic.Run;
 var
   t, BestX: integer;
+  switch: single;
 begin
-  FGlobalBestChiSquare := 1e12;
+  FCalcConditions := CalcConditions;
+  FGlobalBestChiSqr:= 1e12;
 
   Seed;
   InitVelocity;
-  BestX := FindTheBest(Calc);
+  BestX := FindTheBest;
 
-  for t := 1 to FNMax do
+  for t := 1 to FTMax do
   begin
-    if Random(1) < 0.5 then
+    switch := Random;
+    if switch < 0.5 then
       UpdatePSO(t)
     else
       UpdateLFPSO(t);
 
-    BestX := FindTheBest(Calc);
+    BestX := FindTheBest;
   end;
-  Calc.Model := ExpandPeriodicFitModel(XtoStructure(BestX));
+
 end;
 
 procedure TLFPSO_Periodic.Seed;
@@ -247,6 +404,7 @@ begin
   SetDomain(FLayersCount, Xmin);
   SetDomain(FLayersCount, Vmin);
   SetDomain(FLayersCount, Vmax);
+  SetDomain(FLayersCount, V);
 
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
@@ -283,6 +441,24 @@ begin
       Result.Stacks[i].Layers[j].H.V := X[Index][1][LayerIndex];
       Result.Stacks[i].Layers[j].s.V := X[Index][2][LayerIndex];
       Result.Stacks[i].Layers[j].r.V := X[Index][3][LayerIndex];
+      Inc(LayerIndex);
+    end;
+  end;
+end;
+
+function TLFPSO_Periodic.GBestStructure: TFitPeriodicStructure;
+var
+  i, j, LayerIndex: integer;
+begin
+  Result := FStructure;
+  LayerIndex := 0;
+  for i := 0 to High(Result.Stacks) do
+  begin
+    for j := 0 to High(Result.Stacks[i].Layers) do
+    begin
+      Result.Stacks[i].Layers[j].H.V := gbest[1][LayerIndex];
+      Result.Stacks[i].Layers[j].s.V := gbest[2][LayerIndex];
+      Result.Stacks[i].Layers[j].r.V := gbest[3][LayerIndex];
       Inc(LayerIndex);
     end;
   end;
