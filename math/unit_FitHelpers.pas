@@ -73,8 +73,8 @@ begin
     end;
 
 
-    for j := 0  to Inp.Stacks[i].N do
-      Result.AddLayers(j, Data);
+    for j := 1  to Inp.Stacks[i].N do
+      Result.AddLayers(i, Data);
   end;
 
   SetLength(Data, 1);

@@ -71,15 +71,13 @@ implementation
 uses unit_FitHelpers, Forms, System.SysUtils, System.Math;
 
 const
-  c1min = 1;
-  c1max = 2;
-  c2min = 1;
-  c2max = 2;
   w_max = 0.9;
   w_min = 0.4;
   MaxC = 10;
   a = 0.5;
-  eps = 0;
+  eps = 1;
+  c1m = 1.49445;
+  c2m = 1.49445;
 
 { Supplementary}
 
@@ -219,17 +217,17 @@ var
   i, j, k: integer;
   c1, c2: single;
 begin
-  c1 := c1min + (c1max - c1min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2min + (c2max - c2min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c1 := c1m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c2 := c2m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
 
   for i := 1 to High(X) do // for every member of the population
   begin
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(X[I][j]) do // for every layer
       begin
-        V[i][j][k] := RS * (Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
+        V[i][j][k] := Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
-                      c2 * Random * (gbest[j][k] - X[i][j][k]));
+                      c2 * Random * (gbest[j][k] - X[i][j][k]);
 
         if V[i][j][k] > Vmax[0][j][k] then V[i][j][k] := Vmax[0][j][k];
         if V[i][j][k] < Vmin[0][j][k] then V[i][j][k] := Vmin[0][j][k];
@@ -245,17 +243,17 @@ var
   i, j, k: integer;
   c1, c2: single;
 begin
-  c1 := c1min + (c1max - c1min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2min + (c2max - c2min) * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c1 := c1m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c2 := c2m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
 
   for i := 1 to High(X) do // for every member of the population
   begin
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(X[I][j]) do // for every layer
       begin
-        V[i][j][k] := RS * (Omega(t, FTMax) * V[i][j][k]  +
+        V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
-                      c2 * Random * (gbest[j][k] - X[i][j][k]));
+                      c2 * Random * (gbest[j][k] - X[i][j][k]);
 
         if V[i][j][k] > Vmax[0][j][k] then V[i][j][k] := Vmax[0][j][k];
         if V[i][j][k] < Vmin[0][j][k] then V[i][j][k] := Vmin[0][j][k];

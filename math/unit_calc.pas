@@ -90,10 +90,14 @@ uses
 function TCalc.CalcChiSquare: Single;
 var
   i: Integer;
+  Chi: single;
 begin
   Result := 0;
   for I := 0 to High(FResult) do
-    Result := Result + Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
+  begin
+    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
+    Result := Result + Chi;
+  end;
 
   FChiSQR := Result;
 end;

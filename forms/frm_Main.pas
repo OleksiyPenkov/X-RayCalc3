@@ -585,11 +585,11 @@ begin
       Exit;
 
     try
-      LFPSO := TLFPSO_Periodic.Create(40, 200);
+      LFPSO := TLFPSO_Periodic.Create(20, 100);
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
 
-      LFPSO.Structure := Structure.ToFitStructure(0.5);
+      LFPSO.Structure := Structure.ToFitStructure(0.2);
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 

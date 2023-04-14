@@ -39,7 +39,7 @@ type
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
       procedure InsertStack(const N: Integer; const Title: string);
-      procedure AddSubstrate(const Material: string; rho, s: single);
+      procedure AddSubstrate(const Material: string; s, rho: single);
       procedure Select(const ID: Integer);
       procedure EditStack(const ID: Integer);
       procedure DeleteStack(const ID: Integer);
@@ -106,8 +106,8 @@ begin
   RealignStacks;
 end;
 
-procedure TXRCStructure.AddSubstrate(const Material: string; rho,
-  s: single);
+procedure TXRCStructure.AddSubstrate(const Material: string; s,
+  rho: single);
 begin
   Substrate := TXRCStack.Create(Box, 'Substrate', 1);
   Substrate.Top  := 0;
@@ -295,8 +295,8 @@ begin
   for I := 0 to High(Stacks) do
   begin
     StackLayers := Stacks[i].Layers;
-    for j := 0  to Stacks[i].N do
-      Result.AddLayers(j, StackLayers);
+    for j := 1  to Stacks[i].N do
+      Result.AddLayers(i, StackLayers);
   end;
 
   Result.AddSubstrate(Substrate.Layers);
