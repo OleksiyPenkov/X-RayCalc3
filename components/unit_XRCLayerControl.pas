@@ -142,9 +142,9 @@ begin
 
 
   Name.Caption    := FData.Material;
-  Thickness.Text  := FloatToStrF(FData.H, ffFixed, 2, 2);
-  Sigma.Text      := FloatToStrF(FData.s, ffFixed, 2, 2);
-  Rho.Text        := FloatToStrF(FData.r, ffFixed, 2, 2);
+  Thickness.Text  := FloatToStrF(FData.H, ffFixed, 4, 2);
+  Sigma.Text      := FloatToStrF(FData.s, ffFixed, 4, 2);
+  Rho.Text        := FloatToStrF(FData.r, ffFixed, 4, 2);
 
   FLinked := nil;
 
