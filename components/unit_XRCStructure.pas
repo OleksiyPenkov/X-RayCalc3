@@ -30,6 +30,7 @@ type
       procedure SetIncrement(const Value: single);
       procedure Clean;
       function GetSelected: Integer;
+      procedure UpdateGUI;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
@@ -49,7 +50,8 @@ type
 
       function ToString: string;
       procedure FromString(const S: string);
-      function ToFitStructure(const dev: single): TFitPeriodicStructure;
+      function ToFitStructure(const devH, devS, devRho: single): TFitPeriodicStructure;
+      procedure FromFitStructure(const Inp: TLayeredModel);
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -114,7 +116,7 @@ begin
   Substrate.Left := 0;
   Substrate.Width := ClientWidth;
 
-  Substrate.AddSubstrate(Material, rho, s);
+  Substrate.AddSubstrate(Material, s, rho);
 end;
 
 procedure TXRCStructure.Clean;
@@ -328,7 +330,7 @@ begin
     Stacks[i].Increment := Value;
 end;
 
-function TXRCStructure.ToFitStructure(const dev: single): TFitPeriodicStructure;
+function TXRCStructure.ToFitStructure(const devH, devS, devRho: single): TFitPeriodicStructure;
 var
   i, j: integer;
   D: single;
@@ -348,17 +350,18 @@ begin
     begin
       Result.Stacks[i].Layers[j].ID := j;
       Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
-      Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, dev);
-      Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, dev);
-      Result.Stacks[i].Layers[j].r.Init(Stacks[i].Layers[j].r, dev);
+      Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, devH);
+      Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, devS);
+      Result.Stacks[i].Layers[j].r.Init(Stacks[i].Layers[j].r, devRho);
       D := D + Stacks[i].Layers[j].H;
     end;
     Result.Stacks[i].D := D;
   end;
 
   Result.Subs.Material := Substrate.Layers[0].Material;
-  Result.Subs.s.Init(Substrate.Layers[0].s, dev);
-  Result.Subs.r.Init(Substrate.Layers[0].r, dev);
+  Result.Subs.H.Init(Substrate.Layers[0].H);
+  Result.Subs.s.Init(Substrate.Layers[0].s);
+  Result.Subs.r.Init(Substrate.Layers[0].r);
 end;
 
 function TXRCStructure.ToString: string;
@@ -405,6 +408,33 @@ begin
     Result := JStstructure.ToString;
   finally
     FreeAndNil(JStstructure);
+  end;
+end;
+
+procedure TXRCStructure.UpdateGUI;
+begin
+
+end;
+
+procedure TXRCStructure.FromFitStructure(const Inp: TLayeredModel);
+var
+  i, j: integer;
+  Count: integer;
+  Data: TLayerData;
+begin
+  Count := 1;
+
+  for I := 0 to High(Stacks) do
+  begin
+    for j := 0 to High(Stacks[i].Layers) do
+    begin
+      Data.Material := Inp.Layers[Count].Name;
+      Data.H := Inp.Layers[Count].L;
+      Data.s := Inp.Layers[Count].s * 1.41;
+      Data.r := Inp.Layers[Count].ro;
+      Stacks[i].UpdateLayer(j, Data);
+      inc(Count);
+    end;
   end;
 end;
 

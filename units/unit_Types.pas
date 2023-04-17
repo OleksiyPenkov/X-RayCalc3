@@ -135,6 +135,7 @@ type
     V, min, max: single;
     procedure Init(const Val, dev: single); overload;
     procedure Init(const Val, AMin, AMax: single); overload;
+    procedure Init(const Val: single); overload;
     procedure Seed;
   end;
 
@@ -173,6 +174,13 @@ begin
   V := Val;
   min := AMin;
   max := AMax;
+end;
+
+procedure TFitValue.Init(const Val: single);
+begin
+  V   := Val;
+  min := V;
+  max := V;
 end;
 
 procedure TFitValue.Seed;

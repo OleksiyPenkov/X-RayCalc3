@@ -60,7 +60,7 @@ type
 
       property Structure: TFitPeriodicStructure read GetStructure write SetStructure;
       property Result : TLayeredModel read GetResult;
-       property ExpValues: TDataArray read FData write FData;
+      property ExpValues: TDataArray read FData write FData;
 
       procedure Run(CalcConditions: TThreadParams);
 
@@ -217,8 +217,8 @@ var
   i, j, k: integer;
   c1, c2: single;
 begin
-  c1 := c1m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c1 := c1m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c2 := c2m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
 
   for i := 1 to High(X) do // for every member of the population
   begin
@@ -243,13 +243,13 @@ var
   i, j, k: integer;
   c1, c2: single;
 begin
-  c1 := c1m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2m * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c1 := c1m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  c2 := c2m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
 
   for i := 1 to High(X) do // for every member of the population
   begin
     for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[I][j]) do // for every layer
+      for k := 0 to High(X[I][j]) do // for every layer except subtrate
       begin
         V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
@@ -329,12 +329,11 @@ begin
 
     pbest := X[Result];
 
-    if FGlobalBestChiSqr > FLastBestChiSqr then
+    if FLastBestChiSqr <  FGlobalBestChiSqr then
     begin
       FGlobalBestChiSqr := FLastBestChiSqr;
       gbest := X[Result];
     end;
-
 end;
 
 procedure TLFPSO_Periodic.Run;

@@ -585,15 +585,16 @@ begin
       Exit;
 
     try
-      LFPSO := TLFPSO_Periodic.Create(20, 100);
+      LFPSO := TLFPSO_Periodic.Create(10, 100);
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
 
-      LFPSO.Structure := Structure.ToFitStructure(0.2);
+      LFPSO.Structure := Structure.ToFitStructure(0.1, 0.1, 0.1);
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 
       Calc.Model := LFPSO.Result;
+      Structure.FromFitStructure(LFPSO.Result);
       Calc.Run;
       Calc.CalcChiSquare;
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
@@ -724,6 +725,7 @@ begin
     edN.Text := INF.ReadString('PARAMS', 'N', '1000');
     rgCalcMode.ItemIndex := INF.ReadInteger('PARAMS', 'Mode', 0);
     rgPolarisation.ItemIndex := INF.ReadInteger('PARAMS', 'Polarisation', 0);
+    cbMinLimit.Text := INF.ReadString('PARAMS', 'MinLimit', '1E-7');
 
     edStartTeta.Text := INF.ReadString('ANGLE', 'Start', '0.01');
     edEndTeta.Text := INF.ReadString('ANGLE', 'End', '5');
@@ -1150,6 +1152,7 @@ begin
     INF.WriteString('PARAMS', 'N', edN.Text);
     INF.WriteInteger('PARAMS', 'Mode', rgCalcMode.ItemIndex);
     INF.WriteInteger('PARAMS', 'Polarisation', rgPolarisation.ItemIndex);
+    INF.WriteString('PARAMS', 'MinLimit', cbMinLimit.Text);
 
     INF.WriteString('ANGLE', 'Start', edStartTeta.Text);
     INF.WriteString('ANGLE', 'End', edEndTeta.Text);
@@ -1289,7 +1292,7 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
-  Structure.AddSubstrate('SiO2', 2.2, 5);
+  Structure.AddSubstrate('SiO2', 5, 2.2);
 end;
 
 procedure TfrmMain.CreateDummyStructure;

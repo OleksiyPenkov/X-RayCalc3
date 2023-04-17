@@ -35,6 +35,7 @@ type
       procedure SetSubstrate(const Value: boolean);
       procedure InternalOnDblClick(Sender: TObject);
       function AddSpinEdit(const index, Left, Max: integer): TRzSpinEdit;
+    procedure SetLayerData(const Value: TLayerData);
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
@@ -50,7 +51,7 @@ type
       property CheckBox:TRzCheckBox read GetCheckBox write SetCheckBox;
       property Checked: Boolean read GetLinkChecked;
 
-      property Data: TLayerData read FData;
+      property Data: TLayerData read FData write SetLayerData;
 
       procedure IncreaseThickness;
       procedure DecreaseThickness;
@@ -227,6 +228,15 @@ begin
   Thickness.Increment := Value;
   Sigma.Increment     := Value;
   Rho.Increment       := Value;
+end;
+
+procedure TXRCLayerControl.SetLayerData(const Value: TLayerData);
+begin
+  FData := Value;
+
+  Thickness.Value := FData.H;
+  Sigma.Value     := FData.s;
+  Rho.Value       := FData.r;
 end;
 
 procedure TXRCLayerControl.SetLinked(const Value: TXRCLayerControl);

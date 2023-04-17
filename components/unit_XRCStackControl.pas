@@ -27,7 +27,6 @@ type
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
-
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -37,7 +36,8 @@ type
       destructor  Destroy; override;
 
       procedure AddLayer(const Data: TLayerData);
-      procedure AddSubstrate(const Material: string; rho, s: single);
+      procedure AddSubstrate(const Material: string; s, rho: single);
+      procedure UpdateLayer(const Index: integer; AData: TLayerData);
 
       property Selected: Boolean write SetSelected;
       property ID: Integer read FID write FID;
@@ -75,7 +75,7 @@ begin
   FLayers[Count].Top := ClientHeight - 10;
 end;
 
-procedure TXRCStack.AddSubstrate(const Material: string; rho, s: single);
+procedure TXRCStack.AddSubstrate(const Material: string; s, rho: single);
 var
   Data: TLayerData;
 begin
@@ -110,6 +110,11 @@ procedure TXRCStack.UpdateInfo;
 begin
   Caption := FTitle;
   lblLayers.Caption := IntToStr(FN);
+end;
+
+procedure TXRCStack.UpdateLayer(const Index: integer; AData: TLayerData);
+begin
+  FLayers[Index].Data := AData;
 end;
 
 constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
