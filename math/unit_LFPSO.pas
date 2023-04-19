@@ -14,6 +14,7 @@ type
   TUpdateFitProgressMsg  = record
     BestChi : single;
     Step    : integer;
+    Curve   : TDataArray;
   end;
 
   TVector = array of single;   // Array of layer parameters
@@ -45,8 +46,9 @@ type
 
       FTMax: integer;
       FPopulation: integer;
-      FData: TDataArray;
-    FLimit: single;
+      FData, FResultingCurve: TDataArray;
+      FLimit: single;
+    FSuccededStepCount: Integer;
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -63,6 +65,7 @@ type
       function GBestStructure: TFitPeriodicStructure;
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
+      procedure CheckLimits(const i, j, k: integer); inline;
     public
       constructor Create(const NMax, Population: integer);
       destructor Destroy; override;
@@ -79,7 +82,7 @@ type
 
 implementation
 
-uses unit_FitHelpers, Forms, System.SysUtils, System.Math, unit_helpers;
+uses unit_FitHelpers, Forms, System.SysUtils, System.Math, unit_helpers, Dialogs;
 
 const
   w_max = 0.9;
@@ -147,7 +150,7 @@ end;
 
 function Omega(const t, TMax: integer): single;
 begin
-  Result := 0.1 + 0.8 * (1 - t / Tmax);
+  Result := 0.2 + 0.8 * (1 - t / Tmax);
 end;
 
 function RS: integer;
@@ -193,13 +196,30 @@ procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
 begin
-  MultiplyVector(Xmax, 0.1, Vmax);
+  MultiplyVector(Xmax, 0.3, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(V[i][j]) do // for every layer
         V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
+end;
+
+procedure TLFPSO_Periodic.CheckLimits(const i, j, k: integer);
+begin
+  if V[i][j][k] > Vmax[0][j][k] then
+             V[i][j][k] := Vmax[0][j][k];
+
+  if V[i][j][k] < Vmin[0][j][k] then
+             V[i][j][k] := Vmin[0][j][k];
+
+  X[i][j][k] := X[i][j][k] + V[i][j][k];
+
+  if X[i][j][k] > Xmax[0][j][k] then
+             X[i][j][k] := Xmax[0][j][k];
+
+  if X[i][j][k] < Xmin[0][j][k] then
+             X[i][j][k] := Xmin[0][j][k];
 end;
 
 function TLFPSO_Periodic.LevyWalk(const X, gBest: single): single;
@@ -240,10 +260,7 @@ begin
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
                       c2 * Random * (gbest[j][k] - X[i][j][k]);
 
-        if V[i][j][k] > Vmax[0][j][k] then V[i][j][k] := Vmax[0][j][k];
-        if V[i][j][k] < Vmin[0][j][k] then V[i][j][k] := Vmin[0][j][k];
-
-        X[i][j][k] := X[i][j][k] + V[i][j][k];
+        CheckLimits(i, j, k);
       end;
   end;
 
@@ -266,10 +283,7 @@ begin
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
                       c2 * Random * (gbest[j][k] - X[i][j][k]);
 
-        if V[i][j][k] > Vmax[0][j][k] then V[i][j][k] := Vmax[0][j][k];
-        if V[i][j][k] < Vmin[0][j][k] then V[i][j][k] := Vmin[0][j][k];
-
-        X[i][j][k] := X[i][j][k] + V[i][j][k];
+        CheckLimits(i, j, k);
       end;
   end;
 end;
@@ -329,10 +343,16 @@ begin
         begin
           FLastBestChiSqr  := Calc.ChiSQR;
           Result := i;
-//          DataToFile('D:\Temp\calc.txt', Calc.Results);
+          FResultingCurve := Calc.Results;
+          inc(FSuccededStepCount);
         end;
         if Calc.ChiSQR > FLastWorseChiSQR then
+        begin
           FLastWorseChiSQR :=  Calc.ChiSQR;
+          dec(FSuccededStepCount);
+          if FSuccededStepCount < 1 then FSuccededStepCount := 1;
+
+        end;
       finally
         FreeAndNil(Calc);
         Application.ProcessMessages;
@@ -345,7 +365,9 @@ begin
     begin
       FGlobalBestChiSqr := FLastBestChiSqr;
       gbest := X[Result];
-    end;
+    end
+    else
+      SetLength(FResultingCurve, 0);
 end;
 
 procedure TLFPSO_Periodic.Run;
@@ -362,19 +384,22 @@ begin
 
   SendUpdateMessage(0);
 
+  FSuccededStepCount := 1;
+
   for t := 1 to FTMax do
   begin
     switch := Random;
     if switch < 0.5 then
-      UpdatePSO(t)
+      UpdatePSO(FSuccededStepCount)
     else
-      UpdateLFPSO(t);
+      UpdateLFPSO(FSuccededStepCount);
 
     BestX := FindTheBest;
 
     SendUpdateMessage(t);
+    if FGlobalBestChiSqr < 0.1 then Break;
   end;
-
+  ShowMessage(FloatToStr(FGlobalBestChiSqr));
 end;
 
 procedure TLFPSO_Periodic.Seed;
@@ -400,6 +425,7 @@ begin
   New(msg_prm);
   msg_prm.BestChi := FGlobalBestChiSqr;
   msg_prm.Step := Step;
+  msg_prm.Curve := FResultingCurve;
 
   PostMessage(
     Application.MainFormHandle,

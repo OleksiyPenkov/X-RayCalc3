@@ -306,16 +306,22 @@ object frmMain: TfrmMain
             Cursor = crCross
             Legend.TopPos = 0
             Legend.Visible = False
-            MarginRight = 0
+            MarginLeft = 5
+            MarginRight = 5
             MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
+            LeftAxis.Automatic = False
+            LeftAxis.AutomaticMinimum = False
+            LeftAxis.AxisValuesFormat = '#,##0'
+            LeftAxis.LabelsExponent = True
+            LeftAxis.Logarithmic = True
             View3D = False
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
-            Color = 15925239
+            Color = 16771538
             TabOrder = 0
             ExplicitLeft = 6
             ExplicitTop = 6
@@ -323,12 +329,14 @@ object frmMain: TfrmMain
             ColorPaletteIndex = 13
             object Series1: TLineSeries
               HoverElement = [heCurrent]
+              SeriesColor = 16744448
               Title = 'srFitProgress'
               Brush.BackColor = clDefault
               LinePen.Color = clRed
-              LinePen.Width = 2
+              LinePen.Width = 3
               Pointer.InflateMargins = True
               Pointer.Style = psRectangle
+              Stairs = True
               XValues.Name = 'X'
               XValues.Order = loAscending
               YValues.Name = 'Y'

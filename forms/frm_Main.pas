@@ -287,7 +287,7 @@ type
     procedure CreateDummyStructure;
     procedure FinalizeCalc(Calc: TCalc);
     procedure GetThreadParams(var CD: TThreadParams);
-    procedure PlotResults(Calc: TCalc);
+    procedure PlotResults(const Data: TDataArray);
     procedure PrintMax;
     procedure SaveProject(const FileName: string);
     procedure SaveData;
@@ -368,11 +368,17 @@ end;
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
+  Hour, Min, Sec, MSec: Word;
+  i: integer;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   Series1.AddXY(msg_prm.Step, msg_prm.BestChi);
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 1);
+  if Length(msg_prm.Curve) > 1 then
+     PlotResults(msg_prm.Curve);
   Dispose(msg_prm);
+  DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
+  spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
 end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
@@ -803,13 +809,13 @@ begin
   StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
 end;
 
- procedure TfrmMain.PlotResults(Calc: TCalc);
+ procedure TfrmMain.PlotResults(const Data: TDataArray);
 var
   j: Integer;
 begin
   FSeriesList[FActiveModel.CurveID].Clear;
-  for j := 0 to High(Calc.Results) do
-      FSeriesList[FActiveModel.CurveID].AddXY(Calc.Results[j].t, Calc.Results[j].R);
+  for j := 0 to High(Data) do
+      FSeriesList[FActiveModel.CurveID].AddXY(Data[j].t, Data[j].R);
 end;
 
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);
@@ -838,12 +844,9 @@ procedure TfrmMain.FinalizeCalc(Calc: TCalc);
 var
   Hour, Min, Sec, MSec: Word;
 begin
-  PlotResults(Calc);
+  PlotResults(Calc.Results);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
-  DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-  spnFitTime.Caption := Format('Fitting Time: %d.%d.%d ', [Hour, Min, Sec]);
-
   FSeriesList[FActiveModel.CurveID].EndUpdate;
   FSeriesList[FActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
@@ -959,6 +962,7 @@ var
   CD: TThreadParams;
   Calc: TCalc;
   LFPSO: TLFPSO_Periodic;
+  Hour, Min, Sec, MSec: Word;
 begin
   Randomize;
 
@@ -977,12 +981,17 @@ begin
       Series1.Clear;
       Pages.ActivePage := tsFittingProgress;
 
-      LFPSO := TLFPSO_Periodic.Create(20, 100);
+
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
+      Calc.Model := Structure.Model;
+      Calc.Run;
+      Calc.CalcChiSquare;
+      Series1.AddXY(-1, Calc.ChiSQR);
 
+      LFPSO := TLFPSO_Periodic.Create(30, 200);
       LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := Structure.ToFitStructure(0.1, 0.1, 0.1);
+      LFPSO.Structure := Structure.ToFitStructure(0.2, 0.2, 0.2);
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 
@@ -1006,7 +1015,8 @@ begin
   finally
     Calc.Free;
     LFPSO.Free;
-  end;
+    DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);  end;
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);

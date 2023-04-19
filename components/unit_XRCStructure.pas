@@ -345,15 +345,35 @@ begin
 
     SetLength(Result.Stacks[i].Layers, Length(Stacks[i].Layers));
 
-    D := 0;
+    if Stacks[i].N > 1 then
+    begin
+      D := 0;
+      for j := 0 to High(Stacks[i].Layers) do
+      begin
+        Result.Stacks[i].Layers[j].ID := j;
+        D := D + Stacks[i].Layers[j].H;
+      end;
+      Result.Stacks[i].D := D;
+    end;
+
     for j := 0 to High(Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].ID := j;
       Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
-      Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, devH);
-      Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, devS);
+      if Stacks[i].N > 1 then
+      begin
+        Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, Stacks[i].Layers[j].H - devH * D,  Stacks[i].Layers[j].H + devH * D);
+        if Result.Stacks[i].Layers[j].H.min < 0.5 then
+          Result.Stacks[i].Layers[j].H.min := 0.5;
+      end
+      else
+        Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, devH);
+
+      if devS = 0 then
+        Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, 2, 4)
+      else
+        Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, devS);
+
       Result.Stacks[i].Layers[j].r.Init(Stacks[i].Layers[j].r, devRho);
-      D := D + Stacks[i].Layers[j].H;
     end;
     Result.Stacks[i].D := D;
   end;
@@ -435,6 +455,7 @@ begin
       Stacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
+    inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
   end;
 end;
 
