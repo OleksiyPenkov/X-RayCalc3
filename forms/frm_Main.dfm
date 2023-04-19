@@ -37,6 +37,14 @@ object frmMain: TfrmMain
       ExplicitLeft = 1354
       ExplicitHeight = 20
     end
+    object spnFitTime: TRzStatusPane
+      Left = 100
+      Top = 0
+      Width = 150
+      Height = 19
+      Align = alLeft
+      Caption = ''
+    end
   end
   object LeftSplitter: TRzSplitter
     Left = 0
@@ -195,9 +203,9 @@ object frmMain: TfrmMain
         Width = 732
         Height = 163
         Hint = ''
-        ActivePage = tsThickness
+        ActivePage = tsFittingProgress
         Align = alBottom
-        TabIndex = 0
+        TabIndex = 3
         TabOrder = 0
         ExplicitTop = 543
         ExplicitWidth = 728
@@ -280,6 +288,52 @@ object frmMain: TfrmMain
             TabOrder = 0
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
+          end
+        end
+        object tsFittingProgress: TRzTabSheet
+          Color = 15987699
+          Caption = 'Fitting Progress'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
+          object chFittingProgress: TChart
+            AlignWithMargins = True
+            Left = 3
+            Top = 3
+            Width = 722
+            Height = 132
+            Cursor = crCross
+            Legend.TopPos = 0
+            Legend.Visible = False
+            MarginRight = 0
+            MarginUnits = muPixels
+            Title.Text.Strings = (
+              'TChart')
+            Title.Visible = False
+            View3D = False
+            ZoomWheel = pmwNormal
+            Align = alClient
+            BevelOuter = bvNone
+            Color = 15925239
+            TabOrder = 0
+            ExplicitLeft = 6
+            ExplicitTop = 6
+            DefaultCanvas = 'TGDIPlusCanvas'
+            ColorPaletteIndex = 13
+            object Series1: TLineSeries
+              HoverElement = [heCurrent]
+              Title = 'srFitProgress'
+              Brush.BackColor = clDefault
+              LinePen.Color = clRed
+              LinePen.Width = 2
+              Pointer.InflateMargins = True
+              Pointer.Style = psRectangle
+              XValues.Name = 'X'
+              XValues.Order = loAscending
+              YValues.Name = 'Y'
+              YValues.Order = loNone
+            end
           end
         end
       end

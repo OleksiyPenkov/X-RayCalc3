@@ -91,7 +91,7 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-RayCalc2\test_data\test_single_fit.xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-RayCalc2\test_data\test_double_fit.xrcx&quot; -a</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>

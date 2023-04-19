@@ -72,7 +72,7 @@ type
 
      property Params: TThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
-      property Limit: single write FLimit;
+      property Limit: single read FLimit write FLimit;
       property Results: TDataArray read FResult;
       property TotalD: single read FTotalD;
       property ChiSQR: single read FChiSQR;

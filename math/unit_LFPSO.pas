@@ -3,9 +3,18 @@ unit unit_LFPSO;
 interface
 
 uses
-  unit_materials, unit_Types, unit_calc;
+  unit_materials, unit_Types, unit_calc, unit_SMessages, Windows;
+
+const
+  WM_CHI_UPDATE = WM_STR_BASE + 100;
 
 type
+
+  PUpdateFitProgressMsg = ^TUpdateFitProgressMsg ;
+  TUpdateFitProgressMsg  = record
+    BestChi : single;
+    Step    : integer;
+  end;
 
   TVector = array of single;   // Array of layer parameters
 
@@ -37,6 +46,7 @@ type
       FTMax: integer;
       FPopulation: integer;
       FData: TDataArray;
+    FLimit: single;
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -52,7 +62,7 @@ type
       function GetResult: TLayeredModel;
       function GBestStructure: TFitPeriodicStructure;
       function LevyWalk(const X, gBest: single): single;
-
+      procedure SendUpdateMessage(const Step: integer);
     public
       constructor Create(const NMax, Population: integer);
       destructor Destroy; override;
@@ -61,6 +71,7 @@ type
       property Structure: TFitPeriodicStructure read GetStructure write SetStructure;
       property Result : TLayeredModel read GetResult;
       property ExpValues: TDataArray read FData write FData;
+      property Limit: single write FLimit;
 
       procedure Run(CalcConditions: TThreadParams);
 
@@ -68,7 +79,7 @@ type
 
 implementation
 
-uses unit_FitHelpers, Forms, System.SysUtils, System.Math;
+uses unit_FitHelpers, Forms, System.SysUtils, System.Math, unit_helpers;
 
 const
   w_max = 0.9;
@@ -309,7 +320,7 @@ begin
         Calc := TCalc.Create;
         Calc.Params := FCalcConditions;
         Calc.ExpValues := FData;
-
+        Calc.Limit := FLimit;
 
         Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
         Calc.Run;
@@ -318,6 +329,7 @@ begin
         begin
           FLastBestChiSqr  := Calc.ChiSQR;
           Result := i;
+//          DataToFile('D:\Temp\calc.txt', Calc.Results);
         end;
         if Calc.ChiSQR > FLastWorseChiSQR then
           FLastWorseChiSQR :=  Calc.ChiSQR;
@@ -348,6 +360,8 @@ begin
   InitVelocity;
   BestX := FindTheBest;
 
+  SendUpdateMessage(0);
+
   for t := 1 to FTMax do
   begin
     switch := Random;
@@ -357,6 +371,8 @@ begin
       UpdateLFPSO(t);
 
     BestX := FindTheBest;
+
+    SendUpdateMessage(t);
   end;
 
 end;
@@ -375,6 +391,23 @@ begin
 
     NormalizeD(i);
   end;
+end;
+
+procedure TLFPSO_Periodic.SendUpdateMessage(const Step: integer);
+var
+  msg_prm: PUpdateFitProgressMsg;
+begin
+  New(msg_prm);
+  msg_prm.BestChi := FGlobalBestChiSqr;
+  msg_prm.Step := Step;
+
+  PostMessage(
+    Application.MainFormHandle,
+    WM_CHI_UPDATE,
+    LPARAM(msg_prm),
+    0
+  );
+  Application.ProcessMessages;
 end;
 
 procedure TLFPSO_Periodic.SetDomain(const Count: integer; var X: TPopulation);

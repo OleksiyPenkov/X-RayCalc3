@@ -27,6 +27,7 @@ function SeriesToString(Series: TLineSeries): string;
 
 procedure SeriesFromClipboard(Series: TLineSeries);
 procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr: string); forward;
+procedure DataToFile(const FileName: string; Data: TDataArray);
 
 function SeriesToData( Series: TLineSeries): TDataArray;
 procedure AutoMerge( var Series: TLineSeries);
@@ -321,6 +322,22 @@ begin
   finally
     MyStringList.Free;
   end;
+end;
+
+procedure DataToFile(const FileName: string; Data: TDataArray);
+var
+  OutFile: Text;
+  i: integer;
+begin
+  Assign(OutFile, FileName);
+  Rewrite(OutFile);
+  for I := 0 to High(Data) do
+  begin
+    writeln(OutFile, Data[i].t, #9 ,Data[i].r);
+  end;
+
+
+  Close(OutFile);
 end;
 
 procedure SeriesFromClipboard(Series: TLineSeries);

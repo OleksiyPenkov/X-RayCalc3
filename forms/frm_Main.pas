@@ -14,7 +14,7 @@ uses
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
-  unit_materials, VCLTee.TeeFunci;
+  unit_materials, VCLTee.TeeFunci, unit_LFPSO;
 
 type
   TSeriesList = array of TLineSeries;
@@ -206,6 +206,10 @@ type
     RzStatusPane7: TRzStatusPane;
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
+    tsFittingProgress: TRzTabSheet;
+    chFittingProgress: TChart;
+    Series1: TLineSeries;
+    spnFitTime: TRzStatusPane;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -264,7 +268,7 @@ type
 
     FLastID: integer;
     IsFolder, IsItem, IsData, IsModel, IsExtension: Boolean;
-    StartTime: TDateTime;
+    StartTime, FitStartTime: TDateTime;
 
     FSeriesList: TSeriesList ;
     FThicknessSeries: TSeriesList ;
@@ -296,6 +300,7 @@ type
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
 //    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
+    procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
   end;
 
 var
@@ -312,7 +317,7 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack, editor_Layer, unit_FitHelpers, unit_LFPSO;
+  editor_Stack, editor_Layer, unit_FitHelpers;
 
 {$R *.dfm}
 
@@ -358,6 +363,16 @@ end;
 function TfrmMain.ModelName(Data: PProjectData): string;
 begin
   Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
+end;
+
+procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
+var
+  msg_prm: PUpdateFitProgressMsg;
+begin
+  msg_prm := PUpdateFitProgressMsg(Msg.WParam);
+  Series1.AddXY(msg_prm.Step, msg_prm.BestChi);
+  spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 1);
+  Dispose(msg_prm);
 end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
@@ -565,56 +580,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
-var
-  CD: TThreadParams;
-  Calc: TCalc;
-  LFPSO: TLFPSO_Periodic;
-begin
-  Randomize;
 
-  if (FActiveModel = nil) then
-    Exit;
-  GetThreadParams(CD);
-  try
-    Calc := TCalc.Create;
-
-    if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
-       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
-    else
-      Exit;
-
-    try
-      LFPSO := TLFPSO_Periodic.Create(10, 100);
-      Calc.Params := CD;
-      Calc.Limit := StrToFloat(cbMinLimit.Text);
-
-      LFPSO.Structure := Structure.ToFitStructure(0.1, 0.1, 0.1);
-      LFPSO.ExpValues := Calc.ExpValues;
-      LFPSO.Run(CD);
-
-      Calc.Model := LFPSO.Result;
-      Structure.FromFitStructure(LFPSO.Result);
-      Calc.Run;
-      Calc.CalcChiSquare;
-      spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-
-    except
-      on E: exception do
-      begin
-        ShowMessage(E.Message);
-        FSeriesList[FActiveModel.CurveID].EndUpdate;
-        FSeriesList[FActiveModel.CurveID].Repaint;
-        Screen.Cursor := crDefault;
-        CalcRun.Enabled := True;
-      end;
-    end;
-    FinalizeCalc(Calc);
-  finally
-    Calc.Free;
-    LFPSO.Free;
-  end;
-end;
 
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
 begin
@@ -751,6 +717,7 @@ var
   StartT, EndT: single;
 begin
   StartTime := Now;
+  FitStartTime := Now;
 
   Screen.Cursor := crHourGlass;
   FSeriesList[FActiveModel.CurveID].BeginUpdate;
@@ -874,6 +841,9 @@ begin
   PlotResults(Calc);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
+  DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
+  spnFitTime.Caption := Format('Fitting Time: %d.%d.%d ', [Hour, Min, Sec]);
+
   FSeriesList[FActiveModel.CurveID].EndUpdate;
   FSeriesList[FActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
@@ -981,6 +951,61 @@ begin
     FinalizeCalc(Calc);
   finally
     Calc.Free;
+  end;
+end;
+
+procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
+var
+  CD: TThreadParams;
+  Calc: TCalc;
+  LFPSO: TLFPSO_Periodic;
+begin
+  Randomize;
+
+  if (FActiveModel = nil) then
+    Exit;
+  GetThreadParams(CD);
+  try
+    Calc := TCalc.Create;
+
+    if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
+    else
+      Exit;
+
+    try
+      Series1.Clear;
+      Pages.ActivePage := tsFittingProgress;
+
+      LFPSO := TLFPSO_Periodic.Create(20, 100);
+      Calc.Params := CD;
+      Calc.Limit := StrToFloat(cbMinLimit.Text);
+
+      LFPSO.Limit := Calc.Limit;
+      LFPSO.Structure := Structure.ToFitStructure(0.1, 0.1, 0.1);
+      LFPSO.ExpValues := Calc.ExpValues;
+      LFPSO.Run(CD);
+
+      Calc.Model := LFPSO.Result;
+      Structure.FromFitStructure(LFPSO.Result);
+      Calc.Run;
+      Calc.CalcChiSquare;
+      spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
+
+    except
+      on E: exception do
+      begin
+        ShowMessage(E.Message);
+        FSeriesList[FActiveModel.CurveID].EndUpdate;
+        FSeriesList[FActiveModel.CurveID].Repaint;
+        Screen.Cursor := crDefault;
+        CalcRun.Enabled := True;
+      end;
+    end;
+    FinalizeCalc(Calc);
+  finally
+    Calc.Free;
+    LFPSO.Free;
   end;
 end;
 
