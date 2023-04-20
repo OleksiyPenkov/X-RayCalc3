@@ -213,10 +213,6 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 724
-          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -236,7 +232,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
-            ExplicitWidth = 718
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -244,10 +239,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -274,10 +265,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3

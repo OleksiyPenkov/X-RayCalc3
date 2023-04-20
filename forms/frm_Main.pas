@@ -989,9 +989,9 @@ begin
       Calc.CalcChiSquare;
       Series1.AddXY(-1, Calc.ChiSQR);
 
-      LFPSO := TLFPSO_Periodic.Create(30, 100);
+      LFPSO := TLFPSO_Periodic.Create(50, 50);
       LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := Structure.ToFitStructure(0.3, 0.3, 0.3);
+      LFPSO.Structure := Structure.ToFitStructure(0.2, 0, 0.2);
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 

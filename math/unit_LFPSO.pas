@@ -49,7 +49,6 @@ type
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
-    FSuccededStepCount: Integer;
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -163,7 +162,7 @@ end;
 
 { TLFPSO }
 
-constructor TLFPSO_Periodic.Create;
+constructor TLFPSO_Periodic.Create(const NMax, Population: integer);
 begin
   FTMax := NMax;
   FPopulation := Population;
@@ -363,12 +362,9 @@ begin
     begin
       FGlobalBestChiSqr := FLastBestChiSqr;
       gbest := X[Result];
-      inc(FSuccededStepCount);
     end
     else begin
       SetLength(FResultingCurve, 0);
-      dec(FSuccededStepCount);
-       if FSuccededStepCount < 1 then FSuccededStepCount := 1;
     end;
 end;
 
@@ -386,15 +382,13 @@ begin
 
   SendUpdateMessage(0);
 
-  FSuccededStepCount := 1;
-
   for t := 1 to FTMax do
   begin
     switch := Random;
     if switch < 0.5 then
-      UpdatePSO(FSuccededStepCount)
+      UpdatePSO(t)
     else
-      UpdateLFPSO(FSuccededStepCount);
+      UpdateLFPSO(t);
 
     BestX := FindTheBest;
 
