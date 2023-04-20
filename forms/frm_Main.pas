@@ -115,12 +115,6 @@ type
     tsThickness: TRzTabSheet;
     tsRoughness: TRzTabSheet;
     tsDensity: TRzTabSheet;
-    ChartToolBar: TRzToolbar;
-    btnDataLoad: TRzToolButton;
-    btnDataPaste: TRzToolButton;
-    rzspcr3: TRzSpacer;
-    btnCalcRun: TRzToolButton;
-    rzspcr4: TRzSpacer;
     Chart: TChart;
     RzPanel3: TRzPanel;
     RzStatusPane1: TRzStatusPane;
@@ -150,36 +144,7 @@ type
     btnLayerPaste: TRzToolButton;
     btnLayerDelete: TRzToolButton;
     btnLayerCut: TRzToolButton;
-    pnl1: TPanel;
-    Label5: TLabel;
-    pnlAngleParams: TRzPanel;
-    Label1: TLabel;
-    Label2: TLabel;
-    Label3: TLabel;
-    Label4: TLabel;
-    edStartTeta: TEdit;
-    edEndTeta: TEdit;
-    edWidth: TEdit;
-    edLambda: TEdit;
-    cb2Theta: TRzCheckBox;
-    pnlWaveParams: TRzPanel;
-    Label9: TLabel;
-    Label10: TLabel;
-    Label11: TLabel;
-    Label12: TLabel;
-    edStartL: TEdit;
-    edEndL: TEdit;
-    edTheta: TEdit;
-    edDL: TEdit;
-    edN: TEdit;
-    rzspcr5: TRzSpacer;
-    btnClac: TRzToolButton;
-    btnCalcAll: TRzToolButton;
     spnTime: TRzStatusPane;
-    Label6: TLabel;
-    cbIncrement: TRzComboBox;
-    rgCalcMode: TRzRadioGroup;
-    rgPolarisation: TRzRadioGroup;
     dlgSaveResult: TSaveDialog;
     dlgLoadData: TOpenDialog;
     dlgSaveProject: TSaveDialog;
@@ -196,20 +161,68 @@ type
     N5: TMenuItem;
     pmCopytoclipboard: TMenuItem;
     pmExporttofile: TMenuItem;
-    btnResultSave: TRzToolButton;
-    btnBtnCopy: TRzToolButton;
     chThickness: TChart;
     chRoughness: TChart;
     chDensity: TChart;
     RzSpacer1: TRzSpacer;
     BtnDown: TRzToolButton;
     RzStatusPane7: TRzStatusPane;
-    RzSpacer2: TRzSpacer;
-    BtnExecute: TRzToolButton;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
     Series1: TLineSeries;
     spnFitTime: TRzStatusPane;
+    pnl1: TPanel;
+    RzPanel2: TRzPanel;
+    Label6: TLabel;
+    cbIncrement: TRzComboBox;
+    RzPanel6: TRzPanel;
+    RzPanel7: TRzPanel;
+    RzPanel4: TRzPanel;
+    Label5: TLabel;
+    edN: TEdit;
+    rgPolarisation: TRzRadioGroup;
+    pnlWaveParams: TRzPanel;
+    Label9: TLabel;
+    Label10: TLabel;
+    Label11: TLabel;
+    Label12: TLabel;
+    edStartL: TEdit;
+    edEndL: TEdit;
+    edTheta: TEdit;
+    edDL: TEdit;
+    pnlAngleParams: TRzPanel;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
+    edStartTeta: TEdit;
+    edEndTeta: TEdit;
+    edWidth: TEdit;
+    edLambda: TEdit;
+    cb2Theta: TRzCheckBox;
+    rgCalcMode: TRzRadioGroup;
+    ChartToolBar: TRzToolbar;
+    btnDataLoad: TRzToolButton;
+    btnDataPaste: TRzToolButton;
+    rzspcr3: TRzSpacer;
+    btnCalcRun: TRzToolButton;
+    rzspcr4: TRzSpacer;
+    btnResultSave: TRzToolButton;
+    btnBtnCopy: TRzToolButton;
+    RzSpacer2: TRzSpacer;
+    BtnExecute: TRzToolButton;
+    Label7: TLabel;
+    edFIter: TEdit;
+    edFPopulation: TEdit;
+    Label8: TLabel;
+    edFdH: TEdit;
+    Label13: TLabel;
+    edFdS: TEdit;
+    Label14: TLabel;
+    edFdRho: TEdit;
+    Label15: TLabel;
+    edFVmax: TEdit;
+    Label16: TLabel;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -294,6 +307,7 @@ type
     procedure AddCurve(var Data: PProjectData);
     procedure PlotDistributions(Model: TLayeredModel);
     procedure PrepareDistributionCharts;
+    function GetFitParams: TFitParams;
     { Private declarations }
   public
     { Public declarations }
@@ -718,6 +732,18 @@ begin
   end;
 end;
 
+function TfrmMain.GetFitParams: TFitParams;
+begin
+  Result.NMax := StrToInt(edFIter.Text);
+  Result.Pop  := StrToInt(edFPopulation.Text);
+
+  Result.dH    := StrToFloat(edFdH.Text);
+  Result.dS    := StrToFloat(edFdS.Text);
+  Result.dRho  := StrToFloat(edFdRho.Text);
+
+  Result.Vmax  := StrToFloat(edFVmax.Text);
+end;
+
 procedure TfrmMain.GetThreadParams(var CD: TThreadParams);
 var
   StartT, EndT: single;
@@ -989,9 +1015,10 @@ begin
       Calc.CalcChiSquare;
       Series1.AddXY(-1, Calc.ChiSQR);
 
-      LFPSO := TLFPSO_Periodic.Create(50, 50);
+      LFPSO := TLFPSO_Periodic.Create;
+      LFPSO.Params := GetFitParams;
       LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := Structure.ToFitStructure(0.2, 0, 0.2);
+      LFPSO.Structure := Structure.ToFitStructure;
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 

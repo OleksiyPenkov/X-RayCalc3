@@ -95,6 +95,8 @@ begin
 //    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
 
     Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) / exp(FData[i].t);
+
+//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) / abs(Log10(FData[i].r)) / exp(FData[i].t);
     Result := Result + Chi;
   end;
 

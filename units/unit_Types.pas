@@ -66,6 +66,13 @@ type
           DW: single);
   end;
 
+  TFitParams = record
+    NMax: integer;
+     Pop: integer;
+    dH, dS, dRho: single;
+            Vmax: single;
+  end;
+
   // Calculation data types
 
   TCalcLayer = record
@@ -133,9 +140,9 @@ type
 
   TFitValue = record
     V, min, max: single;
-    procedure Init(const Val, dev: single); overload;
-    procedure Init(const Val, AMin, AMax: single); overload;
-    procedure Init(const Val: single); overload;
+    procedure Init(const dev: single); overload;
+    procedure Init(const AMin, AMax: single); overload;
+    procedure Init; overload;
     procedure Seed;
   end;
 
@@ -169,16 +176,14 @@ end;
 
 { TFitValue }
 
-procedure TFitValue.Init(const Val, AMin, AMax: single);
+procedure TFitValue.Init(const AMin, AMax: single);
 begin
-  V := Val;
   min := AMin;
   max := AMax;
 end;
 
-procedure TFitValue.Init(const Val: single);
+procedure TFitValue.Init;
 begin
-  V   := Val;
   min := V;
   max := V;
 end;
@@ -188,9 +193,8 @@ begin
   V := Min + Random * (Max - min);
 end;
 
-procedure TFitValue.Init(const Val, dev: single);
+procedure TFitValue.Init(const dev: single);
 begin
-  V   := Val;
   min := V * (1 - dev);
   max := V * (1 + dev);
 end;

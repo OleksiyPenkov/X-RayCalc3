@@ -49,6 +49,7 @@ type
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
+    FParams: TFitParams;
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -66,8 +67,9 @@ type
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
       procedure CheckLimits(const i, j, k: integer); inline;
+    procedure SetParams(const Value: TFitParams);
     public
-      constructor Create(const NMax, Population: integer);
+      constructor Create;
       destructor Destroy; override;
 
 
@@ -75,6 +77,7 @@ type
       property Result : TLayeredModel read GetResult;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
+      property Params: TFitParams write SetParams;
 
       procedure Run(CalcConditions: TThreadParams);
 
@@ -162,19 +165,9 @@ end;
 
 { TLFPSO }
 
-constructor TLFPSO_Periodic.Create(const NMax, Population: integer);
+constructor TLFPSO_Periodic.Create;
 begin
-  FTMax := NMax;
-  FPopulation := Population;
-
-  SetLength(X, Population);
-  SetLength(V, Population);
-
-  SetLength(Xmax, 1);
-  SetLength(Xmin, 1);
-  SetLength(Vmax, 1);
-  SetLength(Vmin, 1);
-  SetLength(Xrange, 1);
+  inherited ;
 end;
 
 destructor TLFPSO_Periodic.Destroy;
@@ -263,6 +256,7 @@ begin
 
         CheckLimits(i, j, k);
       end;
+    NormalizeD(i);
   end;
 
 end;
@@ -286,6 +280,7 @@ begin
 
         CheckLimits(i, j, k);
       end;
+    NormalizeD(i);
   end;
 end;
 
@@ -443,9 +438,27 @@ begin
   end;
 end;
 
+procedure TLFPSO_Periodic.SetParams(const Value: TFitParams);
+begin
+  FParams := Value;
+
+  FTMax := FParams.NMax;
+  FPopulation := FParams.Pop;
+
+  SetLength(X, FPopulation);
+  SetLength(V, FPopulation);
+
+  SetLength(Xmax, 1);
+  SetLength(Xmin, 1);
+  SetLength(Vmax, 1);
+  SetLength(Vmin, 1);
+  SetLength(Xrange, 1);
+end;
+
 procedure TLFPSO_Periodic.SetStructure(const Inp: TFitPeriodicStructure);
 var
   i, j, Index: integer;
+  D: single;
 begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
@@ -457,6 +470,46 @@ begin
   SetDomain(FLayersCount, Vmin);
   SetDomain(FLayersCount, Vmax);
   SetDomain(FLayersCount, V);
+
+
+  for I := 0 to High(FStructure.Stacks) do
+  begin
+    if FStructure.Stacks[i].N > 1 then
+    begin
+      D := 0;
+      for j := 0 to High(FStructure.Stacks[i].Layers) do
+      begin
+        FStructure.Stacks[i].Layers[j].ID := j;
+        D := D + FStructure.Stacks[i].Layers[j].H.V;
+      end;
+      FStructure.Stacks[i].D := D;
+    end;
+
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      if FStructure.Stacks[i].N > 1 then
+      begin
+        FStructure.Stacks[i].Layers[j].H.Init(FStructure.Stacks[i].Layers[j].H.V - FParams.dH * D,
+                                              FStructure.Stacks[i].Layers[j].H.V + FParams.dH * D);
+
+        if FStructure.Stacks[i].Layers[j].H.min < 0.5 then
+          FStructure.Stacks[i].Layers[j].H.min := 0.5;
+      end
+      else
+        FStructure.Stacks[i].Layers[j].H.Init(FParams.dH);
+
+      if FParams.dS = 0 then
+        FStructure.Stacks[i].Layers[j].s.Init(2, 6)
+      else
+        FStructure.Stacks[i].Layers[j].s.Init(FParams.dS);
+
+      FStructure.Stacks[i].Layers[j].r.Init(FParams.dRho);
+    end;
+    FStructure.Stacks[i].D := D;
+  end;
+
+
+
 
   Index := 0;
   for i := 0 to High(Inp.Stacks) do

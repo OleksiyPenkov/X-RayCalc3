@@ -50,7 +50,7 @@ type
 
       function ToString: string;
       procedure FromString(const S: string);
-      function ToFitStructure(const devH, devS, devRho: single): TFitPeriodicStructure;
+      function ToFitStructure: TFitPeriodicStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
     published
       property Increment: single read FIncrement write SetIncrement;
@@ -330,7 +330,7 @@ begin
     Stacks[i].Increment := Value;
 end;
 
-function TXRCStructure.ToFitStructure(const devH, devS, devRho: single): TFitPeriodicStructure;
+function TXRCStructure.ToFitStructure: TFitPeriodicStructure;
 var
   i, j: integer;
   D: single;
@@ -359,29 +359,17 @@ begin
     for j := 0 to High(Stacks[i].Layers) do
     begin
       Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
-      if Stacks[i].N > 1 then
-      begin
-        Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, Stacks[i].Layers[j].H - devH * D,  Stacks[i].Layers[j].H + devH * D);
-        if Result.Stacks[i].Layers[j].H.min < 0.5 then
-          Result.Stacks[i].Layers[j].H.min := 0.5;
-      end
-      else
-        Result.Stacks[i].Layers[j].H.Init(Stacks[i].Layers[j].H, devH);
-
-      if devS = 0 then
-        Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, 2, 4)
-      else
-        Result.Stacks[i].Layers[j].s.Init(Stacks[i].Layers[j].s, devS);
-
-      Result.Stacks[i].Layers[j].r.Init(Stacks[i].Layers[j].r, devRho);
+      Result.Stacks[i].Layers[j].H.V := Stacks[i].Layers[j].H;
+      Result.Stacks[i].Layers[j].s.V := Stacks[i].Layers[j].s;
+      Result.Stacks[i].Layers[j].r.V := Stacks[i].Layers[j].r;
     end;
     Result.Stacks[i].D := D;
   end;
 
   Result.Subs.Material := Substrate.Layers[0].Material;
-  Result.Subs.H.Init(Substrate.Layers[0].H);
-  Result.Subs.s.Init(Substrate.Layers[0].s);
-  Result.Subs.r.Init(Substrate.Layers[0].r);
+  Result.Subs.H.V := Substrate.Layers[0].H;
+  Result.Subs.s.V := Substrate.Layers[0].s;
+  Result.Subs.r.V := Substrate.Layers[0].r;
 end;
 
 function TXRCStructure.ToString: string;
