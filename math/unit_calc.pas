@@ -47,12 +47,9 @@ type
 
       FParams: TThreadParams;
 
-      FTree: TVirtualStringTree;
-      FGradientChart: TChart;
       FTotalD: single;
       FChiSQR: single;
 
-      FModel: PVirtualNode;
       FHasGradients: Boolean;
 
       Tasks: array of TProc;
@@ -70,7 +67,7 @@ type
       procedure Run;
       function CalcChiSquare: Single;
 
-     property Params: TThreadParams write FParams;
+      property Params: TThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single read FLimit write FLimit;
       property Results: TDataArray read FResult;
@@ -95,11 +92,13 @@ begin
   Result := 0;
   for I := 0 to High(FResult) do
   begin
-    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
+//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
+
+    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) / exp(FData[i].t);
     Result := Result + Chi;
   end;
 
-  FChiSQR := Result;
+  FChiSQR := Result * High(FResult);
 end;
 
 procedure TCalc.PrepareWorkers;

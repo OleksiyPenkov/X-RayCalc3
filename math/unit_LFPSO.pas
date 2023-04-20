@@ -33,6 +33,7 @@ type
       X, V : TPopulation;  // solutions and velocityes
       Xmax : TPopulation; // 1 column for upper boundary
       Xmin : TPopulation; // 1 column for lower boundary
+      Xrange : TPopulation;   // 1 column for delta X
 
       Vmax, VMin: TPopulation; // 1 column for min/max velocity
 
@@ -150,7 +151,7 @@ end;
 
 function Omega(const t, TMax: integer): single;
 begin
-  Result := 0.2 + 0.8 * (1 - t / Tmax);
+  Result := 0.1 + 0.9 * (1 - t / Tmax);
 end;
 
 function RS: integer;
@@ -174,6 +175,7 @@ begin
   SetLength(Xmin, 1);
   SetLength(Vmax, 1);
   SetLength(Vmin, 1);
+  SetLength(Xrange, 1);
 end;
 
 destructor TLFPSO_Periodic.Destroy;
@@ -196,7 +198,7 @@ procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
 begin
-  MultiplyVector(Xmax, 0.3, Vmax);
+  MultiplyVector(Xrange, 1, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
@@ -344,14 +346,10 @@ begin
           FLastBestChiSqr  := Calc.ChiSQR;
           Result := i;
           FResultingCurve := Calc.Results;
-          inc(FSuccededStepCount);
         end;
         if Calc.ChiSQR > FLastWorseChiSQR then
         begin
           FLastWorseChiSQR :=  Calc.ChiSQR;
-          dec(FSuccededStepCount);
-          if FSuccededStepCount < 1 then FSuccededStepCount := 1;
-
         end;
       finally
         FreeAndNil(Calc);
@@ -365,9 +363,13 @@ begin
     begin
       FGlobalBestChiSqr := FLastBestChiSqr;
       gbest := X[Result];
+      inc(FSuccededStepCount);
     end
-    else
+    else begin
       SetLength(FResultingCurve, 0);
+      dec(FSuccededStepCount);
+       if FSuccededStepCount < 1 then FSuccededStepCount := 1;
+    end;
 end;
 
 procedure TLFPSO_Periodic.Run;
@@ -399,7 +401,6 @@ begin
     SendUpdateMessage(t);
     if FGlobalBestChiSqr < 0.1 then Break;
   end;
-  ShowMessage(FloatToStr(FGlobalBestChiSqr));
 end;
 
 procedure TLFPSO_Periodic.Seed;
@@ -458,6 +459,7 @@ begin
   SetDomain(FLayersCount, X);
   SetDomain(FLayersCount, Xmax);
   SetDomain(FLayersCount, Xmin);
+  SetDomain(FLayersCount, Xrange);
   SetDomain(FLayersCount, Vmin);
   SetDomain(FLayersCount, Vmax);
   SetDomain(FLayersCount, V);
@@ -470,14 +472,17 @@ begin
        X[0][1][Index] := Inp.Stacks[i].Layers[j].H.V;
       Xmax[0][1][Index] := Inp.Stacks[i].Layers[j].H.max;
       Xmin[0][1][Index] := Inp.Stacks[i].Layers[j].H.min;
+      Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
 
        X[0][2][Index] := Inp.Stacks[i].Layers[j].s.V;
       Xmax[0][2][Index] := Inp.Stacks[i].Layers[j].s.max;
       Xmin[0][2][Index] := Inp.Stacks[i].Layers[j].s.min;
+      Xrange[0][2][Index] := Xmax[0][2][Index] - Xmin[0][2][Index];
 
        X[0][3][Index] := Inp.Stacks[i].Layers[j].r.V;
       Xmax[0][3][Index] := Inp.Stacks[i].Layers[j].r.max;
       Xmin[0][3][Index] := Inp.Stacks[i].Layers[j].r.min;
+      Xrange[0][3][Index] := Xmax[0][3][Index] - Xmin[0][3][Index];
 
       Inc(Index);
     end;

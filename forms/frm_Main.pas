@@ -989,18 +989,17 @@ begin
       Calc.CalcChiSquare;
       Series1.AddXY(-1, Calc.ChiSQR);
 
-      LFPSO := TLFPSO_Periodic.Create(30, 200);
+      LFPSO := TLFPSO_Periodic.Create(30, 100);
       LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := Structure.ToFitStructure(0.2, 0.2, 0.2);
+      LFPSO.Structure := Structure.ToFitStructure(0.3, 0.3, 0.3);
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 
       Calc.Model := LFPSO.Result;
-      Structure.FromFitStructure(LFPSO.Result);
       Calc.Run;
       Calc.CalcChiSquare;
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-
+      Structure.FromFitStructure(LFPSO.Result);
     except
       on E: exception do
       begin
