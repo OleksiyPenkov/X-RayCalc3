@@ -108,7 +108,7 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-RayCalc2\test_data\test2.xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-RayCalc2\test_data\test_double.xrcx&quot; -a</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -121,6 +121,11 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+        <DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
+        <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -153,7 +158,6 @@
         <DCCReference Include="components\unit_XRCProjectTree.pas"/>
         <DCCReference Include="components\editor_Layer.pas">
             <Form>edtrLayer</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="math\unit_FitHelpers.pas"/>
         <DCCReference Include="math\unit_LFPSO.pas"/>

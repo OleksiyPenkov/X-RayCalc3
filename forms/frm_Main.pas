@@ -387,7 +387,7 @@ var
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   Series1.AddXY(msg_prm.Step, msg_prm.BestChi);
-  spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 1);
+  spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
   if Length(msg_prm.Curve) > 1 then
      PlotResults(msg_prm.Curve);
   Dispose(msg_prm);
@@ -962,7 +962,7 @@ begin
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
       begin
         Calc.CalcChiSquare;
-        spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
+        spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 4);
       end
       else
         spChiSqr.Caption := '';

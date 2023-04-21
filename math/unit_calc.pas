@@ -65,7 +65,7 @@ type
       constructor Create;
       destructor Free;
       procedure Run;
-      function CalcChiSquare: Single;
+      function CalcChiSquare: double;
 
       property Params: TThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
@@ -84,23 +84,19 @@ uses
 
   { TCalc }
 
-function TCalc.CalcChiSquare: Single;
+function TCalc.CalcChiSquare: double;
 var
   i: Integer;
-  Chi: single;
+  Chi: double;
 begin
   Result := 0;
   for I := 0 to High(FResult) do
   begin
-//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
-
-    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) / exp(FData[i].t);
-
-//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) / abs(Log10(FData[i].r)) / exp(FData[i].t);
+    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
     Result := Result + Chi;
   end;
 
-  FChiSQR := Result * High(FResult);
+  FChiSQR := Result / High(FResult) * 1000;
 end;
 
 procedure TCalc.PrepareWorkers;

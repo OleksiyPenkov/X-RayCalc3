@@ -220,9 +220,9 @@ function TLFPSO_Periodic.LevyWalk(const X, gBest: single): single;
 const
   beta = 1.5;
 var
-  dX, Y, S: single;
-  num, den, sigma_u: single;
-  u, v, z: single;
+  dX, S: double;
+  num, den, sigma_u: double;
+  u, v, z: double;
 begin
   num := gamma(1 + beta) * sin(pi * beta / 2); // used for Numerator
   den := gamma(( 1 + beta)/2) * beta * power(2, (beta-1)/2); // used for Denominator
@@ -240,7 +240,7 @@ end;
 procedure TLFPSO_Periodic.UpdateLFPSO(const t: integer);
 var
   i, j, k: integer;
-  c1, c2: single;
+  c1, c2: double;
 begin
   c1 := c1m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
   c2 := c2m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
@@ -264,7 +264,7 @@ end;
 procedure TLFPSO_Periodic.UpdatePSO(const t: integer);
 var
   i, j, k: integer;
-  c1, c2: single;
+  c1, c2: double;
 begin
   c1 := c1m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
   c2 := c2m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
@@ -287,8 +287,8 @@ end;
 procedure TLFPSO_Periodic.NormalizeD; // keep D for every periodic stack constant
 var
   i, j: integer;
-  Index, Last, Most: integer;
-  D, HMax: single;
+  Index, Last: integer;
+  Dreal, f: double;
 begin
   Index := 0;
 
@@ -301,18 +301,13 @@ begin
     end;
     Last := Index + Length(FStructure.Stacks[i].Layers) - 1;
 
-    D := 0; HMax := 0;
+    Dreal := 0;
     for j := Index to Last do
-    begin
-      D := D + X[Particle][1][j];
-      if X[Particle][1][j] > HMax then  // find the thickest layer
-      begin
-        HMax := X[Particle][1][j];
-        Most := j;
-      end;
-    end;
+      Dreal := Dreal + X[Particle][1][j];
 
-    X[Particle][1][Most] := X[Particle][1][Most] + (FStructure.Stacks[i].D - D); // correct the thickest layer to maintain total D
+    f := (FStructure.Stacks[i].D - Dreal)/Dreal;
+    for j := Index to Last do
+      X[Particle][1][j] := X[Particle][1][j] * (1 + f);
   end;
 end;
 
@@ -366,7 +361,7 @@ end;
 procedure TLFPSO_Periodic.Run;
 var
   t, BestX: integer;
-  switch: single;
+  switch: double;
 begin
   FCalcConditions := CalcConditions;
   FGlobalBestChiSqr:= 1e12;
@@ -388,7 +383,7 @@ begin
     BestX := FindTheBest;
 
     SendUpdateMessage(t);
-    if FGlobalBestChiSqr < 0.1 then Break;
+//    if FGlobalBestChiSqr < 0.1 then Break;
   end;
 end;
 
@@ -458,7 +453,7 @@ end;
 procedure TLFPSO_Periodic.SetStructure(const Inp: TFitPeriodicStructure);
 var
   i, j, Index: integer;
-  D: single;
+  D: double;
 begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
