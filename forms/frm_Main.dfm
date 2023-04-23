@@ -307,10 +307,9 @@ object frmMain: TfrmMain
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
-            LeftAxis.Automatic = False
-            LeftAxis.AutomaticMinimum = False
             LeftAxis.AxisValuesFormat = '#,##0'
             LeftAxis.LabelsExponent = True
+            LeftAxis.Logarithmic = True
             LeftAxis.MaximumRound = True
             View3D = False
             ZoomWheel = pmwNormal
@@ -777,7 +776,7 @@ object frmMain: TfrmMain
             NumbersOnly = True
             ParentFont = False
             TabOrder = 0
-            Text = '30'
+            Text = '50'
           end
           object edFPopulation: TEdit
             Left = 158
@@ -808,7 +807,7 @@ object frmMain: TfrmMain
             Font.Style = []
             ParentFont = False
             TabOrder = 2
-            Text = '0.3'
+            Text = '0.25'
           end
           object edFdS: TEdit
             Left = 96
@@ -823,7 +822,7 @@ object frmMain: TfrmMain
             Font.Style = []
             ParentFont = False
             TabOrder = 3
-            Text = '0.3'
+            Text = '0.25'
           end
           object edFdRho: TEdit
             Left = 160
@@ -838,7 +837,7 @@ object frmMain: TfrmMain
             Font.Style = []
             ParentFont = False
             TabOrder = 4
-            Text = '0.3'
+            Text = '0.25'
           end
           object edFVmax: TEdit
             Left = 41

@@ -39,17 +39,20 @@ type
 
       pbest: TSolution; // best local solution
       gbest: TSolution; // best global solution
+      abest: TSolution;
 
       FLastBestChiSqr  : single;
       FLastWorseChiSQR : single;
       FGlobalBestChiSqr: single;
+      FAbsoluteBestChiSqr: single;
+      FJammingCount    : integer;
 
 
       FTMax: integer;
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
-    FParams: TFitParams;
+      FParams: TFitParams;
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -63,11 +66,12 @@ type
       function FindTheBest: integer;
       procedure UpdatePSO(const t: integer);
       function GetResult: TLayeredModel;
-      function GBestStructure: TFitPeriodicStructure;
+      function GBestStructure(best: TSolution): TFitPeriodicStructure;
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
       procedure CheckLimits(const i, j, k: integer); inline;
-    procedure SetParams(const Value: TFitParams);
+      procedure SetParams(const Value: TFitParams);
+      procedure ReInit(const Step: integer); inline;
     public
       constructor Create;
       destructor Destroy; override;
@@ -178,7 +182,7 @@ end;
 
 function TLFPSO_Periodic.GetResult: TLayeredModel;
 begin
-  Result := ExpandPeriodicFitModel(GBestStructure);
+  Result := ExpandPeriodicFitModel(GBestStructure(abest));
 end;
 
 function TLFPSO_Periodic.GetStructure: TFitPeriodicStructure;
@@ -190,7 +194,7 @@ procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
 begin
-  MultiplyVector(Xrange, 1, Vmax);
+  MultiplyVector(Xrange, FParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
@@ -333,13 +337,12 @@ begin
         if Calc.ChiSQR < FLastBestChiSqr then
         begin
           FLastBestChiSqr  := Calc.ChiSQR;
-          Result := i;
           FResultingCurve := Calc.Results;
+          Result := i;
         end;
+
         if Calc.ChiSQR > FLastWorseChiSQR then
-        begin
           FLastWorseChiSQR :=  Calc.ChiSQR;
-        end;
       finally
         FreeAndNil(Calc);
         Application.ProcessMessages;
@@ -355,22 +358,43 @@ begin
     end
     else begin
       SetLength(FResultingCurve, 0);
+      Inc(FJammingCount);
     end;
+
+    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
+    begin
+      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+      abest := X[Result];
+    end;
+
 end;
 
-procedure TLFPSO_Periodic.Run;
-var
-  t, BestX: integer;
-  switch: double;
+procedure TLFPSO_Periodic.ReInit(const Step: integer);
 begin
-  FCalcConditions := CalcConditions;
-  FGlobalBestChiSqr:= 1e12;
+  FJammingCount := 0;
 
   Seed;
   InitVelocity;
-  BestX := FindTheBest;
+  FindTheBest;
 
-  SendUpdateMessage(0);
+  SendUpdateMessage(Step);
+end;
+
+
+procedure TLFPSO_Periodic.Run;
+var
+  t: integer;
+  switch: double;
+  GlobalRizeCount, ReInitCount: integer;
+
+begin
+  GlobalRizeCount := 0;
+  ReInitCount := 0;
+  FGlobalBestChiSqr:= 1e12;
+  FAbsoluteBestChiSqr := 1e12;
+  FCalcConditions := CalcConditions;
+
+  ReInit(0);
 
   for t := 1 to FTMax do
   begin
@@ -380,10 +404,29 @@ begin
     else
       UpdateLFPSO(t);
 
-    BestX := FindTheBest;
-
+    FindTheBest;
     SendUpdateMessage(t);
-//    if FGlobalBestChiSqr < 0.1 then Break;
+    if FGlobalBestChiSqr < 0.0001 then Break;
+
+    if FJammingCount > 2 then
+    begin
+      if ReInitCount > 2 then
+      begin
+        ReInitCount := 0;
+        SetStructure(GBestStructure(abest));
+        gbest := abest;
+        FGlobalBestChiSqr := FAbsoluteBestChiSqr;
+      end
+      else
+      begin
+        SetStructure(GBestStructure(gbest));
+        FGlobalBestChiSqr := FGlobalBestChiSqr  * 3;
+      end;
+
+      ReInit(t);
+      Inc(ReInitCount);
+      FJammingCount := 0;
+    end;
   end;
 end;
 
@@ -503,9 +546,6 @@ begin
     FStructure.Stacks[i].D := D;
   end;
 
-
-
-
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
   begin
@@ -549,7 +589,7 @@ begin
   end;
 end;
 
-function TLFPSO_Periodic.GBestStructure: TFitPeriodicStructure;
+function TLFPSO_Periodic.GBestStructure(best: TSolution): TFitPeriodicStructure;
 var
   i, j, LayerIndex: integer;
 begin
@@ -559,9 +599,9 @@ begin
   begin
     for j := 0 to High(Result.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := gbest[1][LayerIndex];
-      Result.Stacks[i].Layers[j].s.V := gbest[2][LayerIndex];
-      Result.Stacks[i].Layers[j].r.V := gbest[3][LayerIndex];
+      Result.Stacks[i].Layers[j].H.V := best[1][LayerIndex];
+      Result.Stacks[i].Layers[j].s.V := best[2][LayerIndex];
+      Result.Stacks[i].Layers[j].r.V := best[3][LayerIndex];
       Inc(LayerIndex);
     end;
   end;
