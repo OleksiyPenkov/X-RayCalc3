@@ -26,16 +26,21 @@ type
       FIncrement: single;
       FVisibility: boolean;
 
+      FFitLimitsStr: string;
+
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       procedure Clean;
       function GetSelected: Integer;
       procedure UpdateGUI;
+      function GetFitLimits: string;
+      procedure SetFitLimits(const Value: string);
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
 
       property Selected: Integer read GetSelected;
+      property FitLimits: string read GetFitLimits write SetFitLimits;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
@@ -52,6 +57,7 @@ type
       procedure FromString(const S: string);
       function ToFitStructure: TFitPeriodicStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
+      procedure StoreFitLimits(const Inp: TFitPeriodicStructure);
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -321,6 +327,13 @@ begin
   end;
 end;
 
+procedure TXRCStructure.SetFitLimits(const Value: string);
+var
+  SL, Line: TStringList;
+begin
+
+end;
+
 procedure TXRCStructure.SetIncrement(const Value: single);
 var
   i: Integer;
@@ -328,6 +341,29 @@ begin
   FIncrement := Value;
   for I := 0 to High(Stacks) do
     Stacks[i].Increment := Value;
+end;
+
+procedure TXRCStructure.StoreFitLimits(const Inp: TFitPeriodicStructure);
+var
+  i, j: integer;
+  Count: integer;
+  Data: TLayerData;
+begin
+  Count := 1;
+
+  for I := 0 to High(Stacks) do
+  begin
+    for j := 0 to High(Stacks[i].Layers) do
+    begin
+      Data.Material := Inp.Stacks[i].Layers[j].Material;
+      Data.H := Inp.Stacks[i].Layers[j].H;
+      Data.s := Inp.Stacks[i].Layers[j].s;
+      Data.r := Inp.Stacks[i].Layers[j].r;
+      Stacks[i].UpdateLayer(j, Data);
+      inc(Count);
+    end;
+    inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
+  end;
 end;
 
 function TXRCStructure.ToFitStructure: TFitPeriodicStructure;
@@ -352,7 +388,7 @@ begin
       for j := 0 to High(Stacks[i].Layers) do
       begin
         Result.Stacks[i].Layers[j].ID := j;
-        D := D + Stacks[i].Layers[j].H;
+        D := D + Stacks[i].Layers[j].H.V;
       end;
       Result.Stacks[i].D := D;
     end;
@@ -360,26 +396,18 @@ begin
     for j := 0 to High(Stacks[i].Layers) do
     begin
       Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
-      Result.Stacks[i].Layers[j].H.V := Stacks[i].Layers[j].H;
-      Result.Stacks[i].Layers[j].H.min := Stacks[i].Layers[j].H;
-      Result.Stacks[i].Layers[j].H.max := Stacks[i].Layers[j].H;
-
-      Result.Stacks[i].Layers[j].s.V := Stacks[i].Layers[j].s;
-      Result.Stacks[i].Layers[j].s.min := Stacks[i].Layers[j].s;
-      Result.Stacks[i].Layers[j].s.max := Stacks[i].Layers[j].s;
-
-      Result.Stacks[i].Layers[j].r.V := Stacks[i].Layers[j].r;
-      Result.Stacks[i].Layers[j].r.min := Stacks[i].Layers[j].r;
-      Result.Stacks[i].Layers[j].r.max := Stacks[i].Layers[j].r;
+      Result.Stacks[i].Layers[j].H := Stacks[i].Layers[j].H;
+      Result.Stacks[i].Layers[j].s := Stacks[i].Layers[j].s;
+      Result.Stacks[i].Layers[j].r := Stacks[i].Layers[j].r;
 
     end;
     Result.Stacks[i].D := D;
   end;
 
   Result.Subs.Material := Substrate.Layers[0].Material;
-  Result.Subs.H.V := Substrate.Layers[0].H;
-  Result.Subs.s.V := Substrate.Layers[0].s;
-  Result.Subs.r.V := Substrate.Layers[0].r;
+  Result.Subs.H := Substrate.Layers[0].H;
+  Result.Subs.s := Substrate.Layers[0].s;
+  Result.Subs.r := Substrate.Layers[0].r;
 end;
 
 function TXRCStructure.ToString: string;
@@ -405,9 +433,17 @@ begin
 
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', Data.Material);
-        JLayer.AddPair('H', Data.H);
-        JLayer.AddPair('s', Data.s);
-        JLayer.AddPair('r', Data.r);
+        JLayer.AddPair('H', Data.H.V);
+        JLayer.AddPair('Hmin', Data.H.min);
+        JLayer.AddPair('Hmax', Data.H.max);
+
+        JLayer.AddPair('s', Data.s.V);
+        JLayer.AddPair('Smin', Data.s.min);
+        JLayer.AddPair('Smax', Data.s.max);
+
+        JLayer.AddPair('r', Data.r.V);
+        JLayer.AddPair('Rmin', Data.r.min);
+        JLayer.AddPair('Rmax', Data.r.max);
 
         JLayers.Add(JLayer);
       end;
@@ -418,8 +454,8 @@ begin
     Data := Substrate.Layers[0];
     JSub := TJSONObject.Create;
     JSub.AddPair('M', Data.Material);
-    JSub.AddPair('s', Data.s);
-    JSub.AddPair('r', Data.r);
+    JSub.AddPair('s', Data.s.V);
+    JSub.AddPair('r', Data.r.V);
 
     JStstructure.AddPair('Stacks', JStacks);
     JStstructure.AddPair('Subs', JSub);
@@ -447,9 +483,9 @@ begin
     for j := 0 to High(Stacks[i].Layers) do
     begin
       Data.Material := Inp.Layers[Count].Name;
-      Data.H := Inp.Layers[Count].L;
-      Data.s := Inp.Layers[Count].s * 1.41;
-      Data.r := Inp.Layers[Count].ro;
+      Data.H.V := Inp.Layers[Count].L;
+      Data.s.V := Inp.Layers[Count].s * 1.41;
+      Data.r.V := Inp.Layers[Count].ro;
       Stacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
@@ -462,9 +498,21 @@ var
   i, j, p: Integer;
   Data: TLayerData;
   JStstructure: TJSONObject;
-  JLayer, JStack, JSub : TJSONValue;
+  JLayer, JStack, JSub: TJSONValue;
   JStacks, JLayers : TJSONArray;
   ts: string;
+
+  function FindValue(const Value: string; Base: single): single;
+  var
+    JVal : TJSONValue;
+  begin
+    JVal := JLayer.FindValue(Value);
+    if JVal <> nil then
+       Result := StrToFloat(JVal.Value)
+    else
+      Result := Base;
+  end;
+
 begin
   Visible := False;
   Clean;
@@ -489,9 +537,18 @@ begin
       begin
         JLayer := JLayers.Items[j];
         Data.Material := JLayer.GetValue<string>('M');
-        Data.H := JLayer.GetValue<single>('H');
-        Data.s := JLayer.GetValue<single>('s');
-        Data.r := JLayer.GetValue<single>('r');
+
+        Data.H.V := JLayer.GetValue<single>('H');
+        Data.H.min := FindValue('Hmin', Data.H.V);
+        Data.H.max := FindValue('Hmax', Data.H.V);
+
+        Data.s.V := JLayer.GetValue<single>('s');
+        Data.s.min := FindValue('Smin', Data.s.V);
+        Data.s.max := FindValue('Smax', Data.s.V);
+
+        Data.r.V := JLayer.GetValue<single>('r');
+        Data.r.min := FindValue('Rmin', Data.r.V);
+        Data.r.max := FindValue('Rmax', Data.r.V);
 
         Stacks[i].AddLayer(Data);
       end;
@@ -502,6 +559,11 @@ begin
   end;
 
   Visible := True;
+end;
+
+function TXRCStructure.GetFitLimits: string;
+begin
+
 end;
 
 function TXRCStructure.GetSelected: Integer;

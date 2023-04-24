@@ -217,13 +217,7 @@ type
     Label8: TLabel;
     edFVmax: TEdit;
     Label16: TLabel;
-    BitBtn1: TBitBtn;
-    Label13: TLabel;
-    edFdH: TEdit;
-    edFdS: TEdit;
-    Label14: TLabel;
-    edFdRho: TEdit;
-    Label15: TLabel;
+    btnSetFitLimits: TBitBtn;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -264,7 +258,7 @@ type
     procedure pmiEnabledClick(Sender: TObject);
     procedure Properties1Click(Sender: TObject);
     procedure actAutoFittingExecute(Sender: TObject);
-    procedure BitBtn1Click(Sender: TObject);
+    procedure btnSetFitLimitsClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -290,8 +284,6 @@ type
     FRoughnessSeries: TSeriesList ;
     FDensitySeries: TSeriesList ;
 
-    FFitStructure: TFitPeriodicStructure;
-
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
     function DataName(Data: PProjectData): string;
@@ -301,7 +293,6 @@ type
     procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
-    procedure CreateDummyStructure;
     procedure FinalizeCalc(Calc: TCalc);
     procedure GetThreadParams(var CD: TThreadParams);
     procedure PlotResults(const Data: TDataArray);
@@ -634,12 +625,13 @@ begin
   SeriesToFile(FSeriesList[FActiveData.CurveID], DataName(FActiveData));
 end;
 
-procedure TfrmMain.BitBtn1Click(Sender: TObject);
+procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
+var
+    FitStructure: TFitPeriodicStructure;
 begin
-  if not FFitStructure.LimitsSet  then
-    FFitStructure := Structure.ToFitStructure;
-
-  frmLimits.Show(FFitStructure);
+  FitStructure := Structure.ToFitStructure;
+  frmLimits.Show(FitStructure);
+  Structure.StoreFitLimits(FitStructure);
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);
@@ -748,10 +740,6 @@ function TfrmMain.GetFitParams: TFitParams;
 begin
   Result.NMax := StrToInt(edFIter.Text);
   Result.Pop  := StrToInt(edFPopulation.Text);
-
-  Result.dH    := StrToFloat(edFdH.Text);
-  Result.dS    := StrToFloat(edFdS.Text);
-  Result.dRho  := StrToFloat(edFdRho.Text);
 
   Result.Vmax  := StrToFloat(edFVmax.Text);
 end;
@@ -1001,6 +989,7 @@ var
   Calc: TCalc;
   LFPSO: TLFPSO_Periodic;
   Hour, Min, Sec, MSec: Word;
+  FitStructure: TFitPeriodicStructure;
 begin
   Randomize;
 
@@ -1012,6 +1001,13 @@ begin
 
     if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
        Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
+    else
+      Exit;
+
+    FitStructure := Structure.ToFitStructure;
+
+    if frmLimits.Show(FitStructure) then
+        Structure.StoreFitLimits(FitStructure)
     else
       Exit;
 
@@ -1030,11 +1026,7 @@ begin
       LFPSO := TLFPSO_Periodic.Create;
       LFPSO.Params := GetFitParams;
       LFPSO.Limit := Calc.Limit;
-
-      if FFitStructure.LimitsSet then
-        LFPSO.Structure := FFitStructure
-      else
-        LFPSO.Structure := Structure.ToFitStructure;
+      LFPSO.Structure := Structure.ToFitStructure;
 
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
@@ -1373,32 +1365,6 @@ begin
   Structure.AddSubstrate('SiO2', 5, 2.2);
 end;
 
-procedure TfrmMain.CreateDummyStructure;
-var
-  Data1, Data2, Data3, Data4: TLayerData;
-begin
-  Data1.Material := 'Si';
-  Data1.H := 23; Data1.s := 2.5; Data1.r := 2.3;
-
-  Data2.Material := 'MoSi2';
-  Data2.H := 6; Data2.s := 3; Data2.r := 6.2;
-
-  Data3.Material := 'Mo';
-  Data3.H := 14; Data3.s := 2.5; Data3.r := 10;
-
-  Data4.Material := 'MoSi2';
-  Data4.H := 12; Data2.s := 3; Data2.r := 6.2;
-
-  Structure.AddStack(1, 'Top');
-  Structure.AddLayer(0, Data1);
-
-  Structure.AddStack(5, 'Main');
-  Structure.AddLayer(1, Data4);
-  Structure.AddLayer(1, Data3);
-  Structure.AddLayer(1, Data2);
-  Structure.AddLayer(1, Data1);
-end;
-
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
@@ -1428,12 +1394,6 @@ begin
         end
         else
           CreateDefaultProject;
-     end;
-     if FindCmdLineSwitch('d') then
-     begin
-       CreateDefaultProject;
-       CreateDummyStructure;
-       PrepareDistributionCharts;
      end;
   end
   else

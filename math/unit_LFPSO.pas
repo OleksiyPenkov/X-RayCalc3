@@ -386,7 +386,7 @@ var
   t: integer;
   switch: double;
   GlobalRizeCount, ReInitCount: integer;
-
+  Best: integer;
 begin
   GlobalRizeCount := 0;
   ReInitCount := 0;
@@ -420,7 +420,7 @@ begin
       else
       begin
         SetStructure(GBestStructure(gbest));
-        FGlobalBestChiSqr := FGlobalBestChiSqr  * 3;
+        FGlobalBestChiSqr := FGlobalBestChiSqr  * 2;
       end;
 
       ReInit(t);
@@ -519,31 +519,6 @@ begin
       begin
         FStructure.Stacks[i].Layers[j].ID := j;
         D := D + FStructure.Stacks[i].Layers[j].H.V;
-      end;
-      FStructure.Stacks[i].D := D;
-    end;
-
-    if not FStructure.LimitsSet then
-    begin
-      for j := 0 to High(FStructure.Stacks[i].Layers) do
-      begin
-        if FStructure.Stacks[i].N > 1 then
-        begin
-          FStructure.Stacks[i].Layers[j].H.Init(FStructure.Stacks[i].Layers[j].H.V - FParams.dH * D,
-                                                FStructure.Stacks[i].Layers[j].H.V + FParams.dH * D);
-
-          if FStructure.Stacks[i].Layers[j].H.min < 0.5 then
-            FStructure.Stacks[i].Layers[j].H.min := 0.5;
-        end
-        else
-          FStructure.Stacks[i].Layers[j].H.Init(FParams.dH);
-
-        if FParams.dS = 0 then
-          FStructure.Stacks[i].Layers[j].s.Init(2, 6)
-        else
-          FStructure.Stacks[i].Layers[j].s.Init(FParams.dS);
-
-        FStructure.Stacks[i].Layers[j].r.Init(FParams.dRho);
       end;
       FStructure.Stacks[i].D := D;
     end;

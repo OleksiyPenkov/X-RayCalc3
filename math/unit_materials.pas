@@ -77,9 +77,9 @@ begin
     FLayers[CurrentLayer + i].LayerID  := i;
 
     FLayers[CurrentLayer + i].Name := Data[i].Material;
-    FLayers[CurrentLayer + i].L    := Data[i].H;
-    FLayers[CurrentLayer + i].s    := Data[i].s / 1.41;
-    FLayers[CurrentLayer + i].ro   := Data[i].r;
+    FLayers[CurrentLayer + i].L    := Data[i].H.V;
+    FLayers[CurrentLayer + i].s    := Data[i].s.V / 1.41;
+    FLayers[CurrentLayer + i].ro   := Data[i].r.V;
   end;
   inc(CurrentLayer, Length(Data));
 end;
@@ -114,8 +114,8 @@ begin
   begin
     Name := Data[0].Material;
     L    := 1E8;
-    s    := Data[0].s / 1.41;
-    ro   := Data[0].r;
+    s    := Data[0].s.V / 1.41;
+    ro   := Data[0].r.V;
   end;
 end;
 

@@ -58,9 +58,9 @@ implementation
 procedure TedtrLayer.FillEdits;
 begin
   edMaterial.Text := Data.Material;
-  edH.Value := Data.H;
-  edSigma.Value := Data.S;
-  edRo.Value := Data.R;
+  edH.Value := Data.H.V;
+  edSigma.Value := Data.S.V;
+  edRo.Value := Data.R.V;
 end;
 
 procedure TedtrLayer.FormShow(Sender: TObject);
@@ -72,9 +72,9 @@ end;
 procedure TedtrLayer.SaveData;
 begin
   Data.Material := edMaterial.Text;
-  Data.H := edH.Value;
-  Data.S := edSigma.Value;
-  Data.R := edRo.Value;
+  Data.H.V := edH.Value;
+  Data.S.V := edSigma.Value;
+  Data.R.V := edRo.Value;
 end;
 
 procedure TedtrLayer.btnOKClick(Sender: TObject);

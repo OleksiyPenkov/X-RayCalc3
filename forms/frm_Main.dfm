@@ -698,8 +698,8 @@ object frmMain: TfrmMain
             ParentFont = False
           end
           object Label8: TLabel
-            Left = 105
-            Top = 8
+            Left = 9
+            Top = 35
             Width = 50
             Height = 13
             Caption = 'Population'
@@ -711,7 +711,7 @@ object frmMain: TfrmMain
             ParentFont = False
           end
           object Label16: TLabel
-            Left = 9
+            Left = 38
             Top = 76
             Width = 26
             Height = 13
@@ -723,49 +723,10 @@ object frmMain: TfrmMain
             Font.Style = []
             ParentFont = False
           end
-          object Label13: TLabel
-            Left = 11
-            Top = 35
-            Width = 20
-            Height = 19
-            Caption = 'DH'
-            Font.Charset = GREEK_CHARSET
-            Font.Color = clBlack
-            Font.Height = -15
-            Font.Name = 'Symbol'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label14: TLabel
-            Left = 75
-            Top = 35
-            Width = 18
-            Height = 19
-            Caption = 'Ds'
-            Font.Charset = GREEK_CHARSET
-            Font.Color = clBlack
-            Font.Height = -15
-            Font.Name = 'Symbol'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label15: TLabel
-            Left = 139
-            Top = 35
-            Width = 18
-            Height = 19
-            Caption = 'Dr'
-            Font.Charset = GREEK_CHARSET
-            Font.Color = clBlack
-            Font.Height = -15
-            Font.Name = 'Symbol'
-            Font.Style = []
-            ParentFont = False
-          end
           object edFIter: TEdit
             Left = 62
             Top = 4
-            Width = 35
+            Width = 43
             Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
@@ -779,9 +740,9 @@ object frmMain: TfrmMain
             Text = '50'
           end
           object edFPopulation: TEdit
-            Left = 158
-            Top = 4
-            Width = 35
+            Left = 62
+            Top = 31
+            Width = 43
             Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
@@ -795,7 +756,7 @@ object frmMain: TfrmMain
             Text = '50'
           end
           object edFVmax: TEdit
-            Left = 41
+            Left = 70
             Top = 72
             Width = 35
             Height = 22
@@ -808,60 +769,6 @@ object frmMain: TfrmMain
             ParentFont = False
             TabOrder = 2
             Text = '1'
-          end
-          object BitBtn1: TBitBtn
-            Left = 121
-            Top = 71
-            Width = 75
-            Height = 25
-            Caption = 'Set Limits'
-            TabOrder = 3
-            OnClick = BitBtn1Click
-          end
-          object edFdH: TEdit
-            Left = 32
-            Top = 32
-            Width = 33
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            TabOrder = 4
-            Text = '0.25'
-          end
-          object edFdS: TEdit
-            Left = 96
-            Top = 32
-            Width = 33
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            TabOrder = 5
-            Text = '0.25'
-          end
-          object edFdRho: TEdit
-            Left = 160
-            Top = 32
-            Width = 33
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            TabOrder = 6
-            Text = '0.25'
           end
         end
         object RzPanel7: TRzPanel
@@ -1450,6 +1357,15 @@ object frmMain: TfrmMain
             '0.1'
             '0.01'
             '0.001')
+        end
+        object btnSetFitLimits: TBitBtn
+          Left = 265
+          Top = 5
+          Width = 75
+          Height = 25
+          Caption = 'Fit Limits'
+          TabOrder = 1
+          OnClick = btnSetFitLimitsClick
         end
       end
     end

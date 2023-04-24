@@ -107,10 +107,18 @@ type
     f: TComplex;
   end;
 
+  TFitValue = record
+    V, min, max: single;
+    procedure Init(const dev: single); overload;
+    procedure Init(const AMin, AMax: single); overload;
+    procedure Init; overload;
+    procedure Seed;
+  end;
+
   TLayerData = record
     Material: string;
-    H, s, r: single;
-    StackID: integer;
+    H, s, r: TFitValue;
+    StackID, ID: integer;
   end;
 
   TLayersData = array of TLayerData;
@@ -138,32 +146,18 @@ type
 
   // Fitting data types
 
-  TFitValue = record
-    V, min, max: single;
-    procedure Init(const dev: single); overload;
-    procedure Init(const AMin, AMax: single); overload;
-    procedure Init; overload;
-    procedure Seed;
-  end;
-
-  TFitLayer = record
-    ID: integer;
-    Material : string;
-    H, s, r: TFitValue;
-  end;
 
   TFitStack = record
     ID: integer;
     N: integer;
     D: single;
     Header: string;
-    Layers: array of TFitLayer;
+    Layers: array of TLayerData;
   end;
 
   TFitPeriodicStructure = record
     Stacks: array of TFitStack;
-    Subs: TFitLayer;
-    LimitsSet: boolean;
+    Subs: TLayerData;
     function Total: integer;
   end;
 

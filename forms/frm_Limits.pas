@@ -40,7 +40,7 @@ type
   public
     { Public declarations }
 
-    procedure Show(var Structure: TFitPeriodicStructure);
+    function Show(var Structure: TFitPeriodicStructure): boolean;
   end;
 
 var
@@ -200,11 +200,11 @@ begin
     end;
   end;
 
-  FStructure.LimitsSet := True;
 end;
 
-procedure TfrmLimits.Show(var Structure: TFitPeriodicStructure);
+function TfrmLimits.Show(var Structure: TFitPeriodicStructure): boolean;
 begin
+  Result := False;
   FStructure := Structure;
 
   StructureToView;
@@ -213,6 +213,7 @@ begin
   begin
     StructureFromView;
     Structure := FStructure;
+    Result := True;
   end;
 end;
 

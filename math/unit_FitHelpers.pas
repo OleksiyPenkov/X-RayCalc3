@@ -67,9 +67,9 @@ begin
     for k := 0 to High(Inp.Stacks[i].Layers) do
     begin
       Data[k].Material := Inp.Stacks[i].Layers[k].Material;
-      Data[k].H := Inp.Stacks[i].Layers[k].H.V;
-      Data[k].s := Inp.Stacks[i].Layers[k].s.V;
-      Data[k].r := Inp.Stacks[i].Layers[k].r.V;
+      Data[k].H := Inp.Stacks[i].Layers[k].H;
+      Data[k].s := Inp.Stacks[i].Layers[k].s;
+      Data[k].r := Inp.Stacks[i].Layers[k].r;
     end;
 
 
@@ -79,8 +79,8 @@ begin
 
   SetLength(Data, 1);
   Data[0].Material := Inp.Subs.Material;
-  Data[0].s := Inp.Subs.s.V;
-  Data[0].r := Inp.Subs.r.V;
+  Data[0].s := Inp.Subs.s;
+  Data[0].r := Inp.Subs.r;
 
   Result.AddSubstrate(Data);
 end;

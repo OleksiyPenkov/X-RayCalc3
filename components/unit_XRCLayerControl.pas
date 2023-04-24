@@ -142,9 +142,9 @@ begin
 
 
   Name.Caption    := FData.Material;
-  Thickness.Text  := FloatToStrF(FData.H, ffFixed, 4, 2);
-  Sigma.Text      := FloatToStrF(FData.s, ffFixed, 4, 2);
-  Rho.Text        := FloatToStrF(FData.r, ffFixed, 4, 2);
+  Thickness.Text  := FloatToStrF(FData.H.V, ffFixed, 4, 2);
+  Sigma.Text      := FloatToStrF(FData.s.V, ffFixed, 4, 2);
+  Rho.Text        := FloatToStrF(FData.r.V, ffFixed, 4, 2);
 
   FLinked := nil;
 
@@ -234,9 +234,9 @@ procedure TXRCLayerControl.SetLayerData(const Value: TLayerData);
 begin
   FData := Value;
 
-  Thickness.Value := FData.H;
-  Sigma.Value     := FData.s;
-  Rho.Value       := FData.r;
+  Thickness.Value := FData.H.V;
+  Sigma.Value     := FData.s.V;
+  Rho.Value       := FData.r.V;
 end;
 
 procedure TXRCLayerControl.SetLinked(const Value: TXRCLayerControl);
@@ -269,9 +269,9 @@ begin
   end;
 
    case (Sender as TRzSpinEdit).Tag of
-     1: FData.H := (Sender as TRzSpinEdit).Value;
-     2: FData.s := (Sender as TRzSpinEdit).Value;
-     3: FData.r := (Sender as TRzSpinEdit).Value;
+     1: FData.H.V := (Sender as TRzSpinEdit).Value;
+     2: FData.s.V := (Sender as TRzSpinEdit).Value;
+     3: FData.r.V := (Sender as TRzSpinEdit).Value;
    end;
 
   FOnSet := FOnSetOld;

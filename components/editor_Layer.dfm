@@ -3,8 +3,8 @@ object edtrLayer: TedtrLayer
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Layer properties'
-  ClientHeight = 115
-  ClientWidth = 358
+  ClientHeight = 103
+  ClientWidth = 350
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,14 +18,12 @@ object edtrLayer: TedtrLayer
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 352
-    Height = 62
+    Width = 344
+    Height = 50
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 344
-    ExplicitHeight = 50
     object Label1: TLabel
       Left = 9
       Top = 10
@@ -114,15 +112,13 @@ object edtrLayer: TedtrLayer
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 71
-    Width = 352
+    Top = 59
+    Width = 344
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 59
-    ExplicitWidth = 344
     object btnOK: TRzBitBtn
       Left = 201
       Top = 10
