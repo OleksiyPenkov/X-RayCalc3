@@ -14,7 +14,7 @@ uses
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
-  unit_materials, VCLTee.TeeFunci, unit_LFPSO;
+  unit_materials, VCLTee.TeeFunci, unit_LFPSO, Vcl.Buttons;
 
 type
   TSeriesList = array of TLineSeries;
@@ -215,14 +215,15 @@ type
     edFIter: TEdit;
     edFPopulation: TEdit;
     Label8: TLabel;
-    edFdH: TEdit;
+    edFVmax: TEdit;
+    Label16: TLabel;
+    BitBtn1: TBitBtn;
     Label13: TLabel;
+    edFdH: TEdit;
     edFdS: TEdit;
     Label14: TLabel;
     edFdRho: TEdit;
     Label15: TLabel;
-    edFVmax: TEdit;
-    Label16: TLabel;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -263,6 +264,7 @@ type
     procedure pmiEnabledClick(Sender: TObject);
     procedure Properties1Click(Sender: TObject);
     procedure actAutoFittingExecute(Sender: TObject);
+    procedure BitBtn1Click(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -287,6 +289,8 @@ type
     FThicknessSeries: TSeriesList ;
     FRoughnessSeries: TSeriesList ;
     FDensitySeries: TSeriesList ;
+
+    FFitStructure: TFitPeriodicStructure;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -331,7 +335,7 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack, editor_Layer, unit_FitHelpers;
+  editor_Stack, editor_Layer, unit_FitHelpers, frm_Limits;
 
 {$R *.dfm}
 
@@ -628,6 +632,14 @@ procedure TfrmMain.Auto1Click(Sender: TObject);
 begin
   AutoMerge(FSeriesList[FActiveData.CurveID]);
   SeriesToFile(FSeriesList[FActiveData.CurveID], DataName(FActiveData));
+end;
+
+procedure TfrmMain.BitBtn1Click(Sender: TObject);
+begin
+  if not FFitStructure.LimitsSet  then
+    FFitStructure := Structure.ToFitStructure;
+
+  frmLimits.Show(FFitStructure);
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);
@@ -1018,7 +1030,12 @@ begin
       LFPSO := TLFPSO_Periodic.Create;
       LFPSO.Params := GetFitParams;
       LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := Structure.ToFitStructure;
+
+      if FFitStructure.LimitsSet then
+        LFPSO.Structure := FFitStructure
+      else
+        LFPSO.Structure := Structure.ToFitStructure;
+
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 

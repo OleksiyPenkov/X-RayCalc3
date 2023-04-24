@@ -342,6 +342,7 @@ begin
   begin
     Result.Stacks[i].ID := Stacks[i].ID;
     Result.Stacks[i].N := Stacks[i].N;
+    Result.Stacks[i].Header := Stacks[i].Title;
 
     SetLength(Result.Stacks[i].Layers, Length(Stacks[i].Layers));
 
@@ -360,8 +361,17 @@ begin
     begin
       Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
       Result.Stacks[i].Layers[j].H.V := Stacks[i].Layers[j].H;
+      Result.Stacks[i].Layers[j].H.min := Stacks[i].Layers[j].H;
+      Result.Stacks[i].Layers[j].H.max := Stacks[i].Layers[j].H;
+
       Result.Stacks[i].Layers[j].s.V := Stacks[i].Layers[j].s;
+      Result.Stacks[i].Layers[j].s.min := Stacks[i].Layers[j].s;
+      Result.Stacks[i].Layers[j].s.max := Stacks[i].Layers[j].s;
+
       Result.Stacks[i].Layers[j].r.V := Stacks[i].Layers[j].r;
+      Result.Stacks[i].Layers[j].r.min := Stacks[i].Layers[j].r;
+      Result.Stacks[i].Layers[j].r.max := Stacks[i].Layers[j].r;
+
     end;
     Result.Stacks[i].D := D;
   end;

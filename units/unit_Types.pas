@@ -156,12 +156,14 @@ type
     ID: integer;
     N: integer;
     D: single;
+    Header: string;
     Layers: array of TFitLayer;
   end;
 
   TFitPeriodicStructure = record
     Stacks: array of TFitStack;
     Subs: TFitLayer;
+    LimitsSet: boolean;
     function Total: integer;
   end;
 

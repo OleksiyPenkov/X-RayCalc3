@@ -92,8 +92,8 @@ begin
   Result := 0;
   for I := 0 to High(FData) do
   begin
-    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
-//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r))/ sqrt(FData[i].t);
+//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
+    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r))/ sqrt(FData[i].t);
     Result := Result + Chi;
   end;
 

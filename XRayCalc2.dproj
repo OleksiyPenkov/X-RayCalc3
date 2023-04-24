@@ -108,7 +108,7 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-RayCalc2\test_data\bilayer_model_for_fit.xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-RayCalc2\test_data\MLx4_model_1.xrcx&quot; -a</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -161,6 +161,10 @@
         </DCCReference>
         <DCCReference Include="math\unit_FitHelpers.pas"/>
         <DCCReference Include="math\unit_LFPSO.pas"/>
+        <DCCReference Include="forms\frm_Limits.pas">
+            <Form>frmLimits</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -188,6 +192,12 @@
             </Delphi.Personality>
             <Deployment Version="4">
                 <DeployFile LocalName="OUT\BIN\XRayCalc2.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>XRayCalc2.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="OUT\BIN\XRayCalc2.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>XRayCalc2.exe</RemoteName>
                         <Overwrite>true</Overwrite>

@@ -21,7 +21,8 @@ uses
   unit_XRCProjectTree in 'components\unit_XRCProjectTree.pas',
   editor_Layer in 'components\editor_Layer.pas' {edtrLayer},
   unit_FitHelpers in 'math\unit_FitHelpers.pas',
-  unit_LFPSO in 'math\unit_LFPSO.pas';
+  unit_LFPSO in 'math\unit_LFPSO.pas',
+  frm_Limits in 'forms\frm_Limits.pas' {frmLimits};
 
 {$R *.res}
 
@@ -32,5 +33,6 @@ begin
   Application.CreateForm(TedtrStack, edtrStack);
   Application.CreateForm(TedtrSubstrate, edtrSubstrate);
   Application.CreateForm(TedtrLayer, edtrLayer);
+  Application.CreateForm(TfrmLimits, frmLimits);
   Application.Run;
 end.

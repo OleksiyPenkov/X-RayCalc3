@@ -523,27 +523,30 @@ begin
       FStructure.Stacks[i].D := D;
     end;
 
-    for j := 0 to High(FStructure.Stacks[i].Layers) do
+    if not FStructure.LimitsSet then
     begin
-      if FStructure.Stacks[i].N > 1 then
+      for j := 0 to High(FStructure.Stacks[i].Layers) do
       begin
-        FStructure.Stacks[i].Layers[j].H.Init(FStructure.Stacks[i].Layers[j].H.V - FParams.dH * D,
-                                              FStructure.Stacks[i].Layers[j].H.V + FParams.dH * D);
+        if FStructure.Stacks[i].N > 1 then
+        begin
+          FStructure.Stacks[i].Layers[j].H.Init(FStructure.Stacks[i].Layers[j].H.V - FParams.dH * D,
+                                                FStructure.Stacks[i].Layers[j].H.V + FParams.dH * D);
 
-        if FStructure.Stacks[i].Layers[j].H.min < 0.5 then
-          FStructure.Stacks[i].Layers[j].H.min := 0.5;
-      end
-      else
-        FStructure.Stacks[i].Layers[j].H.Init(FParams.dH);
+          if FStructure.Stacks[i].Layers[j].H.min < 0.5 then
+            FStructure.Stacks[i].Layers[j].H.min := 0.5;
+        end
+        else
+          FStructure.Stacks[i].Layers[j].H.Init(FParams.dH);
 
-      if FParams.dS = 0 then
-        FStructure.Stacks[i].Layers[j].s.Init(2, 6)
-      else
-        FStructure.Stacks[i].Layers[j].s.Init(FParams.dS);
+        if FParams.dS = 0 then
+          FStructure.Stacks[i].Layers[j].s.Init(2, 6)
+        else
+          FStructure.Stacks[i].Layers[j].s.Init(FParams.dS);
 
-      FStructure.Stacks[i].Layers[j].r.Init(FParams.dRho);
+        FStructure.Stacks[i].Layers[j].r.Init(FParams.dRho);
+      end;
+      FStructure.Stacks[i].D := D;
     end;
-    FStructure.Stacks[i].D := D;
   end;
 
   Index := 0;
