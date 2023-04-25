@@ -189,7 +189,7 @@ object frmLimits: TfrmLimits
       Left = 476
       Top = 8
       ModalResult = 1
-      Caption = 'Save'
+      Caption = 'Set'
       TabOrder = 0
     end
     object RzBitBtn2: TRzBitBtn

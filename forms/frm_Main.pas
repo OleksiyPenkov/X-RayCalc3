@@ -215,9 +215,20 @@ type
     edFIter: TEdit;
     edFPopulation: TEdit;
     Label8: TLabel;
+    btnSetFitLimits: TBitBtn;
+    RzGroupBox1: TRzGroupBox;
+    cbLFPSOShake: TRzCheckBox;
     edFVmax: TEdit;
     Label16: TLabel;
-    btnSetFitLimits: TBitBtn;
+    edLFPSOChiFactor: TEdit;
+    Label13: TLabel;
+    edLFPSOkVmax: TEdit;
+    Label14: TLabel;
+    edLFPSOSkip: TEdit;
+    Label15: TLabel;
+    edLFPSORImax: TEdit;
+    Label17: TLabel;
+    spChiBest: TRzStatusPane;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -383,6 +394,7 @@ begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   Series1.AddXY(msg_prm.Step, msg_prm.BestChi);
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
+  spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
   if Length(msg_prm.Curve) > 1 then
      PlotResults(msg_prm.Curve);
   Dispose(msg_prm);
@@ -740,8 +752,13 @@ function TfrmMain.GetFitParams: TFitParams;
 begin
   Result.NMax := StrToInt(edFIter.Text);
   Result.Pop  := StrToInt(edFPopulation.Text);
-
   Result.Vmax  := StrToFloat(edFVmax.Text);
+  Result.JammingMax := StrToInt(edLFPSOSkip.Text);
+  Result.ReInitMax  := StrToInt(edLFPSORImax.Text);
+  Result.KChiSqr    := StrToFloat(edLFPSOChiFactor.Text);
+  Result.KVmax      := StrToFloat(edLFPSOkVmax.Text);
+
+  Result.Shake  := cbLFPSOShake.Checked;
 end;
 
 procedure TfrmMain.GetThreadParams(var CD: TThreadParams);
@@ -995,14 +1012,8 @@ begin
 
   if (FActiveModel = nil) then
     Exit;
-  GetThreadParams(CD);
-  try
-    Calc := TCalc.Create;
 
-    if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
-       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
-    else
-      Exit;
+  try
 
     FitStructure := Structure.ToFitStructure;
 
@@ -1015,6 +1026,13 @@ begin
       Series1.Clear;
       Pages.ActivePage := tsFittingProgress;
 
+      Calc := TCalc.Create;
+      if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+         Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
+      else
+        Exit;
+
+      GetThreadParams(CD);
 
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
@@ -1026,7 +1044,7 @@ begin
       LFPSO := TLFPSO_Periodic.Create;
       LFPSO.Params := GetFitParams;
       LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := Structure.ToFitStructure;
+      LFPSO.Structure := FitStructure;
 
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
@@ -1035,7 +1053,7 @@ begin
       Calc.Run;
       Calc.CalcChiSquare;
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-      Structure.FromFitStructure(LFPSO.Result);
+      Structure.StoreFitLimits(LFPSO.Structure);
     except
       on E: exception do
       begin

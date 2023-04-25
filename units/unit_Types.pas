@@ -69,8 +69,13 @@ type
   TFitParams = record
     NMax: integer;
      Pop: integer;
-    dH, dS, dRho: single;
-            Vmax: single;
+    Vmax: single;
+    JammingMax: integer;
+     ReInitMax: integer;
+       KChiSqr: single;
+       KVmax  : single;
+
+     Shake : boolean;
   end;
 
   // Calculation data types

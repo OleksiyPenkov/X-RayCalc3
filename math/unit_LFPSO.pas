@@ -12,6 +12,7 @@ type
 
   PUpdateFitProgressMsg = ^TUpdateFitProgressMsg ;
   TUpdateFitProgressMsg  = record
+    LastChi : single;
     BestChi : single;
     Step    : integer;
     Curve   : TDataArray;
@@ -63,7 +64,7 @@ type
 
       function GetStructure: TFitPeriodicStructure;
       procedure SetStructure(const Inp: TFitPeriodicStructure);
-      function FindTheBest: integer;
+      procedure FindTheBest;
       procedure UpdatePSO(const t: integer);
       function GetResult: TLayeredModel;
       function GBestStructure(best: TSolution): TFitPeriodicStructure;
@@ -72,6 +73,7 @@ type
       procedure CheckLimits(const i, j, k: integer); inline;
       procedure SetParams(const Value: TFitParams);
       procedure ReInit(const Step: integer); inline;
+      procedure CopySolution(const Source: TSolution; var Dest: TSolution);
     public
       constructor Create;
       destructor Destroy; override;
@@ -157,7 +159,7 @@ end;
 
 function Omega(const t, TMax: integer): single;
 begin
-  Result := 0.1 + 0.9 * (1 - t / Tmax);
+  Result := 0.05 + 0.05 * (1 - t / Tmax);
 end;
 
 function RS: integer;
@@ -187,20 +189,25 @@ end;
 
 function TLFPSO_Periodic.GetStructure: TFitPeriodicStructure;
 begin
-
+  Result := GBestStructure(abest);
 end;
 
 procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
 begin
-  MultiplyVector(Xrange, FParams.Vmax, Vmax);
+  MultiplyVector(Xmax, FParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(V[i][j]) do // for every layer
         V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
+end;
+
+procedure TLFPSO_Periodic.CopySolution(const Source: TSolution; var Dest: TSolution);
+begin
+  Dest := Source;
 end;
 
 procedure TLFPSO_Periodic.CheckLimits(const i, j, k: integer);
@@ -315,9 +322,9 @@ begin
   end;
 end;
 
-function TLFPSO_Periodic.FindTheBest: integer;
+procedure TLFPSO_Periodic.FindTheBest;
 var
-  i: integer;
+  i, Result: integer;
   Calc: TCalc;
 begin
   FLastBestChiSqr  := 1e12;
@@ -349,12 +356,12 @@ begin
       end;
     end;
 
-    pbest := X[Result];
+    CopySolution(X[Result], pbest);
 
     if FLastBestChiSqr <  FGlobalBestChiSqr then
     begin
       FGlobalBestChiSqr := FLastBestChiSqr;
-      gbest := X[Result];
+      CopySolution(X[Result], gbest);
     end
     else begin
       SetLength(FResultingCurve, 0);
@@ -364,7 +371,7 @@ begin
     if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-      abest := X[Result];
+      CopySolution(X[Result], abest);
     end;
 
 end;
@@ -385,10 +392,10 @@ procedure TLFPSO_Periodic.Run;
 var
   t: integer;
   switch: double;
-  GlobalRizeCount, ReInitCount: integer;
-  Best: integer;
+  ReInitCount: integer;
+  Vmax0: single;
 begin
-  GlobalRizeCount := 0;
+  Vmax0 := FParams.Vmax ;
   ReInitCount := 0;
   FGlobalBestChiSqr:= 1e12;
   FAbsoluteBestChiSqr := 1e12;
@@ -406,23 +413,24 @@ begin
 
     FindTheBest;
     SendUpdateMessage(t);
-    if FGlobalBestChiSqr < 0.0001 then Break;
+    if FGlobalBestChiSqr < 0.0005 then Break;
 
-    if FJammingCount > 2 then
+    if FParams.Shake and (FJammingCount > FParams.JammingMax) then
     begin
-      if ReInitCount > 2 then
+      if ReInitCount > FParams.ReInitMax then
       begin
         ReInitCount := 0;
         SetStructure(GBestStructure(abest));
-        gbest := abest;
+        CopySolution(abest, gbest);
         FGlobalBestChiSqr := FAbsoluteBestChiSqr;
+        FParams.Vmax := Vmax0;
       end
       else
       begin
         SetStructure(GBestStructure(gbest));
-        FGlobalBestChiSqr := FGlobalBestChiSqr  * 2;
+        FGlobalBestChiSqr := FGlobalBestChiSqr  * FParams.KChiSqr;
+        FParams.Vmax := FParams.Vmax * FParams.KVmax;
       end;
-
       ReInit(t);
       Inc(ReInitCount);
       FJammingCount := 0;
@@ -451,7 +459,8 @@ var
   msg_prm: PUpdateFitProgressMsg;
 begin
   New(msg_prm);
-  msg_prm.BestChi := FGlobalBestChiSqr;
+  msg_prm.LastChi := FGlobalBestChiSqr;
+  msg_prm.BestChi := FAbsoluteBestChiSqr;
   msg_prm.Step := Step;
   msg_prm.Curve := FResultingCurve;
 
