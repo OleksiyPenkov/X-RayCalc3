@@ -30,7 +30,6 @@ type
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
-      procedure Clean;
       function GetSelected: Integer;
       procedure UpdateGUI;
       function GetFitLimits: string;
@@ -58,6 +57,7 @@ type
       function ToFitStructure: TFitPeriodicStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
       procedure StoreFitLimits(const Inp: TFitPeriodicStructure);
+      procedure Clear;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -118,14 +118,12 @@ procedure TXRCStructure.AddSubstrate(const Material: string; s,
   rho: single);
 begin
   Substrate := TXRCStack.Create(Box, 'Substrate', 1);
-  Substrate.Top  := 0;
-  Substrate.Left := 0;
   Substrate.Width := ClientWidth;
 
   Substrate.AddSubstrate(Material, s, rho);
 end;
 
-procedure TXRCStructure.Clean;
+procedure TXRCStructure.Clear;
 var
   i: Integer;
 begin
@@ -515,7 +513,7 @@ var
 
 begin
   Visible := False;
-  Clean;
+  Clear;
 
   p := pos('}}', s);
   ts := copy(S, 1, p + 1);

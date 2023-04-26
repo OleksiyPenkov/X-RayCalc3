@@ -94,6 +94,8 @@ begin
   lblLayers.Caption   := '';
 
   FSubstrate := True;
+  lblLayers.Top := 1;
+  FLayers[0].Top := ClientHeight - 10;
 end;
 
 procedure TXRCStack.ClearLayers;

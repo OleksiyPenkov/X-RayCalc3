@@ -785,8 +785,6 @@ begin
   end;
 end;
 
-
-
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
 begin
   FActiveModel.Data := Structure.ToString;
@@ -1405,6 +1403,7 @@ end;
 
 procedure TfrmMain.FileNewExecute(Sender: TObject);
 begin
+  Structure.Clear;
   CreateDefaultProject;
 end;
 
@@ -1539,6 +1538,7 @@ begin
 
   Chart.SeriesList.Clear;
   Project.Clear;
+  Structure.AddSubstrate('SiO2', 5, 2.2);
 
   FLastID := 1;
   FProjectName := 'noname.xrcx';
@@ -1556,18 +1556,7 @@ begin
   FModelsRoot := PG;
 
   // добавляем модель
-//  PL := Project.AddChild(PG, Nil);
-//  FActiveModel := Project.GetNodeData(PL);
-//  FActiveModel.ID := FLastID;
-//  inc(FLastID);
-//  FActiveModel.Title := 'Model 1';
-//  FActiveModel.Group := gtModel;
-//  FActiveModel.RowType := prItem;
-//
-//  AddCurve(FActiveModel);
-   CreateNewModel(FModelsRoot);
-
-//  Tree.SaveToFile(ModelName(PD)); // сохраняем модель
+  CreateNewModel(FModelsRoot);
   Project.Expanded[PG] := True;
 
   // данные
@@ -1579,7 +1568,6 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
-  Structure.AddSubstrate('SiO2', 5, 2.2);
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
