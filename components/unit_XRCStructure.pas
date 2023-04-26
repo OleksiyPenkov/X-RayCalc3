@@ -32,12 +32,15 @@ type
 
       FFitLimitsStr: string;
 
+      FClipBoardLayers: TLayersData;
+
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelected: Integer;
       procedure UpdateGUI;
       function GetFitLimits: string;
       procedure SetFitLimits(const Value: string);
+      procedure ClearSelection(const Reset:boolean = False); inline;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
@@ -64,6 +67,8 @@ type
       procedure FromFitStructure(const Inp: TLayeredModel);
       procedure StoreFitLimits(const Inp: TFitPeriodicStructure);
       procedure Clear;
+      procedure CopyLayer(const Reset: boolean);
+      procedure PasteLayer;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -138,6 +143,26 @@ begin
   Finalize(Stacks);
 
   Substrate.Free;
+end;
+
+procedure TXRCStructure.ClearSelection;
+var
+  i: integer;
+begin
+  for I := 0 to High(Stacks) do
+    Stacks[i].ClearSelection;
+
+  if Reset then
+  begin
+    FSelectedLayerParent := -1;
+    FSelectedLayer := -1;
+  end;
+end;
+
+procedure TXRCStructure.CopyLayer;
+begin
+  FClipBoardLayers[0] := Stacks[FSelectedLayerParent].Layers[FSelectedLayer];
+  ClearSelection(Reset);
 end;
 
 constructor TXRCStructure.Create(AOwner: TComponent);
@@ -247,6 +272,7 @@ begin
   FSelectedStack := -1;
   FSelectedLayerParent := -1;
   FSelectedLayer := -1;
+  SetLength(FClipBoardLayers, 1);
 end;
 
 procedure TXRCStructure.DeleteLayer;
@@ -332,6 +358,15 @@ begin
   Result.AddSubstrate(Substrate.Layers);
 end;
 
+procedure TXRCStructure.PasteLayer;
+begin
+  if FSelectedStack <> -1 then
+       Stacks[FSelectedStack].AddLayer(FClipBoardLayers[0])
+  else
+    if FSelectedLayerParent <> -1 then
+        Stacks[FSelectedLayerParent].AddLayer(FClipBoardLayers[0])
+end;
+
 procedure TXRCStructure.Select(const ID: Integer);
 var
   i: Integer;
@@ -353,8 +388,7 @@ procedure TXRCStructure.SelectLayer(const StackID, LayerID: Integer);
 var
   i: integer;
 begin
-  for I := 0 to High(Stacks) do
-    Stacks[i].ClearSelection;
+  ClearSelection;
 
   if (StackID <> FSelectedLayerParent) and (LayerID <> FSelectedLayer) then
   begin

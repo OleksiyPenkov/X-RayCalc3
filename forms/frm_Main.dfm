@@ -1427,9 +1427,9 @@ object frmMain: TfrmMain
           rzspcr1
           btnLayerAdd
           btnLayerInsert
-          btnLayerCopy
-          btnLayerPaste
+          btnCopyLayer
           btnLayerCut
+          btnLayerPaste
           RzSpacer3
           btnLayerDelete)
         object btnPeriodAdd: TRzToolButton
@@ -1473,15 +1473,8 @@ object frmMain: TfrmMain
           ParentShowHint = False
           ShowHint = True
         end
-        object btnLayerCopy: TRzToolButton
-          Left = 137
-          Top = 2
-          Action = LayerCopy
-          ParentShowHint = False
-          ShowHint = True
-        end
         object btnLayerPaste: TRzToolButton
-          Left = 162
+          Left = 187
           Top = 2
           Hint = 'Paste layer'
           Action = LayerPaste
@@ -1497,7 +1490,7 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnLayerCut: TRzToolButton
-          Left = 187
+          Left = 162
           Top = 2
           Hint = 'Cut layer'
           Action = LayerCut
@@ -1507,6 +1500,11 @@ object frmMain: TfrmMain
         object RzSpacer3: TRzSpacer
           Left = 212
           Top = 2
+        end
+        object btnCopyLayer: TRzToolButton
+          Left = 137
+          Top = 2
+          Action = actLayerCopy
         end
       end
       object RzPanel2: TRzPanel
@@ -1719,13 +1717,6 @@ object frmMain: TfrmMain
       end
       item
         Items = <
-          item
-            Action = LayerCopy
-            Caption = '&Copy'
-            ImageIndex = 11
-            ShortCut = 24643
-            CommandProperties.ButtonSize = bsLarge
-          end
           item
             Action = LayerCut
             Caption = 'C&ut'
@@ -2039,12 +2030,6 @@ object frmMain: TfrmMain
           end
           item
             Caption = '-'
-          end
-          item
-            Action = LayerCopy
-            Caption = '&Copy'
-            ImageIndex = 11
-            ShortCut = 24643
           end
           item
             Items = <
@@ -2473,11 +2458,12 @@ object frmMain: TfrmMain
       ImageIndex = 29
       OnExecute = PeriodDeleteExecute
     end
-    object LayerCopy: TAction
+    object actLayerCopy: TAction
       Category = 'Layer'
       Caption = 'Copy'
-      ImageIndex = 11
-      ShortCut = 24643
+      Hint = 'Copy Layer'
+      ImageIndex = 6
+      OnExecute = actLayerCopyExecute
     end
     object LayerCut: TAction
       Category = 'Layer'

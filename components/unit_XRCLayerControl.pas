@@ -256,7 +256,6 @@ begin
   FLinked := Value;
 end;
 
-
 procedure TXRCLayerControl.SetSlected(const Value: boolean);
 begin
   FSelected := Value;

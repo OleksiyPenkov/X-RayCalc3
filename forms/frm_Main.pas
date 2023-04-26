@@ -50,7 +50,6 @@ type
     PeriodAdd: TAction;
     PeriodInsert: TAction;
     PeriodDelete: TAction;
-    LayerCopy: TAction;
     LayerCut: TAction;
     LayerPaste: TAction;
     LayerPasteBefore: TAction;
@@ -137,7 +136,6 @@ type
     rzspcr1: TRzSpacer;
     btnLayerAdd: TRzToolButton;
     btnLayerInsert: TRzToolButton;
-    btnLayerCopy: TRzToolButton;
     btnLayerPaste: TRzToolButton;
     btnLayerDelete: TRzToolButton;
     btnLayerCut: TRzToolButton;
@@ -233,6 +231,8 @@ type
     RzSpacer3: TRzSpacer;
     BtnFastForward: TRzToolButton;
     BtnCancel: TRzToolButton;
+    btnCopyLayer: TRzToolButton;
+    actLayerCopy: TAction;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -281,6 +281,7 @@ type
     procedure ProjectItemCopyExecute(Sender: TObject);
     procedure ProjectItemExtensionExecute(Sender: TObject);
     procedure FilePrintExecute(Sender: TObject);
+    procedure actLayerCopyExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -789,6 +790,11 @@ end;
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
 begin
   FActiveModel.Data := Structure.ToString;
+end;
+
+procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
+begin
+  Structure.CopyLayer(True);
 end;
 
 procedure TfrmMain.AddCurve(var Data: PProjectData);
@@ -1367,6 +1373,8 @@ end;
 
 procedure TfrmMain.LayerCutExecute(Sender: TObject);
 begin
+  Structure.CopyLayer(False);
+  Structure.DeleteLayer;
   FActiveModel.Data := Structure.ToString;
 end;
 
@@ -1383,6 +1391,7 @@ end;
 
 procedure TfrmMain.LayerPasteExecute(Sender: TObject);
 begin
+  Structure.PasteLayer;
   FActiveModel.Data := Structure.ToString;
 end;
 
@@ -1640,7 +1649,6 @@ begin
   LayerID := Msg.WParam;
   ID := Msg.LParam;
   Structure.SelectLayer(LayerID, ID);
-  LayerInsert.Enabled := (ID > 0);
 end;
 
 procedure TfrmMain.WMStackClick(var Msg: TMessage);
@@ -1649,7 +1657,6 @@ var
 begin
   ID := Msg.WParam;
   Structure.Select(ID);
-  PeriodInsert.Enabled := (ID > 0);
 end;
 
 //procedure TfrmMain.WMStackDblClick(var Msg: TMessage);
