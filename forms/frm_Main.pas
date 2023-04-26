@@ -93,7 +93,6 @@ type
     actShowLibrary: TAction;
     actAutoFitting: TAction;
     il_16: TImageList;
-    il_32: TImageList;
     Project1: TMenuItem;
     Project2: TMenuItem;
     Calc1: TMenuItem;
@@ -229,6 +228,7 @@ type
     edLFPSORImax: TEdit;
     Label17: TLabel;
     spChiBest: TRzStatusPane;
+    dlgPrint: TPrintDialog;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -270,6 +270,14 @@ type
     procedure Properties1Click(Sender: TObject);
     procedure actAutoFittingExecute(Sender: TObject);
     procedure btnSetFitLimitsClick(Sender: TObject);
+    procedure ProjectAddFolderExecute(Sender: TObject);
+    procedure ModelCreateExecute(Sender: TObject);
+    procedure FileNewExecute(Sender: TObject);
+    procedure ModelProperitesExecute(Sender: TObject);
+    procedure ProjectItemDeleteExecute(Sender: TObject);
+    procedure ProjectItemCopyExecute(Sender: TObject);
+    procedure ProjectItemExtensionExecute(Sender: TObject);
+    procedure FilePrintExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -314,6 +322,7 @@ type
     procedure PlotDistributions(Model: TLayeredModel);
     procedure PrepareDistributionCharts;
     function GetFitParams: TFitParams;
+    procedure EditProjectItem;
     { Private declarations }
   public
     { Public declarations }
@@ -337,7 +346,7 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack, editor_Layer, unit_FitHelpers, frm_Limits;
+  editor_Stack, editor_Layer, unit_FitHelpers, frm_Limits, editor_proj_item;
 
 {$R *.dfm}
 
@@ -380,9 +389,31 @@ begin
 //  end;
 end;
 
+procedure TfrmMain.ModelCreateExecute(Sender: TObject);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+  Node := Project.GetFirstSelected;
+  if Node = nil then Node := Project.GetFirst;
+
+  Data := Project.GetNodeData(Node);
+  if (Data.RowType = prFolder) and (Data.Group = gtModel) then
+    Node := Project.AddChild(Node)
+  else
+    Node := Project.AddChild(FModelsRoot);
+
+//  CreateNewModel(Node);
+end;
+
 function TfrmMain.ModelName(Data: PProjectData): string;
 begin
   Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
+end;
+
+procedure TfrmMain.ModelProperitesExecute(Sender: TObject);
+begin
+  EditProjectItem;
 end;
 
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
@@ -470,6 +501,43 @@ begin
 //  EditProjectItem;
 end;
 
+procedure TfrmMain.ProjectAddFolderExecute(Sender: TObject);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  PD: PProjectData;
+
+  s: string;
+begin
+  s := 'Folder';
+  if not InputQuery('New folder', 'Input folder title', s) or (s = '') then
+    Exit;
+
+  Node := Project.GetFirstSelected;
+  if Node = nil then
+    Node := FModelsRoot;
+
+  PD := Project.GetNodeData(Node);
+  if PD.RowType <> prGroup then
+  begin
+    case PD.Group of
+      gtModel:
+        Node := Project.AddChild(FModelsRoot);
+      gtData:
+        Node := Project.AddChild(FDataRoot);
+    end;
+  end
+  else
+    Node := Project.AddChild(Node);
+  Data := Project.GetNodeData(Node);
+  Data.ID := 0;
+  Data.Title := s;
+  Data.Group := PD.Group;
+  Data.RowType := prFolder;
+  Project.ClearSelection;
+  Project.Selected[Node] := True;
+end;
+
 procedure TfrmMain.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
   TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
   CellRect: TRect);
@@ -540,9 +608,88 @@ begin
   Project.Repaint;
 end;
 
+procedure TfrmMain.ProjectItemCopyExecute(Sender: TObject);
+var
+  Data: PProjectData;
+begin
+  Data := Project.GetNodeData(Project.GetFirstSelected);
+  if (Data.Group = gtModel) and (Data.RowType = prItem) then
+  begin
+    //Clipboard.AsText := TreeToStr;
+  end;
+  if (Data.Group = gtData) and (Data.RowType = prItem) then
+    //SeriesToClipboard(Data.Curve);
+end;
+
+procedure TfrmMain.ProjectItemDeleteExecute(Sender: TObject);
+begin
+//  if IsModel and IsItem then
+//    DeleteModel(LastNode, LastData);
+//  if IsData and IsItem then
+//    DeleteData(LastNode, LastData);
+//  if IsFolder then
+//    DeleteFolder(LastNode);
+//  if IsExtension then
+//    DeleteExtension(LastNode);
+//  ProjectChange(Tree, Nil);
+end;
+
+procedure TfrmMain.ProjectItemExtensionExecute(Sender: TObject);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+//  if FActiveModel <> nil then
+//    Tree.SaveToFile(ModelName(FActiveModel));
+
+  Node := Project.GetFirstSelected;
+  if Node = nil then Exit;
+
+  Data := Project.GetNodeData(Node);
+  if (Data.RowType = prItem) and (Data.Group = gtModel) then
+    Node := Project.AddChild(Node);
+
+//  CreateNewExtension(Node);
+end;
+
 procedure TfrmMain.Properties1Click(Sender: TObject);
 begin
-//  EditProjectItem;
+  EditProjectItem;
+end;
+
+procedure TfrmMain.EditProjectItem;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+  Node := Project.GetFirstSelected;
+  Data := Project.GetNodeData(Node);
+  case Data.RowType of
+    prFolder:
+      begin
+        Data.Title := InputBox('Folder', 'Edit the folder''s title', Data.Title);
+      end;
+    prItem:
+      begin
+        edtrProjectItem.Data := Data;
+        if edtrProjectItem.ShowModal = mrOk then
+        begin
+          FSeriesList[Data.CurveID].Color := Data.Color;
+          FSeriesList[Data.CurveID].Title := Data.Title;
+          mmDescription.Lines.Text := Data.Description;
+        end;
+      end;
+    prExtension:
+      begin
+//        edtrGradient.Data := Data;
+//        FillExtensionPeriods(edtrGradient.cbPeriod);
+//        if edtrGradient.ShowModal = mrOk then
+//        begin
+//          mmDescription.Lines.Text := Data.Description;
+//        end;
+      end;
+  end;
+
 end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
@@ -1221,12 +1368,28 @@ begin
   PrepareDistributionCharts;
 end;
 
+procedure TfrmMain.FileNewExecute(Sender: TObject);
+begin
+  CreateDefaultProject;
+end;
+
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
 begin
   if dlgOpenProject.Execute then
   begin
     LoadProject(dlgOpenProject.FileName, True);
 //    AddRecentItem(FProjectFileName , True);
+  end;
+end;
+
+procedure TfrmMain.FilePrintExecute(Sender: TObject);
+begin
+  if dlgPrint.Execute then
+  begin
+    Chart.Title.Text.Text := Structure.ToString;
+    Chart.Title.Visible := True;
+    Chart.PrintLandscape;
+    Chart.Title.Visible := False;
   end;
 end;
 

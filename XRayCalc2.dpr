@@ -22,7 +22,8 @@ uses
   editor_Layer in 'components\editor_Layer.pas' {edtrLayer},
   unit_FitHelpers in 'math\unit_FitHelpers.pas',
   unit_LFPSO in 'math\unit_LFPSO.pas',
-  frm_Limits in 'forms\frm_Limits.pas' {frmLimits};
+  frm_Limits in 'forms\frm_Limits.pas' {frmLimits},
+  editor_proj_item in 'editors\editor_proj_item.pas' {edtrProjectItem};
 
 {$R *.res}
 
@@ -34,5 +35,6 @@ begin
   Application.CreateForm(TedtrSubstrate, edtrSubstrate);
   Application.CreateForm(TedtrLayer, edtrLayer);
   Application.CreateForm(TfrmLimits, frmLimits);
+  Application.CreateForm(TedtrProjectItem, edtrProjectItem);
   Application.Run;
 end.

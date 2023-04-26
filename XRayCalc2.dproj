@@ -165,6 +165,10 @@
             <Form>frmLimits</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="editors\editor_proj_item.pas">
+            <Form>edtrProjectItem</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
