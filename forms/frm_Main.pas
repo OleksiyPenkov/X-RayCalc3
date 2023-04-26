@@ -63,7 +63,6 @@ type
     ResultSave: TAction;
     ResultCopy: TAction;
     FileSaveAs: TAction;
-    CalcTest: TAction;
     ProjectAddFolder: TAction;
     CalcAll: TAction;
     ProjectItemDelete: TAction;
@@ -89,7 +88,6 @@ type
     ProjectItemExtension: TAction;
     DataCopyClpbrd: TAction;
     DataExport: TAction;
-    CalcFitting: TAction;
     actShowLibrary: TAction;
     actAutoFitting: TAction;
     il_16: TImageList;
@@ -164,7 +162,6 @@ type
     chRoughness: TChart;
     chDensity: TChart;
     RzSpacer1: TRzSpacer;
-    BtnDown: TRzToolButton;
     RzStatusPane7: TRzStatusPane;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
@@ -229,6 +226,13 @@ type
     Label17: TLabel;
     spChiBest: TRzStatusPane;
     dlgPrint: TPrintDialog;
+    btnNewProject: TRzToolButton;
+    btnOpenProject: TRzToolButton;
+    btnSaveProject: TRzToolButton;
+    btnExtension: TRzToolButton;
+    RzSpacer3: TRzSpacer;
+    BtnFastForward: TRzToolButton;
+    BtnCancel: TRzToolButton;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -264,7 +268,6 @@ type
     procedure DataNormExecute(Sender: TObject);
     procedure pmiLinkedClick(Sender: TObject);
     procedure Auto1Click(Sender: TObject);
-    procedure Manual1Click(Sender: TObject);
     procedure pmiVisibleClick(Sender: TObject);
     procedure pmiEnabledClick(Sender: TObject);
     procedure Properties1Click(Sender: TObject);
@@ -323,6 +326,11 @@ type
     procedure PrepareDistributionCharts;
     function GetFitParams: TFitParams;
     procedure EditProjectItem;
+    procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
+    procedure DeleteData(Node: PVirtualNode; Data: PProjectData);
+    procedure DeleteExtension(Node: PVirtualNode);
+    procedure DeleteFolder(Node: PVirtualNode);
+    procedure CreateNewModel(Node: PVirtualNode);
     { Private declarations }
   public
     { Public declarations }
@@ -373,37 +381,27 @@ begin
   end;
 end;
 
-procedure TfrmMain.Manual1Click(Sender: TObject);
-//var
-//  Form: TedtrManualNorm;
+procedure TfrmMain.CreateNewModel(Node: PVirtualNode);
+var
+  PD: PProjectData;
+  PL: PVirtualNode;
 begin
-//  try
-//    Form := TedtrManualNorm.Create(frmMain);
-//    if Form.ShowModal = mrOk then
-//    begin
-//      ManualMerge(Form.edPos.Value, Form.edK.Value, FActiveData.Curve);
-//      SeriesToFile(FActiveData.Curve, DataName(FActiveData));
-//    end;
-//  finally
-//    Form.Free
-//  end;
+  // добавляем модель
+  PL := Project.AddChild(Node, Nil);
+  FActiveModel := Project.GetNodeData(PL);
+  FActiveModel.ID := FLastID;
+  FActiveModel.Title := 'Model ' + IntToStr(FLastID);
+  FActiveModel.Group := gtModel;
+  FActiveModel.RowType := prItem;
+
+  AddCurve(FActiveModel);
+  Project.Expanded[Node] := True;
+  inc(FLastID);
 end;
 
 procedure TfrmMain.ModelCreateExecute(Sender: TObject);
-var
-  Node: PVirtualNode;
-  Data: PProjectData;
 begin
-  Node := Project.GetFirstSelected;
-  if Node = nil then Node := Project.GetFirst;
-
-  Data := Project.GetNodeData(Node);
-  if (Data.RowType = prFolder) and (Data.Group = gtModel) then
-    Node := Project.AddChild(Node)
-  else
-    Node := Project.AddChild(FModelsRoot);
-
-//  CreateNewModel(Node);
+  CreateNewModel(FModelsRoot);
 end;
 
 function TfrmMain.ModelName(Data: PProjectData): string;
@@ -621,17 +619,50 @@ begin
     //SeriesToClipboard(Data.Curve);
 end;
 
+procedure TfrmMain.DeleteModel(Node: PVirtualNode; Data: PProjectData);
+begin
+  FSeriesList[Data.CurveID].Free;
+//  DeleteFile(ModelName(FActiveModel));
+  Project.DeleteNode(Node);
+  Project.Repaint;
+  FActiveModel := nil;
+//  Tree.Clear;
+end;
+
+procedure TfrmMain.DeleteData(Node: PVirtualNode; Data: PProjectData);
+begin
+  DeleteFile(DataName(Data));
+  FSeriesList[Data.CurveID].Free;
+ //  Data.Curve.Free;
+  Project.DeleteNode(Node);
+  Project.Refresh;
+end;
+
+procedure TfrmMain.DeleteExtension(Node: PVirtualNode);
+begin
+  Project.DeleteNode(Node);
+  Project.Refresh;
+end;
+
+procedure TfrmMain.DeleteFolder(Node: PVirtualNode);
+begin
+  if Node.ChildCount = 0 then
+    Project.DeleteNode(Node)
+  else
+    ShowMessage('The folder is not empty! Can''t delete !');
+end;
+
 procedure TfrmMain.ProjectItemDeleteExecute(Sender: TObject);
 begin
-//  if IsModel and IsItem then
-//    DeleteModel(LastNode, LastData);
-//  if IsData and IsItem then
-//    DeleteData(LastNode, LastData);
-//  if IsFolder then
-//    DeleteFolder(LastNode);
-//  if IsExtension then
-//    DeleteExtension(LastNode);
-//  ProjectChange(Tree, Nil);
+  if IsModel and IsItem then
+    DeleteModel(LastNode, LastData);
+  if IsData and IsItem then
+    DeleteData(LastNode, LastData);
+  if IsFolder then
+    DeleteFolder(LastNode);
+  if IsExtension then
+    DeleteExtension(LastNode);
+  ProjectChange(Project, Nil);
 end;
 
 procedure TfrmMain.ProjectItemExtensionExecute(Sender: TObject);
@@ -771,7 +802,11 @@ begin
   FSeriesList[Count].ParentChart := Chart;
 
   FSeriesList[Count].Title := Data.Title;
-  Data.Color := FSeriesList[Count].Color;
+  if Data.Color <> 0 then
+    FSeriesList[Count].Color := Data.Color
+  else
+    Data.Color := FSeriesList[Count].Color;
+
   FSeriesList[Count].LinePen.Width := 2;
   Data.Visible := True;
   FSeriesList[Count].Visible := Data.Visible;
@@ -1521,15 +1556,16 @@ begin
   FModelsRoot := PG;
 
   // добавляем модель
-  PL := Project.AddChild(PG, Nil);
-  FActiveModel := Project.GetNodeData(PL);
-  FActiveModel.ID := FLastID;
-  inc(FLastID);
-  FActiveModel.Title := 'Model 1';
-  FActiveModel.Group := gtModel;
-  FActiveModel.RowType := prItem;
-
-  AddCurve(FActiveModel);
+//  PL := Project.AddChild(PG, Nil);
+//  FActiveModel := Project.GetNodeData(PL);
+//  FActiveModel.ID := FLastID;
+//  inc(FLastID);
+//  FActiveModel.Title := 'Model 1';
+//  FActiveModel.Group := gtModel;
+//  FActiveModel.RowType := prItem;
+//
+//  AddCurve(FActiveModel);
+   CreateNewModel(FModelsRoot);
 
 //  Tree.SaveToFile(ModelName(PD)); // сохраняем модель
   Project.Expanded[PG] := True;
