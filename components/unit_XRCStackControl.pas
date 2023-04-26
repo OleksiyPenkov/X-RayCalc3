@@ -27,6 +27,7 @@ type
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
+    procedure SetID(const Value: Integer);
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -41,7 +42,7 @@ type
       procedure DeleteLayer(const Index: integer);
 
       property Selected: Boolean write SetSelected;
-      property ID: Integer read FID write FID;
+      property ID: Integer read FID write SetID;
       property N:integer read FN;
       procedure Edit;
       property Layers: TLayersData read GetLayersData;
@@ -187,21 +188,10 @@ end;
 procedure TXRCStack.DeleteLayer(const Index: integer);
 var
   i: integer;
-  Data : TLayerData;
 begin
   FreeAndNil(FLayers[Index]);
-  if Index < High(FLayers) then
-  begin
-    for I := Index to High(FLayers) - 1 do
-    begin
-      Data := FLayers[i + 1].Data;
-      FLayers[I] := FLayers[i + 1];
-      Data.ID := I;
-      FLayers[I].Data := Data;
-    end;
-  end;
-  i := Length(FLayers);
-  SetLength(FLayers, i - 1);
+  Delete(FLayers, Index, 1);
+
   if Length(FLayers) > 0 then
     Height := Height - FLayers[0].Height
   else
@@ -261,6 +251,15 @@ end;
 procedure TXRCStack.Select(const LayerID: integer);
 begin
   FLayers[LayerID].Selected := True;
+end;
+
+procedure TXRCStack.SetID(const Value: Integer);
+var
+  i: integer;
+begin
+  FID := Value;
+  for I := 0 to High(FLayers) do
+    FLayers[i].UpdateID(I, -1);
 end;
 
 procedure TXRCStack.SetIncrement(const Value: Single);

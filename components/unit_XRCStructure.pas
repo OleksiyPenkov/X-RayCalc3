@@ -52,7 +52,7 @@ type
       procedure Select(const ID: Integer);
       procedure SelectLayer(const StackID, LayerID: Integer);
       procedure EditStack(const ID: Integer);
-      procedure DeleteStack(const ID: Integer);
+      procedure DeleteStack;
       procedure DeleteLayer;
 
       function Model: TLayeredModel;
@@ -259,12 +259,18 @@ begin
   end;
 end;
 
-procedure TXRCStructure.DeleteStack(const ID: Integer);
+procedure TXRCStructure.DeleteStack;
+var
+  i: integer;
 begin
-  if ID > -1 then
+  if FSelectedStack > -1 then
   begin
-    Stacks[ID].Free;
-    Delete(Stacks, ID, 1);
+    Stacks[FSelectedStack].Free;
+    Delete(Stacks, FSelectedStack, 1);
+    FSelectedStack := -1;
+
+    for I := 0 to High(Stacks) do
+      Stacks[i].ID := i;
   end;
 end;
 

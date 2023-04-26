@@ -59,6 +59,7 @@ type
 
       procedure IncreaseThickness;
       procedure DecreaseThickness;
+      procedure UpdateID(const StackID, LayerID: integer);
   end;
 
 implementation
@@ -271,6 +272,13 @@ begin
   Thickness.Visible := not FSubstrate;
   FLinkCheckBox.Visible := not FSubstrate;
   Color := clLtGray;
+end;
+
+procedure TXRCLayerControl.UpdateID(const StackID, LayerID: integer);
+begin
+  FData.StackID := StackID;
+  if LayerID <> -1 then
+       FData.ID := LayerID;
 end;
 
 procedure TXRCLayerControl.ValueChange;

@@ -860,7 +860,7 @@ end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
 begin
-  Structure.DeleteStack(Structure.Selected);
+  Structure.DeleteStack;
   FActiveModel.Data := Structure.ToString;
 end;
 
