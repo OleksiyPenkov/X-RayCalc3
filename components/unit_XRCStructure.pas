@@ -90,6 +90,7 @@ procedure TXRCStructure.RealignStacks;
 var
   i, count: Integer;
   top: Integer;
+  MaxHeigh: integer;
 
 begin
   Count := Length(Stacks) - 1;
@@ -98,10 +99,12 @@ begin
   for I := 0 to Count do
     Stacks[i].Align := alNone;
 
+  MaxHeigh := 0;
   for I := 0 to Count do
   begin
-    Stacks[i].Top := i * 80;
+    Stacks[i].Top := MaxHeigh + 5;
     Stacks[i].Align := alTop;
+    MaxHeigh := MaxHeigh + Stacks[i].Height;
   end;
 
   Substrate.Top := ClientHeight - 5;

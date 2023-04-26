@@ -94,7 +94,6 @@ object frmMain: TfrmMain
         ShowHint = True
         StyleName = 'Windows'
         TabOrder = 0
-        ExplicitWidth = 248
         ToolbarControls = (
           btnNewProject
           btnOpenProject
@@ -191,7 +190,6 @@ object frmMain: TfrmMain
         FlatColor = clSkyBlue
         TabOrder = 1
         ExplicitTop = 748
-        ExplicitWidth = 242
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 5
@@ -210,7 +208,6 @@ object frmMain: TfrmMain
           FrameHotStyle = fsNone
           FrameVisible = True
           ReadOnlyColor = clBtnFace
-          ExplicitWidth = 232
         end
       end
     end
@@ -237,12 +234,11 @@ object frmMain: TfrmMain
         TabIndex = 3
         TabOrder = 0
         ExplicitTop = 670
-        ExplicitWidth = 885
+        ExplicitWidth = 872
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitWidth = 885
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -262,7 +258,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
-            ExplicitWidth = 879
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -270,7 +265,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitWidth = 885
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -290,7 +284,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 879
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -298,7 +291,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitWidth = 885
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -318,7 +310,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 879
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -326,7 +317,7 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Fitting Progress'
-          ExplicitWidth = 881
+          ExplicitWidth = 868
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -352,7 +343,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
-            ExplicitWidth = 875
+            ExplicitWidth = 862
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object Series1: TLineSeries
@@ -446,7 +437,7 @@ object frmMain: TfrmMain
         BevelOuter = bvLowered
         Color = clCream
         TabOrder = 1
-        ExplicitWidth = 879
+        ExplicitWidth = 866
         ExplicitHeight = 463
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
@@ -481,7 +472,7 @@ object frmMain: TfrmMain
         FlatColor = clSkyBlue
         TabOrder = 2
         ExplicitTop = 617
-        ExplicitWidth = 879
+        ExplicitWidth = 866
         DesignSize = (
           870
           50)
@@ -687,7 +678,7 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
-          ExplicitLeft = 736
+          ExplicitLeft = 723
         end
         object cbMinLimit: TRzComboBox
           Left = 808
@@ -708,7 +699,7 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
-          ExplicitLeft = 817
+          ExplicitLeft = 804
         end
       end
       object pnl1: TPanel
@@ -719,7 +710,7 @@ object frmMain: TfrmMain
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitWidth = 885
+        ExplicitWidth = 872
         object RzPanel6: TRzPanel
           AlignWithMargins = True
           Left = 459
@@ -731,7 +722,7 @@ object frmMain: TfrmMain
           BorderOuter = fsFlatRounded
           Color = 15987699
           TabOrder = 0
-          ExplicitWidth = 423
+          ExplicitWidth = 410
           object Label7: TLabel
             Left = 9
             Top = 11
@@ -1315,13 +1306,13 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
-        ExplicitWidth = 885
+        ExplicitWidth = 872
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
-          BtnCancel
-          RzSpacer2
           BtnExecute
+          RzSpacer2
+          BtnCancel
           rzspcr4
           btnResultSave
           btnBtnCopy
@@ -1378,7 +1369,7 @@ object frmMain: TfrmMain
           Top = 2
         end
         object BtnExecute: TRzToolButton
-          Left = 87
+          Left = 54
           Top = 2
           DisabledIndex = 41
           Action = actAutoFitting
@@ -1391,7 +1382,7 @@ object frmMain: TfrmMain
           Action = CalcAll
         end
         object BtnCancel: TRzToolButton
-          Left = 54
+          Left = 87
           Top = 2
           DisabledIndex = 54
           Action = CalcStop
