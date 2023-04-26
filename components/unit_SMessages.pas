@@ -13,15 +13,28 @@ const
   WM_STR_STACK_CLICK = WM_STR_BASE + 0;
   WM_STR_STACKDBLCLICK = WM_STR_BASE + 1;
   WM_RECALC = WM_STR_BASE + 2;
+  WM_STR_LAYER_CLICK = WM_STR_BASE + 3;
 
-  procedure StackClick(ID: integer);
-  procedure StackDoubleClick(ID: integer);
+  procedure StackClick(const ID: integer);
+  procedure StackDoubleClick(const ID: integer);
   procedure SendRecalcMessage;
+  procedure LayerClick(const StackID, ID: integer);
 
 implementation
 
 uses
   Forms, SysUtils;
+
+procedure LayerClick(const StackID, ID: integer);
+begin
+  PostMessage(
+    Application.MainFormHandle,
+    WM_STR_LAYER_CLICK ,
+    StackID,
+    ID
+  );
+end;
+
 
 procedure StackClick;
 begin

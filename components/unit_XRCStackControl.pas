@@ -35,9 +35,10 @@ type
       constructor Create(AOwner: TComponent; const Title: string; const N: integer);
       destructor  Destroy; override;
 
-      procedure AddLayer(const Data: TLayerData);
+      procedure AddLayer(Data: TLayerData);
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
+      procedure DeleteLayer(const Index: integer);
 
       property Selected: Boolean write SetSelected;
       property ID: Integer read FID write FID;
@@ -47,6 +48,8 @@ type
       property Increment:Single write SetIncrement;
       property Title: string read FTitle;
       property Materials: TMaterialsList read GetMaterialsList;
+      procedure ClearSelection;
+      procedure Select(const LayerID: integer);
   end;
 
 implementation
@@ -56,12 +59,15 @@ uses
 
 { TXRCStack }
 
-procedure TXRCStack.AddLayer(const Data: TLayerData);
+procedure TXRCStack.AddLayer(Data: TLayerData);
 var
   Count: Integer;
 begin
   Count := Length(FLayers);
   SetLength(FLayers, Count + 1);
+  Data.StackID := FID;
+  Data.ID := Count;
+
 
   FLayers[Count] := TXRCLayerControl.Create(Self, 0, Data);
   FLayers[Count].Parent := Self;
@@ -106,6 +112,14 @@ begin
      FreeAndNil(FLayers[i]);
 
   SetLength(FLayers, 0);
+end;
+
+procedure TXRCStack.ClearSelection;
+var
+  i: integer;
+begin
+  for I := 0 to High(FLayers) do
+    FLayers[i].Selected := False;
 end;
 
 procedure TXRCStack.UpdateInfo;
@@ -170,6 +184,30 @@ begin
   UpdateInfo;
 end;
 
+procedure TXRCStack.DeleteLayer(const Index: integer);
+var
+  i: integer;
+  Data : TLayerData;
+begin
+  FreeAndNil(FLayers[Index]);
+  if Index < High(FLayers) then
+  begin
+    for I := Index to High(FLayers) - 1 do
+    begin
+      Data := FLayers[i + 1].Data;
+      FLayers[I] := FLayers[i + 1];
+      Data.ID := I;
+      FLayers[I].Data := Data;
+    end;
+  end;
+  i := Length(FLayers);
+  SetLength(FLayers, i - 1);
+  if Length(FLayers) > 0 then
+    Height := Height - FLayers[0].Height
+  else
+    Height := 80;
+end;
+
 destructor TXRCStack.Destroy;
 begin
 //  ClearLayers;
@@ -218,6 +256,11 @@ begin
     Result[i].StackID := FID;
     Result[i].LayerID := i + 1;
   end;
+end;
+
+procedure TXRCStack.Select(const LayerID: integer);
+begin
+  FLayers[LayerID].Selected := True;
 end;
 
 procedure TXRCStack.SetIncrement(const Value: Single);

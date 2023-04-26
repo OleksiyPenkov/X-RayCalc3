@@ -22,6 +22,7 @@ type
 
       FLinked : TXRCLayerControl;
       FSubstrate: boolean;
+      FSelected: boolean;
 
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
@@ -34,8 +35,10 @@ type
       function GetLinkChecked: Boolean;
       procedure SetSubstrate(const Value: boolean);
       procedure InternalOnDblClick(Sender: TObject);
+      procedure InternalOnClick(Sender: TObject);
       function AddSpinEdit(const index, Left, Max: integer): TRzSpinEdit;
-    procedure SetLayerData(const Value: TLayerData);
+      procedure SetLayerData(const Value: TLayerData);
+      procedure SetSlected(const Value: boolean);
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
@@ -50,6 +53,7 @@ type
       property Onset: Boolean read FOnSet write FOnSet;
       property CheckBox:TRzCheckBox read GetCheckBox write SetCheckBox;
       property Checked: Boolean read GetLinkChecked;
+      property Selected: boolean read FSelected write SetSlected;
 
       property Data: TLayerData read FData write SetLayerData;
 
@@ -84,7 +88,6 @@ begin
 
   Result.OnChange := ValueChange
 end;
-
 
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
 begin
@@ -150,6 +153,8 @@ begin
 
   Self.OnDblClick := InternalOnDblClick;
   Name.OnDblClick := InternalOnDblClick;
+  Self.OnClick := InternalOnClick;
+  Name.OnClick := InternalOnClick;
 
   FSubstrate := False;
   FOnset := False;
@@ -218,6 +223,12 @@ begin
   Thickness.Value := Thickness.Value + Thickness.Increment;
 end;
 
+procedure TXRCLayerControl.InternalOnClick(Sender: TObject);
+begin
+  if not FSubstrate then
+      LayerClick(FData.StackID, FData.ID);
+end;
+
 procedure TXRCLayerControl.InternalOnDblClick(Sender: TObject);
 begin
   Edit;
@@ -244,6 +255,15 @@ begin
   FLinked := Value;
 end;
 
+
+procedure TXRCLayerControl.SetSlected(const Value: boolean);
+begin
+  FSelected := Value;
+  if FSelected then
+    Name.Font.Color := clRed
+  else
+    Name.Font.Color := clBlack;
+end;
 
 procedure TXRCLayerControl.SetSubstrate(const Value: boolean);
 begin

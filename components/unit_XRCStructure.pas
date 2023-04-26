@@ -23,6 +23,10 @@ type
       Substrate: TXRCStack;
 
       FSelectedStack : Integer;
+
+      FSelectedLayer : Integer;
+      FSelectedLayerParent : Integer;
+
       FIncrement: single;
       FVisibility: boolean;
 
@@ -46,8 +50,10 @@ type
       procedure InsertStack(const N: Integer; const Title: string);
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure Select(const ID: Integer);
+      procedure SelectLayer(const StackID, LayerID: Integer);
       procedure EditStack(const ID: Integer);
       procedure DeleteStack(const ID: Integer);
+      procedure DeleteLayer;
 
       function Model: TLayeredModel;
       function Materials: TMaterialsList;
@@ -239,6 +245,18 @@ begin
   Box.TabOrder := 1;
 
   FSelectedStack := -1;
+  FSelectedLayerParent := -1;
+  FSelectedLayer := -1;
+end;
+
+procedure TXRCStructure.DeleteLayer;
+begin
+  if (FSelectedLayer >= 0) and (FSelectedLayerParent >= 0) then
+  begin
+    Stacks[FSelectedLayerParent].DeleteLayer(FSelectedLayer);
+    FSelectedLayerParent := -1;
+    FSelectedLayer := -1;
+  end;
 end;
 
 procedure TXRCStructure.DeleteStack(const ID: Integer);
@@ -322,6 +340,25 @@ begin
       Stacks[i].Selected := (ID = i);
 
     FSelectedStack := ID;
+  end;
+end;
+
+procedure TXRCStructure.SelectLayer(const StackID, LayerID: Integer);
+var
+  i: integer;
+begin
+  for I := 0 to High(Stacks) do
+    Stacks[i].ClearSelection;
+
+  if (StackID <> FSelectedLayerParent) and (LayerID <> FSelectedLayer) then
+  begin
+    Stacks[StackID].Select(LayerID);
+    FSelectedLayerParent := StackID;
+    FSelectedLayer := LayerID;
+  end
+  else begin
+    FSelectedLayerParent := -1;
+    FSelectedLayer := -1;
   end;
 end;
 

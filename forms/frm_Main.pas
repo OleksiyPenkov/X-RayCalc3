@@ -335,6 +335,7 @@ type
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
+    procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
 //    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
@@ -1358,8 +1359,6 @@ begin
 end;
 
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
-var
-  Data: TLayerData;
 begin
   if edtrLayer.ShowModal = mrOk then
     Structure.AddLayer(Structure.Selected, edtrLayer.Data);
@@ -1373,6 +1372,7 @@ end;
 
 procedure TfrmMain.LayerDeleteExecute(Sender: TObject);
 begin
+  Structure.DeleteLayer;
   FActiveModel.Data := Structure.ToString;
 end;
 
@@ -1530,7 +1530,7 @@ end;
 procedure TfrmMain.CreateDefaultProject;
 var
   PD: PProjectData;
-  PG, PL: PVirtualNode;
+  PG: PVirtualNode;
 begin
   if DirectoryExists(FProjectDir) then
     ClearDir(FProjectDir);
@@ -1631,6 +1631,16 @@ end;
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
 begin
   Structure.Increment := StrToFloat(cbIncrement.Value);
+end;
+
+procedure TfrmMain.WMLayerClick(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.SelectLayer(LayerID, ID);
+  LayerInsert.Enabled := (ID > 0);
 end;
 
 procedure TfrmMain.WMStackClick(var Msg: TMessage);
