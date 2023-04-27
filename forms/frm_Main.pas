@@ -33,9 +33,7 @@ type
     Status: TRzStatusBar;
     LeftSplitter: TRzSplitter;
     RzPanel1: TRzPanel;
-    RzToolbar1: TRzToolbar;
-    btnProjectAddFolder: TRzToolButton;
-    btnModelCreate: TRzToolButton;
+    tlbrFile: TRzToolbar;
     RzPanel5: TRzPanel;
     mmDescription: TRzMemo;
     ActionManager: TActionManager;
@@ -56,7 +54,7 @@ type
     LayerPasteAfter: TAction;
     CalcRun: TAction;
     ModelCreate: TAction;
-    ModelProperites: TAction;
+    actItemProperites: TAction;
     DataLoad: TAction;
     DataPaste: TAction;
     ResultSave: TAction;
@@ -89,7 +87,7 @@ type
     DataExport: TAction;
     actShowLibrary: TAction;
     actAutoFitting: TAction;
-    il_16: TImageList;
+    ilProject: TImageList;
     Project1: TMenuItem;
     Project2: TMenuItem;
     Calc1: TMenuItem;
@@ -99,10 +97,6 @@ type
     Calcall1: TMenuItem;
     Reopen1: TMenuItem;
     Add1: TMenuItem;
-    btnModelProperites: TRzToolButton;
-    btnProjectItemCopy: TRzToolButton;
-    rzspcr2: TRzSpacer;
-    btnProjectItemDelete: TRzToolButton;
     dlgOpenProject: TOpenDialog;
     Zip: TAbZipper;
     UnZip: TAbUnZipper;
@@ -159,7 +153,6 @@ type
     chThickness: TChart;
     chRoughness: TChart;
     chDensity: TChart;
-    RzSpacer1: TRzSpacer;
     RzStatusPane7: TRzStatusPane;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
@@ -224,15 +217,31 @@ type
     Label17: TLabel;
     spChiBest: TRzStatusPane;
     dlgPrint: TPrintDialog;
-    btnNewProject: TRzToolButton;
-    btnOpenProject: TRzToolButton;
-    btnSaveProject: TRzToolButton;
-    btnExtension: TRzToolButton;
     RzSpacer3: TRzSpacer;
     BtnFastForward: TRzToolButton;
     BtnCancel: TRzToolButton;
     btnCopyLayer: TRzToolButton;
     actLayerCopy: TAction;
+    actProjectItemDuplicate: TAction;
+    tlbrProject: TRzToolbar;
+    ilStructure: TImageList;
+    ilCalc: TImageList;
+    BtnNew: TRzToolButton;
+    BtnOpen: TRzToolButton;
+    BtnSave: TRzToolButton;
+    RzSpacer1: TRzSpacer;
+    BtnPrint: TRzToolButton;
+    btnAddModel: TRzToolButton;
+    BtnExport: TRzToolButton;
+    BtnCopy: TRzToolButton;
+    BtnPaste: TRzToolButton;
+    BtnEdit: TRzToolButton;
+    RzSpacer4: TRzSpacer;
+    BtnWordWrap: TRzToolButton;
+    RzSpacer5: TRzSpacer;
+    BtnRecycle: TRzToolButton;
+    actModelCopy: TAction;
+    actModelPaste: TAction;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -267,21 +276,23 @@ type
     procedure LayerPasteExecute(Sender: TObject);
     procedure DataNormExecute(Sender: TObject);
     procedure pmiLinkedClick(Sender: TObject);
-    procedure Auto1Click(Sender: TObject);
     procedure pmiVisibleClick(Sender: TObject);
     procedure pmiEnabledClick(Sender: TObject);
-    procedure Properties1Click(Sender: TObject);
     procedure actAutoFittingExecute(Sender: TObject);
     procedure btnSetFitLimitsClick(Sender: TObject);
     procedure ProjectAddFolderExecute(Sender: TObject);
     procedure ModelCreateExecute(Sender: TObject);
     procedure FileNewExecute(Sender: TObject);
-    procedure ModelProperitesExecute(Sender: TObject);
+    procedure actItemProperitesExecute(Sender: TObject);
     procedure ProjectItemDeleteExecute(Sender: TObject);
     procedure ProjectItemCopyExecute(Sender: TObject);
     procedure ProjectItemExtensionExecute(Sender: TObject);
     procedure FilePrintExecute(Sender: TObject);
     procedure actLayerCopyExecute(Sender: TObject);
+    procedure actProjectItemDuplicateExecute(Sender: TObject);
+    procedure actModelCopyExecute(Sender: TObject);
+    procedure actModelPasteExecute(Sender: TObject);
+    procedure pmProjectPopup(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -356,7 +367,12 @@ uses
   unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
-  editor_Stack, editor_Layer, unit_FitHelpers, frm_Limits, editor_proj_item;
+  editor_Stack,
+  editor_Layer,
+  unit_FitHelpers,
+  frm_Limits,
+  editor_proj_item,
+  ClipBrd;
 
 {$R *.dfm}
 
@@ -411,7 +427,7 @@ begin
   Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
 end;
 
-procedure TfrmMain.ModelProperitesExecute(Sender: TObject);
+procedure TfrmMain.actItemProperitesExecute(Sender: TObject);
 begin
   EditProjectItem;
 end;
@@ -437,7 +453,6 @@ procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
   CalcRunExecute(Self);
 end;
-
 
 procedure TfrmMain.CreateProjectTree;
 begin
@@ -685,11 +700,6 @@ begin
 //  CreateNewExtension(Node);
 end;
 
-procedure TfrmMain.Properties1Click(Sender: TObject);
-begin
-  EditProjectItem;
-end;
-
 procedure TfrmMain.EditProjectItem;
 var
   Node: PVirtualNode;
@@ -797,6 +807,31 @@ begin
   Structure.CopyLayer(True);
 end;
 
+procedure TfrmMain.actModelCopyExecute(Sender: TObject);
+begin
+  ClipBoard.AsText := Structure.ToString;
+end;
+
+procedure TfrmMain.actModelPasteExecute(Sender: TObject);
+var
+  S: string;
+begin
+  S := ClipBoard.AsText;
+  CreateNewModel(FModelsRoot);
+  Structure.FromString(S);
+  FActiveModel.Data := S;
+end;
+
+procedure TfrmMain.actProjectItemDuplicateExecute(Sender: TObject);
+var
+  S: string;
+begin
+  S := Structure.ToString;
+  CreateNewModel(FModelsRoot);
+  Structure.FromString(S);
+  FActiveModel.Data := S;
+end;
+
 procedure TfrmMain.AddCurve(var Data: PProjectData);
 var
   Count: integer;
@@ -816,12 +851,6 @@ begin
   Data.Visible := True;
   FSeriesList[Count].Visible := Data.Visible;
   Data.CurveID := Count;
-end;
-
-procedure TfrmMain.Auto1Click(Sender: TObject);
-begin
-  AutoMerge(FSeriesList[FActiveData.CurveID]);
-  SeriesToFile(FSeriesList[FActiveData.CurveID], DataName(FActiveData));
 end;
 
 procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
@@ -1066,8 +1095,15 @@ end;
 
 procedure TfrmMain.pmiVisibleClick(Sender: TObject);
 begin
-//  LastData.CurveID.Visible := not LastData.Curve.Visible;
+  FSeriesList[LastData.CurveID].Visible := pmiVisible.Checked;
+  LastData.Visible := pmiVisible.Checked;
   Project.Repaint;
+end;
+
+procedure TfrmMain.pmProjectPopup(Sender: TObject);
+begin
+  pmiVisible.Checked := LastData.Visible;
+  pmiLinked.Checked  := LastData = FLinkedData;
 end;
 
 procedure TfrmMain.FinalizeCalc(Calc: TCalc);
@@ -1357,6 +1393,7 @@ begin
       AddCurve(Data);
       SeriesFromFile(FSeriesList[Data.CurveID], DataName(Data), s);
       Chart.AddSeries(FSeriesList[Data.CurveID]);
+      FSeriesList[Data.CurveID].Visible := Data.Visible;
     end
     else
       Project.DeleteNode(Node);
