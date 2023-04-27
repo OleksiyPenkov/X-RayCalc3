@@ -96,7 +96,6 @@ type
     Calc3: TMenuItem;
     Calcall1: TMenuItem;
     Reopen1: TMenuItem;
-    Add1: TMenuItem;
     dlgOpenProject: TOpenDialog;
     Zip: TAbZipper;
     UnZip: TAbUnZipper;
@@ -242,6 +241,33 @@ type
     BtnRecycle: TRzToolButton;
     actModelCopy: TAction;
     actModelPaste: TAction;
+    btnCopyImage: TRzToolButton;
+    btnPrintGraphics: TRzToolButton;
+    ools1: TMenuItem;
+    ShowLibrary1: TMenuItem;
+    Result1: TMenuItem;
+    Save1: TMenuItem;
+    Copytoclipboard1: TMenuItem;
+    CopyasBMP1: TMenuItem;
+    CopyasWMF1: TMenuItem;
+    Saveplotasfile1: TMenuItem;
+    N2: TMenuItem;
+    New1: TMenuItem;
+    Copymodel1: TMenuItem;
+    PasteModel1: TMenuItem;
+    Newextension1: TMenuItem;
+    Add1: TMenuItem;
+    Insert1: TMenuItem;
+    Delete1: TMenuItem;
+    N3: TMenuItem;
+    Add2: TMenuItem;
+    Insert2: TMenuItem;
+    Copy1: TMenuItem;
+    Paste1: TMenuItem;
+    Cut1: TMenuItem;
+    N4: TMenuItem;
+    Delete2: TMenuItem;
+    RzVersionInfoStatus1: TRzVersionInfoStatus;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -293,6 +319,13 @@ type
     procedure actModelCopyExecute(Sender: TObject);
     procedure actModelPasteExecute(Sender: TObject);
     procedure pmProjectPopup(Sender: TObject);
+    procedure actShowLibraryExecute(Sender: TObject);
+    procedure FileCopyPlotBMPExecute(Sender: TObject);
+    procedure FilePlotCopyWMFExecute(Sender: TObject);
+    procedure FilePlotToFileExecute(Sender: TObject);
+    procedure HelpAboutExecute(Sender: TObject);
+    procedure CalcAllExecute(Sender: TObject);
+    procedure CalcStopExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
 
@@ -372,7 +405,7 @@ uses
   unit_FitHelpers,
   frm_Limits,
   editor_proj_item,
-  ClipBrd;
+  ClipBrd, frm_MList, frm_about;
 
 {$R *.dfm}
 
@@ -832,6 +865,11 @@ begin
   FActiveModel.Data := S;
 end;
 
+procedure TfrmMain.actShowLibraryExecute(Sender: TObject);
+begin
+  frmMaterialList.ShowModal;
+end;
+
 procedure TfrmMain.AddCurve(var Data: PProjectData);
 var
   Count: integer;
@@ -1027,6 +1065,11 @@ begin
   CD.N := StrToInt(edN.Text);
  end;
 
+procedure TfrmMain.HelpAboutExecute(Sender: TObject);
+begin
+  frmAbout.ShowModal;
+end;
+
 procedure TfrmMain.PrintMax;
 var
   X, Y, mx, x1, x2, my, RI, OldX: single;
@@ -1179,6 +1222,11 @@ begin
   end;
 end;
 
+procedure TfrmMain.CalcAllExecute(Sender: TObject);
+begin
+  //
+end;
+
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
 var
   CD: TThreadParams;
@@ -1221,6 +1269,11 @@ begin
   finally
     Calc.Free;
   end;
+end;
+
+procedure TfrmMain.CalcStopExecute(Sender: TObject);
+begin
+ //
 end;
 
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
@@ -1447,6 +1500,11 @@ begin
   PrepareDistributionCharts;
 end;
 
+procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
+begin
+  Chart.CopyToClipboardBitmap;
+end;
+
 procedure TfrmMain.FileNewExecute(Sender: TObject);
 begin
   Structure.Clear;
@@ -1460,6 +1518,24 @@ begin
     LoadProject(dlgOpenProject.FileName, True);
 //    AddRecentItem(FProjectFileName , True);
   end;
+end;
+
+procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
+begin
+  Chart.CopyToClipboardMetafile(True);
+end;
+
+procedure TfrmMain.FilePlotToFileExecute(Sender: TObject);
+begin
+  if dlgExport.Execute then
+    Case dlgExport.FilterIndex of
+      1:
+        Chart.SaveToBitmapFile(dlgExport.FileName + '.bmp');
+      2:
+        Chart.SaveToMetafileEnh(dlgExport.FileName + '.emf');
+      3:
+        Chart.SaveToMetafile(dlgExport.FileName + '.wmf');
+    end;
 end;
 
 procedure TfrmMain.FilePrintExecute(Sender: TObject);
@@ -1525,6 +1601,7 @@ begin
     INF.Free;
   end;
 end;
+
 
 procedure TfrmMain.SaveData;
 var

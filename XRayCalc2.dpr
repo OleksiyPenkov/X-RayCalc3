@@ -23,7 +23,9 @@ uses
   unit_FitHelpers in 'math\unit_FitHelpers.pas',
   unit_LFPSO in 'math\unit_LFPSO.pas',
   frm_Limits in 'forms\frm_Limits.pas' {frmLimits},
-  editor_proj_item in 'editors\editor_proj_item.pas' {edtrProjectItem};
+  editor_proj_item in 'editors\editor_proj_item.pas' {edtrProjectItem},
+  frm_about in 'forms\frm_about.pas' {frmAbout},
+  frm_MList in 'forms\frm_MList.pas' {frmMaterialList};
 
 {$R *.res}
 
@@ -36,5 +38,7 @@ begin
   Application.CreateForm(TedtrLayer, edtrLayer);
   Application.CreateForm(TfrmLimits, frmLimits);
   Application.CreateForm(TedtrProjectItem, edtrProjectItem);
+  Application.CreateForm(TfrmAbout, frmAbout);
+  Application.CreateForm(TfrmMaterialList, frmMaterialList);
   Application.Run;
 end.
