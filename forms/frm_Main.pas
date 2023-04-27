@@ -452,6 +452,7 @@ end;
 
 procedure TfrmMain.ModelCreateExecute(Sender: TObject);
 begin
+  FActiveModel.Data := Structure.ToString;
   CreateNewModel(FModelsRoot);
 end;
 
@@ -546,7 +547,7 @@ end;
 
 procedure TfrmMain.ProjectDblClick(Sender: TObject);
 begin
-//  EditProjectItem;
+  EditProjectItem;
 end;
 
 procedure TfrmMain.ProjectAddFolderExecute(Sender: TObject);
@@ -846,19 +847,18 @@ begin
 end;
 
 procedure TfrmMain.actModelPasteExecute(Sender: TObject);
-var
-  S: string;
 begin
-  S := ClipBoard.AsText;
+  FActiveModel.Data := Structure.ToString;
   CreateNewModel(FModelsRoot);
-  Structure.FromString(S);
-  FActiveModel.Data := S;
+  FActiveModel.Data := ClipBoard.AsText;
+  Structure.FromString(FActiveModel.Data);
 end;
 
 procedure TfrmMain.actProjectItemDuplicateExecute(Sender: TObject);
 var
   S: string;
 begin
+  FActiveModel.Data := Structure.ToString;
   S := Structure.ToString;
   CreateNewModel(FModelsRoot);
   Structure.FromString(S);
@@ -914,6 +914,7 @@ begin
   Data.RowType := prItem;
 
   AddCurve(Data);
+  Project.Expanded[FDataRoot] := True;
 
   SeriesFromClipboard(FSeriesList[Data.CurveID]);
   SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
@@ -1223,8 +1224,25 @@ begin
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
 begin
-  //
+  if FModelsRoot.ChildCount > 0 then
+    Node := Project.GetFirstChild(FModelsRoot)
+  else
+    Exit;
+
+  while Node <> FDataRoot do
+  begin
+    Data := Project.GetNodeData(Node);
+    if Data.RowType = prItem then
+    begin
+      Project.FocusedNode := Node;
+      CalcRunExecute(Sender);
+    end;
+    Node := Project.GetNext(Node);
+  end;
 end;
 
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
@@ -1498,6 +1516,7 @@ begin
   FIgnoreFocusChange := False;
   Project.Repaint;
   PrepareDistributionCharts;
+  Caption := 'X-RayCalc 2: ' + ExtractFileName(FileName);
 end;
 
 procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
@@ -1661,7 +1680,7 @@ begin
 
   Chart.SeriesList.Clear;
   Project.Clear;
-  Structure.AddSubstrate('SiO2', 5, 2.2);
+  Structure.AddSubstrate('Si', 5, 2.2);
 
   FLastID := 1;
   FProjectName := 'noname.xrcx';
@@ -1691,6 +1710,7 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
+  Caption := 'X-RayCalc 2: ' + FProjectName;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);

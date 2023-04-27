@@ -1376,6 +1376,7 @@ object frmMain: TfrmMain
         object btnDataLoad: TRzToolButton
           Left = 228
           Top = 2
+          Hint = 'Load curve'
           ImageIndex = 8
           Action = DataLoad
           ParentShowHint = False
@@ -1384,6 +1385,7 @@ object frmMain: TfrmMain
         object btnDataPaste: TRzToolButton
           Left = 253
           Top = 2
+          Hint = 'Paste curve'
           ImageIndex = 9
           Action = DataPaste
           ParentShowHint = False
@@ -1396,6 +1398,7 @@ object frmMain: TfrmMain
         object btnCalcRun: TRzToolButton
           Left = 4
           Top = 2
+          Hint = 'Calculate'
           ImageIndex = 0
           Action = CalcRun
           ParentShowHint = False
@@ -1408,6 +1411,7 @@ object frmMain: TfrmMain
         object btnResultSave: TRzToolButton
           Left = 120
           Top = 2
+          Hint = 'Save result'
           DisabledIndex = 35
           ImageIndex = 4
           Action = ResultSave
@@ -1417,6 +1421,7 @@ object frmMain: TfrmMain
         object btnBtnCopy: TRzToolButton
           Left = 145
           Top = 2
+          Hint = 'Copy result'
           DisabledIndex = 37
           ImageIndex = 5
           Action = ResultCopy
@@ -1430,6 +1435,7 @@ object frmMain: TfrmMain
         object BtnExecute: TRzToolButton
           Left = 54
           Top = 2
+          Hint = 'Auto Fitting'
           DisabledIndex = 41
           ImageIndex = 2
           Action = actAutoFitting
@@ -1437,6 +1443,7 @@ object frmMain: TfrmMain
         object BtnFastForward: TRzToolButton
           Left = 29
           Top = 2
+          Hint = 'Calculate all'
           DisabledIndex = 52
           ImageIndex = 1
           Action = CalcAll
@@ -1444,6 +1451,7 @@ object frmMain: TfrmMain
         object BtnCancel: TRzToolButton
           Left = 87
           Top = 2
+          Hint = 'Terminate'
           DisabledIndex = 54
           ImageIndex = 3
           Action = CalcStop
@@ -1451,6 +1459,7 @@ object frmMain: TfrmMain
         object btnCopyImage: TRzToolButton
           Left = 170
           Top = 2
+          Hint = 'Save result as image'
           ImageIndex = 6
           Action = FilePlotCopyWMF
         end
