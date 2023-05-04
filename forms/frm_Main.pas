@@ -1251,6 +1251,7 @@ begin
        Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
 
     try
+      PrepareDistributionCharts;
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
@@ -1298,17 +1299,16 @@ begin
   if (FActiveModel = nil) then
     Exit;
 
-  try
-
-    FitStructure := Structure.ToFitStructure;
-
-    if frmLimits.Show(FitStructure) then
+  FitStructure := Structure.ToFitStructure;
+  if frmLimits.Show(FitStructure) then
         Structure.StoreFitLimits(FitStructure)
-    else
+  else
       Exit;
 
+  try
     try
       Series1.Clear;
+      PrepareDistributionCharts;
       Pages.ActivePage := tsFittingProgress;
 
       Calc := TCalc.Create;
@@ -1354,7 +1354,8 @@ begin
     Calc.Free;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d h', [Hour, Min, Sec]);  end;
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d h', [Hour, Min, Sec]);
+  end;
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);
@@ -1702,6 +1703,7 @@ begin
 
   FDataRoot := PG;
   Caption := 'X-RayCalc 2: ' + FProjectName;
+
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);

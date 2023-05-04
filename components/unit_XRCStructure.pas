@@ -35,7 +35,6 @@ type
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelected: Integer;
-      procedure UpdateGUI;
       function GetFitLimits: string;
       procedure ClearSelection(const Reset:boolean = False); inline;
     public
@@ -79,7 +78,10 @@ implementation
 procedure TXRCStructure.AddLayer(const StackID: Integer;
   const Data: TLayerData);
 begin
-  Stacks[StackID].AddLayer(Data);
+  if StackID <> -1 then
+    Stacks[StackID].AddLayer(Data)
+  else
+    Stacks[High(Stacks)].AddLayer(Data)
 end;
 
 procedure TXRCStructure.RealignStacks;
@@ -527,11 +529,6 @@ begin
   finally
     FreeAndNil(JStstructure);
   end;
-end;
-
-procedure TXRCStructure.UpdateGUI;
-begin
-
 end;
 
 procedure TXRCStructure.FromFitStructure(const Inp: TLayeredModel);

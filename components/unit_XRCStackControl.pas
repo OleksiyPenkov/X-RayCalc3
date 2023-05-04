@@ -27,7 +27,7 @@ type
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
-    procedure SetID(const Value: Integer);
+      procedure SetID(const Value: Integer);
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
