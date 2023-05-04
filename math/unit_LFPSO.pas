@@ -426,7 +426,7 @@ begin
 
     FindTheBest;
     SendUpdateMessage(t);
-    if FGlobalBestChiSqr < 0.0005 then Break;
+    if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
     begin

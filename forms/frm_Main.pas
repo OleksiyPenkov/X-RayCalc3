@@ -163,9 +163,6 @@ type
     cbIncrement: TRzComboBox;
     RzPanel6: TRzPanel;
     RzPanel7: TRzPanel;
-    RzPanel4: TRzPanel;
-    Label5: TLabel;
-    edN: TEdit;
     rgPolarisation: TRzRadioGroup;
     pnlWaveParams: TRzPanel;
     Label9: TLabel;
@@ -273,6 +270,10 @@ type
     edLFPSOOmega2: TEdit;
     Label19: TLabel;
     RzButton1: TRzButton;
+    edFitTolerance: TEdit;
+    Label20: TLabel;
+    RzGroupBox2: TRzGroupBox;
+    edN: TEdit;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -479,20 +480,21 @@ var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
 begin
+  chFittingProgress.DoubleBuffered := True;
+
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
+
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
-  if Length(msg_prm.Curve) > 1 then
+  if (Length(msg_prm.Curve) > 1) then
+  begin
      PlotResults(msg_prm.Curve);
+  end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
   spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
 
-  if (msg_prm.BestChi > 0) and (msg_prm.BestChi < 0.1) then
-    chFittingProgress.LeftAxis.Minimum :=  msg_prm.BestChi / 10
-  else
-    chFittingProgress.LeftAxis.Minimum := 0.1;
 end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
@@ -1022,6 +1024,7 @@ begin
   Result.w1         := StrToFloat(edLFPSOOmega1.Text);
   Result.w2         := StrToFloat(edLFPSOOmega2.Text);
   Result.Shake      := cbLFPSOShake.Checked;
+  Result.Tolerance := StrToFloat(edFitTolerance.Text);
 end;
 
 procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
@@ -1124,9 +1127,11 @@ end;
 var
   j: Integer;
 begin
+  FSeriesList[FActiveModel.CurveID].BeginUpdate;
   FSeriesList[FActiveModel.CurveID].Clear;
   for j := 0 to High(Data) do
       FSeriesList[FActiveModel.CurveID].AddXY(Data[j].t, Data[j].R);
+  FSeriesList[FActiveModel.CurveID].EndUpdate;
 end;
 
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);
@@ -1308,6 +1313,7 @@ var
   LFPSO: TLFPSO_Periodic;
   Hour, Min, Sec, MSec: Word;
   FitStructure: TFitPeriodicStructure;
+  Params: TFitParams;
 begin
   Randomize;
 
@@ -1319,7 +1325,7 @@ begin
         Structure.StoreFitLimits(FitStructure)
   else
       Exit;
-
+  Params := GetFitParams;
   try
     try
       lsrConvergence.Clear;
@@ -1331,6 +1337,12 @@ begin
       else
         Exit;
 
+
+      chFittingProgress.BottomAxis.Minimum := -1;
+      chFittingProgress.BottomAxis.Maximum := Params.NMax;
+      chFittingProgress.BottomAxis.Minimum := -1;
+      chFittingProgress.LeftAxis.Minimum := Params.Tolerance / 5;
+
       GetThreadParams(CD);
 
       Calc.Params := CD;
@@ -1339,9 +1351,11 @@ begin
       Calc.Run;
       Calc.CalcChiSquare;
       lsrConvergence.AddXY(-1, Calc.ChiSQR);
+      chFittingProgress.LeftAxis.Maximum := Calc.ChiSQR * 2;
 
       LFPSO := TLFPSO_Periodic.Create;
-      LFPSO.Params := GetFitParams;
+      LFPSO.Params := Params;
+
       LFPSO.Limit := Calc.Limit;
       LFPSO.Structure := FitStructure;
       LFPSO.Materials := Calc.Model.Materials; // cache materials optical constants

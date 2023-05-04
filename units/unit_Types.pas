@@ -69,6 +69,7 @@ type
   TFitParams = record
     NMax: integer;
      Pop: integer;
+   Tolerance: Single;
     Vmax: single;
     JammingMax: integer;
      ReInitMax: integer;
