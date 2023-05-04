@@ -43,7 +43,7 @@ type
 
       FLimit: single;
 
-      FParams: TThreadParams;
+      FParams: TCalcThreadParams;
 
       FTotalD: single;
       FChiSQR: single;
@@ -63,7 +63,7 @@ type
       procedure Run;
       function CalcChiSquare: single;
 
-      property Params: TThreadParams write FParams;
+      property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single read FLimit write FLimit;
       property Results: TDataArray read FResult;

@@ -371,13 +371,17 @@ object frmMain: TfrmMain
           Color = 15987699
           Caption = 'Fitting Progress'
           ExplicitWidth = 891
+          DesignSize = (
+            895
+            138)
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 889
+            Width = 822
             Height = 132
             Cursor = crCross
+            Margins.Right = 70
             Legend.TopPos = 0
             Legend.Visible = False
             MarginLeft = 5
@@ -386,10 +390,13 @@ object frmMain: TfrmMain
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
-            LeftAxis.AxisValuesFormat = '#,##0'
+            BottomAxis.Title.Caption = 'Iteration'
+            LeftAxis.AxisValuesFormat = '#.0 "x10" E+0'
             LeftAxis.LabelsExponent = True
             LeftAxis.Logarithmic = True
             LeftAxis.MaximumRound = True
+            LeftAxis.Title.Caption = #967'2'
+            LeftAxis.Title.Font.Height = -13
             View3D = False
             ZoomWheel = pmwNormal
             Align = alClient
@@ -399,7 +406,7 @@ object frmMain: TfrmMain
             ExplicitWidth = 885
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
-            object Series1: TLineSeries
+            object lsrConvergence: TLineSeries
               HoverElement = [heCurrent]
               SeriesColor = 16744448
               Title = 'srFitProgress'
@@ -414,6 +421,15 @@ object frmMain: TfrmMain
               YValues.Name = 'Y'
               YValues.Order = loNone
             end
+          end
+          object RzButton1: TRzButton
+            Left = 830
+            Top = 6
+            Width = 59
+            Anchors = [akTop, akRight]
+            Caption = 'Copy'
+            TabOrder = 1
+            OnClick = RzButton1Click
           end
         end
       end
@@ -455,6 +471,7 @@ object frmMain: TfrmMain
         Title.Text.Strings = (
           'TChart')
         Title.Visible = False
+        OnZoom = ChartZoom
         DepthAxis.Automatic = False
         DepthAxis.AutomaticMaximum = False
         DepthAxis.AutomaticMinimum = False
@@ -489,6 +506,9 @@ object frmMain: TfrmMain
         BevelOuter = bvLowered
         Color = clCream
         TabOrder = 1
+        OnMouseDown = ChartMouseDown
+        OnMouseMove = ChartMouseMove
+        OnMouseUp = ChartMouseUp
         ExplicitWidth = 889
         ExplicitHeight = 463
         DefaultCanvas = 'TGDIPlusCanvas'
@@ -836,7 +856,7 @@ object frmMain: TfrmMain
           object RzGroupBox1: TRzGroupBox
             Left = 111
             Top = 0
-            Width = 162
+            Width = 234
             Height = 100
             Caption = 'LFPSO'
             Color = 15987699
@@ -868,8 +888,8 @@ object frmMain: TfrmMain
               ParentFont = False
             end
             object Label14: TLabel
-              Left = 86
-              Top = 46
+              Left = 81
+              Top = 47
               Width = 31
               Height = 13
               Caption = 'kVmax'
@@ -900,6 +920,32 @@ object frmMain: TfrmMain
               Height = 13
               Caption = 'RImax'
               Font.Charset = DEFAULT_CHARSET
+              Font.Color = clBlack
+              Font.Height = -11
+              Font.Name = 'Tahoma'
+              Font.Style = []
+              ParentFont = False
+            end
+            object Label18: TLabel
+              Left = 167
+              Top = 46
+              Width = 17
+              Height = 13
+              Caption = ' '#969'1'
+              Font.Charset = GREEK_CHARSET
+              Font.Color = clBlack
+              Font.Height = -11
+              Font.Name = 'Tahoma'
+              Font.Style = []
+              ParentFont = False
+            end
+            object Label19: TLabel
+              Left = 167
+              Top = 74
+              Width = 17
+              Height = 13
+              Caption = ' '#969'2'
+              Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
               Font.Height = -11
               Font.Name = 'Tahoma'
@@ -990,6 +1036,36 @@ object frmMain: TfrmMain
               ParentFont = False
               TabOrder = 5
               Text = '3'
+            end
+            object edLFPSOOmega1: TEdit
+              Left = 187
+              Top = 42
+              Width = 35
+              Height = 22
+              Alignment = taRightJustify
+              Font.Charset = DEFAULT_CHARSET
+              Font.Color = clBlack
+              Font.Height = -12
+              Font.Name = 'Tahoma'
+              Font.Style = []
+              ParentFont = False
+              TabOrder = 6
+              Text = '0.05'
+            end
+            object edLFPSOOmega2: TEdit
+              Left = 190
+              Top = 70
+              Width = 35
+              Height = 22
+              Alignment = taRightJustify
+              Font.Charset = DEFAULT_CHARSET
+              Font.Color = clBlack
+              Font.Height = -12
+              Font.Name = 'Tahoma'
+              Font.Style = []
+              ParentFont = False
+              TabOrder = 7
+              Text = '0.05'
             end
           end
         end
@@ -4146,8 +4222,8 @@ object frmMain: TfrmMain
   end
   object ilCalc: TImageList
     ColorDepth = cd32Bit
-    Left = 1400
-    Top = 48
+    Left = 952
+    Top = 224
     Bitmap = {
       494C01010A004800040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030

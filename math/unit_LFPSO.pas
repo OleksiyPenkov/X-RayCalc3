@@ -26,7 +26,8 @@ type
 
   TLFPSO_Periodic = class
     private
-      FCalcConditions: TThreadParams;
+      FCalcParams: TCalcThreadParams;
+      FFitParams: TFitParams;
 
       FLayersCount: integer;
       FStructure: TFitPeriodicStructure;  // initial (input) structure
@@ -54,7 +55,7 @@ type
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
-      FParams: TFitParams;
+
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
@@ -75,6 +76,7 @@ type
       procedure SetParams(const Value: TFitParams);
       procedure ReInit(const Step: integer); inline;
       procedure CopySolution(const Source: TSolution; var Dest: TSolution);
+      function Omega(const t, TMax: integer): single; inline;
     public
       constructor Create;
       destructor Destroy; override;
@@ -87,13 +89,19 @@ type
       property Params: TFitParams write SetParams;
       property Materials: TMaterials write  FMaterials;
 
-      procedure Run(CalcConditions: TThreadParams);
+      procedure Run(CalcConditions: TCalcThreadParams);
 
   end;
 
 implementation
 
-uses unit_FitHelpers, Forms, System.SysUtils, System.Math, unit_helpers, Dialogs;
+uses
+  unit_FitHelpers,
+  Forms,
+  System.SysUtils,
+  Neslib.FastMath,
+  unit_helpers,
+  Dialogs;
 
 const
   w_max = 0.9;
@@ -106,8 +114,8 @@ const
 
 { Supplementary}
 
-function Gamma( x : extended) : extended;
-const COF : array [0..14] of extended =
+function Gamma( x : single) : single;
+const COF : array [0..14] of single =
                 (  0.999999999999997092, // may as well include this in the array
                   57.1562356658629235,
                  -59.5979603554754912,
@@ -128,20 +136,20 @@ const
   PI_OVER_K = PI / K;
 var
   j : integer;
-  tmp, w, ser : extended;
+  tmp, w, ser : single;
   reflect : boolean;
 begin
   reflect := (x < 0.5);
   if reflect then w := 1.0 - x else w := x;
   tmp := w + 5.2421875;
-  tmp := (w + 0.5)*Ln(tmp) - tmp;
+  tmp := (w + 0.5) * FastLn(tmp) - tmp;
   ser := COF[0];
   for j := 1 to 14 do ser := ser + COF[j]/(w + j);
   try
     if reflect then
-      result := PI_OVER_K * w * Exp(-tmp) / (Sin(PI*x) * ser)
+      result := PI_OVER_K * w * FastExp(-tmp) / (FastSin(PI*x) * ser)
     else
-      result := K * Exp(tmp) * ser / w;
+      result := K * FastExp(tmp) * ser / w;
   except
     raise Exception.CreateFmt(
         'Gamma(%g) is undefined or out of floating-point range', [x]);
@@ -159,9 +167,9 @@ begin
         Result[i][j][k] := X[i][j][k] * v;
 end;
 
-function Omega(const t, TMax: integer): single;
+function TLFPSO_Periodic.Omega(const t, TMax: integer): single;
 begin
-  Result := 0.05 + 0.05 * (1 - t / Tmax);
+  Result := FFitParams.w1 + FFitParams.w2 * (1 - t / Tmax);
 end;
 
 function RS: integer;
@@ -198,7 +206,7 @@ procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
 begin
-  MultiplyVector(Xrange, FParams.Vmax, Vmax);
+  MultiplyVector(Xmax, FFitParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
@@ -237,13 +245,13 @@ var
   num, den, sigma_u: double;
   u, v, z: double;
 begin
-  num := gamma(1 + beta) * sin(pi * beta / 2); // used for Numerator
-  den := gamma(( 1 + beta)/2) * beta * power(2, (beta-1)/2); // used for Denominator
-  sigma_u := power(num / den, 1 / beta); // Standard deviation
+  num := gamma(1 + beta) * FastSin(pi * beta / 2); // used for Numerator
+  den := gamma(( 1 + beta)/2) * beta * FastPower(2, (beta-1)/2); // used for Denominator
+  sigma_u := FastPower(num / den, 1 / beta); // Standard deviation
 
   u := Random * sigma_u;
   v := Random;
-  z := u/ abs(power(v, 1/ beta));
+  z := u/ abs(FastPower(v, 1/ beta));
 
   S := 0.01 * z * (X - gBest);
   dX := X * S;
@@ -336,7 +344,7 @@ begin
     begin
       try
         Calc := TCalc.Create;
-        Calc.Params := FCalcConditions;
+        Calc.Params := FCalcParams;
         Calc.ExpValues := FData;
         Calc.Limit := FLimit;
 
@@ -399,11 +407,11 @@ var
   ReInitCount: integer;
   Vmax0: single;
 begin
-  Vmax0 := FParams.Vmax ;
+  Vmax0 := FFitParams.Vmax ;
   ReInitCount := 0;
   FGlobalBestChiSqr:= 1e12;
   FAbsoluteBestChiSqr := 1e12;
-  FCalcConditions := CalcConditions;
+  FCalcParams := CalcConditions;
   SetLength(FMaterials, 0);
 
   ReInit(0);
@@ -420,21 +428,21 @@ begin
     SendUpdateMessage(t);
     if FGlobalBestChiSqr < 0.0005 then Break;
 
-    if FParams.Shake and (FJammingCount > FParams.JammingMax) then
+    if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
     begin
-      if ReInitCount > FParams.ReInitMax then
+      if ReInitCount > FFitParams.ReInitMax then
       begin
         ReInitCount := 0;
         SetStructure(GBestStructure(abest));
         CopySolution(abest, gbest);
         FGlobalBestChiSqr := FAbsoluteBestChiSqr;
-        FParams.Vmax := Vmax0;
+        FFitParams.Vmax := Vmax0;
       end
       else
       begin
         SetStructure(GBestStructure(gbest));
-        FGlobalBestChiSqr := FGlobalBestChiSqr  * FParams.KChiSqr;
-        FParams.Vmax := FParams.Vmax * FParams.KVmax;
+        FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
+        FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
       end;
       ReInit(t);
       Inc(ReInitCount);
@@ -492,10 +500,10 @@ end;
 
 procedure TLFPSO_Periodic.SetParams(const Value: TFitParams);
 begin
-  FParams := Value;
+  FFitParams := Value;
 
-  FTMax := FParams.NMax;
-  FPopulation := FParams.Pop;
+  FTMax := FFitParams.NMax;
+  FPopulation := FFitParams.Pop;
 
   SetLength(X, FPopulation);
   SetLength(V, FPopulation);

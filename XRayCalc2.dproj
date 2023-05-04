@@ -128,8 +128,8 @@
         <Icon_MainIcon>XRayCalc2_Icon.ico</Icon_MainIcon>
         <VerInfo_MajorVer>0</VerInfo_MajorVer>
         <VerInfo_MinorVer>6</VerInfo_MinorVer>
-        <VerInfo_Build>260</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=0.6.0.260;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=0.6.0;Comments=</VerInfo_Keys>
+        <VerInfo_Build>261</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=0.6.0.261;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=0.6.0;Comments=</VerInfo_Keys>
         <VerInfo_PreRelease>true</VerInfo_PreRelease>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">

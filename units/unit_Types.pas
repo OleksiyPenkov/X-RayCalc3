@@ -51,7 +51,7 @@ type
          )
   end;
 
-  TThreadParams = record
+  TCalcThreadParams = record
     N: integer;
     K: integer;
     P: TPolarisation;
@@ -74,6 +74,7 @@ type
      ReInitMax: integer;
        KChiSqr: single;
        KVmax  : single;
+        w1, w2: single;
 
      Shake : boolean;
   end;
