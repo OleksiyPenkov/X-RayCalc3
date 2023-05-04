@@ -3,8 +3,8 @@ object frmMaterialList: TfrmMaterialList
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Materials Database'
-  ClientHeight = 364
-  ClientWidth = 358
+  ClientHeight = 352
+  ClientWidth = 350
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

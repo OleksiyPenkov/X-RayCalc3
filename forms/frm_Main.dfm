@@ -815,7 +815,7 @@ object frmMain: TfrmMain
             NumbersOnly = True
             ParentFont = False
             TabOrder = 0
-            Text = '50'
+            Text = '100'
           end
           object edFPopulation: TEdit
             Left = 62
@@ -831,7 +831,7 @@ object frmMain: TfrmMain
             NumbersOnly = True
             ParentFont = False
             TabOrder = 1
-            Text = '50'
+            Text = '100'
           end
           object RzGroupBox1: TRzGroupBox
             Left = 111
@@ -944,7 +944,7 @@ object frmMain: TfrmMain
               Font.Style = []
               ParentFont = False
               TabOrder = 2
-              Text = '1'
+              Text = '2'
             end
             object edLFPSOkVmax: TEdit
               Left = 118
@@ -959,7 +959,7 @@ object frmMain: TfrmMain
               Font.Style = []
               ParentFont = False
               TabOrder = 3
-              Text = '1.4'
+              Text = '2'
             end
             object edLFPSOSkip: TEdit
               Left = 38

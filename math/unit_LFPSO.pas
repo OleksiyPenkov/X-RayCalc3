@@ -30,6 +30,7 @@ type
 
       FLayersCount: integer;
       FStructure: TFitPeriodicStructure;  // initial (input) structure
+      FMaterials: TMaterials;
 
       X, V : TPopulation;  // solutions and velocityes
       Xmax : TPopulation; // 1 column for upper boundary
@@ -84,6 +85,7 @@ type
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
+      property Materials: TMaterials write  FMaterials;
 
       procedure Run(CalcConditions: TThreadParams);
 
@@ -196,7 +198,7 @@ procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
 begin
-  MultiplyVector(Xmax, FParams.Vmax, Vmax);
+  MultiplyVector(Xrange, FParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
@@ -339,8 +341,10 @@ begin
         Calc.Limit := FLimit;
 
         Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
+        Calc.Model.Materials := FMaterials;
         Calc.Run;
         Calc.CalcChiSquare;
+
         if Calc.ChiSQR < FLastBestChiSqr then
         begin
           FLastBestChiSqr  := Calc.ChiSQR;
@@ -400,6 +404,7 @@ begin
   FGlobalBestChiSqr:= 1e12;
   FAbsoluteBestChiSqr := 1e12;
   FCalcConditions := CalcConditions;
+  SetLength(FMaterials, 0);
 
   ReInit(0);
 

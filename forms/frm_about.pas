@@ -3,7 +3,7 @@
   *   X-Ray Calc 2
   *
   *   Copyright (C) 2001-2023 Oleksiy Penkov
-  *   e-mail: oleksiy.penkov@gmail.com
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
 unit frm_about;

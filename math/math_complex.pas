@@ -2,8 +2,8 @@
   *
   *   X-Ray Calc 2
   *
-  *   Copyright (C) 2001-2020 Oleksiy Penkov
-  *   e-mail: oleksiy.penkov@gmail.com
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
 
@@ -12,7 +12,8 @@ unit math_complex;
 interface
 
 uses
-  Math, SysUtils;
+  Neslib.FastMath,
+  SysUtils;
 
 type
   TComplex = record
@@ -320,9 +321,9 @@ begin
   else
   begin
     if x > y then
-      Result := x * Sqrt(1 + Power(y / x, 2))
+      Result := x * Sqrt(1 + FastPower(y / x, 2))
     else
-      Result := y * Sqrt(1 + Power(x / y, 2));
+      Result := y * Sqrt(1 + FastPower(x / y, 2));
   end;
 end;
 
@@ -335,7 +336,7 @@ end;
 { return the argument of Z in radians: z = x + yi -> arctan(y/x) }
 function ArgZ(Z: TComplex): single;
 begin
-  Result := ArcTan2(Z.Im, Z.Re);
+  Result := FastArcTan2(Z.Im, Z.Re);
 end;
 
 { return conjugate of Z (  (x + iy)~ = x - iy ) }
@@ -368,7 +369,7 @@ end;
 { return the cosine of Z }
 function CosZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Cos(Z.Re) * Cosh(Z.Im), -(Sin(Z.Re) * Sinh(Z.Im)));
+  Result := ToComplex(FastCos(Z.Re) * Cosh(Z.Im), -(FastSin(Z.Re) * Sinh(Z.Im)));
 end;
 
 { return the arccosine of Z. Input value must be between -1..1 and -i..i }
@@ -381,13 +382,13 @@ end;
 { return the hyperbolic cosine of Z }
 function CoshZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Cosh(Z.Re) * Cos(Z.Im), Sinh(Z.Re) * Sin(Z.Im));
+  Result := ToComplex(Cosh(Z.Re) * FastCos(Z.Im), Sinh(Z.Re) * FastSin(Z.Im));
 end;
 
 { return the sine of Z }
 function SinZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Sin(Z.Re) * Cosh(Z.Im), Cos(Z.Re) * Sinh(Z.Im));
+  Result := ToComplex(FastSin(Z.Re) * Cosh(Z.Im), FastCos(Z.Re) * Sinh(Z.Im));
 end;
 
 { return the arcsine of Z. Input value must be between -1..1 and -i..i }
@@ -400,7 +401,7 @@ end;
 { return the hyperbolic sine of Z }
 function SinhZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Sinh(Z.Re) * Cos(Z.Im), Cosh(Z.Re) * Sin(Z.Im));
+  Result := ToComplex(Sinh(Z.Re) * FastCos(Z.Im), Cosh(Z.Re) * FastSin(Z.Im));
 end;
 
 { return the hyperbolic arcsine of Z }
@@ -418,8 +419,8 @@ var
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (Cos(x) + Cosh(y));
-  Result := ToComplex(t * Sin(x), t * Sinh(y));
+  t := 1.0 / (FastCos(x) + Cosh(y));
+  Result := ToComplex(t * FastSin(x), t * Sinh(y));
 end;
 
 { return the arctan of Z. }
@@ -429,7 +430,7 @@ var
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (Cos(x) + Cosh(y));
+  t := 1.0 / (FastCos(x) + Cosh(y));
   Result := ToComplex(t * ArcSin(x), t * ArcSinh(y));
 end;
 
@@ -440,8 +441,8 @@ var
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (Cos(x) + Cosh(y));
-  Result := ToComplex(t * Sinh(x), t * Sin(y));
+  t := 1.0 / (FastCos(x) + Cosh(y));
+  Result := ToComplex(t * Sinh(x), t * FastSin(y));
 end;
 
 { return the hyperbolic arctan of Z. Input value must be between -1..1 and -i..i }
@@ -459,31 +460,31 @@ function ExpZ(const Z: TComplex): TComplex;
 var
   x: single;
 begin
-  x := Exp(Z.Re);
-  Result.Re := x * Cos(Z.Im);
-  Result.Im := x * Sin(Z.Im);
+  x := FastExp(Z.Re);
+  Result.Re := x * FastCos(Z.Im);
+  Result.Im := x * FastSin(Z.Im);
 end;
 
 { returns the natural log of Z:  Ln(x + iy) }
 function LnZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Ln(AbsZ(Z)), ArgZ(Z));
+  Result := ToComplex(FastLn(AbsZ(Z)), ArgZ(Z));
 end;
 
 { retuns the base 10 log of Z:  log(x+yi) }
 function Log10Z(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(0.2171472409516259 * Ln(NormZ(Z)), ArgZ(Z));
+  Result := ToComplex(0.2171472409516259 * FastLn(NormZ(Z)), ArgZ(Z));
 end;
 
 { returns the complex number given by the rectangular coordinates Range and Angle:
-  z = r(cos(angle) + i sin(angle))
+  z = r(cos(angle) + i FastSin(angle))
   Range is the length of the straight line extending from 0,0i to the point x,yi
   Angle is the angle in radians between the real axis and the point x,yi
   }
 function PolarZ(Range, Angle: single): TComplex;
 begin
-  Result := ToComplex(Range * Cos(Angle), Range * Sin(Angle));
+  Result := ToComplex(Range * FastCos(Angle), Range * FastSin(Angle));
 end;
 
 { returns the rectangular coordinates Range and Angle of the complex number Z
@@ -506,15 +507,15 @@ begin
     if Z.Re > 0 then
     begin
       LValue := LValue + Z.Re;
-      Result := ToComplex(Sqrt(LValue / 2), Z.Im / Sqrt(LValue * 2));
+      Result := ToComplex(Sqrt(LValue / 2), Z.Im * InverseSqrt(LValue * 2));
     end
     else
     begin
       LValue := LValue - Z.Re;
       if Z.Im < 0 then
-        Result := ToComplex(Abs(Z.Im) / Sqrt(LValue * 2), -Sqrt(LValue / 2))
+        Result := ToComplex(Abs(Z.Im) * InverseSqrt(LValue * 2), -Sqrt(LValue / 2))
       else
-        Result := ToComplex(Abs(Z.Im) / Sqrt(LValue * 2), Sqrt(LValue / 2));
+        Result := ToComplex(Abs(Z.Im) * InverseSqrt(LValue * 2), Sqrt(LValue / 2));
     end;
   end;
 end;
@@ -530,11 +531,11 @@ begin
     Result := PowZR2(Z, Z2.Re)
   else
   begin
-    LogF.Re := Ln(AbsZ(Z));
-    LogF.Im := ArcTan2(Z.Im, Z.Re);
-    Phase.Re := Exp(LogF.Re * Z2.Re - LogF.Im * Z2.Im);
+    LogF.Re := FastLn(AbsZ(Z));
+    LogF.Im := FastArcTan2(Z.Im, Z.Re);
+    Phase.Re := FastExp(LogF.Re * Z2.Re - LogF.Im * Z2.Im);
     Phase.Im := LogF.Re * Z2.Im + LogF.Im * Z2.Re;
-    Result := ToComplex(Phase.Re * Cos(Phase.Im), Phase.Re * Sin(Phase.Im));
+    Result := ToComplex(Phase.Re * FastCos(Phase.Im), Phase.Re * FastSin(Phase.Im));
   end;
 end;
 

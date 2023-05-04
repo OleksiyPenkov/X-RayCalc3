@@ -354,7 +354,6 @@ type
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
     function DataName(Data: PProjectData): string;
-    function ModelName(Data: PProjectData): string;
     procedure CreateDefaultProject;
     procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
     procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
@@ -434,7 +433,6 @@ end;
 
 procedure TfrmMain.CreateNewModel(Node: PVirtualNode);
 var
-  PD: PProjectData;
   PL: PVirtualNode;
 begin
   // добавляем модель
@@ -456,11 +454,6 @@ begin
   CreateNewModel(FModelsRoot);
 end;
 
-function TfrmMain.ModelName(Data: PProjectData): string;
-begin
-  Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
-end;
-
 procedure TfrmMain.actItemProperitesExecute(Sender: TObject);
 begin
   EditProjectItem;
@@ -470,7 +463,6 @@ procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
-  i: integer;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   Series1.AddXY(msg_prm.Step, msg_prm.BestChi);
@@ -1168,7 +1160,6 @@ end;
 procedure TfrmMain.PrepareDistributionCharts;
 var
   Materials: TMaterialsList;
-  i: integer;
 
   procedure InitSereis(Series: TLineSeries);
   begin
@@ -1206,7 +1197,7 @@ end;
 
 procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
 var
-  i, j: integer;
+  i: integer;
 begin
   for i := 0 to High(FThicknessSeries) do
   begin
@@ -1339,7 +1330,7 @@ begin
       LFPSO.Params := GetFitParams;
       LFPSO.Limit := Calc.Limit;
       LFPSO.Structure := FitStructure;
-
+      LFPSO.Materials := Calc.Model.Materials; // cache materials optical constants
       LFPSO.ExpValues := Calc.ExpValues;
       LFPSO.Run(CD);
 
@@ -1363,7 +1354,7 @@ begin
     Calc.Free;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);  end;
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d h', [Hour, Min, Sec]);  end;
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);

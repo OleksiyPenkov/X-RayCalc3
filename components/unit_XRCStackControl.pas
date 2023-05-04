@@ -186,8 +186,6 @@ begin
 end;
 
 procedure TXRCStack.DeleteLayer(const Index: integer);
-var
-  i: integer;
 begin
   FreeAndNil(FLayers[Index]);
   Delete(FLayers, Index, 1);

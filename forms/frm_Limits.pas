@@ -146,7 +146,7 @@ end;
 
 procedure TfrmLimits.StructureToView;
 var
-  i, j, k: integer;
+  i, j: integer;
   Group: TListGroup;
   ListItem: TListItem;
 begin
