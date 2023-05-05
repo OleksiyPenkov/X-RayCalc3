@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 2
   *
-  *   Copyright (C) 2001-2022 Oleksiy Penkov
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -19,6 +19,8 @@ uses
   OtlParallel,
   OtlCollections,
   OtlCommon,
+  OtlTaskControl,
+  OtlTask,
   GpLists,
   OtlSync,
   System.SysUtils,
@@ -190,13 +192,19 @@ begin
 end;
 
 procedure TCalc.RunThetaThreads;
+var
+  Config: IOmniTaskConfig;
 begin
   FLayeredModel.Generate(FParams.Lambda);
   FTotalD := FLayeredModel.TotalD;
 
   PrepareWorkers;
 
+  Config := Parallel.TaskConfig;
+  Config.SetPriority(tpAboveNormal);
+
   Parallel.ForEach(0, NThreads - 1, 1)
+      .TaskConfig(Config)
       .Execute(
           procedure(const elem:Integer)
           begin

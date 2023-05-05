@@ -1007,6 +1007,20 @@ begin
     LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
+
+    edFIter.Text        := INF.ReadString('FIT', 'Namx', '100');
+    edFPopulation.Text  := INF.ReadString('FIT', 'Pop', '100');
+    edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
+
+    edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
+    edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
+    edLFPSORImax.Text     := INF.ReadString('LFPSO', 'RIMax', '3');
+    edLFPSOChiFactor.Text := INF.ReadString('LFPSO', 'kChi', '2');
+    edLFPSOkVmax.Text     := INF.ReadString('LFPSO', 'kVmax', '2');
+    edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
+    edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
+
+    cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
   finally
     INF.Free;
   end;
@@ -1621,6 +1635,19 @@ begin
       INF.WriteInteger('STATE', 'ActiveModel', FActiveModel.ID);
       FActiveModel.Data := Structure.ToString;
     end;
+
+    INF.WriteString('FIT', 'Namx', edFIter.Text);
+    INF.WriteString('FIT', 'Pop', edFPopulation.Text);
+    INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
+
+    INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
+    INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );
+    INF.WriteString('LFPSO', 'RIMax', edLFPSORImax.Text );
+    INF.WriteString('LFPSO', 'kChi', edLFPSOChiFactor.Text);
+    INF.WriteString('LFPSO', 'kVmax', edLFPSOkVmax.Text );
+    INF.WriteString('LFPSO', 'w1', edLFPSOOmega1.Text );
+    INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
+    INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
 
     INF.UpdateFile;
 

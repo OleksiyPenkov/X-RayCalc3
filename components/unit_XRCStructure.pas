@@ -35,7 +35,6 @@ type
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelected: Integer;
-      function GetFitLimits: string;
       procedure ClearSelection(const Reset:boolean = False); inline;
     public
       constructor Create(AOwner: TComponent);
@@ -620,11 +619,6 @@ begin
   end;
 
   Visible := True;
-end;
-
-function TXRCStructure.GetFitLimits: string;
-begin
-
 end;
 
 function TXRCStructure.GetSelected: Integer;
