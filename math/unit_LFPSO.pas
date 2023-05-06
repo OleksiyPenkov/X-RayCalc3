@@ -55,6 +55,7 @@ type
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
+    FTerminated: Boolean;
 
 
       procedure UpdateLFPSO(const t: integer);
@@ -90,6 +91,7 @@ type
       property Materials: TMaterials write  FMaterials;
 
       procedure Run(CalcConditions: TCalcThreadParams);
+      procedure Terminate;
 
   end;
 
@@ -340,52 +342,52 @@ begin
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
 
-    for i := 0 to High(X) do
-    begin
-      try
-        Calc := TCalc.Create;
-        Calc.Params := FCalcParams;
-        Calc.ExpValues := FData;
-        Calc.Limit := FLimit;
+  for i := 0 to High(X) do
+  begin
+    if FTerminated then Break;
+    try
+      Calc := TCalc.Create;
+      Calc.Params := FCalcParams;
+      Calc.ExpValues := FData;
+      Calc.Limit := FLimit;
 
-        Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
-        Calc.Model.Materials := FMaterials;
-        Calc.Run;
-        Calc.CalcChiSquare;
+      Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
+      Calc.Model.Materials := FMaterials;
+      Calc.Run;
+      Calc.CalcChiSquare;
 
-        if Calc.ChiSQR < FLastBestChiSqr then
-        begin
-          FLastBestChiSqr  := Calc.ChiSQR;
-          FResultingCurve := Calc.Results;
-          Result := i;
-        end;
-
-        if Calc.ChiSQR > FLastWorseChiSQR then
-          FLastWorseChiSQR :=  Calc.ChiSQR;
-      finally
-        FreeAndNil(Calc);
-        Application.ProcessMessages;
+      if Calc.ChiSQR < FLastBestChiSqr then
+      begin
+        FLastBestChiSqr  := Calc.ChiSQR;
+        FResultingCurve := Calc.Results;
+        Result := i;
       end;
+
+      if Calc.ChiSQR > FLastWorseChiSQR then
+        FLastWorseChiSQR :=  Calc.ChiSQR;
+    finally
+      FreeAndNil(Calc);
+      Application.ProcessMessages;
     end;
+  end;
 
-    CopySolution(X[Result], pbest);
+  CopySolution(X[Result], pbest);
 
-    if FLastBestChiSqr <  FGlobalBestChiSqr then
-    begin
-      FGlobalBestChiSqr := FLastBestChiSqr;
-      CopySolution(X[Result], gbest);
-    end
-    else begin
-      SetLength(FResultingCurve, 0);
-      Inc(FJammingCount);
-    end;
+  if FLastBestChiSqr <  FGlobalBestChiSqr then
+  begin
+    FGlobalBestChiSqr := FLastBestChiSqr;
+    CopySolution(X[Result], gbest);
+  end
+  else begin
+    SetLength(FResultingCurve, 0);
+    Inc(FJammingCount);
+  end;
 
-    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
-    begin
-      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-      CopySolution(X[Result], abest);
-    end;
-
+  if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
+  begin
+    FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+    CopySolution(X[Result], abest);
+  end;
 end;
 
 procedure TLFPSO_Periodic.ReInit(const Step: integer);
@@ -407,6 +409,7 @@ var
   ReInitCount: integer;
   Vmax0: single;
 begin
+  FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
   ReInitCount := 0;
   FGlobalBestChiSqr:= 1e12;
@@ -418,6 +421,8 @@ begin
 
   for t := 1 to FTMax do
   begin
+    if FTerminated then Break;
+
     switch := Random;
     if switch < 0.5 then
       UpdatePSO(t)
@@ -569,6 +574,11 @@ begin
       Inc(Index);
     end;
   end;
+end;
+
+procedure TLFPSO_Periodic.Terminate;
+begin
+  FTerminated := True;
 end;
 
 function TLFPSO_Periodic.XtoStructure(const Index: integer): TFitPeriodicStructure;

@@ -342,6 +342,7 @@ type
     procedure RzButton1Click(Sender: TObject);
   private
     Project : TXRCProjectTree;
+    LFPSO: TLFPSO_Periodic;
 
     FProjectDir: string;
     FProjectName: string;
@@ -1052,6 +1053,10 @@ begin
   FSeriesList[FActiveModel.CurveID].BeginUpdate;
 
   CalcRun.Enabled := False;
+  CalcAll.Enabled := False;
+  actAutoFitting.Enabled := False;
+  CalcStop.Enabled := True;
+
 
   StartT := StrToFloat(edStartTeta.Text);
   EndT := StrToFloat(edEndTeta.Text);
@@ -1188,7 +1193,13 @@ begin
   FSeriesList[FActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
+
   CalcRun.Enabled := True;
+  CalcAll.Enabled := True;
+  actAutoFitting.Enabled := True;
+  CalcStop.Enabled := False;
+
+
   PrintMax;
 end;
 
@@ -1317,14 +1328,14 @@ end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
 begin
- //
+ if LFPSO <> nil then
+       LFPSO.Terminate;
 end;
 
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   CD: TCalcThreadParams;
   Calc: TCalc;
-  LFPSO: TLFPSO_Periodic;
   Hour, Min, Sec, MSec: Word;
   FitStructure: TFitPeriodicStructure;
   Params: TFitParams;
@@ -1339,6 +1350,8 @@ begin
         Structure.StoreFitLimits(FitStructure)
   else
       Exit;
+
+
   Params := GetFitParams;
   try
     try
