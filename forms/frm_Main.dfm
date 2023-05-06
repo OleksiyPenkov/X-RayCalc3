@@ -817,11 +817,11 @@ object frmMain: TfrmMain
           TabOrder = 0
           ExplicitWidth = 393
           object Label7: TLabel
-            Left = 9
+            Left = 7
             Top = 11
-            Width = 47
+            Width = 27
             Height = 13
-            Caption = 'Itreations'
+            Caption = 'Nmax'
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
             Font.Height = -11
@@ -830,11 +830,11 @@ object frmMain: TfrmMain
             ParentFont = False
           end
           object Label8: TLabel
-            Left = 9
-            Top = 38
-            Width = 50
+            Left = 88
+            Top = 11
+            Width = 19
             Height = 13
-            Caption = 'Population'
+            Caption = 'Size'
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
             Font.Height = -11
@@ -843,8 +843,8 @@ object frmMain: TfrmMain
             ParentFont = False
           end
           object Label20: TLabel
-            Left = 8
-            Top = 77
+            Left = 60
+            Top = 39
             Width = 47
             Height = 13
             Caption = 'Tolerance'
@@ -855,10 +855,23 @@ object frmMain: TfrmMain
             Font.Style = []
             ParentFont = False
           end
+          object Label5: TLabel
+            Left = 71
+            Top = 81
+            Width = 38
+            Height = 13
+            Caption = 'Window'
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clBlack
+            Font.Height = -11
+            Font.Name = 'Tahoma'
+            Font.Style = []
+            ParentFont = False
+          end
           object edFIter: TEdit
-            Left = 62
+            Left = 40
             Top = 7
-            Width = 43
+            Width = 42
             Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
@@ -872,8 +885,8 @@ object frmMain: TfrmMain
             Text = '100'
           end
           object edFPopulation: TEdit
-            Left = 62
-            Top = 34
+            Left = 113
+            Top = 7
             Width = 43
             Height = 22
             Alignment = taRightJustify
@@ -888,7 +901,7 @@ object frmMain: TfrmMain
             Text = '100'
           end
           object RzGroupBox1: TRzGroupBox
-            Left = 111
+            Left = 162
             Top = 0
             Width = 226
             Height = 101
@@ -988,7 +1001,7 @@ object frmMain: TfrmMain
             end
             object cbLFPSOShake: TRzCheckBox
               Left = 11
-              Top = 45
+              Top = 43
               Width = 54
               Height = 19
               Caption = 'Shake'
@@ -1103,9 +1116,9 @@ object frmMain: TfrmMain
             end
           end
           object edFitTolerance: TEdit
-            Left = 59
-            Top = 73
-            Width = 46
+            Left = 113
+            Top = 35
+            Width = 43
             Height = 22
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
@@ -1116,6 +1129,31 @@ object frmMain: TfrmMain
             ParentFont = False
             TabOrder = 3
             Text = '0.005'
+          end
+          object cbPWChiSqr: TRzCheckBox
+            Left = 9
+            Top = 80
+            Width = 56
+            Height = 19
+            Caption = 'PW '#967'2'
+            Checked = True
+            State = cbChecked
+            TabOrder = 4
+          end
+          object edFWindow: TEdit
+            Left = 112
+            Top = 77
+            Width = 44
+            Height = 22
+            Alignment = taRightJustify
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clBlack
+            Font.Height = -12
+            Font.Name = 'Tahoma'
+            Font.Style = []
+            ParentFont = False
+            TabOrder = 5
+            Text = '0.05'
           end
         end
         object RzPanel7: TRzPanel

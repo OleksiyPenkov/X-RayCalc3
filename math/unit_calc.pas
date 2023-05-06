@@ -52,6 +52,7 @@ type
 
       Tasks: array of TProc;
       NThreads : byte;
+      FMovAvg: TDataArray;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -67,6 +68,7 @@ type
 
       property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
+      property MovAvg: TDataArray read FMovAvg write FMovAvg;
       property Limit: single read FLimit write FLimit;
       property Results: TDataArray read FResult;
       property TotalD: single read FTotalD;
@@ -90,11 +92,24 @@ function TCalc.CalcChiSquare: single;
 var
   i: Integer;
   Chi: single;
+
+  UseWeight: boolean;
+  Ratio: single;
+
 begin
+  UseWeight := Length(FMovAvg) > 1;
+
   Result := 0;
   for I := 0 to High(FData) do
   begin
     Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
+    if UseWeight  then
+    begin
+      Ratio := FData[i].r / FMovAvg[i].r;
+      if Ratio > 3 then
+        Chi := Chi * Ratio;
+    end;
+
     Result := Result + Chi;
   end;
 

@@ -55,7 +55,8 @@ type
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
-    FTerminated: Boolean;
+      FTerminated: Boolean;
+      FMovAvg: TDataArray;
 
 
       procedure UpdateLFPSO(const t: integer);
@@ -89,6 +90,7 @@ type
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
       property Materials: TMaterials write  FMaterials;
+      property MovAvg: TDataArray read FMovAvg write FMovAvg;
 
       procedure Run(CalcConditions: TCalcThreadParams);
       procedure Terminate;
@@ -347,9 +349,10 @@ begin
     if FTerminated then Break;
     try
       Calc := TCalc.Create;
-      Calc.Params := FCalcParams;
+      Calc.Params    := FCalcParams;
       Calc.ExpValues := FData;
-      Calc.Limit := FLimit;
+      Calc.MovAvg    := FMovAvg;
+      Calc.Limit     := FLimit;
 
       Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
       Calc.Model.Materials := FMaterials;
@@ -452,7 +455,9 @@ begin
       ReInit(t);
       Inc(ReInitCount);
       FJammingCount := 0;
-    end;
+    end
+    else
+      CopySolution(gbest, abest);
   end;
 end;
 

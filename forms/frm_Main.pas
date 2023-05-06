@@ -274,6 +274,9 @@ type
     Label20: TLabel;
     RzGroupBox2: TRzGroupBox;
     edN: TEdit;
+    cbPWChiSqr: TRzCheckBox;
+    edFWindow: TEdit;
+    Label5: TLabel;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -1012,6 +1015,8 @@ begin
     edFIter.Text        := INF.ReadString('FIT', 'Namx', '100');
     edFPopulation.Text  := INF.ReadString('FIT', 'Pop', '100');
     edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
+    cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
+    edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
 
     edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
     edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
@@ -1294,7 +1299,14 @@ begin
     Calc := TCalc.Create;
 
     if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
-       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+    begin
+      Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+      if cbPWChiSqr.Checked then
+      begin
+        Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
+        //DataToFile('D:\Temp\movavg.dat', Calc.MovAvg );
+      end;
+    end;
 
     try
       Calc.Params := CD;
@@ -1360,10 +1372,17 @@ begin
 
       Calc := TCalc.Create;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
-         Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
-      else
+      begin
+         Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+         if cbPWChiSqr.Checked then
+         begin
+           Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
+         end;
+      end
+      else begin
+        ShowMessage('Measured curve is not linked!');
         Exit;
-
+      end;
 
       chFittingProgress.BottomAxis.Minimum := -1;
       chFittingProgress.BottomAxis.Maximum := Params.NMax;
@@ -1387,6 +1406,7 @@ begin
       LFPSO.Structure := FitStructure;
       LFPSO.Materials := Calc.Model.Materials; // cache materials optical constants
       LFPSO.ExpValues := Calc.ExpValues;
+      LFPSO.MovAvg    := Calc.MovAvg ;
       LFPSO.Run(CD);
 
       Calc.Model := LFPSO.Result;
@@ -1652,6 +1672,8 @@ begin
     INF.WriteString('FIT', 'Namx', edFIter.Text);
     INF.WriteString('FIT', 'Pop', edFPopulation.Text);
     INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
+    INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
+    INF.WriteString('FIT', 'Window', edFWindow.Text);
 
     INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
     INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );
