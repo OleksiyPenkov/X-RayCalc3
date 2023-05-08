@@ -51,7 +51,7 @@ type
          )
   end;
 
-  TThreadParams = record
+  TCalcThreadParams = record
     N: integer;
     K: integer;
     P: TPolarisation;
@@ -69,11 +69,13 @@ type
   TFitParams = record
     NMax: integer;
      Pop: integer;
+   Tolerance: Single;
     Vmax: single;
     JammingMax: integer;
      ReInitMax: integer;
        KChiSqr: single;
        KVmax  : single;
+        w1, w2: single;
 
      Shake : boolean;
   end;

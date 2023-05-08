@@ -27,6 +27,7 @@ type
     procedure ListViewClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btnInitClick(Sender: TObject);
+    procedure RzBitBtn2Click(Sender: TObject);
   private
     ListViewEditor: TRzEdit;
     LItem: TListitem;
@@ -144,9 +145,14 @@ begin
   End;
 end;
 
+procedure TfrmLimits.RzBitBtn2Click(Sender: TObject);
+begin
+  ModalResult := mrCancel;
+end;
+
 procedure TfrmLimits.StructureToView;
 var
-  i, j, k: integer;
+  i, j: integer;
   Group: TListGroup;
   ListItem: TListItem;
 begin
@@ -214,7 +220,8 @@ begin
     StructureFromView;
     Structure := FStructure;
     Result := True;
-  end;
+  end
+  else Result := False;
 end;
 
 procedure TfrmLimits.UserEditListView(var Message: TMessage);

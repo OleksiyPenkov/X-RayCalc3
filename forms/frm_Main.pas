@@ -155,7 +155,7 @@ type
     RzStatusPane7: TRzStatusPane;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
-    Series1: TLineSeries;
+    lsrConvergence: TLineSeries;
     spnFitTime: TRzStatusPane;
     pnl1: TPanel;
     RzPanel2: TRzPanel;
@@ -163,9 +163,6 @@ type
     cbIncrement: TRzComboBox;
     RzPanel6: TRzPanel;
     RzPanel7: TRzPanel;
-    RzPanel4: TRzPanel;
-    Label5: TLabel;
-    edN: TEdit;
     rgPolarisation: TRzRadioGroup;
     pnlWaveParams: TRzPanel;
     Label9: TLabel;
@@ -268,6 +265,18 @@ type
     N4: TMenuItem;
     Delete2: TMenuItem;
     RzVersionInfoStatus1: TRzVersionInfoStatus;
+    Label18: TLabel;
+    edLFPSOOmega1: TEdit;
+    edLFPSOOmega2: TEdit;
+    Label19: TLabel;
+    RzButton1: TRzButton;
+    edFitTolerance: TEdit;
+    Label20: TLabel;
+    RzGroupBox2: TRzGroupBox;
+    edN: TEdit;
+    cbPWChiSqr: TRzCheckBox;
+    edFWindow: TEdit;
+    Label5: TLabel;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -326,8 +335,17 @@ type
     procedure HelpAboutExecute(Sender: TObject);
     procedure CalcAllExecute(Sender: TObject);
     procedure CalcStopExecute(Sender: TObject);
+    procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
+      Y: Integer);
+    procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure ChartMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure ChartZoom(Sender: TObject);
+    procedure RzButton1Click(Sender: TObject);
   private
     Project : TXRCProjectTree;
+    LFPSO: TLFPSO_Periodic;
 
     FProjectDir: string;
     FProjectName: string;
@@ -354,14 +372,13 @@ type
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
     function DataName(Data: PProjectData): string;
-    function ModelName(Data: PProjectData): string;
     procedure CreateDefaultProject;
     procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
     procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure FinalizeCalc(Calc: TCalc);
-    procedure GetThreadParams(var CD: TThreadParams);
+    procedure GetThreadParams(var CD: TCalcThreadParams);
     procedure PlotResults(const Data: TDataArray);
     procedure PrintMax;
     procedure SaveProject(const FileName: string);
@@ -376,6 +393,7 @@ type
     procedure DeleteExtension(Node: PVirtualNode);
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
+    procedure MatchToStructure; inline;
     { Private declarations }
   public
     { Public declarations }
@@ -405,7 +423,8 @@ uses
   unit_FitHelpers,
   frm_Limits,
   editor_proj_item,
-  ClipBrd, frm_MList, frm_about;
+  ClipBrd, frm_MList,
+  frm_about;
 
 {$R *.dfm}
 
@@ -434,7 +453,6 @@ end;
 
 procedure TfrmMain.CreateNewModel(Node: PVirtualNode);
 var
-  PD: PProjectData;
   PL: PVirtualNode;
 begin
   // добавляем модель
@@ -452,12 +470,8 @@ end;
 
 procedure TfrmMain.ModelCreateExecute(Sender: TObject);
 begin
+  FActiveModel.Data := Structure.ToString;
   CreateNewModel(FModelsRoot);
-end;
-
-function TfrmMain.ModelName(Data: PProjectData): string;
-begin
-  Result := Format('%smodel_%d.bin', [FProjectDir, Data.ID])
 end;
 
 procedure TfrmMain.actItemProperitesExecute(Sender: TObject);
@@ -469,17 +483,22 @@ procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
-  i: integer;
 begin
+  chFittingProgress.DoubleBuffered := True;
+
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
-  Series1.AddXY(msg_prm.Step, msg_prm.BestChi);
+  lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
+
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
-  if Length(msg_prm.Curve) > 1 then
+  if (Length(msg_prm.Curve) > 1) then
+  begin
      PlotResults(msg_prm.Curve);
+  end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
   spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
+
 end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
@@ -546,7 +565,7 @@ end;
 
 procedure TfrmMain.ProjectDblClick(Sender: TObject);
 begin
-//  EditProjectItem;
+  EditProjectItem;
 end;
 
 procedure TfrmMain.ProjectAddFolderExecute(Sender: TObject);
@@ -648,10 +667,6 @@ begin
   if not((Data.RowType = prItem) and (Data.Group = gtModel)) then
     Exit;
 
-//  if not FIgnoreFocusChange and (FActiveModel <> nil) then
-//    Tree.SaveToFile(ModelName(FActiveModel));
-
-//  Tree.LoadFromFile(ModelName(Data));
   FActiveModel := Data;
   Project.Repaint;
 end;
@@ -663,27 +678,24 @@ begin
   Data := Project.GetNodeData(Project.GetFirstSelected);
   if (Data.Group = gtModel) and (Data.RowType = prItem) then
   begin
-    //Clipboard.AsText := TreeToStr;
+    ClipBoard.AsText := Structure.ToString;
   end;
   if (Data.Group = gtData) and (Data.RowType = prItem) then
-    //SeriesToClipboard(Data.Curve);
+    SeriesToClipboard(FSeriesList[Data.CurveID]);
 end;
 
 procedure TfrmMain.DeleteModel(Node: PVirtualNode; Data: PProjectData);
 begin
   FSeriesList[Data.CurveID].Free;
-//  DeleteFile(ModelName(FActiveModel));
   Project.DeleteNode(Node);
   Project.Repaint;
   FActiveModel := nil;
-//  Tree.Clear;
 end;
 
 procedure TfrmMain.DeleteData(Node: PVirtualNode; Data: PProjectData);
 begin
   DeleteFile(DataName(Data));
   FSeriesList[Data.CurveID].Free;
- //  Data.Curve.Free;
   Project.DeleteNode(Node);
   Project.Refresh;
 end;
@@ -720,9 +732,6 @@ var
   Node: PVirtualNode;
   Data: PProjectData;
 begin
-//  if FActiveModel <> nil then
-//    Tree.SaveToFile(ModelName(FActiveModel));
-
   Node := Project.GetFirstSelected;
   if Node = nil then Exit;
 
@@ -846,19 +855,18 @@ begin
 end;
 
 procedure TfrmMain.actModelPasteExecute(Sender: TObject);
-var
-  S: string;
 begin
-  S := ClipBoard.AsText;
+  FActiveModel.Data := Structure.ToString;
   CreateNewModel(FModelsRoot);
-  Structure.FromString(S);
-  FActiveModel.Data := S;
+  FActiveModel.Data := ClipBoard.AsText;
+  Structure.FromString(FActiveModel.Data);
 end;
 
 procedure TfrmMain.actProjectItemDuplicateExecute(Sender: TObject);
 var
   S: string;
 begin
+  FActiveModel.Data := Structure.ToString;
   S := Structure.ToString;
   CreateNewModel(FModelsRoot);
   Structure.FromString(S);
@@ -914,9 +922,16 @@ begin
   Data.RowType := prItem;
 
   AddCurve(Data);
+  Project.Expanded[FDataRoot] := True;
 
   SeriesFromClipboard(FSeriesList[Data.CurveID]);
   SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
+end;
+
+procedure TfrmMain.MatchToStructure;
+begin
+  PrepareDistributionCharts;
+  FActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.PeriodAddExecute(Sender: TObject);
@@ -928,13 +943,12 @@ begin
   edtrStack.Edit(Name, N);
   if Name <> '' then
      Structure.AddStack(N, Name);
-
 end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
 begin
   Structure.DeleteStack;
-  FActiveModel.Data := Structure.ToString;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.PeriodInsertExecute(Sender: TObject);
@@ -946,7 +960,7 @@ begin
   edtrStack.Edit(Name, N);
   if Name <> '' then
      Structure.InsertStack(N, Name);
-  FActiveModel.Data := Structure.ToString;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
@@ -997,6 +1011,22 @@ begin
     LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
+
+    edFIter.Text        := INF.ReadString('FIT', 'Namx', '100');
+    edFPopulation.Text  := INF.ReadString('FIT', 'Pop', '100');
+    edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
+    cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
+    edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
+
+    edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
+    edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
+    edLFPSORImax.Text     := INF.ReadString('LFPSO', 'RIMax', '3');
+    edLFPSOChiFactor.Text := INF.ReadString('LFPSO', 'kChi', '2');
+    edLFPSOkVmax.Text     := INF.ReadString('LFPSO', 'kVmax', '2');
+    edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
+    edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
+
+    cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
   finally
     INF.Free;
   end;
@@ -1011,11 +1041,13 @@ begin
   Result.ReInitMax  := StrToInt(edLFPSORImax.Text);
   Result.KChiSqr    := StrToFloat(edLFPSOChiFactor.Text);
   Result.KVmax      := StrToFloat(edLFPSOkVmax.Text);
-
-  Result.Shake  := cbLFPSOShake.Checked;
+  Result.w1         := StrToFloat(edLFPSOOmega1.Text);
+  Result.w2         := StrToFloat(edLFPSOOmega2.Text);
+  Result.Shake      := cbLFPSOShake.Checked;
+  Result.Tolerance := StrToFloat(edFitTolerance.Text);
 end;
 
-procedure TfrmMain.GetThreadParams(var CD: TThreadParams);
+procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
 var
   StartT, EndT: single;
 begin
@@ -1026,6 +1058,10 @@ begin
   FSeriesList[FActiveModel.CurveID].BeginUpdate;
 
   CalcRun.Enabled := False;
+  CalcAll.Enabled := False;
+  actAutoFitting.Enabled := False;
+  CalcStop.Enabled := True;
+
 
   StartT := StrToFloat(edStartTeta.Text);
   EndT := StrToFloat(edEndTeta.Text);
@@ -1115,9 +1151,11 @@ end;
 var
   j: Integer;
 begin
+  FSeriesList[FActiveModel.CurveID].BeginUpdate;
   FSeriesList[FActiveModel.CurveID].Clear;
   for j := 0 to High(Data) do
       FSeriesList[FActiveModel.CurveID].AddXY(Data[j].t, Data[j].R);
+  FSeriesList[FActiveModel.CurveID].EndUpdate;
 end;
 
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);
@@ -1160,14 +1198,19 @@ begin
   FSeriesList[FActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
+
   CalcRun.Enabled := True;
+  CalcAll.Enabled := True;
+  actAutoFitting.Enabled := True;
+  CalcStop.Enabled := False;
+
+
   PrintMax;
 end;
 
 procedure TfrmMain.PrepareDistributionCharts;
 var
   Materials: TMaterialsList;
-  i: integer;
 
   procedure InitSereis(Series: TLineSeries);
   begin
@@ -1205,7 +1248,7 @@ end;
 
 procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
 var
-  i, j: integer;
+  i: integer;
 begin
   for i := 0 to High(FThicknessSeries) do
   begin
@@ -1246,7 +1289,7 @@ end;
 
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
 var
-  CD: TThreadParams;
+  CD: TCalcThreadParams;
   Calc: TCalc;
 begin
   if (FActiveModel = nil) then
@@ -1256,7 +1299,14 @@ begin
     Calc := TCalc.Create;
 
     if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
-       Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+    begin
+      Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+      if cbPWChiSqr.Checked then
+      begin
+        Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
+        //DataToFile('D:\Temp\movavg.dat', Calc.MovAvg );
+      end;
+    end;
 
     try
       Calc.Params := CD;
@@ -1290,40 +1340,54 @@ end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
 begin
- //
+ if LFPSO <> nil then
+       LFPSO.Terminate;
 end;
 
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
-  CD: TThreadParams;
+  CD: TCalcThreadParams;
   Calc: TCalc;
-  LFPSO: TLFPSO_Periodic;
   Hour, Min, Sec, MSec: Word;
   FitStructure: TFitPeriodicStructure;
+  Params: TFitParams;
 begin
   Randomize;
 
   if (FActiveModel = nil) then
     Exit;
 
-  try
-
-    FitStructure := Structure.ToFitStructure;
-
-    if frmLimits.Show(FitStructure) then
+  FitStructure := Structure.ToFitStructure;
+  if frmLimits.Show(FitStructure) then
         Structure.StoreFitLimits(FitStructure)
-    else
+  else
       Exit;
 
+
+  Params := GetFitParams;
+  try
     try
-      Series1.Clear;
+      lsrConvergence.Clear;
       Pages.ActivePage := tsFittingProgress;
 
       Calc := TCalc.Create;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
-         Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID])
-      else
+      begin
+         Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+         if cbPWChiSqr.Checked then
+         begin
+           Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
+         end;
+      end
+      else begin
+        ShowMessage('Measured curve is not linked!');
         Exit;
+      end;
+
+      chFittingProgress.BottomAxis.Minimum := -1;
+      chFittingProgress.BottomAxis.Maximum := Params.NMax;
+      chFittingProgress.BottomAxis.Minimum := -1;
+      chFittingProgress.LeftAxis.Minimum := Params.Tolerance / 5;
 
       GetThreadParams(CD);
 
@@ -1332,14 +1396,17 @@ begin
       Calc.Model := Structure.Model;
       Calc.Run;
       Calc.CalcChiSquare;
-      Series1.AddXY(-1, Calc.ChiSQR);
+      lsrConvergence.AddXY(-1, Calc.ChiSQR);
+      chFittingProgress.LeftAxis.Maximum := Calc.ChiSQR * 2;
 
       LFPSO := TLFPSO_Periodic.Create;
-      LFPSO.Params := GetFitParams;
+      LFPSO.Params := Params;
+
       LFPSO.Limit := Calc.Limit;
       LFPSO.Structure := FitStructure;
-
+      LFPSO.Materials := Calc.Model.Materials; // cache materials optical constants
       LFPSO.ExpValues := Calc.ExpValues;
+      LFPSO.MovAvg    := Calc.MovAvg ;
       LFPSO.Run(CD);
 
       Calc.Model := LFPSO.Result;
@@ -1362,7 +1429,8 @@ begin
     Calc.Free;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);  end;
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d h', [Hour, Min, Sec]);
+  end;
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);
@@ -1475,31 +1543,32 @@ procedure TfrmMain.LayerAddExecute(Sender: TObject);
 begin
   if edtrLayer.ShowModal = mrOk then
     Structure.AddLayer(Structure.Selected, edtrLayer.Data);
-  FActiveModel.Data := Structure.ToString;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.LayerCutExecute(Sender: TObject);
 begin
   Structure.CopyLayer(False);
   Structure.DeleteLayer;
-  FActiveModel.Data := Structure.ToString;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.LayerDeleteExecute(Sender: TObject);
 begin
   Structure.DeleteLayer;
-  FActiveModel.Data := Structure.ToString;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.LayerInsertExecute(Sender: TObject);
 begin
-  FActiveModel.Data := Structure.ToString;
+//  Structure.InsertLayer;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.LayerPasteExecute(Sender: TObject);
 begin
   Structure.PasteLayer;
-  FActiveModel.Data := Structure.ToString;
+  MatchToStructure;
 end;
 
 procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
@@ -1514,7 +1583,8 @@ begin
 
   FIgnoreFocusChange := False;
   Project.Repaint;
-  PrepareDistributionCharts;
+  Caption := 'X-RayCalc 2: ' + ExtractFileName(FileName);
+  MatchToStructure;
 end;
 
 procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
@@ -1559,7 +1629,7 @@ procedure TfrmMain.FilePrintExecute(Sender: TObject);
 begin
   if dlgPrint.Execute then
   begin
-    Chart.Title.Text.Text := Structure.ToString;
+//    Chart.Title.Text.Text := Structure.ToString;
     Chart.Title.Visible := True;
     Chart.PrintLandscape;
     Chart.Title.Visible := False;
@@ -1598,6 +1668,21 @@ begin
       INF.WriteInteger('STATE', 'ActiveModel', FActiveModel.ID);
       FActiveModel.Data := Structure.ToString;
     end;
+
+    INF.WriteString('FIT', 'Namx', edFIter.Text);
+    INF.WriteString('FIT', 'Pop', edFPopulation.Text);
+    INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
+    INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
+    INF.WriteString('FIT', 'Window', edFWindow.Text);
+
+    INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
+    INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );
+    INF.WriteString('LFPSO', 'RIMax', edLFPSORImax.Text );
+    INF.WriteString('LFPSO', 'kChi', edLFPSOChiFactor.Text);
+    INF.WriteString('LFPSO', 'kVmax', edLFPSOkVmax.Text );
+    INF.WriteString('LFPSO', 'w1', edLFPSOOmega1.Text );
+    INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
+    INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
 
     INF.UpdateFile;
 
@@ -1667,6 +1752,50 @@ begin
     SaveProject(FProjectFileName);
 end;
 
+procedure TfrmMain.ChartMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  if Button = mbRight then
+    Screen.Cursor := crSizeAll;
+end;
+
+procedure TfrmMain.ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+var
+  xv, yv: single;
+  R: TRect;
+begin
+  if FActiveModel = nil then
+    Exit;
+
+  xv := FSeriesList[FActiveModel.CurveID].XScreenToValue(X);
+  yv := FSeriesList[FActiveModel.CurveID].YScreenToValue(Y);
+  StatusX.Caption := FloatToStrF(xv, ffFixed, 4, 3);
+  if yv < 0.01 then
+    StatusY.Caption := FloatToStrF(yv, ffExponent, 3, 2)
+  else
+    StatusY.Caption := FloatToStrF(yv, ffFixed, 4, 3);
+
+  R := Chart.Legend.RectLegend;
+
+  if (X > R.Left) and (X < R.Right) and (Y > R.Top) and (Y < R.Bottom) then
+    Chart.Cursor := crArrow
+  else
+    Chart.Cursor := crCross;
+end;
+
+procedure TfrmMain.ChartMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  if Button = mbRight then
+    Screen.Cursor := crDefault;
+end;
+
+procedure TfrmMain.ChartZoom(Sender: TObject);
+begin
+  PrintMax;
+end;
+
 procedure TfrmMain.CreateDefaultProject;
 var
   PD: PProjectData;
@@ -1678,7 +1807,7 @@ begin
 
   Chart.SeriesList.Clear;
   Project.Clear;
-  Structure.AddSubstrate('SiO2', 5, 2.2);
+  Structure.AddSubstrate('Si', 5, 2.2);
 
   FLastID := 1;
   FProjectName := 'noname.xrcx';
@@ -1708,6 +1837,8 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
+  Caption := 'X-RayCalc 2: ' + FProjectName;
+
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -1766,6 +1897,11 @@ begin
         pnlWaveParams.Enabled := True;
       end;
   end;
+end;
+
+procedure TfrmMain.RzButton1Click(Sender: TObject);
+begin
+  SeriesToClipboard(lsrConvergence);
 end;
 
 procedure TfrmMain.cbIncrementChange(Sender: TObject);

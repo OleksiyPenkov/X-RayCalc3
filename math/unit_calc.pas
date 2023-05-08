@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 2
   *
-  *   Copyright (C) 2001-2022 Oleksiy Penkov
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -13,14 +13,14 @@ interface
 
 uses
   Classes,
+  Neslib.FastMath,
   unit_types,
   math_complex,
-  VirtualTrees,
-  VclTee.TeEngine, VclTee.Series,
-  VclTee.TeeProcs, VclTee.Chart,
   OtlParallel,
   OtlCollections,
   OtlCommon,
+  OtlTaskControl,
+  OtlTask,
   GpLists,
   OtlSync,
   System.SysUtils,
@@ -45,15 +45,14 @@ type
 
       FLimit: single;
 
-      FParams: TThreadParams;
+      FParams: TCalcThreadParams;
 
       FTotalD: single;
       FChiSQR: single;
 
-      FHasGradients: Boolean;
-
       Tasks: array of TProc;
       NThreads : byte;
+      FMovAvg: TDataArray;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -65,10 +64,11 @@ type
       constructor Create;
       destructor Free;
       procedure Run;
-      function CalcChiSquare: double;
+      function CalcChiSquare: single;
 
-      property Params: TThreadParams write FParams;
+      property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
+      property MovAvg: TDataArray read FMovAvg write FMovAvg;
       property Limit: single read FLimit write FLimit;
       property Results: TDataArray read FResult;
       property TotalD: single read FTotalD;
@@ -79,21 +79,37 @@ type
 implementation
 
 uses
-  Math,
   math_globals;
 
   { TCalc }
+function Log10(const Val: single): single; inline;
+begin
+  Result := 0.2171472409516259 * FastLn(Val);
+end;
 
-function TCalc.CalcChiSquare: double;
+
+function TCalc.CalcChiSquare: single;
 var
   i: Integer;
-  Chi: double;
+  Chi: single;
+
+  UseWeight: boolean;
+  Ratio: single;
+
 begin
+  UseWeight := Length(FMovAvg) > 1;
+
   Result := 0;
   for I := 0 to High(FData) do
   begin
     Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
-//    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r))/ sqrt(FData[i].t);
+    if UseWeight  then
+    begin
+      Ratio := FData[i].r / FMovAvg[i].r;
+      if Ratio > 3 then
+        Chi := Chi * Ratio;
+    end;
+
     Result := Result + Chi;
   end;
 
@@ -132,11 +148,11 @@ begin
 end;
 
 procedure TCalc.CalcLambda;
-var
-  i: integer;
-  Step: single;
-  R: single;
-  L: single;
+//var
+//  i: integer;
+//  Step: single;
+//  R: single;
+//  L: single;
 //  LayeredModel: TLayeredModel;
 //  Layers: TLayers;
  begin
@@ -191,13 +207,19 @@ begin
 end;
 
 procedure TCalc.RunThetaThreads;
+var
+  Config: IOmniTaskConfig;
 begin
   FLayeredModel.Generate(FParams.Lambda);
   FTotalD := FLayeredModel.TotalD;
 
   PrepareWorkers;
 
+  Config := Parallel.TaskConfig;
+  Config.SetPriority(tpAboveNormal);
+
   Parallel.ForEach(0, NThreads - 1, 1)
+      .TaskConfig(Config)
       .Execute(
           procedure(const elem:Integer)
           begin
@@ -221,7 +243,7 @@ end;
 
 function TCalc.RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
 var
-  c, Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t, t: single;
+  c1, c2, Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t, t: single;
 
   function TotalRecursiveRefraction: single;
   var
@@ -248,7 +270,7 @@ var
   begin
       case RF of
         rfError:
-          Result := exp(-1 * sqr(sigma) * sqr(s));
+          Result := FastExp(-1 * sqr(sigma) * sqr(s));
         rfExp:
           Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
         rfLinear:
@@ -274,7 +296,7 @@ var
       b2 := AddZZ(ALayers[i].K, ALayers[i + 1].K);
       ALayers[i].RF := DivZZ(b1, b2);
       s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
-      s := c * sqrt(cos_t * sqrt(s1));
+      s := c1 * sqrt(cos_t * sqrt(s1));
 
       ALayers[i].RF := MulRZ(Roughness(FParams.RF, ALayers[i + 1].s, s), ALayers[i].RF);
     end;
@@ -294,7 +316,7 @@ var
       b2 := AddZZ(MulRZ(1, a1), MulRZ(1, a2));
       ALayers[i].RF := DivZZ(b1, b2);
       s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
-      s := c * sqrt(cos_t * sqrt(s1));
+      s := c1 * sqrt(cos_t * sqrt(s1));
 
       ALayers[i].RF := MulRZ(Roughness(FParams.RF, ALayers[i + 1].s, s), ALayers[i].RF);
     end;
@@ -303,22 +325,22 @@ var
   procedure FresnelCoefficients;   { Френелевские коэффициенты (p-p) }
   var
     i: Integer;
-    c: Single;
     a1: TComplex;
   begin
-    c := 2 * Pi / Lambda; {другое волновое число }
     for i := 0 to Length(ALayers) - 1 do
       begin
         a1 := SqrtZ(AddZR(ALayers[i].e, -sqr_sin_t));
-        ALayers[i].K := MulRZ(c, a1);
+        ALayers[i].K := MulRZ(c2, a1);
       end;
   end;
 
 begin
-  c := 4 * Pi / Lambda; { волновое число }
+  c1 := 4 * Pi / Lambda; { волновое число }
+  c2 := 2 * Pi / Lambda; {другое волновое число }
   t := Pi / 2 - Pi * ATheta / 180;
 
-  sin_t := sin(t); cos_t := cos(t); sqr_sin_t := sqr(sin_t);
+  FastSinCos(t, sin_t, cos_t);
+  sqr_sin_t := sqr(sin_t);
 
   FresnelCoefficients;
   LayerAmplitudeRefractionS;
@@ -345,7 +367,7 @@ var
 
   function Gauss(const c, x, sqr_Width: single): single; inline;
   begin
-    Result := c * exp(-2 * sqr(x) / sqr_Width);
+    Result := c * FastExp(-2 * sqr(x) / sqr_Width);
   end;
 
 begin

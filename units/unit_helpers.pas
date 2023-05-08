@@ -2,8 +2,8 @@
   *
   *   X-Ray Calc 2
   *
-  *   Copyright (C) 2001-2020 Oleksiy Penkov
-  *   e-mail: oleksiy.penkov@gmail.com
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
 
@@ -28,11 +28,14 @@ function SeriesToString(Series: TLineSeries): string;
 procedure SeriesFromClipboard(Series: TLineSeries);
 procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr: string); forward;
 procedure DataToFile(const FileName: string; Data: TDataArray);
+//procedure DataToClipboard(const Data: TDataArray);
 
 function SeriesToData( Series: TLineSeries): TDataArray;
 procedure AutoMerge( var Series: TLineSeries);
 procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
+
+function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 
 procedure FillElementsList(const Path: string; var List: TListBox);
 procedure OpenHelpFile(const FileName: string);
@@ -62,7 +65,40 @@ uses
 const
   TabSeparator = #9;
 
+function MovAvg(const Inp: TDataArray; W: single): TDataArray;
+var
+  i, j: integer;
+  V, V0: single;
+  Offset, Window: integer;
+begin
+  SetLength(Result, Length(Inp));
+  Window := Round(Length(Inp) * W);
+  Offset := Window div 2;
 
+  V := 0;
+  for I := Window to High(Inp) do
+  begin
+    V := 0;
+    for j := i - Window to i do
+      V := V + Inp[j].r;
+
+    V := V / (Window + 1);
+    Result[i - offset].t := Inp[i - offset].t;
+    Result[i - offset].r := V;
+  end;
+
+  for I := 0 to offset do
+  begin
+    Result[i].t := Inp[i].t;
+    Result[i].r := Inp[i].r;
+  end;
+
+  for I := High(Inp) - Offset to High(Inp) do
+  begin
+    Result[i].t := Inp[i].t;
+    Result[i].r := V;
+  end;
+end;
 
 procedure OpenHelpFile(const FileName: string);
 var

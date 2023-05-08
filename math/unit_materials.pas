@@ -1,6 +1,6 @@
 ﻿(* *****************************************************************************
   *
-  *   X-Ray Calc 3
+  *   X-Ray Calc 2
   *
   *   Copyright (C) 2001-2023 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
@@ -17,17 +17,14 @@ uses
   math_globals;
 
 type
+
+  TMaterials = array of TMaterial;
+
   TLayeredModel = class
   private
-    FMaterials: array of TMaterial;
-    Gradients: TGradients;
+    FMaterials: TMaterials;
 
-    NM, NL, CurrentLayer, CurrentMaterial: integer;
-
-    LayersCount: integer;
-
-
-    Delta: single;
+    CurrentLayer, CurrentMaterial: integer;
 
     FLayers: TCalcLayers;
     FLambda: Single;
@@ -50,10 +47,8 @@ type
 
     property Layers: TCalcLayers read GetLayers;
     property TotalD: Single read FTotalD;
-  end;
-
-
-
+    property Materials: TMaterials read FMaterials write FMaterials;
+   end;
 
 implementation
 

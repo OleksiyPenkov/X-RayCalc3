@@ -2,8 +2,8 @@
   *
   *   X-Ray Calc 2
   *
-  *   Copyright (C) 2001-2020 Oleksiy Penkov
-  *   e-mail: oleksiy.penkov@gmail.com
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
 
@@ -104,27 +104,27 @@ begin
 end;
 
 procedure TfrmMaterialList.btnGraphClick(Sender: TObject);
-const
-  H = 12398.6;
-  kk = 0.54014E-5;
-var
-  i, N: integer;
-  s, Name: string;
-  e1, c, beta, gamma: single;
-  f1, f2: TComplex;
-  Size: integer;
-  Na, Nro, L: single;
-  StreamIn: TMemoryStream;
-  StrBuffer: PChar;
-
-  function GetString(Stream: TMemoryStream): string;
-  begin
-    Stream.Read(size, SizeOf(size));
-    StrBuffer := AllocMem(size);
-    Stream.Read(StrBuffer^, size);
-    Result := (StrBuffer);
-    FreeMem(StrBuffer);
-  end;
+//const
+//  H = 12398.6;
+//  kk = 0.54014E-5;
+//var
+//  i, N: integer;
+//  s, Name: string;
+//  e1, c, beta, gamma: single;
+//  f1, f2: TComplex;
+//  Size: integer;
+//  Na, Nro, L: single;
+//  StreamIn: TMemoryStream;
+//  StrBuffer: PChar;
+//
+//  function GetString(Stream: TMemoryStream): string;
+//  begin
+//    Stream.Read(size, SizeOf(size));
+//    StrBuffer := AllocMem(size);
+//    Stream.Read(StrBuffer^, size);
+//    Result := (StrBuffer);
+//    FreeMem(StrBuffer);
+//  end;
 
 
 begin

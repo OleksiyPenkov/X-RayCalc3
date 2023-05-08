@@ -27,7 +27,7 @@ type
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
-    procedure SetID(const Value: Integer);
+      procedure SetID(const Value: Integer);
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -186,8 +186,6 @@ begin
 end;
 
 procedure TXRCStack.DeleteLayer(const Index: integer);
-var
-  i: integer;
 begin
   FreeAndNil(FLayers[Index]);
   Delete(FLayers, Index, 1);

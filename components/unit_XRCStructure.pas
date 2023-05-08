@@ -6,7 +6,7 @@ uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
   VCL.Forms, unit_XRCLayerControl, unit_XRCStackControl,
   RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface,
-  unit_materials, unit_Types, System.JSON;
+  unit_materials, unit_Types, System.JSON, System.Generics.Collections;
 
 type
 
@@ -30,23 +30,17 @@ type
       FIncrement: single;
       FVisibility: boolean;
 
-      FFitLimitsStr: string;
-
       FClipBoardLayers: TLayersData;
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelected: Integer;
-      procedure UpdateGUI;
-      function GetFitLimits: string;
-      procedure SetFitLimits(const Value: string);
       procedure ClearSelection(const Reset:boolean = False); inline;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
 
       property Selected: Integer read GetSelected;
-      property FitLimits: string read GetFitLimits write SetFitLimits;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
@@ -83,13 +77,15 @@ implementation
 procedure TXRCStructure.AddLayer(const StackID: Integer;
   const Data: TLayerData);
 begin
-  Stacks[StackID].AddLayer(Data);
+  if StackID <> -1 then
+    Stacks[StackID].AddLayer(Data)
+  else
+    Stacks[High(Stacks)].AddLayer(Data)
 end;
 
 procedure TXRCStructure.RealignStacks;
 var
   i, count: Integer;
-  top: Integer;
   MaxHeigh: integer;
 
 begin
@@ -316,7 +312,7 @@ end;
 
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
-  i, count, pos: Integer;
+  Count, pos: Integer;
 begin
   Visible := False;
   Count := Length(Stacks);
@@ -345,7 +341,7 @@ end;
 
 function TXRCStructure.Model: TLayeredModel;
 var
-  i, k, j: Integer;
+  i, j: Integer;
   StackLayers: TLayersData;
 begin
   Result := TLayeredModel.Create;
@@ -388,8 +384,6 @@ begin
 end;
 
 procedure TXRCStructure.SelectLayer(const StackID, LayerID: Integer);
-var
-  i: integer;
 begin
   ClearSelection;
 
@@ -403,13 +397,6 @@ begin
     FSelectedLayerParent := -1;
     FSelectedLayer := -1;
   end;
-end;
-
-procedure TXRCStructure.SetFitLimits(const Value: string);
-var
-  SL, Line: TStringList;
-begin
-
 end;
 
 procedure TXRCStructure.SetIncrement(const Value: single);
@@ -543,11 +530,6 @@ begin
   end;
 end;
 
-procedure TXRCStructure.UpdateGUI;
-begin
-
-end;
-
 procedure TXRCStructure.FromFitStructure(const Inp: TLayeredModel);
 var
   i, j: integer;
@@ -637,11 +619,6 @@ begin
   end;
 
   Visible := True;
-end;
-
-function TXRCStructure.GetFitLimits: string;
-begin
-
 end;
 
 function TXRCStructure.GetSelected: Integer;

@@ -23,7 +23,7 @@ object frmLimits: TfrmLimits
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 779
+    ExplicitWidth = 561
     ExplicitHeight = 425
     object Label13: TLabel
       Left = 19
@@ -116,7 +116,8 @@ object frmLimits: TfrmLimits
       ViewStyle = vsReport
       FillLastColumn = False
       OnClick = ListViewClick
-      ExplicitWidth = 431
+      ExplicitWidth = 559
+      ExplicitHeight = 368
     end
     object edFdH: TEdit
       Left = 40
@@ -184,7 +185,7 @@ object frmLimits: TfrmLimits
     Color = 15987699
     TabOrder = 1
     ExplicitTop = 434
-    ExplicitWidth = 779
+    ExplicitWidth = 561
     object RzBitBtn1: TRzBitBtn
       Left = 476
       Top = 8
@@ -198,6 +199,7 @@ object frmLimits: TfrmLimits
       ModalResult = 2
       Caption = 'Cancel'
       TabOrder = 1
+      OnClick = RzBitBtn2Click
     end
   end
 end
