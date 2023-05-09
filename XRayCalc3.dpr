@@ -1,4 +1,4 @@
-program XRayCalc2;
+program XRayCalc3;
 
 uses
   FastMM5,
