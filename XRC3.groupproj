@@ -3,7 +3,7 @@
         <ProjectGuid>{9430B3AD-C299-4509-A910-46BC32B0F243}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="XRayCalc2.dproj">
+        <Projects Include="XRayCalc3.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -14,23 +14,23 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="XRayCalc2">
-        <MSBuild Projects="XRayCalc2.dproj"/>
+    <Target Name="XRayCalc3">
+        <MSBuild Projects="XRayCalc3.dproj"/>
     </Target>
-    <Target Name="XRayCalc2:Clean">
-        <MSBuild Projects="XRayCalc2.dproj" Targets="Clean"/>
+    <Target Name="XRayCalc3:Clean">
+        <MSBuild Projects="XRayCalc3.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="XRayCalc2:Make">
-        <MSBuild Projects="XRayCalc2.dproj" Targets="Make"/>
+    <Target Name="XRayCalc3:Make">
+        <MSBuild Projects="XRayCalc3.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="XRayCalc2"/>
+        <CallTarget Targets="XRayCalc3"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="XRayCalc2:Clean"/>
+        <CallTarget Targets="XRayCalc3:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="XRayCalc2:Make"/>
+        <CallTarget Targets="XRayCalc3:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

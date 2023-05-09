@@ -1,6 +1,6 @@
 ﻿ (* *****************************************************************************
   *
-  *   X-Ray Calc 2
+  *   X-Ray Calc 3
   *
   *   Copyright (C) 2001-2023 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
@@ -124,7 +124,7 @@ begin
 //  {$IFDEF DEBUG}
 //    NThreads := 1;
 //  {$ELSE}
-    NThreads := Environment.Process.Affinity.Count;
+    NThreads := Environment.Process.Affinity.CountPhysical;
 //  {$ENDIF}
 
   SetLength(Tasks, NThreads);
@@ -216,7 +216,7 @@ begin
   PrepareWorkers;
 
   Config := Parallel.TaskConfig;
-  Config.SetPriority(tpAboveNormal);
+  Config.SetPriority(tpHighest);
 
   Parallel.ForEach(0, NThreads - 1, 1)
       .TaskConfig(Config)

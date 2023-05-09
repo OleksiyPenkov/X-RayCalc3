@@ -1,6 +1,6 @@
 ﻿(* *****************************************************************************
   *
-  *   X-Ray Calc 2
+  *   X-Ray Calc 3
   *
   *   Copyright (C) 2001-2023 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
@@ -68,7 +68,7 @@ const
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 var
   i, j: integer;
-  V, V0: single;
+  V: single;
   Offset, Window: integer;
 begin
   SetLength(Result, Length(Inp));

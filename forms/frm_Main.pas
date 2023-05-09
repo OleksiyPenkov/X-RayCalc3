@@ -1583,7 +1583,7 @@ begin
 
   FIgnoreFocusChange := False;
   Project.Repaint;
-  Caption := 'X-RayCalc 2: ' + ExtractFileName(FileName);
+  Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
   MatchToStructure;
 end;
 
@@ -1837,7 +1837,7 @@ begin
   Project.Expanded[PG] := True;
 
   FDataRoot := PG;
-  Caption := 'X-RayCalc 2: ' + FProjectName;
+  Caption := 'X-Ray Calc 3: ' + FProjectName;
 
 end;
 

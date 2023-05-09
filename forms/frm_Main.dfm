@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 381
   Top = 305
-  Caption = 'X-Ray Calc 2'
+  Caption = 'X-Ray Calc 3'
   ClientHeight = 708
   ClientWidth = 1385
   Color = clBtnFace
