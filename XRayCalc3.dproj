@@ -108,7 +108,7 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 2\test_data\Multilayer(4x20)_#1.xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\12_Layers.xrcx&quot; -a</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>

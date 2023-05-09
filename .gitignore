@@ -6,3 +6,5 @@ DCU
 /forms/__recovery/frm_Main.dfm
 /forms/__recovery/frm_Main.pas
 Old
+/*.local
+/*.identcache
