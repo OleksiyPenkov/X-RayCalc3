@@ -173,7 +173,7 @@ begin
     CalcParams[NThreads - 1].UseData := True;
     CalcParams[NThreads - 1].N0 := N * (NThreads - 1) ;
     CalcParams[NThreads - 1].N := Length(FData) - N * (NThreads - 1);
-    SetLength(CalcParams[i].Points, CalcParams[NThreads - 1].N);
+    SetLength(CalcParams[NThreads - 1].Points, CalcParams[NThreads - 1].N);
       for j := 0 to CalcParams[NThreads - 1].N - 1 do
        CalcParams[i].Points[j] := FData[CalcParams[NThreads - 1].N0 + j].t;
 
@@ -433,7 +433,7 @@ end;
 procedure TCalc.Convolute(Width: single);
 var
   Sum, delta, t1, c: single;
-  i, N, k, p, Size: integer;
+  i, N, k, Size: integer;
   sqr_Width: Single;
 begin
   FTail := 0;
@@ -451,7 +451,6 @@ begin
 
   SetLength(FTemp, Size);
 
-  p := 0;
   for i := N to Size - N - 1 do
   begin
     t1 := -0.1;
@@ -463,7 +462,6 @@ begin
     end;
     FTemp[i].t := FResult[i].t;
     FTemp[i].R := Sum;
-    inc(p);
   end;
 
   Restore(0, N - 1);
