@@ -42,6 +42,7 @@ type
 
       FData: TDataArray;
       FResult: TDataArray;
+      FTemp: TDataArray;
 
       FLayeredModel: TLayeredModel;
 
@@ -55,7 +56,7 @@ type
       Tasks: array of TProc;
       NThreads : byte;
       FMovAvg: TDataArray;
-    FTail: Integer;
+      FTail: Integer;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -63,6 +64,8 @@ type
       procedure RunThetaThreads;
       procedure Convolute(Width: single);
       procedure PrepareWorkers;
+      procedure Restore(const N1, N2: integer); inline;
+      procedure MVA(const N1, N2: integer); inline;
     public
       constructor Create;
       destructor Free;
@@ -392,30 +395,46 @@ begin
     Result := Rs;
 end;
 
+procedure TCalc.Restore(const N1, N2: integer);
+var
+  i: integer;
+begin
+  for i := N1 to N2 do
+  begin
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := FResult[i].r;
+  end;
+end;
+
+procedure TCalc.MVA(const N1, N2: integer);
+const
+  W = 10;
+var
+  i, j: integer;
+  S: single;
+begin
+  for i := N1 to N2 do
+  begin
+    S := 0;
+    for J := i - W to i do
+      S := S + FResult[j].r;
+    S := S / (W + 1);
+
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := S;
+  end;
+end;
+
+function Gauss(const c, x, sqr_Width: single): single; inline;
+begin
+  Result := c * FastExp(-2 * sqr(x) / sqr_Width);
+end;
+
 procedure TCalc.Convolute(Width: single);
 var
   Sum, delta, t1, c: single;
   i, N, k, p, Size: integer;
   sqr_Width: Single;
-
-  Temp: TDataArray;
-
-  function Gauss(const c, x, sqr_Width: single): single; inline;
-  begin
-    Result := c * FastExp(-2 * sqr(x) / sqr_Width);
-  end;
-
-  procedure Restore(const N1, N2: integer);
-  var
-    i: integer;
-  begin
-    for i := N1 to N2 do
-    begin
-      Temp[i].t := FResult[i].t;
-      Temp[i].R := FResult[i].r;
-    end;
-  end;
-
 begin
   FTail := 0;
   if Width = 0 then Exit;
@@ -430,7 +449,7 @@ begin
   if frac(N / 2) = 0 then
     N := N - 1;
 
-  SetLength(Temp, Size);
+  SetLength(FTemp, Size);
 
   p := 0;
   for i := N to Size - N - 1 do
@@ -442,15 +461,15 @@ begin
       Sum := Sum + FResult[k].r * Gauss(c, t1, sqr_Width) * delta;
       t1 := t1 + delta;
     end;
-    Temp[i].t := FResult[i].t;
-    Temp[i].R := Sum;
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := Sum;
     inc(p);
   end;
 
   Restore(0, N - 1);
-  Restore(Size - N, Size - 1);
+  MVA(Size - N, Size - 1);
 
-  FResult := Temp;
+  FResult := FTemp;
   FTail := N;
 end;
 
