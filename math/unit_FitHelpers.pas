@@ -6,7 +6,7 @@ uses
   unit_materials, unit_Types, unit_calc;
 
   // fitting
-  procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
+//  procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
 
   // models conversion
 
@@ -16,39 +16,39 @@ uses
 implementation
 
 // Autofitting
- procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
-const
-  Population = 50;
-var
-  i: integer;
-  Models: array [0..(Population - 1)] of TFitPeriodicStructure;
-  MinChisqr: single;
-  Best: integer;
-begin
-  Randomize;
-  MinChisqr := 10000000;
-
-  Models[0] := Inp;
-  for I := 1 to High(Models) do
-     Models[i] := SeedPeriodicModel(Models[0]);
-
-
-  for I := 0 to High(Models) do
-  begin
-    Calc.Model := ExpandPeriodicFitModel(Models[i]);
-    Calc.Run;
-
-    Calc.CalcChiSquare;
-
-    if Calc.ChiSQR < MinChisqr then
-    begin
-      MinChisqr  := Calc.ChiSQR;
-      Best := i;
-    end;
-
-  end;
-  Calc.Model := ExpandPeriodicFitModel(Models[Best]);
-end;
+// procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
+//const
+//  Population = 50;
+//var
+//  i: integer;
+//  Models: array [0..(Population - 1)] of TFitPeriodicStructure;
+//  MinChisqr: single;
+//  Best: integer;
+//begin
+//  Randomize;
+//  MinChisqr := 10000000;
+//
+//  Models[0] := Inp;
+//  for I := 1 to High(Models) do
+//     Models[i] := SeedPeriodicModel(Models[0]);
+//
+//
+//  for I := 0 to High(Models) do
+//  begin
+//    Calc.Model := ExpandPeriodicFitModel(Models[i]);
+//    Calc.Run;
+//
+//    Calc.CalcChiSquare();
+//
+//    if Calc.ChiSQR < MinChisqr then
+//    begin
+//      MinChisqr  := Calc.ChiSQR;
+//      Best := i;
+//    end;
+//
+//  end;
+//  Calc.Model := ExpandPeriodicFitModel(Models[Best]);
+//end;
 
 
   // models conversion

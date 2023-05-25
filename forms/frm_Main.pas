@@ -277,6 +277,7 @@ type
     cbPWChiSqr: TRzCheckBox;
     edFWindow: TEdit;
     Label5: TLabel;
+    cbTWChiSqr: TRzCheckBox;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -1017,6 +1018,7 @@ begin
     edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
     cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
     edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
+    cbTWChiSqr.Checked  := INF.ReadBool('FIT', 'TWChi', False);
 
     edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
     edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
@@ -1043,8 +1045,10 @@ begin
   Result.KVmax      := StrToFloat(edLFPSOkVmax.Text);
   Result.w1         := StrToFloat(edLFPSOOmega1.Text);
   Result.w2         := StrToFloat(edLFPSOOmega2.Text);
-  Result.Shake      := cbLFPSOShake.Checked;
   Result.Tolerance := StrToFloat(edFitTolerance.Text);
+
+  Result.Shake       := cbLFPSOShake.Checked;
+  Result.ThetaWieght := cbTWChiSqr.Checked;
 end;
 
 procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
@@ -1316,7 +1320,7 @@ begin
       Calc.Run;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
       begin
-        Calc.CalcChiSquare;
+        Calc.CalcChiSquare(cbTWChiSqr.Checked);
         spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 4);
       end
       else
@@ -1395,7 +1399,7 @@ begin
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
       Calc.Run;
-      Calc.CalcChiSquare;
+      Calc.CalcChiSquare(Params.ThetaWieght);
       lsrConvergence.AddXY(-1, Calc.ChiSQR);
       chFittingProgress.LeftAxis.Maximum := Calc.ChiSQR * 2;
 
@@ -1411,7 +1415,7 @@ begin
 
       Calc.Model := LFPSO.Result;
       Calc.Run;
-      Calc.CalcChiSquare;
+      Calc.CalcChiSquare(Params.ThetaWieght);
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
       Structure.StoreFitLimits(LFPSO.Structure);
     except
@@ -1674,6 +1678,7 @@ begin
     INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
     INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
     INF.WriteString('FIT', 'Window', edFWindow.Text);
+    INF.WriteBool('FIT', 'TWChi', cbTWChiSqr.Checked);
 
     INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
     INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );

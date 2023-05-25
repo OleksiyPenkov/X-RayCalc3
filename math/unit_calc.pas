@@ -70,7 +70,7 @@ type
       constructor Create;
       destructor Free;
       procedure Run;
-      function CalcChiSquare: single;
+      function CalcChiSquare(const ThetaWieght: boolean): single;
 
       property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
@@ -94,7 +94,7 @@ begin
 end;
 
 
-function TCalc.CalcChiSquare: single;
+function TCalc.CalcChiSquare(const ThetaWieght: boolean): single;
 var
   i: Integer;
   Chi: single;
@@ -117,6 +117,8 @@ begin
       if Ratio > 3 then
         Chi := Chi * Ratio;
     end;
+    if ThetaWieght then
+       Chi := Chi * sqrt (FResult[i].t);
 
     Result := Result + Chi;
   end;

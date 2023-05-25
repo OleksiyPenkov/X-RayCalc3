@@ -357,7 +357,7 @@ begin
       Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
       Calc.Model.Materials := FMaterials;
       Calc.Run;
-      Calc.CalcChiSquare;
+      Calc.CalcChiSquare(FFitParams.ThetaWieght);
 
       if Calc.ChiSQR < FLastBestChiSqr then
       begin

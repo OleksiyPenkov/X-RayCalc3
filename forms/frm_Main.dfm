@@ -292,10 +292,6 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -322,10 +318,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -352,10 +344,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -1166,6 +1154,16 @@ object frmMain: TfrmMain
             ParentFont = False
             TabOrder = 5
             Text = '0.05'
+          end
+          object cbTWChiSqr: TRzCheckBox
+            Left = 9
+            Top = 58
+            Width = 55
+            Height = 19
+            Caption = ' TW'#967'2'
+            Checked = True
+            State = cbChecked
+            TabOrder = 6
           end
         end
         object RzPanel7: TRzPanel

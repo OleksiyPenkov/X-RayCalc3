@@ -77,7 +77,8 @@ type
        KVmax  : single;
         w1, w2: single;
 
-     Shake : boolean;
+         Shake : boolean;
+    ThetaWieght: boolean;
   end;
 
   // Calculation data types
