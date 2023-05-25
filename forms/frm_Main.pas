@@ -497,7 +497,7 @@ begin
   end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-  spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
+  spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
 
 end;
 
@@ -1429,7 +1429,7 @@ begin
     Calc.Free;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d h', [Hour, Min, Sec]);
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
   end;
 end;
 

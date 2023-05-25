@@ -61,7 +61,7 @@ type
 
       procedure UpdateLFPSO(const t: integer);
       procedure Seed;
-      procedure NormalizeD(const Particle: integer);
+      procedure NormalizeD(const ParticleIndex: integer);
       procedure SetDomain(const Count: integer; var X: TPopulation);
       procedure InitVelocity;
       function XtoStructure(const Index: integer): TFitPeriodicStructure;
@@ -328,11 +328,11 @@ begin
 
     Dreal := 0;
     for j := Index to Last do
-      Dreal := Dreal + X[Particle][1][j];
+      Dreal := Dreal + X[ParticleIndex][1][j];
 
     f := (FStructure.Stacks[i].D - Dreal)/Dreal;
     for j := Index to Last do
-      X[Particle][1][j] := X[Particle][1][j] * (1 + f);
+      X[ParticleIndex][1][j] := X[ParticleIndex][1][j] * (1 + f);
   end;
 end;
 
