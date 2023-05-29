@@ -28,16 +28,6 @@ uses
   unit_helpers,
   Dialogs;
 
-const
-  w_max = 0.9;
-  w_min = 0.4;
-  MaxC = 10;
-  a = 0.5;
-  eps = 1;
-  c1m = 1.49445;
-  c2m = 1.49445;
-
-
 { TLFPSO Periodic}
 
 procedure TLFPSO_Regular.UpdateLFPSO(const t: integer);

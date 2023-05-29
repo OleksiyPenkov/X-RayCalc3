@@ -101,6 +101,16 @@ type
   procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
   function RS: integer;
 
+const
+  w_max = 0.9;
+  w_min = 0.4;
+  MaxC = 10;
+  a = 0.5;
+  eps = 1;
+  c1m = 1.49445;
+  c2m = 1.49445;
+
+
 implementation
 
 uses
@@ -110,15 +120,6 @@ uses
   Neslib.FastMath,
   unit_helpers,
   Dialogs;
-
-const
-  w_max = 0.9;
-  w_min = 0.4;
-  MaxC = 10;
-  a = 0.5;
-  eps = 1;
-  c1m = 1.49445;
-  c2m = 1.49445;
 
 { Supplementary}
 
