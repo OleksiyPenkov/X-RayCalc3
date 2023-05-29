@@ -61,7 +61,7 @@ type
       function XtoStructure(const Index: integer): TFitStructure;
       procedure FindTheBest;
       function GetResult: TLayeredModel;
-      function GBestStructure(best: TSolution): TFitStructure;
+
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
       procedure CheckLimits(const i, j, k: integer); inline;
@@ -76,6 +76,7 @@ type
       procedure UpdateLFPSO(const t: integer); virtual;
       procedure Seed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
+      function GBestStructure(best: TSolution): TFitStructure; virtual;
       function GetStructure: TFitStructure;
     private
 

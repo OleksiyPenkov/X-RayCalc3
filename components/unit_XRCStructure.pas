@@ -59,7 +59,9 @@ type
       procedure FromString(const S: string);
       function ToFitStructure: TFitStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
+      procedure RecreateFromFitStructure(const Inp: TFitStructure);
       procedure StoreFitLimits(const Inp: TFitStructure);
+      procedure StoreFitLimitsNP(const Inp: TFitStructure);
       procedure Clear;
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
@@ -95,18 +97,36 @@ begin
   for I := 0 to Count do
     Stacks[i].Align := alNone;
 
-  MaxHeigh := 0;
+  MaxHeigh := 20;
   for I := 0 to Count do
   begin
     Stacks[i].Top := MaxHeigh + 5;
     Stacks[i].Align := alTop;
-    MaxHeigh := MaxHeigh + Stacks[i].Height;
+    MaxHeigh := MaxHeigh + Stacks[i].Height + 5;
   end;
 
   Substrate.Top := ClientHeight - 5;
   Substrate.Align := alTop;
 
+  Self.ClientHeight := MaxHeigh + Substrate.Height + 100;
   Visible := FVisibility;
+end;
+
+procedure TXRCStructure.RecreateFromFitStructure(const Inp: TFitStructure);
+var
+  i, j: integer;
+begin
+  //
+  Visible := False;
+  Clear;
+  AddSubstrate(Inp.Subs.Material, Inp.Subs.s.V, Inp.Subs.r.V);
+
+  AddStack(1, 'Main');
+  for I := 0 to High(Inp.Stacks[0].Layers) do
+  begin
+    AddLayer(0, Inp.Stacks[0].Layers[i]);
+  end;
+  Visible := True;
 end;
 
 procedure TXRCStructure.AddStack(const N: Integer; const Title: string);
@@ -429,6 +449,11 @@ begin
     end;
     inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
   end;
+end;
+
+procedure TXRCStructure.StoreFitLimitsNP(const Inp: TFitStructure);
+begin
+//
 end;
 
 function TXRCStructure.ToFitStructure: TFitStructure;

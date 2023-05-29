@@ -90,16 +90,17 @@ end;
 
 procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
-  i, j, Index: integer;
+  i, j, k, Index: integer;
   D: double;
 begin
-  FLayersCount := Inp.Total;
+  FLayersCount := Inp.TotalNP;
 
   // Init(FStructure)
+  SetLength(FStructure.Stacks, 0);
   SetLength(FStructure.Stacks, 1);
-  SetLength(FStructure.Stacks[0].Layers, Inp.Total);
+  SetLength(FStructure.Stacks[0].Layers, FLayersCount);
   FStructure.Subs := Inp.Subs;
-
+  FStructure.Stacks[0].N := 1;
 
   SetDomain(FLayersCount, X);
   SetDomain(FLayersCount, Xmax);
@@ -112,27 +113,28 @@ begin
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
   begin
-    for j := 0 to High(Inp.Stacks[i].Layers) do
-    begin
-      FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
+    for k := 1 to Inp.Stacks[i].N do
+      for j := 0 to High(Inp.Stacks[i].Layers) do
+      begin
+        FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
 
-      X[0][1][Index] := Inp.Stacks[i].Layers[j].H.V;
-      Xmax[0][1][Index] := Inp.Stacks[i].Layers[j].H.max;
-      Xmin[0][1][Index] := Inp.Stacks[i].Layers[j].H.min;
-      Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
+        X[0][1][Index] := Inp.Stacks[i].Layers[j].H.V;
+        Xmax[0][1][Index] := Inp.Stacks[i].Layers[j].H.max;
+        Xmin[0][1][Index] := Inp.Stacks[i].Layers[j].H.min;
+        Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
 
-      X[0][2][Index] := Inp.Stacks[i].Layers[j].s.V;
-      Xmax[0][2][Index] := Inp.Stacks[i].Layers[j].s.max;
-      Xmin[0][2][Index] := Inp.Stacks[i].Layers[j].s.min;
-      Xrange[0][2][Index] := Xmax[0][2][Index] - Xmin[0][2][Index];
+        X[0][2][Index] := Inp.Stacks[i].Layers[j].s.V;
+        Xmax[0][2][Index] := Inp.Stacks[i].Layers[j].s.max;
+        Xmin[0][2][Index] := Inp.Stacks[i].Layers[j].s.min;
+        Xrange[0][2][Index] := Xmax[0][2][Index] - Xmin[0][2][Index];
 
-       X[0][3][Index] := Inp.Stacks[i].Layers[j].r.V;
-      Xmax[0][3][Index] := Inp.Stacks[i].Layers[j].r.max;
-      Xmin[0][3][Index] := Inp.Stacks[i].Layers[j].r.min;
-      Xrange[0][3][Index] := Xmax[0][3][Index] - Xmin[0][3][Index];
+         X[0][3][Index] := Inp.Stacks[i].Layers[j].r.V;
+        Xmax[0][3][Index] := Inp.Stacks[i].Layers[j].r.max;
+        Xmin[0][3][Index] := Inp.Stacks[i].Layers[j].r.min;
+        Xrange[0][3][Index] := Xmax[0][3][Index] - Xmin[0][3][Index];
 
-      Inc(Index);
-    end;
+        Inc(Index);
+      end;
   end;
 end;
 

@@ -167,6 +167,7 @@ type
     Stacks: array of TFitStack;
     Subs: TLayerData;
     function Total: integer;
+    function TotalNP: integer;
   end;
 
 implementation
@@ -215,5 +216,14 @@ begin
 end;
 
 { TFitStructure }
+
+function TFitStructure.TotalNP: integer;
+var
+  i: integer;
+begin
+  Result := 0;
+  for I := 0 to High(Stacks) do
+    Result := Result + Length(Stacks[i].Layers) * Stacks[i].N;
+end;
 
 end.

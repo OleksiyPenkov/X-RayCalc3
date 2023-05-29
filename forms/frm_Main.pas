@@ -1034,9 +1034,11 @@ begin
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
-    edFIter.Text        := INF.ReadString('FIT', 'Namx', '100');
-    edFPopulation.Text  := INF.ReadString('FIT', 'Pop', '100');
-    edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
+    edFIter.Text            := INF.ReadString('FIT', 'Namx', '100');
+    edFPopulation.Text      := INF.ReadString('FIT', 'Pop', '100');
+    edFitTolerance.Text     := INF.ReadString('FIT', 'Tol', '0.005');
+    cbTreatPeriodic.Checked := INF.ReadBool('FIT', 'Periodic', True);
+
     cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
     edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
     cbTWChi.ItemIndex   := INF.ReadInteger('FIT', 'TWChi', 0);
@@ -1285,9 +1287,9 @@ begin
 
   for i := 1 to High(Model.Layers) - 1 do
   begin
-    FThicknessSeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].L);
-    FRoughnessSeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].s);
-    FDensitySeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].ro);
+    FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Model.Layers[i].L);
+    FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Model.Layers[i].s);
+    FDensitySeries[Model.Layers[i].LayerID].AddXY(i, Model.Layers[i].ro);
   end;
 end;
 
@@ -1338,7 +1340,7 @@ begin
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
-      PlotDistributions(Calc.Model);
+      PlotDistributions(Structure.Model);
       Calc.Run;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
       begin
@@ -1443,7 +1445,12 @@ begin
       Calc.Run;
       Calc.CalcChiSquare(Params.ThetaWieght);
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-      Structure.StoreFitLimits(LFPSO.Structure);
+      if cbTreatPeriodic.Checked then
+        Structure.StoreFitLimits(LFPSO.Structure)
+      else begin
+        Structure.StoreFitLimitsNP(LFPSO.Structure);
+        PlotDistributions(Calc.Model);
+      end;
     except
       on E: exception do
       begin
@@ -1702,6 +1709,8 @@ begin
     INF.WriteString('FIT', 'Namx', edFIter.Text);
     INF.WriteString('FIT', 'Pop', edFPopulation.Text);
     INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
+    INF.WriteBool('FIT', 'Periodic', cbTreatPeriodic.Checked);
+
     INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
     INF.WriteString('FIT', 'Window', edFWindow.Text);
     INF.WriteInteger('FIT', 'TWChi', cbTWChi.ItemIndex);

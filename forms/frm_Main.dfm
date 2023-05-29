@@ -1688,6 +1688,7 @@ object frmMain: TfrmMain
       Align = alLeft
       BorderOuter = fsFlatRounded
       Color = 15987699
+      ShowDockClientCaptions = False
       TabOrder = 1
       object RzToolbar2: TRzToolbar
         Left = 2

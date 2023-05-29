@@ -236,7 +236,15 @@ end;
 function TXRCStack.GetMaterialsList: TMaterialsList;
 var
   i: integer;
+  Cache: array of string;
 begin
+
+
+
+
+
+
+
   SetLength(Result, Length(FLayers));
   for i := 0 to High(FLayers) do
   begin
