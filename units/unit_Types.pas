@@ -78,7 +78,7 @@ type
         w1, w2: single;
 
          Shake : boolean;
-    ThetaWieght: boolean;
+    ThetaWieght: integer;
   end;
 
   // Calculation data types

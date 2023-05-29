@@ -411,10 +411,12 @@ var
   switch: double;
   ReInitCount: integer;
   Vmax0: single;
+  SuccessCount: integer;
 begin
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
   ReInitCount := 0;
+  SuccessCount := 0;
   FGlobalBestChiSqr:= 1e12;
   FAbsoluteBestChiSqr := 1e12;
   FCalcParams := CalcConditions;
@@ -428,9 +430,9 @@ begin
 
     switch := Random;
     if switch < 0.5 then
-      UpdatePSO(t)
+      UpdatePSO(SuccessCount)
     else
-      UpdateLFPSO(t);
+      UpdateLFPSO(SuccessCount);
 
     FindTheBest;
     SendUpdateMessage(t);
@@ -455,9 +457,12 @@ begin
       ReInit(t);
       Inc(ReInitCount);
       FJammingCount := 0;
+      dec(SuccessCount);
     end
-    else
+    else begin
       CopySolution(gbest, abest);
+      inc(SuccessCount);
+    end;
   end;
 end;
 

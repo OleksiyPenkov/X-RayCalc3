@@ -277,7 +277,18 @@ type
     cbPWChiSqr: TRzCheckBox;
     edFWindow: TEdit;
     Label5: TLabel;
-    cbTWChiSqr: TRzCheckBox;
+    Label21: TLabel;
+    cbTWChi: TComboBox;
+    Data1: TMenuItem;
+    Loadfromfile1: TMenuItem;
+    Pastefromclipboard1: TMenuItem;
+    N6: TMenuItem;
+    Normalize1: TMenuItem;
+    NormalizeAuto1: TMenuItem;
+    Smooth1: TMenuItem;
+    N7: TMenuItem;
+    Copytoclipboad1: TMenuItem;
+    Exporttofile1: TMenuItem;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -344,6 +355,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure ChartZoom(Sender: TObject);
     procedure RzButton1Click(Sender: TObject);
+    procedure DataNormAutoExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Periodic;
@@ -829,6 +841,11 @@ begin
   Result := Format('%sdata_%d.dat', [FProjectDir, Data.ID])
 end;
 
+procedure TfrmMain.DataNormAutoExecute(Sender: TObject);
+begin
+  //
+end;
+
 procedure TfrmMain.DataNormExecute(Sender: TObject);
 var
   s: string;
@@ -1018,7 +1035,7 @@ begin
     edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
     cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
     edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
-    cbTWChiSqr.Checked  := INF.ReadBool('FIT', 'TWChi', False);
+    cbTWChi.ItemIndex   := INF.ReadInteger('FIT', 'TWChi', 0);
 
     edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
     edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
@@ -1048,7 +1065,8 @@ begin
   Result.Tolerance := StrToFloat(edFitTolerance.Text);
 
   Result.Shake       := cbLFPSOShake.Checked;
-  Result.ThetaWieght := cbTWChiSqr.Checked;
+  Result.ThetaWieght := cbTWChi.ItemIndex;
+
 end;
 
 procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
@@ -1320,7 +1338,7 @@ begin
       Calc.Run;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
       begin
-        Calc.CalcChiSquare(cbTWChiSqr.Checked);
+        Calc.CalcChiSquare(cbTWChi.ItemIndex);
         spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 4);
       end
       else
@@ -1678,7 +1696,7 @@ begin
     INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
     INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
     INF.WriteString('FIT', 'Window', edFWindow.Text);
-    INF.WriteBool('FIT', 'TWChi', cbTWChiSqr.Checked);
+    INF.WriteInteger('FIT', 'TWChi', cbTWChi.ItemIndex);
 
     INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
     INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );

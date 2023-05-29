@@ -868,6 +868,13 @@ object frmMain: TfrmMain
             Font.Style = []
             ParentFont = False
           end
+          object Label21: TLabel
+            Left = 9
+            Top = 59
+            Width = 32
+            Height = 15
+            Caption = ' TW'#967'2'
+          end
           object edFIter: TEdit
             Left = 40
             Top = 7
@@ -1155,15 +1162,21 @@ object frmMain: TfrmMain
             TabOrder = 5
             Text = '0.05'
           end
-          object cbTWChiSqr: TRzCheckBox
-            Left = 9
-            Top = 58
-            Width = 55
-            Height = 19
-            Caption = ' TW'#967'2'
-            Checked = True
-            State = cbChecked
+          object cbTWChi: TComboBox
+            Left = 49
+            Top = 56
+            Width = 56
+            Height = 23
+            ItemIndex = 0
             TabOrder = 6
+            Text = 'None'
+            Items.Strings = (
+              'None'
+              'sqr'
+              'line'
+              'sqrt'
+              '1/sqr'
+              '1/sqrt')
           end
         end
         object RzPanel7: TRzPanel
@@ -1863,7 +1876,6 @@ object frmMain: TfrmMain
       Caption = 'Structure'
       Hint = 'Add Stack'
       ImageIndex = 1
-      OnClick = PeriodAddExecute
       object Add1: TMenuItem
         Action = PeriodAdd
         Caption = 'Add Period'
@@ -1902,6 +1914,38 @@ object frmMain: TfrmMain
       end
       object Delete2: TMenuItem
         Action = LayerDelete
+      end
+    end
+    object Data1: TMenuItem
+      Caption = 'Data'
+      object Loadfromfile1: TMenuItem
+        Action = DataLoad
+      end
+      object Pastefromclipboard1: TMenuItem
+        Action = DataPaste
+      end
+      object N6: TMenuItem
+        Caption = '-'
+      end
+      object Normalize1: TMenuItem
+        Action = DataNorm
+      end
+      object NormalizeAuto1: TMenuItem
+        Action = DataNormAuto
+        Caption = 'Normalize (Auto)'
+      end
+      object Smooth1: TMenuItem
+        Caption = 'Smooth ...'
+      end
+      object N7: TMenuItem
+        Caption = '-'
+      end
+      object Copytoclipboad1: TMenuItem
+        Action = DataCopyClpbrd
+        Caption = 'Copy to clipboard'
+      end
+      object Exporttofile1: TMenuItem
+        Caption = 'Export to file ...'
       end
     end
     object Calc1: TMenuItem
@@ -2877,6 +2921,7 @@ object frmMain: TfrmMain
     object DataNormAuto: TAction
       Category = 'Data'
       Caption = 'Auto'
+      OnExecute = DataNormAutoExecute
     end
     object DataNormMan: TAction
       Category = 'Data'
