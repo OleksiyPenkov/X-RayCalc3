@@ -10,8 +10,8 @@ uses
 
   // models conversion
 
-  function ExpandPeriodicFitModel(const Inp: TFitPeriodicStructure): TLayeredModel;
-  function SeedPeriodicModel(const Inp: TFitPeriodicStructure): TFitPeriodicStructure;
+  function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
+  function SeedPeriodicModel(const Inp: TFitStructure): TFitStructure;
 
 implementation
 
@@ -53,7 +53,7 @@ implementation
 
   // models conversion
 
-function ExpandPeriodicFitModel(const Inp: TFitPeriodicStructure): TLayeredModel;
+function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
 var
   i, k, j: Integer;
   Data: TLayersData;
@@ -86,7 +86,7 @@ begin
 end;
 
 
-function SeedPeriodicModel(const Inp: TFitPeriodicStructure): TFitPeriodicStructure;
+function SeedPeriodicModel(const Inp: TFitStructure): TFitStructure;
 var
   i, k, j: Integer;
   D, HMax: single;

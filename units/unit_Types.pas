@@ -163,7 +163,7 @@ type
     Layers: array of TLayerData;
   end;
 
-  TFitPeriodicStructure = record
+  TFitStructure = record
     Stacks: array of TFitStack;
     Subs: TLayerData;
     function Total: integer;
@@ -205,7 +205,7 @@ end;
 
 { TFitPeriodicStructure }
 
-function TFitPeriodicStructure.Total: integer;
+function TFitStructure.Total: integer;
 var
   i: integer;
 begin
@@ -213,5 +213,7 @@ begin
   for I := 0 to High(Stacks) do
     Result := Result + Length(Stacks[i].Layers);
 end;
+
+{ TFitStructure }
 
 end.

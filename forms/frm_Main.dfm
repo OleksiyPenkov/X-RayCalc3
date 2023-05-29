@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 305
   Caption = 'X-Ray Calc 3'
   ClientHeight = 708
-  ClientWidth = 1385
+  ClientWidth = 1692
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,7 +19,7 @@ object frmMain: TfrmMain
   object Status: TRzStatusBar
     Left = 0
     Top = 689
-    Width = 1385
+    Width = 1692
     Height = 19
     BorderInner = fsNone
     BorderOuter = fsNone
@@ -45,7 +45,7 @@ object frmMain: TfrmMain
       Caption = ''
     end
     object RzVersionInfoStatus1: TRzVersionInfoStatus
-      Left = 1285
+      Left = 1592
       Top = 0
       Height = 19
       Align = alRight
@@ -57,10 +57,10 @@ object frmMain: TfrmMain
   object LeftSplitter: TRzSplitter
     Left = 0
     Top = 0
-    Width = 1385
+    Width = 1692
     Height = 689
     Position = 234
-    Percent = 17
+    Percent = 14
     UpperLeft.Color = 15987699
     LowerRight.Color = 15987699
     Align = alClient
@@ -268,7 +268,7 @@ object frmMain: TfrmMain
       AlignWithMargins = True
       Left = 356
       Top = 3
-      Width = 791
+      Width = 1098
       Height = 683
       Margins.Left = 0
       Margins.Right = 0
@@ -279,7 +279,7 @@ object frmMain: TfrmMain
       object Pages: TRzPageControl
         Left = 2
         Top = 518
-        Width = 787
+        Width = 1094
         Height = 163
         Hint = ''
         ActivePage = tsFittingProgress
@@ -292,11 +292,12 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitWidth = 783
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 777
+            Width = 1084
             Height = 132
             Cursor = crCross
             Legend.TopPos = 0
@@ -311,6 +312,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
+            ExplicitWidth = 777
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -318,11 +320,12 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitWidth = 783
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 777
+            Width = 1084
             Height = 132
             Cursor = crCross
             Legend.TopPos = 0
@@ -337,6 +340,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 777
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -344,11 +348,12 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitWidth = 783
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 777
+            Width = 1084
             Height = 132
             Cursor = crCross
             Legend.TopPos = 0
@@ -363,6 +368,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 777
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -372,13 +378,13 @@ object frmMain: TfrmMain
           Caption = 'Convergence'
           ExplicitWidth = 779
           DesignSize = (
-            783
+            1090
             138)
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 710
+            Width = 1017
             Height = 132
             Cursor = crCross
             Margins.Right = 70
@@ -442,7 +448,7 @@ object frmMain: TfrmMain
             end
           end
           object RzButton1: TRzButton
-            Left = 718
+            Left = 1025
             Top = 6
             Width = 59
             Anchors = [akTop, akRight]
@@ -457,7 +463,7 @@ object frmMain: TfrmMain
         AlignWithMargins = True
         Left = 5
         Top = 148
-        Width = 781
+        Width = 1088
         Height = 311
         Cursor = crCross
         Foot.Visible = False
@@ -556,7 +562,7 @@ object frmMain: TfrmMain
         AlignWithMargins = True
         Left = 5
         Top = 465
-        Width = 781
+        Width = 1088
         Height = 50
         Align = alBottom
         BorderOuter = fsFlatRounded
@@ -566,7 +572,7 @@ object frmMain: TfrmMain
         ExplicitTop = 464
         ExplicitWidth = 777
         DesignSize = (
-          781
+          1088
           50)
         object RzStatusPane1: TRzStatusPane
           Left = 5
@@ -759,7 +765,7 @@ object frmMain: TfrmMain
           Caption = '0.00'
         end
         object btnChartScale: TRzBitBtn
-          Left = 638
+          Left = 945
           Top = 7
           Anchors = [akTop, akRight]
           Caption = 'Linear'
@@ -774,7 +780,7 @@ object frmMain: TfrmMain
           ExplicitLeft = 634
         end
         object cbMinLimit: TRzComboBox
-          Left = 719
+          Left = 1026
           Top = 8
           Width = 53
           Height = 24
@@ -798,7 +804,7 @@ object frmMain: TfrmMain
       object pnl1: TPanel
         Left = 2
         Top = 31
-        Width = 787
+        Width = 1094
         Height = 114
         Align = alTop
         BevelOuter = bvNone
@@ -808,7 +814,7 @@ object frmMain: TfrmMain
           AlignWithMargins = True
           Left = 387
           Top = 6
-          Width = 397
+          Width = 704
           Height = 105
           Margins.Top = 6
           Align = alClient
@@ -816,367 +822,395 @@ object frmMain: TfrmMain
           Color = 15987699
           TabOrder = 0
           ExplicitWidth = 393
-          object Label7: TLabel
-            Left = 7
-            Top = 11
-            Width = 27
-            Height = 13
-            Caption = 'Nmax'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -11
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label8: TLabel
-            Left = 88
-            Top = 11
-            Width = 19
-            Height = 13
-            Caption = 'Size'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -11
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label20: TLabel
-            Left = 60
-            Top = 39
-            Width = 47
-            Height = 13
-            Caption = 'Tolerance'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -11
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label5: TLabel
-            Left = 71
-            Top = 81
-            Width = 38
-            Height = 13
-            Caption = 'Window'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -11
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label21: TLabel
-            Left = 9
-            Top = 59
-            Width = 32
-            Height = 15
-            Caption = ' TW'#967'2'
-          end
-          object edFIter: TEdit
-            Left = 40
-            Top = 7
-            Width = 42
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            NumbersOnly = True
-            ParentFont = False
-            TabOrder = 0
-            Text = '100'
-          end
-          object edFPopulation: TEdit
-            Left = 113
-            Top = 7
-            Width = 43
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            NumbersOnly = True
-            ParentFont = False
-            TabOrder = 1
-            Text = '100'
-          end
-          object RzGroupBox1: TRzGroupBox
-            Left = 162
-            Top = 0
-            Width = 226
+          object RzPageControl1: TRzPageControl
+            Left = 2
+            Top = 2
+            Width = 343
             Height = 101
-            Caption = 'LFPSO'
-            Color = 15987699
-            TabOrder = 2
-            object Label16: TLabel
-              Left = 11
-              Top = 19
-              Width = 26
-              Height = 13
-              Caption = 'Vmax'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
+            Hint = ''
+            ActivePage = TabSheet1
+            Align = alLeft
+            TabIndex = 0
+            TabOrder = 0
+            FixedDimension = 21
+            object TabSheet1: TRzTabSheet
+              Color = 15987699
+              Caption = 'Fitting'
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
+              object Label7: TLabel
+                Left = 7
+                Top = 15
+                Width = 27
+                Height = 13
+                Caption = 'Nmax'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label8: TLabel
+                Left = 15
+                Top = 51
+                Width = 19
+                Height = 13
+                Caption = 'Size'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label20: TLabel
+                Left = 92
+                Top = 15
+                Width = 47
+                Height = 13
+                Caption = 'Tolerance'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label5: TLabel
+                Left = 154
+                Top = 50
+                Width = 38
+                Height = 13
+                Caption = 'Window'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label21: TLabel
+                Left = 238
+                Top = 49
+                Width = 32
+                Height = 15
+                Caption = ' TW'#967'2'
+              end
+              object edFIter: TEdit
+                Left = 40
+                Top = 11
+                Width = 42
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                NumbersOnly = True
+                ParentFont = False
+                TabOrder = 0
+                Text = '100'
+              end
+              object edFPopulation: TEdit
+                Left = 40
+                Top = 47
+                Width = 43
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                NumbersOnly = True
+                ParentFont = False
+                TabOrder = 1
+                Text = '100'
+              end
+              object cbPWChiSqr: TRzCheckBox
+                Left = 91
+                Top = 49
+                Width = 56
+                Height = 19
+                Caption = 'PW '#967'2'
+                Checked = True
+                State = cbChecked
+                TabOrder = 2
+              end
+              object edFWindow: TEdit
+                Left = 192
+                Top = 46
+                Width = 41
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 3
+                Text = '0.05'
+              end
+              object cbTWChi: TComboBox
+                Left = 274
+                Top = 46
+                Width = 56
+                Height = 23
+                ItemIndex = 0
+                TabOrder = 4
+                Text = 'None'
+                Items.Strings = (
+                  'None'
+                  'sqr'
+                  'line'
+                  'sqrt'
+                  '1/sqr'
+                  '1/sqrt')
+              end
+              object edFitTolerance: TEdit
+                Left = 145
+                Top = 11
+                Width = 43
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 5
+                Text = '0.005'
+              end
+              object cbTreatPeriodic: TRzCheckBox
+                Left = 229
+                Top = 13
+                Width = 101
+                Height = 19
+                Caption = 'Treat as peridic'
+                Checked = True
+                State = cbChecked
+                TabOrder = 6
+              end
             end
-            object Label13: TLabel
-              Left = 169
-              Top = 47
-              Width = 11
-              Height = 13
-              Caption = 'k1'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
+            object TabSheet2: TRzTabSheet
+              Color = 15987699
+              Caption = 'LSPSO'
+              ExplicitWidth = 304
+              ExplicitHeight = 72
+              object Label16: TLabel
+                Left = 11
+                Top = 14
+                Width = 26
+                Height = 13
+                Caption = 'Vmax'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label18: TLabel
+                Left = 88
+                Top = 14
+                Width = 17
+                Height = 13
+                Caption = ' '#969'1'
+                Font.Charset = GREEK_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label19: TLabel
+                Left = 163
+                Top = 14
+                Width = 17
+                Height = 13
+                Caption = ' '#969'2'
+                Font.Charset = GREEK_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label17: TLabel
+                Left = 67
+                Top = 52
+                Width = 33
+                Height = 13
+                Caption = 'SHmax'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label13: TLabel
+                Left = 216
+                Top = 52
+                Width = 11
+                Height = 13
+                Caption = 'k1'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label14: TLabel
+                Left = 274
+                Top = 52
+                Width = 11
+                Height = 13
+                Caption = 'k2'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object Label15: TLabel
+                Left = 148
+                Top = 52
+                Width = 25
+                Height = 13
+                Caption = 'Jmax'
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -11
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+              end
+              object edFVmax: TEdit
+                Left = 43
+                Top = 10
+                Width = 35
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 0
+                Text = '0.1'
+              end
+              object cbLFPSOShake: TRzCheckBox
+                Left = 5
+                Top = 48
+                Width = 62
+                Height = 22
+                AlignmentVertical = avCenter
+                Caption = 'Shake'
+                Checked = True
+                State = cbChecked
+                TabOrder = 1
+              end
+              object edLFPSOOmega1: TEdit
+                Left = 111
+                Top = 10
+                Width = 42
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 2
+                Text = '0.1'
+              end
+              object edLFPSOOmega2: TEdit
+                Left = 186
+                Top = 10
+                Width = 42
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 3
+                Text = '0.1'
+              end
+              object edLFPSORImax: TEdit
+                Left = 106
+                Top = 48
+                Width = 35
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 4
+                Text = '3'
+              end
+              object edLFPSOChiFactor: TEdit
+                Left = 233
+                Top = 48
+                Width = 35
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 5
+                Text = '2'
+              end
+              object edLFPSOkVmax: TEdit
+                Left = 291
+                Top = 48
+                Width = 35
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 6
+                Text = '2'
+              end
+              object edLFPSOSkip: TEdit
+                Left = 175
+                Top = 48
+                Width = 35
+                Height = 22
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                ParentFont = False
+                TabOrder = 7
+                Text = '1'
+              end
             end
-            object Label14: TLabel
-              Left = 169
-              Top = 76
-              Width = 11
-              Height = 13
-              Caption = 'k2'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-            end
-            object Label15: TLabel
-              Left = 92
-              Top = 76
-              Width = 25
-              Height = 13
-              Caption = 'Jmax'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-            end
-            object Label17: TLabel
-              Left = 84
-              Top = 49
-              Width = 33
-              Height = 13
-              Caption = 'SHmax'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-            end
-            object Label18: TLabel
-              Left = 88
-              Top = 19
-              Width = 17
-              Height = 13
-              Caption = ' '#969'1'
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-            end
-            object Label19: TLabel
-              Left = 160
-              Top = 19
-              Width = 17
-              Height = 13
-              Caption = ' '#969'2'
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-            end
-            object cbLFPSOShake: TRzCheckBox
-              Left = 11
-              Top = 43
-              Width = 54
-              Height = 19
-              Caption = 'Shake'
-              Checked = True
-              State = cbChecked
-              TabOrder = 0
-            end
-            object edFVmax: TEdit
-              Left = 43
-              Top = 15
-              Width = 35
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 1
-              Text = '0.1'
-            end
-            object edLFPSOChiFactor: TEdit
-              Left = 186
-              Top = 43
-              Width = 35
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 2
-              Text = '2'
-            end
-            object edLFPSOkVmax: TEdit
-              Left = 186
-              Top = 72
-              Width = 35
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 3
-              Text = '2'
-            end
-            object edLFPSOSkip: TEdit
-              Left = 119
-              Top = 72
-              Width = 35
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 4
-              Text = '1'
-            end
-            object edLFPSORImax: TEdit
-              Left = 119
-              Top = 43
-              Width = 35
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 5
-              Text = '3'
-            end
-            object edLFPSOOmega1: TEdit
-              Left = 111
-              Top = 15
-              Width = 42
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 6
-              Text = '0.1'
-            end
-            object edLFPSOOmega2: TEdit
-              Left = 179
-              Top = 15
-              Width = 42
-              Height = 22
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 7
-              Text = '0.1'
-            end
-          end
-          object edFitTolerance: TEdit
-            Left = 113
-            Top = 35
-            Width = 43
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            TabOrder = 3
-            Text = '0.005'
-          end
-          object cbPWChiSqr: TRzCheckBox
-            Left = 9
-            Top = 80
-            Width = 56
-            Height = 19
-            Caption = 'PW '#967'2'
-            Checked = True
-            State = cbChecked
-            TabOrder = 4
-          end
-          object edFWindow: TEdit
-            Left = 112
-            Top = 77
-            Width = 44
-            Height = 22
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            TabOrder = 5
-            Text = '0.05'
-          end
-          object cbTWChi: TComboBox
-            Left = 49
-            Top = 56
-            Width = 56
-            Height = 23
-            ItemIndex = 0
-            TabOrder = 6
-            Text = 'None'
-            Items.Strings = (
-              'None'
-              'sqr'
-              'line'
-              'sqrt'
-              '1/sqr'
-              '1/sqrt')
           end
         end
         object RzPanel7: TRzPanel
@@ -1522,7 +1556,7 @@ object frmMain: TfrmMain
       object ChartToolBar: TRzToolbar
         Left = 2
         Top = 2
-        Width = 787
+        Width = 1094
         Height = 29
         Images = ilCalc
         TextOptions = ttoCustom
@@ -1920,6 +1954,7 @@ object frmMain: TfrmMain
       Caption = 'Data'
       object Loadfromfile1: TMenuItem
         Action = DataLoad
+        Caption = 'Load ...'
       end
       object Pastefromclipboard1: TMenuItem
         Action = DataPaste
@@ -1929,6 +1964,7 @@ object frmMain: TfrmMain
       end
       object Normalize1: TMenuItem
         Action = DataNorm
+        Caption = 'Normalize ...'
       end
       object NormalizeAuto1: TMenuItem
         Action = DataNormAuto

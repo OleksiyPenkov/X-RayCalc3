@@ -2,8 +2,8 @@ object frmLimits: TfrmLimits
   Left = 0
   Top = 0
   Caption = 'Fitting Limits'
-  ClientHeight = 479
-  ClientWidth = 571
+  ClientHeight = 478
+  ClientWidth = 567
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,14 +17,14 @@ object frmLimits: TfrmLimits
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 565
-    Height = 426
+    Width = 561
+    Height = 425
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 561
-    ExplicitHeight = 425
+    ExplicitWidth = 569
+    ExplicitHeight = 426
     object Label13: TLabel
       Left = 19
       Top = 393
@@ -110,6 +110,7 @@ object frmLimits: TfrmLimits
       ColumnClick = False
       GridLines = True
       GroupView = True
+      Items.ItemData = {}
       ReadOnly = True
       ShowWorkAreas = True
       TabOrder = 0
@@ -117,7 +118,6 @@ object frmLimits: TfrmLimits
       FillLastColumn = False
       OnClick = ListViewClick
       ExplicitWidth = 559
-      ExplicitHeight = 368
     end
     object edFdH: TEdit
       Left = 40
@@ -177,15 +177,13 @@ object frmLimits: TfrmLimits
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 435
-    Width = 565
+    Top = 434
+    Width = 561
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 434
-    ExplicitWidth = 561
     object RzBitBtn1: TRzBitBtn
       Left = 476
       Top = 8

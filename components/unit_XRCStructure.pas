@@ -57,9 +57,9 @@ type
 
       function ToString: string;
       procedure FromString(const S: string);
-      function ToFitStructure: TFitPeriodicStructure;
+      function ToFitStructure: TFitStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
-      procedure StoreFitLimits(const Inp: TFitPeriodicStructure);
+      procedure StoreFitLimits(const Inp: TFitStructure);
       procedure Clear;
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
@@ -408,7 +408,7 @@ begin
     Stacks[i].Increment := Value;
 end;
 
-procedure TXRCStructure.StoreFitLimits(const Inp: TFitPeriodicStructure);
+procedure TXRCStructure.StoreFitLimits(const Inp: TFitStructure);
 var
   i, j: integer;
   Count: integer;
@@ -431,7 +431,7 @@ begin
   end;
 end;
 
-function TXRCStructure.ToFitStructure: TFitPeriodicStructure;
+function TXRCStructure.ToFitStructure: TFitStructure;
 var
   i, j: integer;
   D: single;

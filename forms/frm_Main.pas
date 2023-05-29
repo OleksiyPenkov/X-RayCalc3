@@ -14,7 +14,8 @@ uses
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
-  unit_materials, VCLTee.TeeFunci, unit_LFPSO, Vcl.Buttons;
+  unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
+  unit_LFPSO_Regular;
 
 type
   TSeriesList = array of TLineSeries;
@@ -194,23 +195,7 @@ type
     btnBtnCopy: TRzToolButton;
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
-    Label7: TLabel;
-    edFIter: TEdit;
-    edFPopulation: TEdit;
-    Label8: TLabel;
     btnSetFitLimits: TBitBtn;
-    RzGroupBox1: TRzGroupBox;
-    cbLFPSOShake: TRzCheckBox;
-    edFVmax: TEdit;
-    Label16: TLabel;
-    edLFPSOChiFactor: TEdit;
-    Label13: TLabel;
-    edLFPSOkVmax: TEdit;
-    Label14: TLabel;
-    edLFPSOSkip: TEdit;
-    Label15: TLabel;
-    edLFPSORImax: TEdit;
-    Label17: TLabel;
     spChiBest: TRzStatusPane;
     dlgPrint: TPrintDialog;
     RzSpacer3: TRzSpacer;
@@ -265,20 +250,9 @@ type
     N4: TMenuItem;
     Delete2: TMenuItem;
     RzVersionInfoStatus1: TRzVersionInfoStatus;
-    Label18: TLabel;
-    edLFPSOOmega1: TEdit;
-    edLFPSOOmega2: TEdit;
-    Label19: TLabel;
     RzButton1: TRzButton;
-    edFitTolerance: TEdit;
-    Label20: TLabel;
     RzGroupBox2: TRzGroupBox;
     edN: TEdit;
-    cbPWChiSqr: TRzCheckBox;
-    edFWindow: TEdit;
-    Label5: TLabel;
-    Label21: TLabel;
-    cbTWChi: TComboBox;
     Data1: TMenuItem;
     Loadfromfile1: TMenuItem;
     Pastefromclipboard1: TMenuItem;
@@ -289,6 +263,36 @@ type
     N7: TMenuItem;
     Copytoclipboad1: TMenuItem;
     Exporttofile1: TMenuItem;
+    RzPageControl1: TRzPageControl;
+    TabSheet1: TRzTabSheet;
+    TabSheet2: TRzTabSheet;
+    edFIter: TEdit;
+    Label7: TLabel;
+    Label8: TLabel;
+    edFPopulation: TEdit;
+    Label20: TLabel;
+    cbPWChiSqr: TRzCheckBox;
+    Label5: TLabel;
+    edFWindow: TEdit;
+    cbTWChi: TComboBox;
+    Label21: TLabel;
+    edFitTolerance: TEdit;
+    Label16: TLabel;
+    edFVmax: TEdit;
+    cbLFPSOShake: TRzCheckBox;
+    Label18: TLabel;
+    Label19: TLabel;
+    edLFPSOOmega1: TEdit;
+    edLFPSOOmega2: TEdit;
+    Label17: TLabel;
+    edLFPSORImax: TEdit;
+    Label13: TLabel;
+    edLFPSOChiFactor: TEdit;
+    edLFPSOkVmax: TEdit;
+    Label14: TLabel;
+    edLFPSOSkip: TEdit;
+    Label15: TLabel;
+    cbTreatPeriodic: TRzCheckBox;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -358,7 +362,7 @@ type
     procedure DataNormAutoExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
-    LFPSO: TLFPSO_Periodic;
+    LFPSO: TLFPSO_Base;
 
     FProjectDir: string;
     FProjectName: string;
@@ -919,7 +923,7 @@ end;
 
 procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
 var
-    FitStructure: TFitPeriodicStructure;
+    FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
   frmLimits.Show(FitStructure);
@@ -1371,7 +1375,7 @@ var
   CD: TCalcThreadParams;
   Calc: TCalc;
   Hour, Min, Sec, MSec: Word;
-  FitStructure: TFitPeriodicStructure;
+  FitStructure: TFitStructure;
   Params: TFitParams;
 begin
   Randomize;
@@ -1421,7 +1425,11 @@ begin
       lsrConvergence.AddXY(-1, Calc.ChiSQR);
       chFittingProgress.LeftAxis.Maximum := Calc.ChiSQR * 2;
 
-      LFPSO := TLFPSO_Periodic.Create;
+      if cbTreatPeriodic.Checked then
+         LFPSO := TLFPSO_Periodic.Create
+      else
+         LFPSO := TLFPSO_Regular.Create;
+
       LFPSO.Params := Params;
 
       LFPSO.Limit := Calc.Limit;
