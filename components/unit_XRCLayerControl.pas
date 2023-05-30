@@ -227,7 +227,7 @@ end;
 procedure TXRCLayerControl.InternalOnClick(Sender: TObject);
 begin
   if not FSubstrate then
-      LayerClick(FData.StackID, FData.ID);
+      LayerClick(FData.StackID, FData.LayerID);
 end;
 
 procedure TXRCLayerControl.InternalOnDblClick(Sender: TObject);
@@ -277,7 +277,7 @@ procedure TXRCLayerControl.UpdateID(const StackID, LayerID: integer);
 begin
   FData.StackID := StackID;
   if LayerID <> -1 then
-       FData.ID := LayerID;
+       FData.LayerID := LayerID;
 end;
 
 procedure TXRCLayerControl.ValueChange;

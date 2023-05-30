@@ -65,6 +65,7 @@ type
       procedure Clear;
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
+      function IsPeriodic(const Index: integer): boolean;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -348,6 +349,14 @@ begin
   RealignStacks;
 end;
 
+function TXRCStructure.IsPeriodic(const Index: integer): boolean;
+begin
+  if Index > High(Stacks) then
+    Result := False
+  else
+     Result := Stacks[Index].N > 1;
+end;
+
 function TXRCStructure.Materials: TMaterialsList;
 var
   i: integer;
@@ -355,7 +364,8 @@ begin
   SetLength(Result, 0);
   for I := 0 to High(Stacks) do
   begin
-    Result := Result + Stacks[i].Materials;
+    if Stacks[i].N > 1 then
+       Result := Result + Stacks[i].Materials;
   end;
 end;
 
@@ -452,8 +462,26 @@ begin
 end;
 
 procedure TXRCStructure.StoreFitLimitsNP(const Inp: TFitStructure);
+var
+  i, j: integer;
+  Count: integer;
+  Data: TLayerData;
 begin
-//
+  Count := 0;
+
+  for I := 0 to High(Stacks) do
+  begin
+    for j := 0 to High(Stacks[i].Layers) do
+    begin
+      Data.Material := Inp.Stacks[0].Layers[Count].Material;
+      Data.H := Inp.Stacks[0].Layers[Count].H;
+      Data.s := Inp.Stacks[0].Layers[Count].s;
+      Data.r := Inp.Stacks[0].Layers[Count].r;
+      Stacks[i].UpdateLayer(j, Data);
+      inc(Count);
+    end;
+    inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
+  end;
 end;
 
 function TXRCStructure.ToFitStructure: TFitStructure;
@@ -477,7 +505,7 @@ begin
       D := 0;
       for j := 0 to High(Stacks[i].Layers) do
       begin
-        Result.Stacks[i].Layers[j].ID := j;
+        Result.Stacks[i].Layers[j].LayerID := j;
         D := D + Stacks[i].Layers[j].H.V;
       end;
       Result.Stacks[i].D := D;
@@ -489,7 +517,8 @@ begin
       Result.Stacks[i].Layers[j].H := Stacks[i].Layers[j].H;
       Result.Stacks[i].Layers[j].s := Stacks[i].Layers[j].s;
       Result.Stacks[i].Layers[j].r := Stacks[i].Layers[j].r;
-
+      Result.Stacks[i].Layers[j].StackID := i;
+      Result.Stacks[i].Layers[j].LayerID := j;
     end;
     Result.Stacks[i].D := D;
   end;

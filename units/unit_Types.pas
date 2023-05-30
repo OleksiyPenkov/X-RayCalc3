@@ -89,7 +89,7 @@ type
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
     RF, r: TComplex; { Френелевский коэф. }
-    LayerID, PeriodNo: integer;
+    LayerID, StackID: integer;
   end;
 
 
@@ -126,7 +126,7 @@ type
   TLayerData = record
     Material: string;
     H, s, r: TFitValue;
-    StackID, ID: integer;
+    StackID, LayerID: integer;
   end;
 
   TLayersData = array of TLayerData;

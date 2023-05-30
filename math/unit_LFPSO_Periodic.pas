@@ -145,7 +145,7 @@ begin
       D := 0;
       for j := 0 to High(FStructure.Stacks[i].Layers) do
       begin
-        FStructure.Stacks[i].Layers[j].ID := j;
+        FStructure.Stacks[i].Layers[j].LayerID := j;
         D := D + FStructure.Stacks[i].Layers[j].H.V;
       end;
       FStructure.Stacks[i].D := D;

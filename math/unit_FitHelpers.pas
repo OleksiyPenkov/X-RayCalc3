@@ -70,11 +70,12 @@ begin
       Data[k].H := Inp.Stacks[i].Layers[k].H;
       Data[k].s := Inp.Stacks[i].Layers[k].s;
       Data[k].r := Inp.Stacks[i].Layers[k].r;
+      Data[k].StackID := Inp.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := Inp.Stacks[i].Layers[k].LayerID;
     end;
 
-
     for j := 1  to Inp.Stacks[i].N do
-      Result.AddLayers(i, Data);
+      Result.AddLayers(-1, Data);
   end;
 
   SetLength(Data, 1);

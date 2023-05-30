@@ -410,7 +410,7 @@ type
     procedure DeleteExtension(Node: PVirtualNode);
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
-    procedure MatchToStructure; inline;
+    procedure MatchToStructure; //inline;
     { Private declarations }
   public
     { Public declarations }
@@ -520,6 +520,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
+  PlotDistributions(Structure.Model);
   CalcRunExecute(Self);
 end;
 
@@ -953,6 +954,7 @@ end;
 procedure TfrmMain.MatchToStructure;
 begin
   PrepareDistributionCharts;
+  PlotDistributions(Structure.Model);
   FActiveModel.Data := Structure.ToString;
 end;
 
@@ -1175,7 +1177,7 @@ begin
   StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
 end;
 
- procedure TfrmMain.PlotResults(const Data: TDataArray);
+procedure TfrmMain.PlotResults(const Data: TDataArray);
 var
   j: Integer;
 begin
@@ -1277,6 +1279,7 @@ end;
 procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
 var
   i: integer;
+  Layers: TCalcLayers;
 begin
   for i := 0 to High(FThicknessSeries) do
   begin
@@ -1285,11 +1288,16 @@ begin
     FDensitySeries[i].Clear;
   end;
 
-  for i := 1 to High(Model.Layers) - 1 do
+  Layers := Model.Layers;
+
+  for i := 1 to High(Layers) - 1 do
   begin
-    FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Model.Layers[i].L);
-    FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Model.Layers[i].s);
-    FDensitySeries[Model.Layers[i].LayerID].AddXY(i, Model.Layers[i].ro);
+    if Structure.IsPeriodic(Layers[i].StackID) then
+    begin
+      FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
+      FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
+      FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+    end;
   end;
 end;
 
@@ -1322,6 +1330,7 @@ var
 begin
   if (FActiveModel = nil) then
     Exit;
+
   GetThreadParams(CD);
   try
     Calc := TCalc.Create;
@@ -1340,7 +1349,6 @@ begin
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
-      PlotDistributions(Structure.Model);
       Calc.Run;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
       begin
@@ -1449,7 +1457,7 @@ begin
         Structure.StoreFitLimits(LFPSO.Structure)
       else begin
         Structure.StoreFitLimitsNP(LFPSO.Structure);
-        PlotDistributions(Calc.Model);
+        PlotDistributions(LFPSO.Result);
       end;
     except
       on E: exception do
