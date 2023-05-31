@@ -416,7 +416,7 @@ type
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
     procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
-//    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
+    //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
   end;
@@ -1979,7 +1979,7 @@ end;
 //  ID: Integer;
 //begin
 //  ID := Msg.WParam;
-//  Structure.EditStack(ID);
+//  Structure.  EditStack(ID);
 //end;
 
 end.

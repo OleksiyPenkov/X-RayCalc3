@@ -14,7 +14,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, RzEdit, StdCtrls, Mask, RzBtnEdt, RzButton, ExtCtrls, RzPanel,
-  unit_types, JvExMask, JvToolEdit, JvBaseEdits;
+  unit_types, JvExMask, JvToolEdit, JvBaseEdits, frm_MaterialSelector;
 
 type
   TedtrLayer = class(TForm)
@@ -83,8 +83,11 @@ begin
 end;
 
 procedure TedtrLayer.edMaterialButtonClick(Sender: TObject);
+var
+  S: string;
 begin
-//  edMaterial.Text := GetElementName;
+  frmMaterialSelector.SelectMaterial(S);
+  edMaterial.Text := S;
 end;
 
 end.

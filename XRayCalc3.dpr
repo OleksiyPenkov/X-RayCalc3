@@ -27,7 +27,8 @@ uses
   frm_about in 'forms\frm_about.pas' {frmAbout},
   frm_MList in 'forms\frm_MList.pas' {frmMaterialList},
   unit_LFPSO_Periodic in 'math\unit_LFPSO_Periodic.pas',
-  unit_LFPSO_Regular in 'math\unit_LFPSO_Regular.pas';
+  unit_LFPSO_Regular in 'math\unit_LFPSO_Regular.pas',
+  frm_MaterialSelector in 'forms\frm_MaterialSelector.pas' {frmMaterialSelector};
 
 {$R *.res}
 
@@ -42,5 +43,6 @@ begin
   Application.CreateForm(TedtrProjectItem, edtrProjectItem);
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmMaterialList, frmMaterialList);
+  Application.CreateForm(TfrmMaterialSelector, frmMaterialSelector);
   Application.Run;
 end.
