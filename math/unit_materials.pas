@@ -39,7 +39,7 @@ type
     destructor Free;
     procedure Init;
 
-    procedure AddLayers(const PeriodNo: integer;  Data: TLayersData);
+    procedure AddLayers(const StackID: integer;  Data: TLayersData);
     procedure AddSubstrate(const Data: TLayersData);
 
     procedure ExportToFile(const FileName: string);
@@ -68,8 +68,15 @@ begin
 
   for I := 0 to High(Data) do
   begin
-    FLayers[CurrentLayer + i].PeriodNo := PeriodNo;
-    FLayers[CurrentLayer + i].LayerID  := i;
+    if StackID > 0 then
+    begin
+      FLayers[CurrentLayer + i].StackID := StackID;
+      FLayers[CurrentLayer + i].LayerID  := Data[i].LayerID;
+    end
+    else begin
+      FLayers[CurrentLayer + i].LayerID  := Data[i].LayerID;
+      FLayers[CurrentLayer + i].StackID  := Data[i].StackID;
+    end;
 
     FLayers[CurrentLayer + i].Name := Data[i].Material;
     FLayers[CurrentLayer + i].L    := Data[i].H.V;
@@ -111,6 +118,8 @@ begin
     L    := 1E8;
     s    := Data[0].s.V / 1.41;
     ro   := Data[0].r.V;
+    StackID := -99;
+    LayerID := -99;
   end;
 end;
 
@@ -140,6 +149,7 @@ end;
 
 function TLayeredModel.GetLayers: TCalcLayers;
 begin
+  SetLength(Result, Length(FLayers));
   Result := Copy(FLayers, 0, Length(FLayers));
 end;
 

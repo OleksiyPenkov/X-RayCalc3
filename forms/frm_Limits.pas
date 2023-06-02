@@ -31,7 +31,7 @@ type
   private
     ListViewEditor: TRzEdit;
     LItem: TListitem;
-    FStructure: TFitPeriodicStructure ;
+    FStructure: TFitStructure ;
 
     procedure UserEditListView( Var Message: TMessage ); message USER_EDITLISTVIEW;
     procedure ListViewEditorExit(Sender: TObject);
@@ -41,7 +41,7 @@ type
   public
     { Public declarations }
 
-    function Show(var Structure: TFitPeriodicStructure): boolean;
+    function Show(var Structure: TFitStructure): boolean;
   end;
 
 var
@@ -208,7 +208,7 @@ begin
 
 end;
 
-function TfrmLimits.Show(var Structure: TFitPeriodicStructure): boolean;
+function TfrmLimits.Show(var Structure: TFitStructure): boolean;
 begin
   Result := False;
   FStructure := Structure;

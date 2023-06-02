@@ -21,11 +21,14 @@ uses
   unit_XRCProjectTree in 'components\unit_XRCProjectTree.pas',
   editor_Layer in 'components\editor_Layer.pas' {edtrLayer},
   unit_FitHelpers in 'math\unit_FitHelpers.pas',
-  unit_LFPSO in 'math\unit_LFPSO.pas',
+  unit_LFPSO_Base in 'math\unit_LFPSO_Base.pas',
   frm_Limits in 'forms\frm_Limits.pas' {frmLimits},
   editor_proj_item in 'editors\editor_proj_item.pas' {edtrProjectItem},
   frm_about in 'forms\frm_about.pas' {frmAbout},
-  frm_MList in 'forms\frm_MList.pas' {frmMaterialList};
+  frm_MaterialsLibrary in 'forms\frm_MaterialsLibrary.pas' {frmMaterialsLibrary},
+  unit_LFPSO_Periodic in 'math\unit_LFPSO_Periodic.pas',
+  unit_LFPSO_Regular in 'math\unit_LFPSO_Regular.pas',
+  frm_MaterialSelector in 'forms\frm_MaterialSelector.pas' {frmMaterialSelector};
 
 {$R *.res}
 
@@ -39,6 +42,7 @@ begin
   Application.CreateForm(TfrmLimits, frmLimits);
   Application.CreateForm(TedtrProjectItem, edtrProjectItem);
   Application.CreateForm(TfrmAbout, frmAbout);
-  Application.CreateForm(TfrmMaterialList, frmMaterialList);
+  Application.CreateForm(TfrmMaterialsLibrary, frmMaterialsLibrary);
+  Application.CreateForm(TfrmMaterialSelector, frmMaterialSelector);
   Application.Run;
 end.

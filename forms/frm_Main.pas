@@ -14,7 +14,8 @@ uses
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
-  unit_materials, VCLTee.TeeFunci, unit_LFPSO, Vcl.Buttons;
+  unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
+  unit_LFPSO_Regular;
 
 type
   TSeriesList = array of TLineSeries;
@@ -194,23 +195,7 @@ type
     btnBtnCopy: TRzToolButton;
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
-    Label7: TLabel;
-    edFIter: TEdit;
-    edFPopulation: TEdit;
-    Label8: TLabel;
     btnSetFitLimits: TBitBtn;
-    RzGroupBox1: TRzGroupBox;
-    cbLFPSOShake: TRzCheckBox;
-    edFVmax: TEdit;
-    Label16: TLabel;
-    edLFPSOChiFactor: TEdit;
-    Label13: TLabel;
-    edLFPSOkVmax: TEdit;
-    Label14: TLabel;
-    edLFPSOSkip: TEdit;
-    Label15: TLabel;
-    edLFPSORImax: TEdit;
-    Label17: TLabel;
     spChiBest: TRzStatusPane;
     dlgPrint: TPrintDialog;
     RzSpacer3: TRzSpacer;
@@ -233,7 +218,7 @@ type
     BtnPaste: TRzToolButton;
     BtnEdit: TRzToolButton;
     RzSpacer4: TRzSpacer;
-    BtnWordWrap: TRzToolButton;
+    btnAddExtension: TRzToolButton;
     RzSpacer5: TRzSpacer;
     BtnRecycle: TRzToolButton;
     actModelCopy: TAction;
@@ -265,18 +250,49 @@ type
     N4: TMenuItem;
     Delete2: TMenuItem;
     RzVersionInfoStatus1: TRzVersionInfoStatus;
-    Label18: TLabel;
-    edLFPSOOmega1: TEdit;
-    edLFPSOOmega2: TEdit;
-    Label19: TLabel;
-    RzButton1: TRzButton;
-    edFitTolerance: TEdit;
-    Label20: TLabel;
     RzGroupBox2: TRzGroupBox;
     edN: TEdit;
+    Data1: TMenuItem;
+    Loadfromfile1: TMenuItem;
+    Pastefromclipboard1: TMenuItem;
+    N6: TMenuItem;
+    Normalize1: TMenuItem;
+    NormalizeAuto1: TMenuItem;
+    Smooth1: TMenuItem;
+    N7: TMenuItem;
+    Copytoclipboad1: TMenuItem;
+    Exporttofile1: TMenuItem;
+    RzPageControl1: TRzPageControl;
+    TabSheet1: TRzTabSheet;
+    TabSheet2: TRzTabSheet;
+    edFIter: TEdit;
+    Label7: TLabel;
+    Label8: TLabel;
+    edFPopulation: TEdit;
+    Label20: TLabel;
     cbPWChiSqr: TRzCheckBox;
-    edFWindow: TEdit;
     Label5: TLabel;
+    edFWindow: TEdit;
+    cbTWChi: TComboBox;
+    Label21: TLabel;
+    edFitTolerance: TEdit;
+    Label16: TLabel;
+    edFVmax: TEdit;
+    cbLFPSOShake: TRzCheckBox;
+    Label18: TLabel;
+    Label19: TLabel;
+    edLFPSOOmega1: TEdit;
+    edLFPSOOmega2: TEdit;
+    Label17: TLabel;
+    edLFPSORImax: TEdit;
+    Label13: TLabel;
+    edLFPSOChiFactor: TEdit;
+    edLFPSOkVmax: TEdit;
+    Label14: TLabel;
+    edLFPSOSkip: TEdit;
+    Label15: TLabel;
+    cbTreatPeriodic: TRzCheckBox;
+    RzButton1: TRzButton;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -343,9 +359,10 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure ChartZoom(Sender: TObject);
     procedure RzButton1Click(Sender: TObject);
+    procedure DataNormAutoExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
-    LFPSO: TLFPSO_Periodic;
+    LFPSO: TLFPSO_Base;
 
     FProjectDir: string;
     FProjectName: string;
@@ -393,13 +410,14 @@ type
     procedure DeleteExtension(Node: PVirtualNode);
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
-    procedure MatchToStructure; inline;
+    procedure MatchToStructure;
+    procedure CreateNewExtension(Node: PVirtualNode); //inline;
     { Private declarations }
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
     procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
-//    procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
+    //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
   end;
@@ -423,7 +441,8 @@ uses
   unit_FitHelpers,
   frm_Limits,
   editor_proj_item,
-  ClipBrd, frm_MList,
+  ClipBrd,
+  frm_MaterialsLibrary,
   frm_about;
 
 {$R *.dfm}
@@ -497,12 +516,13 @@ begin
   end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-  spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
+  spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
 
 end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
+  PlotDistributions(Structure.Model);
   CalcRunExecute(Self);
 end;
 
@@ -739,7 +759,28 @@ begin
   if (Data.RowType = prItem) and (Data.Group = gtModel) then
     Node := Project.AddChild(Node);
 
-//  CreateNewExtension(Node);
+  CreateNewExtension(Node);
+end;
+
+procedure TfrmMain.CreateNewExtension(Node: PVirtualNode);
+var
+  Data: PProjectData;
+begin
+  Data := Project.GetNodeData(Node);
+
+  Data.Group := gtModel;
+  Data.Enabled := True;
+  Data.RowType := prExtension;
+  Data.Title := 'Gradient 1';
+  Data.ExtType := etGradient;
+  Data.Rate := 0.14;
+  Data.ParentLayerName := 'C';
+  Data.ParentStackName := 'Main';
+  Data.Form := gtLine;
+
+  Project.ClearSelection;
+  Project.Selected[Node] := True;
+//  Tree.SaveToFile(ModelName(Data));
 end;
 
 procedure TfrmMain.EditProjectItem;
@@ -828,6 +869,11 @@ begin
   Result := Format('%sdata_%d.dat', [FProjectDir, Data.ID])
 end;
 
+procedure TfrmMain.DataNormAutoExecute(Sender: TObject);
+begin
+  //
+end;
+
 procedure TfrmMain.DataNormExecute(Sender: TObject);
 var
   s: string;
@@ -875,7 +921,7 @@ end;
 
 procedure TfrmMain.actShowLibraryExecute(Sender: TObject);
 begin
-  frmMaterialList.ShowModal;
+  frmMaterialsLibrary.ShowModal;
 end;
 
 procedure TfrmMain.AddCurve(var Data: PProjectData);
@@ -901,7 +947,7 @@ end;
 
 procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
 var
-    FitStructure: TFitPeriodicStructure;
+    FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
   frmLimits.Show(FitStructure);
@@ -931,6 +977,7 @@ end;
 procedure TfrmMain.MatchToStructure;
 begin
   PrepareDistributionCharts;
+  PlotDistributions(Structure.Model);
   FActiveModel.Data := Structure.ToString;
 end;
 
@@ -1012,11 +1059,14 @@ begin
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
-    edFIter.Text        := INF.ReadString('FIT', 'Namx', '100');
-    edFPopulation.Text  := INF.ReadString('FIT', 'Pop', '100');
-    edFitTolerance.Text := INF.ReadString('FIT', 'Tol', '0.005');
+    edFIter.Text            := INF.ReadString('FIT', 'Namx', '100');
+    edFPopulation.Text      := INF.ReadString('FIT', 'Pop', '100');
+    edFitTolerance.Text     := INF.ReadString('FIT', 'Tol', '0.005');
+    cbTreatPeriodic.Checked := INF.ReadBool('FIT', 'Periodic', True);
+
     cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
     edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
+    cbTWChi.ItemIndex   := INF.ReadInteger('FIT', 'TWChi', 0);
 
     edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
     edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
@@ -1043,8 +1093,11 @@ begin
   Result.KVmax      := StrToFloat(edLFPSOkVmax.Text);
   Result.w1         := StrToFloat(edLFPSOOmega1.Text);
   Result.w2         := StrToFloat(edLFPSOOmega2.Text);
-  Result.Shake      := cbLFPSOShake.Checked;
   Result.Tolerance := StrToFloat(edFitTolerance.Text);
+
+  Result.Shake       := cbLFPSOShake.Checked;
+  Result.ThetaWieght := cbTWChi.ItemIndex;
+
 end;
 
 procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
@@ -1147,7 +1200,7 @@ begin
   StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
 end;
 
- procedure TfrmMain.PlotResults(const Data: TDataArray);
+procedure TfrmMain.PlotResults(const Data: TDataArray);
 var
   j: Integer;
 begin
@@ -1249,6 +1302,7 @@ end;
 procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
 var
   i: integer;
+  Layers: TCalcLayers;
 begin
   for i := 0 to High(FThicknessSeries) do
   begin
@@ -1257,11 +1311,16 @@ begin
     FDensitySeries[i].Clear;
   end;
 
-  for i := 1 to High(Model.Layers) - 1 do
+  Layers := Model.Layers;
+
+  for i := 1 to High(Layers) - 1 do
   begin
-    FThicknessSeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].L);
-    FRoughnessSeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].s);
-    FDensitySeries[Model.Layers[i].LayerID].AddXY(Model.Layers[i].PeriodNo, Model.Layers[i].ro);
+    if Structure.IsPeriodic(Layers[i].StackID) then
+    begin
+      FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
+      FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
+      FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+    end;
   end;
 end;
 
@@ -1294,6 +1353,7 @@ var
 begin
   if (FActiveModel = nil) then
     Exit;
+
   GetThreadParams(CD);
   try
     Calc := TCalc.Create;
@@ -1312,11 +1372,10 @@ begin
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
-      PlotDistributions(Calc.Model);
       Calc.Run;
       if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
       begin
-        Calc.CalcChiSquare;
+        Calc.CalcChiSquare(cbTWChi.ItemIndex);
         spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 4);
       end
       else
@@ -1349,7 +1408,7 @@ var
   CD: TCalcThreadParams;
   Calc: TCalc;
   Hour, Min, Sec, MSec: Word;
-  FitStructure: TFitPeriodicStructure;
+  FitStructure: TFitStructure;
   Params: TFitParams;
 begin
   Randomize;
@@ -1395,11 +1454,15 @@ begin
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
       Calc.Run;
-      Calc.CalcChiSquare;
+      Calc.CalcChiSquare(Params.ThetaWieght);
       lsrConvergence.AddXY(-1, Calc.ChiSQR);
       chFittingProgress.LeftAxis.Maximum := Calc.ChiSQR * 2;
 
-      LFPSO := TLFPSO_Periodic.Create;
+      if cbTreatPeriodic.Checked then
+         LFPSO := TLFPSO_Periodic.Create
+      else
+         LFPSO := TLFPSO_Regular.Create;
+
       LFPSO.Params := Params;
 
       LFPSO.Limit := Calc.Limit;
@@ -1411,9 +1474,14 @@ begin
 
       Calc.Model := LFPSO.Result;
       Calc.Run;
-      Calc.CalcChiSquare;
+      Calc.CalcChiSquare(Params.ThetaWieght);
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-      Structure.StoreFitLimits(LFPSO.Structure);
+      if cbTreatPeriodic.Checked then
+        Structure.StoreFitLimits(LFPSO.Structure)
+      else begin
+        Structure.StoreFitLimitsNP(LFPSO.Structure);
+        PlotDistributions(LFPSO.Result);
+      end;
     except
       on E: exception do
       begin
@@ -1429,7 +1497,7 @@ begin
     Calc.Free;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d h', [Hour, Min, Sec]);
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
   end;
 end;
 
@@ -1672,8 +1740,11 @@ begin
     INF.WriteString('FIT', 'Namx', edFIter.Text);
     INF.WriteString('FIT', 'Pop', edFPopulation.Text);
     INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
+    INF.WriteBool('FIT', 'Periodic', cbTreatPeriodic.Checked);
+
     INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
     INF.WriteString('FIT', 'Window', edFWindow.Text);
+    INF.WriteInteger('FIT', 'TWChi', cbTWChi.ItemIndex);
 
     INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
     INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );
@@ -1931,7 +2002,7 @@ end;
 //  ID: Integer;
 //begin
 //  ID := Msg.WParam;
-//  Structure.EditStack(ID);
+//  Structure.  EditStack(ID);
 //end;
 
 end.

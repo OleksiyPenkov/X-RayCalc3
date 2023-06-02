@@ -6,54 +6,54 @@ uses
   unit_materials, unit_Types, unit_calc;
 
   // fitting
-  procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
+//  procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
 
   // models conversion
 
-  function ExpandPeriodicFitModel(const Inp: TFitPeriodicStructure): TLayeredModel;
-  function SeedPeriodicModel(const Inp: TFitPeriodicStructure): TFitPeriodicStructure;
+  function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
+  function SeedPeriodicModel(const Inp: TFitStructure): TFitStructure;
 
 implementation
 
 // Autofitting
- procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
-const
-  Population = 50;
-var
-  i: integer;
-  Models: array [0..(Population - 1)] of TFitPeriodicStructure;
-  MinChisqr: single;
-  Best: integer;
-begin
-  Randomize;
-  MinChisqr := 10000000;
-
-  Models[0] := Inp;
-  for I := 1 to High(Models) do
-     Models[i] := SeedPeriodicModel(Models[0]);
-
-
-  for I := 0 to High(Models) do
-  begin
-    Calc.Model := ExpandPeriodicFitModel(Models[i]);
-    Calc.Run;
-
-    Calc.CalcChiSquare;
-
-    if Calc.ChiSQR < MinChisqr then
-    begin
-      MinChisqr  := Calc.ChiSQR;
-      Best := i;
-    end;
-
-  end;
-  Calc.Model := ExpandPeriodicFitModel(Models[Best]);
-end;
+// procedure AutoFit(const Inp:TFitPeriodicStructure; var Calc: TCalc);
+//const
+//  Population = 50;
+//var
+//  i: integer;
+//  Models: array [0..(Population - 1)] of TFitPeriodicStructure;
+//  MinChisqr: single;
+//  Best: integer;
+//begin
+//  Randomize;
+//  MinChisqr := 10000000;
+//
+//  Models[0] := Inp;
+//  for I := 1 to High(Models) do
+//     Models[i] := SeedPeriodicModel(Models[0]);
+//
+//
+//  for I := 0 to High(Models) do
+//  begin
+//    Calc.Model := ExpandPeriodicFitModel(Models[i]);
+//    Calc.Run;
+//
+//    Calc.CalcChiSquare();
+//
+//    if Calc.ChiSQR < MinChisqr then
+//    begin
+//      MinChisqr  := Calc.ChiSQR;
+//      Best := i;
+//    end;
+//
+//  end;
+//  Calc.Model := ExpandPeriodicFitModel(Models[Best]);
+//end;
 
 
   // models conversion
 
-function ExpandPeriodicFitModel(const Inp: TFitPeriodicStructure): TLayeredModel;
+function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
 var
   i, k, j: Integer;
   Data: TLayersData;
@@ -70,11 +70,12 @@ begin
       Data[k].H := Inp.Stacks[i].Layers[k].H;
       Data[k].s := Inp.Stacks[i].Layers[k].s;
       Data[k].r := Inp.Stacks[i].Layers[k].r;
+      Data[k].StackID := Inp.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := Inp.Stacks[i].Layers[k].LayerID;
     end;
 
-
     for j := 1  to Inp.Stacks[i].N do
-      Result.AddLayers(i, Data);
+      Result.AddLayers(-1, Data);
   end;
 
   SetLength(Data, 1);
@@ -86,7 +87,7 @@ begin
 end;
 
 
-function SeedPeriodicModel(const Inp: TFitPeriodicStructure): TFitPeriodicStructure;
+function SeedPeriodicModel(const Inp: TFitStructure): TFitStructure;
 var
   i, k, j: Integer;
   D, HMax: single;

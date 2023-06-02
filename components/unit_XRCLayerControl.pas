@@ -5,7 +5,7 @@ interface
 uses
   SysUtils, Classes, Controls, ExtCtrls, RzEdit, RzSpnEdt,
   RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, unit_types,
-  Messages, Winapi.Windows, unit_consts;
+  Messages, Winapi.Windows, unit_consts, editor_Layer;
 
 type
   TXRCLayerControl = class (TRzPanel)
@@ -174,18 +174,35 @@ end;
 
 procedure TXRCLayerControl.Edit;
 var
-  S1, S2: string;
+  S1, S2, S3: string;
+
 begin
   if FSubstrate then
   begin
-    S1 := Sigma.Text;
-    S2 := Rho.Text;
+    S2 := Sigma.Text;
+    S3 := Rho.Text;
 
-    edtrSubstrate.Edit(FData.Material, S1, S2);
+    edtrSubstrate.Edit(FData.Material, S2, S3);
 
     Sigma.Text := S1;
     Rho.Text   := S2;
+  end
+  else begin
+    edtrLayer.Data.Material := Name.Caption;
+    edtrLayer.Data.H.V      := Thickness.Value;
+    edtrLayer.Data.s.V      := Sigma.Value;
+    edtrLayer.Data.r.V      := Rho.Value;
+
+    if edtrLayer.ShowModal = mrOk then
+    begin
+      Name.Caption := edtrLayer.Data.Material;
+      Thickness.Value := edtrLayer.Data.H.V;
+      Sigma.Value := edtrLayer.Data.s.V;
+      Rho.Value := edtrLayer.Data.r.V;
+    end;
+
   end;
+  SetSlected(False);
 end;
 
 procedure TXRCLayerControl.SetCheckBox(const Value: TRzCheckBox);
@@ -227,7 +244,7 @@ end;
 procedure TXRCLayerControl.InternalOnClick(Sender: TObject);
 begin
   if not FSubstrate then
-      LayerClick(FData.StackID, FData.ID);
+      LayerClick(FData.StackID, FData.LayerID);
 end;
 
 procedure TXRCLayerControl.InternalOnDblClick(Sender: TObject);
@@ -277,7 +294,7 @@ procedure TXRCLayerControl.UpdateID(const StackID, LayerID: integer);
 begin
   FData.StackID := StackID;
   if LayerID <> -1 then
-       FData.ID := LayerID;
+       FData.LayerID := LayerID;
 end;
 
 procedure TXRCLayerControl.ValueChange;

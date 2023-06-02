@@ -4,7 +4,7 @@ object edtrLayer: TedtrLayer
   BorderStyle = bsToolWindow
   Caption = 'Layer properties'
   ClientHeight = 116
-  ClientWidth = 350
+  ClientWidth = 358
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,14 +18,14 @@ object edtrLayer: TedtrLayer
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 344
+    Width = 352
     Height = 63
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
     ExplicitWidth = 336
-    ExplicitHeight = 38
+    ExplicitHeight = 51
     object Label1: TLabel
       Left = 9
       Top = 10
@@ -115,18 +115,19 @@ object edtrLayer: TedtrLayer
     AlignWithMargins = True
     Left = 3
     Top = 72
-    Width = 344
+    Width = 352
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 47
+    ExplicitTop = 60
     ExplicitWidth = 336
     object btnOK: TRzBitBtn
-      Left = 201
+      Left = 192
       Top = 10
-      Width = 66
+      Width = 70
+      Alignment = taRightJustify
       ParentColor = True
       TabOrder = 2
       TabStop = False
@@ -134,9 +135,10 @@ object edtrLayer: TedtrLayer
       Kind = bkOK
     end
     object btnCancel: TRzBitBtn
-      Left = 273
+      Left = 272
       Top = 10
-      Width = 72
+      Width = 70
+      Alignment = taRightJustify
       ParentColor = True
       TabOrder = 3
       TabStop = False

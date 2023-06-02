@@ -31,7 +31,9 @@ type
   TCalcParams = record
                   StartTeta, EndTeta, Step: single;
                   N: integer;
-                  N0: integer
+                  N0: integer;
+                  UseData: boolean;
+                  Points: array of Single;
                 end;
 
   TCalc = class(TObject)
@@ -40,6 +42,7 @@ type
 
       FData: TDataArray;
       FResult: TDataArray;
+      FTemp: TDataArray;
 
       FLayeredModel: TLayeredModel;
 
@@ -53,6 +56,7 @@ type
       Tasks: array of TProc;
       NThreads : byte;
       FMovAvg: TDataArray;
+      FTail: Integer;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -60,11 +64,13 @@ type
       procedure RunThetaThreads;
       procedure Convolute(Width: single);
       procedure PrepareWorkers;
+      procedure Restore(const N1, N2: integer); inline;
+      procedure MVA(const N1, N2: integer); inline;
     public
       constructor Create;
       destructor Free;
       procedure Run;
-      function CalcChiSquare: single;
+      function CalcChiSquare(const ThetaWieght: integer): single;
 
       property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
@@ -79,7 +85,7 @@ type
 implementation
 
 uses
-  math_globals;
+  math_globals, unit_helpers;
 
   { TCalc }
 function Log10(const Val: single): single; inline;
@@ -88,7 +94,7 @@ begin
 end;
 
 
-function TCalc.CalcChiSquare: single;
+function TCalc.CalcChiSquare(const ThetaWieght: integer): single;
 var
   i: Integer;
   Chi: single;
@@ -100,14 +106,24 @@ begin
   UseWeight := Length(FMovAvg) > 1;
 
   Result := 0;
-  for I := 0 to High(FData) do
+  for I := FTail  to High(FData) - FTail - 1 do
   begin
+    if FResult[i].r = 0 then Continue;
+
     Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
     if UseWeight  then
     begin
       Ratio := FData[i].r / FMovAvg[i].r;
       if Ratio > 3 then
         Chi := Chi * Ratio;
+    end;
+    case ThetaWieght of
+      0: ;
+      1: Chi := Chi * sqr (FResult[i].t);
+      2: Chi := Chi * FResult[i].t;
+      3: Chi := Chi * sqrt(FResult[i].t);
+      4: Chi := Chi / sqr(FResult[i].t);
+      5: Chi := Chi / sqrt(FResult[i].t);
     end;
 
     Result := Result + Chi;
@@ -118,33 +134,59 @@ end;
 
 procedure TCalc.PrepareWorkers;
 var
-  N, i: Integer;
+  N, i, j: Integer;
   dt, step: single;
 begin
-//  {$IFDEF DEBUG}
-//    NThreads := 1;
-//  {$ELSE}
-    NThreads := Environment.Process.Affinity.CountPhysical;
-//  {$ENDIF}
+  NThreads := Environment.Process.Affinity.Count;
+  {$IFDEF DEBUG}  NThreads := 2; {$ENDIF}
 
   SetLength(Tasks, NThreads);
   SetLength(CalcParams,  NThreads);
-
-  N := FParams.N div NThreads;
-  dt := (FParams.EndT - FParams.StartT) / NThreads;
-  step := dt / N;
-
-  for i := 0 to NThreads - 1 do
-  begin
-    CalcParams[i].StartTeta := FParams.StartT + i * dt;
-    CalcParams[i].EndTeta := FParams.StartT + (i + 1) * dt;
-    CalcParams[i].Step :=  step;
-    CalcParams[i].N0 := N * i;
-    CalcParams[i].N := N;
-  end;
-
   SetLength(FResult, 0);
-  SetLength(FResult, NThreads * N);
+
+  if Length(FData) < 1 then
+  begin
+    N := FParams.N div NThreads;
+    dt := (FParams.EndT - FParams.StartT) / NThreads;
+    step := dt / N;
+
+    for i := 0 to NThreads - 1 do
+    begin
+      CalcParams[i].StartTeta := FParams.StartT + i * dt;
+      CalcParams[i].EndTeta := FParams.StartT + (i + 1) * dt;
+      CalcParams[i].Step :=  step;
+      CalcParams[i].N0 := N * i;
+      CalcParams[i].N := N;
+      CalcParams[i].UseData := False;
+    end;
+
+    SetLength(FResult, NThreads * N);
+  end
+  else begin
+    N := Length(FData) div NThreads;
+    for i := 0 to NThreads - 2 do
+    begin
+      CalcParams[i].StartTeta := 0;
+      CalcParams[i].EndTeta   := 0;
+      CalcParams[i].Step      := 0;
+      CalcParams[i].N0 := N * i;
+      CalcParams[i].N := N;
+      CalcParams[i].UseData := True;
+
+      SetLength(CalcParams[i].Points, N + 1);
+      for j := 0 to N do
+       CalcParams[i].Points[j] := FData[CalcParams[i].N0 + j].t;
+    end;
+
+    CalcParams[NThreads - 1].UseData := True;
+    CalcParams[NThreads - 1].N0 := N * (NThreads - 1) ;
+    CalcParams[NThreads - 1].N := Length(FData) - N * (NThreads - 1);
+    SetLength(CalcParams[NThreads - 1].Points, CalcParams[NThreads - 1].N);
+      for j := 0 to CalcParams[NThreads - 1].N - 1 do
+       CalcParams[i].Points[j] := FData[CalcParams[NThreads - 1].N0 + j].t;
+
+    SetLength(FResult, Length(FData));
+  end;
 end;
 
 procedure TCalc.CalcLambda;
@@ -185,7 +227,11 @@ var
 begin
   for i := 0 to Params.N - 1 do
   begin
-    FResult[Params.N0 + i].t := Params.StartTeta + i * Params.Step;
+    if Params.UseData then
+       FResult[Params.N0 + i].t := Params.Points[i]
+    else
+      FResult[Params.N0 + i].t := Params.StartTeta + i * Params.Step;
+
     R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, FParams.Lambda, FLayeredModel.Layers);
     if R > FLimit then
       FResult[Params.N0 + i].R := R
@@ -357,20 +403,48 @@ begin
     Result := Rs;
 end;
 
+procedure TCalc.Restore(const N1, N2: integer);
+var
+  i: integer;
+begin
+  for i := N1 to N2 do
+  begin
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := FResult[i].r;
+  end;
+end;
+
+procedure TCalc.MVA(const N1, N2: integer);
+const
+  W = 10;
+var
+  i, j: integer;
+  S: single;
+begin
+  for i := N1 to N2 do
+  begin
+    S := 0;
+    for J := i - W to i do
+      S := S + FResult[j].r;
+    S := S / (W + 1);
+
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := S;
+  end;
+end;
+
+function Gauss(const c, x, sqr_Width: single): single; inline;
+begin
+  Result := c * FastExp(-2 * sqr(x) / sqr_Width);
+end;
+
 procedure TCalc.Convolute(Width: single);
 var
   Sum, delta, t1, c: single;
-  i, N, k, p, Size: integer;
+  i, N, k, Size: integer;
   sqr_Width: Single;
-
-  Temp: TDataArray;
-
-  function Gauss(const c, x, sqr_Width: single): single; inline;
-  begin
-    Result := c * FastExp(-2 * sqr(x) / sqr_Width);
-  end;
-
 begin
+  FTail := 0;
   if Width = 0 then Exit;
 
   Size := Length(FResult);
@@ -383,9 +457,8 @@ begin
   if frac(N / 2) = 0 then
     N := N - 1;
 
-  SetLength(Temp, Size - 2*N);
+  SetLength(FTemp, Size);
 
-  p := 0;
   for i := N to Size - N - 1 do
   begin
     t1 := -0.1;
@@ -395,12 +468,15 @@ begin
       Sum := Sum + FResult[k].r * Gauss(c, t1, sqr_Width) * delta;
       t1 := t1 + delta;
     end;
-    Temp[p].t := FResult[i + 1].t;
-    Temp[p].R := Sum;
-    inc(p);
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := Sum;
   end;
 
-  FResult := Temp;
+  Restore(0, N - 1);
+  MVA(Size - N, Size - 1);
+
+  FResult := FTemp;
+  FTail := N;
 end;
 
 initialization

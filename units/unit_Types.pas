@@ -77,7 +77,8 @@ type
        KVmax  : single;
         w1, w2: single;
 
-     Shake : boolean;
+         Shake : boolean;
+    ThetaWieght: integer;
   end;
 
   // Calculation data types
@@ -88,7 +89,7 @@ type
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
     RF, r: TComplex; { Френелевский коэф. }
-    LayerID, PeriodNo: integer;
+    LayerID, StackID: integer;
   end;
 
 
@@ -125,7 +126,7 @@ type
   TLayerData = record
     Material: string;
     H, s, r: TFitValue;
-    StackID, ID: integer;
+    StackID, LayerID: integer;
   end;
 
   TLayersData = array of TLayerData;
@@ -162,10 +163,11 @@ type
     Layers: array of TLayerData;
   end;
 
-  TFitPeriodicStructure = record
+  TFitStructure = record
     Stacks: array of TFitStack;
     Subs: TLayerData;
     function Total: integer;
+    function TotalNP: integer;
   end;
 
 implementation
@@ -204,13 +206,24 @@ end;
 
 { TFitPeriodicStructure }
 
-function TFitPeriodicStructure.Total: integer;
+function TFitStructure.Total: integer;
 var
   i: integer;
 begin
   Result := 0;
   for I := 0 to High(Stacks) do
     Result := Result + Length(Stacks[i].Layers);
+end;
+
+{ TFitStructure }
+
+function TFitStructure.TotalNP: integer;
+var
+  i: integer;
+begin
+  Result := 0;
+  for I := 0 to High(Stacks) do
+    Result := Result + Length(Stacks[i].Layers) * Stacks[i].N;
 end;
 
 end.

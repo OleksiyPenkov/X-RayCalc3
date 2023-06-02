@@ -67,7 +67,7 @@ begin
   Count := Length(FLayers);
   SetLength(FLayers, Count + 1);
   Data.StackID := FID;
-  Data.ID := Count;
+  Data.LayerID := Count;
 
 
   FLayers[Count] := TXRCLayerControl.Create(Self, 0, Data);
@@ -131,7 +131,9 @@ end;
 
 procedure TXRCStack.UpdateLayer(const Index: integer; AData: TLayerData);
 begin
-  FLayers[Index].Data := AData;
+  FLayers[Index].Onset := True;
+  FLayers[Index].Data  := AData;
+  FLayers[Index].Onset := False;
 end;
 
 constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
@@ -236,11 +238,12 @@ end;
 function TXRCStack.GetMaterialsList: TMaterialsList;
 var
   i: integer;
+  Cache: array of string;
 begin
   SetLength(Result, Length(FLayers));
   for i := 0 to High(FLayers) do
   begin
-    Result[i].Name := FLayers[i].Data.Material;
+    Result[i].Name := Format('%s (%s)',[FLayers[i].Data.Material, FTitle]);
     Result[i].StackID := FID;
     Result[i].LayerID := i + 1;
   end;

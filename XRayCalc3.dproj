@@ -108,7 +108,12 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 2\test_data\Multilayer(4x20)_#1.xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\Multilayer(4x2x5)_NP.xrcx&quot; -a</Debugger_RunParams>
+        <VerInfo_MajorVer>3</VerInfo_MajorVer>
+        <VerInfo_Build>200</VerInfo_Build>
+        <VerInfo_Debug>true</VerInfo_Debug>
+        <VerInfo_AutoGenVersion>true</VerInfo_AutoGenVersion>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.0.0.200;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -128,9 +133,10 @@
         <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>270</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.0.270;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Build>302</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.0.302;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0;Comments=</VerInfo_Keys>
         <VerInfo_PreRelease>true</VerInfo_PreRelease>
+        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -165,7 +171,7 @@
             <Form>edtrLayer</Form>
         </DCCReference>
         <DCCReference Include="math\unit_FitHelpers.pas"/>
-        <DCCReference Include="math\unit_LFPSO.pas"/>
+        <DCCReference Include="math\unit_LFPSO_Base.pas"/>
         <DCCReference Include="forms\frm_Limits.pas">
             <Form>frmLimits</Form>
             <FormType>dfm</FormType>
@@ -178,8 +184,14 @@
             <Form>frmAbout</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="forms\frm_MList.pas">
-            <Form>frmMaterialList</Form>
+        <DCCReference Include="forms\frm_MaterialsLibrary.pas">
+            <Form>frmMaterialsLibrary</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="math\unit_LFPSO_Periodic.pas"/>
+        <DCCReference Include="math\unit_LFPSO_Regular.pas"/>
+        <DCCReference Include="forms\frm_MaterialSelector.pas">
+            <Form>frmMaterialSelector</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Base">
