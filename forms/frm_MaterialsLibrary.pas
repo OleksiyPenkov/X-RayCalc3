@@ -7,7 +7,7 @@
   *
   ****************************************************************************** *)
 
-unit frm_MList;
+unit frm_MaterialsLibrary;
 
 interface
 
@@ -29,7 +29,7 @@ uses
   Menus, Vcl.Buttons;
 
 type
-  TfrmMaterialList = class(TForm)
+  TfrmMaterialsLibrary = class(TForm)
     lbFiles: TListBox;
     RzGroupBox1: TRzGroupBox;
     StringGrid1: TStringGrid;
@@ -66,7 +66,7 @@ type
 function GetElementName: string;
 
 var
-  frmMaterialList: TfrmMaterialList;
+  frmMaterialsLibrary: TfrmMaterialsLibrary;
 
 implementation
 
@@ -81,11 +81,11 @@ uses
 
 function GetElementName: string;
 begin
-  if frmMaterialList.ShowModal = mrOk then
-    Result := frmMaterialList.lbFiles.Items[frmMaterialList.lbFiles.ItemIndex];
+  if frmMaterialsLibrary.ShowModal = mrOk then
+    Result := frmMaterialsLibrary.lbFiles.Items[frmMaterialsLibrary.lbFiles.ItemIndex];
 end;
 
-procedure TfrmMaterialList.bntSaveClick(Sender: TObject);
+procedure TfrmMaterialsLibrary.bntSaveClick(Sender: TObject);
 begin
   if NewElement then
   begin
@@ -94,7 +94,7 @@ begin
   end;
 end;
 
-procedure TfrmMaterialList.btnAddNewClick(Sender: TObject);
+procedure TfrmMaterialsLibrary.btnAddNewClick(Sender: TObject);
 begin
   Edit1.Text := '';
   Edit2.Text := '';
@@ -103,7 +103,7 @@ begin
   stringGrid1.Cells[1,1] := '';
 end;
 
-procedure TfrmMaterialList.btnGraphClick(Sender: TObject);
+procedure TfrmMaterialsLibrary.btnGraphClick(Sender: TObject);
 //const
 //  H = 12398.6;
 //  kk = 0.54014E-5;
@@ -164,41 +164,41 @@ begin
 //  end;
 end;
 
-procedure TfrmMaterialList.Deletefile1Click(Sender: TObject);
+procedure TfrmMaterialsLibrary.Deletefile1Click(Sender: TObject);
 var
   Name: string;
 begin
-  Name := lbFiles.Items[frmMaterialList.lbFiles.ItemIndex];
+  Name := lbFiles.Items[lbFiles.ItemIndex];
   if MessageDlg('File will be deleted! Do you want to continue?', mtWarning, [mbYes, mbNo], 0) = mrYes then
   begin
-    lbFiles.Items.Delete(frmMaterialList.lbFiles.ItemIndex);
+    lbFiles.Items.Delete(lbFiles.ItemIndex);
     DeleteFile(Settings.HenkePath + Name + '.bin');
   end;
 end;
 
-procedure TfrmMaterialList.FormCreate(Sender: TObject);
+procedure TfrmMaterialsLibrary.FormCreate(Sender: TObject);
 begin
   StringGrid1.Cells[0, 0] := 'Element';
   StringGrid1.Cells[1, 0] := 'Conc. at%';
 end;
 
-procedure TfrmMaterialList.FormShow(Sender: TObject);
+procedure TfrmMaterialsLibrary.FormShow(Sender: TObject);
 begin
   FillElementsList(Settings.HenkePath, lbFiles);
 end;
 
-procedure TfrmMaterialList.lbFilesDblClick(Sender: TObject);
+procedure TfrmMaterialsLibrary.lbFilesDblClick(Sender: TObject);
 begin
   ModalResult := mrOk;
 end;
 
-procedure TfrmMaterialList.lbFilesKeyDown(Sender: TObject; var Key: Word;
+procedure TfrmMaterialsLibrary.lbFilesKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   if Key = vk_Return  then lbFilesDblClick(Sender);
 end;
 
-function TfrmMaterialList.NewElement: boolean;
+function TfrmMaterialsLibrary.NewElement: boolean;
 var
   i, N: integer;
   s: string;
@@ -282,7 +282,7 @@ begin
   end;
 end;
 
-procedure TfrmMaterialList.SpinEdit1Change(Sender: TObject);
+procedure TfrmMaterialsLibrary.SpinEdit1Change(Sender: TObject);
 begin
   StringGrid1.RowCount := SpinEdit1.Value + 1;
 end;

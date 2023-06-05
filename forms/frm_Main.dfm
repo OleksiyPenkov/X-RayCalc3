@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 305
   Caption = 'X-Ray Calc 3'
   ClientHeight = 708
-  ClientWidth = 1692
+  ClientWidth = 1462
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,7 +19,7 @@ object frmMain: TfrmMain
   object Status: TRzStatusBar
     Left = 0
     Top = 689
-    Width = 1692
+    Width = 1462
     Height = 19
     BorderInner = fsNone
     BorderOuter = fsNone
@@ -28,7 +28,7 @@ object frmMain: TfrmMain
     Color = 15987699
     TabOrder = 0
     ExplicitTop = 688
-    ExplicitWidth = 1688
+    ExplicitWidth = 1458
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
@@ -45,28 +45,29 @@ object frmMain: TfrmMain
       Caption = ''
     end
     object RzVersionInfoStatus1: TRzVersionInfoStatus
-      Left = 1592
+      Left = 1362
       Top = 0
       Height = 19
       Align = alRight
       Field = vifFileVersion
       VersionInfo = frmAbout.RzVersionInfo1
-      ExplicitLeft = 1218
+      ExplicitLeft = 1592
+      ExplicitTop = -2
     end
   end
   object LeftSplitter: TRzSplitter
     Left = 0
     Top = 0
-    Width = 1692
+    Width = 1462
     Height = 689
     Position = 234
-    Percent = 14
+    Percent = 16
     UpperLeft.Color = 15987699
     LowerRight.Color = 15987699
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1688
+    ExplicitWidth = 1458
     ExplicitHeight = 688
     BarSize = (
       234
@@ -197,7 +198,7 @@ object frmMain: TfrmMain
           BtnPaste
           BtnEdit
           RzSpacer4
-          BtnWordWrap
+          btnAddExtension
           RzSpacer5
           BtnRecycle)
         object btnAddModel: TRzToolButton
@@ -242,7 +243,7 @@ object frmMain: TfrmMain
           Left = 129
           Top = 2
         end
-        object BtnWordWrap: TRzToolButton
+        object btnAddExtension: TRzToolButton
           Left = 137
           Top = 2
           Hint = 'Add extension'
@@ -268,7 +269,7 @@ object frmMain: TfrmMain
       AlignWithMargins = True
       Left = 356
       Top = 3
-      Width = 1098
+      Width = 868
       Height = 683
       Margins.Left = 0
       Margins.Right = 0
@@ -276,31 +277,32 @@ object frmMain: TfrmMain
       BorderOuter = fsFlatRounded
       Color = 15987699
       TabOrder = 0
+      DesignSize = (
+        868
+        683)
       object Pages: TRzPageControl
-        Left = 2
-        Top = 518
-        Width = 1094
+        AlignWithMargins = True
+        Left = 5
+        Top = 515
+        Width = 786
         Height = 163
         Hint = ''
+        Margins.Right = 75
         ActivePage = tsFittingProgress
         Align = alBottom
         TabIndex = 3
         TabOrder = 0
-        ExplicitTop = 517
-        ExplicitWidth = 1090
+        ExplicitTop = 514
+        ExplicitWidth = 782
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 1084
+            Width = 776
             Height = 132
             Cursor = crCross
             Legend.TopPos = 0
@@ -322,15 +324,11 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 1084
+            Width = 776
             Height = 132
             Cursor = crCross
             Legend.TopPos = 0
@@ -352,15 +350,11 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 1084
+            Width = 776
             Height = 132
             Cursor = crCross
             Legend.TopPos = 0
@@ -382,18 +376,14 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitWidth = 1086
-          DesignSize = (
-            1090
-            138)
+          ExplicitWidth = 778
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 1017
+            Width = 776
             Height = 132
             Cursor = crCross
-            Margins.Right = 70
             Border.Color = clDefault
             Border.Visible = True
             Legend.TopPos = 0
@@ -434,7 +424,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
-            ExplicitWidth = 1013
+            ExplicitWidth = 772
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object lsrConvergence: TLineSeries
@@ -453,24 +443,14 @@ object frmMain: TfrmMain
               YValues.Order = loNone
             end
           end
-          object RzButton1: TRzButton
-            Left = 1025
-            Top = 6
-            Width = 59
-            Anchors = [akTop, akRight]
-            Caption = 'Copy'
-            TabOrder = 1
-            OnClick = RzButton1Click
-            ExplicitLeft = 1021
-          end
         end
       end
       object Chart: TChart
         AlignWithMargins = True
         Left = 5
         Top = 148
-        Width = 1088
-        Height = 311
+        Width = 858
+        Height = 305
         Cursor = crCross
         Foot.Visible = False
         Legend.Brush.Color = clSilver
@@ -541,8 +521,8 @@ object frmMain: TfrmMain
         OnMouseDown = ChartMouseDown
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
-        ExplicitWidth = 1084
-        ExplicitHeight = 310
+        ExplicitWidth = 854
+        ExplicitHeight = 304
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -567,18 +547,18 @@ object frmMain: TfrmMain
       object RzPanel3: TRzPanel
         AlignWithMargins = True
         Left = 5
-        Top = 465
-        Width = 1088
+        Top = 459
+        Width = 858
         Height = 50
         Align = alBottom
         BorderOuter = fsFlatRounded
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
-        ExplicitTop = 464
-        ExplicitWidth = 1084
+        ExplicitTop = 458
+        ExplicitWidth = 854
         DesignSize = (
-          1088
+          858
           50)
         object RzStatusPane1: TRzStatusPane
           Left = 5
@@ -771,7 +751,7 @@ object frmMain: TfrmMain
           Caption = '0.00'
         end
         object btnChartScale: TRzBitBtn
-          Left = 945
+          Left = 715
           Top = 7
           Anchors = [akTop, akRight]
           Caption = 'Linear'
@@ -783,10 +763,10 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
-          ExplicitLeft = 941
+          ExplicitLeft = 711
         end
         object cbMinLimit: TRzComboBox
-          Left = 1026
+          Left = 796
           Top = 8
           Width = 53
           Height = 24
@@ -804,30 +784,30 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
-          ExplicitLeft = 1022
+          ExplicitLeft = 792
         end
       end
       object pnl1: TPanel
         Left = 2
         Top = 31
-        Width = 1094
+        Width = 864
         Height = 114
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitWidth = 1090
+        ExplicitWidth = 860
         object RzPanel6: TRzPanel
           AlignWithMargins = True
           Left = 387
           Top = 6
-          Width = 704
+          Width = 474
           Height = 105
           Margins.Top = 6
           Align = alClient
           BorderOuter = fsFlatRounded
           Color = 15987699
           TabOrder = 0
-          ExplicitWidth = 700
+          ExplicitWidth = 470
           object RzPageControl1: TRzPageControl
             Left = 2
             Top = 2
@@ -1003,10 +983,6 @@ object frmMain: TfrmMain
             object TabSheet2: TRzTabSheet
               Color = 15987699
               Caption = 'LSPSO'
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object Label16: TLabel
                 Left = 11
                 Top = 14
@@ -1116,8 +1092,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 48
-                Width = 50
-                Height = 17
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1560,7 +1536,7 @@ object frmMain: TfrmMain
       object ChartToolBar: TRzToolbar
         Left = 2
         Top = 2
-        Width = 1094
+        Width = 864
         Height = 29
         Images = ilCalc
         TextOptions = ttoCustom
@@ -1570,7 +1546,7 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
-        ExplicitWidth = 1090
+        ExplicitWidth = 860
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -1681,6 +1657,17 @@ object frmMain: TfrmMain
           Top = 2
           ImageIndex = 7
         end
+      end
+      object RzButton1: TRzButton
+        Left = 801
+        Top = 650
+        Width = 59
+        Anchors = [akRight, akBottom]
+        Caption = 'Copy'
+        TabOrder = 5
+        OnClick = RzButton1Click
+        ExplicitLeft = 797
+        ExplicitTop = 649
       end
     end
     object StructurePanel: TRzPanel
@@ -3967,7 +3954,7 @@ object frmMain: TfrmMain
       Caption = '-'
     end
     object Properties1: TMenuItem
-      Caption = 'Properties'
+      Action = actItemProperites
     end
     object N5: TMenuItem
       Caption = '-'

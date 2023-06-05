@@ -218,7 +218,7 @@ type
     BtnPaste: TRzToolButton;
     BtnEdit: TRzToolButton;
     RzSpacer4: TRzSpacer;
-    BtnWordWrap: TRzToolButton;
+    btnAddExtension: TRzToolButton;
     RzSpacer5: TRzSpacer;
     BtnRecycle: TRzToolButton;
     actModelCopy: TAction;
@@ -250,7 +250,6 @@ type
     N4: TMenuItem;
     Delete2: TMenuItem;
     RzVersionInfoStatus1: TRzVersionInfoStatus;
-    RzButton1: TRzButton;
     RzGroupBox2: TRzGroupBox;
     edN: TEdit;
     Data1: TMenuItem;
@@ -293,13 +292,11 @@ type
     edLFPSOSkip: TEdit;
     Label15: TLabel;
     cbTreatPeriodic: TRzCheckBox;
+    RzButton1: TRzButton;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree;
-      TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      CellRect: TRect);
     procedure ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure ProjectDblClick(Sender: TObject);
     procedure ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
@@ -373,7 +370,6 @@ type
     FModelsRoot: PVirtualNode;
     FDataRoot: PVirtualNode;
 
-    FActiveModel, FActiveData, FLinkedData: PProjectData;
     LastNode, FLastModel: PVirtualNode;
     LastData: PProjectData;
 
@@ -400,7 +396,7 @@ type
     procedure PrintMax;
     procedure SaveProject(const FileName: string);
     procedure SaveData;
-    procedure AddCurve(var Data: PProjectData);
+    procedure AddCurve(Data: PProjectData);
     procedure PlotDistributions(Model: TLayeredModel);
     procedure PrepareDistributionCharts;
     function GetFitParams: TFitParams;
@@ -410,7 +406,8 @@ type
     procedure DeleteExtension(Node: PVirtualNode);
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
-    procedure MatchToStructure; //inline;
+    procedure MatchToStructure;
+    procedure CreateNewExtension(Node: PVirtualNode); //inline;
     { Private declarations }
   public
     { Public declarations }
@@ -440,14 +437,15 @@ uses
   unit_FitHelpers,
   frm_Limits,
   editor_proj_item,
-  ClipBrd, frm_MList,
+  ClipBrd,
+  frm_MaterialsLibrary,
   frm_about;
 
 {$R *.dfm}
 
 procedure TfrmMain.btnChartScaleClick(Sender: TObject);
 begin
-//  if (FSeriesList[FActiveModel.CurveID].Count = 0) and (FActiveData = nil) then
+//  if (FSeriesList[Project.ActiveModel.CurveID].Count = 0) and (Project.ActiveData = nil) then
 //    Exit;
 
   if Chart.LeftAxis.Logarithmic then
@@ -474,20 +472,20 @@ var
 begin
   // добавляем модель
   PL := Project.AddChild(Node, Nil);
-  FActiveModel := Project.GetNodeData(PL);
-  FActiveModel.ID := FLastID;
-  FActiveModel.Title := 'Model ' + IntToStr(FLastID);
-  FActiveModel.Group := gtModel;
-  FActiveModel.RowType := prItem;
+  Project.ActiveModel := Project.GetNodeData(PL);
+  Project.ActiveModel.ID := FLastID;
+  Project.ActiveModel.Title := 'Model ' + IntToStr(FLastID);
+  Project.ActiveModel.Group := gtModel;
+  Project.ActiveModel.RowType := prItem;
 
-  AddCurve(FActiveModel);
+  AddCurve(Project.ActiveModel);
   Project.Expanded[Node] := True;
   inc(FLastID);
 end;
 
 procedure TfrmMain.ModelCreateExecute(Sender: TObject);
 begin
-  FActiveModel.Data := Structure.ToString;
+  Project.ActiveModel.Data := Structure.ToString;
   CreateNewModel(FModelsRoot);
 end;
 
@@ -532,7 +530,6 @@ begin
   Project.OnChange := ProjectChange;
   Project.OnDblClick := ProjectDblClick;
   Project.OnFocusChanging := ProjectFocusChanging;
-  Project.OnAfterCellPaint := ProjectAfterCellPaint;
   Project.PopupMenu := pmProject;
 end;
 
@@ -571,7 +568,7 @@ begin
 
 
   if IsItem and IsData then
-    FActiveData := LastData;
+    Project.ActiveData := LastData;
 
   if IsModel then
   begin
@@ -623,53 +620,6 @@ begin
   Project.Selected[Node] := True;
 end;
 
-procedure TfrmMain.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
-  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  CellRect: TRect);
-const
-  Points: array [0 .. 2] of TPoint = ((X: 25; Y: 4), (X: 32; Y: 9),
-    (X: 25; Y: 13));
-
-var
-  Data: PProjectData;
-begin
-  if (Column <> 0) or FIgnoreFocusChange then
-    Exit;
-
-  Data := Project.GetNodeData(Node);
-
-  // TargetCanvas.Brush.Color := ;
-  TargetCanvas.FillRect(CellRect);
-
-  if Data = FActiveModel then
-  begin
-    TargetCanvas.Brush.Color := clRed;
-    TargetCanvas.Pen.Color := clRed;
-    TargetCanvas.Polygon(Points);
-  end;
-
-  if Data = FLinkedData then
-  begin
-    TargetCanvas.Pen.Color := clBlack;
-
-    TargetCanvas.Ellipse(25, 2, 35, 15);
-    TargetCanvas.Brush.Color := clGreen;
-    TargetCanvas.Rectangle(25, 7, 35, 15);
-    TargetCanvas.Rectangle(29, 9, 31, 13);
-  end;
-
-  TargetCanvas.Pen.Color := clGray;
-
-  if Data.RowType = prItem then
-  begin
-    if Data.Visible then
-      TargetCanvas.Brush.Color := Data.Color
-    else
-      TargetCanvas.Brush.Color := clLtGray;
-    TargetCanvas.Rectangle(2, 5, 10, 13);
-  end;
-end;
-
 procedure TfrmMain.ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
   NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
   var Allowed: Boolean);
@@ -685,7 +635,7 @@ begin
   if not((Data.RowType = prItem) and (Data.Group = gtModel)) then
     Exit;
 
-  FActiveModel := Data;
+  Project.ActiveModel := Data;
   Project.Repaint;
 end;
 
@@ -707,7 +657,7 @@ begin
   FSeriesList[Data.CurveID].Free;
   Project.DeleteNode(Node);
   Project.Repaint;
-  FActiveModel := nil;
+  Project.ActiveModel := nil;
 end;
 
 procedure TfrmMain.DeleteData(Node: PVirtualNode; Data: PProjectData);
@@ -757,7 +707,28 @@ begin
   if (Data.RowType = prItem) and (Data.Group = gtModel) then
     Node := Project.AddChild(Node);
 
-//  CreateNewExtension(Node);
+  CreateNewExtension(Node);
+end;
+
+procedure TfrmMain.CreateNewExtension(Node: PVirtualNode);
+var
+  Data: PProjectData;
+begin
+  Data := Project.GetNodeData(Node);
+
+  Data.Group := gtModel;
+  Data.Enabled := True;
+  Data.RowType := prExtension;
+  Data.Title := 'Gradient 1';
+  Data.ExtType := etGradient;
+  Data.Rate := 0.14;
+  Data.ParentLayerName := 'C';
+  Data.ParentStackName := 'Main';
+  Data.Form := gtLine;
+
+  Project.ClearSelection;
+  Project.Selected[Node] := True;
+//  Tree.SaveToFile(ModelName(Data));
 end;
 
 procedure TfrmMain.EditProjectItem;
@@ -797,13 +768,13 @@ end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FSeriesList[FActiveData.CurveID]);
+  SeriesToClipboard(FSeriesList[Project.ActiveData.CurveID]);
 end;
 
 procedure TfrmMain.DataExportExecute(Sender: TObject);
 begin
   if dlgSaveResult.Execute then
-      SeriesToFile(FSeriesList[FActiveModel.CurveID], dlgSaveResult.FileName);
+      SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], dlgSaveResult.FileName);
 end;
 
 procedure TfrmMain.DataLoadExecute(Sender: TObject);
@@ -836,7 +807,7 @@ begin
   SeriesFromFile(FSeriesList[Data.CurveID], dlgLoadData.FileName, Data.Description);
   SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
 
-  FActiveData := Data;
+  Project.ActiveData := Data;
   Project.Expanded[FDataRoot] := True;
 
 end;
@@ -858,13 +829,13 @@ begin
   s := InputBox('Data normalization', 'Coefficient', '');
   if s <> '' then
   begin
-    Normalize(StrToFloat(s), FSeriesList[FActiveData.CurveID]);
+    Normalize(StrToFloat(s), FSeriesList[Project.ActiveData.CurveID]);
   end;
 end;
 
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
 begin
-  FActiveModel.Data := Structure.ToString;
+  Project.ActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
@@ -879,29 +850,29 @@ end;
 
 procedure TfrmMain.actModelPasteExecute(Sender: TObject);
 begin
-  FActiveModel.Data := Structure.ToString;
+  Project.ActiveModel.Data := Structure.ToString;
   CreateNewModel(FModelsRoot);
-  FActiveModel.Data := ClipBoard.AsText;
-  Structure.FromString(FActiveModel.Data);
+  Project.ActiveModel.Data := ClipBoard.AsText;
+  Structure.FromString(Project.ActiveModel.Data);
 end;
 
 procedure TfrmMain.actProjectItemDuplicateExecute(Sender: TObject);
 var
   S: string;
 begin
-  FActiveModel.Data := Structure.ToString;
+  Project.ActiveModel.Data := Structure.ToString;
   S := Structure.ToString;
   CreateNewModel(FModelsRoot);
   Structure.FromString(S);
-  FActiveModel.Data := S;
+  Project.ActiveModel.Data := S;
 end;
 
 procedure TfrmMain.actShowLibraryExecute(Sender: TObject);
 begin
-  frmMaterialList.ShowModal;
+  frmMaterialsLibrary.ShowModal;
 end;
 
-procedure TfrmMain.AddCurve(var Data: PProjectData);
+procedure TfrmMain.AddCurve(Data: PProjectData);
 var
   Count: integer;
 begin
@@ -955,7 +926,7 @@ procedure TfrmMain.MatchToStructure;
 begin
   PrepareDistributionCharts;
   PlotDistributions(Structure.Model);
-  FActiveModel.Data := Structure.ToString;
+  Project.ActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.PeriodAddExecute(Sender: TObject);
@@ -1085,7 +1056,7 @@ begin
   FitStartTime := Now;
 
   Screen.Cursor := crHourGlass;
-  FSeriesList[FActiveModel.CurveID].BeginUpdate;
+  FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
 
   CalcRun.Enabled := False;
   CalcAll.Enabled := False;
@@ -1141,18 +1112,18 @@ var
   X, Y, mx, x1, x2, my, RI, OldX: single;
   i: Integer;
 begin
-  if FSeriesList[FActiveModel.CurveID].Count = 0 then
+  if FSeriesList[Project.ActiveModel.CurveID].Count = 0 then
     Exit;
 
   my := 0;
   x1 := Chart.BottomAxis.Minimum;
   x2 := Chart.BottomAxis.Maximum;
   RI := 0;
-  OldX := FSeriesList[FActiveModel.CurveID].XValue[1];
-  for i := 2 to FSeriesList[FActiveModel.CurveID].Count - 2 do
+  OldX := FSeriesList[Project.ActiveModel.CurveID].XValue[1];
+  for i := 2 to FSeriesList[Project.ActiveModel.CurveID].Count - 2 do
   begin
-    X := FSeriesList[FActiveModel.CurveID].XValue[i];
-    Y := FSeriesList[FActiveModel.CurveID].YValue[i];
+    X := FSeriesList[Project.ActiveModel.CurveID].XValue[i];
+    Y := FSeriesList[Project.ActiveModel.CurveID].YValue[i];
     if (X > x1) and (X < x2) and (Y > my) then
     begin
       RI := RI + Y * abs(OldX - X);
@@ -1181,11 +1152,11 @@ procedure TfrmMain.PlotResults(const Data: TDataArray);
 var
   j: Integer;
 begin
-  FSeriesList[FActiveModel.CurveID].BeginUpdate;
-  FSeriesList[FActiveModel.CurveID].Clear;
+  FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
+  FSeriesList[Project.ActiveModel.CurveID].Clear;
   for j := 0 to High(Data) do
-      FSeriesList[FActiveModel.CurveID].AddXY(Data[j].t, Data[j].R);
-  FSeriesList[FActiveModel.CurveID].EndUpdate;
+      FSeriesList[Project.ActiveModel.CurveID].AddXY(Data[j].t, Data[j].R);
+  FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
 end;
 
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);
@@ -1197,9 +1168,9 @@ end;
 procedure TfrmMain.pmiLinkedClick(Sender: TObject);
 begin
   if not pmiLinked.Checked then
-    FLinkedData := nil
+    Project.LinkedData := nil
   else
-    FLinkedData := LastData;
+    Project.LinkedData := LastData;
 
   Project.Repaint;
 end;
@@ -1214,7 +1185,7 @@ end;
 procedure TfrmMain.pmProjectPopup(Sender: TObject);
 begin
   pmiVisible.Checked := LastData.Visible;
-  pmiLinked.Checked  := LastData = FLinkedData;
+  pmiLinked.Checked  := LastData = Project.LinkedData;
 end;
 
 procedure TfrmMain.FinalizeCalc(Calc: TCalc);
@@ -1224,8 +1195,8 @@ begin
   PlotResults(Calc.Results);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
-  FSeriesList[FActiveModel.CurveID].EndUpdate;
-  FSeriesList[FActiveModel.CurveID].Repaint;
+  FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
+  FSeriesList[Project.ActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
 
@@ -1328,16 +1299,16 @@ var
   CD: TCalcThreadParams;
   Calc: TCalc;
 begin
-  if (FActiveModel = nil) then
+  if (Project.ActiveModel = nil) then
     Exit;
 
   GetThreadParams(CD);
   try
     Calc := TCalc.Create;
 
-    if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+    if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
     begin
-      Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+      Calc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
       if cbPWChiSqr.Checked then
       begin
         Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
@@ -1350,7 +1321,7 @@ begin
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
       Calc.Run;
-      if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+      if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
         Calc.CalcChiSquare(cbTWChi.ItemIndex);
         spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 4);
@@ -1362,8 +1333,8 @@ begin
       on E: exception do
       begin
         ShowMessage(E.Message);
-        FSeriesList[FActiveModel.CurveID].EndUpdate;
-        FSeriesList[FActiveModel.CurveID].Repaint;
+        FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
+        FSeriesList[Project.ActiveModel.CurveID].Repaint;
         Screen.Cursor := crDefault;
         CalcRun.Enabled := True;
       end;
@@ -1390,7 +1361,7 @@ var
 begin
   Randomize;
 
-  if (FActiveModel = nil) then
+  if (Project.ActiveModel = nil) then
     Exit;
 
   FitStructure := Structure.ToFitStructure;
@@ -1407,9 +1378,9 @@ begin
       Pages.ActivePage := tsFittingProgress;
 
       Calc := TCalc.Create;
-      if (FLinkedData <> nil) and FSeriesList[FActiveModel.CurveID].Visible then
+      if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
-         Calc.ExpValues := SeriesToData(FSeriesList[FLinkedData.CurveID]);
+         Calc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
          if cbPWChiSqr.Checked then
          begin
            Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
@@ -1463,8 +1434,8 @@ begin
       on E: exception do
       begin
         ShowMessage(E.Message);
-        FSeriesList[FActiveModel.CurveID].EndUpdate;
-        FSeriesList[FActiveModel.CurveID].Repaint;
+        FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
+        FSeriesList[Project.ActiveModel.CurveID].Repaint;
         Screen.Cursor := crDefault;
         CalcRun.Enabled := True;
       end;
@@ -1492,7 +1463,7 @@ begin
 
   // для каждой модели нужно создать series
   Chart.SeriesList.Clear;
-  FActiveModel := nil;
+  Project.ActiveModel := nil;
   First := nil;
   FLastModel := nil;
 
@@ -1507,7 +1478,7 @@ begin
 
       if ActiveID = Data.ID then
       begin
-        FActiveModel := Data;
+        Project.ActiveModel := Data;
         LastNode := Node;
         FLastModel := Node;
         LastData := Data;
@@ -1520,15 +1491,15 @@ begin
     Node := Project.GetNext(Node);
   end;
 
-  if FActiveModel = nil then
+  if Project.ActiveModel = nil then
   begin
     LastNode := First;
-    FActiveModel := Project.GetNodeData(First);
+    Project.ActiveModel := Project.GetNodeData(First);
   end;
 
   inc(FLastID);
 
-  if FActiveModel = nil then
+  if Project.ActiveModel = nil then
   begin
     Project.FocusedNode := First;
     Project.Selected[First] := True;
@@ -1539,18 +1510,18 @@ begin
     Project.Selected[LastNode] := True;
   end;
 
-  Structure.FromString(FActiveModel.Data);
+  Structure.FromString(Project.ActiveModel.Data);
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FSeriesList[FActiveModel.CurveID]);
+  SeriesToClipboard(FSeriesList[Project.ActiveModel.CurveID]);
 end;
 
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
 begin
   if dlgSaveResult.Execute then
-    SeriesToFile(FSeriesList[FActiveModel.CurveID], dlgSaveResult.FileName);
+    SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], dlgSaveResult.FileName);
 end;
 
 procedure TfrmMain.RecoverDataCurves(const LinkedID: integer);
@@ -1559,7 +1530,7 @@ var
   Data: PProjectData;
   s: string;
 begin
-  FActiveData := nil;
+  Project.ActiveData := nil;
 
   Node := Project.GetFirstChild(FDataRoot);
   while Node <> nil do
@@ -1567,11 +1538,11 @@ begin
     Data := Project.GetNodeData(Node);
     if (Data.RowType = prItem) and FileExists(DataName(Data)) then
     begin
-      if FActiveData = nil then
-        FActiveData := Data;
+      if Project.ActiveData = nil then
+        Project.ActiveData := Data;
 
       if Data.ID = LinkedID then
-        FLinkedData := Data;
+        Project.LinkedData := Data;
 
       AddCurve(Data);
       SeriesFromFile(FSeriesList[Data.CurveID], DataName(Data), s);
@@ -1706,12 +1677,12 @@ begin
 
     INF.WriteInteger('INFO', 'Version', CurrentProjectVersion);
 
-    if FLinkedData <> nil then
-      INF.WriteInteger('STATE', 'LinkedData', FLinkedData.ID);
-    if FActiveModel <> nil then
+    if Project.LinkedData <> nil then
+      INF.WriteInteger('STATE', 'LinkedData', Project.LinkedData.ID);
+    if Project.ActiveModel <> nil then
     begin
-      INF.WriteInteger('STATE', 'ActiveModel', FActiveModel.ID);
-      FActiveModel.Data := Structure.ToString;
+      INF.WriteInteger('STATE', 'ActiveModel', Project.ActiveModel.ID);
+      Project.ActiveModel.Data := Structure.ToString;
     end;
 
     INF.WriteString('FIT', 'Namx', edFIter.Text);
@@ -1813,11 +1784,11 @@ var
   xv, yv: single;
   R: TRect;
 begin
-  if FActiveModel = nil then
+  if Project.ActiveModel = nil then
     Exit;
 
-  xv := FSeriesList[FActiveModel.CurveID].XScreenToValue(X);
-  yv := FSeriesList[FActiveModel.CurveID].YScreenToValue(Y);
+  xv := FSeriesList[Project.ActiveModel.CurveID].XScreenToValue(X);
+  yv := FSeriesList[Project.ActiveModel.CurveID].YScreenToValue(Y);
   StatusX.Caption := FloatToStrF(xv, ffFixed, 4, 3);
   if yv < 0.01 then
     StatusY.Caption := FloatToStrF(yv, ffExponent, 3, 2)

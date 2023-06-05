@@ -1,10 +1,10 @@
-object frmMaterialList: TfrmMaterialList
+object frmMaterialsLibrary: TfrmMaterialsLibrary
   Left = 0
   Top = 0
   BorderStyle = bsToolWindow
-  Caption = 'Materials Database'
-  ClientHeight = 352
-  ClientWidth = 350
+  Caption = 'Materials Library'
+  ClientHeight = 382
+  ClientWidth = 367
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
