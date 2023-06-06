@@ -407,7 +407,8 @@ type
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
     procedure MatchToStructure;
-    procedure CreateNewExtension(Node: PVirtualNode); //inline;
+    procedure CreateNewExtension(Node: PVirtualNode);
+    procedure EditGradient(var Data: PProjectData); //inline;
     { Private declarations }
   public
     { Public declarations }
@@ -439,7 +440,7 @@ uses
   editor_proj_item,
   ClipBrd,
   frm_MaterialsLibrary,
-  frm_about;
+  frm_about, editor_Gradient;
 
 {$R *.dfm}
 
@@ -722,8 +723,8 @@ begin
   Data.Title := 'Gradient 1';
   Data.ExtType := etGradient;
   Data.Rate := 0.14;
-  Data.ParentLayerName := 'C';
-  Data.ParentStackName := 'Main';
+  Data.ParentLayerName := '';
+  Data.ParentStackName := '';
   Data.Form := gtLine;
 
   Project.ClearSelection;
@@ -755,15 +756,24 @@ begin
       end;
     prExtension:
       begin
-//        edtrGradient.Data := Data;
-//        FillExtensionPeriods(edtrGradient.cbPeriod);
-//        if edtrGradient.ShowModal = mrOk then
-//        begin
-//          mmDescription.Lines.Text := Data.Description;
-//        end;
+        case Data.ExtType of
+          etGradient: EditGradient(Data);
+          etProfile :;
+        end;
+
       end;
   end;
+end;
 
+
+procedure TfrmMain.EditGradient(var Data: PProjectData);
+begin
+  edtrGradient.Data := Data;
+  edtrGradient.Structure := Structure;
+  if edtrGradient.ShowModal = mrOk then
+  begin
+    mmDescription.Lines.Text := Data.Description;
+  end;
 end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);

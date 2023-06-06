@@ -66,6 +66,8 @@ type
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
       function IsPeriodic(const Index: integer): boolean;
+      procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings);
+      procedure GetLayersList(Stack: string; List: TStrings);
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -675,9 +677,29 @@ begin
   Visible := True;
 end;
 
+procedure TXRCStructure.GetLayersList(Stack: string; List: TStrings);
+begin
+  List.Clear;
+end;
+
 function TXRCStructure.GetSelected: Integer;
 begin
   Result := FSelectedStack;
 end;
+
+procedure TXRCStructure.GetStacksList(PeriodicOnly: Boolean; List: TStrings);
+var
+  i: Integer;
+begin
+  List.Clear;
+  for I := 0 to High(Stacks) do
+  begin
+    if not PeriodicOnly then
+       List.Add(Stacks[i].Title)
+    else
+      if Stacks[i].N > 1 then
+         List.Add(Stacks[i].Title);
+  end;
+ end;
 
 end.

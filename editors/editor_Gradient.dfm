@@ -11,9 +11,7 @@ object edtrGradient: TedtrGradient
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object RzPanel2: TRzPanel
     AlignWithMargins = True
@@ -23,29 +21,35 @@ object edtrGradient: TedtrGradient
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
-    ParentColor = True
+    Color = 15987699
     TabOrder = 0
+    ExplicitTop = 213
+    ExplicitWidth = 209
     DesignSize = (
       217
       41)
     object btnOK: TRzBitBtn
-      Left = 9
+      Left = 1
       Top = 10
       Width = 66
+      Alignment = taRightJustify
       Anchors = [akTop, akRight]
       TabOrder = 0
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
+      ExplicitLeft = -7
     end
     object btnCancel: TRzBitBtn
-      Left = 136
+      Left = 128
       Top = 10
       Width = 72
+      Alignment = taRightJustify
       Anchors = [akTop, akRight]
       TabOrder = 1
       TabStop = False
       Kind = bkCancel
+      ExplicitLeft = 120
     end
   end
   object RzPanel1: TRzPanel
@@ -56,8 +60,10 @@ object edtrGradient: TedtrGradient
     Height = 216
     Align = alClient
     BorderOuter = fsFlatRounded
-    ParentColor = True
+    Color = 15987699
     TabOrder = 1
+    ExplicitWidth = 209
+    ExplicitHeight = 204
     object Label1: TLabel
       Left = 9
       Top = 10
@@ -103,13 +109,13 @@ object edtrGradient: TedtrGradient
       TabOrder = 1
       Text = 'Gradient'
     end
-    object cbPeriod: TComboBox
+    object cbbStack: TComboBox
       Left = 9
       Top = 54
       Width = 96
       Height = 21
       TabOrder = 2
-      OnChange = cbPeriodChange
+      OnChange = cbbStackChange
     end
     object cbLayer: TComboBox
       Left = 111
