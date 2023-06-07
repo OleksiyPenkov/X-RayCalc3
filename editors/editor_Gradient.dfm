@@ -11,6 +11,7 @@ object edtrGradient: TedtrGradient
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  Position = poMainFormCenter
   OnShow = FormShow
   TextHeight = 13
   object RzPanel2: TRzPanel
@@ -29,7 +30,7 @@ object edtrGradient: TedtrGradient
       217
       41)
     object btnOK: TRzBitBtn
-      Left = 1
+      Left = 9
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -38,10 +39,9 @@ object edtrGradient: TedtrGradient
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
-      ExplicitLeft = -7
     end
     object btnCancel: TRzBitBtn
-      Left = 128
+      Left = 135
       Top = 10
       Width = 72
       Alignment = taRightJustify
@@ -49,7 +49,6 @@ object edtrGradient: TedtrGradient
       TabOrder = 1
       TabStop = False
       Kind = bkCancel
-      ExplicitLeft = 120
     end
   end
   object RzPanel1: TRzPanel
@@ -93,7 +92,7 @@ object edtrGradient: TedtrGradient
       Caption = 'Layer'
     end
     object edRate: TJvCalcEdit
-      Left = 140
+      Left = 138
       Top = 131
       Width = 70
       Height = 21
@@ -104,7 +103,7 @@ object edtrGradient: TedtrGradient
     object edTitle: TEdit
       Left = 42
       Top = 6
-      Width = 166
+      Width = 165
       Height = 21
       TabOrder = 1
       Text = 'Gradient'
@@ -127,7 +126,7 @@ object edtrGradient: TedtrGradient
     object mmDescription: TMemo
       Left = 9
       Top = 160
-      Width = 200
+      Width = 198
       Height = 46
       ScrollBars = ssVertical
       TabOrder = 4

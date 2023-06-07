@@ -1897,6 +1897,12 @@ object frmMain: TfrmMain
       object PasteModel1: TMenuItem
         Action = actModelPaste
       end
+      object N8: TMenuItem
+        Caption = '-'
+      end
+      object NewFolder1: TMenuItem
+        Action = ProjectAddFolder
+      end
     end
     object Project2: TMenuItem
       Caption = 'Structure'

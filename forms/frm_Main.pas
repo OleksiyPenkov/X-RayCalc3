@@ -293,6 +293,8 @@ type
     Label15: TLabel;
     cbTreatPeriodic: TRzCheckBox;
     RzButton1: TRzButton;
+    NewFolder1: TMenuItem;
+    N8: TMenuItem;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -407,8 +409,9 @@ type
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
     procedure MatchToStructure;
-    procedure CreateNewExtension(Node: PVirtualNode);
-    procedure EditGradient(var Data: PProjectData); //inline;
+    procedure CreateNewGradientExtension(Node: PVirtualNode);
+    procedure EditGradient(var Data: PProjectData);
+    function FindLastParentNode(out Node: PVirtualNode): boolean; //inline;
     { Private declarations }
   public
     { Public declarations }
@@ -440,7 +443,7 @@ uses
   editor_proj_item,
   ClipBrd,
   frm_MaterialsLibrary,
-  frm_about, editor_Gradient;
+  frm_about, editor_Gradient, frm_ExtensionType;
 
 {$R *.dfm}
 
@@ -696,22 +699,46 @@ begin
   ProjectChange(Project, Nil);
 end;
 
-procedure TfrmMain.ProjectItemExtensionExecute(Sender: TObject);
+function TfrmMain.FindLastParentNode(out Node: PVirtualNode): boolean;
 var
-  Node: PVirtualNode;
   Data: PProjectData;
 begin
   Node := Project.GetFirstSelected;
-  if Node = nil then Exit;
+  if Node = Nil  then Exit;
 
   Data := Project.GetNodeData(Node);
-  if (Data.RowType = prItem) and (Data.Group = gtModel) then
-    Node := Project.AddChild(Node);
-
-  CreateNewExtension(Node);
+  if Data.Group = gtModel then
+  begin
+    if Data.RowType = prItem then
+      Node := Project.AddChild(Node);
+    if Data.RowType = prExtension then
+      Node := Project.AddChild(Node.Parent);
+    Result := True;
+  end
+  else Result := False;
 end;
 
-procedure TfrmMain.CreateNewExtension(Node: PVirtualNode);
+procedure TfrmMain.ProjectItemExtensionExecute(Sender: TObject);
+var
+  EType: TExtentionType;
+  Node : PVirtualNode;
+begin
+  EType := AskSelectExtensionTypenAction;
+  if EType = etNone then Exit;
+
+  if not FindLastParentNode(Node) then
+  begin
+    ShowMessage('Parent model is not selected!');
+    Exit;
+  end;
+
+  case EType of
+    etGradient : CreateNewGradientExtension(Node);
+    etProfile  : ;
+  end;
+end;
+
+procedure TfrmMain.CreateNewGradientExtension(Node: PVirtualNode);
 var
   Data: PProjectData;
 begin
@@ -720,16 +747,15 @@ begin
   Data.Group := gtModel;
   Data.Enabled := True;
   Data.RowType := prExtension;
-  Data.Title := 'Gradient 1';
+  Data.Title := 'Gradient ' + IntToStr(Node.Parent.ChildCount);
   Data.ExtType := etGradient;
   Data.Rate := 0.14;
-  Data.ParentLayerName := '';
-  Data.ParentStackName := '';
+  Data.StackID := -1;
+  Data.LayerID := -1;
   Data.Form := gtLine;
 
   Project.ClearSelection;
   Project.Selected[Node] := True;
-//  Tree.SaveToFile(ModelName(Data));
 end;
 
 procedure TfrmMain.EditProjectItem;

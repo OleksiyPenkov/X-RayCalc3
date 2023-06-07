@@ -275,8 +275,8 @@ begin
   Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
   Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
   Stream.Read(Data.Rate, SizeOf(Data.Rate));
-  Data.ParentLayerName := GetString;
-  Data.ParentStackName := GetString;
+  Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
+  Stream.Read(Data.StackID, SizeOf(Data.StackID));
   Stream.Read(Data.Form, SizeOf(Data.Form));
   Stream.Read(Data.Subj, SizeOf(Data.Subj));
 
@@ -327,8 +327,8 @@ begin
   Stream.Write(Data.Enabled, SizeOf(Data.Enabled));
   Stream.Write(Data.ExtType, SizeOf(Data.ExtType));
   Stream.Write(Data.Rate, SizeOf(Data.Rate));
-  WriteString(Data.ParentLayerName);
-  WriteString(Data.ParentStackName);
+  Stream.Write(Data.LayerID, SizeOf(Data.LayerID));
+  Stream.Write(Data.StackID, SizeOf(Data.StackID));
   Stream.Write(Data.Form, SizeOf(Data.Form));
   Stream.Write(Data.Subj, SizeOf(Data.Subj));
   WriteString(Data.Data);

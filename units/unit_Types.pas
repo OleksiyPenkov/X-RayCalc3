@@ -40,8 +40,8 @@ type
          (Enabled: boolean;
           case ExtType: TExtentionType of
             etGradient:
-              (ParentLayerName: string [40];
-               ParentStackName: string [40];
+              (StackID: integer;
+               LayerID: integer;
                Rate: single;
                Form: TGradientForm;
                Subj: TParameterType;
@@ -136,6 +136,8 @@ type
   end;
 
   TDataArray = array of TDataPoint;
+
+  TIntArray = array of Integer;
 
   TDistrtibution = record
     Name: string;

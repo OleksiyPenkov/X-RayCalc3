@@ -4,7 +4,7 @@
         <ProjectVersion>19.5</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -108,11 +108,11 @@
         <DCC_ExeOutput>.\OUT\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\Multilayer(4x2x5)_NP.xrcx&quot; -a</Debugger_RunParams>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_Build>200</VerInfo_Build>
         <VerInfo_Debug>true</VerInfo_Debug>
         <VerInfo_AutoGenVersion>true</VerInfo_AutoGenVersion>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\Multilayer(4x2x7).xrcx&quot; -a</Debugger_RunParams>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.0.0.200;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
@@ -196,6 +196,10 @@
         </DCCReference>
         <DCCReference Include="editors\editor_Gradient.pas">
             <Form>edtrGradient</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="forms\frm_ExtensionType.pas">
+            <Form>frmExtensionSelector</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Base">

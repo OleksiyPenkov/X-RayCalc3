@@ -27,11 +27,13 @@ type
     procedure btnOKClick(Sender: TObject);
     procedure cbbStackChange(Sender: TObject);
   private
+    { Private declarations }
     FData: PProjectData;
     FStructure: TXRCStructure;
-    { Private declarations }
+    FRealStackID: TIntArray;
 
     procedure FillStacksList;
+    function ListedStackID(const AbsoluteID: integer): Integer;
   public
     { Public declarations }
     property Data: PProjectData read FData write FData;
@@ -50,8 +52,8 @@ uses frm_main;
 procedure TedtrGradient.btnOKClick(Sender: TObject);
 begin
   FData.Title := edTitle.Text;
-  FData.ParentStackName := cbbStack.Text;
-  FData.ParentLayerName := cbLayer.Text;
+  FData.StackID := FRealStackID[cbbStack.ItemIndex];
+  FData.LayerID := cbLayer.ItemIndex;
   FData.Rate := edRate.Value;
   FData.Form := gtLine;
   FData.Description := mmDescription.Lines.Text;
@@ -60,10 +62,8 @@ end;
 
 procedure TedtrGradient.cbbStackChange(Sender: TObject);
 begin
-  if cbbStack.Text <> '' then
-  begin
-     FStructure.GetLayersList(cbbStack.Text, cbLayer.Items);
-  end;
+  if cbbStack.ItemIndex <> -1 then
+    FStructure.GetLayersList(FRealStackID[cbbStack.ItemIndex], cbLayer.Items);
 end;
 
 procedure TedtrGradient.FillStacksList;
@@ -71,7 +71,7 @@ var
   i: Integer;
 begin
   cbbStack.Text := '';
-  FStructure.GetStacksList(True, cbbStack.Items);
+  FStructure.GetStacksList(True, cbbStack.Items, FRealStackID);
   cbbStack.ItemIndex := 0;
 end;
 
@@ -80,11 +80,25 @@ begin
   FillStacksList;
 
   edTitle.Text := string(FData.Title);
-  cbbStack.Text := string(FData.ParentStackName);
-  cbLayer.Text := string(FData.ParentLayerName);
+  cbbStack.ItemIndex := ListedStackID(FData.StackID);
+  cbbStackChange(Sender);
+  cbLayer.ItemIndex  := FData.LayerID;
   edRate.Value := FData.Rate;
   rgSubject.ItemIndex := Ord(FData.Subj);
   mmDescription.Lines.Text := string(FData.Description);
+end;
+
+function TedtrGradient.ListedStackID(const AbsoluteID: integer): Integer;
+var
+  i: Integer;
+begin
+  Result := -1;
+  for i := 0 to High(FRealStackID) do
+    if FRealStackID[i] = AbsoluteID then
+    begin
+      Result := i;
+      Break;
+    end;
 end;
 
 end.
