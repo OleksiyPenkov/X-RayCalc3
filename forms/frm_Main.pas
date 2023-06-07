@@ -412,6 +412,7 @@ type
     procedure CreateNewGradientExtension(Node: PVirtualNode);
     procedure EditGradient(var Data: PProjectData);
     function FindLastParentNode(out Node: PVirtualNode): boolean; //inline;
+    function GetGradients: TGradients;
     { Private declarations }
   public
     { Public declarations }
@@ -443,7 +444,9 @@ uses
   editor_proj_item,
   ClipBrd,
   frm_MaterialsLibrary,
-  frm_about, editor_Gradient, frm_ExtensionType;
+  frm_about,
+  editor_Gradient,
+  frm_ExtensionType;
 
 {$R *.dfm}
 
@@ -749,10 +752,10 @@ begin
   Data.RowType := prExtension;
   Data.Title := 'Gradient ' + IntToStr(Node.Parent.ChildCount);
   Data.ExtType := etGradient;
-  Data.Rate := 0.14;
+  Data.a := 0.14;
   Data.StackID := -1;
   Data.LayerID := -1;
-  Data.Form := gtLine;
+  Data.Form := ffLine;
 
   Project.ClearSelection;
   Project.Selected[Node] := True;
@@ -1084,6 +1087,33 @@ begin
 
 end;
 
+function TfrmMain.GetGradients: TGradients;
+var
+  Item: PVirtualNode;
+  Data: PProjectData;
+  Count: integer;
+begin
+  SetLength(Result, 0);
+  Count := 0;
+  Item := Project.GetFirstChild(FLastModel);
+  while Item <> Nil do
+  begin
+    Data := Project.GetNodeData(Item);
+    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etGradient) then
+    begin
+      SetLength(Result, Count + 1);
+      Result[Count].NL := Structure.GetStackSize(Data.StackID);
+      Result[Count].Func.a  := Data.a;
+      Result[Count].StackID := Data.StackID;
+      Result[Count].LayerID := Data.LayerID;
+      Result[Count].Func.f := Data.Form;
+      Result[Count].Subj := Data.Subj;
+      inc(count)
+    end;
+    Item := Project.GetNextSibling(Item);
+  end;
+end;
+
 procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
 var
   StartT, EndT: single;
@@ -1356,6 +1386,7 @@ begin
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
       Calc.Model := Structure.Model;
+      Calc.Model.Gradients := GetGradients;
       Calc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
@@ -1711,7 +1742,7 @@ begin
     INF.WriteString('WAVE', 'Teta', edTheta.Text);
     INF.WriteString('WAVE', 'width', edDL.Text);
 
-    INF.WriteInteger('INFO', 'Version', CurrentProjectVersion);
+    INF.WriteInteger('INFO', 'Version', CURRENT_PROJECT_VERSION);
 
     if Project.LinkedData <> nil then
       INF.WriteInteger('STATE', 'LinkedData', Project.LinkedData.ID);

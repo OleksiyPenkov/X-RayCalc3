@@ -14,7 +14,7 @@ type
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
   TExtentionType = (etNone, etGradient, etProfile);
-  TGradientForm = (gtLine, gtExp, gtSin, gtCos);
+  TFunctionForm = (ffNone, ffLine, ffExp, ffParabolic, ffSQRT);
   TParameterType = (gsL, gsS, gsRo);
 
   PLineSeries = ^TLineSeries;
@@ -42,8 +42,8 @@ type
             etGradient:
               (StackID: integer;
                LayerID: integer;
-               Rate: single;
-               Form: TGradientForm;
+               a, b, c: single;
+               Form: TFunctionForm;
                Subj: TParameterType;
                );
             etProfile:
@@ -96,16 +96,16 @@ type
   TCalcLayers = array of TCalcLayer;
 
   TFunctionRec = record
-    f: (fNone, fLine, fExp, fParabolic, fFiting);
+    f: TFunctionForm;
     a, b, c: single;
   end;
 
   TGradientRec = record
-    Rate: single;
-    Form: TGradientForm;
+    Func: TFunctionRec;
     Subj: TParameterType;
-    ParentPeriod: string;
-    ParentLayer: string;
+    NL: Integer;
+    LayerID: integer;
+    StackID: integer;
   end;
   TGradients = array of TGradientRec;
 

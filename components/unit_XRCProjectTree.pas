@@ -238,6 +238,7 @@ procedure TXRCProjectTree.ProjectLoadNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Stream: TStream);
 var
   Data: PProjectData;
+  S: string;
 
   function GetString: string;
   var
@@ -272,16 +273,30 @@ begin
 
   if FProjectVersion < 1 then Exit;
 
-  Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-  Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-  Stream.Read(Data.Rate, SizeOf(Data.Rate));
-  Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
-  Stream.Read(Data.StackID, SizeOf(Data.StackID));
-  Stream.Read(Data.Form, SizeOf(Data.Form));
-  Stream.Read(Data.Subj, SizeOf(Data.Subj));
-
-  if FProjectVersion < 2 then Exit;
-  Data.Data := GetString;
+  case FProjectVersion of
+    2: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.a, SizeOf(Data.a));
+          S := GetString;
+          S := GetString;
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Data.Data := GetString;
+       end;
+    3: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
+          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(Data.a, SizeOf(Data.a));
+          Stream.Read(Data.b, SizeOf(Data.b));
+          Stream.Read(Data.c, SizeOf(Data.c));
+          Data.Data := GetString;
+       end;
+  end;
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
@@ -326,11 +341,13 @@ begin
   Stream.Write(Data.Color, SizeOf(Data.Color));
   Stream.Write(Data.Enabled, SizeOf(Data.Enabled));
   Stream.Write(Data.ExtType, SizeOf(Data.ExtType));
-  Stream.Write(Data.Rate, SizeOf(Data.Rate));
   Stream.Write(Data.LayerID, SizeOf(Data.LayerID));
   Stream.Write(Data.StackID, SizeOf(Data.StackID));
   Stream.Write(Data.Form, SizeOf(Data.Form));
   Stream.Write(Data.Subj, SizeOf(Data.Subj));
+  Stream.Write(Data.a, SizeOf(Data.a));
+  Stream.Write(Data.b, SizeOf(Data.a));
+  Stream.Write(Data.c, SizeOf(Data.a));
   WriteString(Data.Data);
 end;
 

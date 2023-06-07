@@ -54,8 +54,8 @@ begin
   FData.Title := edTitle.Text;
   FData.StackID := FRealStackID[cbbStack.ItemIndex];
   FData.LayerID := cbLayer.ItemIndex;
-  FData.Rate := edRate.Value;
-  FData.Form := gtLine;
+  FData.a := edRate.Value;
+  FData.Form := ffLine;
   FData.Description := mmDescription.Lines.Text;
   FData.Subj := TParameterType(rgSubject.ItemIndex);
 end;
@@ -83,7 +83,7 @@ begin
   cbbStack.ItemIndex := ListedStackID(FData.StackID);
   cbbStackChange(Sender);
   cbLayer.ItemIndex  := FData.LayerID;
-  edRate.Value := FData.Rate;
+  edRate.Value := FData.a;
   rgSubject.ItemIndex := Ord(FData.Subj);
   mmDescription.Lines.Text := string(FData.Description);
 end;

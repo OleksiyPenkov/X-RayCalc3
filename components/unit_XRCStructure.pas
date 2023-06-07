@@ -68,6 +68,7 @@ type
       function IsPeriodic(const Index: integer): boolean;
       procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
       procedure GetLayersList(const ID: integer; List: TStrings);
+      function GetStackSize(const ID: Integer): Integer;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -689,6 +690,11 @@ end;
 function TXRCStructure.GetSelected: Integer;
 begin
   Result := FSelectedStack;
+end;
+
+function TXRCStructure.GetStackSize(const ID: Integer): Integer;
+begin
+  Result := Stacks[ID].N;
 end;
 
 procedure TXRCStructure.GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);

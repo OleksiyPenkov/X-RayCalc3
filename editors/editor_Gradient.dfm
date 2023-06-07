@@ -3,8 +3,8 @@ object edtrGradient: TedtrGradient
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Gradient'
-  ClientHeight = 269
-  ClientWidth = 223
+  ClientHeight = 257
+  ClientWidth = 215
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,20 +17,18 @@ object edtrGradient: TedtrGradient
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 225
-    Width = 217
+    Top = 213
+    Width = 209
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 213
-    ExplicitWidth = 209
     DesignSize = (
-      217
+      209
       41)
     object btnOK: TRzBitBtn
-      Left = 9
+      Left = -7
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -39,9 +37,10 @@ object edtrGradient: TedtrGradient
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
+      ExplicitLeft = 9
     end
     object btnCancel: TRzBitBtn
-      Left = 135
+      Left = 119
       Top = 10
       Width = 72
       Alignment = taRightJustify
@@ -49,20 +48,19 @@ object edtrGradient: TedtrGradient
       TabOrder = 1
       TabStop = False
       Kind = bkCancel
+      ExplicitLeft = 135
     end
   end
   object RzPanel1: TRzPanel
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 217
-    Height = 216
+    Width = 209
+    Height = 204
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 209
-    ExplicitHeight = 204
     object Label1: TLabel
       Left = 9
       Top = 10
