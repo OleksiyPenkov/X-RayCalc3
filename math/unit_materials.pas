@@ -49,7 +49,7 @@ type
     property Layers: TCalcLayers read GetLayers;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
-    property Gradients: TGradients write FGradients;
+    property Gradients: TGradients read FGradients write FGradients;
    end;
 
 implementation
@@ -176,11 +176,11 @@ begin
         if (StackID = FGradients[g].StackID) and (LayerID = FGradients[g].LayerID) then
         begin
           case FGradients[g].Subj of
-            gsL : L := CalcGradient(i, L, FGradients[g]);
-            gsS : s := CalcGradient(i, s, FGradients[g]);
-            gsRo: ro := CalcGradient(i, ro, FGradients[g]);
-           end;
-          Break;
+            gsL : L := CalcGradient(L, FGradients[g]);
+            gsS : s := CalcGradient(s, FGradients[g]);
+            gsRo: ro := CalcGradient(ro, FGradients[g]);
+          end;
+          Inc(FGradients[g].Count);
         end
       end;
       c := kk * ro / FMaterials[CurrentMaterial].am * sqr(FLambda);

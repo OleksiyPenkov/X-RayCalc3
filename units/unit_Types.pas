@@ -106,6 +106,7 @@ type
     NL: Integer;
     LayerID: integer;
     StackID: integer;
+    Count: Integer;
   end;
   TGradients = array of TGradientRec;
 

@@ -446,7 +446,7 @@ uses
   frm_MaterialsLibrary,
   frm_about,
   editor_Gradient,
-  frm_ExtensionType;
+  frm_ExtensionType, math_globals;
 
 {$R *.dfm}
 
@@ -1102,6 +1102,7 @@ begin
     if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etGradient) then
     begin
       SetLength(Result, Count + 1);
+      Result[Count].Count := 1;
       Result[Count].NL := Structure.GetStackSize(Data.StackID);
       Result[Count].Func.a  := Data.a;
       Result[Count].StackID := Data.StackID;
@@ -1315,8 +1316,9 @@ end;
 
 procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
 var
-  i: integer;
+  i, j: integer;
   Layers: TCalcLayers;
+  Gradients: TGradients;
 begin
   for i := 0 to High(FThicknessSeries) do
   begin
@@ -1326,14 +1328,38 @@ begin
   end;
 
   Layers := Model.Layers;
+  Gradients := GetGradients;
 
   for i := 1 to High(Layers) - 1 do
   begin
     if Structure.IsPeriodic(Layers[i].StackID) then
     begin
-      FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
-      FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
-      FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+      if Length(Gradients) > 0 then
+      begin
+        for j := 0 to High(Gradients) do
+        begin
+          if (Layers[i].StackID = Gradients[j].StackID) and
+             (Layers[i].LayerID = Gradients[j].LayerID) then
+          begin
+            case Gradients[j].Subj of
+              gsL : FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].L, Gradients[j]));
+  //            gsS : s := CalcGradient(i, s, FGradients[g]);
+  //            gsRo: ro := CalcGradient(i, ro, FGradients[g]);
+            end;
+            inc(Gradients[j].Count);
+          end
+          else begin
+            FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
+            FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
+            FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+          end;
+        end;
+      end
+      else begin
+        FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
+        FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
+        FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+      end;
     end;
   end;
 end;
@@ -1395,7 +1421,7 @@ begin
       end
       else
         spChiSqr.Caption := '';
-
+       PlotDistributions(Calc.Model);
     except
       on E: exception do
       begin
