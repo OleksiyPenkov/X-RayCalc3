@@ -312,7 +312,7 @@ begin
       begin
         if Assigned(FLayers[FLinkedLayers[i]].Linked) and
            Assigned(FLayers[FLinkedLayers[i]].Linked.Linked) then
-                       FLayers[FLinkedLayers[i]].Linked.Linked := nil;  // backlink
+                       FLayers[FLinkedLayers[i]].Linked.Linked := nil;  //clear mutual link
 
         FLayers[FLinkedLayers[i]].Linked := nil;
         FLinkedLayers[i] := -1;
@@ -323,7 +323,7 @@ begin
 
   if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
   begin
-    FLayers[FLinkedLayers[0]].Linked := FLayers[FLinkedLayers[1]];
+    FLayers[FLinkedLayers[0]].Linked := FLayers[FLinkedLayers[1]]; //set mutual links
     FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
   end;
 
