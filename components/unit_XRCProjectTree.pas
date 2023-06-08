@@ -22,6 +22,10 @@ type
   TXRCProjectTree = class (TVirtualStringTree)
     private
       FProjectVersion: Integer;
+      FActiveModel: PProjectData;
+      FLinkedData: PProjectData;
+      FIgnoreFocusChange: boolean;
+      FActiveData: PProjectData;
 
       procedure ProjectAdvancedHeaderDraw(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
       procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -30,11 +34,17 @@ type
       procedure ProjectHeaderDrawQueryElements(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; var Elements: THeaderPaintElements);
       procedure ProjectLoadNode(Sender: TBaseVirtualTree; Node: PVirtualNode; Stream: TStream);
       procedure ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode; Stream: TStream);
+      procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
+      procedure ProjectBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
     public
       constructor Create(AOwner: TComponent);
       destructor Free;
 
       property Version: Integer write FProjectVersion;
+      property ActiveModel:PProjectData read FActiveModel write FActiveModel;
+      property ActiveData:PProjectData read FActiveData write FActiveData;
+      property LinkedData:PProjectData read FLinkedData write FLinkedData;
+      property IgnoreFocusChange: boolean read FIgnoreFocusChange write FIgnoreFocusChange;
     published
 
   end;
@@ -78,18 +88,18 @@ begin
   Font.Height := -13;
   Font.Name := 'Tahoma';
   Font.Style := [];
+  Indent := 10;
   Header.AutoSizeIndex := 0;
   Header.Background := 16765595;
   Header.Height := 23;
   Header.MainColumn := 1;
-  Header.Options := [hoAutoResize, hoColumnResize, hoDrag, hoOwnerDraw, hoShowSortGlyphs, hoVisible];
+  Header.Options := [hoAutoResize, hoColumnResize, hoDrag, hoOwnerDraw, hoVisible];
   Header.ParentFont := False;
   Header.Font.Style := [fsBold];
   NodeAlignment := naFromTop;
   ParentFont := False;
-  TabOrder := 1;
   TreeOptions.MiscOptions := [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning];
-  TreeOptions.PaintOptions := [toShowDropmark, toShowRoot, toThemeAware, toUseBlendedImages, toFullVertGridLines];
+  TreeOptions.PaintOptions := [toShowButtons,toShowDropmark,toThemeAware,toUseBlendedImages,toUseExplorerTheme];
   TreeOptions.SelectionOptions := [toFullRowSelect, toRightClickSelect];
   Touch.InteractiveGestures := [TInteractiveGesture.igPan, TInteractiveGesture.igPressAndTap];
   Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough];
@@ -101,17 +111,19 @@ begin
   OnHeaderDrawQueryElements := ProjectHeaderDrawQueryElements;
   OnLoadNode := ProjectLoadNode;
   OnSaveNode := ProjectSaveNode;
+  OnAfterCellPaint := ProjectAfterCellPaint;
+  OnBeforeCellPaint := ProjectBeforeCellPaint;
 
   Header.Columns.Add;
   Header.Columns.Add;
 
   Header.Columns[0].Width    := 41;
   Header.Columns[0].CheckBox := True;
-  Header.Columns[0].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus,coEditable,coStyleColor];
+  Header.Columns[0].Options  := [coAllowClick,coDraggable,coEnabled,coFixed,coParentBidiMode,coParentColor,coShowDropMark,coVisible,coAllowFocus];
 
   Header.Columns[1].Width    := 180;
   Header.Columns[1].CheckBox := False;
-  Header.Columns[1].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus,coEditable,coStyleColor];
+  Header.Columns[1].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus];
   Header.Columns[1].Text := 'Project Items';
 end;
 
@@ -133,7 +145,64 @@ begin
   end;
 end;
 
+procedure TXRCProjectTree.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  CellRect: TRect);
+const
+  Points: array [0 .. 2] of TPoint = ((X: 22; Y: 5), (X: 32; Y: 10),
+    (X: 22; Y: 15));
 
+var
+  Data: PProjectData;
+begin
+  if (Column <> 0) or FIgnoreFocusChange then
+    Exit;
+
+  Data := GetNodeData(Node);
+
+  if Data = FActiveModel then
+  begin
+    TargetCanvas.Brush.Color := clRed;
+    TargetCanvas.Pen.Color := clRed;
+    TargetCanvas.Polygon(Points);
+  end;
+
+  if Data = FLinkedData then
+  begin
+    TargetCanvas.Pen.Color := clBlack;
+
+    TargetCanvas.Ellipse(25, 2, 35, 15);
+    TargetCanvas.Brush.Color := clGreen;
+    TargetCanvas.Rectangle(25, 7, 35, 15);
+    TargetCanvas.Rectangle(29, 9, 31, 13);
+  end;
+
+  TargetCanvas.Pen.Color := clGray;
+
+  if Data.RowType = prItem then
+  begin
+    if Data.Visible then
+      TargetCanvas.Brush.Color := Data.Color
+    else
+      TargetCanvas.Brush.Color := clLtGray;
+    TargetCanvas.Rectangle(5, 5, 16, 16);
+  end;
+end;
+
+procedure TXRCProjectTree.ProjectBeforeCellPaint(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
+var
+  Data: PProjectData;
+begin
+  Data := Sender.GetNodeData(Node);
+  case Data.RowType of
+    prFolder: ContentRect.Left := ContentRect.Left + 5;
+    prGroup : ContentRect.Left := ContentRect.Left + Indent;
+    prItem  : ContentRect.Left := ContentRect.Left + Indent * 2;
+    prExtension: ContentRect.Left := ContentRect.Left + Indent * 3;
+  end;
+end;
 
 procedure TXRCProjectTree.ProjectFreeNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
@@ -169,6 +238,7 @@ procedure TXRCProjectTree.ProjectLoadNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Stream: TStream);
 var
   Data: PProjectData;
+  S: string;
 
   function GetString: string;
   var
@@ -203,16 +273,30 @@ begin
 
   if FProjectVersion < 1 then Exit;
 
-  Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-  Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-  Stream.Read(Data.Rate, SizeOf(Data.Rate));
-  Data.ParentLayerName := GetString;
-  Data.ParentStackName := GetString;
-  Stream.Read(Data.Form, SizeOf(Data.Form));
-  Stream.Read(Data.Subj, SizeOf(Data.Subj));
-
-  if FProjectVersion < 2 then Exit;
-  Data.Data := GetString;
+  case FProjectVersion of
+    2: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.a, SizeOf(Data.a));
+          S := GetString;
+          S := GetString;
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Data.Data := GetString;
+       end;
+    3: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
+          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(Data.a, SizeOf(Data.a));
+          Stream.Read(Data.b, SizeOf(Data.b));
+          Stream.Read(Data.c, SizeOf(Data.c));
+          Data.Data := GetString;
+       end;
+  end;
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
@@ -228,7 +312,6 @@ begin
     TargetCanvas.Font.Style := [fsBold, fsItalic];
   if (Data.RowType <> prGroup) and  not Data.Enabled then
     TargetCanvas.Font.Color := clGray;
-
 end;
 
 procedure TXRCProjectTree.ProjectSaveNode(Sender: TBaseVirtualTree;
@@ -258,11 +341,13 @@ begin
   Stream.Write(Data.Color, SizeOf(Data.Color));
   Stream.Write(Data.Enabled, SizeOf(Data.Enabled));
   Stream.Write(Data.ExtType, SizeOf(Data.ExtType));
-  Stream.Write(Data.Rate, SizeOf(Data.Rate));
-  WriteString(Data.ParentLayerName);
-  WriteString(Data.ParentStackName);
+  Stream.Write(Data.LayerID, SizeOf(Data.LayerID));
+  Stream.Write(Data.StackID, SizeOf(Data.StackID));
   Stream.Write(Data.Form, SizeOf(Data.Form));
   Stream.Write(Data.Subj, SizeOf(Data.Subj));
+  Stream.Write(Data.a, SizeOf(Data.a));
+  Stream.Write(Data.b, SizeOf(Data.a));
+  Stream.Write(Data.c, SizeOf(Data.a));
   WriteString(Data.Data);
 end;
 

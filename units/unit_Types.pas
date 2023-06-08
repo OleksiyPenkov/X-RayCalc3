@@ -14,7 +14,7 @@ type
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
   TExtentionType = (etNone, etGradient, etProfile);
-  TGradientForm = (gtLine, gtExp, gtSin, gtCos);
+  TFunctionForm = (ffNone, ffLine, ffExp, ffParabolic, ffSQRT);
   TParameterType = (gsL, gsS, gsRo);
 
   PLineSeries = ^TLineSeries;
@@ -40,10 +40,10 @@ type
          (Enabled: boolean;
           case ExtType: TExtentionType of
             etGradient:
-              (ParentLayerName: string [40];
-               ParentStackName: string [40];
-               Rate: single;
-               Form: TGradientForm;
+              (StackID: integer;
+               LayerID: integer;
+               a, b, c: single;
+               Form: TFunctionForm;
                Subj: TParameterType;
                );
             etProfile:
@@ -96,16 +96,17 @@ type
   TCalcLayers = array of TCalcLayer;
 
   TFunctionRec = record
-    f: (fNone, fLine, fExp, fParabolic, fFiting);
+    f: TFunctionForm;
     a, b, c: single;
   end;
 
   TGradientRec = record
-    Rate: single;
-    Form: TGradientForm;
+    Func: TFunctionRec;
     Subj: TParameterType;
-    ParentPeriod: string;
-    ParentLayer: string;
+    NL: Integer;
+    LayerID: integer;
+    StackID: integer;
+    Count: Integer;
   end;
   TGradients = array of TGradientRec;
 
@@ -116,6 +117,7 @@ type
   end;
 
   TFitValue = record
+    Paired: Boolean;
     V, min, max: single;
     procedure Init(const dev: single); overload;
     procedure Init(const AMin, AMax: single); overload;
@@ -136,6 +138,8 @@ type
   end;
 
   TDataArray = array of TDataPoint;
+
+  TIntArray = array of Integer;
 
   TDistrtibution = record
     Name: string;

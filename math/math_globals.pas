@@ -22,6 +22,7 @@ procedure ReadHenke(const N: string; E, L: single; var f: TComplex;
 
 procedure Sort(var Series: TLineSeries);
 procedure CopyData(const Input: TDataArray; var Output: TDataArray);
+function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
 
 
 implementation
@@ -33,6 +34,14 @@ uses
 
 const
   H = 12398.6;
+
+function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
+begin
+  case Gradient.Func.f of
+    ffLine : Result := Val * (1 + Gradient.Count/(Gradient.NL) * Gradient.Func.a);
+  end;
+end;
+
 
 procedure CopyData(const Input: TDataArray; var Output: TDataArray);
 begin

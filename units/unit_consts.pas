@@ -7,7 +7,7 @@ Messages;
 
 const
 
-  CurrentProjectVersion = 2;
+  CURRENT_PROJECT_VERSION = 3;
 
   PARAMETERS_FILE_NAME = 'params.dsc';
   PROJECT_FILE_NAME = 'project.dsc';

@@ -48,6 +48,7 @@ type
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure Select(const ID: Integer);
       procedure SelectLayer(const StackID, LayerID: Integer);
+      procedure LinkLayer(const StackID, LayerID: Integer);
       procedure EditStack(const ID: Integer);
       procedure DeleteStack;
       procedure DeleteLayer;
@@ -66,6 +67,10 @@ type
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
       function IsPeriodic(const Index: integer): boolean;
+      procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
+      procedure GetLayersList(const ID: integer; List: TStrings);
+      function GetStackSize(const ID: Integer): Integer;
+      procedure EnablePairing(const Enabled: Boolean);
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -331,6 +336,15 @@ begin
   Stacks[ID].Edit;
 end;
 
+procedure TXRCStructure.EnablePairing(const Enabled: Boolean);
+var
+  Stack: TXRCStack;
+begin
+  for Stack in Stacks do
+    Stack.EnablePairing(Enabled);
+
+end;
+
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   Count, pos: Integer;
@@ -355,6 +369,11 @@ begin
     Result := False
   else
      Result := Stacks[Index].N > 1;
+end;
+
+procedure TXRCStructure.LinkLayer(const StackID, LayerID: Integer);
+begin
+  Stacks[StackID].LinkLayer(LayerID);
 end;
 
 function TXRCStructure.Materials: TMaterialsList;
@@ -553,14 +572,17 @@ begin
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', Data.Material);
         JLayer.AddPair('H', Data.H.V);
+        JLayer.AddPair('HP', Data.H.Paired);
         JLayer.AddPair('Hmin', Data.H.min);
         JLayer.AddPair('Hmax', Data.H.max);
 
         JLayer.AddPair('s', Data.s.V);
+        JLayer.AddPair('SP', Data.s.Paired);
         JLayer.AddPair('Smin', Data.s.min);
         JLayer.AddPair('Smax', Data.s.max);
 
         JLayer.AddPair('r', Data.r.V);
+        JLayer.AddPair('RP', Data.r.Paired);
         JLayer.AddPair('Rmin', Data.r.min);
         JLayer.AddPair('Rmax', Data.r.max);
 
@@ -622,9 +644,21 @@ var
   begin
     JVal := JLayer.FindValue(Value);
     if JVal <> nil then
-       Result := StrToFloat(JVal.Value)
+       Result := JVal.AsType<single>
     else
       Result := Base;
+  end;
+
+
+  function FindBoolValue(const Value: string): boolean;
+  var
+    JVal : TJSONValue;
+  begin
+    JVal := JLayer.FindValue(Value);
+    if JVal <> nil then
+       Result := JVal.AsType<Boolean>
+    else
+      Result := False;
   end;
 
 begin
@@ -653,14 +687,17 @@ begin
         Data.Material := JLayer.GetValue<string>('M');
 
         Data.H.V := JLayer.GetValue<single>('H');
+        Data.H.Paired := FindBoolValue('HP');
         Data.H.min := FindValue('Hmin', Data.H.V);
         Data.H.max := FindValue('Hmax', Data.H.V);
 
         Data.s.V := JLayer.GetValue<single>('s');
+        Data.s.Paired := FindBoolValue('SP');
         Data.s.min := FindValue('Smin', Data.s.V);
         Data.s.max := FindValue('Smax', Data.s.V);
 
         Data.r.V := JLayer.GetValue<single>('r');
+        Data.r.Paired := FindBoolValue('RP');
         Data.r.min := FindValue('Rmin', Data.r.V);
         Data.r.max := FindValue('Rmax', Data.r.V);
 
@@ -675,9 +712,44 @@ begin
   Visible := True;
 end;
 
+procedure TXRCStructure.GetLayersList(const ID: integer; List: TStrings);
+var
+  i, j: Integer;
+begin
+  List.Clear;
+  for j := 0 to High(Stacks[ID].Layers) do
+         List.Add(Stacks[ID].Layers[j].Material);
+end;
+
 function TXRCStructure.GetSelected: Integer;
 begin
   Result := FSelectedStack;
+end;
+
+function TXRCStructure.GetStackSize(const ID: Integer): Integer;
+begin
+  Result := Stacks[ID].N;
+end;
+
+procedure TXRCStructure.GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
+var
+  i, count: Integer;
+begin
+  List.Clear;
+  count := 0;
+  for I := 0 to High(Stacks) do
+  begin
+    if not PeriodicOnly then
+       List.Add(Stacks[i].Title)
+    else
+      if Stacks[i].N > 1 then
+      begin
+        List.Add(Stacks[i].Title);
+        Inc(Count);
+        SetLength(RealID, Count);
+        RealID[count - 1] := i;
+      end;
+  end;
 end;
 
 end.

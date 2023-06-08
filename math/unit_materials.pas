@@ -29,6 +29,7 @@ type
     FLayers: TCalcLayers;
     FLambda: Single;
     FTotalD: single;
+    FGradients: TGradients;
 
     procedure PrepareLayers;
     function FindMaterial(const Name: string): TMaterial;
@@ -48,6 +49,7 @@ type
     property Layers: TCalcLayers read GetLayers;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
+    property Gradients: TGradients read FGradients write FGradients;
    end;
 
 implementation
@@ -155,9 +157,10 @@ end;
 
 procedure TLayeredModel.PrepareLayers;
 var
-  i: Integer;
+  i, g, NL: Integer;
   c, ro: Single;
 begin
+  NL := Length(FLayers);
   for I := 1 to High(FLayers) - 1 do
   begin
     AddMaterial(FLayers[i].Name, FLambda);
@@ -168,6 +171,18 @@ begin
 
     with FLayers[i] do
     begin
+      for g := 0 to High(FGradients) do
+      begin
+        if (StackID = FGradients[g].StackID) and (LayerID = FGradients[g].LayerID) then
+        begin
+          case FGradients[g].Subj of
+            gsL : L := CalcGradient(L, FGradients[g]);
+            gsS : s := CalcGradient(s, FGradients[g]);
+            gsRo: ro := CalcGradient(ro, FGradients[g]);
+          end;
+          Inc(FGradients[g].Count);
+        end
+      end;
       c := kk * ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
       e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
       e.im := FMaterials[CurrentMaterial].f.im * c;

@@ -14,7 +14,10 @@ type
       Thickness: TRzSpinEdit;
       Sigma: TRzSpinEdit;
       Rho: TRzSpinEdit;
+
       FLinkCheckBox: TRzCheckBox;
+
+      PairedH, PairedS, PairedR: TRzCheckBox;
 
       FData : TLayerData;
       FOnSet:  boolean;
@@ -24,6 +27,8 @@ type
       FSubstrate: boolean;
       FSelected: boolean;
 
+
+      procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
       procedure SetEnabled(const Value: Boolean);
@@ -36,9 +41,13 @@ type
       procedure SetSubstrate(const Value: boolean);
       procedure InternalOnDblClick(Sender: TObject);
       procedure InternalOnClick(Sender: TObject);
+      procedure LinkedOnClick(Sender: TObject);
       function AddSpinEdit(const index, Left, Max: integer): TRzSpinEdit;
       procedure SetLayerData(const Value: TLayerData);
       procedure SetSlected(const Value: boolean);
+      function AddCheckBox(const index, Left: integer): TRzCheckBox;
+      procedure SetPairable(const Value: boolean);
+      procedure SetLinkChecked(const Value: boolean);
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
@@ -54,12 +63,14 @@ type
       property CheckBox:TRzCheckBox read GetCheckBox write SetCheckBox;
       property Checked: Boolean read GetLinkChecked;
       property Selected: boolean read FSelected write SetSlected;
+      property Pairable: boolean write SetPairable;
 
       property Data: TLayerData read FData write SetLayerData;
 
       procedure IncreaseThickness;
       procedure DecreaseThickness;
       procedure UpdateID(const StackID, LayerID: integer);
+      property LinkChecked: boolean read GetLinkChecked write SetLinkChecked;
   end;
 
 implementation
@@ -76,7 +87,7 @@ begin
   Result.Parent := Self;
   Result.Left := Left;
   Result.Top := 11;
-  Result.Width := 65;
+  Result.Width := 58;
   Result.Height := 21;
   Result.Decimals := 2;
   Result.Increment := 0.1;
@@ -90,6 +101,27 @@ begin
   Result.OnChange := ValueChange
 end;
 
+function TXRCLayerControl.AddCheckBox(const index, Left: integer):TRzCheckBox;
+begin
+  Result := TRzCheckBox.Create(Self);
+
+  Result.Parent := Self;
+  Result.Left := Left;
+  Result.Top := 13;
+  Result.Tag := Index;
+
+  Result.OnClick := CheckBoxClick;
+end;
+
+procedure TXRCLayerControl.CheckBoxClick(Sender: TObject);
+begin
+  case (Sender as TRzCheckBox).Tag of
+    1: FData.H.Paired := PairedH.Checked;
+    2: FData.s.Paired := PairedS.Checked;
+    3: FData.r.Paired := PairedR.Checked;
+  end;
+end;
+
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
 begin
   inherited Create(AOwner);
@@ -97,7 +129,7 @@ begin
   FHandler := Handler;
 
   FOnset := True;
-  FData  := Data;
+//  FData  := Data;
 
 
   AlignWithMargins := True;
@@ -109,13 +141,16 @@ begin
   Name := TRzLabel.Create(Self);
 
   //Thickness
-  Thickness := AddSpinEdit(1, 110, 99999);
+  Thickness := AddSpinEdit(1, 90, 99999);
+  PairedH   := AddCheckBox(1, 150);
 
   //Sigma
-  Sigma := AddSpinEdit(2, 180, 50);
+  Sigma := AddSpinEdit(2, 170, 50);
+  PairedS   := AddCheckBox(2, 230);
 
   //Rho
   Rho := AddSpinEdit(3, 250, 30);
+  PairedR   := AddCheckBox(3, 310);
 
   //RzCheckBox1
   FLinkCheckBox := TRzCheckBox.Create(Self);
@@ -124,7 +159,7 @@ begin
   //Name
   Name.Name := 'Name';
   Name.Parent := Self;
-  Name.Left := 33;
+  Name.Left := 25;
   Name.Top := 14;
   Name.Width := 129;
   Name.Height := 13;
@@ -138,17 +173,15 @@ begin
   //Link
   FLinkCheckBox.Name := '';
   FLinkCheckBox.Parent := Self;
-  FLinkCheckBox.Left := 8;
+  FLinkCheckBox.Left := 5;
   FLinkCheckBox.Top := 13;
   FLinkCheckBox.Width := 19;
   FLinkCheckBox.Height := 15;
   FLinkCheckBox.TabOrder := 3;
 
 
-  Name.Caption    := FData.Material;
-  Thickness.Text  := FloatToStrF(FData.H.V, ffFixed, 4, 2);
-  Sigma.Text      := FloatToStrF(FData.s.V, ffFixed, 4, 2);
-  Rho.Text        := FloatToStrF(FData.r.V, ffFixed, 4, 2);
+  Name.Caption    := Data.Material;
+  SetLayerData(Data);
 
   FLinked := nil;
 
@@ -156,6 +189,7 @@ begin
   Name.OnDblClick := InternalOnDblClick;
   Self.OnClick := InternalOnClick;
   Name.OnClick := InternalOnClick;
+  FLinkCheckBox.OnClick := LinkedOnClick;
 
   FSubstrate := False;
   FOnset := False;
@@ -163,7 +197,10 @@ end;
 
 procedure TXRCLayerControl.DecreaseThickness;
 begin
+  FOnSet := True;
   Thickness.Value := Thickness.Value - Thickness.Increment;
+  FData.H.V := Thickness.Value;
+  FOnSet := False;
 end;
 
 destructor TXRCLayerControl.Destroy;
@@ -227,18 +264,26 @@ end;
 
 function TXRCLayerControl.GetLinkChecked: Boolean;
 begin
-  Result := FLinkCheckBox.Checked;
+  if FLinkCheckBox.Visible then
+    Result := FLinkCheckBox.Checked
+  else
+    Result := False;
 end;
 
 function TXRCLayerControl.GetLinked: TXRCLayerControl;
 begin
-  Result := nil;
-  Result := FLinked;
+  if Assigned(FLinked) then
+    Result := FLinked
+  else
+    Result := nil;
 end;
 
 procedure TXRCLayerControl.IncreaseThickness;
 begin
+  FOnSet := True;
   Thickness.Value := Thickness.Value + Thickness.Increment;
+  FData.H.V := Thickness.Value;
+  FOnSet := False;
 end;
 
 procedure TXRCLayerControl.InternalOnClick(Sender: TObject);
@@ -250,6 +295,11 @@ end;
 procedure TXRCLayerControl.InternalOnDblClick(Sender: TObject);
 begin
   Edit;
+end;
+
+procedure TXRCLayerControl.LinkedOnClick(Sender: TObject);
+begin
+  LinkedClick(FData.StackID, FData.LayerID);
 end;
 
 procedure TXRCLayerControl.SetIncrement(const Value: Double);
@@ -264,13 +314,32 @@ begin
   FData := Value;
 
   Thickness.Value := FData.H.V;
+  PairedH.Checked := FData.H.Paired;
+
   Sigma.Value     := FData.s.V;
+  PairedS.Checked := FData.s.Paired;
+
   Rho.Value       := FData.r.V;
+  PairedR.Checked := FData.r.Paired;
+end;
+
+procedure TXRCLayerControl.SetLinkChecked(const Value: boolean);
+begin
+  FLinkCheckBox.Checked := Value;
 end;
 
 procedure TXRCLayerControl.SetLinked(const Value: TXRCLayerControl);
 begin
   FLinked := Value;
+end;
+
+procedure TXRCLayerControl.SetPairable(const Value: boolean);
+begin
+  FLinkCheckBox.Visible := Value;
+
+  PairedH.Visible := Value;
+  PairedS.Visible := Value;
+  PairedR.Visible := Value;
 end;
 
 procedure TXRCLayerControl.SetSlected(const Value: boolean);
@@ -287,6 +356,7 @@ begin
   FSubstrate := Value;
   Thickness.Visible := not FSubstrate;
   FLinkCheckBox.Visible := not FSubstrate;
+  SetPairable(False);
   Color := clLtGray;
 end;
 
@@ -299,26 +369,33 @@ end;
 
 procedure TXRCLayerControl.ValueChange;
 var
-  FOnSetOld: Boolean;
+  OnSetOld: Boolean;
+  OldValue: single;
 begin
-  FOnSetOld := FOnSet;
-  Onset := True;
-
-  if (FLinked <> nil) and (not FLinked.OnSet) then
-  begin
-    FLinked.OnSet := True;
-//    if FData.H > Thickness.Text then FLinked.IncreaseThickness else FLinked.DecreaseThickness;
-
-    FLinked.OnSet := False;
-  end;
+  if FOnSet then Exit;
+  
+  OnSetOld := FOnSet;
+  FOnSet := True;
 
    case (Sender as TRzSpinEdit).Tag of
-     1: FData.H.V := (Sender as TRzSpinEdit).Value;
+     1: begin
+          OldValue := FData.H.V ;
+          FData.H.V := (Sender as TRzSpinEdit).Value;
+          if Assigned(FLinked)and (not FLinked.OnSet) then
+          begin
+            FLinked.OnSet := True;
+            if FData.H.V < OldValue then
+                 FLinked.IncreaseThickness
+            else
+                 FLinked.DecreaseThickness;
+            FLinked.OnSet := False;
+        end;
+        end;
      2: FData.s.V := (Sender as TRzSpinEdit).Value;
      3: FData.r.V := (Sender as TRzSpinEdit).Value;
    end;
 
-  FOnSet := FOnSetOld;
+  FOnSet := OnSetOld;
   if not FOnSet then
      SendRecalcMessage;
 end;

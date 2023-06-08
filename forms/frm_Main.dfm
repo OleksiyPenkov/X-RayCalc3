@@ -28,7 +28,7 @@ object frmMain: TfrmMain
     Color = 15987699
     TabOrder = 0
     ExplicitTop = 688
-    ExplicitWidth = 1688
+    ExplicitWidth = 1458
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
@@ -67,7 +67,7 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1688
+    ExplicitWidth = 1458
     ExplicitHeight = 688
     BarSize = (
       234
@@ -292,13 +292,12 @@ object frmMain: TfrmMain
         Align = alBottom
         TabIndex = 3
         TabOrder = 0
-        ExplicitLeft = 60
-        ExplicitWidth = 801
+        ExplicitTop = 514
+        ExplicitWidth = 782
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitWidth = 1090
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -318,7 +317,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
-            ExplicitWidth = 1084
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -326,7 +324,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitWidth = 1090
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -346,7 +343,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 1084
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -354,7 +350,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitWidth = 1090
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -374,7 +369,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 1084
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -382,8 +376,7 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitLeft = -2
-          ExplicitTop = 27
+          ExplicitWidth = 778
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -431,7 +424,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
-            ExplicitWidth = 1013
+            ExplicitWidth = 772
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object lsrConvergence: TLineSeries
@@ -528,8 +521,8 @@ object frmMain: TfrmMain
         OnMouseDown = ChartMouseDown
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
-        ExplicitWidth = 1084
-        ExplicitHeight = 310
+        ExplicitWidth = 854
+        ExplicitHeight = 304
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -562,8 +555,8 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
-        ExplicitTop = 464
-        ExplicitWidth = 1084
+        ExplicitTop = 458
+        ExplicitWidth = 854
         DesignSize = (
           858
           50)
@@ -770,7 +763,7 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
-          ExplicitLeft = 941
+          ExplicitLeft = 711
         end
         object cbMinLimit: TRzComboBox
           Left = 796
@@ -791,7 +784,7 @@ object frmMain: TfrmMain
             '1e-6'
             '1e-7'
             '1e-8')
-          ExplicitLeft = 1022
+          ExplicitLeft = 792
         end
       end
       object pnl1: TPanel
@@ -802,7 +795,7 @@ object frmMain: TfrmMain
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitWidth = 1090
+        ExplicitWidth = 860
         object RzPanel6: TRzPanel
           AlignWithMargins = True
           Left = 387
@@ -814,7 +807,7 @@ object frmMain: TfrmMain
           BorderOuter = fsFlatRounded
           Color = 15987699
           TabOrder = 0
-          ExplicitWidth = 700
+          ExplicitWidth = 470
           object RzPageControl1: TRzPageControl
             Left = 2
             Top = 2
@@ -985,6 +978,7 @@ object frmMain: TfrmMain
                 Checked = True
                 State = cbChecked
                 TabOrder = 6
+                OnClick = cbTreatPeriodicClick
               end
             end
             object TabSheet2: TRzTabSheet
@@ -1553,7 +1547,7 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
-        ExplicitWidth = 1090
+        ExplicitWidth = 860
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -1673,6 +1667,8 @@ object frmMain: TfrmMain
         Caption = 'Copy'
         TabOrder = 5
         OnClick = RzButton1Click
+        ExplicitLeft = 797
+        ExplicitTop = 649
       end
     end
     object StructurePanel: TRzPanel
@@ -1829,18 +1825,16 @@ object frmMain: TfrmMain
             '10'
             '5'
             '1'
+            '0.25'
             '0.1'
-            '0.01'
-            '0.001')
-          ItemIndex = 3
+            '0.01')
           Values.Strings = (
             '10'
             '5'
             '1'
             '0.25'
             '0.1'
-            '0.01'
-            '0.001')
+            '0.01')
         end
         object btnSetFitLimits: TBitBtn
           Left = 265
@@ -1901,6 +1895,12 @@ object frmMain: TfrmMain
       end
       object PasteModel1: TMenuItem
         Action = actModelPaste
+      end
+      object N8: TMenuItem
+        Caption = '-'
+      end
+      object NewFolder1: TMenuItem
+        Action = ProjectAddFolder
       end
     end
     object Project2: TMenuItem

@@ -20,6 +20,8 @@ type
       FN: Integer;
       FTitle: string;
       FSubstrate: Boolean;
+      FEnablePairing: Boolean;
+      FLinkedLayers: array [0..1] of Integer;
 
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
@@ -28,6 +30,7 @@ type
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
       procedure SetID(const Value: Integer);
+      procedure UpdateLayersStatus(const Pairable: Boolean);
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -51,6 +54,9 @@ type
       property Materials: TMaterialsList read GetMaterialsList;
       procedure ClearSelection;
       procedure Select(const LayerID: integer);
+      procedure EnablePairing(const Enabled: Boolean);
+      procedure LinkLayer(const LayerID: Integer);
+
   end;
 
 implementation
@@ -72,6 +78,7 @@ begin
 
   FLayers[Count] := TXRCLayerControl.Create(Self, 0, Data);
   FLayers[Count].Parent := Self;
+  FLayers[Count].Pairable := FN > 1;
 
   if (Count mod 2) = 0 then FLayers[Count].Color := $00FFE3C1
     else FLayers[Count].Color := $00FFD29B;
@@ -136,6 +143,14 @@ begin
   FLayers[Index].Onset := False;
 end;
 
+procedure TXRCStack.UpdateLayersStatus(const Pairable: Boolean);
+var
+  i: integer;
+begin
+  for I := 0 to High(FLayers) do
+    FLayers[i].Pairable := Pairable;
+end;
+
 constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
 begin
   inherited Create(AOwner);
@@ -184,6 +199,10 @@ begin
   OnClick := FOnClick;
   OnDblClick := FOnDoubleClick;
 
+  FLinkedLayers[0] := -1;
+  FLinkedLayers[1] := -1;
+
+
   UpdateInfo;
 end;
 
@@ -209,6 +228,12 @@ begin
 
 end;
 
+procedure TXRCStack.EnablePairing(const Enabled: Boolean);
+begin
+  FEnablePairing := Enabled;
+  UpdateLayersStatus((FN > 1) and Enabled);
+end;
+
 procedure TXRCStack.FOnClick(Sender: TObject);
 begin
   if RzSeparator.Visible  then StackClick(FID);
@@ -220,6 +245,7 @@ begin
   begin
     edtrStack.Edit(FTitle, FN);
     UpdateInfo;
+    UpdateLayersStatus((FN > 1) and FEnablePairing);
   end
   else begin
     FLayers[0].Edit;
@@ -235,6 +261,7 @@ begin
     Result[i] := FLayers[i].Data;
 end;
 
+
 function TXRCStack.GetMaterialsList: TMaterialsList;
 var
   i: integer;
@@ -247,6 +274,59 @@ begin
     Result[i].StackID := FID;
     Result[i].LayerID := i + 1;
   end;
+end;
+
+procedure TXRCStack.LinkLayer(const LayerID: Integer);
+var
+  State, Found: Boolean;
+      i: integer;
+begin
+  State := FLayers[LayerID].LinkChecked;
+  if State then
+  begin
+    if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
+    begin
+      FLayers[LayerID].LinkChecked := False;
+      Exit; // only 2 links ara allowed
+    end;
+
+    Found := False;
+    for i:=0 to High(FLinkedLayers) do
+    begin
+      if LayerID = FLinkedLayers[i] then
+      begin
+        Found := True;
+        Break;
+      end;
+    end;
+    if Found then Exit;
+    if FLinkedLayers[0] = -1 then
+      FLinkedLayers[0] := LayerID
+    else
+      FLinkedLayers[1] := LayerID;
+  end else
+  begin
+    for i:=0 to High(FLinkedLayers) do
+    begin
+      if LayerID = FLinkedLayers[i] then
+      begin
+        if Assigned(FLayers[FLinkedLayers[i]].Linked) and
+           Assigned(FLayers[FLinkedLayers[i]].Linked.Linked) then
+                       FLayers[FLinkedLayers[i]].Linked.Linked := nil;  //clear mutual link
+
+        FLayers[FLinkedLayers[i]].Linked := nil;
+        FLinkedLayers[i] := -1;
+        Break;
+      end;
+    end;
+  end;
+
+  if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
+  begin
+    FLayers[FLinkedLayers[0]].Linked := FLayers[FLinkedLayers[1]]; //set mutual links
+    FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
+  end;
+
 end;
 
 procedure TXRCStack.Select(const LayerID: integer);
