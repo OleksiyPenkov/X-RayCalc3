@@ -117,6 +117,7 @@ type
   end;
 
   TFitValue = record
+    Paired: Boolean;
     V, min, max: single;
     procedure Init(const dev: single); overload;
     procedure Init(const AMin, AMax: single); overload;

@@ -359,6 +359,7 @@ type
     procedure ChartZoom(Sender: TObject);
     procedure RzButton1Click(Sender: TObject);
     procedure DataNormAutoExecute(Sender: TObject);
+    procedure cbTreatPeriodicClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -1604,6 +1605,7 @@ begin
   end;
 
   Structure.FromString(Project.ActiveModel.Data);
+  Structure.EnablePairing(cbTreatPeriodic.Checked);
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
@@ -2019,6 +2021,11 @@ end;
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
 begin
   Structure.Increment := StrToFloat(cbIncrement.Value);
+end;
+
+procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
+begin
+  Structure.EnablePairing(cbTreatPeriodic.Checked);
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);

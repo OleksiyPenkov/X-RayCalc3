@@ -978,6 +978,7 @@ object frmMain: TfrmMain
                 Checked = True
                 State = cbChecked
                 TabOrder = 6
+                OnClick = cbTreatPeriodicClick
               end
             end
             object TabSheet2: TRzTabSheet

@@ -69,6 +69,7 @@ type
       procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
       procedure GetLayersList(const ID: integer; List: TStrings);
       function GetStackSize(const ID: Integer): Integer;
+      procedure EnablePairing(const Enabled: Boolean);
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -334,6 +335,15 @@ begin
   Stacks[ID].Edit;
 end;
 
+procedure TXRCStructure.EnablePairing(const Enabled: Boolean);
+var
+  Stack: TXRCStack;
+begin
+  for Stack in Stacks do
+    Stack.EnablePairing(Enabled);
+
+end;
+
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   Count, pos: Integer;
@@ -556,14 +566,17 @@ begin
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', Data.Material);
         JLayer.AddPair('H', Data.H.V);
+        JLayer.AddPair('HP', Data.H.Paired);
         JLayer.AddPair('Hmin', Data.H.min);
         JLayer.AddPair('Hmax', Data.H.max);
 
         JLayer.AddPair('s', Data.s.V);
+        JLayer.AddPair('SP', Data.s.Paired);
         JLayer.AddPair('Smin', Data.s.min);
         JLayer.AddPair('Smax', Data.s.max);
 
         JLayer.AddPair('r', Data.r.V);
+        JLayer.AddPair('RP', Data.r.Paired);
         JLayer.AddPair('Rmin', Data.r.min);
         JLayer.AddPair('Rmax', Data.r.max);
 
@@ -625,9 +638,21 @@ var
   begin
     JVal := JLayer.FindValue(Value);
     if JVal <> nil then
-       Result := StrToFloat(JVal.Value)
+       Result := JVal.AsType<single>
     else
       Result := Base;
+  end;
+
+
+  function FindBoolValue(const Value: string): boolean;
+  var
+    JVal : TJSONValue;
+  begin
+    JVal := JLayer.FindValue(Value);
+    if JVal <> nil then
+       Result := JVal.AsType<Boolean>
+    else
+      Result := False;
   end;
 
 begin
@@ -656,14 +681,17 @@ begin
         Data.Material := JLayer.GetValue<string>('M');
 
         Data.H.V := JLayer.GetValue<single>('H');
+        Data.H.Paired := FindBoolValue('HP');
         Data.H.min := FindValue('Hmin', Data.H.V);
         Data.H.max := FindValue('Hmax', Data.H.V);
 
         Data.s.V := JLayer.GetValue<single>('s');
+        Data.s.Paired := FindBoolValue('SP');
         Data.s.min := FindValue('Smin', Data.s.V);
         Data.s.max := FindValue('Smax', Data.s.V);
 
         Data.r.V := JLayer.GetValue<single>('r');
+        Data.r.Paired := FindBoolValue('RP');
         Data.r.min := FindValue('Rmin', Data.r.V);
         Data.r.max := FindValue('Rmax', Data.r.V);
 

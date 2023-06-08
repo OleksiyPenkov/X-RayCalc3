@@ -20,6 +20,7 @@ type
       FN: Integer;
       FTitle: string;
       FSubstrate: Boolean;
+    FEnablePairing: Boolean;
 
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
@@ -28,6 +29,7 @@ type
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
       procedure SetID(const Value: Integer);
+      procedure UpdateLayersStatus(const Pairable: Boolean);
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -51,6 +53,7 @@ type
       property Materials: TMaterialsList read GetMaterialsList;
       procedure ClearSelection;
       procedure Select(const LayerID: integer);
+      procedure EnablePairing(const Enabled: Boolean);
   end;
 
 implementation
@@ -72,6 +75,7 @@ begin
 
   FLayers[Count] := TXRCLayerControl.Create(Self, 0, Data);
   FLayers[Count].Parent := Self;
+  FLayers[Count].Pairable := FN > 1;
 
   if (Count mod 2) = 0 then FLayers[Count].Color := $00FFE3C1
     else FLayers[Count].Color := $00FFD29B;
@@ -134,6 +138,14 @@ begin
   FLayers[Index].Onset := True;
   FLayers[Index].Data  := AData;
   FLayers[Index].Onset := False;
+end;
+
+procedure TXRCStack.UpdateLayersStatus(const Pairable: Boolean);
+var
+  i: integer;
+begin
+  for I := 0 to High(FLayers) do
+    FLayers[i].Pairable := Pairable;
 end;
 
 constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
@@ -209,6 +221,12 @@ begin
 
 end;
 
+procedure TXRCStack.EnablePairing(const Enabled: Boolean);
+begin
+  FEnablePairing := Enabled;
+  UpdateLayersStatus((FN > 1) and Enabled);
+end;
+
 procedure TXRCStack.FOnClick(Sender: TObject);
 begin
   if RzSeparator.Visible  then StackClick(FID);
@@ -220,6 +238,7 @@ begin
   begin
     edtrStack.Edit(FTitle, FN);
     UpdateInfo;
+    UpdateLayersStatus((FN > 1) and FEnablePairing);
   end
   else begin
     FLayers[0].Edit;
