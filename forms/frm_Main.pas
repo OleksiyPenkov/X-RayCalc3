@@ -419,6 +419,7 @@ type
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
     procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
+    procedure WMLinkedClick(var Msg: TMessage); message WM_STR_Linked_CLICK;
     //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
@@ -2035,6 +2036,15 @@ begin
   LayerID := Msg.WParam;
   ID := Msg.LParam;
   Structure.SelectLayer(LayerID, ID);
+end;
+
+procedure TfrmMain.WMLinkedClick(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.LinkLayer(LayerID, ID);
 end;
 
 procedure TfrmMain.WMStackClick(var Msg: TMessage);

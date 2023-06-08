@@ -48,6 +48,7 @@ type
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure Select(const ID: Integer);
       procedure SelectLayer(const StackID, LayerID: Integer);
+      procedure LinkLayer(const StackID, LayerID: Integer);
       procedure EditStack(const ID: Integer);
       procedure DeleteStack;
       procedure DeleteLayer;
@@ -368,6 +369,11 @@ begin
     Result := False
   else
      Result := Stacks[Index].N > 1;
+end;
+
+procedure TXRCStructure.LinkLayer(const StackID, LayerID: Integer);
+begin
+  Stacks[StackID].LinkLayer(LayerID);
 end;
 
 function TXRCStructure.Materials: TMaterialsList;

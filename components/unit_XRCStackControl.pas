@@ -20,7 +20,8 @@ type
       FN: Integer;
       FTitle: string;
       FSubstrate: Boolean;
-    FEnablePairing: Boolean;
+      FEnablePairing: Boolean;
+      FLinkedLayers: array [0..1] of Integer;
 
       procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
@@ -54,6 +55,8 @@ type
       procedure ClearSelection;
       procedure Select(const LayerID: integer);
       procedure EnablePairing(const Enabled: Boolean);
+      procedure LinkLayer(const LayerID: Integer);
+
   end;
 
 implementation
@@ -196,6 +199,10 @@ begin
   OnClick := FOnClick;
   OnDblClick := FOnDoubleClick;
 
+  FLinkedLayers[0] := -1;
+  FLinkedLayers[1] := -1;
+
+
   UpdateInfo;
 end;
 
@@ -254,6 +261,7 @@ begin
     Result[i] := FLayers[i].Data;
 end;
 
+
 function TXRCStack.GetMaterialsList: TMaterialsList;
 var
   i: integer;
@@ -266,6 +274,59 @@ begin
     Result[i].StackID := FID;
     Result[i].LayerID := i + 1;
   end;
+end;
+
+procedure TXRCStack.LinkLayer(const LayerID: Integer);
+var
+  State, Found: Boolean;
+      i: integer;
+begin
+  State := FLayers[LayerID].LinkChecked;
+  if State then
+  begin
+    if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
+    begin
+      FLayers[LayerID].LinkChecked := False;
+      Exit; // only 2 links ara allowed
+    end;
+
+    Found := False;
+    for i:=0 to High(FLinkedLayers) do
+    begin
+      if LayerID = FLinkedLayers[i] then
+      begin
+        Found := True;
+        Break;
+      end;
+    end;
+    if Found then Exit;
+    if FLinkedLayers[0] = -1 then
+      FLinkedLayers[0] := LayerID
+    else
+      FLinkedLayers[1] := LayerID;
+  end else
+  begin
+    for i:=0 to High(FLinkedLayers) do
+    begin
+      if LayerID = FLinkedLayers[i] then
+      begin
+        if Assigned(FLayers[FLinkedLayers[i]].Linked) and
+           Assigned(FLayers[FLinkedLayers[i]].Linked.Linked) then
+                       FLayers[FLinkedLayers[i]].Linked.Linked := nil;  // backlink
+
+        FLayers[FLinkedLayers[i]].Linked := nil;
+        FLinkedLayers[i] := -1;
+        Break;
+      end;
+    end;
+  end;
+
+  if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
+  begin
+    FLayers[FLinkedLayers[0]].Linked := FLayers[FLinkedLayers[1]];
+    FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
+  end;
+
 end;
 
 procedure TXRCStack.Select(const LayerID: integer);
