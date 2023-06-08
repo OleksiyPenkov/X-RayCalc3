@@ -242,7 +242,7 @@ begin
   //Label2
   Label2.Name := 'Label2';
   Label2.Parent := Header;
-  Label2.Left := 120;
+  Label2.Left := 110;
   Label2.Top := 6;
   Label2.Width := 35;
   Label2.Height := 16;
@@ -256,7 +256,7 @@ begin
   //Label3
   Label3.Name := 'Label3';
   Label3.Parent := Header;
-  Label3.Left := 191;
+  Label3.Left := 181;
   Label3.Top := 6;
   Label3.Width := 35;
   Label3.Height := 16;
@@ -274,7 +274,7 @@ begin
   Label4.Top := 6;
   Label4.Width := 65;
   Label4.Height := 16;
-  Label4.Caption := 'ρ (g/cm³)  N';
+  Label4.Caption := 'ρ (g/cm³)   N';
   Label4.Font.Color := clWindowText;
   Label4.Font.Height := -13;
   Label4.Font.Name := 'Tahoma';

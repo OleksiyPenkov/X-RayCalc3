@@ -109,6 +109,8 @@ begin
   Result.Left := Left;
   Result.Top := 13;
   Result.Tag := Index;
+  Result.ShowHint := True;
+  Result.Hint := 'Mark this parameter as paired accross all repeated stacks';
 
   Result.OnClick := CheckBoxClick;
 end;
@@ -178,6 +180,8 @@ begin
   FLinkCheckBox.Width := 19;
   FLinkCheckBox.Height := 15;
   FLinkCheckBox.TabOrder := 3;
+  FLinkCheckBox.ShowHint := True;
+  FLinkCheckBox.Hint := 'Pair to another layer';
 
 
   Name.Caption    := Data.Material;
