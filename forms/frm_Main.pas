@@ -1343,8 +1343,8 @@ begin
           begin
             case Gradients[j].Subj of
               gsL : FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].L, Gradients[j]));
-  //            gsS : s := CalcGradient(i, s, FGradients[g]);
-  //            gsRo: ro := CalcGradient(i, ro, FGradients[g]);
+              gsS : FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].s, Gradients[j]));
+              gsRo: FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].ro, Gradients[j]));
             end;
             inc(Gradients[j].Count);
           end

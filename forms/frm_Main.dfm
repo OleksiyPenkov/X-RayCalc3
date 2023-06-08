@@ -1824,18 +1824,16 @@ object frmMain: TfrmMain
             '10'
             '5'
             '1'
+            '0.25'
             '0.1'
-            '0.01'
-            '0.001')
-          ItemIndex = 3
+            '0.01')
           Values.Strings = (
             '10'
             '5'
             '1'
             '0.25'
             '0.1'
-            '0.01'
-            '0.001')
+            '0.01')
         end
         object btnSetFitLimits: TBitBtn
           Left = 265
