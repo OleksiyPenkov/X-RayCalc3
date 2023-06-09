@@ -399,7 +399,6 @@ type
     procedure SaveProject(const FileName: string);
     procedure SaveData;
     procedure AddCurve(Data: PProjectData);
-    procedure PlotDistributions(Model: TLayeredModel);
     procedure PrepareDistributionCharts;
     function GetFitParams: TFitParams;
     procedure EditProjectItem;
@@ -415,6 +414,7 @@ type
     function GetGradients: TGradients;
     procedure CreateProfileExtension;
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
+    procedure PlotProfileNP;
     procedure PlotProfile;
     { Private declarations }
   public
@@ -529,7 +529,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PlotDistributions(Structure.Model);
+  PlotProfile;
   CalcRunExecute(Self);
 end;
 
@@ -1013,7 +1013,7 @@ end;
 procedure TfrmMain.MatchToStructure;
 begin
   PrepareDistributionCharts;
-  PlotDistributions(Structure.Model);
+  PlotProfile;
   Project.ActiveModel.Data := Structure.ToString;
 end;
 
@@ -1385,9 +1385,9 @@ begin
   CreateSeries(chDensity, FDensitySeries);
 end;
 
-procedure TfrmMain.PlotProfile;
+procedure TfrmMain.PlotProfileNP;
 var
-  i, j, k, count: integer;
+  i, j, k, shift: integer;
 begin
   for i := 0 to High(FThicknessSeries) do
   begin
@@ -1396,73 +1396,102 @@ begin
     FDensitySeries[i].Clear;
   end;
 
+  shift := 1;
   for i := 0 to High(Structure.Stacks) do
   begin
+    if Structure.Stacks[i].N = 1 then Continue;
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
-      if Length(Structure.Stacks[i].Layers[j].Profiles.H) = 0 then Continue;
-
       for k := 0 to High(Structure.Stacks[i].Layers[j].Profiles.H) do
       begin
-         FThicknessSeries[j].AddXY(k + 1, Structure.Stacks[i].Layers[j].Profiles.H[k]);
-         FRoughnessSeries[j].AddXY(k + 1, Structure.Stacks[i].Layers[j].Profiles.s[k]);
-         FDensitySeries[j].AddXY(k + 1, Structure.Stacks[i].Layers[j].Profiles.r[k]);
+         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Profiles.H[k]);
+         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Profiles.s[k]);
+         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Profiles.r[k]);
       end;
     end;
+    Inc(shift, Structure.Stacks[i].N);
   end;
-
-
 end;
 
-procedure TfrmMain.PlotDistributions(Model: TLayeredModel);
+procedure TfrmMain.PlotProfile;
 var
-  i, j: integer;
-  Layers: TCalcLayers;
+  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d: integer;
   Gradients: TGradients;
 begin
-  for i := 0 to High(FThicknessSeries) do
+  for StackIndex := 0 to High(FThicknessSeries) do
   begin
-    FThicknessSeries[i].Clear;
-    FRoughnessSeries[i].Clear;
-    FDensitySeries[i].Clear;
+    FThicknessSeries[StackIndex].Clear;
+    FRoughnessSeries[StackIndex].Clear;
+    FDensitySeries[StackIndex].Clear;
   end;
 
-  Layers := Model.Layers;
   Gradients := GetGradients;
 
-  for i := 1 to High(Layers) - 1 do
+  shift := 0; d := 0;
+  for StackIndex := 0 to High(Structure.Stacks) do
   begin
-    if Structure.IsPeriodic(Layers[i].StackID) then
+    if Structure.Stacks[StackIndex].N = 1 then Continue;
+
+    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
     begin
-      if Length(Gradients) > 0 then
+      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
-        for j := 0 to High(Gradients) do
+        if Length(Gradients) > 0 then
         begin
-          if (Layers[i].StackID = Gradients[j].StackID) and
-             (Layers[i].LayerID = Gradients[j].LayerID) then
+          for GradientIndex := 0 to High(Gradients) do
           begin
-            case Gradients[j].Subj of
-              gsL : FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].L, Gradients[j]));
-              gsS : FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].s, Gradients[j]));
-              gsRo: FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].ro, Gradients[j]));
+            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = Gradients[GradientIndex].StackID) and
+               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = Gradients[GradientIndex].LayerID) then
+            begin
+              case Gradients[GradientIndex].Subj of
+                gsL : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, Gradients[GradientIndex]));
+                gsS : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, Gradients[GradientIndex]));
+                gsRo: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, Gradients[GradientIndex]));
+              end;
+              inc(Gradients[GradientIndex].Count);
+            end
+            else begin
+//              FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
+//              FRoughnessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
+//                FDensitySeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V);
             end;
-            inc(Gradients[j].Count);
-          end
-          else begin
-            FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
-            FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
-            FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
           end;
-        end;
-      end
-      else begin
-        FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
-        FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
-        FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+         end
+         else begin
+           FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
+           FRoughnessSeries[LayerIndex+ d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
+           FDensitySeries[LayerIndex + d].  AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
+         end;
       end;
     end;
+    Inc(shift, Structure.Stacks[StackIndex].N);
+    Inc(d, Length(Structure.Stacks[StackIndex].Layers));
   end;
+
 end;
+
+//        if Length(Gradients) > 0 then
+//        begin
+//          for g := 0 to High(Gradients) do
+//          begin
+//            if (Structure.Stacks[i].Layers[i].LayerID = Gradients[j].StackID) and
+//               (Structure.Stacks[i].Layers[i].ID = Gradients[j].LayerID) then
+//            begin
+////              case Gradients[j].Subj of
+////                gsL : FThicknessSeries[j * i].AddXY(i, CalcGradient(Layers[i].L, Gradients[j]));
+////                gsS : FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].s, Gradients[j]));
+////                gsRo: FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, CalcGradient(Layers[i].ro, Gradients[j]));
+////              end;
+//              inc(Gradients[j].Count);
+//            end
+//            else begin
+////              FThicknessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].L);
+////              FRoughnessSeries[Model.Layers[i].LayerID].AddXY(i, Layers[i].s);
+////              FDensitySeries[Model.Layers[i].LayerID].AddXY(i,   Layers[i].ro);
+//            end;
+//          end;
+//        end
+//        else begin
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
 var
@@ -1521,7 +1550,8 @@ begin
       end
       else
         spChiSqr.Caption := '';
-       PlotDistributions(Calc.Model);
+       //PlotDistributions(Calc.Model);
+       //PlotProfile;
     except
       on E: exception do
       begin
@@ -1625,11 +1655,11 @@ begin
         CreateProfileExtension;
         Structure.UpdateInterfaceNP(LFPSO.Structure);
         Structure.UpdateProfiles(Result);
-        PlotProfile;
+        PlotProfileNP;
       end
       else begin
         Structure.UpdateInterfaceP(LFPSO.Structure);
-        PlotDistributions(Result);
+        PlotProfile;
       end;
     except
       on E: exception do

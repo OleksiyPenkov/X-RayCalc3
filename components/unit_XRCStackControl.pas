@@ -59,8 +59,6 @@ type
       procedure Select(const LayerID: integer);
       procedure EnablePairing(const Enabled: Boolean);
       procedure LinkLayer(const LayerID: Integer);
-
-
   end;
 
 implementation

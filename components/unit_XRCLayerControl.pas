@@ -50,6 +50,8 @@ type
       function AddCheckBox(const index, Left: integer): TRzCheckBox;
       procedure SetPairable(const Value: boolean);
       procedure SetLinkChecked(const Value: boolean);
+      function GetID: Integer;
+      function GetStackID: Integer;
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
@@ -77,6 +79,9 @@ type
       property Profiles: TProfiles read FProfiles write FProfiles;
       procedure ClearProfiles;
       procedure AddProfilePoint(const H, s, r: Single);
+
+      property ID: Integer read GetID;
+      property StackID: Integer read GetStackID;
   end;
 
 implementation
@@ -284,6 +289,16 @@ end;
 function TXRCLayerControl.GetEnabled: Boolean;
 begin
   Result := Enabled;
+end;
+
+function TXRCLayerControl.GetID: Integer;
+begin
+  Result := FData.LayerID;
+end;
+
+function TXRCLayerControl.GetStackID: Integer;
+begin
+  Result := FData.StackID;
 end;
 
 function TXRCLayerControl.GetLinkChecked: Boolean;
