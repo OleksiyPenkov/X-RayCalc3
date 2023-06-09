@@ -359,7 +359,6 @@ type
     procedure ChartZoom(Sender: TObject);
     procedure RzButton1Click(Sender: TObject);
     procedure DataNormAutoExecute(Sender: TObject);
-    procedure cbTreatPeriodicClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -416,6 +415,7 @@ type
     function GetGradients: TGradients;
     procedure CreateProfileExtension;
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
+    procedure PlotProfile;
     { Private declarations }
   public
     { Public declarations }
@@ -987,7 +987,7 @@ var
 begin
   FitStructure := Structure.ToFitStructure;
   frmLimits.Show(FitStructure);
-  Structure.StoreFitLimits(FitStructure);
+  Structure.UpdateInterfaceP(FitStructure);
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);
@@ -1380,10 +1380,37 @@ var
 begin
   Materials := Structure.Materials;
 
-
   CreateSeries(chThickness, FThicknessSeries);
   CreateSeries(chRoughness, FRoughnessSeries);
   CreateSeries(chDensity, FDensitySeries);
+end;
+
+procedure TfrmMain.PlotProfile;
+var
+  i, j, k, count: integer;
+begin
+  for i := 0 to High(FThicknessSeries) do
+  begin
+    FThicknessSeries[i].Clear;
+    FRoughnessSeries[i].Clear;
+    FDensitySeries[i].Clear;
+  end;
+
+  for i := 0 to High(Structure.Stacks) do
+  begin
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      if Length(Structure.Stacks[i].Layers[j].Profiles.H) = 0 then Continue;
+
+      for k := 0 to High(Structure.Stacks[i].Layers[j].Profiles.H) do
+      begin
+         FThicknessSeries[j].AddXY(k + 1, Structure.Stacks[i].Layers[j].Profiles.H[k]);
+         FRoughnessSeries[j].AddXY(k + 1, Structure.Stacks[i].Layers[j].Profiles.s[k]);
+         FDensitySeries[j].AddXY(k + 1, Structure.Stacks[i].Layers[j].Profiles.r[k]);
+      end;
+    end;
+  end;
+
 
 end;
 
@@ -1524,6 +1551,7 @@ var
   Hour, Min, Sec, MSec: Word;
   FitStructure: TFitStructure;
   Params: TFitParams;
+  Result : TLayeredModel;
 begin
   Randomize;
 
@@ -1532,7 +1560,7 @@ begin
 
   FitStructure := Structure.ToFitStructure;
   if frmLimits.Show(FitStructure) then
-        Structure.StoreFitLimits(FitStructure)
+        Structure.UpdateInterfaceP(FitStructure)
   else
       Exit;
 
@@ -1586,15 +1614,22 @@ begin
       LFPSO.MovAvg    := Calc.MovAvg ;
       LFPSO.Run(CD);
 
-      Calc.Model := LFPSO.Result;
+      Result :=  LFPSO.Result;
+      Calc.Model := Result;
       Calc.Run;
       Calc.CalcChiSquare(Params.ThetaWieght);
       spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
-      if cbTreatPeriodic.Checked then
-        Structure.StoreFitLimits(LFPSO.Structure)
+
+      if not cbTreatPeriodic.Checked and Structure.IsPeriodic then
+      begin
+        CreateProfileExtension;
+        Structure.UpdateInterfaceNP(LFPSO.Structure);
+        Structure.UpdateProfiles(Result);
+        PlotProfile;
+      end
       else begin
-        Structure.StoreFitLimitsNP(LFPSO.Structure);
-        PlotDistributions(LFPSO.Result);
+        Structure.UpdateInterfaceP(LFPSO.Structure);
+        PlotDistributions(Result);
       end;
     except
       on E: exception do
@@ -1677,7 +1712,7 @@ begin
   end;
 
   Structure.FromString(Project.ActiveModel.Data);
-  Structure.EnablePairing(cbTreatPeriodic.Checked);
+  Structure.EnablePairing;
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
@@ -2093,11 +2128,6 @@ end;
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
 begin
   Structure.Increment := StrToFloat(cbIncrement.Value);
-end;
-
-procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
-begin
-  Structure.EnablePairing(cbTreatPeriodic.Checked);
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);

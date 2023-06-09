@@ -28,6 +28,8 @@ type
       FSelected: boolean;
 
 
+      FProfiles: TProfiles;
+
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
@@ -71,6 +73,10 @@ type
       procedure DecreaseThickness;
       procedure UpdateID(const StackID, LayerID: integer);
       property LinkChecked: boolean read GetLinkChecked write SetLinkChecked;
+
+      property Profiles: TProfiles read FProfiles write FProfiles;
+      procedure ClearProfiles;
+      procedure AddProfilePoint(const H, s, r: Single);
   end;
 
 implementation
@@ -79,6 +85,13 @@ uses
   editor_Substrate, unit_SMessages;
 
 { TXRCLayerControl }
+
+procedure TXRCLayerControl.AddProfilePoint(const H, s, r: Single);
+begin
+  Insert(H, FProfiles.H, MaxInt);
+  Insert(s, FProfiles.s, MaxInt);
+  Insert(r, FProfiles.r, MaxInt);
+end;
 
 function TXRCLayerControl.AddSpinEdit(const index, Left, Max: integer):TRzSpinEdit;
 begin
@@ -122,6 +135,13 @@ begin
     2: FData.s.Paired := PairedS.Checked;
     3: FData.r.Paired := PairedR.Checked;
   end;
+end;
+
+procedure TXRCLayerControl.ClearProfiles;
+begin
+  SetLength(FProfiles.H, 0);
+  SetLength(FProfiles.s, 0);
+  SetLength(FProfiles.r, 0);
 end;
 
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);

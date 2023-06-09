@@ -7,6 +7,13 @@ uses
 
 type
 
+  TFloatArray = array of Single;
+  TIntArray = array of Integer;
+
+  TProfiles = record
+                H, s, r: TFloatArray;
+              end;
+
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
   TCalcMode = (cmTheta, cmLambda, cmTest);
   TPolarisation = (cmS, cmSP);
@@ -138,8 +145,6 @@ type
   end;
 
   TDataArray = array of TDataPoint;
-
-  TIntArray = array of Integer;
 
   TDistrtibution = record
     Name: string;

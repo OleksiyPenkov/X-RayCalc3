@@ -9,13 +9,15 @@ uses
 
 type
 
+  TLayers = array of TXRCLayerControl;
+
   TXRCStack = class (TRzPanel)
     private
       lblLayers: TRzLabel;
       RzSeparator: TRzSeparator;
 
 
-      FLayers: array of TXRCLayerControl;
+      FLayers: TLayers;
       FID: Integer;
       FN: Integer;
       FTitle: string;
@@ -48,7 +50,8 @@ type
       property ID: Integer read FID write SetID;
       property N:integer read FN;
       procedure Edit;
-      property Layers: TLayersData read GetLayersData;
+      property Layers:TLayers read FLayers write FLayers;
+      property LayerData: TLayersData read GetLayersData;
       property Increment:Single write SetIncrement;
       property Title: string read FTitle;
       property Materials: TMaterialsList read GetMaterialsList;
@@ -56,6 +59,7 @@ type
       procedure Select(const LayerID: integer);
       procedure EnablePairing(const Enabled: Boolean);
       procedure LinkLayer(const LayerID: Integer);
+
 
   end;
 

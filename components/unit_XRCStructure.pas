@@ -10,6 +10,8 @@ uses
 
 type
 
+  TStacks = array of TXRCStack;
+
   TXRCStructure = class (TRzPanel)
     private
       Header: TRzPanel;
@@ -19,7 +21,7 @@ type
       Label4: TRzLabel;
       Box: TJvDesignScrollBox;
 
-      Stacks: array of TXRCStack;
+      FStacks: TStacks;
       Substrate: TXRCStack;
 
       FSelectedStack : Integer;
@@ -41,6 +43,7 @@ type
       destructor  Destroy; override;
 
       property Selected: Integer read GetSelected;
+      property Stacks: TStacks read FStacks;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
@@ -61,16 +64,18 @@ type
       function ToFitStructure: TFitStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
       procedure RecreateFromFitStructure(const Inp: TFitStructure);
-      procedure StoreFitLimits(const Inp: TFitStructure);
-      procedure StoreFitLimitsNP(const Inp: TFitStructure);
+      procedure UpdateInterfaceP(const Inp: TFitStructure);
+      procedure UpdateInterfaceNP(const Inp: TFitStructure);
+      procedure UpdateProfiles(const Inp: TLayeredModel);
       procedure Clear;
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
-      function IsPeriodic(const Index: integer): boolean;
+      function IsPeriodic: boolean; overload;
+      function IsPeriodic(const Index: integer): boolean; overload;
       procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
       procedure GetLayersList(const ID: integer; List: TStrings);
       function GetStackSize(const ID: Integer): Integer;
-      procedure EnablePairing(const Enabled: Boolean);
+      procedure EnablePairing;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -86,9 +91,9 @@ procedure TXRCStructure.AddLayer(const StackID: Integer;
   const Data: TLayerData);
 begin
   if StackID <> -1 then
-    Stacks[StackID].AddLayer(Data)
+    FStacks[StackID].AddLayer(Data)
   else
-    Stacks[High(Stacks)].AddLayer(Data)
+    FStacks[High(FStacks)].AddLayer(Data)
 end;
 
 procedure TXRCStructure.RealignStacks;
@@ -97,18 +102,18 @@ var
   MaxHeigh: integer;
 
 begin
-  Count := Length(Stacks) - 1;
+  Count := Length(FStacks) - 1;
   Substrate.Align := alBottom;
 
   for I := 0 to Count do
-    Stacks[i].Align := alNone;
+    FStacks[i].Align := alNone;
 
   MaxHeigh := 20;
   for I := 0 to Count do
   begin
-    Stacks[i].Top := MaxHeigh + 5;
-    Stacks[i].Align := alTop;
-    MaxHeigh := MaxHeigh + Stacks[i].Height + 5;
+    FStacks[i].Top := MaxHeigh + 5;
+    FStacks[i].Align := alTop;
+    MaxHeigh := MaxHeigh + FStacks[i].Height + 5;
   end;
 
   Substrate.Top := ClientHeight - 5;
@@ -141,11 +146,11 @@ var
 begin
   FVisibility := Visible;
   Visible := False;
-  Count := Length(Stacks);
+  Count := Length(FStacks);
 
-  SetLength(Stacks, Count + 1);
-  Stacks[Count] := TXRCStack.Create(Box, Title, N);
-  Stacks[Count].ID := Count;
+  SetLength(FStacks, Count + 1);
+  FStacks[Count] := TXRCStack.Create(Box, Title, N);
+  FStacks[Count].ID := Count;
 
   RealignStacks;
 end;
@@ -163,19 +168,20 @@ procedure TXRCStructure.Clear;
 var
   i: Integer;
 begin
-  for I := 0 to High(Stacks) do
-     Stacks[i].Free;
-  Finalize(Stacks);
+  for I := 0 to High(FStacks) do
+     FStacks[i].Free;
+  Finalize(FStacks);
 
   Substrate.Free;
 end;
+
 
 procedure TXRCStructure.ClearSelection;
 var
   i: integer;
 begin
-  for I := 0 to High(Stacks) do
-    Stacks[i].ClearSelection;
+  for I := 0 to High(FStacks) do
+    FStacks[i].ClearSelection;
 
   if Reset then
   begin
@@ -186,7 +192,7 @@ end;
 
 procedure TXRCStructure.CopyLayer;
 begin
-  FClipBoardLayers[0] := Stacks[FSelectedLayerParent].Layers[FSelectedLayer];
+  FClipBoardLayers[0] := FStacks[FSelectedLayerParent].LayerData[FSelectedLayer];
   ClearSelection(Reset);
 end;
 
@@ -304,7 +310,7 @@ procedure TXRCStructure.DeleteLayer;
 begin
   if (FSelectedLayer >= 0) and (FSelectedLayerParent >= 0) then
   begin
-    Stacks[FSelectedLayerParent].DeleteLayer(FSelectedLayer);
+    FStacks[FSelectedLayerParent].DeleteLayer(FSelectedLayer);
     FSelectedLayerParent := -1;
     FSelectedLayer := -1;
   end;
@@ -316,12 +322,12 @@ var
 begin
   if FSelectedStack > -1 then
   begin
-    Stacks[FSelectedStack].Free;
-    Delete(Stacks, FSelectedStack, 1);
+    FStacks[FSelectedStack].Free;
+    Delete(FStacks, FSelectedStack, 1);
     FSelectedStack := -1;
 
-    for I := 0 to High(Stacks) do
-      Stacks[i].ID := i;
+    for I := 0 to High(FStacks) do
+      FStacks[i].ID := i;
   end;
 end;
 
@@ -333,47 +339,60 @@ end;
 
 procedure TXRCStructure.EditStack;
 begin
-  Stacks[ID].Edit;
+  FStacks[ID].Edit;
 end;
 
-procedure TXRCStructure.EnablePairing(const Enabled: Boolean);
+procedure TXRCStructure.EnablePairing;
 var
   Stack: TXRCStack;
 begin
-  for Stack in Stacks do
-    Stack.EnablePairing(Enabled);
-
+  for Stack in FStacks do
+    Stack.EnablePairing(True);
 end;
+
 
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   Count, pos: Integer;
 begin
   Visible := False;
-  Count := Length(Stacks);
+  Count := Length(FStacks);
 
   if FSelectedStack <> -1 then Pos := FSelectedStack
     else Pos := count;
 
-  Insert(Nil, Stacks, pos);
+  Insert(Nil, FStacks, pos);
 
-  Stacks[Pos] := TXRCStack.Create(Box, Title, N);
-  Stacks[Pos].ID := Pos;
+  FStacks[Pos] := TXRCStack.Create(Box, Title, N);
+  FStacks[Pos].ID := Pos;
 
   RealignStacks;
 end;
 
+function TXRCStructure.IsPeriodic: boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  for I := 0 to High(FStacks) do
+    if IsPeriodic(i) then
+    begin
+      Result := True;
+      Break;
+    end;
+end;
+
 function TXRCStructure.IsPeriodic(const Index: integer): boolean;
 begin
-  if Index > High(Stacks) then
+  if Index > High(FStacks) then
     Result := False
   else
-     Result := Stacks[Index].N > 1;
+     Result := FStacks[Index].N > 1;
 end;
 
 procedure TXRCStructure.LinkLayer(const StackID, LayerID: Integer);
 begin
-  Stacks[StackID].LinkLayer(LayerID);
+  FStacks[StackID].LinkLayer(LayerID);
 end;
 
 function TXRCStructure.Materials: TMaterialsList;
@@ -381,10 +400,10 @@ var
   i: integer;
 begin
   SetLength(Result, 0);
-  for I := 0 to High(Stacks) do
+  for I := 0 to High(FStacks) do
   begin
-    if Stacks[i].N > 1 then
-       Result := Result + Stacks[i].Materials;
+    if FStacks[i].N > 1 then
+       Result := Result + FStacks[i].Materials;
   end;
 end;
 
@@ -396,23 +415,23 @@ begin
   Result := TLayeredModel.Create;
   Result.Init;
 
-  for I := 0 to High(Stacks) do
+  for I := 0 to High(FStacks) do
   begin
-    StackLayers := Stacks[i].Layers;
-    for j := 1  to Stacks[i].N do
+    StackLayers := FStacks[i].LayerData;
+    for j := 1  to FStacks[i].N do
       Result.AddLayers(i, StackLayers);
   end;
 
-  Result.AddSubstrate(Substrate.Layers);
+  Result.AddSubstrate(Substrate.LayerData);
 end;
 
 procedure TXRCStructure.PasteLayer;
 begin
   if FSelectedStack <> -1 then
-       Stacks[FSelectedStack].AddLayer(FClipBoardLayers[0])
+       FStacks[FSelectedStack].AddLayer(FClipBoardLayers[0])
   else
     if FSelectedLayerParent <> -1 then
-        Stacks[FSelectedLayerParent].AddLayer(FClipBoardLayers[0])
+        FStacks[FSelectedLayerParent].AddLayer(FClipBoardLayers[0])
 end;
 
 procedure TXRCStructure.Select(const ID: Integer);
@@ -422,11 +441,11 @@ begin
   if ID = FSelectedStack then
   begin
     FSelectedStack := -1;
-    Stacks[ID].Selected := False;
+    FStacks[ID].Selected := False;
   end
   else begin
-    for I := 0 to High(Stacks) do
-      Stacks[i].Selected := (ID = i);
+    for I := 0 to High(FStacks) do
+      FStacks[i].Selected := (ID = i);
 
     FSelectedStack := ID;
   end;
@@ -438,7 +457,7 @@ begin
 
   if (StackID <> FSelectedLayerParent) and (LayerID <> FSelectedLayer) then
   begin
-    Stacks[StackID].Select(LayerID);
+    FStacks[StackID].Select(LayerID);
     FSelectedLayerParent := StackID;
     FSelectedLayer := LayerID;
   end
@@ -453,34 +472,11 @@ var
   i: Integer;
 begin
   FIncrement := Value;
-  for I := 0 to High(Stacks) do
-    Stacks[i].Increment := Value;
+  for I := 0 to High(FStacks) do
+    FStacks[i].Increment := Value;
 end;
 
-procedure TXRCStructure.StoreFitLimits(const Inp: TFitStructure);
-var
-  i, j: integer;
-  Count: integer;
-  Data: TLayerData;
-begin
-  Count := 1;
-
-  for I := 0 to High(Stacks) do
-  begin
-    for j := 0 to High(Stacks[i].Layers) do
-    begin
-      Data.Material := Inp.Stacks[i].Layers[j].Material;
-      Data.H := Inp.Stacks[i].Layers[j].H;
-      Data.s := Inp.Stacks[i].Layers[j].s;
-      Data.r := Inp.Stacks[i].Layers[j].r;
-      Stacks[i].UpdateLayer(j, Data);
-      inc(Count);
-    end;
-    inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
-  end;
-end;
-
-procedure TXRCStructure.StoreFitLimitsNP(const Inp: TFitStructure);
+procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);
 var
   i, j: integer;
   Count: integer;
@@ -488,18 +484,52 @@ var
 begin
   Count := 0;
 
-  for I := 0 to High(Stacks) do
+  for I := 0 to High(FStacks) do
   begin
-    for j := 0 to High(Stacks[i].Layers) do
+    for j := 0 to High(FStacks[i].Layers) do
     begin
       Data.Material := Inp.Stacks[0].Layers[Count].Material;
       Data.H := Inp.Stacks[0].Layers[Count].H;
       Data.s := Inp.Stacks[0].Layers[Count].s;
       Data.r := Inp.Stacks[0].Layers[Count].r;
-      Stacks[i].UpdateLayer(j, Data);
+      FStacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
-    inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
+    inc(Count, (FStacks[i].N - 1) * (High(FStacks[i].Layers) + 1));
+  end;
+end;
+
+procedure TXRCStructure.UpdateInterfaceP(const Inp: TFitStructure);
+var
+  i, j: integer;
+  Data: TLayerData;
+begin
+  for I := 0 to High(FStacks) do
+  begin
+    for j := 0 to High(FStacks[i].LayerData) do
+    begin
+      Data.Material := Inp.Stacks[i].Layers[j].Material;
+      Data.H := Inp.Stacks[i].Layers[j].H;
+      Data.s := Inp.Stacks[i].Layers[j].s;
+      Data.r := Inp.Stacks[i].Layers[j].r;
+      FStacks[i].UpdateLayer(j, Data);
+    end;
+  end;
+end;
+
+procedure TXRCStructure.UpdateProfiles(const Inp: TLayeredModel);
+var
+  i, j, SID, LID: integer;
+begin
+  for I := 0 to High(FStacks) do
+     for j := 0 to High(FStacks[i].Layers) do
+       FStacks[i].Layers[j].ClearProfiles;
+
+  for I := 1 to High(Inp.Layers) - 1 do
+  begin
+    SID := Inp.Layers[i].StackID;
+    LID := Inp.Layers[i].LayerID;
+    Structure.FStacks[SID].Layers[LID].AddProfilePoint(Inp.Layers[i].L, Inp.Layers[i].s, Inp.Layers[i].ro);
   end;
 end;
 
@@ -509,43 +539,43 @@ var
   D: single;
 begin
 
-  SetLength(Result.Stacks, Length(Stacks));
+  SetLength(Result.Stacks, Length(FStacks));
 
-  for I := 0 to High(Stacks) do
+  for I := 0 to High(FStacks) do
   begin
-    Result.Stacks[i].ID := Stacks[i].ID;
-    Result.Stacks[i].N := Stacks[i].N;
-    Result.Stacks[i].Header := Stacks[i].Title;
+    Result.Stacks[i].ID := FStacks[i].ID;
+    Result.Stacks[i].N := FStacks[i].N;
+    Result.Stacks[i].Header := FStacks[i].Title;
 
-    SetLength(Result.Stacks[i].Layers, Length(Stacks[i].Layers));
+    SetLength(Result.Stacks[i].Layers, Length(FStacks[i].LayerData));
 
-    if Stacks[i].N > 1 then
+    if FStacks[i].N > 1 then
     begin
       D := 0;
-      for j := 0 to High(Stacks[i].Layers) do
+      for j := 0 to High(FStacks[i].LayerData) do
       begin
         Result.Stacks[i].Layers[j].LayerID := j;
-        D := D + Stacks[i].Layers[j].H.V;
+        D := D + FStacks[i].LayerData[j].H.V;
       end;
       Result.Stacks[i].D := D;
     end;
 
-    for j := 0 to High(Stacks[i].Layers) do
+    for j := 0 to High(FStacks[i].LayerData) do
     begin
-      Result.Stacks[i].Layers[j].Material := Stacks[i].Layers[j].Material;
-      Result.Stacks[i].Layers[j].H := Stacks[i].Layers[j].H;
-      Result.Stacks[i].Layers[j].s := Stacks[i].Layers[j].s;
-      Result.Stacks[i].Layers[j].r := Stacks[i].Layers[j].r;
+      Result.Stacks[i].Layers[j].Material := FStacks[i].LayerData[j].Material;
+      Result.Stacks[i].Layers[j].H := FStacks[i].LayerData[j].H;
+      Result.Stacks[i].Layers[j].s := FStacks[i].LayerData[j].s;
+      Result.Stacks[i].Layers[j].r := FStacks[i].LayerData[j].r;
       Result.Stacks[i].Layers[j].StackID := i;
       Result.Stacks[i].Layers[j].LayerID := j;
     end;
     Result.Stacks[i].D := D;
   end;
 
-  Result.Subs.Material := Substrate.Layers[0].Material;
-  Result.Subs.H := Substrate.Layers[0].H;
-  Result.Subs.s := Substrate.Layers[0].s;
-  Result.Subs.r := Substrate.Layers[0].r;
+  Result.Subs.Material := Substrate.LayerData[0].Material;
+  Result.Subs.H := Substrate.LayerData[0].H;
+  Result.Subs.s := Substrate.LayerData[0].s;
+  Result.Subs.r := Substrate.LayerData[0].r;
 end;
 
 function TXRCStructure.ToString: string;
@@ -558,16 +588,16 @@ begin
   JStstructure := TJSONObject.Create;
   try
     JStacks :=  TJSONArray.Create;
-    for I := 0 to High(Stacks) do
+    for I := 0 to High(FStacks) do
     begin
       JStack :=  TJSONObject.Create;
-      JStack.AddPair('T', Stacks[i].Title);
-      JStack.AddPair('N', Stacks[i].N);
+      JStack.AddPair('T', FStacks[i].Title);
+      JStack.AddPair('N', FStacks[i].N);
 
       JLayers := TJSONArray.Create;
-      for j := 0 to High(Stacks[i].Layers) do
+      for j := 0 to High(FStacks[i].LayerData) do
       begin
-        Data := Stacks[i].Layers[j];
+        Data := FStacks[i].LayerData[j];
 
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', Data.Material);
@@ -592,7 +622,7 @@ begin
       JStacks.Add(JStack);
     end;
 
-    Data := Substrate.Layers[0];
+    Data := Substrate.LayerData[0];
     JSub := TJSONObject.Create;
     JSub.AddPair('M', Data.Material);
     JSub.AddPair('s', Data.s.V);
@@ -614,18 +644,18 @@ var
 begin
   Count := 1;
 
-  for I := 0 to High(Stacks) do
+  for I := 0 to High(FStacks) do
   begin
-    for j := 0 to High(Stacks[i].Layers) do
+    for j := 0 to High(FStacks[i].LayerData) do
     begin
       Data.Material := Inp.Layers[Count].Name;
       Data.H.V := Inp.Layers[Count].L;
       Data.s.V := Inp.Layers[Count].s * 1.41;
       Data.r.V := Inp.Layers[Count].ro;
-      Stacks[i].UpdateLayer(j, Data);
+      FStacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
-    inc(Count, (Stacks[i].N - 1) * (High(Stacks[i].Layers) + 1));
+    inc(Count, (FStacks[i].N - 1) * (High(FStacks[i].LayerData) + 1));
   end;
 end;
 
@@ -701,7 +731,7 @@ begin
         Data.r.min := FindValue('Rmin', Data.r.V);
         Data.r.max := FindValue('Rmax', Data.r.V);
 
-        Stacks[i].AddLayer(Data);
+        FStacks[i].AddLayer(Data);
       end;
     end;
 
@@ -717,8 +747,8 @@ var
   i, j: Integer;
 begin
   List.Clear;
-  for j := 0 to High(Stacks[ID].Layers) do
-         List.Add(Stacks[ID].Layers[j].Material);
+  for j := 0 to High(FStacks[ID].LayerData) do
+         List.Add(FStacks[ID].LayerData[j].Material);
 end;
 
 function TXRCStructure.GetSelected: Integer;
@@ -728,7 +758,7 @@ end;
 
 function TXRCStructure.GetStackSize(const ID: Integer): Integer;
 begin
-  Result := Stacks[ID].N;
+  Result := FStacks[ID].N;
 end;
 
 procedure TXRCStructure.GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
@@ -737,14 +767,14 @@ var
 begin
   List.Clear;
   count := 0;
-  for I := 0 to High(Stacks) do
+  for I := 0 to High(FStacks) do
   begin
     if not PeriodicOnly then
-       List.Add(Stacks[i].Title)
+       List.Add(FStacks[i].Title)
     else
-      if Stacks[i].N > 1 then
+      if FStacks[i].N > 1 then
       begin
-        List.Add(Stacks[i].Title);
+        List.Add(FStacks[i].Title);
         Inc(Count);
         SetLength(RealID, Count);
         RealID[count - 1] := i;
