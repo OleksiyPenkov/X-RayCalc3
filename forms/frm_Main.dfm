@@ -1828,6 +1828,7 @@ object frmMain: TfrmMain
             '0.25'
             '0.1'
             '0.01')
+          ItemIndex = 4
           Values.Strings = (
             '10'
             '5'
@@ -3930,14 +3931,11 @@ object frmMain: TfrmMain
     OnPopup = pmProjectPopup
     Left = 128
     Top = 368
-    object pmiNorm: TMenuItem
-      Caption = 'Normalize'
-      object Auto1: TMenuItem
-        Action = DataNormAuto
-      end
-      object Manual1: TMenuItem
-        Action = DataNormMan
-      end
+    object pmiEnabled: TMenuItem
+      AutoCheck = True
+      Caption = 'Enabled'
+      ShortCut = 114
+      OnClick = pmiEnabledClick
     end
     object pmiVisible: TMenuItem
       AutoCheck = True
@@ -3949,11 +3947,14 @@ object frmMain: TfrmMain
       Caption = 'Linked'
       OnClick = pmiLinkedClick
     end
-    object pmiEnabled: TMenuItem
-      AutoCheck = True
-      Caption = 'Enabled'
-      ShortCut = 114
-      OnClick = pmiEnabledClick
+    object pmiNorm: TMenuItem
+      Caption = 'Normalize'
+      object Auto1: TMenuItem
+        Action = DataNormAuto
+      end
+      object Manual1: TMenuItem
+        Action = DataNorm
+      end
     end
     object N1: TMenuItem
       Caption = '-'

@@ -25,7 +25,7 @@ type
     Group: TProjectGroupType;
     Description: string;
     Data: string;
-    function IsModel:Boolean;
+    function IsModel: Boolean;
 
     case RowType: TProjRowType of
       prGroup, prFolder:

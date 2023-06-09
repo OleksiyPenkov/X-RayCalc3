@@ -410,10 +410,12 @@ type
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
     procedure MatchToStructure;
-    procedure CreateNewGradientExtension(Node: PVirtualNode);
+    procedure CreateGradientExtension(Node: PVirtualNode);
     procedure EditGradient(var Data: PProjectData);
-    function FindLastParentNode(out Node: PVirtualNode): boolean; //inline;
+    function CreateChildNode(out Node: PVirtualNode): boolean; //inline;
     function GetGradients: TGradients;
+    procedure CreateProfileExtension;
+    function FindParentModel(out Node: PVirtualNode): PVirtualNode;
     { Private declarations }
   public
     { Public declarations }
@@ -704,7 +706,7 @@ begin
   ProjectChange(Project, Nil);
 end;
 
-function TfrmMain.FindLastParentNode(out Node: PVirtualNode): boolean;
+function TfrmMain.CreateChildNode(out Node: PVirtualNode): boolean;
 var
   Data: PProjectData;
 begin
@@ -720,7 +722,27 @@ begin
       Node := Project.AddChild(Node.Parent);
     Result := True;
   end
-  else Result := False;
+  else begin
+    ShowMessage('Parent model is not selected!');
+    Result := False;
+  end;
+end;
+
+function TfrmMain.FindParentModel(out Node: PVirtualNode): PVirtualNode;
+var
+  Data: PProjectData;
+begin
+  Result := nil;
+  if Node = Nil  then Exit;
+
+  Data := Project.GetNodeData(Node);
+  if Data.Group = gtModel then
+  begin
+    if Data.RowType = prExtension then
+      Result := Node.Parent
+    else
+      Result := Node;
+  end
 end;
 
 procedure TfrmMain.ProjectItemExtensionExecute(Sender: TObject);
@@ -731,19 +753,44 @@ begin
   EType := AskSelectExtensionTypenAction;
   if EType = etNone then Exit;
 
-  if not FindLastParentNode(Node) then
-  begin
-    ShowMessage('Parent model is not selected!');
-    Exit;
-  end;
-
   case EType of
-    etGradient : CreateNewGradientExtension(Node);
-    etProfile  : ;
+    etGradient : begin
+                    if CreateChildNode(Node) then
+                          CreateGradientExtension(Node);
+                  end;
+    etProfile  : CreateProfileExtension;
   end;
 end;
 
-procedure TfrmMain.CreateNewGradientExtension(Node: PVirtualNode);
+procedure TfrmMain.CreateProfileExtension;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Node := FindParentModel(LastNode);
+  if Node = nil then Exit;
+
+
+  if not Project.ProfileAttached(Node) then
+  begin
+    Node := Project.AddChild(Node);
+    Data := Project.GetNodeData(Node);
+
+    Data.Group := gtModel;
+    Data.Enabled := True;
+    Data.RowType := prExtension;
+    Data.Title := 'Profile';
+    Data.ExtType := etProfile;
+    Data.StackID := -1;
+    Data.LayerID := -1;
+    Data.Form := ffLine;
+
+    Project.ClearSelection;
+    Project.Selected[Node] := True;
+  end;
+end;
+
+procedure TfrmMain.CreateGradientExtension(Node: PVirtualNode);
 var
   Data: PProjectData;
 begin
@@ -1252,9 +1299,33 @@ begin
 end;
 
 procedure TfrmMain.pmProjectPopup(Sender: TObject);
+var
+  IsModel, IsProfile: boolean;
 begin
-  pmiVisible.Checked := LastData.Visible;
-  pmiLinked.Checked  := LastData = Project.LinkedData;
+  case LastData.RowType of
+        prItem:  begin
+                    IsModel := LastData.IsModel;
+                    pmiEnabled.Visible := False;
+                    pmiVisible.Visible := True;
+                    pmiVisible.Checked := LastData.Visible;
+                    pmiLinked.Visible  := not IsModel;
+                    pmiLinked.Checked  := LastData = Project.LinkedData;
+                    pmiNorm.Visible    :=  not IsModel;
+                    pmCopytoclipboard.Visible := not IsModel;
+                    pmExporttofile.Visible    := not IsModel;
+                 end;
+    prExtension: begin
+                    pmiNorm.Visible := False;
+                    pmiEnabled.Visible := True;
+                    pmiEnabled.Checked := LastData.Enabled;
+                    pmiVisible.Visible := False;
+                    pmiLinked.Visible  := False;
+
+                    IsProfile := LastData.ExtType = etProfile;
+                    pmCopytoclipboard.Visible := IsProfile;
+                    pmExporttofile.Visible    := IsProfile;
+                 end;
+  end;
 end;
 
 procedure TfrmMain.FinalizeCalc(Calc: TCalc);
