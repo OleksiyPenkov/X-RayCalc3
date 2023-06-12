@@ -33,11 +33,15 @@ type
       FVisibility: boolean;
 
       FClipBoardLayers: TLayersData;
+      JLayer, JStack, JSub: TJSONValue;
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelected: Integer;
       procedure ClearSelection(const Reset:boolean = False); inline;
+      function FindBoolValue(const Value: string): boolean;
+      function FindValue(const Value: string; Base: single): single;
+      function FindStrValue(const Value: string): string;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
@@ -676,39 +680,50 @@ begin
   end;
 end;
 
+
+function TXRCStructure.FindValue(const Value: string; Base: single): single;
+var
+  JVal : TJSONValue;
+begin
+  JVal := JLayer.FindValue(Value);
+  if JVal <> nil then
+     Result := JVal.AsType<single>
+  else
+    Result := Base;
+end;
+
+
+function TXRCStructure.FindBoolValue(const Value: string): boolean;
+var
+  JVal : TJSONValue;
+begin
+  JVal := JLayer.FindValue(Value);
+  if JVal <> nil then
+     Result := JVal.AsType<Boolean>
+  else
+    Result := False;
+end;
+
+function TXRCStructure.FindStrValue(const Value: string): string;
+var
+  JVal : TJSONValue;
+begin
+  JVal := JLayer.FindValue(Value);
+  if JVal <> nil then
+     Result := JVal.AsType<String>
+  else
+    Result := '';
+end;
+
 procedure TXRCStructure.FromString(const S: string);
 var
   i, j, p: Integer;
   Data: TLayerData;
   JStstructure: TJSONObject;
-  JLayer, JStack, JSub: TJSONValue;
   JStacks, JLayers : TJSONArray;
   ts: string;
   Profiles: array [1..3] of string;
   LayerIndex: Integer;
-
-  function FindValue(const Value: string; Base: single): single;
-  var
-    JVal : TJSONValue;
-  begin
-    JVal := JLayer.FindValue(Value);
-    if JVal <> nil then
-       Result := JVal.AsType<single>
-    else
-      Result := Base;
-  end;
-
-
-  function FindBoolValue(const Value: string): boolean;
-  var
-    JVal : TJSONValue;
-  begin
-    JVal := JLayer.FindValue(Value);
-    if JVal <> nil then
-       Result := JVal.AsType<Boolean>
-    else
-      Result := False;
-  end;
 
 begin
   Visible := False;
@@ -739,21 +754,21 @@ begin
         Data.H.Paired := FindBoolValue('HP');
         Data.H.min := FindValue('Hmin', Data.H.V);
         Data.H.max := FindValue('Hmax', Data.H.V);
-        Profiles[1] := JLayer.GetValue<string>('ProfileH');
+        Profiles[1] := FindStrValue('ProfileH');
 
 
         Data.s.V := JLayer.GetValue<single>('s');
         Data.s.Paired := FindBoolValue('SP');
         Data.s.min := FindValue('Smin', Data.s.V);
         Data.s.max := FindValue('Smax', Data.s.V);
-        Profiles[2] := JLayer.GetValue<string>('ProfileS');
+        Profiles[2] := FindStrValue('ProfileS');
 
 
         Data.r.V := JLayer.GetValue<single>('r');
         Data.r.Paired := FindBoolValue('RP');
         Data.r.min := FindValue('Rmin', Data.r.V);
         Data.r.max := FindValue('Rmax', Data.r.V);
-        Profiles[3] := JLayer.GetValue<string>('ProfileR');
+        Profiles[3] := FindStrValue('ProfileR');
 
 
         LayerIndex := FStacks[i].AddLayer(Data);
@@ -789,7 +804,10 @@ end;
 
 function TXRCStructure.GetStackSize(const ID: Integer): Integer;
 begin
-  Result := FStacks[ID].N;
+  if ID < Length(FStacks) then
+     Result := FStacks[ID].N
+  else
+    Result := -1;
 end;
 
 procedure TXRCStructure.GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
