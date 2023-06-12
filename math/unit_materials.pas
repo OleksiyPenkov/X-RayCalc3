@@ -158,16 +158,16 @@ end;
 procedure TLayeredModel.PrepareLayers;
 var
   i, g, NL: Integer;
-  c, ro: Single;
+  c, l_ro: Single;
 begin
   NL := Length(FLayers);
   for I := 1 to High(FLayers) - 1 do
   begin
     AddMaterial(FLayers[i].Name, FLambda);
     if FLayers[i].ro <> 0 then
-      ro := FLayers[i].ro
+      l_ro := FLayers[i].ro
     else
-      ro := FMaterials[CurrentMaterial].ro;   // use default falue for density
+      l_ro := FMaterials[CurrentMaterial].ro;   // use default falue for density
 
     with FLayers[i] do
     begin
@@ -178,12 +178,12 @@ begin
           case FGradients[g].Subj of
             gsL : L := CalcGradient(L, FGradients[g]);
             gsS : s := CalcGradient(s, FGradients[g]);
-            gsRo: ro := CalcGradient(ro, FGradients[g]);
+            gsRo: l_ro := CalcGradient(l_ro, FGradients[g]);
           end;
           Inc(FGradients[g].Count);
         end
       end;
-      c := kk * ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+      c := kk * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
       e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
       e.im := FMaterials[CurrentMaterial].f.im * c;
     end;

@@ -420,6 +420,7 @@ type
     function IsProfileEnbled: Boolean;
     procedure PlotGradedProfile;
     procedure PlotSimpleProfile;
+    procedure ClearProfiles;
     { Private declarations }
   public
     { Public declarations }
@@ -1482,7 +1483,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.PlotProfile;
+procedure TfrmMain.ClearProfiles;
 var
   StackIndex: integer;
 begin
@@ -1492,6 +1493,11 @@ begin
     FRoughnessSeries[StackIndex].Clear;
     FDensitySeries[StackIndex].Clear;
   end;
+end;
+
+procedure TfrmMain.PlotProfile;
+begin
+  ClearProfiles;
 
   FGradients := GetGradients;
   if Length(FGradients) > 0 then
@@ -1716,6 +1722,7 @@ var
   Node, First: PVirtualNode;
   Data: PProjectData;
 begin
+  Project.LinkedData := nil;
   // восстанавливаем дерево проектов
   Project.Version := FProjectVersion;
   Project.LoadFromFile(FProjectDir + PROJECT_FILE_NAME);
@@ -1860,6 +1867,7 @@ begin
   RecoverProjectTree(ActiveID);
   RecoverDataCurves(LinkedID);
 
+  ClearProfiles;
   FIgnoreFocusChange := False;
   Project.Repaint;
   Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
@@ -1874,6 +1882,7 @@ end;
 procedure TfrmMain.FileNewExecute(Sender: TObject);
 begin
   Structure.Clear;
+  ClearProfiles;
   CreateDefaultProject;
 end;
 
@@ -2120,7 +2129,7 @@ begin
 
   FDataRoot := PG;
   Caption := 'X-Ray Calc 3: ' + FProjectName;
-
+  Project.LinkedData := nil;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);

@@ -67,8 +67,6 @@ begin
 end;
 
 procedure TedtrGradient.FillStacksList;
-var
-  i: Integer;
 begin
   cbbStack.Text := '';
   FStructure.GetStacksList(True, cbbStack.Items, FRealStackID);

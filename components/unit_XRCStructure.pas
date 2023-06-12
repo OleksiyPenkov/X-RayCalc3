@@ -129,7 +129,7 @@ end;
 
 procedure TXRCStructure.RecreateFromFitStructure(const Inp: TFitStructure);
 var
-  i, j: integer;
+  i: integer;
 begin
   //
   Visible := False;
@@ -790,7 +790,7 @@ end;
 
 procedure TXRCStructure.GetLayersList(const ID: integer; List: TStrings);
 var
-  i, j: Integer;
+  j: Integer;
 begin
   List.Clear;
   for j := 0 to High(FStacks[ID].LayerData) do
