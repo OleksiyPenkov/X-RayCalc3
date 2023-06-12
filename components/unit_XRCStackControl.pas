@@ -41,7 +41,7 @@ type
       constructor Create(AOwner: TComponent; const Title: string; const N: integer);
       destructor  Destroy; override;
 
-      procedure AddLayer(Data: TLayerData);
+      function AddLayer(Data: TLayerData): integer;
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
       procedure DeleteLayer(const Index: integer);
@@ -68,7 +68,7 @@ uses
 
 { TXRCStack }
 
-procedure TXRCStack.AddLayer(Data: TLayerData);
+function TXRCStack.AddLayer(Data: TLayerData): integer;
 var
   Count: Integer;
 begin
@@ -89,6 +89,7 @@ begin
 
   lblLayers.Top := 1;
   FLayers[Count].Top := ClientHeight - 10;
+  Result := Count;
 end;
 
 procedure TXRCStack.AddSubstrate(const Material: string; s, rho: single);

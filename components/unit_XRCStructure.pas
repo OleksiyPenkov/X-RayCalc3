@@ -56,7 +56,7 @@ type
       procedure DeleteStack;
       procedure DeleteLayer;
 
-      function Model: TLayeredModel;
+      function Model(const ExpandProfiles: Boolean): TLayeredModel;
       function Materials: TMaterialsList;
 
       function ToString: string;
@@ -407,9 +407,9 @@ begin
   end;
 end;
 
-function TXRCStructure.Model: TLayeredModel;
+function TXRCStructure.Model(const ExpandProfiles: Boolean): TLayeredModel;
 var
-  i, j: Integer;
+  i, j, k: Integer;
   StackLayers: TLayersData;
 begin
   Result := TLayeredModel.Create;
@@ -419,7 +419,18 @@ begin
   begin
     StackLayers := FStacks[i].LayerData;
     for j := 1  to FStacks[i].N do
+    begin
+      if ExpandProfiles and (FStacks[i].N > 1) then
+      begin
+        for k := 0 to High(StackLayers) do
+        begin
+          StackLayers[k].H.V := FStacks[i].Layers[k].Profiles.H[j - 1];
+          StackLayers[k].s.V := FStacks[i].Layers[k].Profiles.s[j - 1];
+          StackLayers[k].r.V := FStacks[i].Layers[k].Profiles.r[j - 1];
+        end;
+      end;
       Result.AddLayers(i, StackLayers);
+    end;
   end;
 
   Result.AddSubstrate(Substrate.LayerData);
@@ -483,7 +494,6 @@ var
   Data: TLayerData;
 begin
   Count := 0;
-
   for I := 0 to High(FStacks) do
   begin
     for j := 0 to High(FStacks[i].Layers) do
@@ -584,6 +594,7 @@ var
   Data: TLayerData;
   JStstructure, JLayer, JStack, JSub : TJSONObject;
   JStacks, JLayers : TJSONArray;
+  Profile: string;
 begin
   JStstructure := TJSONObject.Create;
   try
@@ -605,16 +616,22 @@ begin
         JLayer.AddPair('HP', Data.H.Paired);
         JLayer.AddPair('Hmin', Data.H.min);
         JLayer.AddPair('Hmax', Data.H.max);
+        Profile := FStacks[i].Layers[j].ProfileToSrting(gsL);
+        JLayer.AddPair('ProfileH', Profile);
 
         JLayer.AddPair('s', Data.s.V);
         JLayer.AddPair('SP', Data.s.Paired);
         JLayer.AddPair('Smin', Data.s.min);
         JLayer.AddPair('Smax', Data.s.max);
+        Profile := FStacks[i].Layers[j].ProfileToSrting(gsS);
+        JLayer.AddPair('ProfileS', Profile);
 
         JLayer.AddPair('r', Data.r.V);
         JLayer.AddPair('RP', Data.r.Paired);
         JLayer.AddPair('Rmin', Data.r.min);
         JLayer.AddPair('Rmax', Data.r.max);
+        Profile := FStacks[i].Layers[j].ProfileToSrting(gsRo);
+        JLayer.AddPair('ProfileR', Profile);
 
         JLayers.Add(JLayer);
       end;
@@ -667,6 +684,8 @@ var
   JLayer, JStack, JSub: TJSONValue;
   JStacks, JLayers : TJSONArray;
   ts: string;
+  Profiles: array [1..3] of string;
+  LayerIndex: Integer;
 
   function FindValue(const Value: string; Base: single): single;
   var
@@ -720,18 +739,30 @@ begin
         Data.H.Paired := FindBoolValue('HP');
         Data.H.min := FindValue('Hmin', Data.H.V);
         Data.H.max := FindValue('Hmax', Data.H.V);
+        Profiles[1] := JLayer.GetValue<string>('ProfileH');
+
 
         Data.s.V := JLayer.GetValue<single>('s');
         Data.s.Paired := FindBoolValue('SP');
         Data.s.min := FindValue('Smin', Data.s.V);
         Data.s.max := FindValue('Smax', Data.s.V);
+        Profiles[2] := JLayer.GetValue<string>('ProfileS');
+
 
         Data.r.V := JLayer.GetValue<single>('r');
         Data.r.Paired := FindBoolValue('RP');
         Data.r.min := FindValue('Rmin', Data.r.V);
         Data.r.max := FindValue('Rmax', Data.r.V);
+        Profiles[3] := JLayer.GetValue<string>('ProfileR');
 
-        FStacks[i].AddLayer(Data);
+
+        LayerIndex := FStacks[i].AddLayer(Data);
+        if Profiles[1] <> '' then
+        begin
+          FStacks[i].Layers[j].ProfileFromSrting(gsL, Profiles[1]);
+          FStacks[i].Layers[j].ProfileFromSrting(gsS, Profiles[2]);
+          FStacks[i].Layers[j].ProfileFromSrting(gsRo, Profiles[3]);
+        end;
       end;
     end;
 

@@ -416,6 +416,7 @@ type
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
     procedure PlotProfileNP;
     procedure PlotProfile;
+    function IsProfileEnbled: Boolean;
     { Private declarations }
   public
     { Public declarations }
@@ -1515,6 +1516,26 @@ begin
   end;
 end;
 
+function TfrmMain.IsProfileEnbled: Boolean;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Result := False;
+  Node := Project.GetFirstChild(FLastModel);
+  while Node <> nil do
+  begin
+    Data := Project.GetNodeData(Node);
+    if Data.ExtType = etProfile then
+    begin
+      Result := Data.Enabled;
+      Break;
+    end;
+    Node := Project.GetNextSibling(Node);
+  end;
+
+end;
+
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
 var
   CD: TCalcThreadParams;
@@ -1540,7 +1561,7 @@ begin
     try
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
-      Calc.Model := Structure.Model;
+      Calc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
       Calc.Model.Gradients := GetGradients;
       Calc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
@@ -1550,8 +1571,11 @@ begin
       end
       else
         spChiSqr.Caption := '';
-       //PlotDistributions(Calc.Model);
-       //PlotProfile;
+
+      if IsProfileEnbled and not cbTreatPeriodic.Checked then
+         PlotProfileNP
+     else
+        PlotProfile;
     except
       on E: exception do
       begin
@@ -1624,7 +1648,7 @@ begin
 
       Calc.Params := CD;
       Calc.Limit := StrToFloat(cbMinLimit.Text);
-      Calc.Model := Structure.Model;
+      Calc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
       Calc.Run;
       Calc.CalcChiSquare(Params.ThetaWieght);
       lsrConvergence.AddXY(-1, Calc.ChiSQR);
@@ -1672,6 +1696,7 @@ begin
       end;
     end;
     FinalizeCalc(Calc);
+    Project.ActiveModel.Data  := Structure.ToString;
   finally
     Calc.Free;
     LFPSO.Free;

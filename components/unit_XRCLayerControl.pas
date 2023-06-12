@@ -82,6 +82,8 @@ type
 
       property ID: Integer read GetID;
       property StackID: Integer read GetStackID;
+      function ProfileToSrting(const Subj: TParameterType): string;
+      function ProfileFromSrting(const Subj: TParameterType; Profile: string): string;
   end;
 
 implementation
@@ -339,6 +341,43 @@ end;
 procedure TXRCLayerControl.LinkedOnClick(Sender: TObject);
 begin
   LinkedClick(FData.StackID, FData.LayerID);
+end;
+
+function TXRCLayerControl.ProfileFromSrting(const Subj: TParameterType;
+  Profile: string): string;
+var
+  i, p: Integer;
+  val: single;
+begin
+  i := 1; p := Pos(';', Profile);
+  while i < Length(Profile) do
+  begin
+    p := Pos(';', Profile, i);
+    val := StrToFloat(copy(Profile, i, p - i - 1));
+    case Subj of
+      gsL:    Insert(Val, FProfiles.H, MaxInt);
+      gsS:    Insert(Val, FProfiles.s, MaxInt);
+      gsRo:   Insert(Val, FProfiles.r, MaxInt);
+    end;
+    i := p + 1;
+  end;
+end;
+
+function TXRCLayerControl.ProfileToSrting(const Subj: TParameterType): string;
+var
+  i: Integer;
+  Val : single;
+begin
+  Result := '';
+  for I := 0 to High(FProfiles.H) do
+  begin
+    case Subj of
+      gsL:  Val := FProfiles.H[i];
+      gsS:  Val := FProfiles.s[i];
+      gsRo: Val := FProfiles.r[i];
+    end;
+    Result := Format('%s%f;',[Result, Val])
+  end;
 end;
 
 procedure TXRCLayerControl.SetIncrement(const Value: Double);
