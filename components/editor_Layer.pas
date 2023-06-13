@@ -32,18 +32,13 @@ type
     Label6: TLabel;
     btnPrev: TRzBitBtn;
     btnNext: TRzBitBtn;
-    procedure btnOKClick(Sender: TObject);
-    procedure FormShow(Sender: TObject);
-
-    procedure FillEdits;
-    procedure SaveData;
     procedure edMaterialButtonClick(Sender: TObject);
 
   private
     { Private declarations }
   public
     { Public declarations }
-    Data : TLayerData;
+    function ShowEditor(const IsSubstrate: Boolean; var Data: TLayerData): boolean;
   end;
 
 var
@@ -55,31 +50,30 @@ implementation
 
 {$R *.dfm}
 
-procedure TedtrLayer.FillEdits;
+
+function TedtrLayer.ShowEditor(const IsSubstrate: Boolean; var Data: TLayerData): boolean;
 begin
+  Result := False;
   edMaterial.Text := Data.Material;
   edH.Value := Data.H.V;
   edSigma.Value := Data.S.V;
   edRo.Value := Data.R.V;
-end;
 
-procedure TedtrLayer.FormShow(Sender: TObject);
-begin
-  FillEdits;
+  edH.Visible := not IsSubstrate;
+  Label2.Visible :=  not IsSubstrate;
+
+
   ActiveControl := edMaterial;
-end;
 
-procedure TedtrLayer.SaveData;
-begin
-  Data.Material := edMaterial.Text;
-  Data.H.V := edH.Value;
-  Data.S.V := edSigma.Value;
-  Data.R.V := edRo.Value;
-end;
+  if ShowModal = mrOk then
+  begin
+    Data.Material := edMaterial.Text;
+    Data.H.V := edH.Value;
+    Data.S.V := edSigma.Value;
+    Data.R.V := edRo.Value;
+    Result := True;
+  end;
 
-procedure TedtrLayer.btnOKClick(Sender: TObject);
-begin
-  SaveData;
 end;
 
 procedure TedtrLayer.edMaterialButtonClick(Sender: TObject);

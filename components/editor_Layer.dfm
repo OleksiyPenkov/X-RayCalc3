@@ -3,7 +3,7 @@ object edtrLayer: TedtrLayer
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Layer properties'
-  ClientHeight = 116
+  ClientHeight = 125
   ClientWidth = 358
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
@@ -12,19 +12,18 @@ object edtrLayer: TedtrLayer
   Font.Name = 'Tahoma'
   Font.Style = []
   Position = poMainFormCenter
-  OnShow = FormShow
   TextHeight = 13
   object RzPanel1: TRzPanel
     AlignWithMargins = True
     Left = 3
     Top = 3
     Width = 352
-    Height = 63
+    Height = 72
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 336
+    ExplicitWidth = 344
     ExplicitHeight = 51
     object Label1: TLabel
       Left = 9
@@ -114,7 +113,7 @@ object edtrLayer: TedtrLayer
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 72
+    Top = 81
     Width = 352
     Height = 41
     Align = alBottom
@@ -122,7 +121,7 @@ object edtrLayer: TedtrLayer
     Color = 15987699
     TabOrder = 1
     ExplicitTop = 60
-    ExplicitWidth = 336
+    ExplicitWidth = 344
     object btnOK: TRzBitBtn
       Left = 192
       Top = 10
@@ -131,7 +130,6 @@ object edtrLayer: TedtrLayer
       ParentColor = True
       TabOrder = 2
       TabStop = False
-      OnClick = btnOKClick
       Kind = bkOK
     end
     object btnCancel: TRzBitBtn

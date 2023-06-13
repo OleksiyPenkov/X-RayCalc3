@@ -80,7 +80,7 @@ type
 implementation
 
 uses
-  editor_Substrate, unit_SMessages;
+   unit_SMessages;
 
 { TXRCLayerControl }
 
@@ -218,35 +218,13 @@ begin
 end;
 
 procedure TXRCLayerControl.Edit;
-var
-  S1, S2, S3: string;
-
 begin
-  if FSubstrate then
+  if edtrLayer.ShowEditor(FSubstrate, FData) then
   begin
-    S2 := Sigma.Text;
-    S3 := Rho.Text;
-
-    edtrSubstrate.Edit(FData.Material, S2, S3);
-
-    Sigma.Text := S1;
-    Rho.Text   := S2;
-  end
-  else begin
-    edtrLayer.Data.Material := Name.Caption;
-    edtrLayer.Data.H.V      := Thickness.Value;
-    edtrLayer.Data.s.V      := Sigma.Value;
-    edtrLayer.Data.r.V      := Rho.Value;
-
-    if edtrLayer.ShowModal = mrOk then
-    begin
-      Name.Caption := edtrLayer.Data.Material;
-      Thickness.Value := edtrLayer.Data.H.V;
-      Sigma.Value := edtrLayer.Data.s.V;
-      Rho.Value := edtrLayer.Data.r.V;
-    end;
-
+    Name.Caption    := Data.Material;
+    SetLayerData(FData);
   end;
+
   SetSlected(False);
 end;
 

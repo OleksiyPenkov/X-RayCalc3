@@ -14,7 +14,6 @@ uses
   unit_XRCStackControl in 'components\unit_XRCStackControl.pas',
   unit_SMessages in 'components\unit_SMessages.pas',
   editor_Stack in 'components\editor_Stack.pas' {edtrStack},
-  editor_Substrate in 'components\editor_Substrate.pas' {edtrSubstrate},
   unit_calc in 'math\unit_calc.pas',
   unit_materials in 'math\unit_materials.pas',
   math_globals in 'math\math_globals.pas',
@@ -41,7 +40,6 @@ begin
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TedtrStack, edtrStack);
-  Application.CreateForm(TedtrSubstrate, edtrSubstrate);
   Application.CreateForm(TedtrLayer, edtrLayer);
   Application.CreateForm(TfrmLimits, frmLimits);
   Application.CreateForm(TedtrProjectItem, edtrProjectItem);

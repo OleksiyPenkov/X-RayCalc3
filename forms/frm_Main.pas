@@ -1821,9 +1821,11 @@ begin
 end;
 
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
+var
+  Data: TLayerData;
 begin
-  if edtrLayer.ShowModal = mrOk then
-    Structure.AddLayer(Structure.Selected, edtrLayer.Data);
+  if edtrLayer.ShowEditor(False, Data) then
+    Structure.AddLayer(Structure.Selected, Data);
   MatchToStructure;
 end;
 
