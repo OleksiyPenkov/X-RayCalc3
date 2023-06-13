@@ -27,9 +27,6 @@ type
       FSubstrate: boolean;
       FSelected: boolean;
 
-
-      FProfiles: TProfiles;
-
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
@@ -76,14 +73,8 @@ type
       procedure UpdateID(const StackID, LayerID: integer);
       property LinkChecked: boolean read GetLinkChecked write SetLinkChecked;
 
-      property Profiles: TProfiles read FProfiles write FProfiles;
-      procedure ClearProfiles;
-      procedure AddProfilePoint(const H, s, r: Single);
-
       property ID: Integer read GetID;
       property StackID: Integer read GetStackID;
-      function ProfileToSrting(const Subj: TParameterType): string;
-      function ProfileFromSrting(const Subj: TParameterType; Profile: string): string;
   end;
 
 implementation
@@ -92,13 +83,6 @@ uses
   editor_Substrate, unit_SMessages;
 
 { TXRCLayerControl }
-
-procedure TXRCLayerControl.AddProfilePoint(const H, s, r: Single);
-begin
-  Insert(H, FProfiles.H, MaxInt);
-  Insert(s, FProfiles.s, MaxInt);
-  Insert(r, FProfiles.r, MaxInt);
-end;
 
 function TXRCLayerControl.AddSpinEdit(const index, Left, Max: integer):TRzSpinEdit;
 begin
@@ -142,13 +126,6 @@ begin
     2: FData.s.Paired := PairedS.Checked;
     3: FData.r.Paired := PairedR.Checked;
   end;
-end;
-
-procedure TXRCLayerControl.ClearProfiles;
-begin
-  SetLength(FProfiles.H, 0);
-  SetLength(FProfiles.s, 0);
-  SetLength(FProfiles.r, 0);
 end;
 
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
@@ -343,42 +320,6 @@ begin
   LinkedClick(FData.StackID, FData.LayerID);
 end;
 
-function TXRCLayerControl.ProfileFromSrting(const Subj: TParameterType;
-  Profile: string): string;
-var
-  i, p: Integer;
-  val: single;
-begin
-  i := 1; p := Pos(';', Profile);
-  while i < Length(Profile) do
-  begin
-    p := Pos(';', Profile, i);
-    val := StrToFloat(copy(Profile, i, p - i - 1));
-    case Subj of
-      gsL:    Insert(Val, FProfiles.H, MaxInt);
-      gsS:    Insert(Val, FProfiles.s, MaxInt);
-      gsRo:   Insert(Val, FProfiles.r, MaxInt);
-    end;
-    i := p + 1;
-  end;
-end;
-
-function TXRCLayerControl.ProfileToSrting(const Subj: TParameterType): string;
-var
-  i: Integer;
-  Val : single;
-begin
-  Result := '';
-  for I := 0 to High(FProfiles.H) do
-  begin
-    case Subj of
-      gsL:  Val := FProfiles.H[i];
-      gsS:  Val := FProfiles.s[i];
-      gsRo: Val := FProfiles.r[i];
-    end;
-    Result := Format('%s%f;',[Result, Val])
-  end;
-end;
 
 procedure TXRCLayerControl.SetIncrement(const Value: Double);
 begin

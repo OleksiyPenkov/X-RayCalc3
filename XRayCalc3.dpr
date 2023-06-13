@@ -30,7 +30,9 @@ uses
   unit_LFPSO_Regular in 'math\unit_LFPSO_Regular.pas',
   frm_MaterialSelector in 'forms\frm_MaterialSelector.pas' {frmMaterialSelector},
   editor_Gradient in 'editors\editor_Gradient.pas' {edtrGradient},
-  frm_ExtensionType in 'forms\frm_ExtensionType.pas' {frmExtensionSelector};
+  frm_ExtensionType in 'forms\frm_ExtensionType.pas' {frmExtensionSelector},
+  Vcl.Themes,
+  Vcl.Styles;
 
 {$R *.res}
 

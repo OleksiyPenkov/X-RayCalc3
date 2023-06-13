@@ -10,10 +10,6 @@ type
   TFloatArray = array of Single;
   TIntArray = array of Integer;
 
-  TProfiles = record
-                H, s, r: TFloatArray;
-              end;
-
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
   TCalcMode = (cmTheta, cmLambda, cmTest);
   TPolarisation = (cmS, cmSP);
@@ -136,24 +132,23 @@ type
     Material: string;
     H, s, r: TFitValue;
     StackID, LayerID: integer;
+    PH, PS, PR: TFloatArray;
+  public
+    procedure ClearProfiles;
+    procedure AddProfilePoint(const H, s, r: Single);
+    function ProfileFromSrting(const Subj: TParameterType;
+      Profile: string): string;
+    function ProfileToSrting(const Subj: TParameterType): string;
   end;
 
   TLayersData = array of TLayerData;
+  PLayersData = ^TLayersData ;
 
   TDataPoint = record
     t, r: single;
   end;
 
   TDataArray = array of TDataPoint;
-
-  TDistrtibution = record
-    Name: string;
-    DType: TParameterType;
-    Values: array of single;
-  end;
-
-  TDistributions = array of TDistrtibution;
-
 
   TMaterialsList = array of record
                         Name: string;
@@ -233,6 +228,59 @@ begin
   Result := 0;
   for I := 0 to High(Stacks) do
     Result := Result + Length(Stacks[i].Layers) * Stacks[i].N;
+end;
+
+{ TLayerData }
+
+procedure TLayerData.ClearProfiles;
+begin
+  SetLength(PH, 0);
+  SetLength(PS, 0);
+  SetLength(PR, 0);
+end;
+
+procedure TLayerData.AddProfilePoint(const H, s, r: Single);
+begin
+  Insert(H, PH, MaxInt);
+  Insert(s, PS, MaxInt);
+  Insert(r, PR, MaxInt);
+end;
+
+function TLayerData.ProfileFromSrting(const Subj: TParameterType;
+  Profile: string): string;
+var
+  i, p: Integer;
+  val: single;
+begin
+  i := 1; p := Pos(';', Profile);
+  while i < Length(Profile) do
+  begin
+    p := Pos(';', Profile, i);
+    val := StrToFloat(copy(Profile, i, p - i - 1));
+    case Subj of
+      gsL:    Insert(Val, PH, MaxInt);
+      gsS:    Insert(Val, PS, MaxInt);
+      gsRo:   Insert(Val, PR, MaxInt);
+    end;
+    i := p + 1;
+  end;
+end;
+
+function TLayerData.ProfileToSrting(const Subj: TParameterType): string;
+var
+  i: Integer;
+  Val : single;
+begin
+  Result := '';
+  for I := 0 to High(PH) do
+  begin
+    case Subj of
+      gsL:  Val := PH[i];
+      gsS:  Val := PS[i];
+      gsRo: Val := PR[i];
+    end;
+    Result := Format('%s%f;',[Result, Val])
+  end;
 end;
 
 end.

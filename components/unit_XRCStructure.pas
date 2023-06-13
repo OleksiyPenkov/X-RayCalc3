@@ -428,9 +428,9 @@ begin
       begin
         for k := 0 to High(StackLayers) do
         begin
-          StackLayers[k].H.V := FStacks[i].Layers[k].Profiles.H[j - 1];
-          StackLayers[k].s.V := FStacks[i].Layers[k].Profiles.s[j - 1];
-          StackLayers[k].r.V := FStacks[i].Layers[k].Profiles.r[j - 1];
+          StackLayers[k].H.V := StackLayers[k].PH[j - 1];
+          StackLayers[k].s.V := StackLayers[k].PS[j - 1];
+          StackLayers[k].r.V := StackLayers[k].PR[j - 1];
         end;
       end;
       Result.AddLayers(i, StackLayers);
@@ -537,13 +537,13 @@ var
 begin
   for I := 0 to High(FStacks) do
      for j := 0 to High(FStacks[i].Layers) do
-       FStacks[i].Layers[j].ClearProfiles;
+       FStacks[i].Layers[j].Data.ClearProfiles;
 
   for I := 1 to High(Inp.Layers) - 1 do
   begin
     SID := Inp.Layers[i].StackID;
     LID := Inp.Layers[i].LayerID;
-    Structure.FStacks[SID].Layers[LID].AddProfilePoint(Inp.Layers[i].L, Inp.Layers[i].s, Inp.Layers[i].ro);
+    Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].L, Inp.Layers[i].s, Inp.Layers[i].ro);
   end;
 end;
 
@@ -620,21 +620,21 @@ begin
         JLayer.AddPair('HP', Data.H.Paired);
         JLayer.AddPair('Hmin', Data.H.min);
         JLayer.AddPair('Hmax', Data.H.max);
-        Profile := FStacks[i].Layers[j].ProfileToSrting(gsL);
+        Profile := Data.ProfileToSrting(gsL);
         JLayer.AddPair('ProfileH', Profile);
 
         JLayer.AddPair('s', Data.s.V);
         JLayer.AddPair('SP', Data.s.Paired);
         JLayer.AddPair('Smin', Data.s.min);
         JLayer.AddPair('Smax', Data.s.max);
-        Profile := FStacks[i].Layers[j].ProfileToSrting(gsS);
+        Profile := Data.ProfileToSrting(gsS);
         JLayer.AddPair('ProfileS', Profile);
 
         JLayer.AddPair('r', Data.r.V);
         JLayer.AddPair('RP', Data.r.Paired);
         JLayer.AddPair('Rmin', Data.r.min);
         JLayer.AddPair('Rmax', Data.r.max);
-        Profile := FStacks[i].Layers[j].ProfileToSrting(gsRo);
+        Profile := Data.ProfileToSrting(gsRo);
         JLayer.AddPair('ProfileR', Profile);
 
         JLayers.Add(JLayer);
@@ -770,14 +770,15 @@ begin
         Data.r.max := FindValue('Rmax', Data.r.V);
         Profiles[3] := FindStrValue('ProfileR');
 
-
-        LayerIndex := FStacks[i].AddLayer(Data);
         if Profiles[1] <> '' then
         begin
-          FStacks[i].Layers[j].ProfileFromSrting(gsL, Profiles[1]);
-          FStacks[i].Layers[j].ProfileFromSrting(gsS, Profiles[2]);
-          FStacks[i].Layers[j].ProfileFromSrting(gsRo, Profiles[3]);
+          Data.ClearProfiles;
+          Data.ProfileFromSrting(gsL, Profiles[1]);
+          Data.ProfileFromSrting(gsS, Profiles[2]);
+          Data.ProfileFromSrting(gsRo, Profiles[3]);
         end;
+
+        LayerIndex := FStacks[i].AddLayer(Data);
       end;
     end;
 

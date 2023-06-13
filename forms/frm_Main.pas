@@ -1394,24 +1394,17 @@ procedure TfrmMain.PlotProfileNP;
 var
   i, j, k, shift: integer;
 begin
-  for i := 0 to High(FThicknessSeries) do
-  begin
-    FThicknessSeries[i].Clear;
-    FRoughnessSeries[i].Clear;
-    FDensitySeries[i].Clear;
-  end;
-
   shift := 1;
   for i := 0 to High(Structure.Stacks) do
   begin
     if Structure.Stacks[i].N = 1 then Continue;
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
-      for k := 0 to High(Structure.Stacks[i].Layers[j].Profiles.H) do
+      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PH) do
       begin
-         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Profiles.H[k]);
-         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Profiles.s[k]);
-         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Profiles.r[k]);
+         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PH[k]);
+         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PS[k]);
+         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PR[k]);
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1503,7 +1496,10 @@ begin
   if Length(FGradients) > 0 then
     PlotGradedProfile
   else
-    PlotSimpleProfile
+      if IsProfileEnbled and not cbTreatPeriodic.Checked then
+         PlotProfileNP
+      else
+        PlotSimpleProfile;
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
@@ -1691,12 +1687,11 @@ begin
         CreateProfileExtension;
         Structure.UpdateInterfaceNP(LFPSO.Structure);
         Structure.UpdateProfiles(Result);
-        PlotProfileNP;
       end
       else begin
         Structure.UpdateInterfaceP(LFPSO.Structure);
-        PlotProfile;
       end;
+      PlotProfile;
     except
       on E: exception do
       begin
