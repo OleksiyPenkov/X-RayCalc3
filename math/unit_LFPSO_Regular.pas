@@ -10,6 +10,8 @@ type
 
   TLFPSO_Regular = class (TLFPSO_BASE)
     private
+      FLinks : array [1..3] of TIntArray;
+
       procedure UpdateLFPSO(const t: integer); override;
       procedure Seed; override;
       procedure SetStructure(const Inp: TFitStructure); override;
@@ -43,11 +45,17 @@ begin
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(X[I][j]) do // for every layer
       begin
-        V[i][j][k] := Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
-                      c1 * Random * (pbest[j][k] - X[i][j][k]) +
-                      c2 * Random * (gbest[j][k] - X[i][j][k]);
+        if FLinks[j][k] > -1 then
+          V[i][j][k] := V[i][j][FLinks[j][k]]
+        else
+          V[i][j][k] := Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
+                        c1 * Random * (pbest[j][k] - X[i][j][k]) +
+                        c2 * Random * (gbest[j][k] - X[i][j][k]);
 
-        CheckLimits(i, j, k);
+        if FLinks[j][k] = -1 then
+          CheckLimits(i, j, k)
+        else
+          X[i][j][k] := X[i][j][FLinks[j][k]];
       end;
   end;
 end;
@@ -65,11 +73,17 @@ begin
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(X[I][j]) do // for every layer except subtrate
       begin
-        V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
+        if FLinks[j][k] > -1 then
+          V[i][j][k] := V[i][j][FLinks[j][k]]
+        else
+          V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
                       c2 * Random * (gbest[j][k] - X[i][j][k]);
 
-        CheckLimits(i, j, k);
+        if FLinks[j][k] = -1 then
+          CheckLimits(i, j, k)
+        else
+          X[i][j][k] := X[i][j][FLinks[j][k]];
       end;
   end;
 end;
@@ -84,7 +98,12 @@ begin
   begin
     for j := 1 to 3 do // for H, s, rho
       for k := 0 to High(X[0][j]) do // for every layer
-        X[i][j][k] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
+      begin
+        if FLinks[j][k] > -1 then
+          X[i][j][k] := X[i][j][FLinks[j][k]]
+        else
+          X[i][j][k] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
+      end;
   end;
 end;
 
@@ -92,6 +111,8 @@ procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
   i, j, k, Index: integer;
   D: double;
+  HLinks, SLinks, RLinks: TIntArray;
+  NLayers: Integer;
 begin
   FLayersCount := Inp.TotalNP;
 
@@ -110,11 +131,26 @@ begin
   SetDomain(FLayersCount, Vmax);
   SetDomain(FLayersCount, V);
 
+  SetLength(FLinks[1], FLayersCount);
+  SetLength(FLinks[2], FLayersCount);
+  SetLength(FLinks[3], FLayersCount);
+
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
   begin
     for k := 1 to Inp.Stacks[i].N do
-      for j := 0 to High(Inp.Stacks[i].Layers) do
+    begin
+      NLayers := Length(Inp.Stacks[i].Layers);
+
+      if k = 1 then
+      begin
+        SetLength(HLinks, NLayers);
+        SetLength(SLinks, NLayers);
+        SetLength(RLinks, NLayers);
+      end;
+
+
+      for j := 0 to NLayers - 1 do
       begin
         FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
 
@@ -133,8 +169,35 @@ begin
         Xmin[0][3][Index] := Inp.Stacks[i].Layers[j].r.min;
         Xrange[0][3][Index] := Xmax[0][3][Index] - Xmin[0][3][Index];
 
+        if k = 1 then
+        begin
+          FLinks[1][Index] := -1;
+          FLinks[2][Index] := -1;
+          FLinks[3][Index] := -1;
+
+          HLinks[j] := -1;
+          SLinks[j] := -1;
+          RLinks[j] := -1;
+
+          if Inp.Stacks[i].Layers[j].H.Paired then
+            HLinks[j] := Index;
+
+          if Inp.Stacks[i].Layers[j].s.Paired then
+            SLinks[j] := Index;
+
+          if Inp.Stacks[i].Layers[j].r.Paired then
+            RLinks[j] := Index;
+
+        end
+        else begin
+          FLinks[1][Index] := HLinks[j] ;
+          FLinks[2][Index] := SLinks[j] ;
+          FLinks[3][Index] := RLinks[j] ;
+        end;
+
         Inc(Index);
       end;
+    end;
   end;
 end;
 

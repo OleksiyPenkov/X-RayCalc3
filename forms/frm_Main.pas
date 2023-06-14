@@ -555,6 +555,8 @@ begin
   if FIgnoreFocusChange then
     Exit;
 
+  if Node = LastNode then Exit;
+
   LastData := Project.GetNodeData(LastNode);
   if LastData <> nil then
   begin
@@ -1824,6 +1826,12 @@ procedure TfrmMain.LayerAddExecute(Sender: TObject);
 var
   Data: TLayerData;
 begin
+  Data.Material := 'Si';
+
+  Data.H.New(25);
+  Data.s.New(3);
+  Data.r.New(0);
+
   if edtrLayer.ShowEditor(False, Data) then
     Structure.AddLayer(Structure.Selected, Data);
   MatchToStructure;

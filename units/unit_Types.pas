@@ -122,6 +122,7 @@ type
   TFitValue = record
     Paired: Boolean;
     V, min, max: single;
+    procedure New(const Val: single);
     procedure Init(const dev: single); overload;
     procedure Init(const AMin, AMax: single); overload;
     procedure Init; overload;
@@ -195,6 +196,14 @@ procedure TFitValue.Init;
 begin
   min := V;
   max := V;
+end;
+
+procedure TFitValue.New(const Val: single);
+begin
+  V := Val;
+  min := 0;
+  max := 0;
+  Paired := False;
 end;
 
 procedure TFitValue.Seed;
