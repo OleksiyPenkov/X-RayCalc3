@@ -26,6 +26,7 @@ type
 
   TLFPSO_BASE = class
     protected
+      FReInit : Boolean;
       FFitParams: TFitParams;
       FCalcParams: TCalcThreadParams;
       FStructure: TFitStructure;  // initial (input) structure
@@ -67,11 +68,10 @@ type
       procedure CheckLimits(const i, j, k: integer); inline;
       procedure SetParams(const Value: TFitParams);
       procedure ReInit(const Step: integer); //inline;
-      procedure CopySolution(const Source: TSolution; var Dest: TSolution);
       function Omega(const t, TMax: integer): single; inline;
       procedure SetDomain(const Count: integer; var X: TPopulation);
-      procedure InitVelocity;
 
+      procedure InitVelocity; virtual;
       procedure UpdatePSO(const t: integer); virtual;
       procedure UpdateLFPSO(const t: integer); virtual;
       procedure Seed;virtual;
@@ -213,21 +213,8 @@ begin
 end;
 
 procedure TLFPSO_BASE.InitVelocity;
-var
-  i, j, k: integer;
 begin
-  MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
-  MultiplyVector(Vmax, -1, Vmin);
 
-  for i := 0 to High(V) do // for every member of the population
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(V[i][j]) do // for every layer
-        V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
-end;
-
-procedure TLFPSO_BASE.CopySolution(const Source: TSolution; var Dest: TSolution);
-begin
-  Dest := Source;
 end;
 
 procedure TLFPSO_BASE.CheckLimits(const i, j, k: integer);
@@ -308,12 +295,12 @@ begin
     end;
   end;
 
-  CopySolution(X[Result], pbest);
+  pbest := X[Result];
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
-    CopySolution(X[Result], gbest);
+    gbest := X[Result];
   end
   else begin
     SetLength(FResultingCurve, 0);
@@ -323,7 +310,7 @@ begin
   if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
   begin
     FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-    CopySolution(X[Result], abest);
+    abest := X[Result];
   end;
 end;
 
@@ -347,6 +334,7 @@ var
   Vmax0: single;
   SuccessCount: integer;
 begin
+  FReInit := False;
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
   ReInitCount := 0;
@@ -374,11 +362,12 @@ begin
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
     begin
+      FReInit := True;
       if ReInitCount > FFitParams.ReInitMax then
       begin
         ReInitCount := 0;
         SetStructure(GBestStructure(abest));
-        CopySolution(abest, gbest);
+        gbest := abest;
         FGlobalBestChiSqr := FAbsoluteBestChiSqr;
         FFitParams.Vmax := Vmax0;
       end
@@ -394,7 +383,7 @@ begin
       dec(SuccessCount);
     end
     else begin
-      CopySolution(gbest, abest);
+      abest := gbest;
       inc(SuccessCount);
     end;
   end;

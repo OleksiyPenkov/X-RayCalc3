@@ -15,6 +15,7 @@ type
       procedure NormalizeD(const ParticleIndex: integer);
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
+      procedure InitVelocity; override;
     public
       //
   end;
@@ -103,6 +104,19 @@ begin
     for j := Index to Last do
       X[ParticleIndex][1][j] := X[ParticleIndex][1][j] * (1 + f);
   end;
+end;
+
+procedure TLFPSO_Periodic.InitVelocity;
+var
+  i, j, k: integer;
+begin
+  MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
+  MultiplyVector(Vmax, -1, Vmin);
+
+  for i := 0 to High(V) do // for every member of the population
+    for j := 1 to 3 do // for H, s, rho
+      for k := 0 to High(V[i][j]) do // for every layer
+        V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
 end;
 
 procedure TLFPSO_Periodic.Seed;
