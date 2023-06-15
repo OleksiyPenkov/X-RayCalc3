@@ -2019,6 +2019,9 @@ object frmMain: TfrmMain
         Action = actShowLibrary
         Caption = 'Materials Library'
       end
+      object EditHenketable1: TMenuItem
+        Action = actEditHenke
+      end
     end
     object Calc2: TMenuItem
       Caption = 'Help'
@@ -3074,6 +3077,11 @@ object frmMain: TfrmMain
       Category = 'Project Item'
       Caption = 'Paste Model'
       OnExecute = actModelPasteExecute
+    end
+    object actEditHenke: TAction
+      Category = 'Materials'
+      Caption = 'Edit Henke table...'
+      OnExecute = actEditHenkeExecute
     end
   end
   object ilProject: TImageList

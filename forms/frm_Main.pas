@@ -295,6 +295,8 @@ type
     RzButton1: TRzButton;
     NewFolder1: TMenuItem;
     N8: TMenuItem;
+    actEditHenke: TAction;
+    EditHenketable1: TMenuItem;
     procedure rgCalcModeClick(Sender: TObject);
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
@@ -359,6 +361,7 @@ type
     procedure ChartZoom(Sender: TObject);
     procedure RzButton1Click(Sender: TObject);
     procedure DataNormAutoExecute(Sender: TObject);
+    procedure actEditHenkeExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -455,7 +458,7 @@ uses
   frm_MaterialsLibrary,
   frm_about,
   editor_Gradient,
-  frm_ExtensionType, math_globals;
+  frm_ExtensionType, math_globals, editor_HenkeTable;
 
 {$R *.dfm}
 
@@ -926,6 +929,11 @@ begin
   begin
     Normalize(StrToFloat(s), FSeriesList[Project.ActiveData.CurveID]);
   end;
+end;
+
+procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
+begin
+  edtrHenkeTable.ShowModal;
 end;
 
 procedure TfrmMain.ActionManagerChange(Sender: TObject);
