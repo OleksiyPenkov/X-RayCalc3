@@ -44,7 +44,7 @@ implementation
 resourcestring
   rstrGradientRadioCaption  = 'Gradient';
   rstrGradientRadioHint     = 'Create ad istribution of a parameter (H, s, rho) for cirtain layer';
-  rstrProfileRadioCaption   = 'Distribution';
+  rstrProfileRadioCaption   = 'Profile';
   rstrProfileRadioHint      = 'Create a parameters'' distribution table';
 
 function AskSelectExtensionTypenAction: TExtentionType;

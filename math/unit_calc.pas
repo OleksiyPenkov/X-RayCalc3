@@ -138,7 +138,7 @@ var
   dt, step: single;
 begin
   NThreads := Environment.Process.Affinity.Count;
-  {$IFDEF DEBUG}  NThreads := 2; {$ENDIF}
+  {$IFDEF DEBUG}  NThreads := 8; {$ENDIF}
 
   SetLength(Tasks, NThreads);
   SetLength(CalcParams,  NThreads);

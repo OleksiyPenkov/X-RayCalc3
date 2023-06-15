@@ -45,6 +45,7 @@ type
       property ActiveData:PProjectData read FActiveData write FActiveData;
       property LinkedData:PProjectData read FLinkedData write FLinkedData;
       property IgnoreFocusChange: boolean read FIgnoreFocusChange write FIgnoreFocusChange;
+      function ProfileAttached(Node: PVirtualNode): Boolean;
     published
 
   end;
@@ -131,6 +132,27 @@ destructor TXRCProjectTree.Free;
 begin
 
   inherited Free;
+end;
+
+function TXRCProjectTree.ProfileAttached(Node: PVirtualNode): Boolean;
+var
+  Data: PProjectData;
+begin
+  Result := False;
+
+  Node := GetFirstChild(Node);
+  if Node <> nil then
+  begin
+    repeat
+      Data := GetNodeData(Node);
+      if Data.ExtType = etProfile then
+      begin
+        Result := True;
+        Break;
+      end;
+      Node := GetNextSibling(Node);
+    until Node = nil;
+  end;
 end;
 
 procedure TXRCProjectTree.ProjectAdvancedHeaderDraw(Sender: TVTHeader;

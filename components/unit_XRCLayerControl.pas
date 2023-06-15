@@ -27,7 +27,6 @@ type
       FSubstrate: boolean;
       FSelected: boolean;
 
-
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
@@ -48,6 +47,8 @@ type
       function AddCheckBox(const index, Left: integer): TRzCheckBox;
       procedure SetPairable(const Value: boolean);
       procedure SetLinkChecked(const Value: boolean);
+      function GetID: Integer;
+      function GetStackID: Integer;
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
       destructor  Destroy; override;
@@ -71,12 +72,15 @@ type
       procedure DecreaseThickness;
       procedure UpdateID(const StackID, LayerID: integer);
       property LinkChecked: boolean read GetLinkChecked write SetLinkChecked;
+
+      property ID: Integer read GetID;
+      property StackID: Integer read GetStackID;
   end;
 
 implementation
 
 uses
-  editor_Substrate, unit_SMessages;
+   unit_SMessages;
 
 { TXRCLayerControl }
 
@@ -109,6 +113,8 @@ begin
   Result.Left := Left;
   Result.Top := 13;
   Result.Tag := Index;
+  Result.ShowHint := True;
+  Result.Hint := 'Mark this parameter as paired accross all repeated stacks';
 
   Result.OnClick := CheckBoxClick;
 end;
@@ -178,6 +184,8 @@ begin
   FLinkCheckBox.Width := 19;
   FLinkCheckBox.Height := 15;
   FLinkCheckBox.TabOrder := 3;
+  FLinkCheckBox.ShowHint := True;
+  FLinkCheckBox.Hint := 'Pair to another layer';
 
 
   Name.Caption    := Data.Material;
@@ -210,35 +218,13 @@ begin
 end;
 
 procedure TXRCLayerControl.Edit;
-var
-  S1, S2, S3: string;
-
 begin
-  if FSubstrate then
+  if edtrLayer.ShowEditor(FSubstrate, FData) then
   begin
-    S2 := Sigma.Text;
-    S3 := Rho.Text;
-
-    edtrSubstrate.Edit(FData.Material, S2, S3);
-
-    Sigma.Text := S1;
-    Rho.Text   := S2;
-  end
-  else begin
-    edtrLayer.Data.Material := Name.Caption;
-    edtrLayer.Data.H.V      := Thickness.Value;
-    edtrLayer.Data.s.V      := Sigma.Value;
-    edtrLayer.Data.r.V      := Rho.Value;
-
-    if edtrLayer.ShowModal = mrOk then
-    begin
-      Name.Caption := edtrLayer.Data.Material;
-      Thickness.Value := edtrLayer.Data.H.V;
-      Sigma.Value := edtrLayer.Data.s.V;
-      Rho.Value := edtrLayer.Data.r.V;
-    end;
-
+    Name.Caption    := Data.Material;
+    SetLayerData(FData);
   end;
+
   SetSlected(False);
 end;
 
@@ -260,6 +246,16 @@ end;
 function TXRCLayerControl.GetEnabled: Boolean;
 begin
   Result := Enabled;
+end;
+
+function TXRCLayerControl.GetID: Integer;
+begin
+  Result := FData.LayerID;
+end;
+
+function TXRCLayerControl.GetStackID: Integer;
+begin
+  Result := FData.StackID;
 end;
 
 function TXRCLayerControl.GetLinkChecked: Boolean;
@@ -301,6 +297,7 @@ procedure TXRCLayerControl.LinkedOnClick(Sender: TObject);
 begin
   LinkedClick(FData.StackID, FData.LayerID);
 end;
+
 
 procedure TXRCLayerControl.SetIncrement(const Value: Double);
 begin
