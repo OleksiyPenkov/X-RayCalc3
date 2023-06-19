@@ -717,11 +717,10 @@ end;
 
 procedure TXRCStructure.FromString(const S: string);
 var
-  i, j, p: Integer;
+  i, j: Integer;
   Data: TLayerData;
   JStstructure: TJSONObject;
   JStacks, JLayers : TJSONArray;
-  ts: string;
   Profiles: array [1..3] of string;
   LayerIndex: Integer;
 
@@ -729,10 +728,7 @@ begin
   Visible := False;
   Clear;
 
-  p := pos('}}', s);
-  ts := copy(S, 1, p + 1);
-
-  JStstructure := TJSonObject.ParseJSONValue(ts) as TJSonObject;
+  JStstructure := TJSonObject.ParseJSONValue(S) as TJSonObject;
 
   try
     JSub := JStstructure.Get('Subs').JsonValue;

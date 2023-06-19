@@ -190,34 +190,27 @@ begin
 end;
 
 procedure TCalc.CalcLambda;
-//var
-//  i: integer;
-//  Step: single;
-//  R: single;
-//  L: single;
-//  LayeredModel: TLayeredModel;
-//  Layers: TLayers;
+var
+  i: integer;
+  Step: single;
+  R: single;
+  L: single;
+  Layers: TCalcLayers;
  begin
-//  LayeredModel := TLayeredModel.Create;
-//  try
-//    Step := (EndL - StartL) / N;
-//    SetLength(FResult, N);
-//    for i := 0 to N - 1 do
-//    begin
-//      L := StartL + i * Step;
-//      LayeredModel.Generate(L);
-//      Layers := LayeredModel.Layers;
-//      FResult[i].t := L;
-//      R := RefCalc(Theta, L, Layers);
-//      if R > FLimit then
-//        FResult[i].R := R
-//      else
-//        FResult[i].R := FLimit;
-//    end;
-//    FTotalD := LayeredModel.TotalD;
-//  finally
-//    LayeredModel.Free;
-//  end;
+  Step := (EndL - StartL) / N;
+  SetLength(FResult, N);
+  for i := 0 to N - 1 do
+  begin
+    L := StartL + i * Step;
+    FLayeredModel.Generate(L);
+    Layers := FLayeredModel.Layers;
+    FResult[i].t := L;
+    R := RefCalc(Theta, L, Layers);
+    if R > FLimit then
+      FResult[i].R := R
+    else
+      FResult[i].R := FLimit;
+  end;
 end;
 
 procedure TCalc.CalcTet;

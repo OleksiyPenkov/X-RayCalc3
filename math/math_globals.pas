@@ -15,15 +15,27 @@ uses
   math_complex,
   VclTee.Series,
   unit_types,
-  Classes;
+  Classes,
+  Vcl.Grids,
+  RzGrids;
 
-procedure ReadHenke(const N: string; E, L: single; var f: TComplex;
+const
+   H = 12398.6;
+
+type
+  THenkeRecord = record
+                   e, f1, f2: Single;
+                 end;
+  THenkeTable = array of THenkeRecord;
+
+  procedure ReadHenke(const N: string; E, L: single; var f: TComplex;
   var Na, Nro: single);
 
-procedure Sort(var Series: TLineSeries);
-procedure CopyData(const Input: TDataArray; var Output: TDataArray);
-function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
-
+  procedure Sort(var Series: TLineSeries);
+  procedure CopyData(const Input: TDataArray; var Output: TDataArray);
+  function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
+  procedure ReadHenkeTable(const N: string; var Na, Nro: single; var Table: THenkeTable);
+  procedure WriteHenkeTable(const N: string; Na, Nro: single; Table: THenkeTable);
 
 implementation
 
@@ -32,8 +44,7 @@ uses
   SysUtils,
   VCLTee.TeEngine;
 
-const
-  H = 12398.6;
+
 
 function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
 begin
@@ -255,6 +266,106 @@ begin
   f.im := Interp(e1, e2, f1.im, f2.im, E);
 end;
 
+procedure ReadHenkeTable(const N: string; var Na, Nro: single; var Table: THenkeTable);
+var
+  fn, s, Msg: string;
+  Val: THenkeRecord;
+  size: integer;
+  Stream : TMemoryStream;
+  StrBuffer: PChar;
 
+  function GetString: string;
+  begin
+    Stream.Read(size, SizeOf(size));
+    StrBuffer := AllocMem(size);
+    Stream.Read(StrBuffer^, size);
+    Result := (StrBuffer);
+    FreeMem(StrBuffer);
+  end;
+
+
+begin
+  fn := Settings.HenkePath + N + '.bin';
+  if not FileExists(fn) then
+  begin
+    Msg := Format('Error! Material %s not found in the database!', [N]);
+    raise EInOutError.Create(Msg);
+  end;
+  try
+    Stream := TMemoryStream.Create;
+    try
+      Stream.LoadFromFile(fn);
+
+      S := GetString;
+      Size := SizeOf(Na);
+
+      Stream.Read(Na, Size);
+      Stream.Read(Nro, Size);
+
+      while (Stream.Position < Stream.Size) do
+      begin
+        Stream.Read(Val.e, Size);
+        Stream.Read(Val.f1, Size);
+        Stream.Read(Val.f2, Size);
+
+        if Val.e > 0 then
+          Insert(Val, Table, MaxInt);
+      end;
+      finally
+        Stream.Free;
+      end;
+  except
+    on E: EInOutError do
+    begin
+      Msg := Format('Error! File %s.bin corrupted or has wrong format', [N]);
+      raise EInOutError.Create(Msg);
+    end;
+  end;
+end;
+
+procedure WriteHenkeTable(const N: string; Na, Nro: single; Table: THenkeTable);
+var
+  fn: string;
+  Stream: TMemoryStream;
+  size, i: Integer;
+
+  procedure WriteString(const s: string);
+  begin
+    size := ByteLength(s) + 1;
+    Stream.Write(size, SizeOf(size));
+    Stream.Write(PChar(s)^, size);
+  end;
+
+begin
+  fn := Settings.HenkePath + N + '.bin';
+
+  try
+    Stream := TMemoryStream.Create;
+    try
+      WriteString(N);
+
+      size := SizeOf(Na);
+
+      Stream.Write(Na, size);
+      Stream.Write(Nro, size);
+
+
+      for I := 0 to High(Table) do
+      begin
+        Stream.Write(Table[i].e, size);
+        Stream.Write(Table[i].f1, size);
+        Stream.Write(Table[i].f2, size);
+      end;
+      Stream.SaveToFile(fn);
+    finally
+      Stream.Free;
+    end;
+  except
+    on e: EInOutError do
+    begin
+      Writeln(Format('Error writing file!', [N]));
+    end;
+  end;
+end;
 
 end.

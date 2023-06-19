@@ -31,7 +31,11 @@ uses
   editor_Gradient in 'editors\editor_Gradient.pas' {edtrGradient},
   frm_ExtensionType in 'forms\frm_ExtensionType.pas' {frmExtensionSelector},
   Vcl.Themes,
-  Vcl.Styles;
+  Vcl.Styles,
+  editor_HenkeTable in 'editors\editor_HenkeTable.pas' {edtrHenkeTable},
+  editor_JSON in 'editors\editor_JSON.pas' {frmJsonEditor},
+  XSuperObject in 'Superobject\XSuperObject.pas',
+  XSuperJSON in 'Superobject\XSuperJSON.pas';
 
 {$R *.res}
 
@@ -48,5 +52,7 @@ begin
   Application.CreateForm(TfrmMaterialSelector, frmMaterialSelector);
   Application.CreateForm(TedtrGradient, edtrGradient);
   Application.CreateForm(TfrmExtensionSelector, frmExtensionSelector);
+  Application.CreateForm(TedtrHenkeTable, edtrHenkeTable);
+  Application.CreateForm(TfrmJsonEditor, frmJsonEditor);
   Application.Run;
 end.

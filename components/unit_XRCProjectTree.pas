@@ -261,6 +261,7 @@ procedure TXRCProjectTree.ProjectLoadNode(Sender: TBaseVirtualTree;
 var
   Data: PProjectData;
   S: string;
+  p: Integer;
 
   function GetString: string;
   var
@@ -319,6 +320,9 @@ begin
           Data.Data := GetString;
        end;
   end;
+
+  p := pos('}}', Data.Data);
+  Data.Data := copy(Data.Data, 1, p + 1);
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
