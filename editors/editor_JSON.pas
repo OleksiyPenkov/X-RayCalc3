@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, SynEditHighlighter, SynEditCodeFolding,
-  SynHighlighterJSON, SynEditExport, SynExportHTML, RzPanel, SynEdit, Vcl.Menus, XSuperObject,
+  SynHighlighterJSON, SynEditExport, SynExportHTML, RzPanel, SynEdit, Vcl.Menus,
   Vcl.ExtCtrls, RzButton;
 
 type
@@ -24,21 +24,22 @@ type
     function Edit(var InString: string): Boolean;
   end;
 
-function FormatJson (InString: WideString): string;
-
 var
   frmJsonEditor: TfrmJsonEditor;
 
 implementation
 
 {$R *.dfm}
+uses
+  json, REST.Json;
 
-function FormatJson(InString: WideString): string; // Input string is "InString"
+function FormatJson(const InString: String): string;
 var
-  Json : ISuperObject;
+  tmpJson: TJsonValue;
 begin
-  Json := TSuperObject.Create(InString);
-  Result := Json.AsJson(true, false); //Here comes your result: pretty-print JSON
+  tmpJson := TJSONObject.ParseJSONValue(InString);
+  Result := TJson.Format(tmpJson);
+  FreeAndNil(tmpJson);
 end;
 
 { TfrmJsonEditor }

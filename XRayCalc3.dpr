@@ -33,9 +33,7 @@ uses
   Vcl.Themes,
   Vcl.Styles,
   editor_HenkeTable in 'editors\editor_HenkeTable.pas' {edtrHenkeTable},
-  editor_JSON in 'editors\editor_JSON.pas' {frmJsonEditor},
-  XSuperObject in 'Superobject\XSuperObject.pas',
-  XSuperJSON in 'Superobject\XSuperJSON.pas';
+  editor_JSON in 'editors\editor_JSON.pas' {frmJsonEditor};
 
 {$R *.res}
 
