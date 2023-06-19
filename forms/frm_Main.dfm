@@ -1491,7 +1491,7 @@ object frmMain: TfrmMain
           end
           object rgCalcMode: TRzRadioGroup
             Left = 3
-            Top = 0
+            Top = -1
             Width = 161
             Height = 42
             BorderOuter = fsFlatRounded
@@ -1505,6 +1505,7 @@ object frmMain: TfrmMain
               'by wave')
             SpaceEvenly = True
             TabOrder = 3
+            OnChanging = rgCalcModeChanging
           end
           object RzGroupBox2: TRzGroupBox
             Left = 319
@@ -1938,6 +1939,12 @@ object frmMain: TfrmMain
         Action = LayerPaste
       end
       object N4: TMenuItem
+        Caption = '-'
+      end
+      object actProjecEditModelText1: TMenuItem
+        Action = actProjecEditModelText
+      end
+      object N9: TMenuItem
         Caption = '-'
       end
       object Cut1: TMenuItem
@@ -3082,6 +3089,11 @@ object frmMain: TfrmMain
       Category = 'Materials'
       Caption = 'Edit Henke table...'
       OnExecute = actEditHenkeExecute
+    end
+    object actProjecEditModelText: TAction
+      Category = 'Project Item'
+      Caption = 'Edit as text ...'
+      OnExecute = actProjecEditModelTextExecute
     end
   end
   object ilProject: TImageList

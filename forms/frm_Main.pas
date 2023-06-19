@@ -297,7 +297,9 @@ type
     N8: TMenuItem;
     actEditHenke: TAction;
     EditHenketable1: TMenuItem;
-    procedure rgCalcModeClick(Sender: TObject);
+    actProjecEditModelText: TAction;
+    actProjecEditModelText1: TMenuItem;
+    N9: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -362,6 +364,9 @@ type
     procedure RzButton1Click(Sender: TObject);
     procedure DataNormAutoExecute(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
+    procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
+      var AllowChange: Boolean);
+    procedure actProjecEditModelTextExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -458,7 +463,7 @@ uses
   frm_MaterialsLibrary,
   frm_about,
   editor_Gradient,
-  frm_ExtensionType, math_globals, editor_HenkeTable;
+  frm_ExtensionType, math_globals, editor_HenkeTable, editor_JSON;
 
 {$R *.dfm}
 
@@ -959,6 +964,18 @@ begin
   Structure.FromString(Project.ActiveModel.Data);
 end;
 
+procedure TfrmMain.actProjecEditModelTextExecute(Sender: TObject);
+var
+  Str: string;
+begin
+  Str := Structure.ToString;
+  if frmJsonEditor.Edit(Str) then
+  begin
+    Str := StringReplace(Str, #13#10, '', [rfReplaceAll]);
+    Structure.FromString(Str);
+  end;
+end;
+
 procedure TfrmMain.actProjectItemDuplicateExecute(Sender: TObject);
 var
   S: string;
@@ -1219,13 +1236,11 @@ begin
 
     1:
       begin
-//        ThreadsRunning := 1;
-//        SetLength(FResults, 1);
-//        CD.Mode := cmLambda;
-//        CD.Theta := StrToFloat(edTheta.Text);
-//        CD.StartL := StrToFloat(edStartL.Text);
-//        CD.EndL := StrToFloat(edEndL.Text);
-//        CD.DW := StrToFloat(edDL.Text);
+        CD.Mode := cmLambda;
+        CD.Theta := StrToFloat(edTheta.Text);
+        CD.StartL := StrToFloat(edStartL.Text);
+        CD.EndL := StrToFloat(edEndL.Text);
+        CD.DW := StrToFloat(edDL.Text);
       end;
   end;
 
@@ -2187,9 +2202,11 @@ begin
   FreeAndNil(Settings);
 end;
 
-procedure TfrmMain.rgCalcModeClick(Sender: TObject);
+
+procedure TfrmMain.rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
+  var AllowChange: Boolean);
 begin
-  case rgCalcMode.ItemIndex of
+  case NewIndex of
     0:
       begin
         pnlAngleParams.Enabled := True;
@@ -2201,7 +2218,9 @@ begin
         pnlWaveParams.Enabled := True;
       end;
   end;
+  AllowChange := True;
 end;
+
 
 procedure TfrmMain.RzButton1Click(Sender: TObject);
 begin
