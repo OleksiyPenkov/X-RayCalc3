@@ -221,39 +221,37 @@ var
   i, k, j: Integer;
   Data: TLayersData;
   LayerIndex: Integer;
+  Total: Integer;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
+  Total := FStructure.TotalNP;
   LayerIndex := 0;
+  SetLength(Data, Total);
   for I := 0 to High(FStructure.Stacks) do
   begin
-    SetLength(Data, Length(FStructure.Stacks[i].Layers));
-    for k := 0 to High(FStructure.Stacks[i].Layers) do
-    begin
-      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
-      Data[k].H.V := Solution[LayerIndex][1][0];
-      Data[k].PH := Solution[LayerIndex][1];
 
-      Data[k].s := FStructure.Stacks[i].Layers[k].s;
-      Data[k].PS := Solution[LayerIndex][2];
-      Data[k].s.V := Solution[LayerIndex][2][0];
+    for j := 1 to FStructure.Stacks[i].N do
+      for k := 0 to High(FStructure.Stacks[i].Layers) do
+      begin
+        Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
+        Data[LayerIndex].H.V := Poly(k + 1, Solution[k][1]);
 
-      Data[k].r := FStructure.Stacks[i].Layers[k].r;
-      Data[k].r.V := Solution[LayerIndex][3][0];
-      Data[k].PR := Solution[LayerIndex][1];
+        Data[LayerIndex].s := FStructure.Stacks[i].Layers[k].s;
+        Data[LayerIndex].s.V := Poly(k + 1, Solution[k][2]);
 
+        Data[LayerIndex].r := FStructure.Stacks[i].Layers[k].r;
+        Data[LayerIndex].r.V := Poly(k + 1, Solution[k][3]);
 
-      Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
-      Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
-    end;
-
-    for j := 1  to FStructure.Stacks[i].N do
-      Result.AddLayers(-1, Data);
-
-    Inc(LayerIndex);
+        Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
+        Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+        Inc(LayerIndex);
+      end;
   end;
-//
+  Result.AddLayers(-1, Data);
+
+  //
   SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
   Data[0].s := FStructure.Subs.s;
