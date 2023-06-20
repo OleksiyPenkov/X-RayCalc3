@@ -298,10 +298,6 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -328,10 +324,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -358,10 +350,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -982,23 +970,29 @@ object frmMain: TfrmMain
                 Text = '0.005'
               end
               object cbTreatPeriodic: TRzCheckBox
-                Left = 229
-                Top = 13
-                Width = 101
+                Left = 197
+                Top = 11
+                Width = 66
                 Height = 19
-                Caption = 'Treat as peridic'
+                Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
                 TabOrder = 6
+              end
+              object cbPoly: TRzCheckBox
+                Left = 277
+                Top = 11
+                Width = 46
+                Height = 19
+                Caption = 'Poly'
+                Checked = True
+                State = cbChecked
+                TabOrder = 7
               end
             end
             object TabSheet2: TRzTabSheet
               Color = 15987699
               Caption = 'LSPSO'
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object Label16: TLabel
                 Left = 11
                 Top = 14
@@ -1108,8 +1102,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 48
-                Width = 50
-                Height = 17
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True

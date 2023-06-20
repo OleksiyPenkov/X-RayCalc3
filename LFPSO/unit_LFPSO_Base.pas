@@ -79,7 +79,7 @@ type
       function GBestStructure(best: TSolution): TFitStructure; virtual;
       function GetStructure: TFitStructure;
       function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
-      procedure Set_Init_X(const Index, VT: Integer; Val: TFitValue); inline;
+      procedure Set_Init_X(const Index, VT: Integer; Val: TFitValue); virtual;
       procedure Init_Domains;
     private
 
@@ -452,14 +452,11 @@ end;
 
 procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
 var
-  i: integer;
+  i, j: integer;
 begin
   for I := 0 to High(X) do
-  begin
-    SetLength(X[i][1], Count);
-    SetLength(X[i][2], Count);
-    SetLength(X[i][3], Count);
-  end;
+    for j := 1 to 3 do
+      SetLength(X[i][j], Count);
 end;
 
 procedure TLFPSO_BASE.SetParams(const Value: TFitParams);
@@ -537,10 +534,10 @@ end;
 
 procedure TLFPSO_BASE.Set_Init_X(const Index, VT: Integer; Val: TFitValue);
 begin
-   X[0][VT][Index]   := Val.V;
-  Xmax[0][VT][Index] := Val.max;
-  Xmin[0][VT][Index] := Val.min;
-  Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
+       X[0][VT][Index] := Val.V;
+    Xmax[0][VT][Index] := Val.max;
+    Xmin[0][VT][Index] := Val.min;
+  Xrange[0][VT][Index] := Xmax[0][VT][Index] - Xmin[0][VT][Index];
 end;
 
 procedure TLFPSO_BASE.Init_Domains;

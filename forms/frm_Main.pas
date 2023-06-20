@@ -300,6 +300,7 @@ type
     actProjecEditModelText: TAction;
     actProjecEditModelText1: TMenuItem;
     N9: TMenuItem;
+    cbPoly: TRzCheckBox;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -469,7 +470,7 @@ uses
   frm_MaterialsLibrary,
   frm_about,
   editor_Gradient,
-  frm_ExtensionType, math_globals, editor_HenkeTable, editor_JSON;
+  frm_ExtensionType, math_globals, editor_HenkeTable, editor_JSON, unit_LFPSO_Poly;
 
 {$R *.dfm}
 
@@ -1582,6 +1583,8 @@ begin
   GetThreadParams;
   try
     try
+      FCalc := TCalc.Create;
+
       FCalc.Params := FCalcThreadParams;
       FCalc.Limit := StrToFloat(cbMinLimit.Text);
       FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
@@ -1664,7 +1667,10 @@ begin
   if cbTreatPeriodic.Checked then
      LFPSO := TLFPSO_Periodic.Create
   else
-     LFPSO := TLFPSO_Regular.Create;
+    if cbPoly.Checked then
+       LFPSO := TLFPSO_Poly.Create
+     else
+       LFPSO := TLFPSO_Regular.Create;
 
   LFPSO.Params := FFitParams;
 
