@@ -8,9 +8,12 @@ uses
 
 type
 
+  TLayerIndexes = array [1..3] of Integer;
+  TIndexes  = array of TLayerIndexes;
+
   TLFPSO_Regular = class (TLFPSO_BASE)
     private
-      FLinks : array [1..3] of TIntArray;
+      FLinks : TIndexes;
 
       procedure UpdateLFPSO(const t: integer); override;
       procedure Seed; override;
@@ -42,8 +45,8 @@ begin
 
   for i := 1 to High(X) do // for every member of the population
   begin
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[I][j]) do // for every layer
+    for j := 0 to High(X[I]) do // for every layer
+      for k := 1 to 3 do           // for H, s, rho
       begin
         if FLinks[j][k] = -1 then
         begin
@@ -54,8 +57,9 @@ begin
           CheckLimits(i, j, k);
         end
         else
-          X[i][j][k] := X[i][j][FLinks[j][k]];
+          X[i][j][k] := X[i][FLinks[j][k]][k];
       end;
+
   end;
 end;
 
@@ -69,8 +73,8 @@ begin
 
   for i := 1 to High(X) do // for every member of the population
   begin
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[I][j]) do // for every layer except subtrate
+    for j := 0 to High(X[I]) do // for every layer
+      for k := 1 to 3 do           // for H, s, rho
       begin
         if FLinks[j][k] = -1 then
         begin
@@ -81,7 +85,7 @@ begin
           CheckLimits(i, j, k);
         end
         else
-          X[i][j][k] := X[i][j][FLinks[j][k]];
+          X[i][j][k] := X[i][FLinks[j][k]][k];
       end;
   end;
 end;
@@ -94,12 +98,13 @@ begin
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do // for every member of the population
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(V[i][j]) do // for every layer
+    for j := 0 to High(V[I]) do // for every layer
+      for k := 1 to 3 do           // for H, s, rho
         if FLinks[j][k] > -1 then
            V[i][j][k] := 0
         else
            V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
+
 end;
 
 procedure TLFPSO_Regular.Seed;
@@ -110,18 +115,19 @@ begin
 
   for I := 1 to High(X) do // for every member of the population
   begin
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[0][j]) do // for every layer
+    for j := 0 to High(X[I]) do // for every layer
+      for k := 1 to 3 do           // for H, s, rho
       begin
         if FLinks[j][k] > -1 then
-          X[i][j][k] := X[i][j][FLinks[j][k]]
+          X[i][j][k] := X[i][FLinks[j][k]][k]
         else
           X[i][j][k] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
       end;
+
   end;
 end;
 
-procedure InitArray(const Length: Integer; var A: TIntArray);
+procedure InitArray(const Length: Integer; var A: TIndexes);
 begin
   SetLength(A, 0);
   SetLength(A, Length);
@@ -131,7 +137,7 @@ procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
   i, j, k, l, Index: integer;
   D: double;
-  Links: array [1..3] of TIntArray;
+  Links: TIndexes;
   NLayers: Integer;
 begin
   FLayersCount := Inp.TotalNP;
@@ -145,9 +151,7 @@ begin
 
   Init_Domains;
 
-  if not FReInit then
-    for l := 1 to 3 do
-      InitArray(FLayersCount, FLinks[l]);
+  InitArray(FLayersCount, FLinks);
 
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
@@ -156,8 +160,8 @@ begin
     for k := 1 to Inp.Stacks[i].N do
     begin
       if (k = 1) and not FReInit then
-        for l := 1 to 3 do
-          InitArray(NLayers, Links[l]);
+
+      InitArray(NLayers, Links);
 
       for j := 0 to NLayers - 1 do
       begin
@@ -173,22 +177,22 @@ begin
           begin
             for l := 1 to 3 do
             begin
-              FLinks[l][Index] := -1;
-              Links[l][j] := -1;
+              FLinks[Index][l] := -1;
+              Links[j][l] := -1;
             end;
 
             if Inp.Stacks[i].Layers[j].H.Paired then
-              Links[1][j] := Index;
+              Links[j][1] := Index;
 
             if Inp.Stacks[i].Layers[j].s.Paired then
-              Links[2][j] := Index;
+              Links[j][2] := Index;
 
             if Inp.Stacks[i].Layers[j].r.Paired then
-              Links[3][j] := Index;
+              Links[j][3] := Index;
           end
           else
             for l := 1 to 3 do
-              FLinks[l][Index] := Links[l][j] ;
+              FLinks[Index][l] := Links[j][l] ;
         end;
         Inc(Index);
       end;

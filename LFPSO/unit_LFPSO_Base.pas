@@ -18,9 +18,9 @@ type
     Curve   : TDataArray;
   end;
 
-  TVector = array of single;   // Array of layer parameters
+  TLayer = array [1..3] of single;   // Array of layer parameters
 
-  TSolution = array [1..3] of TVector; // H, Sigma, rho x N Layers
+  TSolution = array of TLayer; // H, Sigma, rho x N Layers
 
   TPopulation = array of TSolution;
 
@@ -79,7 +79,7 @@ type
       function GBestStructure(best: TSolution): TFitStructure; virtual;
       function GetStructure: TFitStructure;
       function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
-      procedure Set_Init_X(const Index, VT: Integer; Val: TFitValue); virtual;
+      procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue); virtual;
       procedure Init_Domains;
     private
 
@@ -172,9 +172,9 @@ procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulatio
 var
   i, j, k: integer;
 begin
-  for I := 0 to High(X) do // for every member of the population
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[i][j]) do // for every layer
+  for I := 0 to High(X) do                  // for every member of the population
+    for j := 0 to High(X[i]) do          // for every layer
+      for k := 1 to 3 do                    // for H, s, rho
         Result[i][j][k] := X[i][j][k] * v;
 end;
 
@@ -452,11 +452,10 @@ end;
 
 procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
 var
-  i, j: integer;
+  i, j, k: integer;
 begin
   for I := 0 to High(X) do
-    for j := 1 to 3 do
-      SetLength(X[i][j], Count);
+    SetLength(X[i], Count);
 end;
 
 procedure TLFPSO_BASE.SetParams(const Value: TFitParams);
@@ -506,9 +505,9 @@ begin
   begin
     for j := 0 to High(Result.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := X[Index][1][LayerIndex];
-      Result.Stacks[i].Layers[j].s.V := X[Index][2][LayerIndex];
-      Result.Stacks[i].Layers[j].r.V := X[Index][3][LayerIndex];
+      Result.Stacks[i].Layers[j].H.V := X[Index][LayerIndex][1];
+      Result.Stacks[i].Layers[j].s.V := X[Index][LayerIndex][2];
+      Result.Stacks[i].Layers[j].r.V := X[Index][LayerIndex][3];
       Inc(LayerIndex);
     end;
   end;
@@ -524,20 +523,20 @@ begin
   begin
     for j := 0 to High(Result.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := best[1][LayerIndex];
-      Result.Stacks[i].Layers[j].s.V := best[2][LayerIndex];
-      Result.Stacks[i].Layers[j].r.V := best[3][LayerIndex];
+      Result.Stacks[i].Layers[j].H.V := best[LayerIndex][1];
+      Result.Stacks[i].Layers[j].s.V := best[LayerIndex][2];
+      Result.Stacks[i].Layers[j].r.V := best[LayerIndex][3];
       Inc(LayerIndex);
     end;
   end;
 end;
 
-procedure TLFPSO_BASE.Set_Init_X(const Index, VT: Integer; Val: TFitValue);
+procedure TLFPSO_BASE.Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
 begin
-       X[0][VT][Index] := Val.V;
-    Xmax[0][VT][Index] := Val.max;
-    Xmin[0][VT][Index] := Val.min;
-  Xrange[0][VT][Index] := Xmax[0][VT][Index] - Xmin[0][VT][Index];
+       X[0][LIndex][PIndex] := Val.V;
+    Xmax[0][LIndex][PIndex] := Val.max;
+    Xmin[0][LIndex][PIndex] := Val.min;
+  Xrange[0][LIndex][PIndex] := Xmax[0][LIndex][PIndex] - Xmin[0][LIndex][PIndex];
 end;
 
 procedure TLFPSO_BASE.Init_Domains;

@@ -985,8 +985,7 @@ object frmMain: TfrmMain
                 Width = 46
                 Height = 19
                 Caption = 'Poly'
-                Checked = True
-                State = cbChecked
+                State = cbUnchecked
                 TabOrder = 7
               end
             end

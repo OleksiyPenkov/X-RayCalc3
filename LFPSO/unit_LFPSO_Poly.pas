@@ -8,7 +8,8 @@ uses
 
 type
 
-  TPolyLayer = array [1..3] of TVector; //
+  TCoefficients = array of Single;
+  TPolyLayer = array [1..3] of TCoefficients; //
   TPolySolution = array of TPolyLayer;
   TPolyPopulation = array of TPolySolution;
 
@@ -21,7 +22,7 @@ type
       abest: TPolySolution;
 
 
-      procedure Set_Init_XPoly(const N, Index, VT: Integer; Val: TFitValue);
+      procedure Set_Init_XPoly(const N, Index, ValueType: Integer; Val: TFitValue);
       procedure SetStructure(const Inp: TFitStructure); override;
     public
       //
@@ -70,22 +71,22 @@ begin
   end;
 end;
 
-procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, VT: Integer; Val: TFitValue);
+procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; Val: TFitValue);
 begin
   if N = 1 then
   begin
-    SetLength(X[0][Index][VT], 1);   // not periodic layer, only a0 = v
-    SetLength(V[0][Index][VT], 1);
+    SetLength(X[0][Index][ValueType], 1);   // not periodic layer, only a0 = v
+    SetLength(V[0][Index][ValueType], 1);
   end
   else begin
-    SetLength(X[0][Index][VT], 10); // init array of a0..aN
-    SetLength(V[0][Index][VT], 10);
+    SetLength(X[0][Index][ValueType], 10); // init array of a0..aN
+    SetLength(V[0][Index][ValueType], 10);
   end;
 
-    X[0][Index][VT][0] := Val.V;
-    Xmax[0][VT][Index] := Val.max;
-    Xmin[0][VT][Index] := Val.min;
-  Xrange[0][VT][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
+    X[0][Index][ValueType][0] := Val.V;
+    Xmax[0][Index][ValueType] := Val.max;
+    Xmin[0][Index][ValueType] := Val.min;
+  Xrange[0][Index][ValueType] := Xmax[0][Index][ValueType] - Xmin[0][Index][ValueType];
 end;
 
 end.
