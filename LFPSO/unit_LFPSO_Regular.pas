@@ -52,7 +52,6 @@ begin
           V[i][j][k] := Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
                         c1 * Random * (pbest[j][k] - X[i][j][k]) +
                         c2 * Random * (gbest[j][k] - X[i][j][k]);
-
           CheckLimits(i, j, k);
         end
         else
@@ -79,7 +78,6 @@ begin
           V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
                       c1 * Random * (pbest[j][k] - X[i][j][k]) +
                       c2 * Random * (gbest[j][k] - X[i][j][k]);
-
           CheckLimits(i, j, k);
         end
         else

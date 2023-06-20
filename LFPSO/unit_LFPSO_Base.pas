@@ -60,13 +60,13 @@ type
       FMovAvg: TDataArray;
       CFactor: single;
 
-      function XtoStructure(const Index: integer): TFitStructure;
-      procedure FindTheBest;
-      function GetResult: TLayeredModel;
+      function XtoStructure(const Index: integer): TFitStructure; virtual;
+      procedure FindTheBest; virtual;
+      function GetResult: TLayeredModel; virtual;
 
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
-      procedure CheckLimits(const i, j, k: integer); inline;
+      procedure CheckLimits(const i, j, k: integer); virtual;
       procedure SetParams(const Value: TFitParams);
       procedure ReInit(const Step: integer); //inline;
       function Omega(const t, TMax: integer): single; inline;
@@ -77,9 +77,9 @@ type
       procedure UpdateLFPSO(const t: integer); virtual;
       procedure Seed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
-      function GBestStructure(best: TSolution): TFitStructure; virtual;
-      function GetStructure: TFitStructure;
-      function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
+      function GBestStructure(best: TSolution): TFitStructure;
+      function GetStructure: TFitStructure; virtual;
+      function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue); virtual;
       procedure Init_Domains;
       procedure ApplyCFactor(var c1, c2: single);// inline;
@@ -98,7 +98,7 @@ type
       property Params: TFitParams write SetParams;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
 
-      procedure Run(CalcConditions: TCalcThreadParams);
+      procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
 
   end;
@@ -176,7 +176,7 @@ var
   i, j, k: integer;
 begin
   for I := 0 to High(X) do                  // for every member of the population
-    for j := 0 to High(X[i]) do          // for every layer
+    for j := 0 to High(X[i]) do             // for every layer
       for k := 1 to 3 do                    // for H, s, rho
         Result[i][j][k] := X[i][j][k] * v;
 end;

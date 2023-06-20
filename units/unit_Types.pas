@@ -83,6 +83,7 @@ type
          Shake : boolean;
     ThetaWieght: integer;
         CFactor: Boolean;
+      MaxPOrder: Integer;
   end;
 
   // Calculation data types

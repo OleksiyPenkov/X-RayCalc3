@@ -4,7 +4,7 @@
         <ProjectVersion>19.5</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -134,8 +134,8 @@
         <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>348</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.1.348;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.1;Comments=</VerInfo_Keys>
+        <VerInfo_Build>351</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.1.351;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.1;Comments=</VerInfo_Keys>
         <VerInfo_PreRelease>true</VerInfo_PreRelease>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Release>1</VerInfo_Release>
