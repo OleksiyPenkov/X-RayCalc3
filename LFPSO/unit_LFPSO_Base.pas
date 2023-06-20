@@ -78,6 +78,7 @@ type
       procedure SetStructure(const Inp: TFitStructure); virtual;
       function GBestStructure(best: TSolution): TFitStructure; virtual;
       function GetStructure: TFitStructure;
+      function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
     private
 
 
@@ -115,7 +116,6 @@ const
 implementation
 
 uses
-  unit_FitHelpers,
   Forms,
   System.SysUtils,
   Neslib.FastMath,
@@ -200,6 +200,40 @@ destructor TLFPSO_BASE.Destroy;
 begin
 
   inherited;
+end;
+
+function TLFPSO_BASE.ExpandPeriodicFitModel(
+  const Inp: TFitStructure): TLayeredModel;
+var
+  i, k, j: Integer;
+  Data: TLayersData;
+begin
+  Result := TLayeredModel.Create;
+  Result.Init;
+
+  for I := 0 to High(Inp.Stacks) do
+  begin
+    SetLength(Data, Length(Inp.Stacks[i].Layers));
+    for k := 0 to High(Inp.Stacks[i].Layers) do
+    begin
+      Data[k].Material := Inp.Stacks[i].Layers[k].Material;
+      Data[k].H := Inp.Stacks[i].Layers[k].H;
+      Data[k].s := Inp.Stacks[i].Layers[k].s;
+      Data[k].r := Inp.Stacks[i].Layers[k].r;
+      Data[k].StackID := Inp.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := Inp.Stacks[i].Layers[k].LayerID;
+    end;
+
+    for j := 1  to Inp.Stacks[i].N do
+      Result.AddLayers(-1, Data);
+  end;
+
+  SetLength(Data, 1);
+  Data[0].Material := Inp.Subs.Material;
+  Data[0].s := Inp.Subs.s;
+  Data[0].r := Inp.Subs.r;
+
+  Result.AddSubstrate(Data);
 end;
 
 function TLFPSO_BASE.GetResult: TLayeredModel;
@@ -334,6 +368,8 @@ var
   Vmax0: single;
   SuccessCount: integer;
 begin
+  Randomize;
+
   FReInit := False;
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;

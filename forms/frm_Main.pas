@@ -392,6 +392,10 @@ type
     FRoughnessSeries: TSeriesList ;
     FDensitySeries: TSeriesList ;
     FGradients: TGradients;
+    FFitParams: TFitParams;
+    FCalc: TCalc;
+    FCalcThreadParams: TCalcThreadParams;
+    FFitStructure: TFitStructure;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -402,14 +406,14 @@ type
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure FinalizeCalc(Calc: TCalc);
-    procedure GetThreadParams(var CD: TCalcThreadParams);
+    procedure GetThreadParams;
     procedure PlotResults(const Data: TDataArray);
     procedure PrintMax;
     procedure SaveProject(const FileName: string);
     procedure SaveData;
     procedure AddCurve(Data: PProjectData);
     procedure PrepareDistributionCharts;
-    function GetFitParams: TFitParams;
+    procedure GetFitParams;
     procedure EditProjectItem;
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
     procedure DeleteData(Node: PVirtualNode; Data: PProjectData);
@@ -429,6 +433,9 @@ type
     procedure PlotGradedProfile;
     procedure PlotSimpleProfile;
     procedure ClearProfiles;
+    procedure PrepareInterfaceAF;
+    function PrepareCalcAF: boolean;
+    function PrepareLFPSO : boolean;
     { Private declarations }
   public
     { Public declarations }
@@ -456,7 +463,6 @@ uses
   unit_XRCStructure,
   editor_Stack,
   editor_Layer,
-  unit_FitHelpers,
   frm_Limits,
   editor_proj_item,
   ClipBrd,
@@ -765,7 +771,7 @@ var
   EType: TExtentionType;
   Node : PVirtualNode;
 begin
-  EType := AskSelectExtensionTypenAction;
+  EType := SelectExtensionTypeAction;
   if EType = etNone then Exit;
 
   case EType of
@@ -1150,22 +1156,21 @@ begin
   end;
 end;
 
-function TfrmMain.GetFitParams: TFitParams;
+procedure TfrmMain.GetFitParams;
 begin
-  Result.NMax := StrToInt(edFIter.Text);
-  Result.Pop  := StrToInt(edFPopulation.Text);
-  Result.Vmax  := StrToFloat(edFVmax.Text);
-  Result.JammingMax := StrToInt(edLFPSOSkip.Text);
-  Result.ReInitMax  := StrToInt(edLFPSORImax.Text);
-  Result.KChiSqr    := StrToFloat(edLFPSOChiFactor.Text);
-  Result.KVmax      := StrToFloat(edLFPSOkVmax.Text);
-  Result.w1         := StrToFloat(edLFPSOOmega1.Text);
-  Result.w2         := StrToFloat(edLFPSOOmega2.Text);
-  Result.Tolerance := StrToFloat(edFitTolerance.Text);
+  FFitParams.NMax := StrToInt(edFIter.Text);
+  FFitParams.Pop  := StrToInt(edFPopulation.Text);
+  FFitParams.Vmax  := StrToFloat(edFVmax.Text);
+  FFitParams.JammingMax := StrToInt(edLFPSOSkip.Text);
+  FFitParams.ReInitMax  := StrToInt(edLFPSORImax.Text);
+  FFitParams.KChiSqr    := StrToFloat(edLFPSOChiFactor.Text);
+  FFitParams.KVmax      := StrToFloat(edLFPSOkVmax.Text);
+  FFitParams.w1         := StrToFloat(edLFPSOOmega1.Text);
+  FFitParams.w2         := StrToFloat(edLFPSOOmega2.Text);
+  FFitParams.Tolerance := StrToFloat(edFitTolerance.Text);
 
-  Result.Shake       := cbLFPSOShake.Checked;
-  Result.ThetaWieght := cbTWChi.ItemIndex;
-
+  FFitParams.Shake       := cbLFPSOShake.Checked;
+  FFitParams.ThetaWieght := cbTWChi.ItemIndex;
 end;
 
 function TfrmMain.GetGradients: TGradients;
@@ -1196,7 +1201,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.GetThreadParams(var CD: TCalcThreadParams);
+procedure TfrmMain.GetThreadParams;
 var
   StartT, EndT: single;
 begin
@@ -1216,36 +1221,36 @@ begin
   EndT := StrToFloat(edEndTeta.Text);
 
   if cb2Theta.Checked then
-    CD.k := 2
+    FCalcThreadParams.k := 2
   else
-    CD.k := 1;
+    FCalcThreadParams.k := 1;
 
   if rgPolarisation.ItemIndex = 0 then
-    CD.P := cmS
+    FCalcThreadParams.P := cmS
   else
-    CD.P := cmSP;
+    FCalcThreadParams.P := cmSP;
 
   case rgCalcMode.ItemIndex of
     0:begin
-        CD.Mode := cmTheta;
-        CD.Lambda := StrToFloat(edLambda.Text);
-        CD.StartT := StartT;
-        CD.EndT   := EndT;
-        CD.DT     := StrToFloat(edWidth.Text);
+        FCalcThreadParams.Mode := cmTheta;
+        FCalcThreadParams.Lambda := StrToFloat(edLambda.Text);
+        FCalcThreadParams.StartT := StartT;
+        FCalcThreadParams.EndT   := EndT;
+        FCalcThreadParams.DT     := StrToFloat(edWidth.Text);
       end;
 
     1:
       begin
-        CD.Mode := cmLambda;
-        CD.Theta := StrToFloat(edTheta.Text);
-        CD.StartL := StrToFloat(edStartL.Text);
-        CD.EndL := StrToFloat(edEndL.Text);
-        CD.DW := StrToFloat(edDL.Text);
+        FCalcThreadParams.Mode := cmLambda;
+        FCalcThreadParams.Theta := StrToFloat(edTheta.Text);
+        FCalcThreadParams.StartL := StrToFloat(edStartL.Text);
+        FCalcThreadParams.EndL := StrToFloat(edEndL.Text);
+        FCalcThreadParams.DW := StrToFloat(edDL.Text);
       end;
   end;
 
-  CD.RF := rfError;
-  CD.N := StrToInt(edN.Text);
+  FCalcThreadParams.RF := rfError;
+  FCalcThreadParams.N := StrToInt(edN.Text);
  end;
 
 procedure TfrmMain.HelpAboutExecute(Sender: TObject);
@@ -1570,37 +1575,22 @@ begin
 end;
 
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
-var
-  CD: TCalcThreadParams;
-  Calc: TCalc;
 begin
   if (Project.ActiveModel = nil) then
     Exit;
 
-  GetThreadParams(CD);
+  GetThreadParams;
   try
-    Calc := TCalc.Create;
-
-    if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
-    begin
-      Calc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
-      if cbPWChiSqr.Checked then
-      begin
-        Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
-        //DataToFile('D:\Temp\movavg.dat', Calc.MovAvg );
-      end;
-    end;
-
     try
-      Calc.Params := CD;
-      Calc.Limit := StrToFloat(cbMinLimit.Text);
-      Calc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
-      Calc.Model.Gradients := GetGradients;
-      Calc.Run;
+      FCalc.Params := FCalcThreadParams;
+      FCalc.Limit := StrToFloat(cbMinLimit.Text);
+      FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+      FCalc.Model.Gradients := GetGradients;
+      FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
-        Calc.CalcChiSquare(cbTWChi.ItemIndex);
-        spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 4);
+        FCalc.CalcChiSquare(cbTWChi.ItemIndex);
+        spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 4);
       end
       else
         spChiSqr.Caption := '';
@@ -1619,9 +1609,9 @@ begin
         CalcRun.Enabled := True;
       end;
     end;
-    FinalizeCalc(Calc);
+    FinalizeCalc(FCalc);
   finally
-    Calc.Free;
+    FCalc.Free;
   end;
 end;
 
@@ -1631,81 +1621,98 @@ begin
        LFPSO.Terminate;
 end;
 
+
+procedure TfrmMain.PrepareInterfaceAF;
+begin
+  lsrConvergence.Clear;
+  Pages.ActivePage := tsFittingProgress;
+  chFittingProgress.BottomAxis.Minimum := -1;
+  chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
+  chFittingProgress.BottomAxis.Minimum := -1;
+  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
+end;
+
+function TfrmMain.PrepareCalcAF: Boolean;
+begin
+  Result := True;
+  if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
+  begin
+     FCalc := TCalc.Create;
+     FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
+     if cbPWChiSqr.Checked then
+     begin
+       FCalc.MovAvg := MovAvg(FCalc.ExpValues, StrToFloat(edFWindow.Text));
+     end;
+
+    GetThreadParams;
+
+    FCalc.Params := FCalcThreadParams;
+    FCalc.Limit := StrToFloat(cbMinLimit.Text);
+    FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+  end
+  else begin
+    ShowMessage('Measured curve is not linked!');
+    Result := False;
+  end;
+end;
+
+
+function TfrmMain.PrepareLFPSO: Boolean;
+begin
+
+
+  if cbTreatPeriodic.Checked then
+     LFPSO := TLFPSO_Periodic.Create
+  else
+     LFPSO := TLFPSO_Regular.Create;
+
+  LFPSO.Params := FFitParams;
+
+  LFPSO.Limit := FCalc.Limit;
+  LFPSO.Materials := FCalc.Model.Materials; // cache materials optical constants
+  LFPSO.ExpValues := FCalc.ExpValues;
+  LFPSO.MovAvg    := FCalc.MovAvg ;
+  LFPSO.Structure := FFitStructure;
+  Result := True;
+end;
+
+
+
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
-  CD: TCalcThreadParams;
-  Calc: TCalc;
   Hour, Min, Sec, MSec: Word;
-  FitStructure: TFitStructure;
-  Params: TFitParams;
   Result : TLayeredModel;
 begin
-  Randomize;
-
   if (Project.ActiveModel = nil) then
     Exit;
 
-  FitStructure := Structure.ToFitStructure;
-  if frmLimits.Show(FitStructure) then
-        Structure.UpdateInterfaceP(FitStructure)
-  else
-      Exit;
+  FFitStructure := Structure.ToFitStructure;
+  if frmLimits.Show(FFitStructure) then
+        Structure.UpdateInterfaceP(FFitStructure)
+  else begin
+    Exit;
+  end;
 
-
-  Params := GetFitParams;
+  GetFitParams;
+  PrepareInterfaceAF;
   try
     try
-      lsrConvergence.Clear;
-      Pages.ActivePage := tsFittingProgress;
+      if not PrepareCalcAF then Exit;
 
-      Calc := TCalc.Create;
-      if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
-      begin
-         Calc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
-         if cbPWChiSqr.Checked then
-         begin
-           Calc.MovAvg := MovAvg(Calc.ExpValues, StrToFloat(edFWindow.Text));
-         end;
-      end
-      else begin
-        ShowMessage('Measured curve is not linked!');
-        Exit;
-      end;
+      FCalc.Run;
+      FCalc.CalcChiSquare(FFitParams.ThetaWieght);
+      lsrConvergence.AddXY(-1, FCalc.ChiSQR);
+      chFittingProgress.LeftAxis.Maximum := FCalc.ChiSQR * 2;
 
-      chFittingProgress.BottomAxis.Minimum := -1;
-      chFittingProgress.BottomAxis.Maximum := Params.NMax;
-      chFittingProgress.BottomAxis.Minimum := -1;
-      chFittingProgress.LeftAxis.Minimum := Params.Tolerance / 5;
+      PrepareLFPSO;
 
-      GetThreadParams(CD);
-
-      Calc.Params := CD;
-      Calc.Limit := StrToFloat(cbMinLimit.Text);
-      Calc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
-      Calc.Run;
-      Calc.CalcChiSquare(Params.ThetaWieght);
-      lsrConvergence.AddXY(-1, Calc.ChiSQR);
-      chFittingProgress.LeftAxis.Maximum := Calc.ChiSQR * 2;
-
-      if cbTreatPeriodic.Checked then
-         LFPSO := TLFPSO_Periodic.Create
-      else
-         LFPSO := TLFPSO_Regular.Create;
-
-      LFPSO.Params := Params;
-
-      LFPSO.Limit := Calc.Limit;
-      LFPSO.Structure := FitStructure;
-      LFPSO.Materials := Calc.Model.Materials; // cache materials optical constants
-      LFPSO.ExpValues := Calc.ExpValues;
-      LFPSO.MovAvg    := Calc.MovAvg ;
-      LFPSO.Run(CD);
+      LFPSO.Run(FCalcThreadParams);
 
       Result :=  LFPSO.Result;
-      Calc.Model := Result;
-      Calc.Run;
-      Calc.CalcChiSquare(Params.ThetaWieght);
-      spChiSqr.Caption := FloatToStrF(Calc.ChiSQR, ffFixed, 8, 1);
+      FCalc.Model := Result;
+      FCalc.Run;
+      FCalc.CalcChiSquare(FFitParams.ThetaWieght);
+      spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 1);
 
       if not cbTreatPeriodic.Checked and Structure.IsPeriodic then
       begin
@@ -1727,10 +1734,10 @@ begin
         CalcRun.Enabled := True;
       end;
     end;
-    FinalizeCalc(Calc);
+    FinalizeCalc(FCalc);
     Project.ActiveModel.Data  := Structure.ToString;
   finally
-    Calc.Free;
+    FCalc.Free;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
     spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);

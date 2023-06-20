@@ -23,7 +23,6 @@ type
 implementation
 
 uses
-  unit_FitHelpers,
   Forms,
   System.SysUtils,
   Neslib.FastMath,
