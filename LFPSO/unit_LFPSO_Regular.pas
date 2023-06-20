@@ -129,9 +129,9 @@ end;
 
 procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, Index: integer;
+  i, j, k, l, Index: integer;
   D: double;
-  HLinks, SLinks, RLinks: TIntArray;
+  Links: array [1..3] of TIntArray;
   NLayers: Integer;
 begin
   FLayersCount := Inp.TotalNP;
@@ -143,20 +143,11 @@ begin
   FStructure.Subs := Inp.Subs;
   FStructure.Stacks[0].N := 1;
 
-  SetDomain(FLayersCount, X);
-  SetDomain(FLayersCount, Xmax);
-  SetDomain(FLayersCount, Xmin);
-  SetDomain(FLayersCount, Xrange);
-  SetDomain(FLayersCount, Vmin);
-  SetDomain(FLayersCount, Vmax);
-  SetDomain(FLayersCount, V);
+  Init_Domains;
 
   if not FReInit then
-  begin
-    InitArray(FLayersCount, FLinks[1]);
-    InitArray(FLayersCount, FLinks[2]);
-    InitArray(FLayersCount, FLinks[3]);
-  end;
+    for l := 1 to 3 do
+      InitArray(FLayersCount, FLinks[l]);
 
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
@@ -165,61 +156,40 @@ begin
     for k := 1 to Inp.Stacks[i].N do
     begin
       if (k = 1) and not FReInit then
-      begin
-        InitArray(NLayers, HLinks);
-        InitArray(NLayers, SLinks);
-        InitArray(NLayers, RLinks);
-      end;
+        for l := 1 to 3 do
+          InitArray(NLayers, Links[l]);
 
       for j := 0 to NLayers - 1 do
       begin
         FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
 
-        X[0][1][Index] := Inp.Stacks[i].Layers[j].H.V;
-        Xmax[0][1][Index] := Inp.Stacks[i].Layers[j].H.max;
-        Xmin[0][1][Index] := Inp.Stacks[i].Layers[j].H.min;
-        Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
-
-        X[0][2][Index] := Inp.Stacks[i].Layers[j].s.V;
-        Xmax[0][2][Index] := Inp.Stacks[i].Layers[j].s.max;
-        Xmin[0][2][Index] := Inp.Stacks[i].Layers[j].s.min;
-        Xrange[0][2][Index] := Xmax[0][2][Index] - Xmin[0][2][Index];
-
-         X[0][3][Index] := Inp.Stacks[i].Layers[j].r.V;
-        Xmax[0][3][Index] := Inp.Stacks[i].Layers[j].r.max;
-        Xmin[0][3][Index] := Inp.Stacks[i].Layers[j].r.min;
-        Xrange[0][3][Index] := Xmax[0][3][Index] - Xmin[0][3][Index];
-
+        Set_Init_X(Index, 1, Inp.Stacks[i].Layers[j].H);
+        Set_Init_X(Index, 2, Inp.Stacks[i].Layers[j].s);
+        Set_Init_X(Index, 3, Inp.Stacks[i].Layers[j].r);
 
         if not FReInit then
         begin
           if k = 1 then
           begin
-            FLinks[1][Index] := -1;
-            FLinks[2][Index] := -1;
-            FLinks[3][Index] := -1;
-
-            HLinks[j] := -1;
-            SLinks[j] := -1;
-            RLinks[j] := -1;
+            for l := 1 to 3 do
+            begin
+              FLinks[l][Index] := -1;
+              Links[l][j] := -1;
+            end;
 
             if Inp.Stacks[i].Layers[j].H.Paired then
-              HLinks[j] := Index;
+              Links[1][j] := Index;
 
             if Inp.Stacks[i].Layers[j].s.Paired then
-              SLinks[j] := Index;
+              Links[2][j] := Index;
 
             if Inp.Stacks[i].Layers[j].r.Paired then
-              RLinks[j] := Index;
-
+              Links[3][j] := Index;
           end
-          else begin
-            FLinks[1][Index] := HLinks[j] ;
-            FLinks[2][Index] := SLinks[j] ;
-            FLinks[3][Index] := RLinks[j] ;
-          end;
+          else
+            for l := 1 to 3 do
+              FLinks[l][Index] := Links[l][j] ;
         end;
-
         Inc(Index);
       end;
     end;

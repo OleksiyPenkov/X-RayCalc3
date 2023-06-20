@@ -79,8 +79,9 @@ type
       function GBestStructure(best: TSolution): TFitStructure; virtual;
       function GetStructure: TFitStructure;
       function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
+      procedure Set_Init_X(const Index, VT: Integer; Val: TFitValue); inline;
+      procedure Init_Domains;
     private
-
 
     public
       constructor Create;
@@ -532,6 +533,25 @@ begin
       Inc(LayerIndex);
     end;
   end;
+end;
+
+procedure TLFPSO_BASE.Set_Init_X(const Index, VT: Integer; Val: TFitValue);
+begin
+   X[0][VT][Index]   := Val.V;
+  Xmax[0][VT][Index] := Val.max;
+  Xmin[0][VT][Index] := Val.min;
+  Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
+end;
+
+procedure TLFPSO_BASE.Init_Domains;
+begin
+  SetDomain(FLayersCount, X);
+  SetDomain(FLayersCount, Xmax);
+  SetDomain(FLayersCount, Xmin);
+  SetDomain(FLayersCount, Xrange);
+  SetDomain(FLayersCount, Vmin);
+  SetDomain(FLayersCount, Vmax);
+  SetDomain(FLayersCount, V);
 end;
 
 end.

@@ -134,8 +134,8 @@
         <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>330</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.1.330;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.1;Comments=</VerInfo_Keys>
+        <VerInfo_Build>333</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.1.333;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.1;Comments=</VerInfo_Keys>
         <VerInfo_PreRelease>true</VerInfo_PreRelease>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Release>1</VerInfo_Release>
@@ -208,6 +208,7 @@
             <Form>frmJsonEditor</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="LFPSO\unit_LFPSO_Poly.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

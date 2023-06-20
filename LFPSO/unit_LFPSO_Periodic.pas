@@ -142,14 +142,7 @@ begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
 
-  SetDomain(FLayersCount, X);
-  SetDomain(FLayersCount, Xmax);
-  SetDomain(FLayersCount, Xmin);
-  SetDomain(FLayersCount, Xrange);
-  SetDomain(FLayersCount, Vmin);
-  SetDomain(FLayersCount, Vmax);
-  SetDomain(FLayersCount, V);
-
+  Init_Domains;
 
   for I := 0 to High(FStructure.Stacks) do
   begin
@@ -170,20 +163,9 @@ begin
   begin
     for j := 0 to High(Inp.Stacks[i].Layers) do
     begin
-       X[0][1][Index] := Inp.Stacks[i].Layers[j].H.V;
-      Xmax[0][1][Index] := Inp.Stacks[i].Layers[j].H.max;
-      Xmin[0][1][Index] := Inp.Stacks[i].Layers[j].H.min;
-      Xrange[0][1][Index] := Xmax[0][1][Index] - Xmin[0][1][Index];
-
-       X[0][2][Index] := Inp.Stacks[i].Layers[j].s.V;
-      Xmax[0][2][Index] := Inp.Stacks[i].Layers[j].s.max;
-      Xmin[0][2][Index] := Inp.Stacks[i].Layers[j].s.min;
-      Xrange[0][2][Index] := Xmax[0][2][Index] - Xmin[0][2][Index];
-
-       X[0][3][Index] := Inp.Stacks[i].Layers[j].r.V;
-      Xmax[0][3][Index] := Inp.Stacks[i].Layers[j].r.max;
-      Xmin[0][3][Index] := Inp.Stacks[i].Layers[j].r.min;
-      Xrange[0][3][Index] := Xmax[0][3][Index] - Xmin[0][3][Index];
+      Set_Init_X(Index, 1, Inp.Stacks[i].Layers[j].H);
+      Set_Init_X(Index, 2, Inp.Stacks[i].Layers[j].s);
+      Set_Init_X(Index, 3, Inp.Stacks[i].Layers[j].r);
 
       Inc(Index);
     end;
