@@ -82,6 +82,7 @@ type
 
          Shake : boolean;
     ThetaWieght: integer;
+        CFactor: Boolean;
   end;
 
   // Calculation data types

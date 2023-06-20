@@ -1172,6 +1172,7 @@ begin
 
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
+  FFitParams.CFactor := False;
 end;
 
 function TfrmMain.GetGradients: TGradients;

@@ -58,6 +58,7 @@ type
       FLimit: single;
       FTerminated: Boolean;
       FMovAvg: TDataArray;
+      CFactor: single;
 
       function XtoStructure(const Index: integer): TFitStructure;
       procedure FindTheBest;
@@ -81,7 +82,9 @@ type
       function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue); virtual;
       procedure Init_Domains;
+      procedure ApplyCFactor(var c1, c2: single);// inline;
     private
+
 
     public
       constructor Create;
@@ -110,8 +113,8 @@ const
   MaxC = 10;
   a = 0.5;
   eps = 1;
-  c1m = 1.49445;
-  c2m = 1.49445;
+  c1m = 1.41;
+  c2m = 1.41;
 
 
 implementation
@@ -252,6 +255,19 @@ begin
 
 end;
 
+procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
+begin
+  if FFitParams.CFactor and (CFactor > 0) then
+  begin
+    c1 := c1m * CFactor;
+    c2 := c2m * CFactor;
+  end else
+  begin
+    c1 := c1m;
+    c2 := c2m;
+  end;
+end;
+
 procedure TLFPSO_BASE.CheckLimits(const i, j, k: integer);
 begin
   if V[i][j][k] > Vmax[0][j][k] then
@@ -347,6 +363,9 @@ begin
     FAbsoluteBestChiSqr := FGlobalBestChiSqr;
     abest := X[Result];
   end;
+
+  CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
+
 end;
 
 procedure TLFPSO_BASE.ReInit(const Step: integer);

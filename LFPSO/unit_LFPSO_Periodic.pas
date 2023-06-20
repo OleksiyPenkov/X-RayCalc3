@@ -34,10 +34,9 @@ uses
 procedure TLFPSO_Periodic.UpdateLFPSO(const t: integer);
 var
   i, j, k: integer;
-  c1, c2: double;
+  c1, c2: single;
 begin
-  c1 := c1m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  ApplyCFactor(c1, c2);
 
   for i := 1 to High(X) do // for every member of the population
   begin
@@ -58,14 +57,13 @@ end;
 procedure TLFPSO_Periodic.UpdatePSO(const t: integer);
 var
   i, j, k: integer;
-  c1, c2: double;
+  c1, c2: single;
 begin
-  c1 := c1m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  ApplyCFactor(c1, c2);
 
   for i := 0 to High(V) do          // for every member of the population
   begin
-    for j := 0 to High(V[i]) do  //for every layer
+    for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
       begin
         V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
@@ -113,7 +111,7 @@ begin
   MultiplyVector(Vmax, -1, Vmin);
 
   for i := 0 to High(V) do          // for every member of the population
-    for j := 0 to High(V[i]) do  //for every layer
+    for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
         V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
 end;
@@ -124,7 +122,7 @@ var
 begin
   for i := 0 to High(X) do          // for every member of the population
   begin
-    for j := 0 to High(X[i]) do  //for every layer
+    for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
         X[i][j][k] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
 

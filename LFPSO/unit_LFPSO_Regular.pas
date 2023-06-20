@@ -38,10 +38,9 @@ uses
 procedure TLFPSO_Regular.UpdateLFPSO(const t: integer);
 var
   i, j, k: integer;
-  c1, c2: double;
+  c1, c2: single;
 begin
-  c1 := c1m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2m; //* (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  ApplyCFactor(c1, c2);
 
   for i := 1 to High(X) do // for every member of the population
   begin
@@ -66,10 +65,9 @@ end;
 procedure TLFPSO_Regular.UpdatePSO(const t: integer);
 var
   i, j, k: integer;
-  c1, c2: double;
+  c1, c2: single;
 begin
-  c1 := c1m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
-  c2 := c2m;// * (FLastBestChiSqr - FGlobalBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr + eps);
+  ApplyCFactor(c1, c2);
 
   for i := 1 to High(X) do // for every member of the population
   begin
