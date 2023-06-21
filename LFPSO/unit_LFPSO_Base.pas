@@ -63,7 +63,6 @@ type
       FMovAvg: TDataArray;
       CFactor: single;
 
-      function XtoStructure(const Index: integer): TFitStructure; virtual;
       procedure FindTheBest; virtual;
       function GetResult: TLayeredModel; virtual;
 
@@ -82,9 +81,9 @@ type
       procedure SetStructure(const Inp: TFitStructure); virtual;
       function GBestStructure(best: TSolution): TFitStructure;
       function GetStructure: TFitStructure; virtual;
-      function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel; virtual;
-      procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue); virtual;
-      procedure Init_Domains; virtual;
+      function ExpandPeriodicFitModel(Solution: TSolution): TLayeredModel;
+      procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
+      procedure Init_DomainsP;
       procedure ApplyCFactor(var c1, c2: single);// inline;
     private
 
@@ -209,43 +208,45 @@ begin
   inherited;
 end;
 
-function TLFPSO_BASE.ExpandPeriodicFitModel(
-  const Inp: TFitStructure): TLayeredModel;
+function TLFPSO_BASE.ExpandPeriodicFitModel(Solution: TSolution): TLayeredModel;
 var
-  i, k, j: Integer;
+  i, k, j, LayerIndex: Integer;
   Data: TLayersData;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
-  for I := 0 to High(Inp.Stacks) do
+  LayerIndex := 0;
+  for I := 0 to High(FStructure.Stacks) do
   begin
-    SetLength(Data, Length(Inp.Stacks[i].Layers));
-    for k := 0 to High(Inp.Stacks[i].Layers) do
+    SetLength(Data, 0);
+    SetLength(Data, Length(FStructure.Stacks[i].Layers));
+    for k := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      Data[k].Material := Inp.Stacks[i].Layers[k].Material;
-      Data[k].H := Inp.Stacks[i].Layers[k].H;
-      Data[k].s := Inp.Stacks[i].Layers[k].s;
-      Data[k].r := Inp.Stacks[i].Layers[k].r;
-      Data[k].StackID := Inp.Stacks[i].Layers[k].StackID;
-      Data[k].LayerID := Inp.Stacks[i].Layers[k].LayerID;
+      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
+      Data[k].H.V := Solution[LayerIndex][1];
+      Data[k].s.V := Solution[LayerIndex][2];
+      Data[k].r.V := Solution[LayerIndex][3];
+      Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+      Inc(LayerIndex);
     end;
 
-    for j := 1  to Inp.Stacks[i].N do
+    for j := 1  to FStructure.Stacks[i].N do
       Result.AddLayers(-1, Data);
   end;
 
   SetLength(Data, 1);
-  Data[0].Material := Inp.Subs.Material;
-  Data[0].s := Inp.Subs.s;
-  Data[0].r := Inp.Subs.r;
+  Data[0].Material := FStructure.Subs.Material;
+  Data[0].s := FStructure.Subs.s;
+  Data[0].r := FStructure.Subs.r;
 
   Result.AddSubstrate(Data);
 end;
 
 function TLFPSO_BASE.GetResult: TLayeredModel;
 begin
-  Result := ExpandPeriodicFitModel(GBestStructure(abest));
+  Result := ExpandPeriodicFitModel(abest);
 end;
 
 function TLFPSO_BASE.GetStructure: TFitStructure;
@@ -329,7 +330,7 @@ begin
       Calc.MovAvg    := FMovAvg;
       Calc.Limit     := FLimit;
 
-      Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
+      Calc.Model := ExpandPeriodicFitModel(X[i]);
       Calc.Model.Materials := FMaterials;
       Calc.Run;
       Calc.CalcChiSquare(FFitParams.ThetaWieght);
@@ -516,24 +517,6 @@ begin
 
 end;
 
-function TLFPSO_BASE.XtoStructure(const Index: integer): TFitStructure;
-var
-  i, j, LayerIndex: integer;
-begin
-  Result := FStructure;
-  LayerIndex := 0;
-  for i := 0 to High(Result.Stacks) do
-  begin
-    for j := 0 to High(Result.Stacks[i].Layers) do
-    begin
-      Result.Stacks[i].Layers[j].H.V := X[Index][LayerIndex][1];
-      Result.Stacks[i].Layers[j].s.V := X[Index][LayerIndex][2];
-      Result.Stacks[i].Layers[j].r.V := X[Index][LayerIndex][3];
-      Inc(LayerIndex);
-    end;
-  end;
-end;
-
 function TLFPSO_BASE.GBestStructure(best: TSolution): TFitStructure;
 var
   i, j, LayerIndex: integer;
@@ -560,7 +543,7 @@ begin
   Xrange[0][LIndex][PIndex] := Xmax[0][LIndex][PIndex] - Xmin[0][LIndex][PIndex];
 end;
 
-procedure TLFPSO_BASE.Init_Domains;
+procedure TLFPSO_BASE.Init_DomainsP;
 begin
   SetDomain(FLayersCount, X);
   SetDomain(FLayersCount, Xmax);

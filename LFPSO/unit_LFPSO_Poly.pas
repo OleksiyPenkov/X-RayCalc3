@@ -40,7 +40,7 @@ type
       function ExpandToModel(Solution: TPolySolution): TLayeredModel;
       function GetStructure: TFitStructure; override;
       procedure SetVelocityRanges;
-      procedure Init_Domains; override;
+      procedure Init_DomainsP;
       procedure SetDomainP(const Count: integer; var X: TPolyPopulation);
       procedure SetParams(const Value: TFitParams); override;
     public
@@ -267,14 +267,9 @@ begin
       for k := 0 to High(FStructure.Stacks[i].Layers) do
       begin
         Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
-        Data[LayerIndex].H := FStructure.Stacks[i].Layers[k].H;
         Data[LayerIndex].H.V := Poly(j, Solution[k][1]);
-
-        Data[LayerIndex].s := FStructure.Stacks[i].Layers[k].s;
-//        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
-
-        Data[LayerIndex].r := FStructure.Stacks[i].Layers[k].r;
-//        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
+        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
+        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
 
         Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
         Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
@@ -441,7 +436,7 @@ begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
 
-  Init_Domains;
+  Init_DomainsP;
 
   SetLength(Indexes, FStructure.TotalNP);
   SetLength(Counts, FStructure.TotalNP);
@@ -502,7 +497,7 @@ begin
   Xrange[0][Index][ValueType] := Xmax[0][Index][ValueType] - Xmin[0][Index][ValueType];
 end;
 
-procedure TLFPSO_Poly.Init_Domains;
+procedure TLFPSO_Poly.Init_DomainsP;
 begin
   SetDomainP(FLayersCount, X);
   SetDomain(FLayersCount, Xmax);

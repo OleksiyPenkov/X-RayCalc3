@@ -138,7 +138,7 @@ begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
 
-  Init_Domains;
+  Init_DomainsP;
 
   for I := 0 to High(FStructure.Stacks) do
   begin

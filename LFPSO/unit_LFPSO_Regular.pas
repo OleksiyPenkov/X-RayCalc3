@@ -142,7 +142,7 @@ begin
   FStructure.Subs := Inp.Subs;
   FStructure.Stacks[0].N := 1;
 
-  Init_Domains;
+  Init_DomainsP;
 
   InitArray(FLayersCount, FLinks);
 
