@@ -373,7 +373,7 @@ begin
       for k := 1 to 3 do                       // for H, s, rho
         for c := 0 to High(Vmax[i][j][k]) do
         begin
-           Vmax[i][j][k][c] := Xrange[0][j][k] * FFitParams.Vmax / sqr(c + 1);
+           Vmax[i][j][k][c] := Xrange[0][j][k] * FFitParams.Vmax;
            Vmin[i][j][k][c] := - Vmax[i][j][k][c];
         end;
 end;
@@ -417,7 +417,7 @@ begin
       begin           // for H, s, rho
         for p := 0 to High(X[i][j][k]) do
         begin
-          Val := Random * (Xmax[0][Indexes[j]][k] - Xmin[0][Indexes[j]][k]) / power(10, p);
+          Val := Random * (Xmax[0][Indexes[j]][k] - Xmin[0][Indexes[j]][k]) / (p + 1);
           X[i][j][k][p] := Xmin[0][Indexes[j]][k] + Val;   // min + Random * (min-max)
         end;
         CheckLimits(i, j, k);
