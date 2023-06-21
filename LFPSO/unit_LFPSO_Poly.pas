@@ -223,19 +223,26 @@ begin
   begin
     for j := 0 to High(Result.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := best[LayerIndex][1][0];
-      if not Result.Stacks[i].Layers[j].H.Paired then
+      if Result.Stacks[i].Layers[j].H.Paired then
+            Result.Stacks[i].Layers[j].H.V := best[LayerIndex][1][0]
+      else begin
          Result.Stacks[i].Layers[j].PH := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][1]);
+         Result.Stacks[i].Layers[j].H.V := Result.Stacks[i].Layers[j].PH[0];
+      end;
 
-
-      Result.Stacks[i].Layers[j].s.V := best[LayerIndex][2][0];
-      if not Result.Stacks[i].Layers[j].s.Paired then
+      if Result.Stacks[i].Layers[j].s.Paired then
+            Result.Stacks[i].Layers[j].s.V := best[LayerIndex][2][0]
+      else begin
          Result.Stacks[i].Layers[j].PS := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][2]);
+         Result.Stacks[i].Layers[j].s.V := Result.Stacks[i].Layers[j].PS[0];
+      end;
 
-
-      Result.Stacks[i].Layers[j].r.V := best[LayerIndex][3][0];
-      if not Result.Stacks[i].Layers[j].r.Paired then
+      if Result.Stacks[i].Layers[j].r.Paired then
+         Result.Stacks[i].Layers[j].r.V := best[LayerIndex][3][0]
+      else begin
          Result.Stacks[i].Layers[j].PR := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][3]);
+         Result.Stacks[i].Layers[j].r.V := Result.Stacks[i].Layers[j].PR[0];
+      end;
 
       Inc(LayerIndex);
     end;
@@ -260,13 +267,14 @@ begin
       for k := 0 to High(FStructure.Stacks[i].Layers) do
       begin
         Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
+        Data[LayerIndex].H := FStructure.Stacks[i].Layers[k].H;
         Data[LayerIndex].H.V := Poly(j, Solution[k][1]);
 
         Data[LayerIndex].s := FStructure.Stacks[i].Layers[k].s;
-        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
+//        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
 
         Data[LayerIndex].r := FStructure.Stacks[i].Layers[k].r;
-        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
+//        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
 
         Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
         Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
@@ -344,8 +352,7 @@ begin
 
 end;
 
-function TLFPSO_Poly.GetPolyValues(const N: Integer;
-  const C: TFloatArray): TFloatArray;
+function TLFPSO_Poly.GetPolyValues(const N: Integer; const C: TFloatArray): TFloatArray;
 var
   i: Integer;
 begin
@@ -356,12 +363,12 @@ end;
 
 function TLFPSO_Poly.GetResult: TLayeredModel;
 begin
-  Result := ExpandToModel(abest);
+  Result := ExpandToModel(pbest);
 end;
 
 function TLFPSO_Poly.GetStructure: TFitStructure;
 begin
-  Result := BestStructure(abest);
+  Result := BestStructure(pbest);
 end;
 
 procedure TLFPSO_Poly.SetVelocityRanges;
@@ -389,7 +396,7 @@ begin
       for k := 1 to 3 do            // for H, s, rho
       begin
         for p := 0 to High(V[i][j][k]) do
-          V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p]);
+          V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p])/(p + 1);
       end;
 end;
 
@@ -417,7 +424,7 @@ begin
       begin           // for H, s, rho
         for p := 0 to High(X[i][j][k]) do
         begin
-          Val := Random * (Xmax[0][Indexes[j]][k] - Xmin[0][Indexes[j]][k]) / (p + 1);
+          Val := Random * (Xmax[0][Indexes[j]][k] - Xmin[0][Indexes[j]][k]) / sqr(p + 1);
           X[i][j][k][p] := Xmin[0][Indexes[j]][k] + Val;   // min + Random * (min-max)
         end;
         CheckLimits(i, j, k);
