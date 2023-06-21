@@ -70,7 +70,7 @@ type
       procedure SendUpdateMessage(const Step: integer);
       procedure CheckLimits(const i, j, k: integer); virtual;
       procedure SetParams(const Value: TFitParams); virtual;
-      procedure ReInit(const Step: integer); //inline;
+      procedure Init(const Step: integer); //inline;
       function Omega(const t, TMax: integer): single; inline;
       procedure SetDomain(const Count: integer; var X: TPopulation);
 
@@ -372,7 +372,7 @@ begin
 
 end;
 
-procedure TLFPSO_BASE.ReInit(const Step: integer);
+procedure TLFPSO_BASE.Init(const Step: integer);
 begin
   FJammingCount := 0;
 
@@ -403,7 +403,7 @@ begin
   FCalcParams := CalcConditions;
   SetLength(FMaterials, 0);
 
-  ReInit(0);
+  Init(0);
 
   for t := 1 to FTMax do
   begin
@@ -436,7 +436,7 @@ begin
         FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
         FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
       end;
-      ReInit(t);
+      Init(t);
       Inc(ReInitCount);
       FJammingCount := 0;
       dec(SuccessCount);

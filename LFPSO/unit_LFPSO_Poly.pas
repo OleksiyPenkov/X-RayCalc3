@@ -27,11 +27,13 @@ type
       function GetPolyValues(const N: Integer; const C: TFloatArray): TFloatArray;
 
       procedure Seed; override;
+      procedure ReSeed;
       procedure Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure InitVelocity; override;
       procedure FindTheBest; override;
-      function BestStructure(best: TPolySolution): TFitStructure;
+      function SolutionToFitStructureFull(Solution: TPolySolution): TFitStructure;
+      function SolutionToFitStructure(Solution: TPolySolution): TFitStructure;
       procedure Run(CalcConditions: TCalcThreadParams); override;
       function GetResult: TLayeredModel; override;
       procedure UpdateLFPSO(const t: integer);  override;
@@ -43,6 +45,7 @@ type
       procedure Init_DomainsP;
       procedure SetDomainP(const Count: integer; var X: TPolyPopulation);
       procedure SetParams(const Value: TFitParams); override;
+    procedure ReInit(const Step: integer);
     public
       //
   end;
@@ -148,6 +151,23 @@ begin
   end;
 end;
 
+procedure TLFPSO_Poly.ReInit(const Step: integer);
+begin
+  FJammingCount := 0;
+
+  ReSeed;
+  InitVelocity;
+  FindTheBest;
+
+  SendUpdateMessage(Step);
+end;
+
+procedure TLFPSO_Poly.ReSeed;
+begin
+  X[0] := gbest;
+  Seed;
+end;
+
 procedure TLFPSO_Poly.Run;
 var
   t: integer;
@@ -168,7 +188,7 @@ begin
   FCalcParams := CalcConditions;
   SetLength(FMaterials, 0);
 
-  ReInit(0);
+  Init(0);
 
   for t := 1 to FTMax do
   begin
@@ -190,14 +210,14 @@ begin
       if ReInitCount > FFitParams.ReInitMax then
       begin
         ReInitCount := 0;
-        SetStructure(BestStructure(abest));
+        //SetStructure(SolutionToFitStructure(abest)); // re-init
         gbest := abest;
         FGlobalBestChiSqr := FAbsoluteBestChiSqr;
         FFitParams.Vmax := Vmax0;
       end
       else
       begin
-        SetStructure(BestStructure(gbest));
+        //SetStructure(SolutionToFitStructure(gbest));    // re-init
         FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
         FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
       end;
@@ -213,7 +233,27 @@ begin
   end;
 end;
 
-function TLFPSO_Poly.BestStructure(best: TPolySolution): TFitStructure;
+function TLFPSO_Poly.SolutionToFitStructure(
+  Solution: TPolySolution): TFitStructure;
+var
+  i, j, LayerIndex: integer;
+begin
+  Result := FStructure;
+  LayerIndex := 0;
+  for i := 0 to High(Result.Stacks) do
+  begin
+    for j := 0 to High(Result.Stacks[i].Layers) do
+    begin
+      Result.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1][0];
+      Result.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2][0];
+      Result.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3][0];
+      Inc(LayerIndex);
+    end;
+  end;
+
+end;
+
+function TLFPSO_Poly.SolutionToFitStructureFull(Solution: TPolySolution): TFitStructure;
 var
   i, j, LayerIndex: integer;
 begin
@@ -224,23 +264,23 @@ begin
     for j := 0 to High(Result.Stacks[i].Layers) do
     begin
       if Result.Stacks[i].Layers[j].H.Paired then
-            Result.Stacks[i].Layers[j].H.V := best[LayerIndex][1][0]
+            Result.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1][0]
       else begin
-         Result.Stacks[i].Layers[j].PH := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][1]);
+         Result.Stacks[i].Layers[j].PH := GetPolyValues(Result.Stacks[i].N, Solution[LayerIndex][1]);
          Result.Stacks[i].Layers[j].H.V := Result.Stacks[i].Layers[j].PH[0];
       end;
 
       if Result.Stacks[i].Layers[j].s.Paired then
-            Result.Stacks[i].Layers[j].s.V := best[LayerIndex][2][0]
+            Result.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2][0]
       else begin
-         Result.Stacks[i].Layers[j].PS := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][2]);
+         Result.Stacks[i].Layers[j].PS := GetPolyValues(Result.Stacks[i].N, Solution[LayerIndex][2]);
          Result.Stacks[i].Layers[j].s.V := Result.Stacks[i].Layers[j].PS[0];
       end;
 
       if Result.Stacks[i].Layers[j].r.Paired then
-         Result.Stacks[i].Layers[j].r.V := best[LayerIndex][3][0]
+         Result.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3][0]
       else begin
-         Result.Stacks[i].Layers[j].PR := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][3]);
+         Result.Stacks[i].Layers[j].PR := GetPolyValues(Result.Stacks[i].N, Solution[LayerIndex][3]);
          Result.Stacks[i].Layers[j].r.V := Result.Stacks[i].Layers[j].PR[0];
       end;
 
@@ -363,7 +403,7 @@ end;
 
 function TLFPSO_Poly.GetStructure: TFitStructure;
 begin
-  Result := BestStructure(abest);
+  Result := SolutionToFitStructureFull(abest);
 end;
 
 procedure TLFPSO_Poly.SetVelocityRanges;
@@ -512,6 +552,7 @@ procedure TLFPSO_Poly.SetDomainP(const Count: integer; var X: TPolyPopulation);
 var
   i, j, k: integer;
 begin
+  SetLength(X, 0);
   SetLength(X, FPopulation);
   for I := 0 to High(X) do
     SetLength(X[i], Count);
@@ -524,13 +565,8 @@ begin
   FTMax := FFitParams.NMax;
   FPopulation := FFitParams.Pop;
 
-  SetLength(X, FPopulation);
-  SetLength(V, FPopulation);
-
   SetLength(Xmax, 1);
   SetLength(Xmin, 1);
-  SetLength(Vmax, 1);
-  SetLength(Vmin, 1);
   SetLength(Xrange, 1);
 end;
 
