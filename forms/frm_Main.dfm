@@ -811,7 +811,7 @@ object frmMain: TfrmMain
           object RzPageControl1: TRzPageControl
             Left = 2
             Top = 2
-            Width = 343
+            Width = 359
             Height = 101
             Hint = ''
             ActivePage = TabSheet1
@@ -822,6 +822,7 @@ object frmMain: TfrmMain
             object TabSheet1: TRzTabSheet
               Color = 15987699
               Caption = 'Fitting'
+              ExplicitWidth = 339
               object Label7: TLabel
                 Left = 7
                 Top = 15
@@ -862,7 +863,7 @@ object frmMain: TfrmMain
                 ParentFont = False
               end
               object Label5: TLabel
-                Left = 154
+                Left = 167
                 Top = 50
                 Width = 38
                 Height = 13
@@ -875,7 +876,7 @@ object frmMain: TfrmMain
                 ParentFont = False
               end
               object Label21: TLabel
-                Left = 238
+                Left = 260
                 Top = 49
                 Width = 32
                 Height = 15
@@ -924,7 +925,7 @@ object frmMain: TfrmMain
                 TabOrder = 2
               end
               object edFWindow: TEdit
-                Left = 192
+                Left = 205
                 Top = 46
                 Width = 41
                 Height = 22
@@ -939,7 +940,7 @@ object frmMain: TfrmMain
                 Text = '0.05'
               end
               object cbTWChi: TComboBox
-                Left = 274
+                Left = 296
                 Top = 46
                 Width = 56
                 Height = 23
@@ -970,8 +971,8 @@ object frmMain: TfrmMain
                 Text = '0.005'
               end
               object cbTreatPeriodic: TRzCheckBox
-                Left = 197
-                Top = 11
+                Left = 192
+                Top = 13
                 Width = 66
                 Height = 19
                 Caption = 'Periodic'
@@ -980,18 +981,39 @@ object frmMain: TfrmMain
                 TabOrder = 6
               end
               object cbPoly: TRzCheckBox
-                Left = 277
-                Top = 11
+                Left = 264
+                Top = 13
                 Width = 46
                 Height = 19
                 Caption = 'Poly'
                 State = cbUnchecked
                 TabOrder = 7
               end
+              object edPolyOrder: TEdit
+                Left = 316
+                Top = 11
+                Width = 34
+                Height = 22
+                Hint = 'Polynomial order'
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                MaxLength = 1
+                NumbersOnly = True
+                ParentFont = False
+                ParentShowHint = False
+                ShowHint = True
+                TabOrder = 8
+                Text = '1'
+              end
             end
             object TabSheet2: TRzTabSheet
               Color = 15987699
               Caption = 'LSPSO'
+              ExplicitWidth = 339
               object Label16: TLabel
                 Left = 11
                 Top = 14

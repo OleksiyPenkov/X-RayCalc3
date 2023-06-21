@@ -358,12 +358,12 @@ end;
 
 function TLFPSO_Poly.GetResult: TLayeredModel;
 begin
-  Result := ExpandToModel(pbest);
+  Result := ExpandToModel(abest);
 end;
 
 function TLFPSO_Poly.GetStructure: TFitStructure;
 begin
-  Result := BestStructure(pbest);
+  Result := BestStructure(abest);
 end;
 
 procedure TLFPSO_Poly.SetVelocityRanges;

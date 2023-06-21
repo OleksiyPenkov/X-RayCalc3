@@ -301,6 +301,7 @@ type
     actProjecEditModelText1: TMenuItem;
     N9: TMenuItem;
     cbPoly: TRzCheckBox;
+    edPolyOrder: TEdit;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -1141,6 +1142,8 @@ begin
     edFPopulation.Text      := INF.ReadString('FIT', 'Pop', '100');
     edFitTolerance.Text     := INF.ReadString('FIT', 'Tol', '0.005');
     cbTreatPeriodic.Checked := INF.ReadBool('FIT', 'Periodic', True);
+    cbPoly.Checked          := INF.ReadBool('FIT', 'Poly', False);
+    edPolyOrder.Text        := INF.ReadString('FIT', 'PolyOrder', '1');
 
     cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
     edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
@@ -1176,7 +1179,7 @@ begin
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
   FFitParams.CFactor     := False;
-  FFitParams.MaxPOrder   := 1;
+  FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
 end;
 
 function TfrmMain.GetGradients: TGradients;
@@ -2007,6 +2010,8 @@ begin
     INF.WriteString('FIT', 'Pop', edFPopulation.Text);
     INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
     INF.WriteBool('FIT', 'Periodic', cbTreatPeriodic.Checked);
+    INF.WriteBool('FIT', 'Poly', cbPoly.Checked);
+    INF.WriteString('FIT', 'PolyOrder', edPolyOrder.Text);
 
     INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
     INF.WriteString('FIT', 'Window', edFWindow.Text);
