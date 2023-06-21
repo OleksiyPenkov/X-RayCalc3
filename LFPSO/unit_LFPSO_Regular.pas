@@ -8,9 +8,6 @@ uses
 
 type
 
-  TLayerIndexes = array [1..3] of Integer;
-  TIndexes  = array of TLayerIndexes;
-
   TLFPSO_Regular = class (TLFPSO_BASE)
     private
       FLinks : TIndexes;

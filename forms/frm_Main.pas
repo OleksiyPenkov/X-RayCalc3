@@ -530,10 +530,13 @@ var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
 begin
-  chFittingProgress.DoubleBuffered := True;
+//  chFittingProgress.DoubleBuffered := True;
 
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
+  if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
+    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
+
 
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
@@ -1173,7 +1176,7 @@ begin
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
   FFitParams.CFactor     := False;
-  FFitParams.MaxPOrder   := 3;
+  FFitParams.MaxPOrder   := 2;
 end;
 
 function TfrmMain.GetGradients: TGradients;

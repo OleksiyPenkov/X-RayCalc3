@@ -14,28 +14,35 @@ type
 
   TLFPSO_Poly = class (TLFPSO_BASE)
     private
+      Indexes: TIntArray;
+      Counts: TIntArray;
 
-      X, V : TPolyPopulation;  // solutions and velocityes
+      X, V : TPolyPopulation;
+      Vmin, Vmax :  TPolyPopulation;   // solutions and velocityes
       pbest: TPolySolution; // best local solution
       gbest: TPolySolution; // best global solution
       abest: TPolySolution;
 
       function Poly(const N: Integer; const C: TFloatArray): Single;
+      function GetPolyValues(const N: Integer; const C: TFloatArray): TFloatArray;
 
       procedure Seed; override;
-      procedure Set_Init_XPoly(const N, Index, ValueType: Integer; Val: TFitValue);
+      procedure Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure InitVelocity; override;
       procedure FindTheBest; override;
-      function XtoStructure(const Index: integer): TFitStructure; override;
       function BestStructure(best: TPolySolution): TFitStructure;
       procedure Run(CalcConditions: TCalcThreadParams); override;
       function GetResult: TLayeredModel; override;
-      function GetStructure: TFitStructure; override;
       procedure UpdateLFPSO(const t: integer);  override;
       procedure UpdatePSO(const t: integer); override;
       procedure CheckLimits(const i, j, k: integer);override;
       function ExpandToModel(Solution: TPolySolution): TLayeredModel;
+      function GetStructure: TFitStructure; override;
+      procedure SetVelocityRanges;
+      procedure Init_Domains; override;
+      procedure SetDomainP(const Count: integer; var X: TPolyPopulation);
+      procedure SetParams(const Value: TFitParams); override;
     public
       //
   end;
@@ -52,42 +59,68 @@ uses
 { TLFPSO Polynomial}
 
 procedure TLFPSO_Poly.CheckLimits(const i, j, k: integer);
+var
+  OldX: TFloatArray;
+   Val, Max, Min: Single;
+   c, r: Integer;
 begin
-//  if V[i][j][k] > Vmax[0][j][k] then
-//             V[i][j][k] := Vmax[0][j][k];
-//
-//  if V[i][j][k] < Vmin[0][j][k] then
-//             V[i][j][k] := Vmin[0][j][k];
+  for c := 0 to High(V[i][j][k]) do
+  begin
+    if V[i][j][k][c] > Vmax[0][j][k][c] then
+               V[i][j][k][c] := Vmax[0][j][k][c];
 
-//  X[i][j][k] := X[i][j][k] + V[i][j][k];
+    if V[i][j][k][0] < Vmin[0][j][k][c] then
+               V[i][j][k][0] := Vmin[0][j][k][c];
 
-//  if X[i][j][k] > Xmax[0][j][k] then
-//             X[i][j][k] := Xmax[0][j][k];
-//
-//  if X[i][j][k] < Xmin[0][j][k] then
-//             X[i][j][k] := Xmin[0][j][k];
+    X[i][j][k][c] := X[i][j][k][c] + V[i][j][k][c]
+  end;
+
+  Max := 0; Min := 1E9;
+
+  for r := 1 to Counts[j] do
+  begin
+    Val := Poly(r, X[i][j][k]);
+    if Val > Max then
+       Max := Val;
+    if Val < Min then
+       Min := Val;
+  end;
+
+  if Max > Xmax[0][Indexes[j]][k] then
+  begin
+    X[i][j][k][0] := Xmax[0][Indexes[j]][k];
+    for c := 1 to High (X[i][j][k]) do
+      X[i][j][k][c] := 0;
+  end;
+
+  if Min < Xmin[0][Indexes[j]][k] then
+  begin
+    X[i][j][k][0] := Xmin[0][Indexes[j]][k];
+    for c := 1 to High (X[i][j][k]) do
+      X[i][j][k][c] := 0;
+  end;
 end;
 
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
 var
   i, j, k,c: integer;
-  c1, c2: single;
+  c1, c2, Val: single;
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 1 to High(X) do // for every member of the population
+  for i := 1 to High(X) do       // for every member of the population
   begin
     for j := 0 to High(X[I]) do // for every layer
-      for k := 1 to 3 do           // for H, s, rho
-        for c := 0 to High(X[I][j][k]) do
-        begin // for every coefficient
+      for k := 1 to 3 do        // for H, s, rho
+      begin
+        for c := 0 to High(X[I][j][k]) do  // for every coefficient
+        begin
           V[i][j][k][c] := Omega(t, FTMax) * LevyWalk(X[i][j][k][c], gbest[j][k][c])  +
                         c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
                         c2 * Random * (gbest[j][k][c] - X[i][j][k][c]);
-
-          X[i][j][k][c] := X[i][j][k][c] + V[i][j][k][c];
         end;
-
+        CheckLimits(i, j, k);
+      end;
   end;
 end;
 
@@ -101,15 +134,17 @@ begin
   for i := 1 to High(X) do // for every member of the population
   begin
     for j := 0 to High(X[I]) do // for every layer
-      for k := 1 to 3 do           // for H, s, rho
+      for k := 1 to 3 do
+      begin
         for c := 0 to High(X[I][j][k]) do  // for every coefficient
         begin
             V[i][j][k][c] := Omega(t, FTMax) * V[i][j][k][c]  +
                       c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
                       c2 * Random * (gbest[j][k][c] - X[i][j][k][c]);
 
-          X[i][j][k][c] := X[i][j][k][c] + V[i][j][k][c];
         end;
+        CheckLimits(i, j, k);
+      end;
   end;
 end;
 
@@ -178,25 +213,6 @@ begin
   end;
 end;
 
-function TLFPSO_Poly.XtoStructure(const Index: integer): TFitStructure;
-var
-  i, j, LayerIndex: integer;
-begin
-  Result := FStructure;
-
-  LayerIndex := 0;
-  for i := 0 to High(Result.Stacks) do
-  begin
-    for j := 0 to High(Result.Stacks[i].Layers) do
-    begin
-      Result.Stacks[i].Layers[j].H.V := Poly(j + 1, X[Index][LayerIndex][1]);
-      Result.Stacks[i].Layers[j].s.V := Poly(j + 1, X[Index][LayerIndex][2]);
-      Result.Stacks[i].Layers[j].r.V := Poly(j + 1, X[Index][LayerIndex][3]);
-      Inc(LayerIndex);
-    end;
-  end;
-end;
-
 function TLFPSO_Poly.BestStructure(best: TPolySolution): TFitStructure;
 var
   i, j, LayerIndex: integer;
@@ -207,10 +223,20 @@ begin
   begin
     for j := 0 to High(Result.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := Poly(j + 1, best[LayerIndex][1]);
+      Result.Stacks[i].Layers[j].H.V := best[LayerIndex][1][0];
+      if not Result.Stacks[i].Layers[j].H.Paired then
+         Result.Stacks[i].Layers[j].PH := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][1]);
 
-      Result.Stacks[i].Layers[j].s.V := Poly(j + 1, best[LayerIndex][2]);
-      Result.Stacks[i].Layers[j].r.V := Poly(j + 1, best[LayerIndex][3]);
+
+      Result.Stacks[i].Layers[j].s.V := best[LayerIndex][2][0];
+      if not Result.Stacks[i].Layers[j].s.Paired then
+         Result.Stacks[i].Layers[j].PS := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][2]);
+
+
+      Result.Stacks[i].Layers[j].r.V := best[LayerIndex][3][0];
+      if not Result.Stacks[i].Layers[j].r.Paired then
+         Result.Stacks[i].Layers[j].PR := GetPolyValues(Result.Stacks[i].N, best[LayerIndex][3]);
+
       Inc(LayerIndex);
     end;
   end;
@@ -221,28 +247,26 @@ var
   i, k, j: Integer;
   Data: TLayersData;
   LayerIndex: Integer;
-  Total: Integer;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
-  Total := FStructure.TotalNP;
   LayerIndex := 0;
-  SetLength(Data, Total);
+  SetLength(Data, FStructure.TotalNP);
+
   for I := 0 to High(FStructure.Stacks) do
   begin
-
     for j := 1 to FStructure.Stacks[i].N do
       for k := 0 to High(FStructure.Stacks[i].Layers) do
       begin
         Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
-        Data[LayerIndex].H.V := Poly(k + 1, Solution[k][1]);
+        Data[LayerIndex].H.V := Poly(j, Solution[k][1]);
 
         Data[LayerIndex].s := FStructure.Stacks[i].Layers[k].s;
-        Data[LayerIndex].s.V := Poly(k + 1, Solution[k][2]);
+        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
 
         Data[LayerIndex].r := FStructure.Stacks[i].Layers[k].r;
-        Data[LayerIndex].r.V := Poly(k + 1, Solution[k][3]);
+        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
 
         Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
         Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
@@ -320,6 +344,16 @@ begin
 
 end;
 
+function TLFPSO_Poly.GetPolyValues(const N: Integer;
+  const C: TFloatArray): TFloatArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, N);
+  for i := 0 to N - 1 do
+    Result[i] := Poly(i + 1, C);
+end;
+
 function TLFPSO_Poly.GetResult: TLayeredModel;
 begin
   Result := ExpandToModel(abest);
@@ -330,20 +364,32 @@ begin
   Result := BestStructure(abest);
 end;
 
+procedure TLFPSO_Poly.SetVelocityRanges;
+var
+  i, j, k, c: integer;
+begin
+  for I := 0 to High(Vmax) do                  // for every member of the population
+    for j := 0 to High(Vmax[i]) do             // for every layer
+      for k := 1 to 3 do                       // for H, s, rho
+        for c := 0 to High(Vmax[i][j][k]) do
+        begin
+           Vmax[i][j][k][c] := Xrange[0][j][k] * FFitParams.Vmax / sqr(c + 1);
+           Vmin[i][j][k][c] := - Vmax[i][j][k][c];
+        end;
+end;
+
 procedure TLFPSO_Poly.InitVelocity;
 var
   i, j, k, p: integer;
 begin
-  MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
-  MultiplyVector(Vmax, -1, Vmin);
+  SetVelocityRanges;
 
   for i := 0 to High(V) do          // for every member of the population
     for j := 0 to High(V[i]) do     //for every layer
-      for k := 1 to 3 do
-      begin            // for H, s, rho
-        V[i][j][k][0] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
-        for p := 1 to High(V[i][j][k]) do
-          V[i][j][k][p] := V[i][j][k][p - 1] / 10;
+      for k := 1 to 3 do            // for H, s, rho
+      begin
+        for p := 0 to High(V[i][j][k]) do
+          V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p]);
       end;
 end;
 
@@ -362,15 +408,19 @@ end;
 procedure TLFPSO_Poly.Seed;
 var
   i, j, k, p: integer;
+  Val: Single;
 begin
   for i := 0 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do
       begin           // for H, s, rho
-        X[i][j][k][0] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
-        for p := 1 to High(X[i][j][k]) do
-          X[i][j][k][p] := 0;
+        for p := 0 to High(X[i][j][k]) do
+        begin
+          Val := Random * (Xmax[0][Indexes[j]][k] - Xmin[0][Indexes[j]][k]) / power(10, p);
+          X[i][j][k][p] := Xmin[0][Indexes[j]][k] + Val;   // min + Random * (min-max)
+        end;
+        CheckLimits(i, j, k);
       end;
   end;
 end;
@@ -386,15 +436,8 @@ begin
 
   Init_Domains;
 
-  SetLength(X, FPopulation);
-  SetLength(V, FPopulation);
-
-  for I := 0 to FPopulation - 1 do
-  begin
-    SetLength(X[i], FLayersCount);
-    SetLength(V[i], FLayersCount);
-  end;
-
+  SetLength(Indexes, FStructure.TotalNP);
+  SetLength(Counts, FStructure.TotalNP);
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
   begin
@@ -402,12 +445,22 @@ begin
     begin
       FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
 
-      Set_Init_XPoly(Inp.Stacks[i].N, Index, 1, Inp.Stacks[i].Layers[j].H);
-      Set_Init_XPoly(Inp.Stacks[i].N, Index, 2, Inp.Stacks[i].Layers[j].s);
-      Set_Init_XPoly(Inp.Stacks[i].N, Index, 3, Inp.Stacks[i].Layers[j].r);
+      Set_Init_XPoly(Inp.Stacks[i].N, Index, 1, Inp.Stacks[i].Layers[j].H.Paired, Inp.Stacks[i].Layers[j].H);
+      Set_Init_XPoly(Inp.Stacks[i].N, Index, 2, Inp.Stacks[i].Layers[j].s.Paired, Inp.Stacks[i].Layers[j].s);
+      Set_Init_XPoly(Inp.Stacks[i].N, Index, 3, Inp.Stacks[i].Layers[j].r.Paired, Inp.Stacks[i].Layers[j].r);
       Inc(Index);
     end;
   end;
+
+  Index := 0;
+  for I := 0 to High(FStructure.Stacks) do
+    for j := 1 to FStructure.Stacks[i].N do
+      for k := 0 to High(FStructure.Stacks[i].Layers) do
+      begin
+        Indexes[Index] := k;
+        Counts[Index]  := FStructure.Stacks[i].N;
+        Inc(Index);
+      end;
 
   for I := 1 to FPopulation - 1 do
     for j := 0 to High(X[i]) do
@@ -415,25 +468,68 @@ begin
       begin
         SetLength(X[i][j][k], Length(X[0][j][k]));   // not periodic layer, only a0 = v
         SetLength(V[i][j][k], Length(X[0][j][k]));
+        SetLength(Vmin[i][j][k], Length(X[0][j][k]));
+        SetLength(Vmax[i][j][k], Length(X[0][j][k]));
       end
 end;
 
-procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; Val: TFitValue);
+procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
 begin
-  if N = 1 then
+  if Paired or (N = 1) then
   begin
     SetLength(X[0][Index][ValueType], 1);   // not periodic layer, only a0 = v
     SetLength(V[0][Index][ValueType], 1);
+    SetLength(Vmin[0][Index][ValueType], 1);
+    SetLength(Vmax[0][Index][ValueType], 1);
   end
   else begin
-    SetLength(X[0][Index][ValueType], FFitParams.MaxPOrder); // init array of a0..aN
-    SetLength(V[0][Index][ValueType], FFitParams.MaxPOrder);
+    SetLength(X[0][Index][ValueType], FFitParams.MaxPOrder + 1); // init array of a0..aN
+    SetLength(V[0][Index][ValueType], FFitParams.MaxPOrder + 1);
+    SetLength(Vmin[0][Index][ValueType], FFitParams.MaxPOrder + 1);
+    SetLength(Vmax[0][Index][ValueType], FFitParams.MaxPOrder + 1);
   end;
 
     X[0][Index][ValueType][0] := Val.V;
     Xmax[0][Index][ValueType] := Val.max;
     Xmin[0][Index][ValueType] := Val.min;
   Xrange[0][Index][ValueType] := Xmax[0][Index][ValueType] - Xmin[0][Index][ValueType];
+end;
+
+procedure TLFPSO_Poly.Init_Domains;
+begin
+  SetDomainP(FLayersCount, X);
+  SetDomain(FLayersCount, Xmax);
+  SetDomain(FLayersCount, Xmin);
+  SetDomain(FLayersCount, Xrange);
+  SetDomainP(FLayersCount, Vmin);
+  SetDomainP(FLayersCount, Vmax);
+  SetDomainP(FLayersCount, V);
+end;
+
+procedure TLFPSO_Poly.SetDomainP(const Count: integer; var X: TPolyPopulation);
+var
+  i, j, k: integer;
+begin
+  SetLength(X, FPopulation);
+  for I := 0 to High(X) do
+    SetLength(X[i], Count);
+end;
+
+procedure TLFPSO_Poly.SetParams(const Value: TFitParams);
+begin
+  FFitParams := Value;
+
+  FTMax := FFitParams.NMax;
+  FPopulation := FFitParams.Pop;
+
+  SetLength(X, FPopulation);
+  SetLength(V, FPopulation);
+
+  SetLength(Xmax, 1);
+  SetLength(Xmin, 1);
+  SetLength(Vmax, 1);
+  SetLength(Vmin, 1);
+  SetLength(Xrange, 1);
 end;
 
 end.

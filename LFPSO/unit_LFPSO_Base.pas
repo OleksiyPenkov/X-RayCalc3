@@ -18,6 +18,9 @@ type
     Curve   : TDataArray;
   end;
 
+  TLayerIndexes = array [1..3] of Integer;
+  TIndexes  = array of TLayerIndexes;
+
   TLayer = array [1..3] of single;   // Array of layer parameters
 
   TSolution = array of TLayer; // H, Sigma, rho x N Layers
@@ -67,7 +70,7 @@ type
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
       procedure CheckLimits(const i, j, k: integer); virtual;
-      procedure SetParams(const Value: TFitParams);
+      procedure SetParams(const Value: TFitParams); virtual;
       procedure ReInit(const Step: integer); //inline;
       function Omega(const t, TMax: integer): single; inline;
       procedure SetDomain(const Count: integer; var X: TPopulation);
@@ -81,7 +84,7 @@ type
       function GetStructure: TFitStructure; virtual;
       function ExpandPeriodicFitModel(const Inp: TFitStructure): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue); virtual;
-      procedure Init_Domains;
+      procedure Init_Domains; virtual;
       procedure ApplyCFactor(var c1, c2: single);// inline;
     private
 
@@ -378,7 +381,6 @@ begin
 
   SendUpdateMessage(Step);
 end;
-
 
 procedure TLFPSO_BASE.Run;
 var
