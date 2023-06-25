@@ -10,6 +10,7 @@ object frmMain: TfrmMain
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  KeyPreview = True
   Menu = mmMain
   Position = poDesigned
   WindowState = wsMaximized
@@ -822,7 +823,6 @@ object frmMain: TfrmMain
             object TabSheet1: TRzTabSheet
               Color = 15987699
               Caption = 'Fitting'
-              ExplicitWidth = 339
               object Label7: TLabel
                 Left = 7
                 Top = 15
@@ -1013,7 +1013,6 @@ object frmMain: TfrmMain
             object TabSheet2: TRzTabSheet
               Color = 15987699
               Caption = 'LSPSO'
-              ExplicitWidth = 339
               object Label16: TLabel
                 Left = 11
                 Top = 14
@@ -1123,8 +1122,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 48
-                Width = 54
-                Height = 19
+                Width = 50
+                Height = 17
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -2022,12 +2021,17 @@ object frmMain: TfrmMain
     object Calc1: TMenuItem
       Caption = 'Calc'
       object Calc3: TMenuItem
-        Caption = 'Calc'
-        ShortCut = 116
+        Action = CalcRun
       end
       object Calcall1: TMenuItem
         Caption = 'Calc all'
         ShortCut = 123
+      end
+      object N10: TMenuItem
+        Caption = '-'
+      end
+      object Fitting1: TMenuItem
+        Action = actAutoFitting
       end
     end
     object Result1: TMenuItem
@@ -2501,7 +2505,7 @@ object frmMain: TfrmMain
               item
                 Action = CalcAll
                 Caption = '&Compute All'
-                ShortCut = 123
+                ShortCut = 117
               end>
             Action = CalcRun
             Caption = '&Run'
@@ -2971,7 +2975,7 @@ object frmMain: TfrmMain
     object CalcAll: TAction
       Category = 'Calc'
       Caption = 'Calc all models'
-      ShortCut = 123
+      ShortCut = 117
       OnExecute = CalcAllExecute
     end
     object ProjectItemDelete: TAction

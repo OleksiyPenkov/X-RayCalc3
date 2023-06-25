@@ -12,6 +12,7 @@ type
     private
       procedure UpdateLFPSO(const t: integer); override;
       procedure Seed; override;
+      procedure ReSeed; override;
       procedure NormalizeD(const ParticleIndex: integer);
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
@@ -103,6 +104,20 @@ begin
   end;
 end;
 
+procedure TLFPSO_Periodic.ReSeed;
+var
+  i, j, k: integer;
+begin
+  for i := 0 to High(X) do          // for every member of the population
+  begin
+    for j := 0 to High(X[i]) do     //for every layer
+      for k := 1 to 3 do            // for H, s, rho
+        X[i][j][k] := X[0][j][k] + Rand(XRange[0][j][k]);
+
+    NormalizeD(i);
+  end;
+end;
+
 procedure TLFPSO_Periodic.InitVelocity;
 var
   i, j, k: integer;
@@ -124,8 +139,8 @@ begin
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-        X[i][j][k] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
-
+       X[i][j][k] := Xmin[0][j][k] + Random * XRange[0][j][k];   // min + Random * (min-max)
+       //X[i][j][k] := X[0][j][k] + Rand(XRange[0][j][k]);
     NormalizeD(i);
   end;
 end;

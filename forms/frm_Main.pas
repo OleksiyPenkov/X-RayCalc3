@@ -302,6 +302,8 @@ type
     N9: TMenuItem;
     cbPoly: TRzCheckBox;
     edPolyOrder: TEdit;
+    N10: TMenuItem;
+    Fitting1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -415,7 +417,7 @@ type
     procedure SaveData;
     procedure AddCurve(Data: PProjectData);
     procedure PrepareDistributionCharts;
-    procedure GetFitParams;
+    function GetFitParams: boolean;
     procedure EditProjectItem;
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
     procedure DeleteData(Node: PVirtualNode; Data: PProjectData);
@@ -436,7 +438,7 @@ type
     procedure PlotSimpleProfile;
     procedure ClearProfiles;
     procedure PrepareInterfaceAF;
-    function PrepareCalcAF: boolean;
+    function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     { Private declarations }
   public
@@ -1163,8 +1165,16 @@ begin
   end;
 end;
 
-procedure TfrmMain.GetFitParams;
+function TfrmMain.GetFitParams: boolean;
 begin
+  Result := False;
+  FFitStructure := Structure.ToFitStructure;
+  if frmLimits.Show(FFitStructure) then
+        Structure.UpdateInterfaceP(FFitStructure)
+  else begin
+    Exit;
+  end;
+
   FFitParams.NMax := StrToInt(edFIter.Text);
   FFitParams.Pop  := StrToInt(edFPopulation.Text);
   FFitParams.Vmax  := StrToFloat(edFVmax.Text);
@@ -1180,6 +1190,7 @@ begin
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
   FFitParams.CFactor     := False;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
+  Result := True;
 end;
 
 function TfrmMain.GetGradients: TGradients;
@@ -1585,17 +1596,9 @@ end;
 
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
 begin
-  if (Project.ActiveModel = nil) then
-    Exit;
-
-  GetThreadParams;
   try
+    if not PrepareCalc then Exit;
     try
-      FCalc := TCalc.Create;
-
-      FCalc.Params := FCalcThreadParams;
-      FCalc.Limit := StrToFloat(cbMinLimit.Text);
-      FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
       FCalc.Model.Gradients := GetGradients;
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
@@ -1643,27 +1646,28 @@ begin
   chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
 end;
 
-function TfrmMain.PrepareCalcAF: Boolean;
+function TfrmMain.PrepareCalc: Boolean;
 begin
-  Result := True;
+  Result :=False;
+  if (Project.ActiveModel = nil) then Exit;
+
+
   if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
   begin
-     FCalc := TCalc.Create;
-     FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
-     if cbPWChiSqr.Checked then
-     begin
-       FCalc.MovAvg := MovAvg(FCalc.ExpValues, StrToFloat(edFWindow.Text));
-     end;
-
+    FCalc := TCalc.Create;
+    FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
+    if cbPWChiSqr.Checked then
+    begin
+      FCalc.MovAvg := MovAvg(FCalc.ExpValues, StrToFloat(edFWindow.Text));
+    end;
     GetThreadParams;
-
     FCalc.Params := FCalcThreadParams;
     FCalc.Limit := StrToFloat(cbMinLimit.Text);
     FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+    Result := True;
   end
   else begin
     ShowMessage('Measured curve is not linked!');
-    Result := False;
   end;
 end;
 
@@ -1697,21 +1701,11 @@ var
   Hour, Min, Sec, MSec: Word;
   Result : TLayeredModel;
 begin
-  if (Project.ActiveModel = nil) then
-    Exit;
-
-  FFitStructure := Structure.ToFitStructure;
-  if frmLimits.Show(FFitStructure) then
-        Structure.UpdateInterfaceP(FFitStructure)
-  else begin
-    Exit;
-  end;
-
-  GetFitParams;
+  if not GetFitParams then Exit;
   PrepareInterfaceAF;
   try
     try
-      if not PrepareCalcAF then Exit;
+      if not PrepareCalc then Exit;
 
       FCalc.Run;
       FCalc.CalcChiSquare(FFitParams.ThetaWieght);

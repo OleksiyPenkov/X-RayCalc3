@@ -116,7 +116,6 @@ begin
         else
           X[i][j][k] := Xmin[0][j][k] + Random * (Xmax[0][j][k] - Xmin[0][j][k]);   // min + Random * (min-max)
       end;
-
   end;
 end;
 

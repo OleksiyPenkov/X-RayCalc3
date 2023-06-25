@@ -78,6 +78,7 @@ type
       procedure UpdatePSO(const t: integer); virtual;
       procedure UpdateLFPSO(const t: integer); virtual;
       procedure Seed;virtual;
+      procedure ReSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
       function GBestStructure(best: TSolution): TFitStructure;
       function GetStructure: TFitStructure; virtual;
@@ -85,7 +86,9 @@ type
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_DomainsP;
       procedure ApplyCFactor(var c1, c2: single);// inline;
+      function Rand(const dx: Single): single;
     private
+
 
 
     public
@@ -191,6 +194,16 @@ begin
 end;
 
 { TLFPSO }
+
+function TLFPSO_BASE.Rand(const dx: Single):single;
+begin
+  Result := (-1 + 2 * Random) * dx;
+end;
+
+procedure TLFPSO_BASE.ReSeed;
+begin
+
+end;
 
 function TLFPSO_BASE.Omega(const t, TMax: integer): single;
 begin
@@ -376,7 +389,11 @@ procedure TLFPSO_BASE.Init(const Step: integer);
 begin
   FJammingCount := 0;
 
-  Seed;
+  if Step = 0 then
+    Seed
+  else
+    ReSeed;
+
   InitVelocity;
   FindTheBest;
 
@@ -425,14 +442,16 @@ begin
       if ReInitCount > FFitParams.ReInitMax then
       begin
         ReInitCount := 0;
-        SetStructure(GBestStructure(abest));
+        //SetStructure(GBestStructure(abest));
         gbest := abest;
+        X[0] := gbest;
         FGlobalBestChiSqr := FAbsoluteBestChiSqr;
         FFitParams.Vmax := Vmax0;
       end
       else
       begin
-        SetStructure(GBestStructure(gbest));
+        //SetStructure(GBestStructure(gbest));
+        X[0] := gbest;
         FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
         FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
       end;
@@ -446,6 +465,7 @@ begin
       inc(SuccessCount);
     end;
   end;
+  SetStructure(GBestStructure(abest));
 end;
 
 procedure TLFPSO_BASE.Seed;
