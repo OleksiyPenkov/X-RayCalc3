@@ -140,7 +140,6 @@ begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
        X[i][j][k] := Xmin[0][j][k] + Random * XRange[0][j][k];   // min + Random * (min-max)
-       //X[i][j][k] := X[0][j][k] + Rand(XRange[0][j][k]);
     NormalizeD(i);
   end;
 end;

@@ -40,7 +40,6 @@ type
       procedure UpdatePSO(const t: integer); override;
       procedure CheckLimits(const i, j, k: integer);override;
       function ExpandToModel(Solution: TPolySolution): TLayeredModel;
-      function GetStructure: TFitStructure; override;
       procedure SetVelocityRanges;
       procedure Init_DomainsP;
       procedure SetDomainP(const Count: integer; var X: TPolyPopulation);
@@ -401,10 +400,10 @@ begin
   Result := ExpandToModel(abest);
 end;
 
-function TLFPSO_Poly.GetStructure: TFitStructure;
-begin
-  Result := SolutionToFitStructureFull(abest);
-end;
+//function TLFPSO_Poly.GetStructure: TFitStructure;
+//begin
+//  Result := SolutionToFitStructureFull(abest);
+//end;
 
 procedure TLFPSO_Poly.SetVelocityRanges;
 var

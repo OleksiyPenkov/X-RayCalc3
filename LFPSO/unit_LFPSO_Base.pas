@@ -80,9 +80,8 @@ type
       procedure Seed;virtual;
       procedure ReSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
-      function GBestStructure(best: TSolution): TFitStructure;
-      function GetStructure: TFitStructure; virtual;
-      function ExpandPeriodicFitModel(Solution: TSolution): TLayeredModel;
+      procedure UpdateStructure(const Solution:TSolution); virtual;
+      function FitModelToLayer(Solution: TSolution): TLayeredModel;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_DomainsP;
       procedure ApplyCFactor(var c1, c2: single);// inline;
@@ -96,7 +95,7 @@ type
       destructor Destroy; override;
 
       property Materials: TMaterials read FMaterials write FMaterials;
-      property Structure: TFitStructure read GetStructure write SetStructure;
+      property Structure: TFitStructure read FStructure write SetStructure;
       property Result : TLayeredModel read GetResult;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
@@ -221,7 +220,7 @@ begin
   inherited;
 end;
 
-function TLFPSO_BASE.ExpandPeriodicFitModel(Solution: TSolution): TLayeredModel;
+function TLFPSO_BASE.FitModelToLayer(Solution: TSolution): TLayeredModel;
 var
   i, k, j, LayerIndex: Integer;
   Data: TLayersData;
@@ -259,12 +258,7 @@ end;
 
 function TLFPSO_BASE.GetResult: TLayeredModel;
 begin
-  Result := ExpandPeriodicFitModel(abest);
-end;
-
-function TLFPSO_BASE.GetStructure: TFitStructure;
-begin
-  Result := GBestStructure(abest);
+  Result := FitModelToLayer(abest);
 end;
 
 procedure TLFPSO_BASE.InitVelocity;
@@ -343,7 +337,7 @@ begin
       Calc.MovAvg    := FMovAvg;
       Calc.Limit     := FLimit;
 
-      Calc.Model := ExpandPeriodicFitModel(X[i]);
+      Calc.Model := FitModelToLayer(X[i]);
       Calc.Model.Materials := FMaterials;
       Calc.Run;
       Calc.CalcChiSquare(FFitParams.ThetaWieght);
@@ -439,22 +433,19 @@ begin
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
     begin
       FReInit := True;
-      if ReInitCount > FFitParams.ReInitMax then
+      if ReInitCount > FFitParams.ReInitMax then // recover previous best solution
       begin
         ReInitCount := 0;
-        //SetStructure(GBestStructure(abest));
         gbest := abest;
-        X[0] := gbest;
         FGlobalBestChiSqr := FAbsoluteBestChiSqr;
         FFitParams.Vmax := Vmax0;
       end
       else
       begin
-        //SetStructure(GBestStructure(gbest));
-        X[0] := gbest;
         FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
         FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
       end;
+      X[0] := gbest;
       Init(t);
       Inc(ReInitCount);
       FJammingCount := 0;
@@ -465,7 +456,7 @@ begin
       inc(SuccessCount);
     end;
   end;
-  SetStructure(GBestStructure(abest));
+  UpdateStructure(gbest);
 end;
 
 procedure TLFPSO_BASE.Seed;
@@ -537,19 +528,19 @@ begin
 
 end;
 
-function TLFPSO_BASE.GBestStructure(best: TSolution): TFitStructure;
+
+procedure TLFPSO_BASE.UpdateStructure(const Solution: TSolution);
 var
   i, j, LayerIndex: integer;
 begin
-  Result := FStructure;
   LayerIndex := 0;
-  for i := 0 to High(Result.Stacks) do
+  for i := 0 to High(FStructure.Stacks) do
   begin
-    for j := 0 to High(Result.Stacks[i].Layers) do
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := best[LayerIndex][1];
-      Result.Stacks[i].Layers[j].s.V := best[LayerIndex][2];
-      Result.Stacks[i].Layers[j].r.V := best[LayerIndex][3];
+      FStructure.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1];
+      FStructure.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2];
+      FStructure.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3];
       Inc(LayerIndex);
     end;
   end;
