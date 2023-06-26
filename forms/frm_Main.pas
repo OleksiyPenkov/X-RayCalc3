@@ -400,6 +400,7 @@ type
     FCalc: TCalc;
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
+    FLastChiSquare: Single;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -533,8 +534,6 @@ var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
 begin
-//  chFittingProgress.DoubleBuffered := True;
-
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
   if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
@@ -1226,7 +1225,6 @@ var
   StartT, EndT: single;
 begin
   StartTime := Now;
-  FitStartTime := Now;
 
   Screen.Cursor := crHourGlass;
   FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
@@ -1603,11 +1601,14 @@ begin
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
+        FLastChiSquare := FCalc.ChiSQR;
         FCalc.CalcChiSquare(cbTWChi.ItemIndex);
         spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 4);
       end
-      else
+      else begin
         spChiSqr.Caption := '';
+        FLastChiSquare := 0;
+      end;
 
       if IsProfileEnbled and not cbTreatPeriodic.Checked then
          PlotProfileNP
@@ -1640,7 +1641,7 @@ procedure TfrmMain.PrepareInterfaceAF;
 begin
   lsrConvergence.Clear;
   Pages.ActivePage := tsFittingProgress;
-  chFittingProgress.BottomAxis.Minimum := -1;
+  chFittingProgress.BottomAxis.Minimum := 0;
   chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
   chFittingProgress.BottomAxis.Minimum := -1;
   chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
@@ -1674,8 +1675,6 @@ end;
 
 function TfrmMain.PrepareLFPSO: Boolean;
 begin
-
-
   if cbTreatPeriodic.Checked then
      LFPSO := TLFPSO_Periodic.Create
   else
@@ -1686,70 +1685,49 @@ begin
 
   LFPSO.Params := FFitParams;
 
-  LFPSO.Limit := FCalc.Limit;
-  LFPSO.Materials := FCalc.Model.Materials; // cache materials optical constants
-  LFPSO.ExpValues := FCalc.ExpValues;
-  LFPSO.MovAvg    := FCalc.MovAvg ;
+  LFPSO.Limit := StrToFloat(cbMinLimit.Text);
+  LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
+  if cbPWChiSqr.Checked then
+    LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, StrToFloat(edFWindow.Text));
+
   LFPSO.Structure := FFitStructure;
+  PrepareInterfaceAF;
   Result := True;
 end;
-
-
 
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
-  Result : TLayeredModel;
 begin
   if not GetFitParams then Exit;
-  PrepareInterfaceAF;
+
   try
-    try
-      if not PrepareCalc then Exit;
+    FitStartTime := Now;
+    CalcRunExecute(nil);
+    if not PrepareLFPSO then Exit;
 
-      FCalc.Run;
-      FCalc.CalcChiSquare(FFitParams.ThetaWieght);
-      lsrConvergence.AddXY(-1, FCalc.ChiSQR);
-      chFittingProgress.LeftAxis.Maximum := FCalc.ChiSQR * 2;
+    LFPSO.Run(FCalcThreadParams);
 
-      PrepareLFPSO;
-
-      LFPSO.Run(FCalcThreadParams);
-
-      Result :=  LFPSO.Result;
-      FCalc.Model := Result;
-      FCalc.Run;
-      FCalc.CalcChiSquare(FFitParams.ThetaWieght);
-      spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 1);
-
-      if not cbTreatPeriodic.Checked and Structure.IsPeriodic then
+    if Structure.IsPeriodic then
+    begin
+      Structure.UpdateInterfaceP(LFPSO.Structure);
+      if not cbTreatPeriodic.Checked then
       begin
         CreateProfileExtension;
-        Structure.UpdateInterfaceNP(LFPSO.Structure);
-        Structure.UpdateProfiles(Result);
-      end
-      else begin
-        Structure.UpdateInterfaceP(LFPSO.Structure);
+        Structure.UpdateProfiles(LFPSO.Result);
       end;
-      PlotProfile;
-    except
-      on E: exception do
-      begin
-        ShowMessage(E.Message);
-        FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
-        FSeriesList[Project.ActiveModel.CurveID].Repaint;
-        Screen.Cursor := crDefault;
-        CalcRun.Enabled := True;
-      end;
-    end;
-    FinalizeCalc(FCalc);
+    end
+    else
+      Structure.UpdateInterfaceNP(LFPSO.Structure);
+
     Project.ActiveModel.Data  := Structure.ToString;
   finally
-    FCalc.Free;
+    Screen.Cursor := crDefault;
     LFPSO.Free;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
     spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
   end;
+  CalcRunExecute(nil);
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);

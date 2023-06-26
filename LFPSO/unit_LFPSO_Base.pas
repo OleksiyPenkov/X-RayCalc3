@@ -87,6 +87,7 @@ type
       procedure ApplyCFactor(var c1, c2: single);// inline;
       function Rand(const dx: Single): single;
     private
+     procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
 
 
 
@@ -318,7 +319,6 @@ begin
 end;
 
 
-
 procedure TLFPSO_BASE.FindTheBest;
 var
   i, Result: integer;
@@ -338,8 +338,14 @@ begin
       Calc.Limit     := FLimit;
 
       Calc.Model := FitModelToLayer(X[i]);
-      Calc.Model.Materials := FMaterials;
+      if Length(FMaterials) <> 0 then
+        Calc.Model.Materials := FMaterials;
+
       Calc.Run;
+
+      if Length(FMaterials) = 0 then
+        FMaterials := Calc.Model.Materials;
+
       Calc.CalcChiSquare(FFitParams.ThetaWieght);
 
       if Calc.ChiSQR < FLastBestChiSqr then
@@ -357,26 +363,24 @@ begin
     end;
   end;
 
-  pbest := X[Result];
+  pbest := Copy(X[Result], 0, MaxInt);
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := X[Result];
+    gbest := Copy(X[Result], 0, MaxInt);
+    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
+    begin
+      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+      abest := Copy(gbest, 0, MaxInt);
+    end;
   end
   else begin
     SetLength(FResultingCurve, 0);
     Inc(FJammingCount);
   end;
 
-  if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
-  begin
-    FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-    abest := X[Result];
-  end;
-
   CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
-
 end;
 
 procedure TLFPSO_BASE.Init(const Step: integer);
@@ -392,6 +396,28 @@ begin
   FindTheBest;
 
   SendUpdateMessage(Step);
+end;
+
+procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0: single);
+begin
+  FReInit := True;
+  if ReInitCount > FFitParams.ReInitMax then // recover previous best solution
+  begin
+    ReInitCount := 0;
+    gbest := Copy(abest, 0, MaxInt);
+    FGlobalBestChiSqr := FAbsoluteBestChiSqr;
+    FFitParams.Vmax := Vmax0;
+  end
+  else
+  begin
+    FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
+    FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
+  end;
+  X[0] := Copy(gbest, 0, MaxInt);
+  Init(t);
+  Inc(ReInitCount);
+  FJammingCount := 0;
+  dec(SuccessCount);
 end;
 
 procedure TLFPSO_BASE.Run;
@@ -431,32 +457,11 @@ begin
     if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-    begin
-      FReInit := True;
-      if ReInitCount > FFitParams.ReInitMax then // recover previous best solution
-      begin
-        ReInitCount := 0;
-        gbest := abest;
-        FGlobalBestChiSqr := FAbsoluteBestChiSqr;
-        FFitParams.Vmax := Vmax0;
-      end
-      else
-      begin
-        FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
-        FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
-      end;
-      X[0] := gbest;
-      Init(t);
-      Inc(ReInitCount);
-      FJammingCount := 0;
-      dec(SuccessCount);
-    end
-    else begin
-      abest := gbest;
+      Shake(SuccessCount, ReInitCount, t, Vmax0)
+    else
       inc(SuccessCount);
-    end;
   end;
-  UpdateStructure(gbest);
+  UpdateStructure(abest);
 end;
 
 procedure TLFPSO_BASE.Seed;
