@@ -287,7 +287,10 @@ begin
     FSelectedStack := -1;
 
     for I := 0 to High(FStacks) do
+    begin
       FStacks[i].ID := i;
+      FStacks[i].UpdateLayersID;
+    end;
   end;
 end;
 
