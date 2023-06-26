@@ -474,7 +474,11 @@ uses
   frm_MaterialsLibrary,
   frm_about,
   editor_Gradient,
-  frm_ExtensionType, math_globals, editor_HenkeTable, editor_JSON, unit_LFPSO_Poly;
+  frm_ExtensionType,
+  math_globals,
+  editor_HenkeTable,
+  editor_JSON,
+  unit_LFPSO_Poly;
 
 {$R *.dfm}
 
@@ -1730,7 +1734,7 @@ begin
     CalcRunExecute(nil);
   finally
     Screen.Cursor := crDefault;
-    LFPSO.Free;
+    FreeAndNil(LFPSO);
   end;
 end;
 
