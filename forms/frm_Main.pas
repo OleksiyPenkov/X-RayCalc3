@@ -86,7 +86,7 @@ type
     ProjectItemExtension: TAction;
     DataCopyClpbrd: TAction;
     DataExport: TAction;
-    actShowLibrary: TAction;
+    actNewMaterial: TAction;
     actAutoFitting: TAction;
     ilProject: TImageList;
     Project1: TMenuItem;
@@ -304,6 +304,8 @@ type
     edPolyOrder: TEdit;
     N10: TMenuItem;
     Fitting1: TMenuItem;
+    N11: TMenuItem;
+    MaterialsLibrary1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -351,7 +353,7 @@ type
     procedure actModelCopyExecute(Sender: TObject);
     procedure actModelPasteExecute(Sender: TObject);
     procedure pmProjectPopup(Sender: TObject);
-    procedure actShowLibraryExecute(Sender: TObject);
+    procedure actNewMaterialExecute(Sender: TObject);
     procedure FileCopyPlotBMPExecute(Sender: TObject);
     procedure FilePlotCopyWMFExecute(Sender: TObject);
     procedure FilePlotToFileExecute(Sender: TObject);
@@ -471,7 +473,7 @@ uses
   frm_Limits,
   editor_proj_item,
   ClipBrd,
-  frm_MaterialsLibrary,
+  frm_NewMaterial,
   frm_about,
   editor_Gradient,
   frm_ExtensionType,
@@ -1003,9 +1005,9 @@ begin
   Project.ActiveModel.Data := S;
 end;
 
-procedure TfrmMain.actShowLibraryExecute(Sender: TObject);
+procedure TfrmMain.actNewMaterialExecute(Sender: TObject);
 begin
-  frmMaterialsLibrary.ShowModal;
+  frmNewMaterial.ShowModal;
 end;
 
 procedure TfrmMain.AddCurve(Data: PProjectData);

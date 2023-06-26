@@ -23,7 +23,7 @@ uses
   frm_Limits in 'forms\frm_Limits.pas' {frmLimits},
   editor_proj_item in 'editors\editor_proj_item.pas' {edtrProjectItem},
   frm_about in 'forms\frm_about.pas' {frmAbout},
-  frm_MaterialsLibrary in 'forms\frm_MaterialsLibrary.pas' {frmMaterialsLibrary},
+  frm_NewMaterial in 'forms\frm_NewMaterial.pas' {frmNewMaterial},
   unit_LFPSO_Periodic in 'LFPSO\unit_LFPSO_Periodic.pas',
   unit_LFPSO_Regular in 'LFPSO\unit_LFPSO_Regular.pas',
   frm_MaterialSelector in 'forms\frm_MaterialSelector.pas' {frmMaterialSelector},
@@ -46,7 +46,7 @@ begin
   Application.CreateForm(TfrmLimits, frmLimits);
   Application.CreateForm(TedtrProjectItem, edtrProjectItem);
   Application.CreateForm(TfrmAbout, frmAbout);
-  Application.CreateForm(TfrmMaterialsLibrary, frmMaterialsLibrary);
+  Application.CreateForm(TfrmNewMaterial, frmNewMaterial);
   Application.CreateForm(TfrmMaterialSelector, frmMaterialSelector);
   Application.CreateForm(TedtrGradient, edtrGradient);
   Application.CreateForm(TfrmExtensionSelector, frmExtensionSelector);

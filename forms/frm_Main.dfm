@@ -2058,11 +2058,18 @@ object frmMain: TfrmMain
     object ools1: TMenuItem
       Caption = 'Tools'
       object ShowLibrary1: TMenuItem
-        Action = actShowLibrary
-        Caption = 'Materials Library'
+        Action = actNewMaterial
+        Caption = 'Create new material ...'
       end
       object EditHenketable1: TMenuItem
         Action = actEditHenke
+      end
+      object N11: TMenuItem
+        Caption = '-'
+      end
+      object MaterialsLibrary1: TMenuItem
+        Caption = 'Materials Library'
+        Enabled = False
       end
     end
     object Calc2: TMenuItem
@@ -2809,7 +2816,7 @@ object frmMain: TfrmMain
       item
         Items = <
           item
-            Action = actShowLibrary
+            Action = actNewMaterial
             Caption = '&Library'
             ImageIndex = 19
             CommandProperties.ButtonSize = bsLarge
@@ -3091,10 +3098,10 @@ object frmMain: TfrmMain
       Caption = 'DataExport'
       OnExecute = DataExportExecute
     end
-    object actShowLibrary: TAction
+    object actNewMaterial: TAction
       Category = 'Materials'
-      Caption = 'Show Library'
-      OnExecute = actShowLibraryExecute
+      Caption = 'New material'
+      OnExecute = actNewMaterialExecute
     end
     object actAutoFitting: TAction
       Category = 'Calc'

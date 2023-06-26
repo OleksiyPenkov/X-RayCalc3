@@ -180,8 +180,8 @@
             <Form>frmAbout</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="forms\frm_MaterialsLibrary.pas">
-            <Form>frmMaterialsLibrary</Form>
+        <DCCReference Include="forms\frm_NewMaterial.pas">
+            <Form>frmNewMaterial</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Periodic.pas"/>
