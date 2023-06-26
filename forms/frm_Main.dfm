@@ -10,6 +10,7 @@ object frmMain: TfrmMain
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  KeyPreview = True
   Menu = mmMain
   Position = poDesigned
   WindowState = wsMaximized
@@ -811,7 +812,7 @@ object frmMain: TfrmMain
           object RzPageControl1: TRzPageControl
             Left = 2
             Top = 2
-            Width = 343
+            Width = 359
             Height = 101
             Hint = ''
             ActivePage = TabSheet1
@@ -862,7 +863,7 @@ object frmMain: TfrmMain
                 ParentFont = False
               end
               object Label5: TLabel
-                Left = 154
+                Left = 167
                 Top = 50
                 Width = 38
                 Height = 13
@@ -875,7 +876,7 @@ object frmMain: TfrmMain
                 ParentFont = False
               end
               object Label21: TLabel
-                Left = 238
+                Left = 260
                 Top = 49
                 Width = 32
                 Height = 15
@@ -924,7 +925,7 @@ object frmMain: TfrmMain
                 TabOrder = 2
               end
               object edFWindow: TEdit
-                Left = 192
+                Left = 205
                 Top = 46
                 Width = 41
                 Height = 22
@@ -939,7 +940,7 @@ object frmMain: TfrmMain
                 Text = '0.05'
               end
               object cbTWChi: TComboBox
-                Left = 274
+                Left = 296
                 Top = 46
                 Width = 56
                 Height = 23
@@ -970,14 +971,44 @@ object frmMain: TfrmMain
                 Text = '0.005'
               end
               object cbTreatPeriodic: TRzCheckBox
-                Left = 229
+                Left = 192
                 Top = 13
-                Width = 101
+                Width = 66
                 Height = 19
-                Caption = 'Treat as peridic'
+                Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
                 TabOrder = 6
+              end
+              object cbPoly: TRzCheckBox
+                Left = 264
+                Top = 13
+                Width = 46
+                Height = 19
+                Caption = 'Poly'
+                Enabled = False
+                State = cbUnchecked
+                TabOrder = 7
+              end
+              object edPolyOrder: TEdit
+                Left = 316
+                Top = 11
+                Width = 34
+                Height = 22
+                Hint = 'Polynomial order'
+                Alignment = taRightJustify
+                Font.Charset = DEFAULT_CHARSET
+                Font.Color = clBlack
+                Font.Height = -12
+                Font.Name = 'Tahoma'
+                Font.Style = []
+                MaxLength = 1
+                NumbersOnly = True
+                ParentFont = False
+                ParentShowHint = False
+                ShowHint = True
+                TabOrder = 8
+                Text = '1'
               end
             end
             object TabSheet2: TRzTabSheet
@@ -1991,12 +2022,17 @@ object frmMain: TfrmMain
     object Calc1: TMenuItem
       Caption = 'Calc'
       object Calc3: TMenuItem
-        Caption = 'Calc'
-        ShortCut = 116
+        Action = CalcRun
       end
       object Calcall1: TMenuItem
         Caption = 'Calc all'
         ShortCut = 123
+      end
+      object N10: TMenuItem
+        Caption = '-'
+      end
+      object Fitting1: TMenuItem
+        Action = actAutoFitting
       end
     end
     object Result1: TMenuItem
@@ -2023,11 +2059,18 @@ object frmMain: TfrmMain
     object ools1: TMenuItem
       Caption = 'Tools'
       object ShowLibrary1: TMenuItem
-        Action = actShowLibrary
-        Caption = 'Materials Library'
+        Action = actNewMaterial
+        Caption = 'Create new material ...'
       end
       object EditHenketable1: TMenuItem
         Action = actEditHenke
+      end
+      object N11: TMenuItem
+        Caption = '-'
+      end
+      object MaterialsLibrary1: TMenuItem
+        Caption = 'Materials Library'
+        Enabled = False
       end
     end
     object Calc2: TMenuItem
@@ -2470,7 +2513,7 @@ object frmMain: TfrmMain
               item
                 Action = CalcAll
                 Caption = '&Compute All'
-                ShortCut = 123
+                ShortCut = 117
               end>
             Action = CalcRun
             Caption = '&Run'
@@ -2774,7 +2817,7 @@ object frmMain: TfrmMain
       item
         Items = <
           item
-            Action = actShowLibrary
+            Action = actNewMaterial
             Caption = '&Library'
             ImageIndex = 19
             CommandProperties.ButtonSize = bsLarge
@@ -2940,7 +2983,7 @@ object frmMain: TfrmMain
     object CalcAll: TAction
       Category = 'Calc'
       Caption = 'Calc all models'
-      ShortCut = 123
+      ShortCut = 117
       OnExecute = CalcAllExecute
     end
     object ProjectItemDelete: TAction
@@ -3056,10 +3099,10 @@ object frmMain: TfrmMain
       Caption = 'DataExport'
       OnExecute = DataExportExecute
     end
-    object actShowLibrary: TAction
+    object actNewMaterial: TAction
       Category = 'Materials'
-      Caption = 'Show Library'
-      OnExecute = actShowLibraryExecute
+      Caption = 'New material'
+      OnExecute = actNewMaterialExecute
     end
     object actAutoFitting: TAction
       Category = 'Calc'

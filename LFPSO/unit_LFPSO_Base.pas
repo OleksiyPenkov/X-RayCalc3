@@ -18,9 +18,12 @@ type
     Curve   : TDataArray;
   end;
 
-  TVector = array of single;   // Array of layer parameters
+  TLayerIndexes = array [1..3] of Integer;
+  TIndexes  = array of TLayerIndexes;
 
-  TSolution = array [1..3] of TVector; // H, Sigma, rho x N Layers
+  TLayer = array [1..3] of single;   // Array of layer parameters
+
+  TSolution = array of TLayer; // H, Sigma, rho x N Layers
 
   TPopulation = array of TSolution;
 
@@ -58,16 +61,16 @@ type
       FLimit: single;
       FTerminated: Boolean;
       FMovAvg: TDataArray;
+      CFactor: single;
 
-      function XtoStructure(const Index: integer): TFitStructure;
-      procedure FindTheBest;
-      function GetResult: TLayeredModel;
+      procedure FindTheBest; virtual;
+      function GetResult: TLayeredModel; virtual;
 
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
-      procedure CheckLimits(const i, j, k: integer); inline;
-      procedure SetParams(const Value: TFitParams);
-      procedure ReInit(const Step: integer); //inline;
+      procedure CheckLimits(const i, j, k: integer); virtual;
+      procedure SetParams(const Value: TFitParams); virtual;
+      procedure Init(const Step: integer); //inline;
       function Omega(const t, TMax: integer): single; inline;
       procedure SetDomain(const Count: integer; var X: TPopulation);
 
@@ -75,10 +78,17 @@ type
       procedure UpdatePSO(const t: integer); virtual;
       procedure UpdateLFPSO(const t: integer); virtual;
       procedure Seed;virtual;
+      procedure ReSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
-      function GBestStructure(best: TSolution): TFitStructure; virtual;
-      function GetStructure: TFitStructure;
+      procedure UpdateStructure(const Solution:TSolution); virtual;
+      function FitModelToLayer(Solution: TSolution): TLayeredModel;
+      procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
+      procedure Init_DomainsP;
+      procedure ApplyCFactor(var c1, c2: single);// inline;
+      function Rand(const dx: Single): single;
     private
+     procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
+
 
 
     public
@@ -86,14 +96,14 @@ type
       destructor Destroy; override;
 
       property Materials: TMaterials read FMaterials write FMaterials;
-      property Structure: TFitStructure read GetStructure write SetStructure;
+      property Structure: TFitStructure read FStructure write SetStructure;
       property Result : TLayeredModel read GetResult;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
 
-      procedure Run(CalcConditions: TCalcThreadParams);
+      procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
 
   end;
@@ -108,14 +118,13 @@ const
   MaxC = 10;
   a = 0.5;
   eps = 1;
-  c1m = 1.49445;
-  c2m = 1.49445;
+  c1m = 1.41;
+  c2m = 1.41;
 
 
 implementation
 
 uses
-  unit_FitHelpers,
   Forms,
   System.SysUtils,
   Neslib.FastMath,
@@ -171,9 +180,9 @@ procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulatio
 var
   i, j, k: integer;
 begin
-  for I := 0 to High(X) do // for every member of the population
-    for j := 1 to 3 do // for H, s, rho
-      for k := 0 to High(X[i][j]) do // for every layer
+  for I := 0 to High(X) do                  // for every member of the population
+    for j := 0 to High(X[i]) do             // for every layer
+      for k := 1 to 3 do                    // for H, s, rho
         Result[i][j][k] := X[i][j][k] * v;
 end;
 
@@ -185,6 +194,16 @@ begin
 end;
 
 { TLFPSO }
+
+function TLFPSO_BASE.Rand(const dx: Single):single;
+begin
+  Result := (-1 + 2 * Random) * dx;
+end;
+
+procedure TLFPSO_BASE.ReSeed;
+begin
+
+end;
 
 function TLFPSO_BASE.Omega(const t, TMax: integer): single;
 begin
@@ -202,19 +221,63 @@ begin
   inherited;
 end;
 
-function TLFPSO_BASE.GetResult: TLayeredModel;
+function TLFPSO_BASE.FitModelToLayer(Solution: TSolution): TLayeredModel;
+var
+  i, k, j, LayerIndex: Integer;
+  Data: TLayersData;
 begin
-  Result := ExpandPeriodicFitModel(GBestStructure(abest));
+  Result := TLayeredModel.Create;
+  Result.Init;
+
+  LayerIndex := 0;
+  for I := 0 to High(FStructure.Stacks) do
+  begin
+    SetLength(Data, 0);
+    SetLength(Data, Length(FStructure.Stacks[i].Layers));
+    for k := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
+      Data[k].H.V := Solution[LayerIndex][1];
+      Data[k].s.V := Solution[LayerIndex][2];
+      Data[k].r.V := Solution[LayerIndex][3];
+      Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+      Inc(LayerIndex);
+    end;
+
+    for j := 1  to FStructure.Stacks[i].N do
+      Result.AddLayers(-1, Data);
+  end;
+
+  SetLength(Data, 1);
+  Data[0].Material := FStructure.Subs.Material;
+  Data[0].s := FStructure.Subs.s;
+  Data[0].r := FStructure.Subs.r;
+
+  Result.AddSubstrate(Data);
 end;
 
-function TLFPSO_BASE.GetStructure: TFitStructure;
+function TLFPSO_BASE.GetResult: TLayeredModel;
 begin
-  Result := GBestStructure(abest);
+  Result := FitModelToLayer(abest);
 end;
 
 procedure TLFPSO_BASE.InitVelocity;
 begin
 
+end;
+
+procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
+begin
+  if FFitParams.CFactor and (CFactor > 0) then
+  begin
+    c1 := c1m * CFactor;
+    c2 := c2m * CFactor;
+  end else
+  begin
+    c1 := c1m;
+    c2 := c2m;
+  end;
 end;
 
 procedure TLFPSO_BASE.CheckLimits(const i, j, k: integer);
@@ -256,7 +319,6 @@ begin
 end;
 
 
-
 procedure TLFPSO_BASE.FindTheBest;
 var
   i, Result: integer;
@@ -275,9 +337,15 @@ begin
       Calc.MovAvg    := FMovAvg;
       Calc.Limit     := FLimit;
 
-      Calc.Model := ExpandPeriodicFitModel(XtoStructure(i));
-      Calc.Model.Materials := FMaterials;
+      Calc.Model := FitModelToLayer(X[i]);
+      if Length(FMaterials) <> 0 then
+        Calc.Model.Materials := FMaterials;    // loading from cache
+
       Calc.Run;
+
+      if Length(FMaterials) = 0 then
+        FMaterials := Calc.Model.Materials;    // saving to cache
+
       Calc.CalcChiSquare(FFitParams.ThetaWieght);
 
       if Calc.ChiSQR < FLastBestChiSqr then
@@ -295,36 +363,62 @@ begin
     end;
   end;
 
-  pbest := X[Result];
+  pbest := Copy(X[Result], 0, MaxInt);
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := X[Result];
+    gbest := Copy(X[Result], 0, MaxInt);
+    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
+    begin
+      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+      abest := Copy(gbest, 0, MaxInt);
+    end;
   end
   else begin
     SetLength(FResultingCurve, 0);
     Inc(FJammingCount);
   end;
 
-  if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
-  begin
-    FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-    abest := X[Result];
-  end;
+  CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
 end;
 
-procedure TLFPSO_BASE.ReInit(const Step: integer);
+procedure TLFPSO_BASE.Init(const Step: integer);
 begin
   FJammingCount := 0;
 
-  Seed;
+  if Step = 0 then
+    Seed
+  else
+    ReSeed;
+
   InitVelocity;
   FindTheBest;
 
   SendUpdateMessage(Step);
 end;
 
+procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0: single);
+begin
+  FReInit := True;
+  if ReInitCount > FFitParams.ReInitMax then // recover previous best solution
+  begin
+    ReInitCount := 0;
+    gbest := Copy(abest, 0, MaxInt);
+    FGlobalBestChiSqr := FAbsoluteBestChiSqr;
+    FFitParams.Vmax := Vmax0;
+  end
+  else
+  begin
+    FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
+    FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
+  end;
+  X[0] := Copy(gbest, 0, MaxInt);
+  Init(t);
+  Inc(ReInitCount);
+  FJammingCount := 0;
+  dec(SuccessCount);
+end;
 
 procedure TLFPSO_BASE.Run;
 var
@@ -334,6 +428,8 @@ var
   Vmax0: single;
   SuccessCount: integer;
 begin
+  Randomize;
+
   FReInit := False;
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
@@ -344,7 +440,7 @@ begin
   FCalcParams := CalcConditions;
   SetLength(FMaterials, 0);
 
-  ReInit(0);
+  Init(0);
 
   for t := 1 to FTMax do
   begin
@@ -361,32 +457,11 @@ begin
     if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-    begin
-      FReInit := True;
-      if ReInitCount > FFitParams.ReInitMax then
-      begin
-        ReInitCount := 0;
-        SetStructure(GBestStructure(abest));
-        gbest := abest;
-        FGlobalBestChiSqr := FAbsoluteBestChiSqr;
-        FFitParams.Vmax := Vmax0;
-      end
-      else
-      begin
-        SetStructure(GBestStructure(gbest));
-        FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
-        FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
-      end;
-      ReInit(t);
-      Inc(ReInitCount);
-      FJammingCount := 0;
-      dec(SuccessCount);
-    end
-    else begin
-      abest := gbest;
+      Shake(SuccessCount, ReInitCount, t, Vmax0)
+    else
       inc(SuccessCount);
-    end;
   end;
+  UpdateStructure(abest);
 end;
 
 procedure TLFPSO_BASE.Seed;
@@ -415,14 +490,10 @@ end;
 
 procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
 var
-  i: integer;
+  i, j, k: integer;
 begin
   for I := 0 to High(X) do
-  begin
-    SetLength(X[i][1], Count);
-    SetLength(X[i][2], Count);
-    SetLength(X[i][3], Count);
-  end;
+    SetLength(X[i], Count);
 end;
 
 procedure TLFPSO_BASE.SetParams(const Value: TFitParams);
@@ -462,40 +533,41 @@ begin
 
 end;
 
-function TLFPSO_BASE.XtoStructure(const Index: integer): TFitStructure;
+
+procedure TLFPSO_BASE.UpdateStructure(const Solution: TSolution);
 var
   i, j, LayerIndex: integer;
 begin
-  Result := FStructure;
   LayerIndex := 0;
-  for i := 0 to High(Result.Stacks) do
+  for i := 0 to High(FStructure.Stacks) do
   begin
-    for j := 0 to High(Result.Stacks[i].Layers) do
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      Result.Stacks[i].Layers[j].H.V := X[Index][1][LayerIndex];
-      Result.Stacks[i].Layers[j].s.V := X[Index][2][LayerIndex];
-      Result.Stacks[i].Layers[j].r.V := X[Index][3][LayerIndex];
+      FStructure.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1];
+      FStructure.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2];
+      FStructure.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3];
       Inc(LayerIndex);
     end;
   end;
 end;
 
-function TLFPSO_BASE.GBestStructure(best: TSolution): TFitStructure;
-var
-  i, j, LayerIndex: integer;
+procedure TLFPSO_BASE.Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
 begin
-  Result := FStructure;
-  LayerIndex := 0;
-  for i := 0 to High(Result.Stacks) do
-  begin
-    for j := 0 to High(Result.Stacks[i].Layers) do
-    begin
-      Result.Stacks[i].Layers[j].H.V := best[1][LayerIndex];
-      Result.Stacks[i].Layers[j].s.V := best[2][LayerIndex];
-      Result.Stacks[i].Layers[j].r.V := best[3][LayerIndex];
-      Inc(LayerIndex);
-    end;
-  end;
+       X[0][LIndex][PIndex] := Val.V;
+    Xmax[0][LIndex][PIndex] := Val.max;
+    Xmin[0][LIndex][PIndex] := Val.min;
+  Xrange[0][LIndex][PIndex] := Xmax[0][LIndex][PIndex] - Xmin[0][LIndex][PIndex];
+end;
+
+procedure TLFPSO_BASE.Init_DomainsP;
+begin
+  SetDomain(FLayersCount, X);
+  SetDomain(FLayersCount, Xmax);
+  SetDomain(FLayersCount, Xmin);
+  SetDomain(FLayersCount, Xrange);
+  SetDomain(FLayersCount, Vmin);
+  SetDomain(FLayersCount, Vmax);
+  SetDomain(FLayersCount, V);
 end;
 
 end.

@@ -7,7 +7,7 @@
   *
   ****************************************************************************** *)
 
-unit frm_MaterialsLibrary;
+unit frm_NewMaterial;
 
 interface
 
@@ -29,8 +29,7 @@ uses
   Menus, Vcl.Buttons;
 
 type
-  TfrmMaterialsLibrary = class(TForm)
-    lbFiles: TListBox;
+  TfrmNewMaterial = class(TForm)
     RzGroupBox1: TRzGroupBox;
     StringGrid1: TStringGrid;
     bntSave: TButton;
@@ -44,18 +43,16 @@ type
     Inserttothetable1: TMenuItem;
     N1: TMenuItem;
     Deletefile1: TMenuItem;
-    btnGraph: TBitBtn;
-    btnAddNew: TButton;
-    procedure FormShow(Sender: TObject);
+    btnClear: TButton;
+    btnClose: TButton;
     procedure lbFilesDblClick(Sender: TObject);
     procedure SpinEdit1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure bntSaveClick(Sender: TObject);
     procedure lbFilesKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
-    procedure Deletefile1Click(Sender: TObject);
-    procedure btnGraphClick(Sender: TObject);
-    procedure btnAddNewClick(Sender: TObject);
+//    procedure Deletefile1Click(Sender: TObject);
+    procedure btnClearClick(Sender: TObject);
   private
     { Private declarations }
     function NewElement: boolean;
@@ -63,10 +60,8 @@ type
     { Public declarations }
   end;
 
-function GetElementName: string;
-
 var
-  frmMaterialsLibrary: TfrmMaterialsLibrary;
+  frmNewMaterial: TfrmNewMaterial;
 
 implementation
 
@@ -79,22 +74,14 @@ uses
 
 {$R *.dfm}
 
-function GetElementName: string;
-begin
-  if frmMaterialsLibrary.ShowModal = mrOk then
-    Result := frmMaterialsLibrary.lbFiles.Items[frmMaterialsLibrary.lbFiles.ItemIndex];
-end;
 
-procedure TfrmMaterialsLibrary.bntSaveClick(Sender: TObject);
+procedure TfrmNewMaterial.bntSaveClick(Sender: TObject);
 begin
   if NewElement then
-  begin
     ShowMessage('Material ' + Edit1.Text + ' was created succefully.');
-    lbFiles.Items.Add(Edit1.Text);
-  end;
 end;
 
-procedure TfrmMaterialsLibrary.btnAddNewClick(Sender: TObject);
+procedure TfrmNewMaterial.btnClearClick(Sender: TObject);
 begin
   Edit1.Text := '';
   Edit2.Text := '';
@@ -103,102 +90,37 @@ begin
   stringGrid1.Cells[1,1] := '';
 end;
 
-procedure TfrmMaterialsLibrary.btnGraphClick(Sender: TObject);
-//const
-//  H = 12398.6;
-//  kk = 0.54014E-5;
+
+//procedure TfrmNewMaterial.Deletefile1Click(Sender: TObject);
 //var
-//  i, N: integer;
-//  s, Name: string;
-//  e1, c, beta, gamma: single;
-//  f1, f2: TComplex;
-//  Size: integer;
-//  Na, Nro, L: single;
-//  StreamIn: TMemoryStream;
-//  StrBuffer: PChar;
-//
-//  function GetString(Stream: TMemoryStream): string;
+//  Name: string;
+//begin
+//  Name := lbFiles.Items[lbFiles.ItemIndex];
+//  if MessageDlg('File will be deleted! Do you want to continue?', mtWarning, [mbYes, mbNo], 0) = mrYes then
 //  begin
-//    Stream.Read(size, SizeOf(size));
-//    StrBuffer := AllocMem(size);
-//    Stream.Read(StrBuffer^, size);
-//    Result := (StrBuffer);
-//    FreeMem(StrBuffer);
+//    lbFiles.Items.Delete(lbFiles.ItemIndex);
+//    DeleteFile(Settings.HenkePath + Name + '.bin');
 //  end;
+//end;
 
-
-begin
-
-//  Name := lbFiles.Items[frmMaterialList.lbFiles.ItemIndex];
-//  frmRIGraph.Clear;
-//  try
-//    StreamIn := TMemoryStream.Create;
-//
-//    StreamIn.LoadFromFile(Settings.HenkePath + Name + '.bin');
-//
-//    s := GetString(StreamIn);
-//    Size := SizeOf(Na);
-//
-//    StreamIn.Read(Na, Size);
-//    StreamIn.Read(Nro, Size);
-//
-//    while StreamIn.Position < StreamIn.Size do
-//    begin
-//      StreamIn.Read(e1, Size);
-//      StreamIn.Read(f1.re, Size);
-//      StreamIn.Read(f1.im, Size);
-//
-//      L := H / e1;
-//      c := kk * Nro / Na * sqr(L);
-//      if f1.re <> -9999 then
-//        Beta := c * f1.re
-//      else
-//        Beta := 0;
-//      Gamma := c * f1.im;
-//
-//      frmRIGraph.Add(L, Beta, Gamma);
-//    end;
-//    frmRIGraph.Show;
-//  finally
-//    StreamIn.Free;
-//  end;
-end;
-
-procedure TfrmMaterialsLibrary.Deletefile1Click(Sender: TObject);
-var
-  Name: string;
-begin
-  Name := lbFiles.Items[lbFiles.ItemIndex];
-  if MessageDlg('File will be deleted! Do you want to continue?', mtWarning, [mbYes, mbNo], 0) = mrYes then
-  begin
-    lbFiles.Items.Delete(lbFiles.ItemIndex);
-    DeleteFile(Settings.HenkePath + Name + '.bin');
-  end;
-end;
-
-procedure TfrmMaterialsLibrary.FormCreate(Sender: TObject);
+procedure TfrmNewMaterial.FormCreate(Sender: TObject);
 begin
   StringGrid1.Cells[0, 0] := 'Element';
   StringGrid1.Cells[1, 0] := 'Conc. at%';
 end;
 
-procedure TfrmMaterialsLibrary.FormShow(Sender: TObject);
-begin
-  FillElementsList(Settings.HenkePath, lbFiles);
-end;
-
-procedure TfrmMaterialsLibrary.lbFilesDblClick(Sender: TObject);
+procedure TfrmNewMaterial.lbFilesDblClick(Sender: TObject);
 begin
   ModalResult := mrOk;
 end;
 
-procedure TfrmMaterialsLibrary.lbFilesKeyDown(Sender: TObject; var Key: Word;
+procedure TfrmNewMaterial.lbFilesKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   if Key = vk_Return  then lbFilesDblClick(Sender);
 end;
 
-function TfrmMaterialsLibrary.NewElement: boolean;
+function TfrmNewMaterial.NewElement: boolean;
 var
   i, N: integer;
   s: string;
@@ -282,7 +204,7 @@ begin
   end;
 end;
 
-procedure TfrmMaterialsLibrary.SpinEdit1Change(Sender: TObject);
+procedure TfrmNewMaterial.SpinEdit1Change(Sender: TObject);
 begin
   StringGrid1.RowCount := SpinEdit1.Value + 1;
 end;

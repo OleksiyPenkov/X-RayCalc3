@@ -45,6 +45,7 @@ type
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
       procedure DeleteLayer(const Index: integer);
+      procedure UpdateLayersID;
 
       property Selected: Boolean write SetSelected;
       property ID: Integer read FID write SetID;
@@ -146,6 +147,14 @@ begin
   FLayers[Index].Onset := False;
 end;
 
+procedure TXRCStack.UpdateLayersID;
+var
+  i: Integer;
+begin
+  for I := 0 to High(Layers) do
+    Layers[i].UpdateID(FID, i);
+end;
+
 procedure TXRCStack.UpdateLayersStatus(const Pairable: Boolean);
 var
   i: integer;
@@ -218,6 +227,8 @@ begin
     Height := Height - FLayers[0].Height
   else
     Height := 80;
+
+  UpdateLayersID;
 end;
 
 destructor TXRCStack.Destroy;

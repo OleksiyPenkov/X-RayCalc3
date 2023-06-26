@@ -51,9 +51,7 @@ begin
   begin
     N := edN.IntValue;
     Name := edTitle.Text;
-  end
-  else
-    Name := '';
+  end;
 end;
 
 end.

@@ -1,10 +1,10 @@
-object frmMaterialsLibrary: TfrmMaterialsLibrary
+object frmNewMaterial: TfrmNewMaterial
   Left = 0
   Top = 0
   BorderStyle = bsToolWindow
-  Caption = 'Materials Library'
-  ClientHeight = 382
-  ClientWidth = 367
+  Caption = 'New Material'
+  ClientHeight = 366
+  ClientWidth = 284
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,55 +13,48 @@ object frmMaterialsLibrary: TfrmMaterialsLibrary
   Font.Style = []
   Position = poMainFormCenter
   OnCreate = FormCreate
-  OnShow = FormShow
   TextHeight = 13
-  object lbFiles: TListBox
-    Left = 8
-    Top = 8
-    Width = 161
-    Height = 321
-    ItemHeight = 13
-    PopupMenu = PopupMenu1
-    TabOrder = 0
-    OnDblClick = lbFilesDblClick
-    OnKeyDown = lbFilesKeyDown
-  end
   object RzGroupBox1: TRzGroupBox
-    Left = 176
-    Top = 8
-    Width = 185
-    Height = 365
-    Caption = 'Create new compound'
+    AlignWithMargins = True
+    Left = 3
+    Top = 3
+    Width = 278
+    Height = 360
+    Align = alClient
     Color = 15987699
-    TabOrder = 1
+    TabOrder = 0
+    ExplicitLeft = 0
+    ExplicitTop = 0
+    ExplicitWidth = 295
+    ExplicitHeight = 361
     object Label3: TLabel
-      Left = 18
-      Top = 69
+      Left = 115
+      Top = 55
       Width = 100
       Height = 13
       Caption = 'Number of elements:'
     end
     object Label2: TLabel
-      Left = 91
-      Top = 19
+      Left = 121
+      Top = 27
       Width = 72
       Height = 13
       Caption = 'Density, g/cm3'
     end
     object Label1: TLabel
       Left = 8
-      Top = 19
+      Top = 27
       Width = 27
       Height = 13
       Caption = 'Name'
     end
     object StringGrid1: TStringGrid
       Left = 8
-      Top = 95
-      Width = 169
-      Height = 226
+      Top = 79
+      Width = 265
+      Height = 240
       ColCount = 2
-      DefaultColWidth = 82
+      DefaultColWidth = 120
       DefaultRowHeight = 20
       FixedCols = 0
       RowCount = 2
@@ -69,7 +62,7 @@ object frmMaterialsLibrary: TfrmMaterialsLibrary
       TabOrder = 0
     end
     object bntSave: TButton
-      Left = 98
+      Left = 100
       Top = 331
       Width = 75
       Height = 25
@@ -78,8 +71,8 @@ object frmMaterialsLibrary: TfrmMaterialsLibrary
       OnClick = bntSaveClick
     end
     object SpinEdit1: TSpinEdit
-      Left = 127
-      Top = 65
+      Left = 224
+      Top = 51
       Width = 49
       Height = 22
       MaxValue = 10
@@ -89,37 +82,37 @@ object frmMaterialsLibrary: TfrmMaterialsLibrary
       OnChange = SpinEdit1Change
     end
     object Edit1: TEdit
-      Left = 8
-      Top = 37
+      Left = 41
+      Top = 24
       Width = 74
       Height = 21
       TabOrder = 3
     end
     object Edit2: TEdit
-      Left = 88
-      Top = 38
-      Width = 88
+      Left = 202
+      Top = 24
+      Width = 71
       Height = 21
       TabOrder = 4
     end
-    object btnAddNew: TButton
+    object btnClear: TButton
       Left = 8
       Top = 331
       Width = 75
       Height = 25
-      Caption = 'Add New'
+      Caption = 'Clear'
       TabOrder = 5
-      OnClick = btnAddNewClick
+      OnClick = btnClearClick
     end
-  end
-  object btnGraph: TBitBtn
-    Left = 48
-    Top = 339
-    Width = 75
-    Height = 25
-    Caption = 'Show Graph'
-    TabOrder = 2
-    OnClick = btnGraphClick
+    object btnClose: TButton
+      Left = 200
+      Top = 331
+      Width = 75
+      Height = 25
+      Caption = 'Close'
+      ModalResult = 8
+      TabOrder = 6
+    end
   end
   object PopupMenu1: TPopupMenu
     Left = 104
@@ -134,7 +127,6 @@ object frmMaterialsLibrary: TfrmMaterialsLibrary
     end
     object Deletefile1: TMenuItem
       Caption = 'Delete file'
-      OnClick = Deletefile1Click
     end
   end
 end

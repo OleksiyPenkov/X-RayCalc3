@@ -35,7 +35,7 @@ type
 var
   frmExtensionSelector: TfrmExtensionSelector;
 
- function AskSelectExtensionTypenAction: TExtentionType;
+ function SelectExtensionTypeAction: TExtentionType;
 
 implementation
 
@@ -47,7 +47,7 @@ resourcestring
   rstrProfileRadioCaption   = 'Profile';
   rstrProfileRadioHint      = 'Create a parameters'' distribution table';
 
-function AskSelectExtensionTypenAction: TExtentionType;
+function SelectExtensionTypeAction: TExtentionType;
 const
   mrGradient = 100;
   mrProfile = 101;

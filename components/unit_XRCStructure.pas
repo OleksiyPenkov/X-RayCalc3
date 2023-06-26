@@ -201,6 +201,24 @@ begin
 end;
 
 constructor TXRCStructure.Create(AOwner: TComponent);
+
+  procedure CreateLabel(const Caption: string; Left: Integer; var MyLabel: TRzLabel);
+  begin
+    MyLabel := TRzLabel.Create(Self);
+
+    MyLabel.Parent := Header;
+    MyLabel.Left := Left;
+    MyLabel.Top := 6;
+    MyLabel.Width := 37;
+    MyLabel.Height := 16;
+    MyLabel.Caption := Caption;
+    MyLabel.Font.Color := clWindowText;
+    MyLabel.Font.Height := -13;
+    MyLabel.Font.Name := 'Tahoma';
+    MyLabel.Font.Style := [fsBold];
+    MyLabel.ParentFont := False;
+  end;
+
 begin
   inherited Create(AOwner);
   Align := alClient;
@@ -210,17 +228,11 @@ begin
   //RzPanel1
   Header := TRzPanel.Create(Self);
 
-  //Label1
-  Label1 := TRzLabel.Create(Self);
-
-  //Label2
-  Label2 := TRzLabel.Create(Self);
-
-  //Label3
-  Label3 := TRzLabel.Create(Self);
-
-  //Label4
-  Label4 := TRzLabel.Create(Self);
+  //Labels
+  CreateLabel('Stack / Layer', 6, Label1);
+  CreateLabel('H (Å)', 110, Label2);
+  CreateLabel('σ (Å)', 181, Label3);
+  CreateLabel('ρ (g/cm³)   N', 250, Label4);
 
   //Box
   Box := TJvDesignScrollBox.Create(Self);
@@ -234,62 +246,6 @@ begin
   Header.BorderOuter := fsFlatRounded;
   Header.Color := clSkyBlue;
   Header.TabOrder := 0;
-
-  //Label1
-  Label1.Name := 'Label1';
-  Label1.Parent := Header;
-  Label1.Left := 5;
-  Label1.Top := 6;
-  Label1.Width := 37;
-  Label1.Height := 16;
-  Label1.Caption := 'Stack / Layer';
-  Label1.Font.Color := clWindowText;
-  Label1.Font.Height := -13;
-  Label1.Font.Name := 'Tahoma';
-  Label1.Font.Style := [fsBold];
-  Label1.ParentFont := False;
-
-  //Label2
-  Label2.Name := 'Label2';
-  Label2.Parent := Header;
-  Label2.Left := 110;
-  Label2.Top := 6;
-  Label2.Width := 35;
-  Label2.Height := 16;
-  Label2.Caption := 'H (Å)';
-  Label2.Font.Color := clWindowText;
-  Label2.Font.Height := -13;
-  Label2.Font.Name := 'Tahoma';
-  Label2.Font.Style := [fsBold];
-  Label2.ParentFont := False;
-
-  //Label3
-  Label3.Name := 'Label3';
-  Label3.Parent := Header;
-  Label3.Left := 181;
-  Label3.Top := 6;
-  Label3.Width := 35;
-  Label3.Height := 16;
-  Label3.Caption := 'σ (Å)';
-  Label3.Font.Color := clWindowText;
-  Label3.Font.Height := -13;
-  Label3.Font.Name := 'Tahoma';
-  Label3.Font.Style := [fsBold];
-  Label3.ParentFont := False;
-
-  //Label4
-  Label4.Name := 'Label4';
-  Label4.Parent := Header;
-  Label4.Left := 250;
-  Label4.Top := 6;
-  Label4.Width := 65;
-  Label4.Height := 16;
-  Label4.Caption := 'ρ (g/cm³)   N';
-  Label4.Font.Color := clWindowText;
-  Label4.Font.Height := -13;
-  Label4.Font.Name := 'Tahoma';
-  Label4.Font.Style := [fsBold];
-  Label4.ParentFont := False;
 
   //Box
   Box.Name := 'Box';
@@ -331,7 +287,10 @@ begin
     FSelectedStack := -1;
 
     for I := 0 to High(FStacks) do
+    begin
       FStacks[i].ID := i;
+      FStacks[i].UpdateLayersID;
+    end;
   end;
 end;
 
