@@ -1652,29 +1652,25 @@ begin
   Result :=False;
   if (Project.ActiveModel = nil) then Exit;
 
-
+  FCalc := TCalc.Create;
+  FCalc.Limit := StrToFloat(cbMinLimit.Text);
   if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
   begin
-    FCalc := TCalc.Create;
     FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
     if cbPWChiSqr.Checked then
-    begin
       FCalc.MovAvg := MovAvg(FCalc.ExpValues, StrToFloat(edFWindow.Text));
-    end;
-    GetThreadParams;
-    FCalc.Params := FCalcThreadParams;
-    FCalc.Limit := StrToFloat(cbMinLimit.Text);
-    FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
-    Result := True;
-  end
-  else begin
-    ShowMessage('Measured curve is not linked!');
   end;
+
+  GetThreadParams;
+  FCalc.Params := FCalcThreadParams;
+  FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+  Result := True;
 end;
 
 
 function TfrmMain.PrepareLFPSO: Boolean;
 begin
+  Result := False;
   if cbTreatPeriodic.Checked then
      LFPSO := TLFPSO_Periodic.Create
   else
@@ -1684,11 +1680,19 @@ begin
        LFPSO := TLFPSO_Regular.Create;
 
   LFPSO.Params := FFitParams;
-
   LFPSO.Limit := StrToFloat(cbMinLimit.Text);
-  LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
-  if cbPWChiSqr.Checked then
-    LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, StrToFloat(edFWindow.Text));
+
+  if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
+  begin
+    LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
+    if cbPWChiSqr.Checked then
+      LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, StrToFloat(edFWindow.Text));
+  end else
+  begin
+     FreeAndNil(LFPSO);
+     ShowMessage('Measured curve is not linked!');
+     Exit;
+  end;
 
   LFPSO.Structure := FFitStructure;
   PrepareInterfaceAF;
@@ -1702,9 +1706,9 @@ begin
   if not GetFitParams then Exit;
 
   try
+    if not PrepareLFPSO then Exit;
     FitStartTime := Now;
     CalcRunExecute(nil);
-    if not PrepareLFPSO then Exit;
 
     LFPSO.Run(FCalcThreadParams);
 
@@ -1721,13 +1725,13 @@ begin
       Structure.UpdateInterfaceNP(LFPSO.Structure);
 
     Project.ActiveModel.Data  := Structure.ToString;
+    DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
+    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
+    CalcRunExecute(nil);
   finally
     Screen.Cursor := crDefault;
     LFPSO.Free;
-    DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
   end;
-  CalcRunExecute(nil);
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);

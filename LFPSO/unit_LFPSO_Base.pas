@@ -339,12 +339,12 @@ begin
 
       Calc.Model := FitModelToLayer(X[i]);
       if Length(FMaterials) <> 0 then
-        Calc.Model.Materials := FMaterials;
+        Calc.Model.Materials := FMaterials;    // loading from cache
 
       Calc.Run;
 
       if Length(FMaterials) = 0 then
-        FMaterials := Calc.Model.Materials;
+        FMaterials := Calc.Model.Materials;    // saving to cache
 
       Calc.CalcChiSquare(FFitParams.ThetaWieght);
 
