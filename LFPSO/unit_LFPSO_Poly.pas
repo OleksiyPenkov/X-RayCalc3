@@ -182,7 +182,7 @@ begin
       begin
         FLastBestChiSqr  := Calc.ChiSQR;
         FResultingCurve := Calc.Results;
-        Result := i;
+        pbest := Copy(X[i], 0, MaxInt);
       end;
 
       if Calc.ChiSQR > FLastWorseChiSQR then
@@ -193,12 +193,12 @@ begin
     end;
   end;
 
-  pbest := Copy(X[Result], 0, MaxInt);
+//  pbest := Copy(X[Result], 0, MaxInt);
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := Copy(X[Result], 0, MaxInt);
+    gbest := Copy(pbest, 0, MaxInt);
     if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
@@ -218,6 +218,7 @@ begin
   FJammingCount := 0;
 
   Seed;
+  gbest  := Copy(X[0], 0, MaxInt);
 
   InitVelocity;
   FindTheBest;
@@ -256,9 +257,9 @@ begin
   for i := 0 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do
-      begin           // for H, s, rho
-        for p := 0 to High(X[i][j][k]) do
+      for k := 1 to 3 do            // for H, s, rho
+      begin
+        for p := 0 to High(X[i][j][k]) do  // for every oefficient of polynome
         begin
           if p = 0 then
           begin
@@ -282,8 +283,6 @@ var
   Vmax0: single;
   SuccessCount: integer;
 begin
-//  FFitParams.Shake := False;
-
   Randomize;
 
   FReInit := False;

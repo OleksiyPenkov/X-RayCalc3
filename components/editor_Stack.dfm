@@ -23,8 +23,8 @@ object edtrStack: TedtrStack
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 264
-    ExplicitHeight = 17
+    ExplicitWidth = 298
+    ExplicitHeight = 31
     object Label1: TLabel
       Left = 9
       Top = 13
@@ -68,8 +68,8 @@ object edtrStack: TedtrStack
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 26
-    ExplicitWidth = 264
+    ExplicitTop = 40
+    ExplicitWidth = 298
     object btnOK: TRzBitBtn
       Left = 18
       Top = 10
