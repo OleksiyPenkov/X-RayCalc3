@@ -71,6 +71,7 @@ type
       procedure UpdateInterfaceP(const Inp: TFitStructure);
       procedure UpdateInterfaceNP(const Inp: TFitStructure);
       procedure UpdateProfiles(const Inp: TLayeredModel);
+      procedure UpdateProfilesP;
       procedure Clear;
       procedure CopyLayer(const Reset: boolean);
       procedure PasteLayer;
@@ -504,6 +505,11 @@ begin
     LID := Inp.Layers[i].LayerID;
     Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].L, Inp.Layers[i].s, Inp.Layers[i].ro);
   end;
+end;
+
+procedure TXRCStructure.UpdateProfilesP;
+begin
+
 end;
 
 function TXRCStructure.ToFitStructure: TFitStructure;

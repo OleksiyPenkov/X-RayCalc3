@@ -2,8 +2,8 @@ object frmJsonEditor: TfrmJsonEditor
   Left = 0
   Top = 0
   Caption = 'Vew/Edit structure as text'
-  ClientHeight = 671
-  ClientWidth = 803
+  ClientHeight = 670
+  ClientWidth = 799
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,8 +13,8 @@ object frmJsonEditor: TfrmJsonEditor
   TextHeight = 15
   object rzstsbr1: TRzStatusBar
     Left = 0
-    Top = 652
-    Width = 803
+    Top = 651
+    Width = 799
     Height = 19
     BorderInner = fsNone
     BorderOuter = fsNone
@@ -22,14 +22,12 @@ object frmJsonEditor: TfrmJsonEditor
     BorderWidth = 0
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 651
-    ExplicitWidth = 799
   end
   object Editor: TSynEdit
     Left = 0
     Top = 29
-    Width = 803
-    Height = 623
+    Width = 799
+    Height = 622
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -67,13 +65,11 @@ object frmJsonEditor: TfrmJsonEditor
     Lines.Strings = (
       'Editor')
     SelectedColor.Alpha = 0.400000005960464500
-    ExplicitWidth = 799
-    ExplicitHeight = 622
   end
   object MainToolBar: TRzToolbar
     Left = 0
     Top = 0
-    Width = 803
+    Width = 799
     Height = 29
     BorderInner = fsNone
     BorderOuter = fsGroove
@@ -81,7 +77,6 @@ object frmJsonEditor: TfrmJsonEditor
     BorderWidth = 0
     Color = 15987699
     TabOrder = 2
-    ExplicitWidth = 799
     ToolbarControls = (
       btnSave)
     object btnSave: TRzBitBtn

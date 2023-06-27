@@ -21,10 +21,8 @@ type
   TLayerIndexes = array [1..3] of Integer;
   TIndexes  = array of TLayerIndexes;
 
-  TLayer = array [1..3] of single;   // Array of layer parameters
-
+  TLayer = array [1..3] of TFloatArray;   // Array of layer parameters
   TSolution = array of TLayer; // H, Sigma, rho x N Layers
-
   TPopulation = array of TSolution;
 
   TLFPSO_BASE = class
@@ -83,7 +81,7 @@ type
       procedure UpdateStructure(const Solution:TSolution); virtual;
       function FitModelToLayer(Solution: TSolution): TLayeredModel;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
-      procedure Init_DomainsP;
+      procedure Init_Domains;
       procedure ApplyCFactor(var c1, c2: single);// inline;
       function Rand(const dx: Single): single;
     private
@@ -178,12 +176,13 @@ end;
 
 procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
 var
-  i, j, k: integer;
+  i, j, k, p: integer;
 begin
   for I := 0 to High(X) do                  // for every member of the population
     for j := 0 to High(X[i]) do             // for every layer
       for k := 1 to 3 do                    // for H, s, rho
-        Result[i][j][k] := X[i][j][k] * v;
+        for p := 0 to High(X[i][j][k]) do
+          Result[i][j][k][p] := X[i][j][k][p] * v;
 end;
 
 function RS: integer;
@@ -237,9 +236,9 @@ begin
     for k := 0 to High(FStructure.Stacks[i].Layers) do
     begin
       Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
-      Data[k].H.V := Solution[LayerIndex][1];
-      Data[k].s.V := Solution[LayerIndex][2];
-      Data[k].r.V := Solution[LayerIndex][3];
+      Data[k].H.V := Solution[LayerIndex][1][0];
+      Data[k].s.V := Solution[LayerIndex][2][0];
+      Data[k].r.V := Solution[LayerIndex][3][0];
       Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
       Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
       Inc(LayerIndex);
@@ -282,19 +281,19 @@ end;
 
 procedure TLFPSO_BASE.CheckLimits(const i, j, k: integer);
 begin
-  if V[i][j][k] > Vmax[0][j][k] then
-             V[i][j][k] := Vmax[0][j][k];
+  if V[i][j][k][0] > Vmax[0][j][k][0] then
+             V[i][j][k][0] := Vmax[0][j][k][0];
 
-  if V[i][j][k] < Vmin[0][j][k] then
-             V[i][j][k] := Vmin[0][j][k];
+  if V[i][j][k][0] < Vmin[0][j][k][0] then
+             V[i][j][k][0] := Vmin[0][j][k][0];
 
-  X[i][j][k] := X[i][j][k] + V[i][j][k];
+  X[i][j][k][0] := X[i][j][k][0] + V[i][j][k][0];
 
-  if X[i][j][k] > Xmax[0][j][k] then
-             X[i][j][k] := Xmax[0][j][k];
+  if X[i][j][k][0] > Xmax[0][j][k][0] then
+             X[i][j][k][0] := Xmax[0][j][k][0];
 
-  if X[i][j][k] < Xmin[0][j][k] then
-             X[i][j][k] := Xmin[0][j][k];
+  if X[i][j][k][0] < Xmin[0][j][k][0] then
+             X[i][j][k][0] := Xmin[0][j][k][0];
 end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;
@@ -490,10 +489,16 @@ end;
 
 procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
 var
-  i, j, k: integer;
+  i, j, k, p: integer;
 begin
+  SetLength(X, FPopulation);
   for I := 0 to High(X) do
+  begin
     SetLength(X[i], Count);
+    for j := 0 to High(X[i]) do
+      for k := 1 to 3 do
+        SetLength(X[i][j][k], 1);
+  end;
 end;
 
 procedure TLFPSO_BASE.SetParams(const Value: TFitParams);
@@ -502,9 +507,6 @@ begin
 
   FTMax := FFitParams.NMax;
   FPopulation := FFitParams.Pop;
-
-  SetLength(X, FPopulation);
-  SetLength(V, FPopulation);
 
   SetLength(Xmax, 1);
   SetLength(Xmin, 1);
@@ -543,9 +545,9 @@ begin
   begin
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      FStructure.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1];
-      FStructure.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2];
-      FStructure.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3];
+      FStructure.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1][0];
+      FStructure.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2][0];
+      FStructure.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3][0];
       Inc(LayerIndex);
     end;
   end;
@@ -553,13 +555,13 @@ end;
 
 procedure TLFPSO_BASE.Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
 begin
-       X[0][LIndex][PIndex] := Val.V;
-    Xmax[0][LIndex][PIndex] := Val.max;
-    Xmin[0][LIndex][PIndex] := Val.min;
-  Xrange[0][LIndex][PIndex] := Xmax[0][LIndex][PIndex] - Xmin[0][LIndex][PIndex];
+       X[0][LIndex][PIndex][0] := Val.V;
+    Xmax[0][LIndex][PIndex][0] := Val.max;
+    Xmin[0][LIndex][PIndex][0] := Val.min;
+  Xrange[0][LIndex][PIndex][0] := Xmax[0][LIndex][PIndex][0] - Xmin[0][LIndex][PIndex][0];
 end;
 
-procedure TLFPSO_BASE.Init_DomainsP;
+procedure TLFPSO_BASE.Init_Domains;
 begin
   SetDomain(FLayersCount, X);
   SetDomain(FLayersCount, Xmax);

@@ -8,44 +8,33 @@ uses
 
 type
 
-  TPolyLayer = array [1..3] of TFloatArray; //
-  TPolySolution = array of TPolyLayer;
-  TPolyPopulation = array of TPolySolution;
+  TPolynomeRecord = record
+                      LayerID, StackID: Integer;
+                                     C: array [1..3] of TFloatArray;
+                    end;
+
+  TPolynomes = array of TPolynomeRecord;
 
   TLFPSO_Poly = class (TLFPSO_BASE)
     private
+      FPolynomes: TPolynomes;
       Indexes: TIntArray;
       Counts: TIntArray;
 
-      X, V : TPolyPopulation;
-      Vmin, Vmax :  TPolyPopulation;   // solutions and velocityes
-      pbest: TPolySolution; // best local solution
-      gbest: TPolySolution; // best global solution
-      abest: TPolySolution;
+      function Poly(const x: Integer; const C: TFloatArray): Single;
 
-      function Poly(const N: Integer; const C: TFloatArray): Single;
-      function GetPolyValues(const N: Integer; const C: TFloatArray): TFloatArray;
-
+      procedure CheckLimits(const i, j, k: integer); override;
+      procedure UpdateLFPSO(const t: integer); override;
       procedure Seed; override;
-      procedure Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
+      procedure ReSeed; override;
       procedure SetStructure(const Inp: TFitStructure); override;
-      procedure InitVelocity; override;
-      procedure FindTheBest; override;
-      procedure UpdateStructureP(Solution: TPolySolution);
-      procedure Run(CalcConditions: TCalcThreadParams); override;
-      function GetResult: TLayeredModel; override;
-      procedure UpdateLFPSO(const t: integer);  override;
       procedure UpdatePSO(const t: integer); override;
-      procedure CheckLimits(const i, j, k: integer);override;
-      function ExpandToModel(Solution: TPolySolution): TLayeredModel;
-      procedure SetVelocityRanges;
-      procedure Init_DomainsP;
-      procedure SetDomainP(const Count: integer; var X: TPolyPopulation);
-      procedure SetParams(const Value: TFitParams); override;
-      procedure Init(const Step: integer);
-      procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
+      procedure InitVelocity; override;
+    procedure Set_Init_XPoly(const N, Index, ValueType: Integer;
+      const Paired: Boolean; Val: TFitValue);
     public
       //
+      property Polynomes:TPolynomes read FPolynomes;
   end;
 
 implementation
@@ -57,50 +46,7 @@ uses
   unit_helpers,
   Dialogs;
 
-{ TLFPSO Polynomial}
-
-procedure TLFPSO_Poly.CheckLimits(const i, j, k: integer);
-var
-  OldX: TFloatArray;
-   Val, Max, Min: Single;
-   c, r: Integer;
-begin
-  for c := 0 to High(V[i][j][k]) do
-  begin
-    if V[i][j][k][c] > Vmax[0][j][k][c] then
-               V[i][j][k][c] := Vmax[0][j][k][c];
-
-    if V[i][j][k][0] < Vmin[0][j][k][c] then
-               V[i][j][k][0] := Vmin[0][j][k][c];
-
-    X[i][j][k][c] := X[i][j][k][c] + V[i][j][k][c]
-  end;
-
-  Max := 0; Min := 1E9;
-
-  for r := 1 to Counts[j] do
-  begin
-    Val := Poly(r, X[i][j][k]);
-    if Val > Max then
-       Max := Val;
-    if Val < Min then
-       Min := Val;
-  end;
-
-  if Max > Xmax[0][Indexes[j]][k] then
-  begin
-    X[i][j][k][0] := Xmax[0][Indexes[j]][k];
-    for c := 1 to High (X[i][j][k]) do
-      X[i][j][k][c] := 0;
-  end;
-
-  if Min < Xmin[0][Indexes[j]][k] then
-  begin
-    X[i][j][k][0] := Xmin[0][Indexes[j]][k];
-    for c := 1 to High (X[i][j][k]) do
-      X[i][j][k][c] := 0;
-  end;
-end;
+{ TLFPSO Periodic}
 
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
 var
@@ -149,105 +95,78 @@ begin
   end;
 end;
 
-procedure TLFPSO_Poly.FindTheBest;
+procedure TLFPSO_Poly.CheckLimits(const i, j, k: integer);
 var
-  i, Result: integer;
-  Calc: TCalc;
+  OldX: TFloatArray;
+   Val, Max, Min: Single;
+   c, r: Integer;
 begin
-  FLastBestChiSqr  := 1e12;
-  FLastWorseChiSQR := 0;
-
-  for i := 0 to High(X) do
+  for c := 0 to High(V[i][j][k]) do
   begin
-    if FTerminated then Break;
-    try
-      Calc := TCalc.Create;
-      Calc.Params    := FCalcParams;
-      Calc.ExpValues := FData;
-      Calc.MovAvg    := FMovAvg;
-      Calc.Limit     := FLimit;
+    if V[i][j][k][c] > Vmax[0][j][k][c] then
+               V[i][j][k][c] := Vmax[0][j][k][c];
 
-      Calc.Model := ExpandToModel(X[i]);
-      if Length(FMaterials) <> 0 then
-        Calc.Model.Materials := FMaterials;    // loading from cache
+    if V[i][j][k][0] < Vmin[0][j][k][c] then
+               V[i][j][k][0] := Vmin[0][j][k][c];
 
-      Calc.Run;
+    X[i][j][k][c] := X[i][j][k][c] + V[i][j][k][c]
+  end;
 
-      if Length(FMaterials) = 0 then
-        FMaterials := Calc.Model.Materials;    // saving to cache
+  Max := 0; Min := 1E9;
 
-      Calc.CalcChiSquare(FFitParams.ThetaWieght);
+  for r := 1 to Counts[j] do
+  begin
+    Val := Poly(r, X[i][j][k]);
+    if Val > Max then
+       Max := Val;
+    if Val < Min then
+       Min := Val;
+  end;
 
-      if Calc.ChiSQR < FLastBestChiSqr then
+  if Max > Xmax[0][Indexes[j]][k][0] then
+  begin
+    X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
+    for c := 1 to High (X[i][j][k]) do
+      X[i][j][k][c] := 0;
+  end;
+
+  if Min < Xmin[0][Indexes[j]][k][0] then
+  begin
+    X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
+    for c := 1 to High (X[i][j][k]) do
+      X[i][j][k][c] := 0;
+  end;
+end;
+
+procedure TLFPSO_Poly.InitVelocity;
+var
+  i, j, k, p: integer;
+begin
+  for i := 0 to High(V) do          // for every member of the population
+    for j := 0 to High(V[i]) do     //for every layer
+      for k := 1 to 3 do            // for H, s, rho
       begin
-        FLastBestChiSqr  := Calc.ChiSQR;
-        FResultingCurve := Calc.Results;
-        pbest := Copy(X[i], 0, MaxInt);
+        for p := 0 to High(V[i][j][k]) do
+          V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p])/(p + 1);
       end;
-
-      if Calc.ChiSQR > FLastWorseChiSQR then
-        FLastWorseChiSQR :=  Calc.ChiSQR;
-    finally
-      FreeAndNil(Calc);
-      Application.ProcessMessages;
-    end;
-  end;
-
-//  pbest := Copy(X[Result], 0, MaxInt);
-
-  if FLastBestChiSqr <  FGlobalBestChiSqr then
-  begin
-    FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := Copy(pbest, 0, MaxInt);
-    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
-    begin
-      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-      abest := Copy(gbest, 0, MaxInt);
-    end;
-  end
-  else begin
-    SetLength(FResultingCurve, 0);
-    Inc(FJammingCount);
-  end;
-
-  CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
 end;
 
-procedure TLFPSO_Poly.Init(const Step: integer);
+function TLFPSO_Poly.Poly(const x: Integer; const C: TFloatArray): Single;
+var
+  i, Last: Integer;
 begin
-  FJammingCount := 0;
+  Result := C[0]; Last := 1;
+  for I := 1 to High(C) do
+  begin
+    Last := Last * x;
+    Result := Result + C[i] * Last
+  end;
+end;
 
+procedure TLFPSO_Poly.ReSeed;
+begin
   Seed;
-  gbest  := Copy(X[0], 0, MaxInt);
-
-  InitVelocity;
-  FindTheBest;
-
-  SendUpdateMessage(Step);
 end;
-
-procedure TLFPSO_Poly.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0: single);
-begin
-  FReInit := True;
-  if ReInitCount > FFitParams.ReInitMax then // recover previous best solution
-  begin
-    ReInitCount := 0;
-    gbest := Copy(abest, 0, MaxInt);
-    FGlobalBestChiSqr := FAbsoluteBestChiSqr;
-    FFitParams.Vmax := Vmax0;
-  end
-  else
-  begin
-    FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
-    FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
-  end;
-  X[0] := Copy(gbest, 0, MaxInt);
-  Init(t);
-  Inc(ReInitCount);
-  FJammingCount := 0;
-  dec(SuccessCount);
-end;
-
 
 procedure TLFPSO_Poly.Seed;
 var
@@ -263,7 +182,7 @@ begin
         begin
           if p = 0 then
           begin
-            Val := Rand(XRange[0][Indexes[j]][k]) / sqr(p + 1);
+            Val := Rand(XRange[0][Indexes[j]][k][0]) / sqr(p + 1);
             X[i][j][k][0] := X[0][Indexes[j]][k][0] + Val
           end
           else
@@ -274,179 +193,10 @@ begin
   end;
 end;
 
-
-procedure TLFPSO_Poly.Run;
-var
-  t: integer;
-  switch: double;
-  ReInitCount: integer;
-  Vmax0: single;
-  SuccessCount: integer;
+procedure InitArray(const Length: Integer; var A: TIndexes);
 begin
-  Randomize;
-
-  FReInit := False;
-  FTerminated := False;
-  Vmax0 := FFitParams.Vmax ;
-  ReInitCount := 0;
-  SuccessCount := 0;
-  FGlobalBestChiSqr:= 1e12;
-  FAbsoluteBestChiSqr := 1e12;
-  FCalcParams := CalcConditions;
-  SetLength(FMaterials, 0);
-
-  Init(0);
-
-  for t := 1 to FTMax do
-  begin
-    if FTerminated then Break;
-
-    switch := Random;
-    if switch < 0.5 then
-      UpdatePSO(SuccessCount)
-    else
-      UpdateLFPSO(SuccessCount);
-
-    FindTheBest;
-    SendUpdateMessage(t);
-    if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
-
-    if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-      Shake(SuccessCount, ReInitCount, t, Vmax0)
-    else
-      inc(SuccessCount);
-  end;
-  UpdateStructureP(abest);
-end;
-
-procedure TLFPSO_Poly.UpdateStructureP(Solution: TPolySolution);
-var
-  i, j, LayerIndex: integer;
-begin
-  LayerIndex := 0;
-  for i := 0 to High(FStructure.Stacks) do
-  begin
-    for j := 0 to High(FStructure.Stacks[i].Layers) do
-    begin
-      if FStructure.Stacks[i].Layers[j].H.Paired then
-            FStructure.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1][0]
-      else begin
-         FStructure.Stacks[i].Layers[j].PH := GetPolyValues(FStructure.Stacks[i].N, Solution[LayerIndex][1]);
-         FStructure.Stacks[i].Layers[j].H.V := FStructure.Stacks[i].Layers[j].PH[0];
-      end;
-
-      if FStructure.Stacks[i].Layers[j].s.Paired then
-            FStructure.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2][0]
-      else begin
-         FStructure.Stacks[i].Layers[j].PS := GetPolyValues(FStructure.Stacks[i].N, Solution[LayerIndex][2]);
-         FStructure.Stacks[i].Layers[j].s.V := FStructure.Stacks[i].Layers[j].PS[0];
-      end;
-
-      if FStructure.Stacks[i].Layers[j].r.Paired then
-         FStructure.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3][0]
-      else begin
-         FStructure.Stacks[i].Layers[j].PR := GetPolyValues(FStructure.Stacks[i].N, Solution[LayerIndex][3]);
-         FStructure.Stacks[i].Layers[j].r.V := FStructure.Stacks[i].Layers[j].PR[0];
-      end;
-
-      Inc(LayerIndex);
-    end;
-  end;
-end;
-
-function TLFPSO_Poly.ExpandToModel(Solution: TPolySolution): TLayeredModel;
-var
-  i, k, j: Integer;
-  Data: TLayersData;
-  LayerIndex: Integer;
-begin
-  Result := TLayeredModel.Create;
-  Result.Init;
-
-  LayerIndex := 0;
-  SetLength(Data, FStructure.TotalNP);
-
-  for I := 0 to High(FStructure.Stacks) do
-  begin
-    for j := 1 to FStructure.Stacks[i].N do
-      for k := 0 to High(FStructure.Stacks[i].Layers) do
-      begin
-        Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
-        Data[LayerIndex].H.V := Poly(j, Solution[k][1]);
-        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
-        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
-
-        Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
-        Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
-        Inc(LayerIndex);
-      end;
-  end;
-  Result.AddLayers(-1, Data);
-
-  //
-  SetLength(Data, 1);
-  Data[0].Material := FStructure.Subs.Material;
-  Data[0].s := FStructure.Subs.s;
-  Data[0].r := FStructure.Subs.r;
-
-  Result.AddSubstrate(Data);
-end;
-
-
-function TLFPSO_Poly.GetPolyValues(const N: Integer; const C: TFloatArray): TFloatArray;
-var
-  i: Integer;
-begin
-  SetLength(Result, N);
-  for i := 0 to N - 1 do
-    Result[i] := Poly(i + 1, C);
-end;
-
-function TLFPSO_Poly.GetResult: TLayeredModel;
-begin
-  Result := ExpandToModel(abest);
-end;
-
-
-procedure TLFPSO_Poly.SetVelocityRanges;
-var
-  i, j, k, c: integer;
-begin
-  for I := 0 to High(Vmax) do                  // for every member of the population
-    for j := 0 to High(Vmax[i]) do             // for every layer
-      for k := 1 to 3 do                       // for H, s, rho
-        for c := 0 to High(Vmax[i][j][k]) do
-        begin
-           Vmax[i][j][k][c] := Xrange[0][j][k] * FFitParams.Vmax;
-           Vmin[i][j][k][c] := - Vmax[i][j][k][c];
-        end;
-end;
-
-procedure TLFPSO_Poly.InitVelocity;
-var
-  i, j, k, p: integer;
-begin
-  SetVelocityRanges;
-
-  for i := 0 to High(V) do          // for every member of the population
-    for j := 0 to High(V[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
-      begin
-        for p := 0 to High(V[i][j][k]) do
-          V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p])/(p + 1);
-      end;
-end;
-
-function TLFPSO_Poly.Poly(const N: Integer; const C: TFloatArray): Single;
-var
-  i, Last: Integer;
-begin
-  Result := C[0]; Last := 1;
-  for I := 1 to High(C) do
-  begin
-    Last := Last * N;
-    Result := Result + C[i] * Last
-  end;
+  SetLength(A, 0);
+  SetLength(A, Length);
 end;
 
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
@@ -458,7 +208,7 @@ begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
 
-  Init_DomainsP;
+  Init_Domains;
 
   SetLength(Indexes, FStructure.TotalNP);
   SetLength(Counts, FStructure.TotalNP);
@@ -514,42 +264,9 @@ begin
   end;
 
     X[0][Index][ValueType][0] := Val.V;
-    Xmax[0][Index][ValueType] := Val.max;
-    Xmin[0][Index][ValueType] := Val.min;
-  Xrange[0][Index][ValueType] := Xmax[0][Index][ValueType] - Xmin[0][Index][ValueType];
-end;
-
-procedure TLFPSO_Poly.Init_DomainsP;
-begin
-  SetDomainP(FLayersCount, X);
-  SetDomain(FLayersCount, Xmax);
-  SetDomain(FLayersCount, Xmin);
-  SetDomain(FLayersCount, Xrange);
-  SetDomainP(FLayersCount, Vmin);
-  SetDomainP(FLayersCount, Vmax);
-  SetDomainP(FLayersCount, V);
-end;
-
-procedure TLFPSO_Poly.SetDomainP(const Count: integer; var X: TPolyPopulation);
-var
-  i, j, k: integer;
-begin
-  SetLength(X, 0);
-  SetLength(X, FPopulation);
-  for I := 0 to High(X) do
-    SetLength(X[i], Count);
-end;
-
-procedure TLFPSO_Poly.SetParams(const Value: TFitParams);
-begin
-  FFitParams := Value;
-
-  FTMax := FFitParams.NMax;
-  FPopulation := FFitParams.Pop;
-
-  SetLength(Xmax, 1);
-  SetLength(Xmin, 1);
-  SetLength(Xrange, 1);
+    Xmax[0][Index][ValueType][0] := Val.max;
+    Xmin[0][Index][ValueType][0] := Val.min;
+  Xrange[0][Index][ValueType][0] := Xmax[0][Index][ValueType][0] - Xmin[0][Index][ValueType][0];
 end;
 
 end.

@@ -1708,6 +1708,8 @@ end;
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
+//  List: TStringList;
+  Node: PVirtualNode;
 begin
   if not GetFitParams then Exit;
 
@@ -1723,8 +1725,16 @@ begin
       Structure.UpdateInterfaceP(LFPSO.Structure);
       if not cbTreatPeriodic.Checked then
       begin
-        CreateProfileExtension;
-        Structure.UpdateProfiles(LFPSO.Result);
+        if cbPoly.Checked then
+        begin
+          if CreateChildNode(Node) then
+                CreateGradientExtension(Node);
+        end
+        else begin
+          CreateProfileExtension;
+          Structure.UpdateProfiles(LFPSO.Result);
+        end;
+
       end;
     end
     else
@@ -1733,7 +1743,12 @@ begin
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
     spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
-    CalcRunExecute(nil);
+//    CalcRunExecute(nil);
+
+//    List := TStringList.Create;
+//    List.Text := FormatJson(Structure.ToString);
+//    List.SaveToFile('D:\Temp\out.json');
+//    FreeAndNil(List);
   finally
     Screen.Cursor := crDefault;
     FreeAndNil(LFPSO);

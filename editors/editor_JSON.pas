@@ -24,6 +24,8 @@ type
     function Edit(var InString: string): Boolean;
   end;
 
+  function FormatJson(const InString: String): string;
+
 var
   frmJsonEditor: TfrmJsonEditor;
 
