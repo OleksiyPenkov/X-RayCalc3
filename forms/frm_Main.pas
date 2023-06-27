@@ -829,22 +829,20 @@ const
   L : array [0..2] of string = ('H','S','rho');
 
 var
-  Model, Gradient: PVirtualNode;
+  Gradient: PVirtualNode;
   Data: PProjectData;
   i, j: Integer;
   S: string;
 begin
-  Model := LastNode;
-
   for I := 0 to High(P) do
   begin
-    Gradient := Project.AddChild(LastNode);
+    Gradient := Project.AddChild(FLastModel);
     Data := Project.GetNodeData(Gradient);
 
     Data.Group := gtModel;
     Data.Enabled := True;
     Data.RowType := prExtension;
-    S := Format('Profile %s: (%s/%s)', [L[Ord(P[i].PT)],
+    S := Format('Prof. %s: (%s/%s)', [L[Ord(P[i].PT)],
                  Structure.Stacks[P[i].StackID].Title,
                  Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
 
@@ -858,8 +856,7 @@ begin
       Data.Poly[j + 1] := P[i].C[j];
   end;
 
-  Project.Expanded[Model] := True;
-  ProjectChange(Project, Model);
+  Project.Expanded[FLastModel] := True;
 end;
 
 procedure TfrmMain.CreateGradientExtension(Node: PVirtualNode);
@@ -1727,6 +1724,7 @@ begin
        LFPSO := TLFPSO_Regular.Create;
 
   GetThreadParams;
+
   LFPSO.Params := FFitParams;
   LFPSO.Limit := StrToFloat(cbMinLimit.Text);
 

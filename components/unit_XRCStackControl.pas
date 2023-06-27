@@ -214,7 +214,6 @@ begin
   FLinkedLayers[0] := -1;
   FLinkedLayers[1] := -1;
 
-
   UpdateInfo;
 end;
 

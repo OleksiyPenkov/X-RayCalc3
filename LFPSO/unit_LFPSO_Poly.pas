@@ -10,7 +10,6 @@ type
 
   TLFPSO_Poly = class (TLFPSO_BASE)
     private
-      FPolynomes: TPolynomes;
       Indexes: TIntArray;
       Counts: TIntArray;
 
@@ -232,14 +231,45 @@ end;
 
 function TLFPSO_Poly.GetPolynomes: TPolynomes;
 var
-  i: Integer;
+  i, j, LayerIndex: integer;
+  NewRecord: TPolynomeRecord;
+
 begin
-  SetLength(Result, 1);
-  SetLength(Result[0].C, 1);
-  Result[0].PT := ptH;
-  Result[0].LayerID := 0;
-  Result[0].StackID := 0;
-  Result[0].C[0] := abest[0][1][1];
+  LayerIndex := 0;
+  for i := 0 to High(FStructure.Stacks) do
+  begin
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      if not FStructure.Stacks[i].Layers[j].H.Paired then
+      begin
+        NewRecord.PT := ptH;
+        NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
+        NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
+        NewRecord.C := Copy(abest[LayerIndex][1], 1, MaxInt);
+        Result := Result + [NewRecord];
+      end;
+
+      if not FStructure.Stacks[i].Layers[j].s.Paired then
+      begin
+        NewRecord.PT := ptS;
+        NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
+        NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
+        NewRecord.C := Copy(abest[LayerIndex][2], 1, MaxInt);
+        Result := Result + [NewRecord];
+      end;
+
+      if not FStructure.Stacks[i].Layers[j].r.Paired then
+      begin
+        NewRecord.PT := ptRho;
+        NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
+        NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
+        NewRecord.C := Copy(abest[LayerIndex][3], 1, MaxInt);
+        Result := Result + [NewRecord];
+      end;
+      Inc(LayerIndex);
+    end;
+
+  end;
 end;
 
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
