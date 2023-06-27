@@ -45,7 +45,7 @@ type
             etGradient:
               (StackID: integer;
                LayerID: integer;
-               a, b, c: single;
+               Poly: array [1..10] of single;
                Form: TFunctionForm;
                Subj: TParameterType;
                );

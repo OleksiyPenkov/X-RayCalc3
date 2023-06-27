@@ -834,7 +834,7 @@ begin
   Data.RowType := prExtension;
   Data.Title := 'Gradient ' + IntToStr(Node.Parent.ChildCount);
   Data.ExtType := etGradient;
-  Data.a := 0.14;
+  Data.Poly[1] := 0.14;
   Data.StackID := -1;
   Data.LayerID := -1;
   Data.Form := ffLine;
@@ -1215,7 +1215,9 @@ begin
       SetLength(Result, Count + 1);
       Result[Count].Count := 1;
       Result[Count].NL := Structure.GetStackSize(Data.StackID);
-      Result[Count].Func.a  := Data.a;
+      Result[Count].Func.a  := Data.Poly[1];
+      Result[Count].Func.b  := Data.Poly[2];
+      Result[Count].Func.c  := Data.Poly[3];
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
       Result[Count].Func.f := Data.Form;
@@ -1725,10 +1727,10 @@ begin
       Structure.UpdateInterfaceP(LFPSO.Structure);
       if not cbTreatPeriodic.Checked then
       begin
-        if cbPoly.Checked then
+        if cbPoly.Checked and CreateChildNode(Node) then
         begin
-          if CreateChildNode(Node) then
-                CreateGradientExtension(Node);
+          CreateGradientExtension(Node);
+          //
         end
         else begin
           CreateProfileExtension;
