@@ -61,7 +61,7 @@ type
       FMovAvg: TDataArray;
       CFactor: single;
 
-      procedure FindTheBest; virtual;
+      function FindTheBest: Boolean;
       function GetResult: TLayeredModel; virtual;
 
       function LevyWalk(const X, gBest: single): single;
@@ -79,15 +79,15 @@ type
       procedure ReSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
       procedure UpdateStructure(const Solution:TSolution); virtual;
-      function FitModelToLayer(Solution: TSolution): TLayeredModel;
+      function FitModelToLayer(Solution: TSolution): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_Domains;
       procedure ApplyCFactor(var c1, c2: single);// inline;
       function Rand(const dx: Single): single;
+      function GetPolynomes: TPolynomes; virtual;
     private
      procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
-
-
+    procedure SendUpdateStep(const Step: integer);
 
     public
       constructor Create;
@@ -100,6 +100,7 @@ type
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
+      property Polynomes:TPolynomes read GetPolynomes;
 
       procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
@@ -256,6 +257,11 @@ begin
   Result.AddSubstrate(Data);
 end;
 
+function TLFPSO_BASE.GetPolynomes: TPolynomes;
+begin
+
+end;
+
 function TLFPSO_BASE.GetResult: TLayeredModel;
 begin
   Result := FitModelToLayer(abest);
@@ -318,11 +324,12 @@ begin
 end;
 
 
-procedure TLFPSO_BASE.FindTheBest;
+function TLFPSO_BASE.FindTheBest: boolean;
 var
-  i, Result: integer;
+  i, Best:integer;
   Calc: TCalc;
 begin
+  Result := False;
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
 
@@ -351,7 +358,7 @@ begin
       begin
         FLastBestChiSqr  := Calc.ChiSQR;
         FResultingCurve := Calc.Results;
-        Result := i;
+        Best := i;
       end;
 
       if Calc.ChiSQR > FLastWorseChiSQR then
@@ -362,24 +369,26 @@ begin
     end;
   end;
 
-  pbest := Copy(X[Result], 0, MaxInt);
+  pbest := Copy(X[Best], 0, MaxInt);
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := Copy(X[Result], 0, MaxInt);
+    gbest := Copy(X[Best], 0, MaxInt);
     if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
       abest := Copy(gbest, 0, MaxInt);
     end;
+    Result := True;
+    CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
   end
   else begin
     SetLength(FResultingCurve, 0);
     Inc(FJammingCount);
   end;
 
-  CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
+
 end;
 
 procedure TLFPSO_BASE.Init(const Step: integer);
@@ -394,7 +403,8 @@ begin
   InitVelocity;
   FindTheBest;
 
-  SendUpdateMessage(Step);
+  if Step = 0 then
+    SendUpdateMessage(Step);
 end;
 
 procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0: single);
@@ -451,8 +461,11 @@ begin
     else
       UpdateLFPSO(SuccessCount);
 
-    FindTheBest;
-    SendUpdateMessage(t);
+    if FindTheBest then
+       SendUpdateMessage(t)
+    else
+      SendUpdateStep(t);
+
     if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
@@ -477,6 +490,25 @@ begin
   msg_prm.BestChi := FAbsoluteBestChiSqr;
   msg_prm.Step := Step;
   msg_prm.Curve := FResultingCurve;
+
+  PostMessage(
+    Application.MainFormHandle,
+    WM_CHI_UPDATE,
+    LPARAM(msg_prm),
+    0
+  );
+  Application.ProcessMessages;
+end;
+
+procedure TLFPSO_BASE.SendUpdateStep(const Step: integer);
+var
+  msg_prm: PUpdateFitProgressMsg;
+begin
+  New(msg_prm);
+  msg_prm.LastChi := FGlobalBestChiSqr;
+  msg_prm.BestChi := FAbsoluteBestChiSqr;
+  msg_prm.Step := Step;
+  msg_prm.Curve := nil;
 
   PostMessage(
     Application.MainFormHandle,

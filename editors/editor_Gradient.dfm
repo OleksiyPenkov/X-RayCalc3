@@ -24,13 +24,13 @@ object edtrGradient: TedtrGradient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 189
-    ExplicitWidth = 193
+    ExplicitTop = 204
+    ExplicitWidth = 198
     DesignSize = (
       206
       41)
     object btnOK: TRzBitBtn
-      Left = -7
+      Left = -15
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -39,10 +39,10 @@ object edtrGradient: TedtrGradient
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
-      ExplicitLeft = 9
+      ExplicitLeft = -23
     end
     object btnCancel: TRzBitBtn
-      Left = 119
+      Left = 111
       Top = 10
       Width = 72
       Alignment = taRightJustify
@@ -50,7 +50,7 @@ object edtrGradient: TedtrGradient
       TabOrder = 1
       TabStop = False
       Kind = bkCancel
-      ExplicitLeft = 135
+      ExplicitLeft = 103
     end
   end
   object RzPanel1: TRzPanel
@@ -63,8 +63,8 @@ object edtrGradient: TedtrGradient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 193
-    ExplicitHeight = 180
+    ExplicitWidth = 198
+    ExplicitHeight = 195
     object Label1: TLabel
       Left = 9
       Top = 10

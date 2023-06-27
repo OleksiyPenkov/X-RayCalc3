@@ -17,8 +17,8 @@ type
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
   TExtentionType = (etNone, etGradient, etProfile);
-  TFunctionForm = (ffNone, ffLine, ffExp, ffParabolic, ffSQRT);
-  TParameterType = (gsL, gsS, gsRo);
+  TFunctionForm = (ffNone, ffPoly, ffExp, ffParabolic, ffSQRT);
+  TParameterType = (ptH, ptS, ptRho);
 
   PLineSeries = ^TLineSeries;
 
@@ -177,6 +177,14 @@ type
     function TotalNP: integer;
   end;
 
+  TPolynomeRecord = record
+                                    PT: TParameterType ;
+                      LayerID, StackID: Integer;
+                                     C: TFloatArray;
+                    end;
+
+  TPolynomes = array of TPolynomeRecord;
+
 implementation
 
 { TProjectData }
@@ -269,9 +277,9 @@ begin
     p := Pos(';', Profile, i);
     val := StrToFloat(copy(Profile, i, p - i - 1));
     case Subj of
-      gsL:    Insert(Val, PH, MaxInt);
-      gsS:    Insert(Val, PS, MaxInt);
-      gsRo:   Insert(Val, PR, MaxInt);
+      ptH:    Insert(Val, PH, MaxInt);
+      ptS:    Insert(Val, PS, MaxInt);
+      ptRho:   Insert(Val, PR, MaxInt);
     end;
     i := p + 1;
   end;
@@ -286,9 +294,9 @@ begin
   for I := 0 to High(PH) do
   begin
     case Subj of
-      gsL:  Val := PH[i];
-      gsS:  Val := PS[i];
-      gsRo: Val := PR[i];
+      ptH:  Val := PH[i];
+      ptS:  Val := PS[i];
+      ptRho: Val := PR[i];
     end;
     Result := Format('%s%f;',[Result, Val])
   end;

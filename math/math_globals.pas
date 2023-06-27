@@ -49,7 +49,7 @@ uses
 function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
 begin
   case Gradient.Func.f of
-    ffLine : Result := Val * (1 + Gradient.Count/(Gradient.NL) * Gradient.Func.a);
+    ffPoly : Result := Val * (1 + Gradient.Count/(Gradient.NL) * Gradient.Func.a);
   end;
 end;
 

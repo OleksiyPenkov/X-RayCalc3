@@ -443,6 +443,7 @@ type
     procedure PrepareInterfaceAF;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
+    procedure CreateFitGradientExtensions(const P: TPolynomes);
     { Private declarations }
   public
     { Public declarations }
@@ -816,11 +817,49 @@ begin
     Data.ExtType := etProfile;
     Data.StackID := -1;
     Data.LayerID := -1;
-    Data.Form := ffLine;
+    Data.Form := ffPoly;
 
     Project.ClearSelection;
     Project.Selected[Node] := True;
   end;
+end;
+
+procedure TfrmMain.CreateFitGradientExtensions(const P: TPolynomes);
+const
+  L : array [0..2] of string = ('H','S','rho');
+
+var
+  Model, Gradient: PVirtualNode;
+  Data: PProjectData;
+  i, j: Integer;
+  S: string;
+begin
+  Model := LastNode;
+
+  for I := 0 to High(P) do
+  begin
+    Gradient := Project.AddChild(LastNode);
+    Data := Project.GetNodeData(Gradient);
+
+    Data.Group := gtModel;
+    Data.Enabled := True;
+    Data.RowType := prExtension;
+    S := Format('Profile %s: (%s/%s)', [L[Ord(P[i].PT)],
+                 Structure.Stacks[P[i].StackID].Title,
+                 Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
+
+    Data.Title := S;
+    Data.ExtType := etGradient;
+    Data.Form := ffPoly;
+    Data.Subj := P[i].PT;
+    Data.StackID := P[i].StackID;
+    Data.LayerID := P[i].LayerID;
+    for j := 0 to High(P[i].C) do
+      Data.Poly[j + 1] := P[i].C[j];
+  end;
+
+  Project.Expanded[Model] := True;
+  ProjectChange(Project, Model);
 end;
 
 procedure TfrmMain.CreateGradientExtension(Node: PVirtualNode);
@@ -837,7 +876,7 @@ begin
   Data.Poly[1] := 0.14;
   Data.StackID := -1;
   Data.LayerID := -1;
-  Data.Form := ffLine;
+  Data.Form := ffPoly;
 
   Project.ClearSelection;
   Project.Selected[Node] := True;
@@ -1486,9 +1525,9 @@ begin
                (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FGradients[GradientIndex].LayerID) then
             begin
               case FGradients[GradientIndex].Subj of
-                gsL : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, FGradients[GradientIndex]));
-                gsS : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
-                gsRo: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
+                ptH  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, FGradients[GradientIndex]));
+                ptS  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
+                ptRho: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
               end;
               inc(FGradients[GradientIndex].Count);
             end;
@@ -1687,6 +1726,7 @@ begin
      else
        LFPSO := TLFPSO_Regular.Create;
 
+  GetThreadParams;
   LFPSO.Params := FFitParams;
   LFPSO.Limit := StrToFloat(cbMinLimit.Text);
 
@@ -1710,7 +1750,6 @@ end;
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
-//  List: TStringList;
   Node: PVirtualNode;
 begin
   if not GetFitParams then Exit;
@@ -1718,7 +1757,6 @@ begin
   try
     if not PrepareLFPSO then Exit;
     FitStartTime := Now;
-    CalcRunExecute(nil);
 
     LFPSO.Run(FCalcThreadParams);
 
@@ -1727,11 +1765,8 @@ begin
       Structure.UpdateInterfaceP(LFPSO.Structure);
       if not cbTreatPeriodic.Checked then
       begin
-        if cbPoly.Checked and CreateChildNode(Node) then
-        begin
-          CreateGradientExtension(Node);
-          //
-        end
+        if cbPoly.Checked then
+         CreateFitGradientExtensions(LFPSO.Polynomes)
         else begin
           CreateProfileExtension;
           Structure.UpdateProfiles(LFPSO.Result);
@@ -1745,12 +1780,7 @@ begin
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
     spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
-//    CalcRunExecute(nil);
-
-//    List := TStringList.Create;
-//    List.Text := FormatJson(Structure.ToString);
-//    List.SaveToFile('D:\Temp\out.json');
-//    FreeAndNil(List);
+    CalcRunExecute(nil);
   finally
     Screen.Cursor := crDefault;
     FreeAndNil(LFPSO);

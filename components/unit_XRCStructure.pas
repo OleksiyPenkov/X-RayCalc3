@@ -585,21 +585,21 @@ begin
         JLayer.AddPair('HP', Data.H.Paired);
         JLayer.AddPair('Hmin', Data.H.min);
         JLayer.AddPair('Hmax', Data.H.max);
-        Profile := Data.ProfileToSrting(gsL);
+        Profile := Data.ProfileToSrting(ptH);
         JLayer.AddPair('ProfileH', Profile);
 
         JLayer.AddPair('s', Data.s.V);
         JLayer.AddPair('SP', Data.s.Paired);
         JLayer.AddPair('Smin', Data.s.min);
         JLayer.AddPair('Smax', Data.s.max);
-        Profile := Data.ProfileToSrting(gsS);
+        Profile := Data.ProfileToSrting(ptS);
         JLayer.AddPair('ProfileS', Profile);
 
         JLayer.AddPair('r', Data.r.V);
         JLayer.AddPair('RP', Data.r.Paired);
         JLayer.AddPair('Rmin', Data.r.min);
         JLayer.AddPair('Rmax', Data.r.max);
-        Profile := Data.ProfileToSrting(gsRo);
+        Profile := Data.ProfileToSrting(ptRho);
         JLayer.AddPair('ProfileR', Profile);
 
         JLayers.Add(JLayer);
@@ -734,9 +734,9 @@ begin
         if Profiles[1] <> '' then
         begin
           Data.ClearProfiles;
-          Data.ProfileFromSrting(gsL, Profiles[1]);
-          Data.ProfileFromSrting(gsS, Profiles[2]);
-          Data.ProfileFromSrting(gsRo, Profiles[3]);
+          Data.ProfileFromSrting(ptH, Profiles[1]);
+          Data.ProfileFromSrting(ptS, Profiles[2]);
+          Data.ProfileFromSrting(ptRho, Profiles[3]);
         end;
 
         LayerIndex := FStacks[i].AddLayer(Data);

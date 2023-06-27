@@ -55,7 +55,7 @@ begin
   FData.StackID := FRealStackID[cbbStack.ItemIndex];
   FData.LayerID := cbLayer.ItemIndex;
   FData.Poly[1] := edRate.Value;
-  FData.Form := ffLine;
+  FData.Form := ffPoly;
   FData.Description := mmDescription.Lines.Text;
   FData.Subj := TParameterType(rgSubject.ItemIndex);
 end;

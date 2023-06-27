@@ -176,9 +176,9 @@ begin
         if (StackID = FGradients[g].StackID) and (LayerID = FGradients[g].LayerID) then
         begin
           case FGradients[g].Subj of
-            gsL : L := CalcGradient(L, FGradients[g]);
-            gsS : s := CalcGradient(s, FGradients[g]);
-            gsRo: l_ro := CalcGradient(l_ro, FGradients[g]);
+            ptH : L := CalcGradient(L, FGradients[g]);
+            ptS : s := CalcGradient(s, FGradients[g]);
+            ptRho: l_ro := CalcGradient(l_ro, FGradients[g]);
           end;
           Inc(FGradients[g].Count);
         end

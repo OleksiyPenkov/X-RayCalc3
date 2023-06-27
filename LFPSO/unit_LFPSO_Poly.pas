@@ -8,13 +8,6 @@ uses
 
 type
 
-  TPolynomeRecord = record
-                      LayerID, StackID: Integer;
-                                     C: array [1..3] of TFloatArray;
-                    end;
-
-  TPolynomes = array of TPolynomeRecord;
-
   TLFPSO_Poly = class (TLFPSO_BASE)
     private
       FPolynomes: TPolynomes;
@@ -30,11 +23,12 @@ type
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
-    procedure Set_Init_XPoly(const N, Index, ValueType: Integer;
+      procedure Set_Init_XPoly(const N, Index, ValueType: Integer;
       const Paired: Boolean; Val: TFitValue);
+      function FitModelToLayer(Solution: TSolution): TLayeredModel; override;
+      function GetPolynomes: TPolynomes; override;
     public
       //
-      property Polynomes:TPolynomes read FPolynomes;
   end;
 
 implementation
@@ -127,14 +121,16 @@ begin
   begin
     X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
     for c := 1 to High (X[i][j][k]) do
-      X[i][j][k][c] := 0;
+      if X[i][j][k][c] > 0 then
+              X[i][j][k][c] := 0;
   end;
 
   if Min < Xmin[0][Indexes[j]][k][0] then
   begin
     X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
     for c := 1 to High (X[i][j][k]) do
-      X[i][j][k][c] := 0;
+      if X[i][j][k][c] < 0 then
+              X[i][j][k][c] := 0;
   end;
 end;
 
@@ -142,6 +138,9 @@ procedure TLFPSO_Poly.InitVelocity;
 var
   i, j, k, p: integer;
 begin
+  MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
+  MultiplyVector(Vmax, -1, Vmin);
+
   for i := 0 to High(V) do          // for every member of the population
     for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
@@ -186,17 +185,61 @@ begin
             X[i][j][k][0] := X[0][Indexes[j]][k][0] + Val
           end
           else
-            X[i][j][k][p] := Rand(X[i][j][k][0]) / sqr(p + 1);
+            X[i][j][k][p] := Rand(1)/sqr(1 + p);
         end;
         CheckLimits(i, j, k);
       end;
   end;
 end;
 
-procedure InitArray(const Length: Integer; var A: TIndexes);
+function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;
+var
+  i, k, j: Integer;
+  Data: TLayersData;
+  LayerIndex: Integer;
 begin
-  SetLength(A, 0);
-  SetLength(A, Length);
+  Result := TLayeredModel.Create;
+  Result.Init;
+
+  LayerIndex := 0;
+  SetLength(Data, FStructure.TotalNP);
+
+  for I := 0 to High(FStructure.Stacks) do
+  begin
+    for j := 1 to FStructure.Stacks[i].N do
+      for k := 0 to High(FStructure.Stacks[i].Layers) do
+      begin
+        Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
+        Data[LayerIndex].H.V := Poly(j, Solution[k][1]);
+        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
+        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
+
+        Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
+        Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+        Inc(LayerIndex);
+      end;
+  end;
+  Result.AddLayers(-1, Data);
+
+  //
+  SetLength(Data, 1);
+  Data[0].Material := FStructure.Subs.Material;
+  Data[0].s := FStructure.Subs.s;
+  Data[0].r := FStructure.Subs.r;
+
+  Result.AddSubstrate(Data);
+end;
+
+function TLFPSO_Poly.GetPolynomes: TPolynomes;
+var
+  i: Integer;
+begin
+  SetLength(Result, 1);
+  SetLength(Result[0].C, 1);
+  Result[0].PT := ptH;
+  Result[0].LayerID := 0;
+  Result[0].StackID := 0;
+  Result[0].C[0] := abest[0][1][1];
 end;
 
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
@@ -248,6 +291,8 @@ begin
 end;
 
 procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
+var
+  p: Integer;
 begin
   if Paired or (N = 1) then
   begin
@@ -267,6 +312,9 @@ begin
     Xmax[0][Index][ValueType][0] := Val.max;
     Xmin[0][Index][ValueType][0] := Val.min;
   Xrange[0][Index][ValueType][0] := Xmax[0][Index][ValueType][0] - Xmin[0][Index][ValueType][0];
+
+  for p := 1 to High(Xrange[0][Index][ValueType]) do
+    Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / Sqr(p + 1);
 end;
 
 end.
