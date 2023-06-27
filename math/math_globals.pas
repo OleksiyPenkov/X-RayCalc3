@@ -33,9 +33,11 @@ type
 
   procedure Sort(var Series: TLineSeries);
   procedure CopyData(const Input: TDataArray; var Output: TDataArray);
-  function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
+
   procedure ReadHenkeTable(const N: string; var Na, Nro: single; var Table: THenkeTable);
   procedure WriteHenkeTable(const N: string; Na, Nro: single; Table: THenkeTable);
+  function Poly(const x: Integer; const C: TFloatArray): Single; overload;
+  function Poly(const x: Integer; V0: Single; const C: TPolyArray; Order: integer): Single; overload;
 
 implementation
 
@@ -44,12 +46,34 @@ uses
   SysUtils,
   VCLTee.TeEngine;
 
+function Poly(const x: Integer; const C: TFloatArray): Single;
+var
+  i, Last: Integer;
+begin
+  Result := C[0]; Last := 1;
+  for I := 1 to High(C) do
+  begin
+    Last := Last * x;
+    Result := Result + C[i] * Last
+  end;
+end;
 
+function Poly(const x: Integer; V0: Single; const C: TPolyArray; Order: integer): Single;
+var
+  i, Last: LongInt;
+begin
+  Result := V0; Last := 1;
+  for I := 1 to 10 do
+  begin
+    Last := Last * x;
+    Result := Result + C[i] * Last
+  end;
+end;
 
 function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
 begin
   case Gradient.Func.f of
-    ffPoly : Result := Val * (1 + Gradient.Count/(Gradient.NL) * Gradient.Func.a);
+    ffPoly : Result := Val * (1 + Gradient.Count/(Gradient.NL) * Gradient.X0);
   end;
 end;
 

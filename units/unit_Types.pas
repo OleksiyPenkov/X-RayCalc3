@@ -9,6 +9,7 @@ type
 
   TFloatArray = array of Single;
   TIntArray = array of Integer;
+  TPolyArray = array [1..10] of single;
 
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
   TCalcMode = (cmTheta, cmLambda, cmTest);
@@ -45,7 +46,7 @@ type
             etGradient:
               (StackID: integer;
                LayerID: integer;
-               Poly: array [1..10] of single;
+               Poly: TPolyArray;
                Form: TFunctionForm;
                Subj: TParameterType;
                );
@@ -102,7 +103,6 @@ type
 
   TFunctionRec = record
     f: TFunctionForm;
-    a, b, c: single;
   end;
 
   TGradientRec = record
@@ -112,6 +112,8 @@ type
     LayerID: integer;
     StackID: integer;
     Count: Integer;
+    X0: Single;
+    C: TPolyArray;
   end;
   TGradients = array of TGradientRec;
 

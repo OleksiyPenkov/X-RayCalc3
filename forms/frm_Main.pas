@@ -857,6 +857,8 @@ begin
   end;
 
   Project.Expanded[FLastModel] := True;
+  Project.ClearSelection;
+  Project.Selected[FLastModel] := True;
 end;
 
 procedure TfrmMain.CreateGradientExtension(Node: PVirtualNode);
@@ -1251,9 +1253,8 @@ begin
       SetLength(Result, Count + 1);
       Result[Count].Count := 1;
       Result[Count].NL := Structure.GetStackSize(Data.StackID);
-      Result[Count].Func.a  := Data.Poly[1];
-      Result[Count].Func.b  := Data.Poly[2];
-      Result[Count].Func.c  := Data.Poly[3];
+      Result[Count].X0 := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.H.V;
+      Result[Count].C       := Data.Poly;
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
       Result[Count].Func.f := Data.Form;
@@ -1521,11 +1522,11 @@ begin
             if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FGradients[GradientIndex].StackID) and
                (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FGradients[GradientIndex].LayerID) then
             begin
-              case FGradients[GradientIndex].Subj of
-                ptH  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, FGradients[GradientIndex]));
-                ptS  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
-                ptRho: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
-              end;
+//              case FGradients[GradientIndex].Subj of
+//                ptH  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, FGradients[GradientIndex]));
+//                ptS  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
+//                ptRho: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
+//              end;
               inc(FGradients[GradientIndex].Count);
             end;
 

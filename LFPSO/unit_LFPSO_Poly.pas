@@ -13,8 +13,6 @@ type
       Indexes: TIntArray;
       Counts: TIntArray;
 
-      function Poly(const x: Integer; const C: TFloatArray): Single;
-
       procedure CheckLimits(const i, j, k: integer); override;
       procedure UpdateLFPSO(const t: integer); override;
       procedure Seed; override;
@@ -37,7 +35,7 @@ uses
   System.SysUtils,
   Neslib.FastMath,
   unit_helpers,
-  Dialogs;
+  Dialogs, math_globals;
 
 { TLFPSO Periodic}
 
@@ -147,18 +145,6 @@ begin
         for p := 0 to High(V[i][j][k]) do
           V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p])/(p + 1);
       end;
-end;
-
-function TLFPSO_Poly.Poly(const x: Integer; const C: TFloatArray): Single;
-var
-  i, Last: Integer;
-begin
-  Result := C[0]; Last := 1;
-  for I := 1 to High(C) do
-  begin
-    Last := Last * x;
-    Result := Result + C[i] * Last
-  end;
 end;
 
 procedure TLFPSO_Poly.ReSeed;
@@ -278,11 +264,14 @@ var
   D: double;
   NLayers: Integer;
 begin
+  SetLength(FStructure.Stacks, 0);
   FStructure := Inp;
   FLayersCount := Inp.Total;
 
   Init_Domains;
 
+  SetLength(Indexes, 0);
+  SetLength(Counts, 0);
   SetLength(Indexes, FStructure.TotalNP);
   SetLength(Counts, FStructure.TotalNP);
   Index := 0;

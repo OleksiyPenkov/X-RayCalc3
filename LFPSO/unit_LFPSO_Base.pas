@@ -486,6 +486,7 @@ begin
     else
       inc(SuccessCount);
   end;
+//  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
   UpdateStructure(abest);  // don't delete!
 end;
 
