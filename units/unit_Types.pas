@@ -9,7 +9,7 @@ type
 
   TFloatArray = array of Single;
   TIntArray = array of Integer;
-  TPolyArray = array [1..10] of single;
+  TPolyArray = array [0..10] of single;
 
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
   TCalcMode = (cmTheta, cmLambda, cmTest);
@@ -17,7 +17,7 @@ type
 
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
-  TExtentionType = (etNone, etGradient, etProfile);
+  TExtentionType = (etNone, etFunction, etArb);
   TFunctionForm = (ffNone, ffPoly, ffExp, ffParabolic, ffSQRT);
   TParameterType = (ptH, ptS, ptRho);
 
@@ -43,14 +43,14 @@ type
       prExtension:
          (Enabled: boolean;
           case ExtType: TExtentionType of
-            etGradient:
+            etFunction:
               (StackID: integer;
                LayerID: integer;
                Poly: TPolyArray;
                Form: TFunctionForm;
                Subj: TParameterType;
                );
-            etProfile:
+            etArb:
               ();
          )
   end;
@@ -101,21 +101,21 @@ type
 
   TCalcLayers = array of TCalcLayer;
 
-  TFunctionRec = record
-    f: TFunctionForm;
+  TFuncProfileRec = record
+    public
+      Func: TFunctionForm;
+      Subj: TParameterType;
+      LayerID: integer;
+      StackID: integer;
+      C: TPolyArray;
+
+      function X(const i: integer): Integer;
+      function Ord: Integer;
+    private
+       IntX: Integer;
   end;
 
-  TGradientRec = record
-    Func: TFunctionRec;
-    Subj: TParameterType;
-    NL: Integer;
-    LayerID: integer;
-    StackID: integer;
-    Count: Integer;
-    X0: Single;
-    C: TPolyArray;
-  end;
-  TGradients = array of TGradientRec;
+  TProfileFunctions = array of TFuncProfileRec;
 
   TMaterial = record
     Name: string;
@@ -178,14 +178,6 @@ type
     function Total: integer;
     function TotalNP: integer;
   end;
-
-  TPolynomeRecord = record
-                                    PT: TParameterType ;
-                      LayerID, StackID: Integer;
-                                     C: TFloatArray;
-                    end;
-
-  TPolynomes = array of TPolynomeRecord;
 
 implementation
 
@@ -302,6 +294,20 @@ begin
     end;
     Result := Format('%s%f;',[Result, Val])
   end;
+end;
+
+{ TFuncProfileRec }
+
+function TFuncProfileRec.Ord: Integer;
+begin
+  Result := Trunc(C[10]);
+end;
+
+function TFuncProfileRec.X(const i: integer): Integer;
+begin
+  if i = 1 then IntX := 0;
+  Inc(IntX);
+  Result := IntX;
 end;
 
 end.

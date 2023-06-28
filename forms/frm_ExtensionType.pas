@@ -83,9 +83,9 @@ begin
       if vistaDlg.Execute then
       begin
         if mrGradient = vistaDlg.ModalResult then
-          Result := etGradient
+          Result := etFunction
         else if mrProfile = vistaDlg.ModalResult  then
-          Result := etProfile;
+          Result := etArb;
       end;
     finally
       vistaDlg.Free;
@@ -98,9 +98,9 @@ begin
       if mrOk = xpDlg.ShowModal then
       begin
         if xpDlg.rbGradient.Checked then
-          Result := etGradient
+          Result := etFunction
         else if xpDlg.rbProfile.Checked then
-          Result := etProfile
+          Result := etArb
       end;
     finally
       xpDlg.Free;

@@ -145,7 +145,7 @@ begin
   begin
     repeat
       Data := GetNodeData(Node);
-      if Data.ExtType = etProfile then
+      if Data.ExtType = etArb then
       begin
         Result := True;
         Break;

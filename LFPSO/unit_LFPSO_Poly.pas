@@ -23,7 +23,7 @@ type
       procedure Set_Init_XPoly(const N, Index, ValueType: Integer;
       const Paired: Boolean; Val: TFitValue);
       function FitModelToLayer(Solution: TSolution): TLayeredModel; override;
-      function GetPolynomes: TPolynomes; override;
+      function GetPolynomes: TProfileFunctions; override;
     public
       //
   end;
@@ -51,7 +51,7 @@ begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do        // for H, s, rho
       begin
-        for c := 0 to High(X[I][j][k]) do  // for every coefficient
+        for c := 0 to Trunc(X[i][j][k][10])do  // for every coefficient
         begin
           V[i][j][k][c] := Omega(t, FTMax) * LevyWalk(X[i][j][k][c], gbest[j][k][c])  +
                         c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
@@ -74,7 +74,7 @@ begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do
       begin
-        for c := 0 to High(X[I][j][k]) do  // for every coefficient
+        for c := 0 to Trunc(X[i][j][k][10]) do  // for every coefficient
         begin
             V[i][j][k][c] := Omega(t, FTMax) * V[i][j][k][c]  +
                       c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
@@ -92,7 +92,7 @@ var
    Val, Max, Min: Single;
    c, r: Integer;
 begin
-  for c := 0 to High(V[i][j][k]) do
+  for c := 0 to Trunc(V[i][j][k][10]) do
   begin
     if V[i][j][k][c] > Vmax[0][j][k][c] then
                V[i][j][k][c] := Vmax[0][j][k][c];
@@ -117,7 +117,7 @@ begin
   if Max > Xmax[0][Indexes[j]][k][0] then
   begin
     X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
-    for c := 1 to High (X[i][j][k]) do
+    for c := 1 to Trunc(X[i][j][k][10]) do
       if X[i][j][k][c] > 0 then
               X[i][j][k][c] := 0;
   end;
@@ -125,7 +125,7 @@ begin
   if Min < Xmin[0][Indexes[j]][k][0] then
   begin
     X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
-    for c := 1 to High (X[i][j][k]) do
+    for c := 1 to Trunc(X[i][j][k][10]) do
       if X[i][j][k][c] < 0 then
               X[i][j][k][c] := 0;
   end;
@@ -142,7 +142,7 @@ begin
     for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
       begin
-        for p := 0 to High(V[i][j][k]) do
+        for p := 0 to Trunc(X[i][j][k][10]) do
           V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p])/(p + 1);
       end;
 end;
@@ -162,7 +162,7 @@ begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
       begin
-        for p := 0 to High(X[i][j][k]) do  // for every oefficient of polynome
+        for p := 0 to Trunc(X[i][j][k][10]) do  // for every oefficient of polynome
         begin
           if p = 0 then
           begin
@@ -215,10 +215,10 @@ begin
   Result.AddSubstrate(Data);
 end;
 
-function TLFPSO_Poly.GetPolynomes: TPolynomes;
+function TLFPSO_Poly.GetPolynomes: TProfileFunctions;
 var
   i, j, LayerIndex: integer;
-  NewRecord: TPolynomeRecord;
+  NewRecord: TFuncProfileRec;
 
 begin
   LayerIndex := 0;
@@ -228,28 +228,28 @@ begin
     begin
       if not FStructure.Stacks[i].Layers[j].H.Paired then
       begin
-        NewRecord.PT := ptH;
+        NewRecord.Subj := ptH;
         NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
         NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := Copy(abest[LayerIndex][1], 1, MaxInt);
+        NewRecord.C := abest[LayerIndex][1];
         Result := Result + [NewRecord];
       end;
 
       if not FStructure.Stacks[i].Layers[j].s.Paired then
       begin
-        NewRecord.PT := ptS;
+        NewRecord.Subj := ptS;
         NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
         NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := Copy(abest[LayerIndex][2], 1, MaxInt);
+        NewRecord.C := abest[LayerIndex][2];
         Result := Result + [NewRecord];
       end;
 
       if not FStructure.Stacks[i].Layers[j].r.Paired then
       begin
-        NewRecord.PT := ptRho;
+        NewRecord.Subj := ptRho;
         NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
         NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := Copy(abest[LayerIndex][3], 1, MaxInt);
+        NewRecord.C := abest[LayerIndex][3];
         Result := Result + [NewRecord];
       end;
       Inc(LayerIndex);
@@ -302,10 +302,10 @@ begin
     for j := 0 to High(X[i]) do
       for k := 1 to 3 do
       begin
-        SetLength(X[i][j][k], Length(X[0][j][k]));   // not periodic layer, only a0 = v
-        SetLength(V[i][j][k], Length(X[0][j][k]));
-        SetLength(Vmin[i][j][k], Length(X[0][j][k]));
-        SetLength(Vmax[i][j][k], Length(X[0][j][k]));
+        X[i][j][k][10]    := X[0][j][k][10];   // not periodic layer, only a0 = v
+        V[i][j][k][10]    := V[0][j][k][10];   // not periodic layer, only a0 = v
+        Vmin[i][j][k][10] := Vmin[0][j][k][10];   // not periodic layer, only a0 = v
+        Vmax[i][j][k][10] := Vmax[0][j][k][10];   // not periodic layer, only a0 = v
       end
 end;
 
@@ -315,16 +315,16 @@ var
 begin
   if Paired or (N = 1) then
   begin
-    SetLength(X[0][Index][ValueType], 1);   // not periodic layer, only a0 = v
-    SetLength(V[0][Index][ValueType], 1);
-    SetLength(Vmin[0][Index][ValueType], 1);
-    SetLength(Vmax[0][Index][ValueType], 1);
+    X[0][Index][ValueType][10] := 0;
+    V[0][Index][ValueType][10] := 0;
+    Vmin[0][Index][ValueType][10] := 0;
+    Vmax[0][Index][ValueType][10] := 0;
   end
   else begin
-    SetLength(X[0][Index][ValueType], FFitParams.MaxPOrder + 1); // init array of a0..aN
-    SetLength(V[0][Index][ValueType], FFitParams.MaxPOrder + 1);
-    SetLength(Vmin[0][Index][ValueType], FFitParams.MaxPOrder + 1);
-    SetLength(Vmax[0][Index][ValueType], FFitParams.MaxPOrder + 1);
+    X[0][Index][ValueType][10] := FFitParams.MaxPOrder;
+    V[0][Index][ValueType][10] := FFitParams.MaxPOrder;
+    Vmin[0][Index][ValueType][10] := FFitParams.MaxPOrder;
+    Vmax[0][Index][ValueType][10] := FFitParams.MaxPOrder;
   end;
 
     X[0][Index][ValueType][0] := Val.V;

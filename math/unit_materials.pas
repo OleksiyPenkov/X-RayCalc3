@@ -29,7 +29,7 @@ type
     FLayers: TCalcLayers;
     FLambda: Single;
     FTotalD: single;
-    FGradients: TGradients;
+    FProfiles: TProfileFunctions;
 
     procedure PrepareLayers;
     function FindMaterial(const Name: string): TMaterial;
@@ -49,7 +49,7 @@ type
     property Layers: TCalcLayers read GetLayers;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
-    property Gradients: TGradients read FGradients write FGradients;
+    property Profiles: TProfileFunctions read FProfiles write FProfiles;
    end;
 
 implementation
@@ -171,16 +171,15 @@ begin
 
     with FLayers[i] do
     begin
-      for g := 0 to High(FGradients) do
+      for g := 0 to High(FProfiles) do
       begin
-        if (StackID = FGradients[g].StackID) and (LayerID = FGradients[g].LayerID) then
+        if (StackID = FProfiles[g].StackID) and (LayerID = FProfiles[g].LayerID) then
         begin
-          case FGradients[g].Subj of
-            ptH : L := Poly(i, FGradients[g].X0, FGradients[g].C, 1);
-            ptS : s := Poly(i, FGradients[g].X0, FGradients[g].C, 1);
-            ptRho: l_ro := Poly(i, FGradients[g].X0, FGradients[g].C, 1);
+          case FProfiles[g].Subj of
+            ptH : L     := Poly(FProfiles[g].X(i), FProfiles[g]);
+            ptS : s     := Poly(FProfiles[g].X(i), FProfiles[g]);
+            ptRho: l_ro := Poly(FProfiles[g].X(i), FProfiles[g]);
           end;
-          Inc(FGradients[g].Count);
         end
       end;
       c := kk * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);

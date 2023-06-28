@@ -397,7 +397,7 @@ type
     FThicknessSeries: TSeriesList ;
     FRoughnessSeries: TSeriesList ;
     FDensitySeries: TSeriesList ;
-    FGradients: TGradients;
+    FProfiles: TProfileFunctions;
     FFitParams: TFitParams;
     FCalc: TCalc;
     FCalcThreadParams: TCalcThreadParams;
@@ -428,10 +428,10 @@ type
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
     procedure MatchToStructure;
-    procedure CreateGradientExtension(Node: PVirtualNode);
+    procedure CreateFunctionProfileExtension(Node: PVirtualNode);
     procedure EditGradient(var Data: PProjectData);
     function CreateChildNode(out Node: PVirtualNode): boolean; //inline;
-    function GetGradients: TGradients;
+    function GetProfileFunctions: TProfileFunctions;
     procedure CreateProfileExtension;
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
     procedure PlotProfileNP;
@@ -443,7 +443,7 @@ type
     procedure PrepareInterfaceAF;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
-    procedure CreateFitGradientExtensions(const P: TPolynomes);
+    procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     { Private declarations }
   public
     { Public declarations }
@@ -788,11 +788,11 @@ begin
   if EType = etNone then Exit;
 
   case EType of
-    etGradient : begin
+    etFunction : begin
                     if CreateChildNode(Node) then
-                          CreateGradientExtension(Node);
+                          CreateFunctionProfileExtension(Node);
                   end;
-    etProfile  : CreateProfileExtension;
+    etArb  : CreateProfileExtension;
   end;
 end;
 
@@ -814,7 +814,7 @@ begin
     Data.Enabled := True;
     Data.RowType := prExtension;
     Data.Title := 'Profile';
-    Data.ExtType := etProfile;
+    Data.ExtType := etArb;
     Data.StackID := -1;
     Data.LayerID := -1;
     Data.Form := ffPoly;
@@ -824,7 +824,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.CreateFitGradientExtensions(const P: TPolynomes);
+procedure TfrmMain.CreateFitGradientExtensions(const P: TProfileFunctions);
 const
   L : array [0..2] of string = ('H','S','rho');
 
@@ -842,18 +842,17 @@ begin
     Data.Group := gtModel;
     Data.Enabled := True;
     Data.RowType := prExtension;
-    S := Format('Prof. %s: (%s/%s)', [L[Ord(P[i].PT)],
+    S := Format('F(%s %s/%s)', [L[Ord(P[i].Subj)],
                  Structure.Stacks[P[i].StackID].Title,
                  Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
 
     Data.Title := S;
-    Data.ExtType := etGradient;
+    Data.ExtType := etFunction;
     Data.Form := ffPoly;
-    Data.Subj := P[i].PT;
+    Data.Subj := P[i].Subj;
     Data.StackID := P[i].StackID;
     Data.LayerID := P[i].LayerID;
-    for j := 0 to High(P[i].C) do
-      Data.Poly[j + 1] := P[i].C[j];
+    Data.Poly    := P[i].C;
   end;
 
   Project.Expanded[FLastModel] := True;
@@ -861,7 +860,7 @@ begin
   Project.Selected[FLastModel] := True;
 end;
 
-procedure TfrmMain.CreateGradientExtension(Node: PVirtualNode);
+procedure TfrmMain.CreateFunctionProfileExtension(Node: PVirtualNode);
 var
   Data: PProjectData;
 begin
@@ -871,8 +870,10 @@ begin
   Data.Enabled := True;
   Data.RowType := prExtension;
   Data.Title := 'Gradient ' + IntToStr(Node.Parent.ChildCount);
-  Data.ExtType := etGradient;
+  Data.ExtType := etFunction;
+  Data.Poly[0] := 0;
   Data.Poly[1] := 0.14;
+  Data.Poly[10] := 1;
   Data.StackID := -1;
   Data.LayerID := -1;
   Data.Form := ffPoly;
@@ -906,8 +907,8 @@ begin
     prExtension:
       begin
         case Data.ExtType of
-          etGradient: EditGradient(Data);
-          etProfile :;
+          etFunction: EditGradient(Data);
+          etArb :;
         end;
 
       end;
@@ -1236,7 +1237,7 @@ begin
   Result := True;
 end;
 
-function TfrmMain.GetGradients: TGradients;
+function TfrmMain.GetProfileFunctions: TProfileFunctions;
 var
   Item: PVirtualNode;
   Data: PProjectData;
@@ -1248,17 +1249,15 @@ begin
   while Item <> Nil do
   begin
     Data := Project.GetNodeData(Item);
-    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etGradient) then
+    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) then
     begin
       SetLength(Result, Count + 1);
-      Result[Count].Count := 1;
-      Result[Count].NL := Structure.GetStackSize(Data.StackID);
-      Result[Count].X0 := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.H.V;
       Result[Count].C       := Data.Poly;
+      Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.H.V;
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
-      Result[Count].Func.f := Data.Form;
-      Result[Count].Subj := Data.Subj;
+      Result[Count].Func    := Data.Form;
+      Result[Count].Subj    := Data.Subj;
       inc(count)
     end;
     Item := Project.GetNextSibling(Item);
@@ -1419,7 +1418,7 @@ begin
                     pmiVisible.Visible := False;
                     pmiLinked.Visible  := False;
 
-                    IsProfile := LastData.ExtType = etProfile;
+                    IsProfile := LastData.ExtType = etArb;
                     pmCopytoclipboard.Visible := IsProfile;
                     pmExporttofile.Visible    := IsProfile;
                  end;
@@ -1517,21 +1516,21 @@ begin
     begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
-          for GradientIndex := 0 to High(FGradients) do
+          for GradientIndex := 0 to High(FProfiles) do
           begin
-            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FGradients[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FGradients[GradientIndex].LayerID) then
+            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
+               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) then
             begin
-//              case FGradients[GradientIndex].Subj of
-//                ptH  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, FGradients[GradientIndex]));
+              case FProfiles[GradientIndex].Subj of
+                ptH  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, FuncProfile(PeriodIndex + shift, FProfiles[GradientIndex]));
 //                ptS  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
 //                ptRho: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
-//              end;
-              inc(FGradients[GradientIndex].Count);
+              end;
+              //inc(FProfiles[GradientIndex].Count);
             end;
 
-            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID <> FGradients[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID <> FGradients[GradientIndex].LayerID) then
+            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID <> FProfiles[GradientIndex].StackID) and
+               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID <> FProfiles[GradientIndex].LayerID) then
             begin
               FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
               FRoughnessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
@@ -1585,8 +1584,8 @@ procedure TfrmMain.PlotProfile;
 begin
   ClearProfiles;
 
-  FGradients := GetGradients;
-  if Length(FGradients) > 0 then
+  FProfiles := GetProfileFunctions;
+  if Length(FProfiles) > 0 then
     PlotGradedProfile
   else
       if IsProfileEnbled and not cbTreatPeriodic.Checked then
@@ -1627,7 +1626,7 @@ begin
   while Node <> nil do
   begin
     Data := Project.GetNodeData(Node);
-    if Data.ExtType = etProfile then
+    if Data.ExtType = etArb then
     begin
       Result := Data.Enabled;
       Break;
@@ -1642,7 +1641,7 @@ begin
   try
     if not PrepareCalc then Exit;
     try
-      FCalc.Model.Gradients := GetGradients;
+      FCalc.Model.Profiles := GetProfileFunctions;
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin

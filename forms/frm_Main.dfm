@@ -1122,8 +1122,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 48
-                Width = 54
-                Height = 19
+                Width = 50
+                Height = 17
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True

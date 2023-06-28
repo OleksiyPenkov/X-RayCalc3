@@ -21,7 +21,7 @@ type
   TLayerIndexes = array [1..3] of Integer;
   TIndexes  = array of TLayerIndexes;
 
-  TLayer = array [1..3] of TFloatArray;   // Array of layer parameters
+  TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
   TSolution = array of TLayer; // H, Sigma, rho x N Layers
   TPopulation = array of TSolution;
 
@@ -86,7 +86,7 @@ type
       procedure Init_Domains;
       procedure ApplyCFactor(var c1, c2: single);// inline;
       function Rand(const dx: Single): single;
-      function GetPolynomes: TPolynomes; virtual;
+      function GetPolynomes: TProfileFunctions; virtual;
     private
      procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
      procedure SendUpdateStep(const Step: integer);
@@ -103,7 +103,7 @@ type
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
-      property Polynomes:TPolynomes read GetPolynomes;
+      property Polynomes:TProfileFunctions read GetPolynomes;
 
       procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
@@ -260,7 +260,7 @@ begin
   Result.AddSubstrate(Data);
 end;
 
-function TLFPSO_BASE.GetPolynomes: TPolynomes;
+function TLFPSO_BASE.GetPolynomes: TProfileFunctions;
 begin
 
 end;
@@ -541,9 +541,6 @@ begin
   for I := 0 to High(X) do
   begin
     SetLength(X[i], Count);
-    for j := 0 to High(X[i]) do
-      for k := 1 to 3 do
-        SetLength(X[i][j][k], 1);
   end;
 end;
 
