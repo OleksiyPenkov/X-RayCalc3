@@ -24,6 +24,7 @@ type
       const Paired: Boolean; Val: TFitValue);
       function FitModelToLayer(Solution: TSolution): TLayeredModel; override;
       function GetPolynomes: TProfileFunctions; override;
+      function Order(const j, k: Integer): integer; inline;
     public
       //
   end;
@@ -46,12 +47,12 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 1 to High(X) do       // for every member of the population
+  for i := 0 to High(X) do       // for every member of the population
   begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do        // for H, s, rho
       begin
-        for c := 0 to Trunc(X[i][j][k][10])do  // for every coefficient
+        for c := 0 to Order(j, k) do  // for every coefficient
         begin
           V[i][j][k][c] := Omega(t, FTMax) * LevyWalk(X[i][j][k][c], gbest[j][k][c])  +
                         c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
@@ -69,12 +70,12 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 1 to High(X) do // for every member of the population
+  for i := 0 to High(X) do // for every member of the population
   begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do
       begin
-        for c := 0 to Trunc(X[i][j][k][10]) do  // for every coefficient
+        for c := 0 to Order(j, k) do  // for every coefficient
         begin
             V[i][j][k][c] := Omega(t, FTMax) * V[i][j][k][c]  +
                       c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
@@ -90,44 +91,54 @@ procedure TLFPSO_Poly.CheckLimits(const i, j, k: integer);
 var
   OldX: TFloatArray;
    Val, Max, Min: Single;
-   c, r: Integer;
+   p, r: Integer;
+   Ord: Integer;
 begin
-  for c := 0 to Trunc(V[i][j][k][10]) do
+  Ord := Order(j, k);
+  for p := 0 to Ord do
   begin
-    if V[i][j][k][c] > Vmax[0][j][k][c] then
-               V[i][j][k][c] := Vmax[0][j][k][c];
+    if V[i][j][k][p] > Vmax[0][j][k][p] then
+               V[i][j][k][p] := Vmax[0][j][k][p];
 
-    if V[i][j][k][0] < Vmin[0][j][k][c] then
-               V[i][j][k][0] := Vmin[0][j][k][c];
+    if V[i][j][k][p] < Vmin[0][j][k][p] then
+               V[i][j][k][p] := Vmin[0][j][k][p];
 
-    X[i][j][k][c] := X[i][j][k][c] + V[i][j][k][c]
+    X[i][j][k][p] := X[i][j][k][p] + V[i][j][k][p]
   end;
 
   Max := 0; Min := 1E9;
 
-  for r := 1 to Counts[j] do
+  if Ord > 0 then
   begin
-    Val := Poly(r, X[i][j][k]);
-    if Val > Max then
-       Max := Val;
-    if Val < Min then
-       Min := Val;
+    X[i][j][k][10] := Ord;
+    for r := 1 to Counts[j] do
+    begin
+      Val := Poly(r, X[i][j][k]);
+      if Val > Max then
+         Max := Val;
+      if Val < Min then
+         Min := Val;
+    end
+  end
+  else begin
+    Max := X[i][j][k][0];
+    Min := X[i][j][k][0];
   end;
 
   if Max > Xmax[0][Indexes[j]][k][0] then
   begin
     X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
-    for c := 1 to Trunc(X[i][j][k][10]) do
-      if X[i][j][k][c] > 0 then
-              X[i][j][k][c] := 0;
+    for p := 1 to Ord do
+      if X[i][j][k][p] > 0 then
+              X[i][j][k][p] := 0;
   end;
 
   if Min < Xmin[0][Indexes[j]][k][0] then
   begin
     X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
-    for c := 1 to Trunc(X[i][j][k][10]) do
-      if X[i][j][k][c] < 0 then
-              X[i][j][k][c] := 0;
+    for p := 1 to Ord do
+      if X[i][j][k][p] < 0 then
+              X[i][j][k][p] := 0;
   end;
 end;
 
@@ -142,8 +153,15 @@ begin
     for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
       begin
-        for p := 0 to Trunc(X[i][j][k][10]) do
-          V[i][j][k][p] := (Random * (Vmax[0][j][k][p]- Vmin[0][j][k][p]) + Vmin[0][j][k][p])/(p + 1);
+        for p := 0 to Order(j, k) do
+        begin
+          if p > 0 then
+          begin
+            Vmax[0][j][k][p] :=  Vmax[0][j][k][0]/(p * 10 + 1);
+            Vmin[0][j][k][p] := -Vmax[0][j][k][p];
+          end;
+          V[i][j][k][p] := Rand(Vmax[0][j][k][p]);
+        end;
       end;
 end;
 
@@ -157,16 +175,16 @@ var
   i, j, k, p: integer;
   Val: Single;
 begin
-  for i := 0 to High(X) do          // for every member of the population
+  for i := 1 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
       begin
-        for p := 0 to Trunc(X[i][j][k][10]) do  // for every oefficient of polynome
+        for p := 0 to Order(j, k) do  // for every oefficient of polynome
         begin
           if p = 0 then
           begin
-            Val := Rand(XRange[0][Indexes[j]][k][0]) / sqr(p + 1);
+            Val := Rand(XRange[0][Indexes[j]][k][0]);
             X[i][j][k][0] := X[0][Indexes[j]][k][0] + Val
           end
           else
@@ -179,7 +197,7 @@ end;
 
 function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;
 var
-  i, k, j: Integer;
+  i, k, j, p: Integer;
   Data: TLayersData;
   LayerIndex: Integer;
 begin
@@ -219,11 +237,13 @@ function TLFPSO_Poly.GetPolynomes: TProfileFunctions;
 var
   i, j, LayerIndex: integer;
   NewRecord: TFuncProfileRec;
-
 begin
+  NewRecord.Func := ffPoly;
   LayerIndex := 0;
   for i := 0 to High(FStructure.Stacks) do
   begin
+    if FStructure.Stacks[i].N = 1 then Continue;
+
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
       if not FStructure.Stacks[i].Layers[j].H.Paired then
@@ -279,8 +299,6 @@ begin
   begin
     for j := 0 to High(Inp.Stacks[i].Layers) do
     begin
-      FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
-
       Set_Init_XPoly(Inp.Stacks[i].N, Index, 1, Inp.Stacks[i].Layers[j].H.Paired, Inp.Stacks[i].Layers[j].H);
       Set_Init_XPoly(Inp.Stacks[i].N, Index, 2, Inp.Stacks[i].Layers[j].s.Paired, Inp.Stacks[i].Layers[j].s);
       Set_Init_XPoly(Inp.Stacks[i].N, Index, 3, Inp.Stacks[i].Layers[j].r.Paired, Inp.Stacks[i].Layers[j].r);
@@ -298,42 +316,29 @@ begin
         Inc(Index);
       end;
 
-  for I := 1 to FPopulation - 1 do
-    for j := 0 to High(X[i]) do
-      for k := 1 to 3 do
-      begin
-        X[i][j][k][10]    := X[0][j][k][10];   // not periodic layer, only a0 = v
-        V[i][j][k][10]    := V[0][j][k][10];   // not periodic layer, only a0 = v
-        Vmin[i][j][k][10] := Vmin[0][j][k][10];   // not periodic layer, only a0 = v
-        Vmax[i][j][k][10] := Vmax[0][j][k][10];   // not periodic layer, only a0 = v
-      end
 end;
 
 procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
 var
   p: Integer;
 begin
-  if Paired or (N = 1) then
-  begin
-    X[0][Index][ValueType][10] := 0;
-    V[0][Index][ValueType][10] := 0;
-    Vmin[0][Index][ValueType][10] := 0;
-    Vmax[0][Index][ValueType][10] := 0;
-  end
-  else begin
-    X[0][Index][ValueType][10] := FFitParams.MaxPOrder;
-    V[0][Index][ValueType][10] := FFitParams.MaxPOrder;
-    Vmin[0][Index][ValueType][10] := FFitParams.MaxPOrder;
-    Vmax[0][Index][ValueType][10] := FFitParams.MaxPOrder;
-  end;
-
-    X[0][Index][ValueType][0] := Val.V;
+    X[0][Index][ValueType][0]    := Val.V;
     Xmax[0][Index][ValueType][0] := Val.max;
     Xmin[0][Index][ValueType][0] := Val.min;
   Xrange[0][Index][ValueType][0] := Xmax[0][Index][ValueType][0] - Xmin[0][Index][ValueType][0];
 
-  for p := 1 to High(Xrange[0][Index][ValueType]) do
-    Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / Sqr(p + 1);
+  if not (Paired or (N = 1)) then
+  begin
+    X[0][Index][ValueType][10]:= FFitParams.MaxPOrder;
+
+    for p := 1 to Trunc(Xrange[0][Index][ValueType][10]) do
+      Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / Sqr(p + 1);
+  end;
+end;
+
+function TLFPSO_Poly.Order(const j, k: Integer): integer;
+begin
+  Result := Trunc(X[0][j][k][10]);
 end;
 
 end.

@@ -855,6 +855,7 @@ begin
     Data.Poly    := P[i].C;
   end;
 
+  MatchToStructure;
   Project.Expanded[FLastModel] := True;
   Project.ClearSelection;
   Project.Selected[FLastModel] := True;

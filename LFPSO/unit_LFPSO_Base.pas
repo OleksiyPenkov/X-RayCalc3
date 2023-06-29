@@ -359,7 +359,6 @@ begin
       FLastWorseChiSQR :=  FCalc.ChiSQR;
   finally
     FreeAndNil(FCalc);
-    Application.ProcessMessages;
   end;
 end;
 
@@ -374,6 +373,7 @@ begin
   for i := 0 to High(X) do
   begin
     CalcSolution(X[i]);
+    Application.ProcessMessages;
     if FTerminated then Break;
   end;
 
