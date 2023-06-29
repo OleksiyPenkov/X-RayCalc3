@@ -110,7 +110,6 @@ begin
 
   if Ord > 0 then
   begin
-    X[i][j][k][10] := Ord;
     for r := 1 to Counts[j] do
     begin
       Val := Poly(r, X[i][j][k]);
@@ -199,29 +198,35 @@ function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;
 var
   i, k, j, p: Integer;
   Data: TLayersData;
-  LayerIndex: Integer;
+  Base, LN: Integer;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
-  LayerIndex := 0;
+
   SetLength(Data, FStructure.TotalNP);
+  LN := 0; Base := 0;
 
   for I := 0 to High(FStructure.Stacks) do
   begin
     for j := 1 to FStructure.Stacks[i].N do
+    begin
       for k := 0 to High(FStructure.Stacks[i].Layers) do
       begin
-        Data[LayerIndex].Material := FStructure.Stacks[i].Layers[k].Material;
-        Data[LayerIndex].H.V := Poly(j, Solution[k][1]);
-        Data[LayerIndex].s.V := Poly(j, Solution[k][2]);
-        Data[LayerIndex].r.V := Poly(j, Solution[k][3]);
+        Data[LN].Material := FStructure.Stacks[i].Layers[k].Material;
 
-        Data[LayerIndex].StackID := FStructure.Stacks[i].Layers[k].StackID;
-        Data[LayerIndex].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
-        Inc(LayerIndex);
+        Data[LN].H.V := Poly(j, Solution[Base + k][1]);
+        Data[LN].s.V := Poly(j, Solution[Base + k][2]);
+        Data[LN].r.V := Poly(j, Solution[Base + k][3]);
+
+        Data[LN].StackID := FStructure.Stacks[i].Layers[k].StackID;
+        Data[LN].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+        Inc(LN);
       end;
+    end;
+    inc(Base, FStructure.Stacks[i].N);
   end;
+
   Result.AddLayers(-1, Data);
 
   //
@@ -235,14 +240,18 @@ end;
 
 function TLFPSO_Poly.GetPolynomes: TProfileFunctions;
 var
-  i, j, LayerIndex: integer;
+  i, j, Base: integer;
   NewRecord: TFuncProfileRec;
 begin
   NewRecord.Func := ffPoly;
-  LayerIndex := 0;
+  Base := 0;
   for i := 0 to High(FStructure.Stacks) do
   begin
-    if FStructure.Stacks[i].N = 1 then Continue;
+    if FStructure.Stacks[i].N = 1 then
+    begin
+     Inc(Base, FStructure.Stacks[i].N);
+     Continue;
+    end;
 
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
@@ -251,7 +260,7 @@ begin
         NewRecord.Subj := ptH;
         NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
         NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := abest[LayerIndex][1];
+        NewRecord.C := abest[Indexes[Base + j]][1];
         Result := Result + [NewRecord];
       end;
 
@@ -260,7 +269,7 @@ begin
         NewRecord.Subj := ptS;
         NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
         NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := abest[LayerIndex][2];
+        NewRecord.C := abest[Indexes[Base + j]][1];
         Result := Result + [NewRecord];
       end;
 
@@ -269,18 +278,17 @@ begin
         NewRecord.Subj := ptRho;
         NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
         NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := abest[LayerIndex][3];
+        NewRecord.C := abest[Indexes[Base + j]][1];
         Result := Result + [NewRecord];
       end;
-      Inc(LayerIndex);
     end;
-
+    Inc(Base, FStructure.Stacks[i].N);
   end;
 end;
 
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, Index: integer;
+  i, j, k, Index, Base: integer;
   D: double;
   NLayers: Integer;
 begin
@@ -306,16 +314,23 @@ begin
     end;
   end;
 
-  Index := 0;
+  Index := 0; Base := 0;
   for I := 0 to High(FStructure.Stacks) do
+  begin
     for j := 1 to FStructure.Stacks[i].N do
       for k := 0 to High(FStructure.Stacks[i].Layers) do
       begin
-        Indexes[Index] := k;
+        Indexes[Index] := Base + k;
         Counts[Index]  := FStructure.Stacks[i].N;
         Inc(Index);
       end;
+    Inc(Base, FStructure.Stacks[i].N );
+  end;
 
+  for i := 1 to High(X) do          // for every member of the population
+    for j := 0 to High(X[i]) do     //for every layer
+      for k := 1 to 3 do
+         X[i][j][k][10] := X[0][j][k][10];
 end;
 
 procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);
@@ -331,7 +346,7 @@ begin
   begin
     X[0][Index][ValueType][10]:= FFitParams.MaxPOrder;
 
-    for p := 1 to Trunc(Xrange[0][Index][ValueType][10]) do
+    for p := 1 to Order(Index, ValueType) do
       Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / Sqr(p + 1);
   end;
 end;
