@@ -121,7 +121,7 @@ end;
 
 procedure TXRCLayerControl.CheckBoxClick(Sender: TObject);
 begin
-  FData.P[(Sender as TRzCheckBox).Tag].Paired := PairedH.Checked;
+  FData.P[(Sender as TRzCheckBox).Tag].Paired := (Sender as TRzCheckBox).Checked;
 end;
 
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);

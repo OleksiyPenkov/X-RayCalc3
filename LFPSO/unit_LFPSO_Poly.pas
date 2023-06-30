@@ -260,7 +260,7 @@ begin
           NewRecord.Subj := TParameterType(p - 1);
           NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
           NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-          NewRecord.C := abest[Indexes[Base + j]][1];
+          NewRecord.C := abest[Indexes[Base + j]][p];
           Result := Result + [NewRecord];
         end;
       end;
