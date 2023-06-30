@@ -15,6 +15,8 @@ const
   WM_RECALC = WM_USER + 1;
   WM_STARTEDITING = WM_USER + 2;
 
+  PAlias : array [1..3] of string = ('H','s','r');
+
 implementation
 
 end.

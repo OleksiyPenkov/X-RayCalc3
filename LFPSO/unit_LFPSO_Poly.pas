@@ -215,9 +215,8 @@ begin
       begin
         Data[LN].Material := FStructure.Stacks[i].Layers[k].Material;
 
-        Data[LN].H.V := Poly(j, Solution[Base + k][1]);
-        Data[LN].s.V := Poly(j, Solution[Base + k][2]);
-        Data[LN].r.V := Poly(j, Solution[Base + k][3]);
+        for p := 1 to 3 do
+         Data[LN].P[p].V := Poly(j, Solution[Base + k][p]);
 
         Data[LN].StackID := FStructure.Stacks[i].Layers[k].StackID;
         Data[LN].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
@@ -232,15 +231,14 @@ begin
   //
   SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
-  Data[0].s := FStructure.Subs.s;
-  Data[0].r := FStructure.Subs.r;
+  Data[0].P := FStructure.Subs.P;
 
   Result.AddSubstrate(Data);
 end;
 
 function TLFPSO_Poly.GetPolynomes: TProfileFunctions;
 var
-  i, j, Base: integer;
+  i, j, p, Base: integer;
   NewRecord: TFuncProfileRec;
 begin
   NewRecord.Func := ffPoly;
@@ -255,31 +253,16 @@ begin
 
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      if not FStructure.Stacks[i].Layers[j].H.Paired then
+      for p := 1 to 3 do
       begin
-        NewRecord.Subj := ptH;
-        NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
-        NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := abest[Indexes[Base + j]][1];
-        Result := Result + [NewRecord];
-      end;
-
-      if not FStructure.Stacks[i].Layers[j].s.Paired then
-      begin
-        NewRecord.Subj := ptS;
-        NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
-        NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := abest[Indexes[Base + j]][1];
-        Result := Result + [NewRecord];
-      end;
-
-      if not FStructure.Stacks[i].Layers[j].r.Paired then
-      begin
-        NewRecord.Subj := ptRho;
-        NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
-        NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-        NewRecord.C := abest[Indexes[Base + j]][1];
-        Result := Result + [NewRecord];
+        if not FStructure.Stacks[i].Layers[j].P[p].Paired then
+        begin
+          NewRecord.Subj := TParameterType(p - 1);
+          NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
+          NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
+          NewRecord.C := abest[Indexes[Base + j]][1];
+          Result := Result + [NewRecord];
+        end;
       end;
     end;
     Inc(Base, FStructure.Stacks[i].N);
@@ -288,7 +271,7 @@ end;
 
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, Index, Base: integer;
+  i, j, k, p, Index, Base: integer;
   D: double;
   NLayers: Integer;
 begin
@@ -307,9 +290,9 @@ begin
   begin
     for j := 0 to High(Inp.Stacks[i].Layers) do
     begin
-      Set_Init_XPoly(Inp.Stacks[i].N, Index, 1, Inp.Stacks[i].Layers[j].H.Paired, Inp.Stacks[i].Layers[j].H);
-      Set_Init_XPoly(Inp.Stacks[i].N, Index, 2, Inp.Stacks[i].Layers[j].s.Paired, Inp.Stacks[i].Layers[j].s);
-      Set_Init_XPoly(Inp.Stacks[i].N, Index, 3, Inp.Stacks[i].Layers[j].r.Paired, Inp.Stacks[i].Layers[j].r);
+      for p := 1 to 3 do
+        Set_Init_XPoly(Inp.Stacks[i].N, Index, p, Inp.Stacks[i].Layers[j].P[p].Paired, Inp.Stacks[i].Layers[j].P[p]);
+
       Inc(Index);
     end;
   end;

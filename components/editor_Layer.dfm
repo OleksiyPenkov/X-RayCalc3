@@ -24,7 +24,7 @@ object edtrLayer: TedtrLayer
     Color = 15987699
     TabOrder = 0
     ExplicitWidth = 344
-    ExplicitHeight = 51
+    ExplicitHeight = 60
     object Label1: TLabel
       Left = 9
       Top = 10
@@ -120,7 +120,7 @@ object edtrLayer: TedtrLayer
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 60
+    ExplicitTop = 69
     ExplicitWidth = 344
     object btnOK: TRzBitBtn
       Left = 192

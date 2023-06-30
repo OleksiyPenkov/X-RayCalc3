@@ -99,9 +99,9 @@ var
 begin
   SetLength(FLayers, 1);
   Data.Material := Material;
-  Data.H.V := 1E8;
-  Data.r.V := rho;
-  Data.s.V := s;
+  Data.P[1].V := 1E8;
+  Data.P[2].V := s;
+  Data.P[3].V := rho;
 
 
   FLayers[0] := TXRCLayerControl.Create(Self, 0, Data);

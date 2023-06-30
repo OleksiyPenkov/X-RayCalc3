@@ -120,8 +120,8 @@ const
   MaxC = 10;
   a = 0.5;
   eps = 1;
-  c1m = 1.41;
-  c2m = 1.41;
+  c1m = 1.412;
+  c2m = 1.412;
 
 
 implementation
@@ -226,7 +226,7 @@ end;
 
 function TLFPSO_BASE.FitModelToLayer(Solution: TSolution): TLayeredModel;
 var
-  i, k, j, LayerIndex: Integer;
+  i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;
 begin
   Result := TLayeredModel.Create;
@@ -240,9 +240,9 @@ begin
     for k := 0 to High(FStructure.Stacks[i].Layers) do
     begin
       Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
-      Data[k].H.V := Solution[LayerIndex][1][0];
-      Data[k].s.V := Solution[LayerIndex][2][0];
-      Data[k].r.V := Solution[LayerIndex][3][0];
+      for p := 1 to 3 do
+        Data[k].P[p].V := Solution[LayerIndex][p][0];
+
       Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
       Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
       Inc(LayerIndex);
@@ -254,8 +254,8 @@ begin
 
   SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
-  Data[0].s := FStructure.Subs.s;
-  Data[0].r := FStructure.Subs.r;
+  Data[0].P :=FStructure.Subs.P;
+
 
   Result.AddSubstrate(Data);
 end;
@@ -581,16 +581,15 @@ end;
 
 procedure TLFPSO_BASE.UpdateStructure(Solution: TSolution);
 var
-  i, j, LayerIndex: integer;
+  i, j, p, LayerIndex: integer;
 begin
   LayerIndex := 0;
   for i := 0 to High(FStructure.Stacks) do
   begin
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      FStructure.Stacks[i].Layers[j].H.V := Solution[LayerIndex][1][0];
-      FStructure.Stacks[i].Layers[j].s.V := Solution[LayerIndex][2][0];
-      FStructure.Stacks[i].Layers[j].r.V := Solution[LayerIndex][3][0];
+      for p := 1 to 3 do
+        FStructure.Stacks[i].Layers[j].P[p].V := Solution[LayerIndex][p][0];
       Inc(LayerIndex);
     end;
   end;

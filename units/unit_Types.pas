@@ -135,14 +135,13 @@ type
 
   TLayerData = record
     Material: string;
-    H, s, r: TFitValue;
+    P: array [1..3] of TFitValue;
     StackID, LayerID: integer;
-    PH, PS, PR: TFloatArray;
+    PP: array [1..3] of TFloatArray;
   public
     procedure ClearProfiles;
     procedure AddProfilePoint(const H, s, r: Single);
-    function ProfileFromSrting(const Subj: TParameterType;
-      Profile: string): string;
+    function ProfileFromSrting(const p: integer; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
   end;
 
@@ -178,6 +177,8 @@ type
     function Total: integer;
     function TotalNP: integer;
   end;
+
+
 
 implementation
 
@@ -246,52 +247,46 @@ end;
 { TLayerData }
 
 procedure TLayerData.ClearProfiles;
+var
+  p: Integer;
 begin
-  SetLength(PH, 0);
-  SetLength(PS, 0);
-  SetLength(PR, 0);
+  for p := 1 to 3 do
+    SetLength(PP[p], 0);
 end;
 
 procedure TLayerData.AddProfilePoint(const H, s, r: Single);
 begin
-  Insert(H, PH, MaxInt);
-  Insert(s, PS, MaxInt);
-  Insert(r, PR, MaxInt);
+  Insert(H, PP[1], MaxInt);
+  Insert(s, PP[2], MaxInt);
+  Insert(r, PP[3], MaxInt);
 end;
 
-function TLayerData.ProfileFromSrting(const Subj: TParameterType;
-  Profile: string): string;
+function TLayerData.ProfileFromSrting(const p: integer; Profile: string): string;
 var
-  i, p: Integer;
+  i, k: Integer;
   val: single;
 begin
-  i := 1; p := Pos(';', Profile);
+  i := 1;
+  k := Pos(';', Profile);
   while i < Length(Profile) do
   begin
-    p := Pos(';', Profile, i);
-    val := StrToFloat(copy(Profile, i, p - i - 1));
-    case Subj of
-      ptH:    Insert(Val, PH, MaxInt);
-      ptS:    Insert(Val, PS, MaxInt);
-      ptRho:   Insert(Val, PR, MaxInt);
-    end;
-    i := p + 1;
+    k := Pos(';', Profile, i);
+    val := StrToFloat(copy(Profile, i, k - i - 1));
+    Insert(Val, PP[p], MaxInt);
+    i := k + 1;
   end;
 end;
 
 function TLayerData.ProfileToSrting(const Subj: TParameterType): string;
 var
-  i: Integer;
+  i, p: Integer;
   Val : single;
 begin
   Result := '';
-  for I := 0 to High(PH) do
+  p := Ord(Subj) + 1;
+  for I := 0 to High(PP[p]) do
   begin
-    case Subj of
-      ptH:  Val := PH[i];
-      ptS:  Val := PS[i];
-      ptRho: Val := PR[i];
-    end;
+    Val := PP[p][i];
     Result := Format('%s%f;',[Result, Val])
   end;
 end;

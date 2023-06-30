@@ -59,8 +59,8 @@ var
 
 procedure TfrmLimits.btnInitClick(Sender: TObject);
 var
-  i, j, Index: integer;
-  dH, dS, dRho: single;
+  i, j, p, Count, Index: integer;
+  dP: array [1..3] of single;
 
   function Convert(const Inp, D: single): string;
   var
@@ -71,24 +71,22 @@ var
   end;
 
 begin
-  dH    := StrToFloat(edFdH.Text);
-  dS    := StrToFloat(edFdS.Text);
-  dRho  := StrToFloat(edFdRho.Text);
+  dP[1] := StrToFloat(edFdH.Text);
+  dP[2] := StrToFloat(edFdS.Text);
+  dP[3] := StrToFloat(edFdRho.Text);
 
   Index := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      ListView.Items[Index].SubItems[0] := Convert(FStructure.Stacks[i].Layers[j].H.V, -dH);
-      ListView.Items[Index].SubItems[1] := Convert(FStructure.Stacks[i].Layers[j].H.V, dH);
-
-      ListView.Items[Index].SubItems[2] := Convert(FStructure.Stacks[i].Layers[j].s.V, -dS);
-      ListView.Items[Index].SubItems[3] := Convert(FStructure.Stacks[i].Layers[j].s.V, dS);
-
-      ListView.Items[Index].SubItems[4] := Convert(FStructure.Stacks[i].Layers[j].r.V, -dRho);
-      ListView.Items[Index].SubItems[5] := Convert(FStructure.Stacks[i].Layers[j].r.V, dRho);
-
+      Count := 0;
+      for p := 1 to 3 do
+      begin
+        ListView.Items[Index].SubItems[Count] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, -dP[p]);
+        ListView.Items[Index].SubItems[Count + 1] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, dP[p]);
+        Inc(Count, 2);
+      end;
       Inc(Index);
     end;
   end;
@@ -152,7 +150,7 @@ end;
 
 procedure TfrmLimits.StructureToView;
 var
-  i, j: integer;
+  i, j, p: integer;
   Group: TListGroup;
   ListItem: TListItem;
 begin
@@ -170,21 +168,18 @@ begin
       ListItem.GroupID := Group.GroupID;
       ListItem.Caption := FStructure.Stacks[i].Layers[j].Material;
 
-      ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].H.min, ffFixed, 5, 2));
-      ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].H.max, ffFixed, 5, 2));
-
-      ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].s.min, ffFixed, 5, 2));
-      ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].s.max, ffFixed, 5, 2));
-
-      ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].r.min, ffFixed, 5, 2));
-      ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].r.max, ffFixed, 5, 2));
+      for p := 1 to 3 do
+      begin
+        ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].min, ffFixed, 5, 2));
+        ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].max, ffFixed, 5, 2));
+      end;
     end;
   end;
 end;
 
 procedure TfrmLimits.StructureFromView;
 var
-  i, j, Index: integer;
+  i, j, p, Count, Index: integer;
 
 begin
 
@@ -193,15 +188,13 @@ begin
   begin
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      FStructure.Stacks[i].Layers[j].H.min := StrToFloat(ListView.Items[Index].SubItems[0]);
-      FStructure.Stacks[i].Layers[j].H.max := StrToFloat(ListView.Items[Index].SubItems[1]);
-
-      FStructure.Stacks[i].Layers[j].s.min := StrToFloat(ListView.Items[Index].SubItems[2]);
-      FStructure.Stacks[i].Layers[j].s.max := StrToFloat(ListView.Items[Index].SubItems[3]);
-
-      FStructure.Stacks[i].Layers[j].r.min := StrToFloat(ListView.Items[Index].SubItems[4]);
-      FStructure.Stacks[i].Layers[j].r.max := StrToFloat(ListView.Items[Index].SubItems[5]);
-
+      Count := 0;
+      for p := 1 to 3 do
+      begin
+        FStructure.Stacks[i].Layers[j].P[p].min := StrToFloat(ListView.Items[Index].SubItems[Count]);
+        FStructure.Stacks[i].Layers[j].P[p].max := StrToFloat(ListView.Items[Index].SubItems[Count + 1]);
+        Inc(Count, 2);
+      end;
       Inc(Index);
     end;
   end;

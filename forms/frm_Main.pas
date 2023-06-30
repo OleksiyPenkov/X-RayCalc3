@@ -1254,7 +1254,7 @@ begin
     begin
       SetLength(Result, Count + 1);
       Result[Count].C       := Data.Poly;
-      Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.H.V;
+      Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.P[Ord(Data.Subj) + 1].V;
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
       Result[Count].Func    := Data.Form;
@@ -1493,11 +1493,11 @@ begin
     if Structure.Stacks[i].N = 1 then Continue;
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
-      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PH) do
+      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[1]) do
       begin
-         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PH[k]);
-         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PS[k]);
-         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PR[k]);
+         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[1][k]);
+         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[2][k]);
+         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[3][k]);
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1533,9 +1533,9 @@ begin
             if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID <> FProfiles[GradientIndex].StackID) and
                (Structure.Stacks[StackIndex].Layers[LayerIndex].ID <> FProfiles[GradientIndex].LayerID) then
             begin
-              FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
-              FRoughnessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
-                FDensitySeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V);
+              FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V);
+              FRoughnessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[2].V);
+                FDensitySeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V);
             end;
           end;
       end
@@ -1559,9 +1559,9 @@ begin
     begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
-        FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
-        FRoughnessSeries[LayerIndex+ d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
-        FDensitySeries[LayerIndex + d].  AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
+        FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V);
+        FRoughnessSeries[LayerIndex+ d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[2].V);
+        FDensitySeries[LayerIndex + d].  AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V);
          end;
     end;
     Inc(shift, Structure.Stacks[StackIndex].N);
@@ -1900,9 +1900,9 @@ var
 begin
   Data.Material := 'Si';
 
-  Data.H.New(25);
-  Data.s.New(3);
-  Data.r.New(0);
+  Data.P[1].New(25);
+  Data.P[2].New(3);
+  Data.P[3].New(0);
 
   if edtrLayer.ShowEditor(False, Data) then
     Structure.AddLayer(Structure.Selected, Data);

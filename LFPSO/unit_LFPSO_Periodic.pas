@@ -146,7 +146,7 @@ end;
 
 procedure TLFPSO_Periodic.SetStructure(const Inp: TFitStructure);
 var
-  i, j, Index: integer;
+  i, j, p, Index: integer;
   D: double;
 begin
   FStructure := Inp;
@@ -162,7 +162,7 @@ begin
       for j := 0 to High(FStructure.Stacks[i].Layers) do
       begin
         FStructure.Stacks[i].Layers[j].LayerID := j;
-        D := D + FStructure.Stacks[i].Layers[j].H.V;
+        D := D + FStructure.Stacks[i].Layers[j].P[1].V;
       end;
       FStructure.Stacks[i].D := D;
     end;
@@ -173,9 +173,8 @@ begin
   begin
     for j := 0 to High(Inp.Stacks[i].Layers) do
     begin
-      Set_Init_X(Index, 1, Inp.Stacks[i].Layers[j].H);
-      Set_Init_X(Index, 2, Inp.Stacks[i].Layers[j].s);
-      Set_Init_X(Index, 3, Inp.Stacks[i].Layers[j].r);
+      for p := 1 to 3 do
+        Set_Init_X(Index, p, Inp.Stacks[i].Layers[j].P[p]);
 
       Inc(Index);
     end;

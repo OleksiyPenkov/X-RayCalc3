@@ -140,7 +140,7 @@ end;
 
 procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, l, Index: integer;
+  i, j, k, l, p, Index: integer;
   D: double;
   Links: TIndexes;
   NLayers: Integer;
@@ -172,9 +172,8 @@ begin
       begin
         FStructure.Stacks[0].Layers[Index] := Inp.Stacks[i].Layers[j];
 
-        Set_Init_X(Index, 1, Inp.Stacks[i].Layers[j].H);
-        Set_Init_X(Index, 2, Inp.Stacks[i].Layers[j].s);
-        Set_Init_X(Index, 3, Inp.Stacks[i].Layers[j].r);
+        for p := 1 to 3 do
+          Set_Init_X(Index, p, Inp.Stacks[i].Layers[j].P[p]);
 
         if not FReInit then
         begin
@@ -186,14 +185,9 @@ begin
               Links[j][l] := -1;
             end;
 
-            if Inp.Stacks[i].Layers[j].H.Paired then
-              Links[j][1] := Index;
-
-            if Inp.Stacks[i].Layers[j].s.Paired then
-              Links[j][2] := Index;
-
-            if Inp.Stacks[i].Layers[j].r.Paired then
-              Links[j][3] := Index;
+            for p := 1 to 3 do
+               if Inp.Stacks[i].Layers[j].P[p].Paired then
+                  Links[j][1] := Index;
           end
           else
             for l := 1 to 3 do

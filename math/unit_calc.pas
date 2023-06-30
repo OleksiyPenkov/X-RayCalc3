@@ -309,7 +309,7 @@ var
   begin
       case RF of
         rfError:
-          Result := FastExp(-1 * sqr(sigma) * sqr(s));
+          Result := FastExp(-1 * sqr(sigma / 1.41) * sqr(s));
         rfExp:
           Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
         rfLinear:

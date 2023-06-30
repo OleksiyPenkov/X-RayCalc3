@@ -90,6 +90,9 @@ var
 
 implementation
 
+uses
+  unit_consts;
+
 { TXRCStructure }
 
 procedure TXRCStructure.AddLayer(const StackID: Integer;
@@ -135,7 +138,7 @@ begin
   //
   Visible := False;
   Clear;
-  AddSubstrate(Inp.Subs.Material, Inp.Subs.s.V, Inp.Subs.r.V);
+  AddSubstrate(Inp.Subs.Material, Inp.Subs.P[2].V, Inp.Subs.P[3].V);
 
   AddStack(1, 'Main');
   for I := 0 to High(Inp.Stacks[0].Layers) do
@@ -373,7 +376,7 @@ end;
 
 function TXRCStructure.Model(const ExpandProfiles: Boolean): TLayeredModel;
 var
-  i, j, k: Integer;
+  i, j, k, p: Integer;
   StackLayers: TLayersData;
 begin
   Result := TLayeredModel.Create;
@@ -387,11 +390,8 @@ begin
       if ExpandProfiles and (FStacks[i].N > 1) then
       begin
         for k := 0 to High(StackLayers) do
-        begin
-          StackLayers[k].H.V := StackLayers[k].PH[j - 1];
-          StackLayers[k].s.V := StackLayers[k].PS[j - 1];
-          StackLayers[k].r.V := StackLayers[k].PR[j - 1];
-        end;
+          for p := 1 to 3 do
+            StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
       end;
       Result.AddLayers(i, StackLayers);
     end;
@@ -463,9 +463,7 @@ begin
     for j := 0 to High(FStacks[i].Layers) do
     begin
       Data.Material := Inp.Stacks[0].Layers[Count].Material;
-      Data.H := Inp.Stacks[0].Layers[Count].H;
-      Data.s := Inp.Stacks[0].Layers[Count].s;
-      Data.r := Inp.Stacks[0].Layers[Count].r;
+      Data.P := Inp.Stacks[0].Layers[Count].P;
       FStacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
@@ -483,9 +481,7 @@ begin
     for j := 0 to High(FStacks[i].LayerData) do
     begin
       Data.Material := Inp.Stacks[i].Layers[j].Material;
-      Data.H := Inp.Stacks[i].Layers[j].H;
-      Data.s := Inp.Stacks[i].Layers[j].s;
-      Data.r := Inp.Stacks[i].Layers[j].r;
+      Data.P := Inp.Stacks[i].Layers[j].P;
       FStacks[i].UpdateLayer(j, Data);
     end;
   end;
@@ -534,7 +530,7 @@ begin
       for j := 0 to High(FStacks[i].LayerData) do
       begin
         Result.Stacks[i].Layers[j].LayerID := j;
-        D := D + FStacks[i].LayerData[j].H.V;
+        D := D + FStacks[i].LayerData[j].P[1].V;
       end;
       Result.Stacks[i].D := D;
     end;
@@ -542,9 +538,7 @@ begin
     for j := 0 to High(FStacks[i].LayerData) do
     begin
       Result.Stacks[i].Layers[j].Material := FStacks[i].LayerData[j].Material;
-      Result.Stacks[i].Layers[j].H := FStacks[i].LayerData[j].H;
-      Result.Stacks[i].Layers[j].s := FStacks[i].LayerData[j].s;
-      Result.Stacks[i].Layers[j].r := FStacks[i].LayerData[j].r;
+      Result.Stacks[i].Layers[j].P := FStacks[i].LayerData[j].P;
       Result.Stacks[i].Layers[j].StackID := i;
       Result.Stacks[i].Layers[j].LayerID := j;
     end;
@@ -552,14 +546,12 @@ begin
   end;
 
   Result.Subs.Material := Substrate.LayerData[0].Material;
-  Result.Subs.H := Substrate.LayerData[0].H;
-  Result.Subs.s := Substrate.LayerData[0].s;
-  Result.Subs.r := Substrate.LayerData[0].r;
+  Result.Subs.P := Substrate.LayerData[0].P;
 end;
 
 function TXRCStructure.ToString: string;
 var
-  i, j: Integer;
+  i, j, p: Integer;
   Data: TLayerData;
   JStstructure, JLayer, JStack, JSub : TJSONObject;
   JStacks, JLayers : TJSONArray;
@@ -581,26 +573,16 @@ begin
 
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', Data.Material);
-        JLayer.AddPair('H', Data.H.V);
-        JLayer.AddPair('HP', Data.H.Paired);
-        JLayer.AddPair('Hmin', Data.H.min);
-        JLayer.AddPair('Hmax', Data.H.max);
-        Profile := Data.ProfileToSrting(ptH);
-        JLayer.AddPair('ProfileH', Profile);
 
-        JLayer.AddPair('s', Data.s.V);
-        JLayer.AddPair('SP', Data.s.Paired);
-        JLayer.AddPair('Smin', Data.s.min);
-        JLayer.AddPair('Smax', Data.s.max);
-        Profile := Data.ProfileToSrting(ptS);
-        JLayer.AddPair('ProfileS', Profile);
-
-        JLayer.AddPair('r', Data.r.V);
-        JLayer.AddPair('RP', Data.r.Paired);
-        JLayer.AddPair('Rmin', Data.r.min);
-        JLayer.AddPair('Rmax', Data.r.max);
-        Profile := Data.ProfileToSrting(ptRho);
-        JLayer.AddPair('ProfileR', Profile);
+        for p := 1 to 3 do
+        begin
+          JLayer.AddPair(PAlias[p], Data.P[p].V);
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
+          Profile := Data.ProfileToSrting(ptH);
+          JLayer.AddPair('Profile' + UpperCase(PAlias[p]), Profile);
+        end;
 
         JLayers.Add(JLayer);
       end;
@@ -611,8 +593,8 @@ begin
     Data := Substrate.LayerData[0];
     JSub := TJSONObject.Create;
     JSub.AddPair('M', Data.Material);
-    JSub.AddPair('s', Data.s.V);
-    JSub.AddPair('r', Data.r.V);
+    JSub.AddPair('s', Data.P[2].V);
+    JSub.AddPair('r', Data.P[3].V);
 
     JStstructure.AddPair('Stacks', JStacks);
     JStstructure.AddPair('Subs', JSub);
@@ -635,9 +617,9 @@ begin
     for j := 0 to High(FStacks[i].LayerData) do
     begin
       Data.Material := Inp.Layers[Count].Name;
-      Data.H.V := Inp.Layers[Count].L;
-      Data.s.V := Inp.Layers[Count].s * 1.41;
-      Data.r.V := Inp.Layers[Count].ro;
+      Data.P[1].V := Inp.Layers[Count].L;
+      Data.P[2].V := Inp.Layers[Count].s;
+      Data.P[3].V := Inp.Layers[Count].ro;
       FStacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
@@ -682,11 +664,11 @@ end;
 
 procedure TXRCStructure.FromString(const S: string);
 var
-  i, j: Integer;
+  i, j, p: Integer;
   Data: TLayerData;
   JStstructure: TJSONObject;
   JStacks, JLayers : TJSONArray;
-  Profiles: array [1..3] of string;
+  PS: string;
   LayerIndex: Integer;
 
 begin
@@ -711,34 +693,21 @@ begin
         JLayer := JLayers.Items[j];
         Data.Material := JLayer.GetValue<string>('M');
 
-        Data.H.V := JLayer.GetValue<single>('H');
-        Data.H.Paired := FindBoolValue('HP');
-        Data.H.min := FindValue('Hmin', Data.H.V);
-        Data.H.max := FindValue('Hmax', Data.H.V);
-        Profiles[1] := FindStrValue('ProfileH');
-
-
-        Data.s.V := JLayer.GetValue<single>('s');
-        Data.s.Paired := FindBoolValue('SP');
-        Data.s.min := FindValue('Smin', Data.s.V);
-        Data.s.max := FindValue('Smax', Data.s.V);
-        Profiles[2] := FindStrValue('ProfileS');
-
-
-        Data.r.V := JLayer.GetValue<single>('r');
-        Data.r.Paired := FindBoolValue('RP');
-        Data.r.min := FindValue('Rmin', Data.r.V);
-        Data.r.max := FindValue('Rmax', Data.r.V);
-        Profiles[3] := FindStrValue('ProfileR');
-
-        if Profiles[1] <> '' then
+        for p := 1 to 3 do
         begin
-          Data.ClearProfiles;
-          Data.ProfileFromSrting(ptH, Profiles[1]);
-          Data.ProfileFromSrting(ptS, Profiles[2]);
-          Data.ProfileFromSrting(ptRho, Profiles[3]);
-        end;
+          Data.P[p].V := JLayer.GetValue<single>(PAlias[p]);
+          Data.P[p].Paired := FindBoolValue(UpperCase(PAlias[p]) + 'P');
+          Data.P[p].min := FindValue(UpperCase(PAlias[p]) + 'min', Data.P[p].V);
+          Data.P[p].max := FindValue(UpperCase(PAlias[p]) + 'max', Data.P[p].V);
 
+          PS := FindStrValue('Profile' + UpperCase(PAlias[p]));
+          if PS <> '' then
+          begin
+            Data.ClearProfiles;
+            Data.ProfileFromSrting(p, PS);
+          end;
+
+        end;
         LayerIndex := FStacks[i].AddLayer(Data);
       end;
     end;

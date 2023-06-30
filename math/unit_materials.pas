@@ -81,9 +81,9 @@ begin
     end;
 
     FLayers[CurrentLayer + i].Name := Data[i].Material;
-    FLayers[CurrentLayer + i].L    := Data[i].H.V;
-    FLayers[CurrentLayer + i].s    := Data[i].s.V / 1.41;
-    FLayers[CurrentLayer + i].ro   := Data[i].r.V;
+    FLayers[CurrentLayer + i].L    := Data[i].P[1].V;
+    FLayers[CurrentLayer + i].s    := Data[i].P[2].V;
+    FLayers[CurrentLayer + i].ro   := Data[i].P[3].V;
   end;
   inc(CurrentLayer, Length(Data));
 end;
@@ -118,8 +118,8 @@ begin
   begin
     Name := Data[0].Material;
     L    := 1E8;
-    s    := Data[0].s.V / 1.41;
-    ro   := Data[0].r.V;
+    s    := Data[0].P[2].V;
+    ro   := Data[0].P[3].V;
     StackID := -99;
     LayerID := -99;
   end;
@@ -213,7 +213,7 @@ begin
   try
     for I := 1 to High(FLayers) do
     begin
-      S := Format('%s;%f;%f;%f',[FLayers[i].Name, FLayers[i].L,FLayers[i].s * 1.41,FLayers[i].ro]);
+      S := Format('%s;%f;%f;%f',[FLayers[i].Name, FLayers[i].L,FLayers[i].s,FLayers[i].ro]);
       SL.Add(S);
     end;
     SL.SaveToFile(FileName);
