@@ -190,8 +190,8 @@
             <Form>frmMaterialSelector</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="editors\editor_Gradient.pas">
-            <Form>edtrGradient</Form>
+        <DCCReference Include="editors\editor_ProfileFunction.pas">
+            <Form>edtrProfileFunction</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="forms\frm_ExtensionType.pas">

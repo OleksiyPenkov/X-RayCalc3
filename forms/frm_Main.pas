@@ -476,7 +476,7 @@ uses
   ClipBrd,
   frm_NewMaterial,
   frm_about,
-  editor_Gradient,
+  editor_ProfileFunction,
   frm_ExtensionType,
   math_globals,
   editor_HenkeTable,
@@ -919,9 +919,9 @@ end;
 
 procedure TfrmMain.EditGradient(var Data: PProjectData);
 begin
-  edtrGradient.Data := Data;
-  edtrGradient.Structure := Structure;
-  if edtrGradient.ShowModal = mrOk then
+  edtrProfileFunction.Data := Data;
+  edtrProfileFunction.Structure := Structure;
+  if edtrProfileFunction.ShowModal = mrOk then
   begin
     mmDescription.Lines.Text := Data.Description;
   end;

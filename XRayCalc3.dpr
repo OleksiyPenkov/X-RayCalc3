@@ -27,7 +27,7 @@ uses
   unit_LFPSO_Periodic in 'LFPSO\unit_LFPSO_Periodic.pas',
   unit_LFPSO_Regular in 'LFPSO\unit_LFPSO_Regular.pas',
   frm_MaterialSelector in 'forms\frm_MaterialSelector.pas' {frmMaterialSelector},
-  editor_Gradient in 'editors\editor_Gradient.pas' {edtrGradient},
+  editor_ProfileFunction in 'editors\editor_ProfileFunction.pas' {edtrProfileFunction},
   frm_ExtensionType in 'forms\frm_ExtensionType.pas' {frmExtensionSelector},
   Vcl.Themes,
   Vcl.Styles,
@@ -48,7 +48,7 @@ begin
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmNewMaterial, frmNewMaterial);
   Application.CreateForm(TfrmMaterialSelector, frmMaterialSelector);
-  Application.CreateForm(TedtrGradient, edtrGradient);
+  Application.CreateForm(TedtrProfileFunction, edtrProfileFunction);
   Application.CreateForm(TfrmExtensionSelector, frmExtensionSelector);
   Application.CreateForm(TedtrHenkeTable, edtrHenkeTable);
   Application.CreateForm(TfrmJsonEditor, frmJsonEditor);

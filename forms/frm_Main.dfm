@@ -299,6 +299,10 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -325,6 +329,10 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -351,6 +359,10 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -1013,6 +1025,10 @@ object frmMain: TfrmMain
             object TabSheet2: TRzTabSheet
               Color = 15987699
               Caption = 'LSPSO'
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object Label16: TLabel
                 Left = 11
                 Top = 14
@@ -1122,8 +1138,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 48
-                Width = 54
-                Height = 19
+                Width = 50
+                Height = 17
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
