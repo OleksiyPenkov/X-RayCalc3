@@ -115,7 +115,7 @@ object edtrProfileFunction: TedtrProfileFunction
     object edTitle: TEdit
       Left = 55
       Top = 7
-      Width = 92
+      Width = 123
       Height = 21
       TabOrder = 0
       Text = 'Gradient'
@@ -123,7 +123,7 @@ object edtrProfileFunction: TedtrProfileFunction
     object cbbStack: TComboBox
       Left = 55
       Top = 34
-      Width = 92
+      Width = 123
       Height = 21
       TabOrder = 1
       OnChange = cbbStackChange
@@ -131,7 +131,7 @@ object edtrProfileFunction: TedtrProfileFunction
     object cbLayer: TComboBox
       Left = 55
       Top = 61
-      Width = 92
+      Width = 123
       Height = 21
       TabOrder = 2
     end
@@ -146,7 +146,7 @@ object edtrProfileFunction: TedtrProfileFunction
     object rgSubject: TRadioGroup
       Left = 9
       Top = 101
-      Width = 138
+      Width = 169
       Height = 48
       Caption = 'Apply to'
       Columns = 3
@@ -160,7 +160,7 @@ object edtrProfileFunction: TedtrProfileFunction
     object cbFunctionType: TRzComboBox
       Left = 9
       Top = 177
-      Width = 105
+      Width = 128
       Height = 21
       Enabled = False
       TabOrder = 5
@@ -173,7 +173,7 @@ object edtrProfileFunction: TedtrProfileFunction
         '')
       ItemIndex = 0
     end
-    object RzSpinEdit1: TRzSpinEdit
+    object seOrder: TRzSpinEdit
       Left = 205
       Top = 206
       Width = 58
@@ -182,15 +182,15 @@ object edtrProfileFunction: TedtrProfileFunction
       Min = 1.000000000000000000
       Value = 1.000000000000000000
       TabOrder = 6
-      OnChange = RzSpinEdit1Change
+      OnChange = seOrderChange
     end
     object Grid: TRzStringGrid
-      Left = 161
+      Left = 184
       Top = 7
-      Width = 184
+      Width = 161
       Height = 193
       ColCount = 2
-      DefaultColWidth = 80
+      DefaultColWidth = 70
       DefaultColAlignment = taCenter
       RowCount = 2
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goFixedRowDefAlign]
@@ -201,6 +201,7 @@ object edtrProfileFunction: TedtrProfileFunction
       Top = 10
       Width = 476
       Height = 271
+      Cursor = crCross
       Legend.Visible = False
       Title.Visible = False
       View3D = False
@@ -229,7 +230,7 @@ object edtrProfileFunction: TedtrProfileFunction
       OnClick = btnPreviewClick
     end
     object btnFunctionHelp: TBitBtn
-      Left = 120
+      Left = 143
       Top = 175
       Width = 35
       Height = 25

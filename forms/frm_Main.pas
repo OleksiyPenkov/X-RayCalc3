@@ -394,9 +394,9 @@ type
     StartTime, FitStartTime: TDateTime;
 
     FSeriesList: TSeriesList ;
-    FThicknessSeries: TSeriesList ;
-    FRoughnessSeries: TSeriesList ;
-    FDensitySeries: TSeriesList ;
+
+    FSeriesArray: array [1..3] of TSeriesList;
+
     FProfiles: TProfileFunctions;
     FFitParams: TFitParams;
     FCalc: TCalc;
@@ -1478,14 +1478,14 @@ var
 begin
   Materials := Structure.Materials;
 
-  CreateSeries(chThickness, FThicknessSeries);
-  CreateSeries(chRoughness, FRoughnessSeries);
-  CreateSeries(chDensity, FDensitySeries);
+  CreateSeries(chThickness, FSeriesArray[1]);
+  CreateSeries(chRoughness, FSeriesArray[2]);
+  CreateSeries(chDensity,   FSeriesArray[3]);
 end;
 
 procedure TfrmMain.PlotProfileNP;
 var
-  i, j, k, shift: integer;
+  i, j, k, p, shift: integer;
 begin
   shift := 1;
   for i := 0 to High(Structure.Stacks) do
@@ -1495,9 +1495,8 @@ begin
     begin
       for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[1]) do
       begin
-         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[1][k]);
-         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[2][k]);
-         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[3][k]);
+        for p := 1 to 3 do
+         FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[p][k]);
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1506,7 +1505,16 @@ end;
 
 procedure TfrmMain.PlotGradedProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d: integer;
+  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
+  Profiled: Boolean;
+
+  function IsProfile: boolean;
+  begin
+     Result := (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
+               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) and
+               (FProfiles[GradientIndex].PIndex = p);
+  end;
+
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1517,28 +1525,23 @@ begin
     begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
+        for p := 1 to 3 do
+        begin
+          Profiled := False;
           for GradientIndex := 0 to High(FProfiles) do
           begin
-            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) then
+            if IsProfile then
             begin
-              case FProfiles[GradientIndex].Subj of
-                ptH  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, FuncProfile(PeriodIndex + shift, FProfiles[GradientIndex]));
-//                ptS  : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
-//                ptRho: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
-              end;
-              //inc(FProfiles[GradientIndex].Count);
-            end;
-
-            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID <> FProfiles[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID <> FProfiles[GradientIndex].LayerID) then
-            begin
-              FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V);
-              FRoughnessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[2].V);
-                FDensitySeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V);
+              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
+                                                    FuncProfile(PeriodIndex + shift, FProfiles[GradientIndex]));
+              Profiled := True;
             end;
           end;
-      end
+          if not Profiled then
+              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
+                                                     Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+         end;
+        end;
     end;
     Inc(shift, Structure.Stacks[StackIndex].N);
     Inc(d, Length(Structure.Stacks[StackIndex].Layers));
@@ -1548,7 +1551,7 @@ end;
 
 procedure TfrmMain.PlotSimpleProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d: integer;
+  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1559,10 +1562,9 @@ begin
     begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
-        FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V);
-        FRoughnessSeries[LayerIndex+ d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[2].V);
-        FDensitySeries[LayerIndex + d].  AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V);
-         end;
+        for p := 1 to 3 do
+          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+      end;
     end;
     Inc(shift, Structure.Stacks[StackIndex].N);
     Inc(d, Length(Structure.Stacks[StackIndex].Layers));
@@ -1571,14 +1573,11 @@ end;
 
 procedure TfrmMain.ClearProfiles;
 var
-  StackIndex: integer;
+  StackIndex, p: integer;
 begin
-  for StackIndex := 0 to High(FThicknessSeries) do
-  begin
-    FThicknessSeries[StackIndex].Clear;
-    FRoughnessSeries[StackIndex].Clear;
-    FDensitySeries[StackIndex].Clear;
-  end;
+  for p := 1 to 3 do
+    for StackIndex := 0 to High(FSeriesArray[p]) do
+      FSeriesArray[p][StackIndex].Clear;
 end;
 
 procedure TfrmMain.PlotProfile;

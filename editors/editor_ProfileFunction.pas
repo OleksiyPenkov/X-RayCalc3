@@ -27,7 +27,7 @@ type
     cbFunctionType: TRzComboBox;
     Label2: TLabel;
     lbl1: TLabel;
-    RzSpinEdit1: TRzSpinEdit;
+    seOrder: TRzSpinEdit;
     Grid: TRzStringGrid;
     lbl2: TLabel;
     ilEquations: TImageList;
@@ -40,7 +40,7 @@ type
     procedure btnOKClick(Sender: TObject);
     procedure cbbStackChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure RzSpinEdit1Change(Sender: TObject);
+    procedure seOrderChange(Sender: TObject);
     procedure btnPreviewClick(Sender: TObject);
   private
     { Private declarations }
@@ -113,6 +113,7 @@ var
   N: Integer;
 begin
   N := Trunc(FData.Poly[10]);
+  seOrder.IntValue := N;
   Grid.RowCount := N + 1;
   for i := 1 to N do
   begin
@@ -144,7 +145,7 @@ procedure TedtrProfileFunction.GetCoefficients;
 var
   i: Integer;
 begin
-  FData.Poly[10] := RzSpinEdit1.IntValue;
+  FData.Poly[10] := seOrder.IntValue;
   for I := 1 to Trunc(FData.Poly[10]) do
     FData.Poly[i] := StrToFloat( Grid.Cells[1, i]);
 end;
@@ -162,9 +163,9 @@ begin
     end;
 end;
 
-procedure TedtrProfileFunction.RzSpinEdit1Change(Sender: TObject);
+procedure TedtrProfileFunction.seOrderChange(Sender: TObject);
 begin
-  Grid.RowCount := RzSpinEdit1.IntValue + 1;
+  Grid.RowCount := seOrder.IntValue + 1;
   Grid.Cells[0, Grid.RowCount - 1] := Format('c%d',[Grid.RowCount - 1]);
 end;
 
