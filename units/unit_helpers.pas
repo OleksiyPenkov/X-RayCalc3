@@ -21,7 +21,9 @@ uses
 
 function ClearDir(const DirectoryName: string; Full: boolean = False): boolean;
 
-procedure SeriesToClipboard(Series: TLineSeries);
+procedure SeriesToClipboard(Series: TLineSeries); overload;
+procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries); overload;
+
 procedure SeriesToFile(Series: TLineSeries; const FileName: string);
 function SeriesToString(Series: TLineSeries): string;
 
@@ -260,14 +262,14 @@ begin
   end;
 end;
 
-procedure SeriesToText(var MyStringList: TStringList; var Series:TLineSeries);
+procedure SeriesToText(const cX, cY, uX, uY: string; var MyStringList: TStringList; var Series:TLineSeries); overload;
 var
   i, N: integer;
   s: string;
   x, y: single;
 begin
-  MyStringList.Add('2Theta' + TabSeparator + 'Reflectivity');
-  MyStringList.Add('deg' + TabSeparator + '');
+  MyStringList.Add(cX + TabSeparator + Cy);
+  MyStringList.Add(uX + TabSeparator + uY);
   MyStringList.Add('');
   N := Series.Count;
   for i := 0 to N - 1 do
@@ -279,6 +281,13 @@ begin
     MyStringList.Add(s);
   end;
 end;
+
+procedure SeriesToText(var MyStringList: TStringList; var Series:TLineSeries); overload;
+begin
+  SeriesToText('2Theta', 'Reflectivity', 'deg', '', MyStringList, Series);
+end;
+
+
 
 procedure SeriesFromText(var MyStringList: TStringList; var Series:TLineSeries);
 var
@@ -321,17 +330,22 @@ begin
     end;
 end;
 
-procedure SeriesToClipboard(Series: TLineSeries);
+procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries);
 var
   MyStringList: TStringList;
 begin
   MyStringList := TStringList.Create;
   try
-    SeriesToText(MyStringList, Series);
+    SeriesToText(cX, cY, uX, uY, MyStringList, Series);
     Clipboard.AsText := MyStringList.Text;
   finally
     MyStringList.Free;
   end;
+end;
+
+procedure SeriesToClipboard(Series: TLineSeries);
+begin
+  SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
 end;
 
 function SeriesToString(Series: TLineSeries): string;

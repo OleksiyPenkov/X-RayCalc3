@@ -2275,7 +2275,10 @@ end;
 
 procedure TfrmMain.RzButton1Click(Sender: TObject);
 begin
-  SeriesToClipboard(lsrConvergence);
+  case Pages.ActivePageIndex of
+    0..2: ;
+    3: SeriesToClipboard('N','ChiSqr','','', lsrConvergence);
+  end;
 end;
 
 procedure TfrmMain.cbIncrementChange(Sender: TObject);

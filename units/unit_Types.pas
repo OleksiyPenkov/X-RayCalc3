@@ -111,6 +111,8 @@ type
 
       function X(const i: integer): Integer;
       function Ord: Integer;
+      procedure Assign(const Data: PProjectData);
+      function PIndex: Integer;
     private
        IntX: Integer;
   end;
@@ -293,9 +295,22 @@ end;
 
 { TFuncProfileRec }
 
+procedure TFuncProfileRec.Assign(const Data: PProjectData);
+begin
+  LayerID := Data.LayerID;
+  StackID := Data.StackID;
+  Subj := Data.Subj;
+  C := Data.Poly;
+end;
+
 function TFuncProfileRec.Ord: Integer;
 begin
   Result := Trunc(C[10]);
+end;
+
+function TFuncProfileRec.PIndex: Integer;
+begin
+  Result := System.Ord(Subj) + 1;
 end;
 
 function TFuncProfileRec.X(const i: integer): Integer;

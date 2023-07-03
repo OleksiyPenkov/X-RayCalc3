@@ -7,7 +7,8 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Mask, JvExMask,
   JvToolEdit, JvBaseEdits, RzButton, Vcl.ExtCtrls, RzPanel, unit_types, unit_XRCStructure,
   System.ImageList, Vcl.ImgList, Vcl.Grids, RzGrids, Vcl.Imaging.pngimage,
-  RzEdit, RzSpnEdt, RzCmboBx;
+  RzEdit, RzSpnEdt, RzCmboBx, VclTee.TeeGDIPlus, Vcl.Buttons, VCLTee.TeEngine,
+  VCLTee.Series, VCLTee.TeeProcs, VCLTee.Chart;
 
 type
   TedtrProfileFunction = class(TForm)
@@ -27,21 +28,25 @@ type
     Label2: TLabel;
     lbl1: TLabel;
     RzSpinEdit1: TRzSpinEdit;
-    imgEquation: TImage;
     Grid: TRzStringGrid;
     lbl2: TLabel;
     ilEquations: TImageList;
     Image1: TImage;
+    Chart: TChart;
+    Series1: TLineSeries;
+    btnPreview: TBitBtn;
+    btnFunctionHelp: TBitBtn;
     procedure FormShow(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
     procedure cbbStackChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure RzSpinEdit1Change(Sender: TObject);
+    procedure btnPreviewClick(Sender: TObject);
   private
     { Private declarations }
     FData: PProjectData;
     FStructure: TXRCStructure;
-    FRealStackID: TIntArray;
+    FRealStackID: unit_types.TIntArray;
 
     procedure FillStacksList;
     function ListedStackID(const AbsoluteID: integer): Integer;
@@ -60,7 +65,7 @@ implementation
 
 {$R *.dfm}
 
-uses frm_main;
+uses frm_main, math_globals;
 
 procedure TedtrProfileFunction.btnOKClick(Sender: TObject);
 begin
@@ -71,6 +76,22 @@ begin
   FData.Form := ffPoly;
   FData.Description := mmDescription.Lines.Text;
   FData.Subj := TParameterType(rgSubject.ItemIndex);
+end;
+
+procedure TedtrProfileFunction.btnPreviewClick(Sender: TObject);
+var
+  i: Integer;
+  PolyRec : TFuncProfileRec;
+begin
+  Series1.Clear;
+  GetCoefficients;
+  PolyRec.Assign(FData);
+  PolyRec.C[0] := FStructure.Stacks[PolyRec.StackID].Layers[PolyRec.LayerID].Data.P[PolyRec.PIndex].V;
+
+  for I := 1 to FStructure.Stacks[PolyRec.StackID].N do
+  begin
+    Series1.AddXY(i, Poly(i, PolyRec.C));
+  end;
 end;
 
 procedure TedtrProfileFunction.cbbStackChange(Sender: TObject);
