@@ -1832,6 +1832,8 @@ object frmMain: TfrmMain
           Top = 2
           ImageIndex = 5
           Action = actLayerCopy
+          ParentShowHint = False
+          ShowHint = True
         end
       end
       object RzPanel2: TRzPanel

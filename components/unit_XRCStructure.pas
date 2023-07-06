@@ -38,20 +38,23 @@ type
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
-      function GetSelected: Integer;
+      function GetSelectedStack: Integer;
       procedure ClearSelection(const Reset:boolean = False); inline;
       function FindBoolValue(const Value: string): boolean;
       function FindValue(const Value: string; Base: single): single;
       function FindStrValue(const Value: string): string;
+      function GetSelectedLayer: Integer;
     public
       constructor Create(AOwner: TComponent);
       destructor  Destroy; override;
 
-      property Selected: Integer read GetSelected;
+      property SelectedStack: Integer read GetSelectedStack;
+      property SelectedLayer: Integer read GetSelectedLayer;
       property Stacks: TStacks read FStacks;
       property Period: single read FPeriod;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
+      procedure InsertLayer(const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
       procedure InsertStack(const N: Integer; const Title: string);
       procedure AddSubstrate(const Material: string; s, rho: single);
@@ -83,6 +86,7 @@ type
       procedure GetLayersList(const ID: integer; List: TStrings);
       function GetStackSize(const ID: Integer): Integer;
       procedure EnablePairing;
+      function IfValidLayerSelected: Boolean; inline;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -200,8 +204,15 @@ begin
   end;
 end;
 
+function TXRCStructure.IfValidLayerSelected: Boolean;
+begin
+  Result := (FSelectedLayerParent >= 0) or (FSelectedLayer >= 0);
+end;
+
 procedure TXRCStructure.CopyLayer;
 begin
+  if not IfValidLayerSelected then Exit;
+
   FClipBoardLayers[0] := FStacks[FSelectedLayerParent].LayerData[FSelectedLayer];
   ClearSelection(Reset);
 end;
@@ -274,7 +285,7 @@ end;
 
 procedure TXRCStructure.DeleteLayer;
 begin
-  if (FSelectedLayer >= 0) and (FSelectedLayerParent >= 0) then
+  if IfValidLayerSelected then
   begin
     FStacks[FSelectedLayerParent].DeleteLayer(FSelectedLayer);
     FSelectedLayerParent := -1;
@@ -319,6 +330,14 @@ begin
     Stack.EnablePairing(True);
 end;
 
+
+procedure TXRCStructure.InsertLayer(const Data: TLayerData);
+var
+  Count, Pos, StackID: Integer;
+begin
+  StackID := FSelectedLayerParent;
+  FStacks[StackID].AddLayer(Data, FSelectedLayer);
+end;
 
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
@@ -737,7 +756,12 @@ begin
          List.Add(FStacks[ID].LayerData[j].Material);
 end;
 
-function TXRCStructure.GetSelected: Integer;
+function TXRCStructure.GetSelectedLayer: Integer;
+begin
+  Result := FSelectedLayer
+end;
+
+function TXRCStructure.GetSelectedStack: Integer;
 begin
   Result := FSelectedStack;
 end;

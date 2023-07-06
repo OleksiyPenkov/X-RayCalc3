@@ -1007,7 +1007,7 @@ end;
 
 procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
 begin
-  Structure.CopyLayer(True);
+  Structure.CopyLayer(False);
 end;
 
 procedure TfrmMain.actModelCopyExecute(Sender: TObject);
@@ -1892,6 +1892,12 @@ procedure TfrmMain.LayerAddExecute(Sender: TObject);
 var
   Data: TLayerData;
 begin
+  if Structure.SelectedStack = -1 then
+  begin
+    ShowMessage('Stack is not selected!');
+    Exit;
+  end;
+
   Data.Material := 'Si';
 
   Data.P[1].New(25);
@@ -1899,7 +1905,7 @@ begin
   Data.P[3].New(0);
 
   if edtrLayer.ShowEditor(False, Data) then
-    Structure.AddLayer(Structure.Selected, Data);
+    Structure.AddLayer(Structure.SelectedStack, Data);
   MatchToStructure;
 end;
 
@@ -1917,8 +1923,23 @@ begin
 end;
 
 procedure TfrmMain.LayerInsertExecute(Sender: TObject);
+var
+  Data: TLayerData;
 begin
-//  Structure.InsertLayer;
+  if Structure.SelectedLayer = -1 then
+  begin
+    ShowMessage('Parent layer is not selected!');
+    Exit;
+  end;
+
+  Data.Material := 'Si';
+
+  Data.P[1].New(25);
+  Data.P[2].New(3);
+  Data.P[3].New(0);
+
+  if edtrLayer.ShowEditor(False, Data) then
+        Structure.InsertLayer(Data);
   MatchToStructure;
 end;
 
