@@ -17,7 +17,7 @@ type
 
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
-  TExtentionType = (etNone, etFunction, etArb);
+  TExtentionType = (etNone, etFunction, etArb, etRough);
   TFunctionForm = (ffNone, ffPoly, ffExp, ffParabolic, ffSQRT);
   TParameterType = (ptH, ptS, ptRho);
 

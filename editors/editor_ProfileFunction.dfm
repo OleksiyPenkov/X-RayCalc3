@@ -31,13 +31,13 @@ object edtrProfileFunction: TedtrProfileFunction
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 204
-    ExplicitWidth = 198
+    ExplicitTop = 287
+    ExplicitWidth = 828
     DesignSize = (
       836
       41)
     object btnOK: TRzBitBtn
-      Left = 761
+      Left = 753
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -46,7 +46,7 @@ object edtrProfileFunction: TedtrProfileFunction
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
-      ExplicitLeft = 279
+      ExplicitLeft = 745
     end
     object btnCancel: TRzBitBtn
       Left = 9
@@ -68,8 +68,8 @@ object edtrProfileFunction: TedtrProfileFunction
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 198
-    ExplicitHeight = 195
+    ExplicitWidth = 828
+    ExplicitHeight = 278
     object Label1: TLabel
       Left = 9
       Top = 10
@@ -134,6 +134,7 @@ object edtrProfileFunction: TedtrProfileFunction
       Width = 123
       Height = 21
       TabOrder = 2
+      OnChange = cbLayerChange
     end
     object mmDescription: TMemo
       Left = 8
@@ -203,6 +204,8 @@ object edtrProfileFunction: TedtrProfileFunction
       Height = 271
       Cursor = crCross
       Legend.Visible = False
+      Title.Text.Strings = (
+        'TChart')
       Title.Visible = False
       View3D = False
       TabOrder = 8
@@ -247,7 +250,7 @@ object edtrProfileFunction: TedtrProfileFunction
     Left = 280
     Top = 240
     Bitmap = {
-      494C010101000800040000011A00FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010101000800040000011A00FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000000400001A000000010020000000000000A0
       010000000000000000000000000000000000FFFFFF00FFFFFF00FFFFFF00FFFF
       FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
@@ -3683,6 +3686,7 @@ object edtrProfileFunction: TedtrProfileFunction
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000}
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000}
   end
 end

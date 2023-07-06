@@ -42,11 +42,13 @@ type
     procedure FormCreate(Sender: TObject);
     procedure seOrderChange(Sender: TObject);
     procedure btnPreviewClick(Sender: TObject);
+    procedure cbLayerChange(Sender: TObject);
   private
     { Private declarations }
     FData: PProjectData;
     FStructure: TXRCStructure;
     FRealStackID: unit_types.TIntArray;
+    FLayerID: Integer;
 
     procedure FillStacksList;
     function ListedStackID(const AbsoluteID: integer): Integer;
@@ -83,6 +85,8 @@ var
   i: Integer;
   PolyRec : TFuncProfileRec;
 begin
+  if (FData.StackID = -1) or (FData.LayerID = -1) then Exit;
+
   Series1.Clear;
   GetCoefficients;
   PolyRec.Assign(FData);
@@ -97,7 +101,15 @@ end;
 procedure TedtrProfileFunction.cbbStackChange(Sender: TObject);
 begin
   if cbbStack.ItemIndex <> -1 then
-    FStructure.GetLayersList(FRealStackID[cbbStack.ItemIndex], cbLayer.Items);
+  begin
+    FData.StackID := FRealStackID[cbbStack.ItemIndex];
+    FStructure.GetLayersList(FData.StackID, cbLayer.Items);
+  end;
+end;
+
+procedure TedtrProfileFunction.cbLayerChange(Sender: TObject);
+begin
+  FData.LayerID := cbLayer.ItemIndex;
 end;
 
 procedure TedtrProfileFunction.FillStacksList;
@@ -139,6 +151,7 @@ begin
   rgSubject.ItemIndex := Ord(FData.Subj);
   mmDescription.Lines.Text := string(FData.Description);
   FillCoefficients;
+  btnPreviewClick(nil);
 end;
 
 procedure TedtrProfileFunction.GetCoefficients;
