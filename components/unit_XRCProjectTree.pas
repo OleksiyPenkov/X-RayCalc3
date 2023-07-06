@@ -145,7 +145,7 @@ begin
   begin
     repeat
       Data := GetNodeData(Node);
-      if Data.ExtType = etProfile then
+      if Data.ExtType = etArb then
       begin
         Result := True;
         Break;
@@ -261,7 +261,7 @@ procedure TXRCProjectTree.ProjectLoadNode(Sender: TBaseVirtualTree;
 var
   Data: PProjectData;
   S: string;
-  p: Integer;
+  p, i: Integer;
 
   function GetString: string;
   var
@@ -300,7 +300,7 @@ begin
     2: begin
           Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
           Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.a, SizeOf(Data.a));
+          Stream.Read(Data.Poly[1], SizeOf(Data.Poly[1]));
           S := GetString;
           S := GetString;
           Stream.Read(Data.Form, SizeOf(Data.Form));
@@ -314,11 +314,22 @@ begin
           Stream.Read(Data.StackID, SizeOf(Data.StackID));
           Stream.Read(Data.Form, SizeOf(Data.Form));
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
-          Stream.Read(Data.a, SizeOf(Data.a));
-          Stream.Read(Data.b, SizeOf(Data.b));
-          Stream.Read(Data.c, SizeOf(Data.c));
+          for I := 1 to 3 do
+            Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
           Data.Data := GetString;
        end;
+    4: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
+          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          for I := 1 to 10 do
+            Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+          Data.Data := GetString;
+       end;
+
   end;
 
   p := pos('}}', Data.Data);
@@ -344,7 +355,7 @@ procedure TXRCProjectTree.ProjectSaveNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Stream: TStream);
 var
   Data: PProjectData;
-  size: Integer;
+  size, i: Integer;
 
   procedure WriteString(const s: string);
   begin
@@ -371,9 +382,8 @@ begin
   Stream.Write(Data.StackID, SizeOf(Data.StackID));
   Stream.Write(Data.Form, SizeOf(Data.Form));
   Stream.Write(Data.Subj, SizeOf(Data.Subj));
-  Stream.Write(Data.a, SizeOf(Data.a));
-  Stream.Write(Data.b, SizeOf(Data.a));
-  Stream.Write(Data.c, SizeOf(Data.a));
+  for I := 1 to 10 do
+            Stream.Write(Data.Poly[i], SizeOf(Data.Poly[i]));
   WriteString(Data.Data);
 end;
 

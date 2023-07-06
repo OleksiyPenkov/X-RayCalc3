@@ -121,11 +121,7 @@ end;
 
 procedure TXRCLayerControl.CheckBoxClick(Sender: TObject);
 begin
-  case (Sender as TRzCheckBox).Tag of
-    1: FData.H.Paired := PairedH.Checked;
-    2: FData.s.Paired := PairedS.Checked;
-    3: FData.r.Paired := PairedR.Checked;
-  end;
+  FData.P[(Sender as TRzCheckBox).Tag].Paired := (Sender as TRzCheckBox).Checked;
 end;
 
 constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
@@ -207,7 +203,7 @@ procedure TXRCLayerControl.DecreaseThickness;
 begin
   FOnSet := True;
   Thickness.Value := Thickness.Value - Thickness.Increment;
-  FData.H.V := Thickness.Value;
+  FData.P[1].V := Thickness.Value;
   FOnSet := False;
 end;
 
@@ -278,7 +274,7 @@ procedure TXRCLayerControl.IncreaseThickness;
 begin
   FOnSet := True;
   Thickness.Value := Thickness.Value + Thickness.Increment;
-  FData.H.V := Thickness.Value;
+  FData.P[1].V := Thickness.Value;
   FOnSet := False;
 end;
 
@@ -310,14 +306,14 @@ procedure TXRCLayerControl.SetLayerData(const Value: TLayerData);
 begin
   FData := Value;
 
-  Thickness.Value := FData.H.V;
-  PairedH.Checked := FData.H.Paired;
+  Thickness.Value := FData.P[1].V;
+  PairedH.Checked := FData.P[1].Paired;
 
-  Sigma.Value     := FData.s.V;
-  PairedS.Checked := FData.s.Paired;
+  Sigma.Value     := FData.P[2].V;
+  PairedS.Checked := FData.P[2].Paired;
 
-  Rho.Value       := FData.r.V;
-  PairedR.Checked := FData.r.Paired;
+  Rho.Value       := FData.P[3].V;
+  PairedR.Checked := FData.P[3].Paired;
 end;
 
 procedure TXRCLayerControl.SetLinkChecked(const Value: boolean);
@@ -376,20 +372,20 @@ begin
 
    case (Sender as TRzSpinEdit).Tag of
      1: begin
-          OldValue := FData.H.V ;
-          FData.H.V := (Sender as TRzSpinEdit).Value;
+          OldValue := FData.P[1].V ;
+          FData.P[1].V := (Sender as TRzSpinEdit).Value;
           if Assigned(FLinked)and (not FLinked.OnSet) then
           begin
             FLinked.OnSet := True;
-            if FData.H.V < OldValue then
+            if FData.P[1].V < OldValue then
                  FLinked.IncreaseThickness
             else
                  FLinked.DecreaseThickness;
             FLinked.OnSet := False;
         end;
         end;
-     2: FData.s.V := (Sender as TRzSpinEdit).Value;
-     3: FData.r.V := (Sender as TRzSpinEdit).Value;
+     2: FData.P[2].V := (Sender as TRzSpinEdit).Value;
+     3: FData.P[3].V := (Sender as TRzSpinEdit).Value;
    end;
 
   FOnSet := OnSetOld;

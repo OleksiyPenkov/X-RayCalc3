@@ -472,11 +472,10 @@ object frmMain: TfrmMain
         Legend.TextStyle = ltsPlain
         Legend.Title.Transparent = False
         Legend.TopPos = 3
-        MarginBottom = 5
-        MarginLeft = 5
-        MarginRight = 5
-        MarginTop = 5
-        MarginUnits = muPixels
+        MarginBottom = 0
+        MarginLeft = 1
+        MarginRight = 1
+        MarginTop = 1
         PrintProportional = False
         SubFoot.Visible = False
         SubTitle.Visible = False
@@ -485,6 +484,19 @@ object frmMain: TfrmMain
           'TChart')
         Title.Visible = False
         OnZoom = ChartZoom
+        BottomAxis.Automatic = False
+        BottomAxis.AutomaticMaximum = False
+        BottomAxis.AutomaticMinimum = False
+        BottomAxis.LabelsFormat.Font.Height = -13
+        BottomAxis.Maximum = 10.000000000000000000
+        BottomAxis.MinorTicks.Visible = False
+        BottomAxis.TickInnerLength = 5
+        BottomAxis.TickLength = 0
+        BottomAxis.Ticks.Width = 2
+        BottomAxis.TicksInner.Width = 2
+        BottomAxis.Title.Caption = 'Incidence angle (deg)'
+        BottomAxis.Title.Font.Height = -16
+        BottomAxis.Title.Pen.Visible = False
         DepthAxis.Automatic = False
         DepthAxis.AutomaticMaximum = False
         DepthAxis.AutomaticMinimum = False
@@ -495,23 +507,38 @@ object frmMain: TfrmMain
         DepthTopAxis.AutomaticMinimum = False
         DepthTopAxis.Maximum = 0.439999999999999900
         DepthTopAxis.Minimum = -0.560000000000000300
+        LeftAxis.Automatic = False
+        LeftAxis.AutomaticMaximum = False
+        LeftAxis.AutomaticMinimum = False
         LeftAxis.Axis.SmallSpace = 1
-        LeftAxis.AxisValuesFormat = '00e-0'
+        LeftAxis.AxisValuesFormat = '0x10E-0'
         LeftAxis.LabelsExponent = True
+        LeftAxis.LabelsFormat.Font.Height = -13
         LeftAxis.LabelsFormat.Margins.Left = 0
         LeftAxis.LabelsFormat.Margins.Top = 0
         LeftAxis.LabelsFormat.Margins.Right = 0
         LeftAxis.LabelsFormat.Margins.Bottom = 0
         LeftAxis.LabelsFormat.Margins.Units = maPixels
         LeftAxis.Logarithmic = True
-        LeftAxis.MaximumOffset = 10
+        LeftAxis.Maximum = 1.000000000000000000
+        LeftAxis.MaximumOffset = 5
+        LeftAxis.Minimum = 0.000000010000000000
+        LeftAxis.MinorTicks.Visible = False
         LeftAxis.RoundFirstLabel = False
+        LeftAxis.TickInnerLength = 5
+        LeftAxis.TickLength = 0
+        LeftAxis.TicksInner.Width = 2
         LeftAxis.Title.Caption = 'Reflectivity'
+        LeftAxis.Title.Font.Height = -16
+        LeftAxis.Title.Font.Style = [fsBold]
         LeftAxis.TitleSize = 15
         Pages.AutoScale = True
         RightAxis.Automatic = False
         RightAxis.AutomaticMaximum = False
         RightAxis.AutomaticMinimum = False
+        RightAxis.Logarithmic = True
+        RightAxis.Maximum = 1.000000000000000000
+        RightAxis.Minimum = 0.000001000000000000
         View3D = False
         Zoom.Pen.Color = clRed
         Zoom.Pen.Mode = pmNotXor
@@ -522,28 +549,13 @@ object frmMain: TfrmMain
         OnMouseDown = ChartMouseDown
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
-        ExplicitWidth = 854
-        ExplicitHeight = 304
+        ExplicitLeft = 11
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
           5
           5
           5)
-        ColorPaletteIndex = -2
-        ColorPalette = (
-          255
-          8404992
-          32768
-          16711680
-          128
-          8388608
-          4210688
-          16711935
-          8421376
-          8388736
-          32896
-          0)
       end
       object RzPanel3: TRzPanel
         AlignWithMargins = True
@@ -752,7 +764,7 @@ object frmMain: TfrmMain
           Caption = '0.00'
         end
         object btnChartScale: TRzBitBtn
-          Left = 715
+          Left = 702
           Top = 7
           Anchors = [akTop, akRight]
           Caption = 'Linear'
@@ -764,12 +776,11 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
-          ExplicitLeft = 711
         end
         object cbMinLimit: TRzComboBox
-          Left = 796
+          Left = 783
           Top = 8
-          Width = 53
+          Width = 66
           Height = 24
           Anchors = [akRight, akBottom]
           Font.Charset = DEFAULT_CHARSET
@@ -779,13 +790,15 @@ object frmMain: TfrmMain
           Font.Style = [fsBold]
           ParentFont = False
           TabOrder = 1
-          Text = '5e-7'
+          Text = '5E-7'
+          OnChange = cbMinLimitChange
           Items.Strings = (
-            '1e-5'
-            '1e-6'
-            '1e-7'
-            '1e-8')
-          ExplicitLeft = 792
+            '10E-4'
+            '10E-5'
+            '10E-6'
+            '10E-7'
+            '10E-8'
+            '10E-9')
         end
       end
       object pnl1: TPanel
@@ -986,7 +999,6 @@ object frmMain: TfrmMain
                 Width = 46
                 Height = 19
                 Caption = 'Poly'
-                Enabled = False
                 State = cbUnchecked
                 TabOrder = 7
               end
@@ -1820,6 +1832,8 @@ object frmMain: TfrmMain
           Top = 2
           ImageIndex = 5
           Action = actLayerCopy
+          ParentShowHint = False
+          ShowHint = True
         end
       end
       object RzPanel2: TRzPanel

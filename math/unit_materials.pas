@@ -29,7 +29,7 @@ type
     FLayers: TCalcLayers;
     FLambda: Single;
     FTotalD: single;
-    FGradients: TGradients;
+    FProfiles: TProfileFunctions;
 
     procedure PrepareLayers;
     function FindMaterial(const Name: string): TMaterial;
@@ -49,7 +49,7 @@ type
     property Layers: TCalcLayers read GetLayers;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
-    property Gradients: TGradients read FGradients write FGradients;
+    property Profiles: TProfileFunctions read FProfiles write FProfiles;
    end;
 
 implementation
@@ -81,9 +81,9 @@ begin
     end;
 
     FLayers[CurrentLayer + i].Name := Data[i].Material;
-    FLayers[CurrentLayer + i].L    := Data[i].H.V;
-    FLayers[CurrentLayer + i].s    := Data[i].s.V / 1.41;
-    FLayers[CurrentLayer + i].ro   := Data[i].r.V;
+    FLayers[CurrentLayer + i].L    := Data[i].P[1].V;
+    FLayers[CurrentLayer + i].s    := Data[i].P[2].V;
+    FLayers[CurrentLayer + i].ro   := Data[i].P[3].V;
   end;
   inc(CurrentLayer, Length(Data));
 end;
@@ -118,8 +118,8 @@ begin
   begin
     Name := Data[0].Material;
     L    := 1E8;
-    s    := Data[0].s.V / 1.41;
-    ro   := Data[0].r.V;
+    s    := Data[0].P[2].V;
+    ro   := Data[0].P[3].V;
     StackID := -99;
     LayerID := -99;
   end;
@@ -171,16 +171,15 @@ begin
 
     with FLayers[i] do
     begin
-      for g := 0 to High(FGradients) do
+      for g := 0 to High(FProfiles) do
       begin
-        if (StackID = FGradients[g].StackID) and (LayerID = FGradients[g].LayerID) then
+        if (StackID = FProfiles[g].StackID) and (LayerID = FProfiles[g].LayerID) then
         begin
-          case FGradients[g].Subj of
-            gsL : L := CalcGradient(L, FGradients[g]);
-            gsS : s := CalcGradient(s, FGradients[g]);
-            gsRo: l_ro := CalcGradient(l_ro, FGradients[g]);
+          case FProfiles[g].Subj of
+            ptH : L     := Poly(FProfiles[g].X(i), FProfiles[g]);
+            ptS : s     := Poly(FProfiles[g].X(i), FProfiles[g]);
+            ptRho: l_ro := Poly(FProfiles[g].X(i), FProfiles[g]);
           end;
-          Inc(FGradients[g].Count);
         end
       end;
       c := kk * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
@@ -214,7 +213,7 @@ begin
   try
     for I := 1 to High(FLayers) do
     begin
-      S := Format('%s;%f;%f;%f',[FLayers[i].Name, FLayers[i].L,FLayers[i].s * 1.41,FLayers[i].ro]);
+      S := Format('%s;%f;%f;%f',[FLayers[i].Name, FLayers[i].L,FLayers[i].s,FLayers[i].ro]);
       SL.Add(S);
     end;
     SL.SaveToFile(FileName);

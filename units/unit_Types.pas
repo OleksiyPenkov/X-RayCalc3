@@ -9,6 +9,7 @@ type
 
   TFloatArray = array of Single;
   TIntArray = array of Integer;
+  TPolyArray = array [0..10] of single;
 
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
   TCalcMode = (cmTheta, cmLambda, cmTest);
@@ -16,9 +17,9 @@ type
 
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
-  TExtentionType = (etNone, etGradient, etProfile);
-  TFunctionForm = (ffNone, ffLine, ffExp, ffParabolic, ffSQRT);
-  TParameterType = (gsL, gsS, gsRo);
+  TExtentionType = (etNone, etFunction, etArb, etRough);
+  TFunctionForm = (ffNone, ffPoly, ffExp, ffParabolic, ffSQRT);
+  TParameterType = (ptH, ptS, ptRho);
 
   PLineSeries = ^TLineSeries;
 
@@ -42,14 +43,14 @@ type
       prExtension:
          (Enabled: boolean;
           case ExtType: TExtentionType of
-            etGradient:
+            etFunction:
               (StackID: integer;
                LayerID: integer;
-               a, b, c: single;
+               Poly: TPolyArray;
                Form: TFunctionForm;
                Subj: TParameterType;
                );
-            etProfile:
+            etArb:
               ();
          )
   end;
@@ -100,20 +101,23 @@ type
 
   TCalcLayers = array of TCalcLayer;
 
-  TFunctionRec = record
-    f: TFunctionForm;
-    a, b, c: single;
+  TFuncProfileRec = record
+    public
+      Func: TFunctionForm;
+      Subj: TParameterType;
+      LayerID: integer;
+      StackID: integer;
+      C: TPolyArray;
+
+      function X(const i: integer): Integer;
+      function Ord: Integer;
+      procedure Assign(const Data: PProjectData);
+      function PIndex: Integer;
+    private
+       IntX: Integer;
   end;
 
-  TGradientRec = record
-    Func: TFunctionRec;
-    Subj: TParameterType;
-    NL: Integer;
-    LayerID: integer;
-    StackID: integer;
-    Count: Integer;
-  end;
-  TGradients = array of TGradientRec;
+  TProfileFunctions = array of TFuncProfileRec;
 
   TMaterial = record
     Name: string;
@@ -133,14 +137,13 @@ type
 
   TLayerData = record
     Material: string;
-    H, s, r: TFitValue;
+    P: array [1..3] of TFitValue;
     StackID, LayerID: integer;
-    PH, PS, PR: TFloatArray;
+    PP: array [1..3] of TFloatArray;
   public
     procedure ClearProfiles;
     procedure AddProfilePoint(const H, s, r: Single);
-    function ProfileFromSrting(const Subj: TParameterType;
-      Profile: string): string;
+    function ProfileFromSrting(const p: integer; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
   end;
 
@@ -176,6 +179,8 @@ type
     function Total: integer;
     function TotalNP: integer;
   end;
+
+
 
 implementation
 
@@ -244,54 +249,75 @@ end;
 { TLayerData }
 
 procedure TLayerData.ClearProfiles;
+var
+  p: Integer;
 begin
-  SetLength(PH, 0);
-  SetLength(PS, 0);
-  SetLength(PR, 0);
+  for p := 1 to 3 do
+    SetLength(PP[p], 0);
 end;
 
 procedure TLayerData.AddProfilePoint(const H, s, r: Single);
 begin
-  Insert(H, PH, MaxInt);
-  Insert(s, PS, MaxInt);
-  Insert(r, PR, MaxInt);
+  Insert(H, PP[1], MaxInt);
+  Insert(s, PP[2], MaxInt);
+  Insert(r, PP[3], MaxInt);
 end;
 
-function TLayerData.ProfileFromSrting(const Subj: TParameterType;
-  Profile: string): string;
+function TLayerData.ProfileFromSrting(const p: integer; Profile: string): string;
 var
-  i, p: Integer;
+  i, k: Integer;
   val: single;
 begin
-  i := 1; p := Pos(';', Profile);
+  i := 1;
+  k := Pos(';', Profile);
   while i < Length(Profile) do
   begin
-    p := Pos(';', Profile, i);
-    val := StrToFloat(copy(Profile, i, p - i - 1));
-    case Subj of
-      gsL:    Insert(Val, PH, MaxInt);
-      gsS:    Insert(Val, PS, MaxInt);
-      gsRo:   Insert(Val, PR, MaxInt);
-    end;
-    i := p + 1;
+    k := Pos(';', Profile, i);
+    val := StrToFloat(copy(Profile, i, k - i - 1));
+    Insert(Val, PP[p], MaxInt);
+    i := k + 1;
   end;
 end;
 
 function TLayerData.ProfileToSrting(const Subj: TParameterType): string;
 var
-  i: Integer;
+  i, p: Integer;
   Val : single;
 begin
   Result := '';
-  for I := 0 to High(PH) do
+  p := Ord(Subj) + 1;
+  for I := 0 to High(PP[p]) do
   begin
-    case Subj of
-      gsL:  Val := PH[i];
-      gsS:  Val := PS[i];
-      gsRo: Val := PR[i];
-    end;
+    Val := PP[p][i];
     Result := Format('%s%f;',[Result, Val])
   end;
+end;
+
+{ TFuncProfileRec }
+
+procedure TFuncProfileRec.Assign(const Data: PProjectData);
+begin
+  LayerID := Data.LayerID;
+  StackID := Data.StackID;
+  Subj := Data.Subj;
+  C := Data.Poly;
+end;
+
+function TFuncProfileRec.Ord: Integer;
+begin
+  Result := Trunc(C[10]);
+end;
+
+function TFuncProfileRec.PIndex: Integer;
+begin
+  Result := System.Ord(Subj) + 1;
+end;
+
+function TFuncProfileRec.X(const i: integer): Integer;
+begin
+  if i = 1 then IntX := 0;
+  Inc(IntX);
+  Result := IntX;
 end;
 
 end.

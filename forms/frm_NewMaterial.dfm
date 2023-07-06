@@ -1,6 +1,7 @@
 object frmNewMaterial: TfrmNewMaterial
   Left = 0
   Top = 0
+  ActiveControl = Edit1
   BorderStyle = bsToolWindow
   Caption = 'New Material'
   ClientHeight = 366
@@ -23,10 +24,8 @@ object frmNewMaterial: TfrmNewMaterial
     Align = alClient
     Color = 15987699
     TabOrder = 0
-    ExplicitLeft = 0
-    ExplicitTop = 0
-    ExplicitWidth = 295
-    ExplicitHeight = 361
+    ExplicitWidth = 270
+    ExplicitHeight = 348
     object Label3: TLabel
       Left = 115
       Top = 55
@@ -35,11 +34,11 @@ object frmNewMaterial: TfrmNewMaterial
       Caption = 'Number of elements:'
     end
     object Label2: TLabel
-      Left = 121
+      Left = 142
       Top = 27
-      Width = 72
+      Width = 36
       Height = 13
-      Caption = 'Density, g/cm3'
+      Caption = 'Density'
     end
     object Label1: TLabel
       Left = 8
@@ -48,7 +47,14 @@ object frmNewMaterial: TfrmNewMaterial
       Height = 13
       Caption = 'Name'
     end
-    object StringGrid1: TStringGrid
+    object lbl1: TLabel
+      Left = 241
+      Top = 27
+      Width = 28
+      Height = 13
+      Caption = 'g/cm'#179
+    end
+    object Grid: TStringGrid
       Left = 8
       Top = 79
       Width = 265
@@ -60,6 +66,7 @@ object frmNewMaterial: TfrmNewMaterial
       RowCount = 2
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing]
       TabOrder = 0
+      OnSelectCell = GridSelectCell
     end
     object bntSave: TButton
       Left = 100
@@ -89,9 +96,9 @@ object frmNewMaterial: TfrmNewMaterial
       TabOrder = 3
     end
     object Edit2: TEdit
-      Left = 202
+      Left = 184
       Top = 24
-      Width = 71
+      Width = 50
       Height = 21
       TabOrder = 4
     end
@@ -112,6 +119,16 @@ object frmNewMaterial: TfrmNewMaterial
       Caption = 'Close'
       ModalResult = 8
       TabOrder = 6
+    end
+    object btnMaterial: TButton
+      Left = 94
+      Top = 104
+      Width = 33
+      Height = 17
+      Caption = '...'
+      TabOrder = 7
+      Visible = False
+      OnClick = btnMaterialClick
     end
   end
   object PopupMenu1: TPopupMenu

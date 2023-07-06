@@ -373,6 +373,7 @@ type
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
       var AllowChange: Boolean);
     procedure actProjecEditModelTextExecute(Sender: TObject);
+    procedure cbMinLimitChange(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -394,10 +395,10 @@ type
     StartTime, FitStartTime: TDateTime;
 
     FSeriesList: TSeriesList ;
-    FThicknessSeries: TSeriesList ;
-    FRoughnessSeries: TSeriesList ;
-    FDensitySeries: TSeriesList ;
-    FGradients: TGradients;
+
+    FSeriesArray: array [1..3] of TSeriesList;
+
+    FProfiles: TProfileFunctions;
     FFitParams: TFitParams;
     FCalc: TCalc;
     FCalcThreadParams: TCalcThreadParams;
@@ -428,10 +429,10 @@ type
     procedure DeleteFolder(Node: PVirtualNode);
     procedure CreateNewModel(Node: PVirtualNode);
     procedure MatchToStructure;
-    procedure CreateGradientExtension(Node: PVirtualNode);
+    procedure CreateFunctionProfileExtension(Node: PVirtualNode);
     procedure EditGradient(var Data: PProjectData);
     function CreateChildNode(out Node: PVirtualNode): boolean; //inline;
-    function GetGradients: TGradients;
+    function GetProfileFunctions: TProfileFunctions;
     procedure CreateProfileExtension;
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
     procedure PlotProfileNP;
@@ -443,6 +444,7 @@ type
     procedure PrepareInterfaceAF;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
+    procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     { Private declarations }
   public
     { Public declarations }
@@ -475,7 +477,7 @@ uses
   ClipBrd,
   frm_NewMaterial,
   frm_about,
-  editor_Gradient,
+  editor_ProfileFunction,
   frm_ExtensionType,
   math_globals,
   editor_HenkeTable,
@@ -496,14 +498,14 @@ begin
     if Chart.LeftAxis.Maximum > 0.01 then
       Chart.LeftAxis.AxisValuesFormat := '0.000'
     else
-      Chart.LeftAxis.AxisValuesFormat := '0e-0';
+      Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end
   else
   begin
     btnChartScale.Caption := 'Linear';
 //    Chart.LeftAxis.Minimum := StrToFloat(Settings.MinLimit);
     Chart.LeftAxis.Logarithmic := True;
-    Chart.LeftAxis.AxisValuesFormat := '0e-0';
+    Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end;
 end;
 
@@ -787,11 +789,11 @@ begin
   if EType = etNone then Exit;
 
   case EType of
-    etGradient : begin
+    etFunction : begin
                     if CreateChildNode(Node) then
-                          CreateGradientExtension(Node);
+                          CreateFunctionProfileExtension(Node);
                   end;
-    etProfile  : CreateProfileExtension;
+    etArb  : CreateProfileExtension;
   end;
 end;
 
@@ -813,17 +815,54 @@ begin
     Data.Enabled := True;
     Data.RowType := prExtension;
     Data.Title := 'Profile';
-    Data.ExtType := etProfile;
+    Data.ExtType := etArb;
     Data.StackID := -1;
     Data.LayerID := -1;
-    Data.Form := ffLine;
+    Data.Form := ffPoly;
 
     Project.ClearSelection;
     Project.Selected[Node] := True;
   end;
 end;
 
-procedure TfrmMain.CreateGradientExtension(Node: PVirtualNode);
+procedure TfrmMain.CreateFitGradientExtensions(const P: TProfileFunctions);
+const
+  L : array [0..2] of string = ('H','S','rho');
+
+var
+  Gradient: PVirtualNode;
+  Data: PProjectData;
+  i, j: Integer;
+  S: string;
+begin
+  for I := 0 to High(P) do
+  begin
+    Gradient := Project.AddChild(FLastModel);
+    Data := Project.GetNodeData(Gradient);
+
+    Data.Group := gtModel;
+    Data.Enabled := True;
+    Data.RowType := prExtension;
+    S := Format('F(%s %s/%s)', [L[Ord(P[i].Subj)],
+                 Structure.Stacks[P[i].StackID].Title,
+                 Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
+
+    Data.Title := S;
+    Data.ExtType := etFunction;
+    Data.Form := ffPoly;
+    Data.Subj := P[i].Subj;
+    Data.StackID := P[i].StackID;
+    Data.LayerID := P[i].LayerID;
+    Data.Poly    := P[i].C;
+  end;
+
+  MatchToStructure;
+  Project.Expanded[FLastModel] := True;
+  Project.ClearSelection;
+  Project.Selected[FLastModel] := True;
+end;
+
+procedure TfrmMain.CreateFunctionProfileExtension(Node: PVirtualNode);
 var
   Data: PProjectData;
 begin
@@ -833,11 +872,13 @@ begin
   Data.Enabled := True;
   Data.RowType := prExtension;
   Data.Title := 'Gradient ' + IntToStr(Node.Parent.ChildCount);
-  Data.ExtType := etGradient;
-  Data.a := 0.14;
+  Data.ExtType := etFunction;
+  Data.Poly[0] := 0;
+  Data.Poly[1] := 0.14;
+  Data.Poly[10] := 1;
   Data.StackID := -1;
   Data.LayerID := -1;
-  Data.Form := ffLine;
+  Data.Form := ffPoly;
 
   Project.ClearSelection;
   Project.Selected[Node] := True;
@@ -868,8 +909,8 @@ begin
     prExtension:
       begin
         case Data.ExtType of
-          etGradient: EditGradient(Data);
-          etProfile :;
+          etFunction: EditGradient(Data);
+          etArb :;
         end;
 
       end;
@@ -879,9 +920,9 @@ end;
 
 procedure TfrmMain.EditGradient(var Data: PProjectData);
 begin
-  edtrGradient.Data := Data;
-  edtrGradient.Structure := Structure;
-  if edtrGradient.ShowModal = mrOk then
+  edtrProfileFunction.Data := Data;
+  edtrProfileFunction.Structure := Structure;
+  if edtrProfileFunction.ShowModal = mrOk then
   begin
     mmDescription.Lines.Text := Data.Description;
   end;
@@ -966,7 +1007,7 @@ end;
 
 procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
 begin
-  Structure.CopyLayer(True);
+  Structure.CopyLayer(False);
 end;
 
 procedure TfrmMain.actModelCopyExecute(Sender: TObject);
@@ -1193,12 +1234,12 @@ begin
 
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
-  FFitParams.CFactor     := False;
+  FFitParams.CFactor     := True;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   Result := True;
 end;
 
-function TfrmMain.GetGradients: TGradients;
+function TfrmMain.GetProfileFunctions: TProfileFunctions;
 var
   Item: PVirtualNode;
   Data: PProjectData;
@@ -1210,16 +1251,15 @@ begin
   while Item <> Nil do
   begin
     Data := Project.GetNodeData(Item);
-    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etGradient) then
+    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) then
     begin
       SetLength(Result, Count + 1);
-      Result[Count].Count := 1;
-      Result[Count].NL := Structure.GetStackSize(Data.StackID);
-      Result[Count].Func.a  := Data.a;
+      Result[Count].C       := Data.Poly;
+      Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.P[Ord(Data.Subj) + 1].V;
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
-      Result[Count].Func.f := Data.Form;
-      Result[Count].Subj := Data.Subj;
+      Result[Count].Func    := Data.Form;
+      Result[Count].Subj    := Data.Subj;
       inc(count)
     end;
     Item := Project.GetNextSibling(Item);
@@ -1309,15 +1349,9 @@ begin
   end;
 
   if my < 0.01 then
-  begin
-    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2);
-    Chart.LeftAxis.AxisValuesFormat := '0.00e-0';
-  end
+    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2)
   else
-  begin
     StatusRMax.Caption := FloatToStrF(my, ffFixed, 4, 3);
-    Chart.LeftAxis.AxisValuesFormat := '0.000';
-  end;
 
   StatusMaxX.Caption := FloatToStrF(mx, ffFixed, 5, 4);
   StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
@@ -1380,7 +1414,7 @@ begin
                     pmiVisible.Visible := False;
                     pmiLinked.Visible  := False;
 
-                    IsProfile := LastData.ExtType = etProfile;
+                    IsProfile := LastData.ExtType = etArb;
                     pmCopytoclipboard.Visible := IsProfile;
                     pmExporttofile.Visible    := IsProfile;
                  end;
@@ -1396,7 +1430,7 @@ begin
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
   FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
   FSeriesList[Project.ActiveModel.CurveID].Repaint;
-  StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
+  StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
 
   CalcRun.Enabled := True;
@@ -1439,14 +1473,14 @@ var
 begin
   Materials := Structure.Materials;
 
-  CreateSeries(chThickness, FThicknessSeries);
-  CreateSeries(chRoughness, FRoughnessSeries);
-  CreateSeries(chDensity, FDensitySeries);
+  CreateSeries(chThickness, FSeriesArray[1]);
+  CreateSeries(chRoughness, FSeriesArray[2]);
+  CreateSeries(chDensity,   FSeriesArray[3]);
 end;
 
 procedure TfrmMain.PlotProfileNP;
 var
-  i, j, k, shift: integer;
+  i, j, k, p, shift: integer;
 begin
   shift := 1;
   for i := 0 to High(Structure.Stacks) do
@@ -1454,11 +1488,10 @@ begin
     if Structure.Stacks[i].N = 1 then Continue;
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
-      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PH) do
+      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[1]) do
       begin
-         FThicknessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PH[k]);
-         FRoughnessSeries[j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PS[k]);
-         FDensitySeries[j].  AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PR[k]);
+        for p := 1 to 3 do
+         FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[p][k]);
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1467,7 +1500,16 @@ end;
 
 procedure TfrmMain.PlotGradedProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d: integer;
+  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
+  Profiled: Boolean;
+
+  function IsProfile: boolean;
+  begin
+     Result := (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
+               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) and
+               (FProfiles[GradientIndex].PIndex = p);
+  end;
+
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1478,28 +1520,23 @@ begin
     begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
-          for GradientIndex := 0 to High(FGradients) do
+        for p := 1 to 3 do
+        begin
+          Profiled := False;
+          for GradientIndex := 0 to High(FProfiles) do
           begin
-            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FGradients[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FGradients[GradientIndex].LayerID) then
+            if IsProfile then
             begin
-              case FGradients[GradientIndex].Subj of
-                gsL : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V, FGradients[GradientIndex]));
-                gsS : FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V, FGradients[GradientIndex]));
-                gsRo: FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, CalcGradient(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V, FGradients[GradientIndex]));
-              end;
-              inc(FGradients[GradientIndex].Count);
-            end;
-
-            if (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID <> FGradients[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID <> FGradients[GradientIndex].LayerID) then
-            begin
-              FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
-              FRoughnessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
-                FDensitySeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.r.V);
+              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
+                                                    FuncProfile(PeriodIndex + shift, FProfiles[GradientIndex]));
+              Profiled := True;
             end;
           end;
-      end
+          if not Profiled then
+              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
+                                                     Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+         end;
+        end;
     end;
     Inc(shift, Structure.Stacks[StackIndex].N);
     Inc(d, Length(Structure.Stacks[StackIndex].Layers));
@@ -1509,7 +1546,7 @@ end;
 
 procedure TfrmMain.PlotSimpleProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d: integer;
+  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1520,10 +1557,9 @@ begin
     begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
-        FThicknessSeries[LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.H.V);
-        FRoughnessSeries[LayerIndex+ d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
-        FDensitySeries[LayerIndex + d].  AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.s.V);
-         end;
+        for p := 1 to 3 do
+          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+      end;
     end;
     Inc(shift, Structure.Stacks[StackIndex].N);
     Inc(d, Length(Structure.Stacks[StackIndex].Layers));
@@ -1532,22 +1568,19 @@ end;
 
 procedure TfrmMain.ClearProfiles;
 var
-  StackIndex: integer;
+  StackIndex, p: integer;
 begin
-  for StackIndex := 0 to High(FThicknessSeries) do
-  begin
-    FThicknessSeries[StackIndex].Clear;
-    FRoughnessSeries[StackIndex].Clear;
-    FDensitySeries[StackIndex].Clear;
-  end;
+  for p := 1 to 3 do
+    for StackIndex := 0 to High(FSeriesArray[p]) do
+      FSeriesArray[p][StackIndex].Clear;
 end;
 
 procedure TfrmMain.PlotProfile;
 begin
   ClearProfiles;
 
-  FGradients := GetGradients;
-  if Length(FGradients) > 0 then
+  FProfiles := GetProfileFunctions;
+  if Length(FProfiles) > 0 then
     PlotGradedProfile
   else
       if IsProfileEnbled and not cbTreatPeriodic.Checked then
@@ -1588,7 +1621,7 @@ begin
   while Node <> nil do
   begin
     Data := Project.GetNodeData(Node);
-    if Data.ExtType = etProfile then
+    if Data.ExtType = etArb then
     begin
       Result := Data.Enabled;
       Break;
@@ -1603,7 +1636,7 @@ begin
   try
     if not PrepareCalc then Exit;
     try
-      FCalc.Model.Gradients := GetGradients;
+      FCalc.Model.Profiles := GetProfileFunctions;
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
@@ -1685,6 +1718,8 @@ begin
      else
        LFPSO := TLFPSO_Regular.Create;
 
+  GetThreadParams;
+
   LFPSO.Params := FFitParams;
   LFPSO.Limit := StrToFloat(cbMinLimit.Text);
 
@@ -1708,13 +1743,13 @@ end;
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
+  Node: PVirtualNode;
 begin
   if not GetFitParams then Exit;
 
   try
     if not PrepareLFPSO then Exit;
     FitStartTime := Now;
-    CalcRunExecute(nil);
 
     LFPSO.Run(FCalcThreadParams);
 
@@ -1723,8 +1758,13 @@ begin
       Structure.UpdateInterfaceP(LFPSO.Structure);
       if not cbTreatPeriodic.Checked then
       begin
-        CreateProfileExtension;
-        Structure.UpdateProfiles(LFPSO.Result);
+        if cbPoly.Checked then
+         CreateFitGradientExtensions(LFPSO.Polynomes)
+        else begin
+          CreateProfileExtension;
+          Structure.UpdateProfiles(LFPSO.Result);
+        end;
+
       end;
     end
     else
@@ -1852,14 +1892,20 @@ procedure TfrmMain.LayerAddExecute(Sender: TObject);
 var
   Data: TLayerData;
 begin
+  if Structure.SelectedStack = -1 then
+  begin
+    ShowMessage('Stack is not selected!');
+    Exit;
+  end;
+
   Data.Material := 'Si';
 
-  Data.H.New(25);
-  Data.s.New(3);
-  Data.r.New(0);
+  Data.P[1].New(25);
+  Data.P[2].New(3);
+  Data.P[3].New(0);
 
   if edtrLayer.ShowEditor(False, Data) then
-    Structure.AddLayer(Structure.Selected, Data);
+    Structure.AddLayer(Structure.SelectedStack, Data);
   MatchToStructure;
 end;
 
@@ -1877,8 +1923,23 @@ begin
 end;
 
 procedure TfrmMain.LayerInsertExecute(Sender: TObject);
+var
+  Data: TLayerData;
 begin
-//  Structure.InsertLayer;
+  if Structure.SelectedLayer = -1 then
+  begin
+    ShowMessage('Parent layer is not selected!');
+    Exit;
+  end;
+
+  Data.Material := 'Si';
+
+  Data.P[1].New(25);
+  Data.P[2].New(3);
+  Data.P[3].New(0);
+
+  if edtrLayer.ShowEditor(False, Data) then
+        Structure.InsertLayer(Data);
   MatchToStructure;
 end;
 
@@ -2229,12 +2290,20 @@ end;
 
 procedure TfrmMain.RzButton1Click(Sender: TObject);
 begin
-  SeriesToClipboard(lsrConvergence);
+  case Pages.ActivePageIndex of
+    0..2: ;
+    3: SeriesToClipboard('N','ChiSqr','','', lsrConvergence);
+  end;
 end;
 
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
 begin
   Structure.Increment := StrToFloat(cbIncrement.Value);
+end;
+
+procedure TfrmMain.cbMinLimitChange(Sender: TObject);
+begin
+  Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);

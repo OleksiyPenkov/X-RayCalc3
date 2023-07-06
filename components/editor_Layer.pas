@@ -55,9 +55,9 @@ function TedtrLayer.ShowEditor(const IsSubstrate: Boolean; var Data: TLayerData)
 begin
   Result := False;
   edMaterial.Text := Data.Material;
-  edH.Value := Data.H.V;
-  edSigma.Value := Data.S.V;
-  edRo.Value := Data.R.V;
+  edH.Value := Data.P[1].V;
+  edSigma.Value := Data.P[2].V;
+  edRo.Value := Data.P[3].V;
 
   edH.Visible := not IsSubstrate;
   Label2.Visible :=  not IsSubstrate;
@@ -68,9 +68,9 @@ begin
   if ShowModal = mrOk then
   begin
     Data.Material := edMaterial.Text;
-    Data.H.V := edH.Value;
-    Data.S.V := edSigma.Value;
-    Data.R.V := edRo.Value;
+    Data.P[1].V := edH.Value;
+    Data.P[2].V := edSigma.Value;
+    Data.P[3].V := edRo.Value;
     Result := True;
   end;
 

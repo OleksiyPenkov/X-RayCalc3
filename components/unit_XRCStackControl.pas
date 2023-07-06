@@ -33,6 +33,8 @@ type
       function GetMaterialsList: TMaterialsList;
       procedure SetID(const Value: Integer);
       procedure UpdateLayersStatus(const Pairable: Boolean);
+      procedure SetLayerColor(const ID: Integer);
+      procedure RealignLayers;
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -41,7 +43,7 @@ type
       constructor Create(AOwner: TComponent; const Title: string; const N: integer);
       destructor  Destroy; override;
 
-      function AddLayer(Data: TLayerData): integer;
+      function AddLayer(Data: TLayerData; Pos: integer = -1): integer;
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
       procedure DeleteLayer(const Index: integer);
@@ -69,28 +71,48 @@ uses
 
 { TXRCStack }
 
-function TXRCStack.AddLayer(Data: TLayerData): integer;
+procedure TXRCStack.SetLayerColor(const ID: Integer);
+begin
+  if (ID mod 2) = 0 then FLayers[ID].Color := $00FFE3C1
+    else FLayers[ID].Color := $00FFD29B;
+end;
+
+function TXRCStack.AddLayer(Data: TLayerData; Pos: integer): integer;
 var
-  Count: Integer;
+  Count, i: Integer;
+  Inserted: Boolean;
 begin
   Count := Length(FLayers);
-  SetLength(FLayers, Count + 1);
+  if Pos = -1 then
+  begin
+    SetLength(FLayers, Count + 1);
+    Pos := Count;
+    Inserted := False;
+  end
+  else
+  begin
+    Insert(Nil, FLayers, Pos);
+    Inserted := True;
+  end;
   Data.StackID := FID;
-  Data.LayerID := Count;
+  Data.LayerID := Pos;
 
-
-  FLayers[Count] := TXRCLayerControl.Create(Self, 0, Data);
-  FLayers[Count].Parent := Self;
-  FLayers[Count].Pairable := FN > 1;
-
-  if (Count mod 2) = 0 then FLayers[Count].Color := $00FFE3C1
-    else FLayers[Count].Color := $00FFD29B;
-
-  ClientHeight := 45 + (Count + 1) * (FLayers[Count].Height + 3);
+  FLayers[Pos] := TXRCLayerControl.Create(Self, 0, Data);
+  FLayers[Pos].Parent := Self;
+  FLayers[Pos].Pairable := FN > 1;
 
   lblLayers.Top := 1;
-  FLayers[Count].Top := ClientHeight - 10;
-  Result := Count;
+  ClientHeight := 45 + (Count + 1) * (FLayers[Pos].Height + 3);
+  if Inserted then
+  begin
+    UpdateLayersID;
+    RealignLayers;
+  end
+  else begin
+    SetLayerColor(Pos);
+    FLayers[Pos].Top := ClientHeight - 10;
+  end;
+  Result := Pos;
 end;
 
 procedure TXRCStack.AddSubstrate(const Material: string; s, rho: single);
@@ -99,9 +121,9 @@ var
 begin
   SetLength(FLayers, 1);
   Data.Material := Material;
-  Data.H.V := 1E8;
-  Data.r.V := rho;
-  Data.s.V := s;
+  Data.P[1].V := 1E8;
+  Data.P[2].V := s;
+  Data.P[3].V := rho;
 
 
   FLayers[0] := TXRCLayerControl.Create(Self, 0, Data);
@@ -152,7 +174,10 @@ var
   i: Integer;
 begin
   for I := 0 to High(Layers) do
+  begin
     Layers[i].UpdateID(FID, i);
+    SetLayerColor(i);
+  end;
 end;
 
 procedure TXRCStack.UpdateLayersStatus(const Pairable: Boolean);
@@ -213,7 +238,6 @@ begin
 
   FLinkedLayers[0] := -1;
   FLinkedLayers[1] := -1;
-
 
   UpdateInfo;
 end;
@@ -341,6 +365,27 @@ begin
     FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
   end;
 
+end;
+
+procedure TXRCStack.RealignLayers;
+var
+  i, count: Integer;
+  MaxHeigh: integer;
+begin
+  Visible := False;
+  Count := Length(FLayers) - 1;
+
+  for I := 0 to Count do
+    FLayers[i].Align := alNone;
+
+  MaxHeigh := 20;
+  for I := 0 to Count do
+  begin
+    FLayers[i].Top := MaxHeigh + 5;
+    FLayers[i].Align := alTop;
+    MaxHeigh := MaxHeigh + FLayers[i].Height + 5;
+  end;
+  Visible := True;
 end;
 
 procedure TXRCStack.Select(const LayerID: integer);

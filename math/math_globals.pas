@@ -33,9 +33,12 @@ type
 
   procedure Sort(var Series: TLineSeries);
   procedure CopyData(const Input: TDataArray; var Output: TDataArray);
-  function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
+
   procedure ReadHenkeTable(const N: string; var Na, Nro: single; var Table: THenkeTable);
   procedure WriteHenkeTable(const N: string; Na, Nro: single; Table: THenkeTable);
+  function Poly(const x: Integer; const C: TPolyArray): Single; overload;
+  function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
+  function FuncProfile(const x: integer; FuncProfile: TFuncProfileRec): single;
 
 implementation
 
@@ -44,15 +47,36 @@ uses
   SysUtils,
   VCLTee.TeEngine;
 
-
-
-function CalcGradient(const Val: Single; Gradient: TGradientRec): single;
+function Poly(const x: Integer; const C: TPolyArray): Single;
+var
+  i, Last: Integer;
 begin
-  case Gradient.Func.f of
-    ffLine : Result := Val * (1 + Gradient.Count/(Gradient.NL) * Gradient.Func.a);
+  Result := C[0]; Last := 1;
+  for I := 1 to Trunc(C[10]) do
+  begin
+    Last := Last * (x - 1);
+    Result := Result + C[i] * Last;
   end;
 end;
 
+function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
+var
+  i, Last: LongInt;
+begin
+  Result := Polynome.C[0]; Last := 1;
+  for I := 1 to Trunc(Polynome.C[10]) do
+  begin
+    Last := Last * (x - 1);
+    Result := Result + Polynome.C[i] * Last
+  end;
+end;
+
+function FuncProfile(const x: integer; FuncProfile: TFuncProfileRec): single;
+begin
+  case FuncProfile.Func of
+    ffPoly : Result := Poly(x, FuncProfile);
+  end;
+end;
 
 procedure CopyData(const Input: TDataArray; var Output: TDataArray);
 begin

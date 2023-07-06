@@ -42,15 +42,19 @@ implementation
 {$R *.dfm}
 
 resourcestring
-  rstrGradientRadioCaption  = 'Gradient';
-  rstrGradientRadioHint     = 'Create ad istribution of a parameter (H, s, rho) for cirtain layer';
-  rstrProfileRadioCaption   = 'Profile';
-  rstrProfileRadioHint      = 'Create a parameters'' distribution table';
+  rstrGradientRadioCaption  = 'Function';
+  rstrGradientRadioHint     = 'Define (H, s, rho) as a function of N';
+  rstrProfileRadioCaption   = 'Arbitrary values';
+  rstrProfileRadioHint      = 'Define (H, s, rho)manually as the distribution table';
+  rstrRoughRadioCaption     = 'Roughness function';
+  rstrRoughRadioHint        = 'Set the special roughness function for given layers';
+
 
 function SelectExtensionTypeAction: TExtentionType;
 const
   mrGradient = 100;
   mrProfile = 101;
+  mrRoughness = 102;
 var
   xpDlg: TfrmExtensionSelector;
   vistaDlg: TTaskDialog;
@@ -64,28 +68,35 @@ begin
     try
       vistaDlg.CommonButtons := [tcbCancel];
       vistaDlg.Flags := [tfAllowDialogCancellation, tfUseCommandLinks];
-      vistaDlg.MainIcon := tdiWarning;
+      vistaDlg.MainIcon := tdiInformation;
       vistaDlg.Caption := 'Select type of new extension';
 
       dlgBtn := vistaDlg.Buttons.Add;
-      Assert(dlgBtn is TTaskDialogButtonItem);
       dlgBtn.Caption := rstrGradientRadioCaption;
       (dlgBtn as TTaskDialogButtonItem).CommandLinkHint := rstrGradientRadioHint ;
       dlgBtn.Default := True;
       dlgBtn.ModalResult := mrGradient;
 
       dlgBtn := vistaDlg.Buttons.Add;
-      Assert(dlgBtn is TTaskDialogButtonItem);
+      dlgBtn.Enabled := False;
       dlgBtn.Caption := rstrProfileRadioCaption;
       (dlgBtn as TTaskDialogButtonItem).CommandLinkHint := rstrProfileRadioHint ;
       dlgBtn.ModalResult := mrProfile;
 
+      dlgBtn := vistaDlg.Buttons.Add;
+      dlgBtn.Enabled := False;
+      dlgBtn.Caption := rstrRoughRadioCaption;
+      (dlgBtn as TTaskDialogButtonItem).CommandLinkHint := rstrRoughRadioHint ;
+      dlgBtn.ModalResult := mrRoughness;
+
       if vistaDlg.Execute then
       begin
         if mrGradient = vistaDlg.ModalResult then
-          Result := etGradient
+          Result := etFunction
         else if mrProfile = vistaDlg.ModalResult  then
-          Result := etProfile;
+          Result := etArb
+        else if mrRoughness = vistaDlg.ModalResult  then
+          Result := etRough;
       end;
     finally
       vistaDlg.Free;
@@ -98,9 +109,9 @@ begin
       if mrOk = xpDlg.ShowModal then
       begin
         if xpDlg.rbGradient.Checked then
-          Result := etGradient
+          Result := etFunction
         else if xpDlg.rbProfile.Checked then
-          Result := etProfile
+          Result := etArb
       end;
     finally
       xpDlg.Free;

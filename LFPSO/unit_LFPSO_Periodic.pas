@@ -44,9 +44,9 @@ begin
     for j := 0 to High(V[i]) do  //for every layer
       for k := 1 to 3 do         // for H, s, rho
       begin
-        V[i][j][k] := Omega(t, FTMax) * LevyWalk(X[i][j][k], gbest[j][k])  +
-                      c1 * Random * (pbest[j][k] - X[i][j][k]) +
-                      c2 * Random * (gbest[j][k] - X[i][j][k]);
+        V[i][j][k][0] := Omega(t, FTMax) * LevyWalk(X[i][j][k][0], gbest[j][k][0])  +
+                      c1 * Random * (pbest[j][k][0] - X[i][j][k][0]) +
+                      c2 * Random * (gbest[j][k][0] - X[i][j][k][0]);
 
         CheckLimits(i, j, k);
       end;
@@ -67,9 +67,9 @@ begin
     for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
       begin
-        V[i][j][k] := Omega(t, FTMax) * V[i][j][k]  +
-                      c1 * Random * (pbest[j][k] - X[i][j][k]) +
-                      c2 * Random * (gbest[j][k] - X[i][j][k]);
+        V[i][j][k][0] := Omega(t, FTMax) * V[i][j][k][0]  +
+                      c1 * Random * (pbest[j][k][0] - X[i][j][k][0]) +
+                      c2 * Random * (gbest[j][k][0] - X[i][j][k][0]);
 
         CheckLimits(i, j, k);
       end;
@@ -96,11 +96,11 @@ begin
 
     Dreal := 0;
     for j := Index to Last do
-      Dreal := Dreal + X[ParticleIndex][j][1];
+      Dreal := Dreal + X[ParticleIndex][j][1][0];
 
     f := (FStructure.Stacks[i].D - Dreal)/Dreal;
     for j := Index to Last do
-      X[ParticleIndex][j][1] := X[ParticleIndex][j][1] * (1 + f);
+      X[ParticleIndex][j][1][0] := X[ParticleIndex][j][1][0] * (1 + f);
   end;
 end;
 
@@ -112,7 +112,7 @@ begin
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-        X[i][j][k] := X[0][j][k] + Rand(XRange[0][j][k]);
+        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0]);
 
     NormalizeD(i);
   end;
@@ -128,7 +128,7 @@ begin
   for i := 0 to High(V) do          // for every member of the population
     for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-        V[i][j][k] := Random * (Vmax[0][j][k] - Vmin[0][j][k]) + Vmin[0][j][k];
+        V[i][j][k][0] := Random * (Vmax[0][j][k][0] - Vmin[0][j][k][0]) + Vmin[0][j][k][0];
 end;
 
 procedure TLFPSO_Periodic.Seed;
@@ -139,20 +139,20 @@ begin
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-       X[i][j][k] := Xmin[0][j][k] + Random * XRange[0][j][k];   // min + Random * (min-max)
+       X[i][j][k][0] := Xmin[0][j][k][0] + Random * XRange[0][j][k][0];   // min + Random * (min-max)
     NormalizeD(i);
   end;
 end;
 
 procedure TLFPSO_Periodic.SetStructure(const Inp: TFitStructure);
 var
-  i, j, Index: integer;
+  i, j, p, Index: integer;
   D: double;
 begin
   FStructure := Inp;
   FLayersCount := Inp.Total;
 
-  Init_DomainsP;
+  Init_Domains;
 
   for I := 0 to High(FStructure.Stacks) do
   begin
@@ -162,7 +162,7 @@ begin
       for j := 0 to High(FStructure.Stacks[i].Layers) do
       begin
         FStructure.Stacks[i].Layers[j].LayerID := j;
-        D := D + FStructure.Stacks[i].Layers[j].H.V;
+        D := D + FStructure.Stacks[i].Layers[j].P[1].V;
       end;
       FStructure.Stacks[i].D := D;
     end;
@@ -173,9 +173,8 @@ begin
   begin
     for j := 0 to High(Inp.Stacks[i].Layers) do
     begin
-      Set_Init_X(Index, 1, Inp.Stacks[i].Layers[j].H);
-      Set_Init_X(Index, 2, Inp.Stacks[i].Layers[j].s);
-      Set_Init_X(Index, 3, Inp.Stacks[i].Layers[j].r);
+      for p := 1 to 3 do
+        Set_Init_X(Index, p, Inp.Stacks[i].Layers[j].P[p]);
 
       Inc(Index);
     end;
