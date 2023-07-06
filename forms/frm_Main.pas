@@ -373,6 +373,7 @@ type
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
       var AllowChange: Boolean);
     procedure actProjecEditModelTextExecute(Sender: TObject);
+    procedure cbMinLimitChange(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -497,14 +498,14 @@ begin
     if Chart.LeftAxis.Maximum > 0.01 then
       Chart.LeftAxis.AxisValuesFormat := '0.000'
     else
-      Chart.LeftAxis.AxisValuesFormat := '0e-0';
+      Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end
   else
   begin
     btnChartScale.Caption := 'Linear';
 //    Chart.LeftAxis.Minimum := StrToFloat(Settings.MinLimit);
     Chart.LeftAxis.Logarithmic := True;
-    Chart.LeftAxis.AxisValuesFormat := '0e-0';
+    Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end;
 end;
 
@@ -1233,7 +1234,7 @@ begin
 
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
-  FFitParams.CFactor     := False;
+  FFitParams.CFactor     := True;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   Result := True;
 end;
@@ -1348,15 +1349,9 @@ begin
   end;
 
   if my < 0.01 then
-  begin
-    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2);
-    Chart.LeftAxis.AxisValuesFormat := '0.00e-0';
-  end
+    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2)
   else
-  begin
     StatusRMax.Caption := FloatToStrF(my, ffFixed, 4, 3);
-    Chart.LeftAxis.AxisValuesFormat := '0.000';
-  end;
 
   StatusMaxX.Caption := FloatToStrF(mx, ffFixed, 5, 4);
   StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
@@ -1435,7 +1430,7 @@ begin
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
   FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
   FSeriesList[Project.ActiveModel.CurveID].Repaint;
-  StatusD.Caption := FloatToStrF(Calc.TotalD, ffFixed, 7, 2);
+  StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
 
   CalcRun.Enabled := True;
@@ -2283,6 +2278,11 @@ end;
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
 begin
   Structure.Increment := StrToFloat(cbIncrement.Value);
+end;
+
+procedure TfrmMain.cbMinLimitChange(Sender: TObject);
+begin
+  Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);

@@ -23,6 +23,7 @@ type
 
       FStacks: TStacks;
       Substrate: TXRCStack;
+      FPeriod: Single;
 
       FSelectedStack : Integer;
 
@@ -48,6 +49,7 @@ type
 
       property Selected: Integer read GetSelected;
       property Stacks: TStacks read FStacks;
+      property Period: single read FPeriod;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure AddStack(const N: Integer; const Title: string);
@@ -379,6 +381,7 @@ var
   i, j, k, p: Integer;
   StackLayers: TLayersData;
 begin
+  FPeriod := 0;
   Result := TLayeredModel.Create;
   Result.Init;
 
@@ -394,6 +397,12 @@ begin
             StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
       end;
       Result.AddLayers(i, StackLayers);
+    end;
+    if FStacks[i].N > 1 then
+    begin
+      FPeriod := 0;
+      for k := 0 to High(StackLayers) do
+        FPeriod := FPeriod + StackLayers[k].P[1].V;
     end;
   end;
 
