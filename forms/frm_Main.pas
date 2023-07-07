@@ -307,6 +307,10 @@ type
     N11: TMenuItem;
     MaterialsLibrary1: TMenuItem;
     actDataSmooth: TAction;
+    N12: TMenuItem;
+    N13: TMenuItem;
+    acStructureUndo: TAction;
+    Undo1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -376,6 +380,7 @@ type
     procedure actProjecEditModelTextExecute(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
     procedure actDataSmoothExecute(Sender: TObject);
+    procedure acStructureUndoExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -406,6 +411,8 @@ type
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
+
+    FStack: TStack<String>;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -447,6 +454,7 @@ type
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
+    procedure SaveHistory;
     { Private declarations }
   public
     { Public declarations }
@@ -623,7 +631,11 @@ begin
   begin
      FLastModel := LastNode;
      if LastData.Data <> '' then
-        Structure.FromString(LastData.Data);
+     begin
+       Structure.FromString(LastData.Data);
+       FStack.Clear;
+       FStack.Push(LastData.Data);
+     end;
   end;
 end;
 
@@ -1020,6 +1032,8 @@ end;
 
 procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.CopyLayer(False);
 end;
 
@@ -1114,6 +1128,12 @@ begin
   SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
 end;
 
+procedure TfrmMain.SaveHistory;
+begin
+  FStack.Push(Structure.ToString);
+  FStack.TrimExcess;
+end;
+
 procedure TfrmMain.MatchToStructure;
 begin
   PrepareDistributionCharts;
@@ -1126,6 +1146,7 @@ var
   Name: string;
   N   : Integer;
 begin
+  SaveHistory;
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
@@ -1134,6 +1155,8 @@ end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.DeleteStack;
   MatchToStructure;
 end;
@@ -1143,6 +1166,8 @@ var
   Name: string;
   N   : Integer;
 begin
+  SaveHistory;
+
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
@@ -1753,6 +1778,15 @@ begin
   Result := True;
 end;
 
+procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
+begin
+  if FStack.Count > 0 then
+  begin
+    Structure.FromString(FStack.Peek);
+    FStack.Extract;
+  end;
+end;
+
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
@@ -1911,6 +1945,8 @@ begin
     Exit;
   end;
 
+  SaveHistory;
+
   Data.Material := 'Si';
 
   Data.P[1].New(25);
@@ -1924,6 +1960,8 @@ end;
 
 procedure TfrmMain.LayerCutExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.CopyLayer(False);
   Structure.DeleteLayer;
   MatchToStructure;
@@ -1931,6 +1969,8 @@ end;
 
 procedure TfrmMain.LayerDeleteExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.DeleteLayer;
   MatchToStructure;
 end;
@@ -1945,6 +1985,8 @@ begin
     Exit;
   end;
 
+  SaveHistory;
+
   Data.Material := 'Si';
 
   Data.P[1].New(25);
@@ -1958,6 +2000,8 @@ end;
 
 procedure TfrmMain.LayerPasteExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.PasteLayer;
   MatchToStructure;
 end;
@@ -2248,6 +2292,9 @@ begin
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
 
+  FStack := TStack<String>.Create;
+  FStack.Capacity := 10;
+
   FormatSettings.DecimalSeparator := '.';
   Project.NodeDataSize := SizeOf(TProjectData);
 
@@ -2279,6 +2326,7 @@ begin
   Project.Clear;
   FreeAndNil(Structure);
   FreeAndNil(Settings);
+  FreeAndNil(FStack);
 end;
 
 

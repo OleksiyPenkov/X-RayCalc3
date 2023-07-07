@@ -2002,6 +2002,15 @@ object frmMain: TfrmMain
       object Delete2: TMenuItem
         Action = LayerDelete
       end
+      object N12: TMenuItem
+        Caption = '-'
+      end
+      object N13: TMenuItem
+        Caption = '-'
+      end
+      object Undo1: TMenuItem
+        Action = acStructureUndo
+      end
     end
     object Data1: TMenuItem
       Caption = 'Data'
@@ -2916,6 +2925,7 @@ object frmMain: TfrmMain
       Caption = 'Copy'
       Hint = 'Copy Layer'
       ImageIndex = 6
+      ShortCut = 24643
       OnExecute = actLayerCopyExecute
     end
     object LayerCut: TAction
@@ -3161,6 +3171,12 @@ object frmMain: TfrmMain
       Caption = 'Smooth'
       Hint = 'Smooth data curve'
       OnExecute = actDataSmoothExecute
+    end
+    object acStructureUndo: TAction
+      Category = 'Layer'
+      Caption = 'Undo'
+      ShortCut = 16474
+      OnExecute = acStructureUndoExecute
     end
   end
   object ilProject: TImageList
