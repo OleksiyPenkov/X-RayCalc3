@@ -33,6 +33,7 @@ procedure DataToFile(const FileName: string; Data: TDataArray);
 //procedure DataToClipboard(const Data: TDataArray);
 
 function SeriesToData( Series: TLineSeries): TDataArray;
+procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
 procedure AutoMerge( var Series: TLineSeries);
 procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
@@ -74,7 +75,11 @@ var
   Offset, Window: integer;
 begin
   SetLength(Result, Length(Inp));
-  Window := Round(Length(Inp) * W);
+  if W > 1 then
+    Window := Trunc(W)
+  else
+    Window := Round(Length(Inp) * W);
+
   Offset := Window div 2;
 
   V := 0;
@@ -247,6 +252,15 @@ begin
   Pos := Series.XValues.Locate(X);
   for I := Pos to Series.Count - 1 do
     Series.YValue[i] := Series.YValue[i] / K;
+end;
+
+procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
+var
+  i: integer;
+begin
+  Series.Clear;
+  for I := 0 to High(Data) do
+   Series.AddXY(Data[i].t, Data[i].r);
 end;
 
 function SeriesToData( Series: TLineSeries): TDataArray;

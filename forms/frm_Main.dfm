@@ -549,13 +549,15 @@ object frmMain: TfrmMain
         OnMouseDown = ChartMouseDown
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
-        ExplicitLeft = 11
+        ExplicitWidth = 854
+        ExplicitHeight = 304
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
           5
           5
           5)
+        ColorPaletteIndex = 13
       end
       object RzPanel3: TRzPanel
         AlignWithMargins = True
@@ -776,6 +778,7 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
+          ExplicitLeft = 698
         end
         object cbMinLimit: TRzComboBox
           Left = 783
@@ -799,6 +802,7 @@ object frmMain: TfrmMain
             '10E-7'
             '10E-8'
             '10E-9')
+          ExplicitLeft = 779
         end
       end
       object pnl1: TPanel
@@ -2020,7 +2024,7 @@ object frmMain: TfrmMain
         Caption = 'Normalize (Auto)'
       end
       object Smooth1: TMenuItem
-        Caption = 'Smooth ...'
+        Action = actDataSmooth
       end
       object N7: TMenuItem
         Caption = '-'
@@ -3151,6 +3155,12 @@ object frmMain: TfrmMain
       Category = 'Project Item'
       Caption = 'Edit as text ...'
       OnExecute = actProjecEditModelTextExecute
+    end
+    object actDataSmooth: TAction
+      Category = 'Data'
+      Caption = 'Smooth'
+      Hint = 'Smooth data curve'
+      OnExecute = actDataSmoothExecute
     end
   end
   object ilProject: TImageList

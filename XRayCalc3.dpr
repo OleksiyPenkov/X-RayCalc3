@@ -33,7 +33,8 @@ uses
   Vcl.Styles,
   editor_HenkeTable in 'editors\editor_HenkeTable.pas' {edtrHenkeTable},
   editor_JSON in 'editors\editor_JSON.pas' {frmJsonEditor},
-  unit_LFPSO_Poly in 'LFPSO\unit_LFPSO_Poly.pas';
+  unit_LFPSO_Poly in 'LFPSO\unit_LFPSO_Poly.pas',
+  unit_SavitzkyGolay in 'math\unit_SavitzkyGolay.pas';
 
 {$R *.res}
 

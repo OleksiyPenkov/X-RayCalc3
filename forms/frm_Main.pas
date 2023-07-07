@@ -306,6 +306,7 @@ type
     Fitting1: TMenuItem;
     N11: TMenuItem;
     MaterialsLibrary1: TMenuItem;
+    actDataSmooth: TAction;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -374,6 +375,7 @@ type
       var AllowChange: Boolean);
     procedure actProjecEditModelTextExecute(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
+    procedure actDataSmoothExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -482,7 +484,8 @@ uses
   math_globals,
   editor_HenkeTable,
   editor_JSON,
-  unit_LFPSO_Poly;
+  unit_LFPSO_Poly,
+  unit_SavitzkyGolay;
 
 {$R *.dfm}
 
@@ -993,6 +996,16 @@ begin
   begin
     Normalize(StrToFloat(s), FSeriesList[Project.ActiveData.CurveID]);
   end;
+end;
+
+procedure TfrmMain.actDataSmoothExecute(Sender: TObject);
+var
+  Data: TDataArray;
+begin
+  Data := SeriesToData(FSeriesList[Project.ActiveData.CurveID]);
+  //TSavitzkyGolay.SmoothCurve(Data, 3, 30);
+  Data := MovAvg(Data, 5);
+  DataToSeries(Data, FSeriesList[Project.ActiveData.CurveID]);
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
