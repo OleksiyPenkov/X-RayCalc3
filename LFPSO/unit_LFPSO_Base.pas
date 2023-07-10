@@ -277,7 +277,7 @@ end;
 
 procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
 begin
-  if FFitParams.CFactor and (CFactor > 0) then
+  if FFitParams.AdaptiveVelocity and (CFactor > 0) then
   begin
     c1 := c1m * CFactor;
     c2 := c2m * CFactor;
@@ -391,7 +391,6 @@ begin
 //      ShowMessage(Format('%f   %f  %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
     end;
     CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
-//    CFactor := 1;
   end
   else begin
     SetLength(FResultingCurve, 0);

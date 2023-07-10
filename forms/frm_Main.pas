@@ -311,6 +311,7 @@ type
     N13: TMenuItem;
     acStructureUndo: TAction;
     Undo1: TMenuItem;
+    cbAdaptiveVelocity: TRzCheckBox;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -455,6 +456,7 @@ type
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     procedure SaveHistory;
+    procedure RescaleChart;
     { Private declarations }
   public
     { Public declarations }
@@ -1007,6 +1009,7 @@ begin
   if s <> '' then
   begin
     Normalize(StrToFloat(s), FSeriesList[Project.ActiveData.CurveID]);
+    SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
   end;
 end;
 
@@ -1015,9 +1018,10 @@ var
   Data: TDataArray;
 begin
   Data := SeriesToData(FSeriesList[Project.ActiveData.CurveID]);
-  //TSavitzkyGolay.SmoothCurve(Data, 3, 30);
+  //TSavitzkyGolay.SmoothCurve(Data, 2, 8);
   Data := MovAvg(Data, 5);
   DataToSeries(Data, FSeriesList[Project.ActiveData.CurveID]);
+  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
@@ -1242,6 +1246,7 @@ begin
     edLFPSOkVmax.Text     := INF.ReadString('LFPSO', 'kVmax', '2');
     edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
     edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
+    cbAdaptiveVelocity.Checked := INF.ReadBool('LFPSO', 'AdaptV', False);
 
     cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
   finally
@@ -1272,7 +1277,7 @@ begin
 
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
-  FFitParams.CFactor     := True;
+  FFitParams.AdaptiveVelocity     := cbAdaptiveVelocity.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   Result := True;
 end;
@@ -1935,6 +1940,14 @@ begin
   end;
 end;
 
+procedure TfrmMain.RescaleChart;
+begin
+  Chart.BottomAxis.Minimum := StrToFloat(edStartTeta.Text);
+  Chart.BottomAxis.Maximum := StrToFloat(edEndTeta.Text);
+
+  Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+end;
+
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
 var
   Data: TLayerData;
@@ -2021,6 +2034,7 @@ begin
   Project.Repaint;
   Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
   MatchToStructure;
+  RescaleChart;
 end;
 
 procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
@@ -2125,6 +2139,8 @@ begin
     INF.WriteString('LFPSO', 'w1', edLFPSOOmega1.Text );
     INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
     INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
+    INF.WriteBool('LFPSO', 'AdaptV', cbAdaptiveVelocity.Checked);
+
 
     INF.UpdateFile;
 

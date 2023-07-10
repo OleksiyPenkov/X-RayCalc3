@@ -7,8 +7,8 @@ uses
 
 type
   TSavitzkyGolay = class
-  private
-    class function CalculateCoefficients(order, windowSize: Integer): TArray<Double>;
+  protected
+    class function CalculateCoefficients(order, windowSize: Integer): TArray<single>;
   public
     class procedure SmoothCurve(var data: TDataArray; order, windowSize: Integer);
   end;
@@ -16,11 +16,11 @@ type
 implementation
 
 
-class function TSavitzkyGolay.CalculateCoefficients(order, windowSize: Integer): TArray<Double>;
+class function TSavitzkyGolay.CalculateCoefficients(order, windowSize: Integer): TArray<single>;
 var
   i, j, k: Integer;
-  sum, factor: Double;
-  coefficients: TArray<Double>;
+  sum, factor: single;
+  coefficients: TArray<single>;
 begin
   SetLength(coefficients, windowSize);
 
@@ -37,36 +37,24 @@ begin
     coefficients[i] := sum;
   end;
 
-  // Normalize coefficients
-//  sum := 0;
-//  for i := 0 to windowSize - 1 do
-//    sum := sum + coefficients[i];
-  sum := Abs(coefficients[windowSize - 1] - coefficients[0]);
-  for i := 0 to windowSize - 1 do
-    coefficients[i] := coefficients[i] / sum;
-
   Result := coefficients;
 end;
 
 class procedure TSavitzkyGolay.SmoothCurve(var data: TDataArray; order, windowSize: Integer);
 var
   i, j, k, halfWindowSize: Integer;
-  coefficients: TArray<Double>;
-  smoothedData: TArray<Double>;
-  Delta:Single;
+  coefficients: TArray<single>;
+  smoothedData: TArray<single>;
 begin
   halfWindowSize := (windowSize - 1) div 2;
   coefficients := CalculateCoefficients(order, windowSize);
   SetLength(smoothedData, Length(data));
 
-  Delta := data[1].t - data[0].t;
-  for I := 0 to High(data) do
-    smoothedData[i] := Data[i].r;
-
-  for i := halfWindowSize to Length(data) - halfWindowSize - 1 do
+  for i := halfWindowSize + 1 to Length(data) - halfWindowSize - 1 do
   begin
+    smoothedData[i] := 0;
     for j := -halfWindowSize to halfWindowSize do
-      smoothedData[i] := smoothedData[i] + coefficients[j + halfWindowSize] * data[i + j].r * delta;
+      smoothedData[i] := smoothedData[i] + coefficients[j + halfWindowSize] * data[i + j].r * (data[i + j].t - data[i + j - 1].t);
   end;
 
   for i := halfWindowSize to Length(data) - halfWindowSize - 1 do

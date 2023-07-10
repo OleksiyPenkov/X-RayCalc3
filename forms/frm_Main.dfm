@@ -832,9 +832,9 @@ object frmMain: TfrmMain
             Width = 359
             Height = 101
             Hint = ''
-            ActivePage = TabSheet1
+            ActivePage = TabSheet2
             Align = alLeft
-            TabIndex = 0
+            TabIndex = 1
             TabOrder = 0
             FixedDimension = 21
             object TabSheet1: TRzTabSheet
@@ -1138,9 +1138,9 @@ object frmMain: TfrmMain
               end
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
-                Top = 48
-                Width = 50
-                Height = 17
+                Top = 49
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1236,6 +1236,17 @@ object frmMain: TfrmMain
                 ParentFont = False
                 TabOrder = 7
                 Text = '1'
+              end
+              object cbAdaptiveVelocity: TRzCheckBox
+                Left = 249
+                Top = 11
+                Width = 68
+                Height = 19
+                AlignmentVertical = avCenter
+                Caption = 'Adapt. V'
+                Checked = True
+                State = cbChecked
+                TabOrder = 8
               end
             end
           end
