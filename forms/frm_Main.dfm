@@ -1238,15 +1238,25 @@ object frmMain: TfrmMain
                 Text = '1'
               end
               object cbAdaptiveVelocity: TRzCheckBox
-                Left = 249
+                Left = 304
                 Top = 11
-                Width = 68
+                Width = 48
                 Height = 19
                 AlignmentVertical = avCenter
-                Caption = 'Adapt. V'
+                Caption = 'Ad.V'
                 Checked = True
                 State = cbChecked
                 TabOrder = 8
+              end
+              object cbReSeed: TRzCheckBox
+                Left = 234
+                Top = 11
+                Width = 58
+                Height = 19
+                AlignmentVertical = avCenter
+                Caption = 'R.Seed'
+                State = cbUnchecked
+                TabOrder = 9
               end
             end
           end

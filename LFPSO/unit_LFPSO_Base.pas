@@ -277,7 +277,7 @@ end;
 
 procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
 begin
-  if FFitParams.AdaptiveVelocity and (CFactor > 0) then
+  if FFitParams.AdaptVel and (CFactor > 0) then
   begin
     c1 := c1m * CFactor;
     c2 := c2m * CFactor;
@@ -403,7 +403,7 @@ procedure TLFPSO_BASE.Init(const Step: integer);
 begin
   FJammingCount := 0;
 
-  if Step = 0 then
+  if (Step = 0) and FFitParams.ReSeed then
     Seed
   else
     ReSeed;

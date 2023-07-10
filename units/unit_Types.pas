@@ -83,7 +83,8 @@ type
 
          Shake : boolean;
     ThetaWieght: integer;
-        AdaptiveVelocity: Boolean;
+       AdaptVel: Boolean;
+         ReSeed: Boolean;
       MaxPOrder: Integer;
   end;
 

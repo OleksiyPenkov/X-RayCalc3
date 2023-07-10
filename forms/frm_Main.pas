@@ -312,6 +312,7 @@ type
     acStructureUndo: TAction;
     Undo1: TMenuItem;
     cbAdaptiveVelocity: TRzCheckBox;
+    cbReSeed: TRzCheckBox;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -1247,6 +1248,7 @@ begin
     edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
     edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
     cbAdaptiveVelocity.Checked := INF.ReadBool('LFPSO', 'AdaptV', False);
+    cbReSeed.Checked  := INF.ReadBool('LFPSO', 'ReSeed', False);
 
     cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
   finally
@@ -1277,7 +1279,8 @@ begin
 
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
-  FFitParams.AdaptiveVelocity     := cbAdaptiveVelocity.Checked;
+  FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
+  FFitParams.ReSeed      := cbReSeed.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   Result := True;
 end;
@@ -2140,7 +2143,7 @@ begin
     INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
     INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
     INF.WriteBool('LFPSO', 'AdaptV', cbAdaptiveVelocity.Checked);
-
+    INF.WriteBool('LFPSO', 'ReSeed', cbReSeed.Checked);
 
     INF.UpdateFile;
 
