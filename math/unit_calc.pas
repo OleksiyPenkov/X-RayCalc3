@@ -43,6 +43,7 @@ type
       FData: TDataArray;
       FResult: TDataArray;
       FTemp: TDataArray;
+      FMovAvg: TDataArray;
 
       FLayeredModel: TLayeredModel;
 
@@ -55,7 +56,7 @@ type
 
       Tasks: array of TProc;
       NThreads : byte;
-      FMovAvg: TDataArray;
+
       FTail: Integer;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
@@ -68,7 +69,7 @@ type
       procedure MVA(const N1, N2: integer); inline;
     public
       constructor Create;
-      destructor Free;
+      destructor Destroy; override;
       procedure Run;
       function CalcChiSquare(const ThetaWieght: integer): single;
 
@@ -88,6 +89,13 @@ uses
   math_globals, unit_helpers;
 
   { TCalc }
+
+procedure ClearArray(var A: TDataArray);
+begin
+  SetLength(A, 0);
+  Finalize(A);
+end;
+
 function Log10(const Val: single): single; inline;
 begin
   Result := 0.2171472409516259 * FastLn(Val);
@@ -239,11 +247,19 @@ begin
   FLimit   := 1E-7;
 end;
 
-destructor TCalc.Free;
+destructor TCalc.Destroy;
 begin
+  ClearArray(FData);
+  ClearArray(FResult);
+  ClearArray(FTemp);
+  ClearArray(FMovAvg);
+
   if FLayeredModel <> nil then
     FLayeredModel.Free;
+
+  inherited;
 end;
+
 
 procedure TCalc.RunThetaThreads;
 var

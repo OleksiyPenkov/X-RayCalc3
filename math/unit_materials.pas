@@ -37,7 +37,7 @@ type
     function GetLayers: TCalcLayers;
   public
     constructor Create;
-    destructor Free;
+    destructor Destroy; override;
     procedure Init;
 
     procedure AddLayers(const StackID: integer;  Data: TLayersData);
@@ -136,12 +136,6 @@ begin
 end;
 
 
-destructor TLayeredModel.Free;
-begin
-  Finalize(FMaterials);
-  Finalize(FLayers);
-end;
-
 procedure TLayeredModel.Generate(const Lambda: Single);
 begin
   FLambda := Lambda;
@@ -201,6 +195,17 @@ end;
 constructor TLayeredModel.Create;
 begin
   inherited ;
+end;
+
+destructor TLayeredModel.Destroy;
+begin
+  SetLength(FMaterials, 0);
+  Finalize(FMaterials);
+  SetLength(FLayers, 0);
+  Finalize(FLayers);
+  SetLength(FProfiles, 0);
+  Finalize(FProfiles);
+  inherited;
 end;
 
 procedure TLayeredModel.ExportToFile(const FileName: string);
