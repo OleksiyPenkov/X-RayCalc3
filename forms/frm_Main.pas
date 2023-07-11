@@ -313,6 +313,9 @@ type
     Undo1: TMenuItem;
     cbAdaptiveVelocity: TRzCheckBox;
     cbReSeed: TRzCheckBox;
+    btnReopenProject: TRzToolButton;
+    rzspcr2: TRzSpacer;
+    actProjectReopen: TAction;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -383,6 +386,7 @@ type
     procedure cbMinLimitChange(Sender: TObject);
     procedure actDataSmoothExecute(Sender: TObject);
     procedure acStructureUndoExecute(Sender: TObject);
+    procedure actProjectReopenExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -1076,6 +1080,11 @@ begin
   CreateNewModel(FModelsRoot);
   Structure.FromString(S);
   Project.ActiveModel.Data := S;
+end;
+
+procedure TfrmMain.actProjectReopenExecute(Sender: TObject);
+begin
+  LoadProject(FProjectFileName, True);
 end;
 
 procedure TfrmMain.actNewMaterialExecute(Sender: TObject);

@@ -90,7 +90,7 @@ type
     private
      procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
      procedure SendUpdateStep(const Step: integer);
-    procedure CalcSolution(const X: TSolution);
+     procedure CalcSolution(const X: TSolution);
 
     public
       constructor Create;
@@ -218,9 +218,31 @@ begin
   inherited ;
 end;
 
+procedure ClearArray(var A: TPopulation);
+begin
+  SetLength(A, 0);
+  Finalize(A);
+end;
+
+procedure ClearSolution(var A: TSolution);
+begin
+  SetLength(A, 0);
+  Finalize(A);
+end;
+
 destructor TLFPSO_BASE.Destroy;
 begin
+  ClearArray(X);
+  ClearArray(V);
+  ClearArray(Xmax);
+  ClearArray(Xmin);
+  ClearArray(Vmax);
+  ClearArray(Vmin);
+  ClearArray(XRange);
 
+  ClearSolution(pbest);
+  ClearSolution(abest);
+  ClearSolution(gbest);
   inherited;
 end;
 
@@ -467,6 +489,7 @@ begin
   for t := 1 to FTMax do
   begin
     if FTerminated then Break;
+    Randomize;
 
     switch := Random;
     if switch < 0.5 then
