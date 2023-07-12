@@ -13,8 +13,8 @@ type
       FLinks : TIndexes;
 
       procedure UpdateLFPSO(const t: integer); override;
-      procedure Seed; override;
-      procedure ReSeed; override;
+      procedure RangeSeed; override;
+      procedure XSeed; override;
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
@@ -108,7 +108,7 @@ begin
 
 end;
 
-procedure TLFPSO_Regular.ReSeed;
+procedure TLFPSO_Regular.XSeed;
 var
   i, j, k: integer;
 begin
@@ -120,7 +120,7 @@ begin
   end;
 end;
 
-procedure TLFPSO_Regular.Seed;
+procedure TLFPSO_Regular.RangeSeed;
 var
   i, j, k: integer;
 begin

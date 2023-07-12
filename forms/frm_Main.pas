@@ -312,10 +312,13 @@ type
     acStructureUndo: TAction;
     Undo1: TMenuItem;
     cbAdaptiveVelocity: TRzCheckBox;
-    cbReSeed: TRzCheckBox;
+    cbSeedRange: TRzCheckBox;
     btnReopenProject: TRzToolButton;
     rzspcr2: TRzSpacer;
     actProjectReopen: TAction;
+    actCalcBenchmark: TAction;
+    N14: TMenuItem;
+    Benchmark1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -387,6 +390,7 @@ type
     procedure actDataSmoothExecute(Sender: TObject);
     procedure acStructureUndoExecute(Sender: TObject);
     procedure actProjectReopenExecute(Sender: TObject);
+    procedure actCalcBenchmarkExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -419,6 +423,8 @@ type
     FLastChiSquare: Single;
 
     FStack: TStack<String>;
+    FTerminated: Boolean;
+    FBenchmarkMode: Boolean;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -500,7 +506,7 @@ uses
   editor_HenkeTable,
   editor_JSON,
   unit_LFPSO_Poly,
-  unit_SavitzkyGolay;
+  unit_SavitzkyGolay, frm_Benchmark;
 
 {$R *.dfm}
 
@@ -1257,7 +1263,7 @@ begin
     edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
     edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
     cbAdaptiveVelocity.Checked := INF.ReadBool('LFPSO', 'AdaptV', False);
-    cbReSeed.Checked  := INF.ReadBool('LFPSO', 'ReSeed', False);
+    cbSeedRange.Checked  := INF.ReadBool('LFPSO', 'SeedRange', False);
 
     cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
   finally
@@ -1267,13 +1273,17 @@ end;
 
 function TfrmMain.GetFitParams: boolean;
 begin
-  Result := False;
-  FFitStructure := Structure.ToFitStructure;
-  if frmLimits.Show(FFitStructure) then
-        Structure.UpdateInterfaceP(FFitStructure)
-  else begin
-    Exit;
-  end;
+  if not FBenchmarkMode then
+  begin
+    Result := False;
+    FFitStructure := Structure.ToFitStructure;
+    if frmLimits.Show(FFitStructure) then
+          Structure.UpdateInterfaceP(FFitStructure)
+    else begin
+      Exit;
+    end;
+  end
+  else Result := True;
 
   FFitParams.NMax := StrToInt(edFIter.Text);
   FFitParams.Pop  := StrToInt(edFPopulation.Text);
@@ -1289,7 +1299,7 @@ begin
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
   FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
-  FFitParams.ReSeed      := cbReSeed.Checked;
+  FFitParams.RangeSeed      := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   Result := True;
 end;
@@ -1726,8 +1736,12 @@ end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
 begin
- if LFPSO <> nil then
+  FTerminated := True;
+
+  if LFPSO <> nil then
+  begin
        LFPSO.Terminate;
+  end;
 end;
 
 
@@ -1842,6 +1856,29 @@ begin
     Screen.Cursor := crDefault;
     FreeAndNil(LFPSO);
   end;
+end;
+
+procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
+var
+  i : Integer;
+begin
+  FTerminated := False;
+  FBenchmarkMode := False;
+
+  frmBenchmark.Clear;
+  frmBenchmark.Show;
+  for i := 1 to 5 do
+  begin
+    if FTerminated then Break;
+    actAutoFittingExecute(nil);
+    frmBenchmark.AddValue(i, spChiSqr.Caption);
+    actProjectReopenExecute(nil);
+    if not FBenchmarkMode then
+      FBenchmarkMode := True;
+    Application.ProcessMessages;
+  end;
+  frmBenchmark.CalcStats;
+  FBenchmarkMode := False;
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);
@@ -2152,7 +2189,7 @@ begin
     INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
     INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
     INF.WriteBool('LFPSO', 'AdaptV', cbAdaptiveVelocity.Checked);
-    INF.WriteBool('LFPSO', 'ReSeed', cbReSeed.Checked);
+    INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
 
     INF.UpdateFile;
 

@@ -34,7 +34,8 @@ uses
   editor_HenkeTable in 'editors\editor_HenkeTable.pas' {edtrHenkeTable},
   editor_JSON in 'editors\editor_JSON.pas' {frmJsonEditor},
   unit_LFPSO_Poly in 'LFPSO\unit_LFPSO_Poly.pas',
-  unit_SavitzkyGolay in 'math\unit_SavitzkyGolay.pas';
+  unit_SavitzkyGolay in 'math\unit_SavitzkyGolay.pas',
+  frm_Benchmark in 'forms\frm_Benchmark.pas' {frmBenchmark};
 
 {$R *.res}
 
@@ -53,5 +54,6 @@ begin
   Application.CreateForm(TfrmExtensionSelector, frmExtensionSelector);
   Application.CreateForm(TedtrHenkeTable, edtrHenkeTable);
   Application.CreateForm(TfrmJsonEditor, frmJsonEditor);
+  Application.CreateForm(TfrmBenchmark, frmBenchmark);
   Application.Run;
 end.

@@ -1261,14 +1261,15 @@ object frmMain: TfrmMain
                 State = cbChecked
                 TabOrder = 8
               end
-              object cbReSeed: TRzCheckBox
+              object cbSeedRange: TRzCheckBox
                 Left = 234
                 Top = 11
-                Width = 58
+                Width = 55
                 Height = 19
                 AlignmentVertical = avCenter
-                Caption = 'R.Seed'
-                State = cbUnchecked
+                Caption = 'SeedR'
+                Checked = True
+                State = cbChecked
                 TabOrder = 9
               end
             end
@@ -2094,6 +2095,12 @@ object frmMain: TfrmMain
       end
       object Fitting1: TMenuItem
         Action = actAutoFitting
+      end
+      object N14: TMenuItem
+        Caption = '-'
+      end
+      object Benchmark1: TMenuItem
+        Action = actCalcBenchmark
       end
     end
     object Result1: TMenuItem
@@ -3217,6 +3224,11 @@ object frmMain: TfrmMain
       Caption = 'Reopen'
       ShortCut = 114
       OnExecute = actProjectReopenExecute
+    end
+    object actCalcBenchmark: TAction
+      Category = 'Calc'
+      Caption = 'Benchmark'
+      OnExecute = actCalcBenchmarkExecute
     end
   end
   object ilProject: TImageList

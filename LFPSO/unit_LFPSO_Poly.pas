@@ -15,8 +15,8 @@ type
 
       procedure CheckLimits(const i, j, k: integer); override;
       procedure UpdateLFPSO(const t: integer); override;
-      procedure Seed; override;
-      procedure ReSeed; override;
+      procedure RangeSeed; override;
+      procedure XSeed; override;
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
@@ -165,12 +165,12 @@ begin
       end;
 end;
 
-procedure TLFPSO_Poly.ReSeed;
+procedure TLFPSO_Poly.XSeed;
 begin
-  Seed;
+  RangeSeed;
 end;
 
-procedure TLFPSO_Poly.Seed;
+procedure TLFPSO_Poly.RangeSeed;
 var
   i, j, k, p: integer;
   Val: Single;

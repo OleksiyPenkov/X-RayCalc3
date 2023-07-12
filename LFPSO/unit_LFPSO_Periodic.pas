@@ -11,8 +11,8 @@ type
   TLFPSO_Periodic = class (TLFPSO_BASE)
     private
       procedure UpdateLFPSO(const t: integer); override;
-      procedure Seed; override;
-      procedure ReSeed; override;
+      procedure RangeSeed; override;
+      procedure XSeed; override;
       procedure NormalizeD(const ParticleIndex: integer);
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
@@ -104,7 +104,7 @@ begin
   end;
 end;
 
-procedure TLFPSO_Periodic.ReSeed;
+procedure TLFPSO_Periodic.XSeed;
 var
   i, j, k: integer;
 begin
@@ -131,7 +131,7 @@ begin
         V[i][j][k][0] := Random * (Vmax[0][j][k][0] - Vmin[0][j][k][0]) + Vmin[0][j][k][0];
 end;
 
-procedure TLFPSO_Periodic.Seed;
+procedure TLFPSO_Periodic.RangeSeed;
 var
   i, j, k: integer;
 begin

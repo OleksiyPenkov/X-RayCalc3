@@ -92,7 +92,6 @@ uses
 
 procedure ClearArray(var A: TDataArray); inline;
 begin
-//  SetLength(A, 0);
   Finalize(A);
 end;
 

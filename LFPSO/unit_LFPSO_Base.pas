@@ -77,8 +77,8 @@ type
       procedure InitVelocity; virtual;
       procedure UpdatePSO(const t: integer); virtual;
       procedure UpdateLFPSO(const t: integer); virtual;
-      procedure Seed;virtual;
-      procedure ReSeed;virtual;
+      procedure RangeSeed;virtual;
+      procedure XSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
       procedure UpdateStructure(Solution:TSolution); virtual;
       function FitModelToLayer(Solution: TSolution): TLayeredModel; virtual;
@@ -203,7 +203,7 @@ begin
   Result := (-1 + 2 * Random) * dx;
 end;
 
-procedure TLFPSO_BASE.ReSeed;
+procedure TLFPSO_BASE.XSeed;
 begin
 
 end;
@@ -424,10 +424,10 @@ procedure TLFPSO_BASE.Init(const Step: integer);
 begin
   FJammingCount := 0;
 
-  if (Step = 0) and FFitParams.ReSeed then
-    Seed
+  if (Step = 0) and FFitParams.RangeSeed then
+    RangeSeed
   else
-    ReSeed;
+    XSeed;
 
   InitVelocity;
   FindTheBest;
@@ -512,7 +512,7 @@ begin
   UpdateStructure(abest);  // don't delete!
 end;
 
-procedure TLFPSO_BASE.Seed;
+procedure TLFPSO_BASE.RangeSeed;
 begin
 
 end;
