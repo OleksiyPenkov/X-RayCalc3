@@ -26,6 +26,7 @@ type
       function GetPolynomes: TProfileFunctions; override;
       function Order(const j, k: Integer): integer; inline;
     public
+      destructor Destroy; override;
       //
   end;
 
@@ -192,6 +193,14 @@ begin
         CheckLimits(i, j, k);
       end;
   end;
+end;
+
+destructor TLFPSO_Poly.Destroy;
+begin
+  Finalize(Indexes);
+  Finalize(Counts);
+
+  inherited;
 end;
 
 function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;

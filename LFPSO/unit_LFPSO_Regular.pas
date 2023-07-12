@@ -20,6 +20,7 @@ type
       procedure InitVelocity; override;
     public
       //
+    destructor Destroy; override;
   end;
 
 implementation
@@ -82,6 +83,12 @@ begin
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0];
       end;
   end;
+end;
+
+destructor TLFPSO_Regular.Destroy;
+begin
+  Finalize(FLinks);
+  inherited;
 end;
 
 procedure TLFPSO_Regular.InitVelocity;

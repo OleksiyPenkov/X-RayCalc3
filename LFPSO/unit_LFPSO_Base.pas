@@ -218,15 +218,14 @@ begin
   inherited ;
 end;
 
-procedure ClearArray(var A: TPopulation);
+procedure ClearArray(var A: TPopulation); inline;
 begin
-  SetLength(A, 0);
   Finalize(A);
 end;
 
-procedure ClearSolution(var A: TSolution);
+procedure ClearSolution(var A: TSolution); inline;
 begin
-  SetLength(A, 0);
+//  SetLength(A, 0);
   Finalize(A);
 end;
 

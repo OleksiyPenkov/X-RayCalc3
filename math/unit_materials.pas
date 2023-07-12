@@ -199,11 +199,8 @@ end;
 
 destructor TLayeredModel.Destroy;
 begin
-  SetLength(FMaterials, 0);
   Finalize(FMaterials);
-  SetLength(FLayers, 0);
   Finalize(FLayers);
-  SetLength(FProfiles, 0);
   Finalize(FProfiles);
   inherited;
 end;

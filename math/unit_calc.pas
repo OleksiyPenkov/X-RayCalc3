@@ -90,9 +90,9 @@ uses
 
   { TCalc }
 
-procedure ClearArray(var A: TDataArray);
+procedure ClearArray(var A: TDataArray); inline;
 begin
-  SetLength(A, 0);
+//  SetLength(A, 0);
   Finalize(A);
 end;
 
@@ -257,6 +257,8 @@ begin
   if FLayeredModel <> nil then
     FLayeredModel.Free;
 
+  Finalize(Tasks);
+  Finalize(CalcParams);
   inherited;
 end;
 
