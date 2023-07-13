@@ -46,7 +46,7 @@ object frmBenchmark: TfrmBenchmark
       Margins.Bottom = 50
       Align = alClient
       ColCount = 6
-      DefaultColWidth = 70
+      DefaultColWidth = 50
       FixedCols = 0
       RowCount = 2
       TabOrder = 1

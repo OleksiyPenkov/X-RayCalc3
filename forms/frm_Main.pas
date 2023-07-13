@@ -426,6 +426,7 @@ type
     FTerminated: Boolean;
     FBenchmarkMode: Boolean;
     FBenchmarkPath: string;
+    FBenchmarkRuns: Integer;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -1285,7 +1286,8 @@ begin
       Exit;
     end;
   end
-  else Result := True;
+  else
+    FFitStructure := Structure.ToFitStructure;
 
   FFitParams.NMax := StrToInt(edFIter.Text);
   FFitParams.Pop  := StrToInt(edFPopulation.Text);
@@ -1865,31 +1867,32 @@ var
   i, j : Integer;
   SL: TStringList;
 begin
-  FBenchmarkMode := False;
   FProjectFileName := FBenchmarkPath + F.Name;
-
-  frmBenchmark.AddFile(ExtractFileName(F.Name));
-  for i := 1 to 20 do
+  frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
+  for i := 1 to FBenchmarkRuns do
   begin
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
     frmBenchmark.AddValue(i, spChiSqr.Caption);
-    if not FBenchmarkMode then
-        FBenchmarkMode := True;
+//    if not FBenchmarkMode then
+//        FBenchmarkMode := True;
     Application.ProcessMessages;
     if FTerminated then Break;
   end;
+  frmBenchmark.CalcStats;
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 var
   Files: TFilesList;
 begin
+  FBenchmarkRuns := 5;
+
   try
     FTerminated := False;
-    frmBenchmark.Clear(20);
+    frmBenchmark.Clear(FBenchmarkRuns);
     frmBenchmark.Show;
-
+    FBenchmarkMode := True;
 
     Files := TFilesList.Create(nil);
     FBenchmarkPath := ExtractFileDir(Application.ExeName) + '\benchmark\';
@@ -1897,8 +1900,6 @@ begin
     Files.Mask := '*.xrcx';
     Files.OnFile := ProcessBenchFile;
     Files.Process;
-
-    frmBenchmark.CalcStats;
     FBenchmarkMode := False;
   finally
     FreeAndNil(Files);

@@ -47,7 +47,7 @@ begin
   begin
     S := StringGrid.Cells[0, y];
     for x := 1 to StringGrid.ColCount-1 do
-      S := S + #9 + StringGrid.Cells[0, y];
+      S := S + #9 + StringGrid.Cells[x, y];
 
     Writeln(F, S);
   end;
