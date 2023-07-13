@@ -86,6 +86,7 @@ type
        AdaptVel: Boolean;
          RangeSeed: Boolean;
       MaxPOrder: Integer;
+          Ksxr : Single;
   end;
 
   // Calculation data types

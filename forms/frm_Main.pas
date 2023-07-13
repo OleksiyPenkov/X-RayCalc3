@@ -1305,6 +1305,8 @@ begin
   FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
   FFitParams.RangeSeed      := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
+  FFitParams.Ksxr        := 0.2;
+
   Result := True;
 end;
 
@@ -1874,8 +1876,6 @@ begin
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
     frmBenchmark.AddValue(i, spChiSqr.Caption);
-//    if not FBenchmarkMode then
-//        FBenchmarkMode := True;
     Application.ProcessMessages;
     if FTerminated then Break;
   end;
@@ -1886,7 +1886,7 @@ procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 var
   Files: TFilesList;
 begin
-  FBenchmarkRuns := 5;
+  FBenchmarkRuns := 20;
 
   try
     FTerminated := False;

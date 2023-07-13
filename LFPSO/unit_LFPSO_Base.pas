@@ -88,7 +88,7 @@ type
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
     private
-     procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
+     procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0, Ksxr0: single);
      procedure SendUpdateStep(const Step: integer);
      procedure CalcSolution(const X: TSolution);
 
@@ -436,7 +436,7 @@ begin
     SendUpdateMessage(Step);
 end;
 
-procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0: single);
+procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0, Ksxr0: single);
 var
   TmpStructure: TFitStructure;
 begin
@@ -447,11 +447,13 @@ begin
     gbest := Copy(abest, 0, MaxInt);   // recover to absolute best solution
     FGlobalBestChiSqr := FAbsoluteBestChiSqr;
     FFitParams.Vmax := Vmax0;
+    FFitParams.Ksxr := Ksxr0;
   end
   else
   begin
     FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
     FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
+    FFitParams.Ksxr := FFitParams.Ksxr * FFitParams.KVmax;
   end;
   UpdateStructure(gbest);        // re-init based on current global best solution
   TmpStructure := FStructure;
@@ -468,7 +470,7 @@ var
   t: integer;
   switch: double;
   ReInitCount: integer;
-  Vmax0: single;
+  Vmax0, Ksxr0: single;
   SuccessCount: integer;
 begin
   Randomize;
@@ -476,6 +478,7 @@ begin
   FReInit := False;
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
+  Ksxr0 := FFitParams.Ksxr ;
   ReInitCount := 0;
   SuccessCount := 0;
   FGlobalBestChiSqr:= 1e12;
@@ -504,7 +507,7 @@ begin
     if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-      Shake(SuccessCount, ReInitCount, t, Vmax0)
+      Shake(SuccessCount, ReInitCount, t, Vmax0, Ksxr0)
     else
       inc(SuccessCount);
   end;

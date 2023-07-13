@@ -112,11 +112,11 @@ procedure TLFPSO_Regular.XSeed;
 var
   i, j, k: integer;
 begin
-  for i := 0 to High(X) do          // for every member of the population
+  for i := 1 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0]);
+        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
   end;
 end;
 
