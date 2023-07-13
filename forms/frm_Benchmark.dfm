@@ -4,7 +4,7 @@ object frmBenchmark: TfrmBenchmark
   BorderStyle = bsNone
   Caption = 'Benchmark'
   ClientHeight = 436
-  ClientWidth = 216
+  ClientWidth = 999
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,13 +13,12 @@ object frmBenchmark: TfrmBenchmark
   Font.Style = []
   FormStyle = fsStayOnTop
   Position = poOwnerFormCenter
-  OnCreate = FormCreate
   TextHeight = 15
   object RzPanel1: TRzPanel
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 210
+    Width = 993
     Height = 430
     Align = alClient
     BorderOuter = fsGroove
@@ -30,8 +29,8 @@ object frmBenchmark: TfrmBenchmark
     ExplicitWidth = 185
     ExplicitHeight = 41
     object BitBtn1: TBitBtn
-      Left = 64
-      Top = 395
+      Left = 896
+      Top = 387
       Width = 75
       Height = 25
       Caption = 'Close'
@@ -42,25 +41,21 @@ object frmBenchmark: TfrmBenchmark
       AlignWithMargins = True
       Left = 7
       Top = 54
-      Width = 196
+      Width = 979
       Height = 322
       Margins.Bottom = 50
       Align = alClient
-      ColCount = 2
-      DefaultColWidth = 100
+      ColCount = 6
+      DefaultColWidth = 70
       FixedCols = 0
-      RowCount = 13
+      RowCount = 2
       TabOrder = 1
-      ExplicitLeft = 5
-      ExplicitTop = 44
-      ExplicitWidth = 200
-      ExplicitHeight = 326
     end
     object pnl1: TPanel
       AlignWithMargins = True
       Left = 7
       Top = 7
-      Width = 196
+      Width = 979
       Height = 41
       Align = alTop
       Alignment = taLeftJustify

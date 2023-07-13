@@ -425,6 +425,7 @@ type
     FStack: TStack<String>;
     FTerminated: Boolean;
     FBenchmarkMode: Boolean;
+    FBenchmarkPath: string;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -468,6 +469,7 @@ type
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     procedure SaveHistory;
     procedure RescaleChart;
+    procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
     { Private declarations }
   public
     { Public declarations }
@@ -506,7 +508,7 @@ uses
   editor_HenkeTable,
   editor_JSON,
   unit_LFPSO_Poly,
-  unit_SavitzkyGolay, frm_Benchmark;
+  unit_SavitzkyGolay, frm_Benchmark, unit_files_list;
 
 {$R *.dfm}
 
@@ -1858,27 +1860,49 @@ begin
   end;
 end;
 
-procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
+procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
 var
-  i : Integer;
+  i, j : Integer;
+  SL: TStringList;
 begin
-  FTerminated := False;
   FBenchmarkMode := False;
+  FProjectFileName := FBenchmarkPath + F.Name;
 
-  frmBenchmark.Clear;
-  frmBenchmark.Show;
-  for i := 1 to 5 do
+  frmBenchmark.AddFile(ExtractFileName(F.Name));
+  for i := 1 to 20 do
   begin
-    if FTerminated then Break;
+    actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
     frmBenchmark.AddValue(i, spChiSqr.Caption);
-    actProjectReopenExecute(nil);
     if not FBenchmarkMode then
-      FBenchmarkMode := True;
+        FBenchmarkMode := True;
     Application.ProcessMessages;
+    if FTerminated then Break;
   end;
-  frmBenchmark.CalcStats;
-  FBenchmarkMode := False;
+end;
+
+procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
+var
+  Files: TFilesList;
+begin
+  try
+    FTerminated := False;
+    frmBenchmark.Clear(20);
+    frmBenchmark.Show;
+
+
+    Files := TFilesList.Create(nil);
+    FBenchmarkPath := ExtractFileDir(Application.ExeName) + '\benchmark\';
+    Files.TargetPath := FBenchmarkPath;
+    Files.Mask := '*.xrcx';
+    Files.OnFile := ProcessBenchFile;
+    Files.Process;
+
+    frmBenchmark.CalcStats;
+    FBenchmarkMode := False;
+  finally
+    FreeAndNil(Files);
+  end;
 end;
 
 procedure TfrmMain.RecoverProjectTree(const ActiveID: Integer);

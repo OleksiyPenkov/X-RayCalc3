@@ -13,15 +13,18 @@ type
     BitBtn1: TBitBtn;
     Grid: TStringGrid;
     pnl1: TPanel;
-    procedure FormCreate(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
   private
-    FCanClose: TObject;
+    FLine: Integer;
+    procedure AutoSizeCol(Grid: TStringGrid; Column: integer);
+    procedure StringGrid2File(StringGrid: TStringGrid; FileName: String);
     { Private declarations }
   public
     { Public declarations }
-    procedure Clear;
+    procedure Clear(const N: integer);
     procedure AddValue(const n: integer; Val: string);
+    procedure AddFile(const Name: string);
+
     procedure CalcStats;
   end;
 
@@ -32,10 +35,51 @@ implementation
 
 {$R *.dfm}
 
+procedure TfrmBenchmark.StringGrid2File(StringGrid: TStringGrid; FileName: String);
+var
+  F: TextFile;
+  x, y: Integer;
+  S: string;
+begin
+  AssignFile(F, FileName);
+  Rewrite(F);
+  for y := 0 to StringGrid.RowCount-1 do
+  begin
+    S := StringGrid.Cells[0, y];
+    for x := 1 to StringGrid.ColCount-1 do
+      S := S + #9 + StringGrid.Cells[0, y];
+
+    Writeln(F, S);
+  end;
+  CloseFile(F);
+end;
+
+
+procedure TfrmBenchmark.AutoSizeCol(Grid: TStringGrid;
+Column: integer);
+var
+  i, W, WMax: integer;
+begin
+  WMax := 0;
+  for i := 0 to (Grid.RowCount - 1) do begin
+    W := Grid.Canvas.TextWidth(Grid.Cells[Column, i]);
+    if W > WMax then
+      WMax := W;
+  end;
+  Grid.ColWidths[Column] := WMax + 10;
+end;
+
+procedure TfrmBenchmark.AddFile(const Name: string);
+begin
+  Grid.RowCount := Grid.RowCount + 1;
+  FLine := Grid.RowCount  - 1;
+  Grid.Cells[0, FLine] := Name;
+  AutoSizeCol(Grid, 0);
+end;
+
 procedure TfrmBenchmark.AddValue(const n: integer; Val: string);
 begin
-  Grid.Cells[0,n] := IntToStr(n);
-  Grid.Cells[1,n] := Val;
+  Grid.Cells[n, FLine] := Val;
 end;
 
 procedure TfrmBenchmark.BitBtn1Click(Sender: TObject);
@@ -45,18 +89,22 @@ end;
 
 procedure TfrmBenchmark.CalcStats;
 begin
-
+  StringGrid2File(Grid, 'benchmark.dat');
 end;
 
 procedure TfrmBenchmark.Clear;
+var
+  i: Integer;
 begin
+  Grid.RowCount := 0;
+  Grid.RowCount := 1;
+  Grid.ColCount := N + 1;
 
-end;
 
-procedure TfrmBenchmark.FormCreate(Sender: TObject);
-begin
-  Grid.Cells[0,0] := 'n';
-  Grid.Cells[1,0] := 'ChiSqr';
+  Grid.Cells[0,0] := 'File';
+
+  for I := 1 to N do
+    Grid.Cells[i, 0] := 'Run ' + IntToStr(i);
 end;
 
 end.
