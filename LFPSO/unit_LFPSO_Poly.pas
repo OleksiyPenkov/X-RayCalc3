@@ -13,7 +13,7 @@ type
       Indexes: TIntArray;
       Counts: TIntArray;
 
-      procedure CheckLimits(const i, j, k: integer); override;
+      procedure CheckLimitsP(const i, j, k, Ord: integer);
       procedure UpdateLFPSO(const t: integer); override;
       procedure RangeSeed; override;
       procedure XSeed; override;
@@ -43,7 +43,7 @@ uses
 
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
 var
-  i, j, k,c: integer;
+  i, j, k,c, Ord: integer;
   c1, c2, Val: single;
 begin
   ApplyCFactor(c1, c2);
@@ -53,20 +53,21 @@ begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do        // for H, s, rho
       begin
-        for c := 0 to Order(j, k) do  // for every coefficient
+        Ord := Order(j, k);
+        for c := 0 to Ord do  // for every coefficient
         begin
           V[i][j][k][c] := Omega(t, FTMax) * LevyWalk(X[i][j][k][c], gbest[j][k][c])  +
                         c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
                         c2 * Random * (gbest[j][k][c] - X[i][j][k][c]);
         end;
-        CheckLimits(i, j, k);
+        CheckLimitsP(i, j, k, Ord);
       end;
   end;
 end;
 
 procedure TLFPSO_Poly.UpdatePSO(const t: integer);
 var
-  i, j, k, c: integer;
+  i, j, k, c, Ord: integer;
   c1, c2: single;
 begin
   ApplyCFactor(c1, c2);
@@ -76,26 +77,25 @@ begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do
       begin
-        for c := 0 to Order(j, k) do  // for every coefficient
+        Ord := Order(j, k);
+        for c := 0 to Ord do  // for every coefficient
         begin
             V[i][j][k][c] := Omega(t, FTMax) * V[i][j][k][c]  +
                       c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
                       c2 * Random * (gbest[j][k][c] - X[i][j][k][c]);
 
         end;
-        CheckLimits(i, j, k);
+        CheckLimitsP(i, j, k, Ord);
       end;
   end;
 end;
 
-procedure TLFPSO_Poly.CheckLimits(const i, j, k: integer);
+procedure TLFPSO_Poly.CheckLimitsP(const i, j, k, Ord: integer);
 var
   OldX: TFloatArray;
    Val, Max, Min: Single;
    p, r: Integer;
-   Ord: Integer;
 begin
-  Ord := Order(j, k);
   for p := 0 to Ord do
   begin
     if V[i][j][k][p] > Vmax[0][j][k][p] then
@@ -166,8 +166,25 @@ begin
 end;
 
 procedure TLFPSO_Poly.XSeed;
+var
+  i, j, k, p, Ord: integer;
+  Val: Single;
 begin
-  RangeSeed;
+  for i := 1 to High(X) do          // for every member of the population
+  begin
+    for j := 0 to High(X[i]) do     //for every layer
+      for k := 1 to 3 do            // for H, s, rho
+      begin
+        Ord := Order(j, k);
+        for p := 0 to Ord do  // for every oefficient of polynome
+        if p = 0 then
+           X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr)
+        else
+           X[i][j][k][p] := X[0][j][k][p] + Rand(XRange[0][j][k][p] * FFitParams.Ksxr);
+
+        CheckLimitsP(i, j, k, Ord);
+      end;
+  end;
 end;
 
 procedure TLFPSO_Poly.RangeSeed;
@@ -175,7 +192,7 @@ var
   i, j, k, p: integer;
   Val: Single;
 begin
-  for i := 1 to High(X) do          // for every member of the population
+  for i := 0 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
@@ -344,8 +361,11 @@ begin
 end;
 
 function TLFPSO_Poly.Order(const j, k: Integer): integer;
+var
+ v : single;
 begin
-  Result := Trunc(X[0][j][k][10]);
+  v := X[0][j][k][10];
+  Result := Trunc(v);
 end;
 
 end.
