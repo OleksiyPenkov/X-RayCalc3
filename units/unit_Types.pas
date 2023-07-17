@@ -140,7 +140,7 @@ type
   TLayerData = record
     Material: string;
     P: array [1..3] of TFitValue;
-    StackID, LayerID: integer;
+    StackID, LayerID, Index: integer;
     PP: array [1..3] of TFloatArray;
   public
     procedure ClearProfiles;

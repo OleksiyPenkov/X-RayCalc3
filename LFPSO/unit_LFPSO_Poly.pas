@@ -222,42 +222,41 @@ end;
 
 function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;
 var
-  i, k, j, p: Integer;
+  i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;
-  Base, LN: Integer;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
-
-  SetLength(Data, FStructure.TotalNP);
-  LN := 0; Base := 0;
-
+  LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
+    SetLength(Data, 0);
+    SetLength(Data, Length(FStructure.Stacks[i].Layers));
+    for k := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
+      Data[k].Index    := LayerIndex;                              // Layer index accross Solution
+
+      Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+      Inc(LayerIndex);
+    end;
+
     for j := 1 to FStructure.Stacks[i].N do
     begin
       for k := 0 to High(FStructure.Stacks[i].Layers) do
-      begin
-        Data[LN].Material := FStructure.Stacks[i].Layers[k].Material;
-
         for p := 1 to 3 do
-         Data[LN].P[p].V := Poly(j, Solution[Base + k][p]);
+          Data[k].P[p].V := Poly(j, Solution[Data[k].Index][p]);
 
-        Data[LN].StackID := FStructure.Stacks[i].Layers[k].StackID;
-        Data[LN].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
-        Inc(LN);
-      end;
+      Result.AddLayers(-1, Data);
     end;
-    inc(Base, FStructure.Stacks[i].N);
   end;
 
-  Result.AddLayers(-1, Data);
-
-  //
   SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
-  Data[0].P := FStructure.Subs.P;
+  Data[0].P :=FStructure.Subs.P;
+
 
   Result.AddSubstrate(Data);
 end;

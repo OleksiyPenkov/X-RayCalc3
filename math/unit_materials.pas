@@ -195,6 +195,9 @@ end;
 constructor TLayeredModel.Create;
 begin
   inherited ;
+  SetLength(FMaterials, 0);
+  SetLength(FLayers, 0);
+  SetLength(FProfiles, 0);
 end;
 
 destructor TLayeredModel.Destroy;
