@@ -47,6 +47,7 @@ type
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
       procedure DeleteLayer(const Index: integer);
+      procedure MoveLayer(const Index, Direction: integer);
       procedure UpdateLayersID;
 
       property Selected: Boolean write SetSelected;
@@ -368,6 +369,23 @@ begin
     FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
   end;
 
+end;
+
+procedure TXRCStack.MoveLayer(const Index, Direction: integer);
+var
+  NewPos: Integer;
+  Tmp: TXRCLayerControl;
+begin
+  NewPos := Index + Direction;
+  if (NewPos < 0) or (NewPos >= Length(FLayers)) then Exit;
+
+  Tmp := FLayers[NewPos];
+  FLayers[NewPos] := FLayers[Index];
+
+  FLayers[Index] := Tmp;
+
+  UpdateLayersID;
+  RealignLayers;
 end;
 
 procedure TXRCStack.RealignLayers;

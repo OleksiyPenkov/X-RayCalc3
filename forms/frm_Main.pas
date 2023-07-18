@@ -480,6 +480,10 @@ type
     //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
+    procedure OnLayerUPMsg(var Msg: TMessage); message WM_STR_LAYER_UP;
+    procedure OnLayerDownMsg(var Msg: TMessage); message WM_STR_LAYER_DOWN;
+    procedure OnLayerDeleteMsg(var Msg: TMessage); message WM_STR_LAYER_DELETE;
+    procedure OnLayerInsertMsg(var Msg: TMessage); message WM_STR_LAYER_INSERT;
   end;
 
 var
@@ -585,6 +589,44 @@ begin
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
   spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
 
+end;
+
+procedure TfrmMain.OnLayerDeleteMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.DeleteLayer(LayerID, ID);
+end;
+
+procedure TfrmMain.OnLayerDownMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.MoveLayer(LayerID, ID, 1);
+end;
+
+procedure TfrmMain.OnLayerInsertMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.SelectLayer(LayerID, ID);
+  LayerInsertExecute(nil);
+  Structure.ClearSelection;
+end;
+
+procedure TfrmMain.OnLayerUPMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.MoveLayer(LayerID, ID, -1);
 end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
