@@ -218,12 +218,13 @@ begin
   lblLayers.Name := 'lblLayers';
   lblLayers.Parent := Self;
   lblLayers.AlignWithMargins := True;
-  lblLayers.Margins.Left := 50;
+  lblLayers.Margins.Left := ClientWidth - 50;
   lblLayers.Align := alTop;
   lblLayers.Alignment := taRightJustify;
   lblLayers.Font.Color := clNavy;
   lblLayers.Font.Style := [fsBold];
   lblLayers.ParentFont := False;
+
 
   //RzSeparator1
   RzSeparator.Name := 'RzSeparator1';
@@ -235,6 +236,8 @@ begin
 
   OnClick := FOnClick;
   OnDblClick := FOnDoubleClick;
+  lblLayers.OnClick := FOnClick;
+  lblLayers.OnDblClick := FOnDoubleClick;
 
   FLinkedLayers[0] := -1;
   FLinkedLayers[1] := -1;

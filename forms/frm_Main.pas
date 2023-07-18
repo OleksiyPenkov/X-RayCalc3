@@ -1876,6 +1876,7 @@ begin
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
     frmBenchmark.AddValue(i, spChiSqr.Caption);
+    frmBenchmark.CalcStats;
     Application.ProcessMessages;
     if FTerminated then Break;
   end;
