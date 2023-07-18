@@ -4,7 +4,7 @@
         <ProjectVersion>19.5</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -150,7 +150,6 @@
         </DCCReference>
         <DCCReference Include="units\unit_Types.pas"/>
         <DCCReference Include="math\math_complex.pas"/>
-        <DCCReference Include="units\unit_settings.pas"/>
         <DCCReference Include="units\unit_helpers.pas"/>
         <DCCReference Include="units\unit_consts.pas"/>
         <DCCReference Include="components\unit_XRCStructure.pas"/>
@@ -213,6 +212,11 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="components\unit_files_list.pas"/>
+        <DCCReference Include="units\unit_Config.pas"/>
+        <DCCReference Include="forms\frm_settings.pas">
+            <Form>frmSettings</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -6,7 +6,6 @@ uses
   frm_Main in 'forms\frm_Main.pas' {frmMain},
   unit_Types in 'units\unit_Types.pas',
   math_complex in 'math\math_complex.pas',
-  unit_settings in 'units\unit_settings.pas',
   unit_helpers in 'units\unit_helpers.pas',
   unit_consts in 'units\unit_consts.pas',
   unit_XRCStructure in 'components\unit_XRCStructure.pas',
@@ -36,7 +35,9 @@ uses
   unit_LFPSO_Poly in 'LFPSO\unit_LFPSO_Poly.pas',
   unit_SavitzkyGolay in 'math\unit_SavitzkyGolay.pas',
   frm_Benchmark in 'forms\frm_Benchmark.pas' {frmBenchmark},
-  unit_files_list in 'components\unit_files_list.pas';
+  unit_files_list in 'components\unit_files_list.pas',
+  unit_Config in 'units\unit_Config.pas',
+  frm_settings in 'forms\frm_settings.pas' {frmSettings};
 
 {$R *.res}
 
@@ -56,5 +57,7 @@ begin
   Application.CreateForm(TedtrHenkeTable, edtrHenkeTable);
   Application.CreateForm(TfrmJsonEditor, frmJsonEditor);
   Application.CreateForm(TfrmBenchmark, frmBenchmark);
+  Application.CreateForm(TfrmSettings, frmSettings);
+  Application.CreateForm(TfrmSettings, frmSettings);
   Application.Run;
 end.

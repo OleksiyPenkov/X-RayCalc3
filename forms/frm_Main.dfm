@@ -947,8 +947,8 @@ object frmMain: TfrmMain
               object cbPWChiSqr: TRzCheckBox
                 Left = 91
                 Top = 49
-                Width = 52
-                Height = 17
+                Width = 56
+                Height = 19
                 Caption = 'PW '#967'2'
                 Checked = True
                 State = cbChecked
@@ -1003,8 +1003,8 @@ object frmMain: TfrmMain
               object cbTreatPeriodic: TRzCheckBox
                 Left = 192
                 Top = 13
-                Width = 62
-                Height = 17
+                Width = 66
+                Height = 19
                 Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
@@ -1957,7 +1957,7 @@ object frmMain: TfrmMain
         Caption = '-'
       end
       object Settings1: TMenuItem
-        Caption = 'Settings'
+        Action = actSystemSettings
       end
       object Settings2: TMenuItem
         Caption = '-'
@@ -3229,6 +3229,11 @@ object frmMain: TfrmMain
       Category = 'Calc'
       Caption = 'Benchmark'
       OnExecute = actCalcBenchmarkExecute
+    end
+    object actSystemSettings: TAction
+      Category = 'System'
+      Caption = 'Settings ...'
+      OnExecute = actSystemSettingsExecute
     end
   end
   object ilProject: TImageList

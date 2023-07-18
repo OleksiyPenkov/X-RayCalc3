@@ -42,6 +42,9 @@ function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 
 procedure FillElementsList(const Path: string; var List: TListBox);
 procedure OpenHelpFile(const FileName: string);
+function GetSpecialPath(CSIDL: word): string;
+function c_GetTempPath: String;
+function CreateFolders(const Root: string; const Path: string): Boolean;
 
 function SimpleShellExecute(
   hWnd: HWND;
@@ -55,18 +58,48 @@ function SimpleShellExecute(
 implementation
 
 uses
+  StrUtils,
   SysUtils,
+  IOUtils,
   ClipBrd,
   Classes,
   ShellApi,
+  ShlObj,
   System.Character,
   Vcl.Forms,
-  VCLTee.TeEngine,
-  frm_main,
-  unit_settings;
+  VCLTee.TeEngine;
 
 const
   TabSeparator = #9;
+
+function CreateFolders(const Root: string; const Path: string): Boolean;
+var
+  FullPath: string;
+begin
+  if Path = '\' then
+    FullPath := Root + Path
+  else
+    FullPath := TPath.Combine(Root, Path);
+
+  Result := SysUtils.ForceDirectories(FullPath);
+end;
+
+function c_GetTempPath: String;
+var
+  Buffer: array[0..65536] of Char;
+begin
+  SetString(Result, Buffer, GetTempPath(Sizeof(Buffer)-1,Buffer));
+end;
+
+function GetSpecialPath(CSIDL: word): string;
+var
+  S: string;
+begin
+  SetLength(S, MAX_PATH);
+  if not SHGetSpecialFolderPath(0, PChar(S), CSIDL, True) then
+    S := '';
+  Result := IncludeTrailingPathDelimiter(PChar(S));
+end;
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 var
@@ -111,11 +144,11 @@ procedure OpenHelpFile(const FileName: string);
 var
   FullPath: string;
 begin
-  FullPath := Settings.AppPath + 'docs\' + FileName;
-  if FileExists(FullPath) then
-     SimpleShellExecute(frmMain.Handle, FullPath)
-  else
-    MessageDlg('Can''t find help files! Check "docs/" folder!', mtError, [mbOk], 0);
+//  FullPath := Settings.AppPath + 'docs\' + FileName;
+//  if FileExists(FullPath) then
+//     SimpleShellExecute(frmMain.Handle, FullPath)
+//  else
+//    MessageDlg('Can''t find help files! Check "docs/" folder!', mtError, [mbOk], 0);
 end;
 
 

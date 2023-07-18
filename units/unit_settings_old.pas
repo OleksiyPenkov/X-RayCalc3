@@ -38,7 +38,7 @@ type
     FMinLimit: string;
 
     // System
-    FNumberOfThreads: byte;
+    FNumberOfThreads: integer;
 
     function GetTempPath: string;
     function GetSystemFileName(fileType: TXRCSystemFile): string;
@@ -56,7 +56,7 @@ type
     property DataDir: string read FDataDir;
     property WorkDir: string read FWorkDir;
     property WorkPath: string read GetWorkPath;
-    property NumberOfThreads: byte read FNumberOfThreads;
+    property NumberOfThreads: integer read FNumberOfThreads;
 
     property SystemFileName[fileType: TXRCSystemFile]: string read GetSystemFileName;
 
@@ -110,7 +110,7 @@ end;
 const
   APPDATA_DIR_NAME = 'X-Ray Calc';
 
-  SETTINGS_FILE_NAME = 'xrc.ini';
+  SETTINGS_FILE_NAME = 'xrc3.ini';
   PATH_SECTION = 'PATH';
   SYSTEM_SECTION = 'SYSTEM';
 
@@ -201,7 +201,7 @@ begin
     FRecentFiles := iniFile.ReadString('MEMORIES','Recent_files','');
     FSplitterPosition := iniFile.ReadInteger('MEMORIES','Splitter', 240);
     FMinLimit := iniFile.ReadString('MEMORIES','MinLimit','5e-7');
-    FNumberOfThreads := iniFile.ReadInteger('SYSTEM','NumberOfThreads', 4);
+    FNumberOfThreads := iniFile.ReadInteger('SYSTEM','NumberOfThreads', -1);
   finally
     iniFile.Free;
   end;

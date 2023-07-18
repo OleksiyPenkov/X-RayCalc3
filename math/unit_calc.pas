@@ -86,7 +86,7 @@ type
 implementation
 
 uses
-  math_globals, unit_helpers;
+  math_globals, unit_helpers, unit_Config;
 
   { TCalc }
 
@@ -144,8 +144,10 @@ var
   N, i, j: Integer;
   dt, step: single;
 begin
-  NThreads := Environment.Process.Affinity.Count;
-  {$IFDEF DEBUG}  NThreads := 8; {$ENDIF}
+  if Config.Section<TCalcOptions>.NumberOfThreads = -1 then
+     NThreads := Environment.Process.Affinity.Count
+  else
+    NThreads := Config.Section<TCalcOptions>.NumberOfThreads;
 
   SetLength(Tasks, NThreads);
   SetLength(CalcParams,  NThreads);

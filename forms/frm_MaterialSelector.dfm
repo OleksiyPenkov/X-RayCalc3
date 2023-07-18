@@ -3,8 +3,8 @@ object frmMaterialSelector: TfrmMaterialSelector
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Select material'
-  ClientHeight = 402
-  ClientWidth = 288
+  ClientHeight = 390
+  ClientWidth = 280
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

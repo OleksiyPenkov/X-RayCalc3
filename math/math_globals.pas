@@ -43,7 +43,7 @@ type
 implementation
 
 uses
-  unit_settings,
+  unit_Config,
   SysUtils,
   VCLTee.TeEngine;
 
@@ -185,7 +185,7 @@ var
 begin
   if E = 0 then
     E := H / L;
-  fn := Settings.HenkePath + '\' + N + '.txt';
+  fn := Config.HenkePath + '\' + N + '.txt';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -249,7 +249,7 @@ begin
   if E = 0 then
     E := H / L;
 
-  fn := Settings.HenkePath + N + '.bin';
+  fn := Config.HenkePath + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -309,7 +309,7 @@ var
 
 
 begin
-  fn := Settings.HenkePath + N + '.bin';
+  fn := Config.HenkePath + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -361,7 +361,7 @@ var
   end;
 
 begin
-  fn := Settings.HenkePath + N + '.bin';
+  fn := Config.HenkePath + N + '.bin';
 
   try
     Stream := TMemoryStream.Create;

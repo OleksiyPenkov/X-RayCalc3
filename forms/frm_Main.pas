@@ -319,6 +319,7 @@ type
     actCalcBenchmark: TAction;
     N14: TMenuItem;
     Benchmark1: TMenuItem;
+    actSystemSettings: TAction;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -391,6 +392,7 @@ type
     procedure acStructureUndoExecute(Sender: TObject);
     procedure actProjectReopenExecute(Sender: TObject);
     procedure actCalcBenchmarkExecute(Sender: TObject);
+    procedure actSystemSettingsExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -495,7 +497,6 @@ uses
   System.IniFiles,
   System.DateUtils,
   AbUtils,
-  unit_settings,
   unit_helpers,
   unit_consts,
   unit_XRCLayerControl,
@@ -513,7 +514,11 @@ uses
   editor_HenkeTable,
   editor_JSON,
   unit_LFPSO_Poly,
-  unit_SavitzkyGolay, frm_Benchmark, unit_files_list;
+  unit_SavitzkyGolay,
+  frm_Benchmark,
+  unit_files_list,
+  unit_config,
+  frm_settings;
 
 {$R *.dfm}
 
@@ -1138,6 +1143,11 @@ begin
   LoadProject(FProjectFileName, True);
 end;
 
+procedure TfrmMain.actSystemSettingsExecute(Sender: TObject);
+begin
+  frmSettings.ShowModal;
+end;
+
 procedure TfrmMain.actNewMaterialExecute(Sender: TObject);
 begin
   frmNewMaterial.ShowModal;
@@ -1158,7 +1168,7 @@ begin
   else
     Data.Color := FSeriesList[Count].Color;
 
-  FSeriesList[Count].LinePen.Width := 2;
+  FSeriesList[Count].LinePen.Width := Config.Section<TGraphOptions>.LineWidth;
   Data.Visible := True;
   FSeriesList[Count].Visible := Data.Visible;
   Data.CurveID := Count;
@@ -1244,7 +1254,7 @@ procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
 begin
   FProjectFileName := FileName;
   FProjectName := ExtractFileName(FileName);
-  FProjectDir := IncludeTrailingPathDelimiter(Settings.TempPath + FProjectName);
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
 
   if Clear then
   begin
@@ -1938,7 +1948,7 @@ begin
     FBenchmarkMode := True;
 
     Files := TFilesList.Create(nil);
-    FBenchmarkPath := ExtractFileDir(Application.ExeName) + '\benchmark\';
+    FBenchmarkPath := Config.BenchPath;
     Files.TargetPath := FBenchmarkPath;
     Files.Mask := '*.xrcx';
     Files.OnFile := ProcessBenchFile;
@@ -2306,7 +2316,7 @@ begin
     OldProjectDir := FProjectDir;
     FProjectName := ExtractFileName(dlgSaveProject.FileName);
     FProjectDir := IncludeTrailingPathDelimiter
-      (Settings.TempPath + FProjectName);
+      (Config.TempPath + FProjectName);
 
     if DirectoryExists(FProjectDir) then
         ClearDir(FProjectDir, True);
@@ -2386,7 +2396,7 @@ begin
 
   FLastID := 1;
   FProjectName := 'noname.xrcx';
-  FProjectDir := IncludeTrailingPathDelimiter(Settings.TempPath + FProjectName);
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
   FProjectFileName := FProjectDir + FProjectName;
   CreateDir(FProjectDir);
 
@@ -2420,6 +2430,7 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
 begin
+  Config := TConfig.Create;
   CreateProjectTree;
 
   Structure := TXRCStructure.Create(StructurePanel);
@@ -2431,8 +2442,8 @@ begin
   FormatSettings.DecimalSeparator := '.';
   Project.NodeDataSize := SizeOf(TProjectData);
 
-  CreateSettings;
-  CreateDir(Settings.TempDir);
+//  CreateSettings;
+  CreateDir(Config.TempDir);
   Pages.ActivePageindex := 0;
 
   if ParamCount <> 0 then
@@ -2458,8 +2469,8 @@ procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Project.Clear;
   FreeAndNil(Structure);
-  FreeAndNil(Settings);
   FreeAndNil(FStack);
+  FreeAndNil(Config);
 end;
 
 
