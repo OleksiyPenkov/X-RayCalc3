@@ -141,8 +141,8 @@ begin
 end;
 
 procedure OpenHelpFile(const FileName: string);
-var
-  FullPath: string;
+//var
+//  FullPath: string;
 begin
 //  FullPath := Settings.AppPath + 'docs\' + FileName;
 //  if FileExists(FullPath) then
@@ -260,8 +260,9 @@ var
   i, Pos: integer;
   Max: single;
 begin
+  Max := 0; Pos := 0;
   AutoNormalisation(Series);
-  // ���� ����� �������
+
   for I := 0 to Series.Count - 2 do
   begin
     Max := Series.YValue[i + 1] / Series.YValue[i];
@@ -272,7 +273,7 @@ begin
       Break;
     end;
   end;
-  // ����������
+
   for I := Pos to Series.Count - 1 do
     Series.YValue[i] := Series.YValue[i] / Max;
 end;
@@ -372,7 +373,7 @@ begin
 
     s1 := Copy(s2, 1, p - 1);
     delete(s2, 1, p);
-    if (s1 <> '') and (s2 <> '') and IsNumber(s1[1]) and IsNumber(s2[1]) then
+    if (s1 <> '') and (s2 <> '') and s1[1].IsNumber and s2[1].IsNumber then
     try
       FixDecimaPoint(s1);
       FixDecimaPoint(s2);

@@ -42,7 +42,7 @@ end;
 
 class procedure TSavitzkyGolay.SmoothCurve(var data: TDataArray; order, windowSize: Integer);
 var
-  i, j, k, halfWindowSize: Integer;
+  i, j, halfWindowSize: Integer;
   coefficients: TArray<single>;
   smoothedData: TArray<single>;
 begin

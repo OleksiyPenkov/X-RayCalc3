@@ -32,8 +32,8 @@ type
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
-      procedure SetEnabled(const Value: Boolean);
-      function GetEnabled: Boolean;
+      procedure SetEnabled(const Value: Boolean); reintroduce; overload;
+      function GetEnabled: Boolean; reintroduce; overload;
       function GetLinked: TXRCLayerControl;
       procedure SetLinked(const Value: TXRCLayerControl);
       function GetCheckBox: TRzCheckBox;
@@ -54,7 +54,7 @@ type
       procedure CreateMenu;
       procedure MenuOnClick(Sender: TObject);
     public
-      constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
+      constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData); reintroduce; overload;
       destructor  Destroy; override;
 
       property Substrate: boolean read FSubstrate write SetSubstrate;

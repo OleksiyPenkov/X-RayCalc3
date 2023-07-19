@@ -9,7 +9,7 @@ uses
 type
 
   TLFPSO_Periodic = class (TLFPSO_BASE)
-    private
+    protected
       procedure UpdateLFPSO(const t: integer); override;
       procedure RangeSeed; override;
       procedure XSeed; override;

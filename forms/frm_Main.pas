@@ -520,7 +520,7 @@ uses
   frm_Benchmark,
   unit_files_list,
   unit_config,
-  frm_settings;
+  frm_settings, unit_XRCStackControl;
 
 {$R *.dfm}
 
@@ -825,6 +825,7 @@ function TfrmMain.CreateChildNode(out Node: PVirtualNode): boolean;
 var
   Data: PProjectData;
 begin
+  Result := False;
   Node := Project.GetFirstSelected;
   if Node = Nil  then Exit;
 
@@ -837,10 +838,8 @@ begin
       Node := Project.AddChild(Node.Parent);
     Result := True;
   end
-  else begin
+  else
     ShowMessage('Parent model is not selected!');
-    Result := False;
-  end;
 end;
 
 function TfrmMain.FindParentModel(out Node: PVirtualNode): PVirtualNode;
@@ -912,7 +911,7 @@ const
 var
   Gradient: PVirtualNode;
   Data: PProjectData;
-  i, j: Integer;
+  i: Integer;
   S: string;
 begin
   for I := 0 to High(P) do
@@ -1186,7 +1185,7 @@ var
     FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
-  frmLimits.Show(FitStructure);
+  frmLimits.ShowLimits(FitStructure);
   Structure.UpdateInterfaceP(FitStructure);
 end;
 
@@ -1339,7 +1338,7 @@ begin
   begin
     Result := False;
     FFitStructure := Structure.ToFitStructure;
-    if frmLimits.Show(FFitStructure) then
+    if frmLimits.ShowLimits(FFitStructure) then
           Structure.UpdateInterfaceP(FFitStructure)
     else begin
       Exit;
@@ -1460,7 +1459,7 @@ begin
   if FSeriesList[Project.ActiveModel.CurveID].Count = 0 then
     Exit;
 
-  my := 0;
+  my := 0;  mx := 0;
   x1 := Chart.BottomAxis.Minimum;
   x2 := Chart.BottomAxis.Maximum;
   RI := 0;
@@ -1676,7 +1675,7 @@ end;
 
 procedure TfrmMain.PlotSimpleProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
+  StackIndex, LayerIndex, PeriodIndex, shift, d, p: integer;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1886,7 +1885,6 @@ end;
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
-  Node: PVirtualNode;
 begin
   if not GetFitParams then Exit;
 
@@ -1925,8 +1923,7 @@ end;
 
 procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
 var
-  i, j : Integer;
-  SL: TStringList;
+  i: Integer;
 begin
   FProjectFileName := FBenchmarkPath + F.Name;
   frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));

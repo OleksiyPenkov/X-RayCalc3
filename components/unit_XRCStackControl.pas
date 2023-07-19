@@ -25,7 +25,7 @@ type
       FEnablePairing: Boolean;
       FLinkedLayers: array [0..1] of Integer;
 
-      procedure ClearLayers;
+//      procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
       procedure UpdateInfo;
       function GetLayersData: TLayersData;
@@ -40,7 +40,7 @@ type
       procedure FOnClick(Sender: TObject);
       procedure FOnDoubleClick(Sender: TObject);
     public
-      constructor Create(AOwner: TComponent; const Title: string; const N: integer);
+      constructor Create(AOwner: TComponent; const Title: string; const N: integer);reintroduce; overload;
       destructor  Destroy; override;
 
       function AddLayer(Data: TLayerData; Pos: integer = -1): integer;
@@ -80,7 +80,7 @@ end;
 
 function TXRCStack.AddLayer(Data: TLayerData; Pos: integer): integer;
 var
-  Count, i: Integer;
+  Count: Integer;
   Inserted: Boolean;
 begin
   Count := Length(FLayers);
@@ -139,15 +139,15 @@ begin
   FLayers[0].Top := ClientHeight - 10;
 end;
 
-procedure TXRCStack.ClearLayers;
-var
-  i: Integer;
-begin
-  for I := 0 to High(FLayers) do
-     FreeAndNil(FLayers[i]);
-
-  SetLength(FLayers, 0);
-end;
+//procedure TXRCStack.ClearLayers;
+//var
+//  i: Integer;
+//begin
+//  for I := 0 to High(FLayers) do
+//     FreeAndNil(FLayers[i]);
+//
+//  SetLength(FLayers, 0);
+//end;
 
 procedure TXRCStack.ClearSelection;
 var
@@ -307,7 +307,6 @@ end;
 function TXRCStack.GetMaterialsList: TMaterialsList;
 var
   i: integer;
-  Cache: array of string;
 begin
   SetLength(Result, Length(FLayers));
   for i := 0 to High(FLayers) do

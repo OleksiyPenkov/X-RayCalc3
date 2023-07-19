@@ -75,6 +75,7 @@ function FuncProfile(const x: integer; FuncProfile: TFuncProfileRec): single;
 begin
   case FuncProfile.Func of
     ffPoly : Result := Poly(x, FuncProfile);
+    else Result := 0;
   end;
 end;
 

@@ -845,9 +845,9 @@ object frmMain: TfrmMain
             Width = 359
             Height = 101
             Hint = ''
-            ActivePage = TabSheet2
+            ActivePage = TabSheet1
             Align = alLeft
-            TabIndex = 1
+            TabIndex = 0
             TabOrder = 0
             FixedDimension = 21
             object TabSheet1: TRzTabSheet
@@ -947,8 +947,8 @@ object frmMain: TfrmMain
               object cbPWChiSqr: TRzCheckBox
                 Left = 91
                 Top = 49
-                Width = 52
-                Height = 17
+                Width = 56
+                Height = 19
                 Caption = 'PW '#967'2'
                 Checked = True
                 State = cbChecked
@@ -1003,8 +1003,8 @@ object frmMain: TfrmMain
               object cbTreatPeriodic: TRzCheckBox
                 Left = 192
                 Top = 13
-                Width = 62
-                Height = 17
+                Width = 66
+                Height = 19
                 Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
@@ -1013,8 +1013,8 @@ object frmMain: TfrmMain
               object cbPoly: TRzCheckBox
                 Left = 264
                 Top = 13
-                Width = 42
-                Height = 17
+                Width = 46
+                Height = 19
                 Caption = 'Poly'
                 State = cbUnchecked
                 TabOrder = 7
@@ -1147,7 +1147,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 0
-                Text = '0.1'
+                Text = '0.3'
               end
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
@@ -1173,7 +1173,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 2
-                Text = '0.1'
+                Text = '0.3'
               end
               object edLFPSOOmega2: TEdit
                 Left = 186
@@ -1188,7 +1188,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 3
-                Text = '0.1'
+                Text = '0'
               end
               object edLFPSORImax: TEdit
                 Left = 106
@@ -1218,7 +1218,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 5
-                Text = '2'
+                Text = '3'
               end
               object edLFPSOkVmax: TEdit
                 Left = 291
@@ -1233,7 +1233,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 6
-                Text = '2'
+                Text = '1'
               end
               object edLFPSOSkip: TEdit
                 Left = 175

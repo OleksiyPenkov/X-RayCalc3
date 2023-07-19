@@ -9,7 +9,7 @@ uses
 type
 
   TLFPSO_Poly = class (TLFPSO_BASE)
-    private
+    protected
       Indexes: TIntArray;
       Counts: TIntArray;
 
@@ -44,7 +44,7 @@ uses
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
 var
   i, j, k,c, Ord: integer;
-  c1, c2, Val: single;
+  c1, c2: single;
 begin
   ApplyCFactor(c1, c2);
 
@@ -92,7 +92,6 @@ end;
 
 procedure TLFPSO_Poly.CheckLimitsP(const i, j, k, Ord: integer);
 var
-  OldX: TFloatArray;
    Val, Max, Min: Single;
    p, r: Integer;
 begin
@@ -168,7 +167,6 @@ end;
 procedure TLFPSO_Poly.XSeed;
 var
   i, j, k, p, Ord: integer;
-  Val: Single;
 begin
   for i := 1 to High(X) do          // for every member of the population
   begin
@@ -297,8 +295,6 @@ end;
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
 var
   i, j, k, p, Index, Base: integer;
-  D: double;
-  NLayers: Integer;
 begin
   SetLength(FStructure.Stacks, 0);
   FStructure := Inp;
@@ -364,7 +360,7 @@ var
  v : single;
 begin
   v := X[0][j][k][10];
-  Result := Trunc(v);
+  Result := System.Trunc(v);
 end;
 
 end.

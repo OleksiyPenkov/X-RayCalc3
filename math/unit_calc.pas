@@ -141,7 +141,7 @@ end;
 
 procedure TCalc.PrepareWorkers;
 var
-  N, i, j: Integer;
+  Count, j, n: Integer;
   dt, step: single;
 begin
   if Config.Section<TCalcOptions>.NumberOfThreads = -1 then
@@ -155,44 +155,44 @@ begin
 
   if Length(FData) < 1 then
   begin
-    N := FParams.N div NThreads;
+    Count := FParams.N div NThreads;
     dt := (FParams.EndT - FParams.StartT) / NThreads;
-    step := dt / N;
+    step := dt / Count;
 
-    for i := 0 to NThreads - 1 do
+    for n := 0 to NThreads - 1 do
     begin
-      CalcParams[i].StartTeta := FParams.StartT + i * dt;
-      CalcParams[i].EndTeta := FParams.StartT + (i + 1) * dt;
-      CalcParams[i].Step :=  step;
-      CalcParams[i].N0 := N * i;
-      CalcParams[i].N := N;
-      CalcParams[i].UseData := False;
+      CalcParams[n].StartTeta := FParams.StartT + n * dt;
+      CalcParams[n].EndTeta := FParams.StartT + (n + 1) * dt;
+      CalcParams[n].Step :=  step;
+      CalcParams[n].N0 := Count * n;
+      CalcParams[n].N := Count;
+      CalcParams[n].UseData := False;
     end;
 
-    SetLength(FResult, NThreads * N);
+    SetLength(FResult, NThreads * Count);
   end
   else begin
-    N := Length(FData) div NThreads;
-    for i := 0 to NThreads - 2 do
+    Count := Length(FData) div NThreads;
+    for n := 0 to NThreads - 2 do
     begin
-      CalcParams[i].StartTeta := 0;
-      CalcParams[i].EndTeta   := 0;
-      CalcParams[i].Step      := 0;
-      CalcParams[i].N0 := N * i;
-      CalcParams[i].N := N;
-      CalcParams[i].UseData := True;
+      CalcParams[n].StartTeta := 0;
+      CalcParams[n].EndTeta   := 0;
+      CalcParams[n].Step      := 0;
+      CalcParams[n].N0 := Count * n;
+      CalcParams[n].N := Count;
+      CalcParams[n].UseData := True;
 
-      SetLength(CalcParams[i].Points, N + 1);
-      for j := 0 to N do
-       CalcParams[i].Points[j] := FData[CalcParams[i].N0 + j].t;
+      SetLength(CalcParams[n].Points, Count + 1);
+      for j := 0 to Count do
+       CalcParams[n].Points[j] := FData[CalcParams[n].N0 + j].t;
     end;
 
     CalcParams[NThreads - 1].UseData := True;
-    CalcParams[NThreads - 1].N0 := N * (NThreads - 1) ;
-    CalcParams[NThreads - 1].N := Length(FData) - N * (NThreads - 1);
+    CalcParams[NThreads - 1].N0 := Count * (NThreads - 1) ;
+    CalcParams[NThreads - 1].N := Length(FData) - Count * (NThreads - 1);
     SetLength(CalcParams[NThreads - 1].Points, CalcParams[NThreads - 1].N);
       for j := 0 to CalcParams[NThreads - 1].N - 1 do
-       CalcParams[i].Points[j] := FData[CalcParams[NThreads - 1].N0 + j].t;
+       CalcParams[NThreads - 1].Points[j] := FData[CalcParams[NThreads - 1].N0 + j].t;
 
     SetLength(FResult, Length(FData));
   end;
@@ -326,20 +326,22 @@ var
 
   function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single;inline;
   begin
-      case RF of
-        rfError:
-          Result := FastExp(-1 * sqr(sigma / 1.41) * sqr(s));
-        rfExp:
-          Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
-        rfLinear:
-          if sigma < 0.5 then
-            Result := sin(sqrt(3) * sigma * s) /
-              (sqrt(3) * sigma * s)
-          else
-            Result := 1;
-        rfStep:
-          Result := cos(sigma * s);
-      end;
+    case RF of
+      rfError:
+        Result := FastExp(-1 * sqr(sigma / 1.41) * sqr(s));
+      rfExp:
+        Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
+      rfLinear:
+        if sigma < 0.5 then
+          Result := sin(sqrt(3) * sigma * s) /
+            (sqrt(3) * sigma * s)
+        else
+          Result := 1;
+      rfStep:
+        Result := cos(sigma * s);
+      else
+        Result := 0;
+    end;
   end;
 
   procedure LayerAmplitudeRefractionS;     { Коэффициент отражения Rs}

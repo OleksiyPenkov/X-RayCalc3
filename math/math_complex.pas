@@ -13,6 +13,7 @@ interface
 
 uses
   Neslib.FastMath,
+  System.Math,
   SysUtils;
 
 type
@@ -369,39 +370,39 @@ end;
 { return the cosine of Z }
 function CosZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(FastCos(Z.Re) * Cosh(Z.Im), -(FastSin(Z.Re) * Sinh(Z.Im)));
+  Result := ToComplex(FastCos(Z.Re) * Neslib.FastMath.Cosh(Z.Im), -(FastSin(Z.Re) * Neslib.FastMath.Sinh(Z.Im)));
 end;
 
 { return the arccosine of Z. Input value must be between -1..1 and -i..i }
 function ArcCosZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(ArcCos(Z.Re) * ArcCosh(Z.Im),
-    ArcSin(Z.Re) * ArcSinh(Z.Im));
+  Result := ToComplex(Neslib.FastMath.ArcCos(Z.Re) * Neslib.FastMath.ArcCosh(Z.Im),
+                      Neslib.FastMath.ArcSin(Z.Re) * Neslib.FastMath.ArcSinh(Z.Im));
 end;
 
 { return the hyperbolic cosine of Z }
 function CoshZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Cosh(Z.Re) * FastCos(Z.Im), Sinh(Z.Re) * FastSin(Z.Im));
+  Result := ToComplex(Neslib.FastMath.Cosh(Z.Re) * FastCos(Z.Im), Neslib.FastMath.Sinh(Z.Re) * FastSin(Z.Im));
 end;
 
 { return the sine of Z }
 function SinZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(FastSin(Z.Re) * Cosh(Z.Im), FastCos(Z.Re) * Sinh(Z.Im));
+  Result := ToComplex(FastSin(Z.Re) * Neslib.FastMath.Cosh(Z.Im), FastCos(Z.Re) * Neslib.FastMath.Sinh(Z.Im));
 end;
 
 { return the arcsine of Z. Input value must be between -1..1 and -i..i }
 function ArcSinZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(ArcSin(Z.Re) * ArcCosh(Z.Im),
-    ArcCos(Z.Re) * ArcSinh(Z.Im));
+  Result := ToComplex(Neslib.FastMath.ArcSin(Z.Re) * Neslib.FastMath.ArcCosh(Z.Im),
+                      Neslib.FastMath.ArcCos(Z.Re) * Neslib.FastMath.ArcSinh(Z.Im));
 end;
 
 { return the hyperbolic sine of Z }
 function SinhZ(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(Sinh(Z.Re) * FastCos(Z.Im), Cosh(Z.Re) * FastSin(Z.Im));
+  Result := ToComplex(Neslib.FastMath.Sinh(Z.Re) * FastCos(Z.Im), Neslib.FastMath.Cosh(Z.Re) * FastSin(Z.Im));
 end;
 
 { return the hyperbolic arcsine of Z }
@@ -419,8 +420,8 @@ var
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (FastCos(x) + Cosh(y));
-  Result := ToComplex(t * FastSin(x), t * Sinh(y));
+  t := 1.0 / (FastCos(x) + Neslib.FastMath.Cosh(y));
+  Result := ToComplex(t * FastSin(x), t * Neslib.FastMath.Sinh(y));
 end;
 
 { return the arctan of Z. }
@@ -430,8 +431,8 @@ var
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (FastCos(x) + Cosh(y));
-  Result := ToComplex(t * ArcSin(x), t * ArcSinh(y));
+  t := 1.0 / (FastCos(x) + Neslib.FastMath.Cosh(y));
+  Result := ToComplex(t * Neslib.FastMath.ArcSin(x), t * Neslib.FastMath.ArcSinh(y));
 end;
 
 { retun the hyperbolic tan of Z }
@@ -441,8 +442,8 @@ var
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (FastCos(x) + Cosh(y));
-  Result := ToComplex(t * Sinh(x), t * FastSin(y));
+  t := 1.0 / (FastCos(x) + Neslib.FastMath.Cosh(y));
+  Result := ToComplex(t * Neslib.FastMath.Sinh(x), t * FastSin(y));
 end;
 
 { return the hyperbolic arctan of Z. Input value must be between -1..1 and -i..i }

@@ -2,8 +2,8 @@ object frmLimits: TfrmLimits
   Left = 0
   Top = 0
   Caption = 'Fitting Limits'
-  ClientHeight = 477
-  ClientWidth = 563
+  ClientHeight = 476
+  ClientWidth = 559
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,14 +17,14 @@ object frmLimits: TfrmLimits
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 557
-    Height = 424
+    Width = 553
+    Height = 423
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 565
-    ExplicitHeight = 425
+    ExplicitWidth = 561
+    ExplicitHeight = 424
     object Label13: TLabel
       Left = 19
       Top = 393
@@ -68,8 +68,8 @@ object frmLimits: TfrmLimits
       AlignWithMargins = True
       Left = 5
       Top = 5
-      Width = 551
-      Height = 368
+      Width = 547
+      Height = 367
       Margins.Bottom = 50
       Align = alClient
       Columns = <
@@ -117,7 +117,7 @@ object frmLimits: TfrmLimits
       ViewStyle = vsReport
       FillLastColumn = False
       OnClick = ListViewClick
-      ExplicitWidth = 555
+      ExplicitWidth = 551
     end
     object edFdH: TEdit
       Left = 40
@@ -177,8 +177,8 @@ object frmLimits: TfrmLimits
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 433
-    Width = 557
+    Top = 432
+    Width = 553
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded

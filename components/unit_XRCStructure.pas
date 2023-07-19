@@ -44,7 +44,7 @@ type
       function FindStrValue(const Value: string): string;
       function GetSelectedLayer: Integer;
     public
-      constructor Create(AOwner: TComponent);
+      constructor Create(AOwner: TComponent); override;
       destructor  Destroy; override;
 
       property SelectedStack: Integer read GetSelectedStack;
@@ -70,7 +70,7 @@ type
       function Model(const ExpandProfiles: Boolean): TLayeredModel;
       function Materials: TMaterialsList;
 
-      function ToString: string;
+      function ToString: string; reintroduce; overload;
       procedure FromString(const S: string);
       function ToFitStructure: TFitStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
@@ -342,7 +342,7 @@ end;
 
 procedure TXRCStructure.InsertLayer(const Data: TLayerData);
 var
-  Count, Pos, StackID: Integer;
+  StackID: Integer;
 begin
   StackID := FSelectedLayerParent;
   FStacks[StackID].AddLayer(Data, FSelectedLayer);
@@ -566,9 +566,9 @@ begin
 
     SetLength(Result.Stacks[i].Layers, Length(FStacks[i].LayerData));
 
+    D := 0;
     if FStacks[i].N > 1 then
     begin
-      D := 0;
       for j := 0 to High(FStacks[i].LayerData) do
       begin
         Result.Stacks[i].Layers[j].LayerID := j;
@@ -711,7 +711,6 @@ var
   JStstructure: TJSONObject;
   JStacks, JLayers : TJSONArray;
   PS: string;
-  LayerIndex: Integer;
 
 begin
   Visible := False;
@@ -750,7 +749,7 @@ begin
           end;
 
         end;
-        LayerIndex := FStacks[i].AddLayer(Data);
+        FStacks[i].AddLayer(Data);
       end;
     end;
 

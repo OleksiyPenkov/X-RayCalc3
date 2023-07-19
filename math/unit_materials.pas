@@ -32,7 +32,7 @@ type
     FProfiles: TProfileFunctions;
 
     procedure PrepareLayers;
-    function FindMaterial(const Name: string): TMaterial;
+//    function FindMaterial(const Name: string): TMaterial;
     procedure AddMaterial(const AName: string; Lambda: single);
     function GetLayers: TCalcLayers;
   public
@@ -125,15 +125,15 @@ begin
   end;
 end;
 
-function TLayeredModel.FindMaterial(const Name: string): TMaterial;
-var
-  i: integer;
-begin
-  for i := 0 to length(FMaterials) - 1 do
-    if FMaterials[i].Name = Name then
-      Break;
-  Result := FMaterials[i];
-end;
+//function TLayeredModel.FindMaterial(const Name: string): TMaterial;
+//var
+//  i: integer;
+//begin
+//  for i := 0 to length(FMaterials) - 1 do
+//    if FMaterials[i].Name = Name then
+//      Break;
+//  Result := FMaterials[i];
+//end;
 
 
 procedure TLayeredModel.Generate(const Lambda: Single);
@@ -151,10 +151,9 @@ end;
 
 procedure TLayeredModel.PrepareLayers;
 var
-  i, g, NL: Integer;
+  i, g: Integer;
   c, l_ro: Single;
 begin
-  NL := Length(FLayers);
   for I := 1 to High(FLayers) - 1 do
   begin
     AddMaterial(FLayers[i].Name, FLambda);

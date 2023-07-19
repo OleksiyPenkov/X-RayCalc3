@@ -2,8 +2,8 @@ object frmExtensionSelector: TfrmExtensionSelector
   Left = 0
   Top = 0
   Caption = 'Select extension type'
-  ClientHeight = 272
-  ClientWidth = 486
+  ClientHeight = 271
+  ClientWidth = 482
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -24,18 +24,20 @@ object frmExtensionSelector: TfrmExtensionSelector
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 480
-    Height = 219
+    Width = 476
+    Height = 218
     Margins.Bottom = 50
     Align = alClient
     TabOrder = 1
+    ExplicitWidth = 480
+    ExplicitHeight = 219
     DesignSize = (
-      480
-      219)
+      476
+      218)
     object txtGradient: TLabel
       Left = 88
       Top = 49
-      Width = 269
+      Width = 261
       Height = 26
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -46,7 +48,7 @@ object frmExtensionSelector: TfrmExtensionSelector
     object txtUnregister: TLabel
       Left = 88
       Top = 119
-      Width = 325
+      Width = 317
       Height = 51
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False

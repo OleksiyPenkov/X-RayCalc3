@@ -9,7 +9,7 @@ uses
 type
 
   TLFPSO_Regular = class (TLFPSO_BASE)
-    private
+    protected
       FLinks : TIndexes;
 
       procedure UpdateLFPSO(const t: integer); override;
@@ -148,7 +148,6 @@ end;
 procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
   i, j, k, l, p, Index: integer;
-  D: double;
   Links: TIndexes;
   NLayers: Integer;
 begin

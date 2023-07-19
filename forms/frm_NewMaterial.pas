@@ -220,8 +220,8 @@ begin
     StreamOut.SaveToFile(Config.HenkePath + Edit1.Text + '.bin');
     Result := True;
   finally
-    StreamIn.Free;
-    StreamOut.Free;
+    FreeAndNil(StreamIn);
+    FreeAndNil(StreamOut);
   end;
 end;
 

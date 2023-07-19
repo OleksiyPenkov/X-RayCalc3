@@ -271,7 +271,6 @@ var
   val: single;
 begin
   i := 1;
-  k := Pos(';', Profile);
   while i < Length(Profile) do
   begin
     k := Pos(';', Profile, i);

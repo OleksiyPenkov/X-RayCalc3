@@ -88,7 +88,7 @@ type
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
     private
-     procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0, Ksxr0: single);
+     procedure Shake(const t: integer; var  SuccessCount, ReInitCount: integer; Vmax0, Ksxr0: single);
      procedure SendUpdateStep(const Step: integer);
      procedure CalcSolution(const X: TSolution);
 
@@ -385,7 +385,7 @@ end;
 
 function TLFPSO_BASE.FindTheBest: boolean;
 var
-  i, Best:integer;
+  i : integer;
 begin
   Result := False;
   FLastBestChiSqr  := 1e12;
@@ -436,7 +436,7 @@ begin
     SendUpdateMessage(Step);
 end;
 
-procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0, Ksxr0: single);
+procedure TLFPSO_BASE.Shake(const t: integer; var  SuccessCount, ReInitCount: integer; Vmax0, Ksxr0: single);
 var
   TmpStructure: TFitStructure;
 begin
@@ -507,7 +507,7 @@ begin
     if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-      Shake(SuccessCount, ReInitCount, t, Vmax0, Ksxr0)
+      Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0)
     else
       inc(SuccessCount);
   end;
@@ -560,7 +560,7 @@ end;
 
 procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
 var
-  i, j, k, p: integer;
+  i: integer;
 begin
   SetLength(X, FPopulation);
   for I := 0 to High(X) do

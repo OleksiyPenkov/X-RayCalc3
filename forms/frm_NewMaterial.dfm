@@ -4,8 +4,8 @@ object frmNewMaterial: TfrmNewMaterial
   ActiveControl = Edit1
   BorderStyle = bsToolWindow
   Caption = 'New Material'
-  ClientHeight = 354
-  ClientWidth = 276
+  ClientHeight = 342
+  ClientWidth = 268
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,11 +19,13 @@ object frmNewMaterial: TfrmNewMaterial
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 270
-    Height = 348
+    Width = 262
+    Height = 336
     Align = alClient
     Color = 15987699
     TabOrder = 0
+    ExplicitWidth = 270
+    ExplicitHeight = 348
     object Label3: TLabel
       Left = 115
       Top = 55

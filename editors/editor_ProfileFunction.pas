@@ -48,7 +48,6 @@ type
     FData: PProjectData;
     FStructure: TXRCStructure;
     FRealStackID: unit_types.TIntArray;
-    FLayerID: Integer;
 
     procedure FillStacksList;
     function ListedStackID(const AbsoluteID: integer): Integer;
