@@ -343,6 +343,15 @@ var
   x, y: single;
   min: Double;
   Separator: string;
+
+  procedure FixDecimaPoint(var s: string); inline;
+  var
+    p: Integer;
+  begin
+    p := pos(',', s);
+    if p > 0 then s[p] := '.';
+  end;
+
 begin
   Separator := TabSeparator;
   min := 1000;
@@ -361,11 +370,12 @@ begin
 
     if p = 0 then Continue;
 
-
     s1 := Copy(s2, 1, p - 1);
     delete(s2, 1, p);
     if (s1 <> '') and (s2 <> '') and IsNumber(s1[1]) and IsNumber(s2[1]) then
     try
+      FixDecimaPoint(s1);
+      FixDecimaPoint(s2);
       x := StrToFloat(s1);
       y := StrToFloat(s2);
       if (y < min) and (y > 0) then min := y;

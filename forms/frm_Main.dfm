@@ -947,8 +947,8 @@ object frmMain: TfrmMain
               object cbPWChiSqr: TRzCheckBox
                 Left = 91
                 Top = 49
-                Width = 56
-                Height = 19
+                Width = 52
+                Height = 17
                 Caption = 'PW '#967'2'
                 Checked = True
                 State = cbChecked
@@ -1003,8 +1003,8 @@ object frmMain: TfrmMain
               object cbTreatPeriodic: TRzCheckBox
                 Left = 192
                 Top = 13
-                Width = 66
-                Height = 19
+                Width = 62
+                Height = 17
                 Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
@@ -1963,7 +1963,7 @@ object frmMain: TfrmMain
         Caption = '-'
       end
       object Exit1: TMenuItem
-        Action = FileClose
+        Action = actSystemExit
       end
     end
     object Project1: TMenuItem
@@ -3234,6 +3234,11 @@ object frmMain: TfrmMain
       Category = 'System'
       Caption = 'Settings ...'
       OnExecute = actSystemSettingsExecute
+    end
+    object actSystemExit: TAction
+      Category = 'System'
+      Caption = 'Exit'
+      OnExecute = actSystemExitExecute
     end
   end
   object ilProject: TImageList

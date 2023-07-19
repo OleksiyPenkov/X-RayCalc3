@@ -320,6 +320,7 @@ type
     N14: TMenuItem;
     Benchmark1: TMenuItem;
     actSystemSettings: TAction;
+    actSystemExit: TAction;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -393,6 +394,7 @@ type
     procedure actProjectReopenExecute(Sender: TObject);
     procedure actCalcBenchmarkExecute(Sender: TObject);
     procedure actSystemSettingsExecute(Sender: TObject);
+    procedure actSystemExitExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -1141,6 +1143,11 @@ end;
 procedure TfrmMain.actProjectReopenExecute(Sender: TObject);
 begin
   LoadProject(FProjectFileName, True);
+end;
+
+procedure TfrmMain.actSystemExitExecute(Sender: TObject);
+begin
+  Close;
 end;
 
 procedure TfrmMain.actSystemSettingsExecute(Sender: TObject);
@@ -2430,6 +2437,7 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
 begin
+  FormatSettings.DecimalSeparator := '.';
   Config := TConfig.Create;
   CreateProjectTree;
 
@@ -2439,7 +2447,6 @@ begin
   FStack := TStack<String>.Create;
   FStack.Capacity := 10;
 
-  FormatSettings.DecimalSeparator := '.';
   Project.NodeDataSize := SizeOf(TProjectData);
 
 //  CreateSettings;
