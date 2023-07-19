@@ -37,10 +37,10 @@ uses
 
 function FormatJson(const InString: String): string;
 var
-  tmpJson: TJsonValue;
+  tmpJson: TJsonAncestor;
 begin
   tmpJson := TJSONObject.ParseJSONValue(InString);
-  Result := TJson.Format(tmpJson);
+  Result := tmpJson.Format(4);
   FreeAndNil(tmpJson);
 end;
 

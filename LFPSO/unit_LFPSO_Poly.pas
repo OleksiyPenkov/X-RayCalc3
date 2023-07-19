@@ -9,14 +9,14 @@ uses
 type
 
   TLFPSO_Poly = class (TLFPSO_BASE)
-    private
+    protected
       Indexes: TIntArray;
       Counts: TIntArray;
 
-      procedure CheckLimits(const i, j, k: integer); override;
+      procedure CheckLimitsP(const i, j, k, Ord: integer);
       procedure UpdateLFPSO(const t: integer); override;
-      procedure Seed; override;
-      procedure ReSeed; override;
+      procedure RangeSeed; override;
+      procedure XSeed; override;
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
@@ -26,6 +26,7 @@ type
       function GetPolynomes: TProfileFunctions; override;
       function Order(const j, k: Integer): integer; inline;
     public
+      destructor Destroy; override;
       //
   end;
 
@@ -42,8 +43,8 @@ uses
 
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
 var
-  i, j, k,c: integer;
-  c1, c2, Val: single;
+  i, j, k,c, Ord: integer;
+  c1, c2: single;
 begin
   ApplyCFactor(c1, c2);
 
@@ -52,20 +53,21 @@ begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do        // for H, s, rho
       begin
-        for c := 0 to Order(j, k) do  // for every coefficient
+        Ord := Order(j, k);
+        for c := 0 to Ord do  // for every coefficient
         begin
           V[i][j][k][c] := Omega(t, FTMax) * LevyWalk(X[i][j][k][c], gbest[j][k][c])  +
                         c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
                         c2 * Random * (gbest[j][k][c] - X[i][j][k][c]);
         end;
-        CheckLimits(i, j, k);
+        CheckLimitsP(i, j, k, Ord);
       end;
   end;
 end;
 
 procedure TLFPSO_Poly.UpdatePSO(const t: integer);
 var
-  i, j, k, c: integer;
+  i, j, k, c, Ord: integer;
   c1, c2: single;
 begin
   ApplyCFactor(c1, c2);
@@ -75,26 +77,24 @@ begin
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do
       begin
-        for c := 0 to Order(j, k) do  // for every coefficient
+        Ord := Order(j, k);
+        for c := 0 to Ord do  // for every coefficient
         begin
             V[i][j][k][c] := Omega(t, FTMax) * V[i][j][k][c]  +
                       c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
                       c2 * Random * (gbest[j][k][c] - X[i][j][k][c]);
 
         end;
-        CheckLimits(i, j, k);
+        CheckLimitsP(i, j, k, Ord);
       end;
   end;
 end;
 
-procedure TLFPSO_Poly.CheckLimits(const i, j, k: integer);
+procedure TLFPSO_Poly.CheckLimitsP(const i, j, k, Ord: integer);
 var
-  OldX: TFloatArray;
    Val, Max, Min: Single;
    p, r: Integer;
-   Ord: Integer;
 begin
-  Ord := Order(j, k);
   for p := 0 to Ord do
   begin
     if V[i][j][k][p] > Vmax[0][j][k][p] then
@@ -164,17 +164,33 @@ begin
       end;
 end;
 
-procedure TLFPSO_Poly.ReSeed;
+procedure TLFPSO_Poly.XSeed;
+var
+  i, j, k, p, Ord: integer;
 begin
-  Seed;
+  for i := 1 to High(X) do          // for every member of the population
+  begin
+    for j := 0 to High(X[i]) do     //for every layer
+      for k := 1 to 3 do            // for H, s, rho
+      begin
+        Ord := Order(j, k);
+        for p := 0 to Ord do  // for every oefficient of polynome
+        if p = 0 then
+           X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr)
+        else
+           X[i][j][k][p] := X[0][j][k][p] + Rand(XRange[0][j][k][p] * FFitParams.Ksxr);
+
+        CheckLimitsP(i, j, k, Ord);
+      end;
+  end;
 end;
 
-procedure TLFPSO_Poly.Seed;
+procedure TLFPSO_Poly.RangeSeed;
 var
   i, j, k, p: integer;
   Val: Single;
 begin
-  for i := 1 to High(X) do          // for every member of the population
+  for i := 0 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
@@ -194,44 +210,51 @@ begin
   end;
 end;
 
+destructor TLFPSO_Poly.Destroy;
+begin
+  Finalize(Indexes);
+  Finalize(Counts);
+
+  inherited;
+end;
+
 function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;
 var
-  i, k, j, p: Integer;
+  i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;
-  Base, LN: Integer;
 begin
   Result := TLayeredModel.Create;
   Result.Init;
 
-
-  SetLength(Data, FStructure.TotalNP);
-  LN := 0; Base := 0;
-
+  LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
+    SetLength(Data, 0);
+    SetLength(Data, Length(FStructure.Stacks[i].Layers));
+    for k := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
+      Data[k].Index    := LayerIndex;                              // Layer index accross Solution
+
+      Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
+      Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
+      Inc(LayerIndex);
+    end;
+
     for j := 1 to FStructure.Stacks[i].N do
     begin
       for k := 0 to High(FStructure.Stacks[i].Layers) do
-      begin
-        Data[LN].Material := FStructure.Stacks[i].Layers[k].Material;
-
         for p := 1 to 3 do
-         Data[LN].P[p].V := Poly(j, Solution[Base + k][p]);
+          Data[k].P[p].V := Poly(j, Solution[Data[k].Index][p]);
 
-        Data[LN].StackID := FStructure.Stacks[i].Layers[k].StackID;
-        Data[LN].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
-        Inc(LN);
-      end;
+      Result.AddLayers(-1, Data);
     end;
-    inc(Base, FStructure.Stacks[i].N);
   end;
 
-  Result.AddLayers(-1, Data);
-
-  //
   SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
-  Data[0].P := FStructure.Subs.P;
+  Data[0].P :=FStructure.Subs.P;
+
 
   Result.AddSubstrate(Data);
 end;
@@ -272,8 +295,6 @@ end;
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
 var
   i, j, k, p, Index, Base: integer;
-  D: double;
-  NLayers: Integer;
 begin
   SetLength(FStructure.Stacks, 0);
   FStructure := Inp;
@@ -335,8 +356,11 @@ begin
 end;
 
 function TLFPSO_Poly.Order(const j, k: Integer): integer;
+var
+ v : single;
 begin
-  Result := Trunc(X[0][j][k][10]);
+  v := X[0][j][k][10];
+  Result := System.Trunc(v);
 end;
 
 end.

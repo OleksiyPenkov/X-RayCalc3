@@ -4,7 +4,7 @@ interface
 
 uses
   SysUtils, Classes, Controls, ExtCtrls, RzEdit, RzSpnEdt,
-  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, unit_types,
+  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, VCL.Menus, unit_types,
   Messages, Winapi.Windows, unit_consts, editor_Layer;
 
 type
@@ -19,6 +19,8 @@ type
 
       PairedH, PairedS, PairedR: TRzCheckBox;
 
+      FMenu: TPopupMenu;
+
       FData : TLayerData;
       FOnSet:  boolean;
       FHandler: HWND;
@@ -30,8 +32,8 @@ type
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SetIncrement(const Value: Double);
-      procedure SetEnabled(const Value: Boolean);
-      function GetEnabled: Boolean;
+      procedure SetEnabled(const Value: Boolean); reintroduce; overload;
+      function GetEnabled: Boolean; reintroduce; overload;
       function GetLinked: TXRCLayerControl;
       procedure SetLinked(const Value: TXRCLayerControl);
       function GetCheckBox: TRzCheckBox;
@@ -49,8 +51,10 @@ type
       procedure SetLinkChecked(const Value: boolean);
       function GetID: Integer;
       function GetStackID: Integer;
+      procedure CreateMenu;
+      procedure MenuOnClick(Sender: TObject);
     public
-      constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
+      constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData); reintroduce; overload;
       destructor  Destroy; override;
 
       property Substrate: boolean read FSubstrate write SetSubstrate;
@@ -81,6 +85,11 @@ implementation
 
 uses
    unit_SMessages;
+
+const
+  Captions: array [1..5] of string = ('Move up','Move down','Insert above','-','Delete');
+  Tags    : array [1..5] of Cardinal = (WM_STR_LAYER_UP, WM_STR_LAYER_DOWN, WM_STR_LAYER_INSERT, 0, WM_STR_LAYER_DELETE);
+
 
 { TXRCLayerControl }
 
@@ -197,6 +206,27 @@ begin
 
   FSubstrate := False;
   FOnset := False;
+
+  CreateMenu;
+end;
+
+procedure TXRCLayerControl.CreateMenu;
+var
+  Item: TMenuItem;
+  i: Integer;
+begin
+  FMenu := TPopupMenu.Create(Self);
+  Self.PopupMenu := FMenu;
+
+  for I := 1 to 5 do
+  begin
+    Item := TMenuItem.Create(FMenu);;
+    Item.Tag     := Tags[i];
+    Item.Caption := Captions[i];
+    if Tags[i] <> 0 then
+      Item.OnClick := MenuOnClick;
+    FMenu.Items.Add(Item);
+  end;
 end;
 
 procedure TXRCLayerControl.DecreaseThickness;
@@ -294,6 +324,11 @@ begin
   LinkedClick(FData.StackID, FData.LayerID);
 end;
 
+
+procedure TXRCLayerControl.MenuOnClick(Sender: TObject);
+begin
+  ArrangeLayer((Sender as TMenuItem).Tag, FData.StackID, FData.LayerID);
+end;
 
 procedure TXRCLayerControl.SetIncrement(const Value: Double);
 begin

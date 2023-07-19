@@ -83,8 +83,10 @@ type
 
          Shake : boolean;
     ThetaWieght: integer;
-        CFactor: Boolean;
+       AdaptVel: Boolean;
+         RangeSeed: Boolean;
       MaxPOrder: Integer;
+          Ksxr : Single;
   end;
 
   // Calculation data types
@@ -138,7 +140,7 @@ type
   TLayerData = record
     Material: string;
     P: array [1..3] of TFitValue;
-    StackID, LayerID: integer;
+    StackID, LayerID, Index: integer;
     PP: array [1..3] of TFloatArray;
   public
     procedure ClearProfiles;
@@ -269,7 +271,6 @@ var
   val: single;
 begin
   i := 1;
-  k := Pos(';', Profile);
   while i < Length(Profile) do
   begin
     k := Pos(';', Profile, i);

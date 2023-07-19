@@ -32,12 +32,12 @@ type
     FProfiles: TProfileFunctions;
 
     procedure PrepareLayers;
-    function FindMaterial(const Name: string): TMaterial;
+//    function FindMaterial(const Name: string): TMaterial;
     procedure AddMaterial(const AName: string; Lambda: single);
     function GetLayers: TCalcLayers;
   public
     constructor Create;
-    destructor Free;
+    destructor Destroy; override;
     procedure Init;
 
     procedure AddLayers(const StackID: integer;  Data: TLayersData);
@@ -125,22 +125,16 @@ begin
   end;
 end;
 
-function TLayeredModel.FindMaterial(const Name: string): TMaterial;
-var
-  i: integer;
-begin
-  for i := 0 to length(FMaterials) - 1 do
-    if FMaterials[i].Name = Name then
-      Break;
-  Result := FMaterials[i];
-end;
+//function TLayeredModel.FindMaterial(const Name: string): TMaterial;
+//var
+//  i: integer;
+//begin
+//  for i := 0 to length(FMaterials) - 1 do
+//    if FMaterials[i].Name = Name then
+//      Break;
+//  Result := FMaterials[i];
+//end;
 
-
-destructor TLayeredModel.Free;
-begin
-  Finalize(FMaterials);
-  Finalize(FLayers);
-end;
 
 procedure TLayeredModel.Generate(const Lambda: Single);
 begin
@@ -157,10 +151,9 @@ end;
 
 procedure TLayeredModel.PrepareLayers;
 var
-  i, g, NL: Integer;
+  i, g: Integer;
   c, l_ro: Single;
 begin
-  NL := Length(FLayers);
   for I := 1 to High(FLayers) - 1 do
   begin
     AddMaterial(FLayers[i].Name, FLambda);
@@ -201,6 +194,17 @@ end;
 constructor TLayeredModel.Create;
 begin
   inherited ;
+  SetLength(FMaterials, 0);
+  SetLength(FLayers, 0);
+  SetLength(FProfiles, 0);
+end;
+
+destructor TLayeredModel.Destroy;
+begin
+  Finalize(FMaterials);
+  Finalize(FLayers);
+  Finalize(FProfiles);
+  inherited;
 end;
 
 procedure TLayeredModel.ExportToFile(const FileName: string);

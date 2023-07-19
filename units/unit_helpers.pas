@@ -33,6 +33,7 @@ procedure DataToFile(const FileName: string; Data: TDataArray);
 //procedure DataToClipboard(const Data: TDataArray);
 
 function SeriesToData( Series: TLineSeries): TDataArray;
+procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
 procedure AutoMerge( var Series: TLineSeries);
 procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
@@ -41,6 +42,9 @@ function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 
 procedure FillElementsList(const Path: string; var List: TListBox);
 procedure OpenHelpFile(const FileName: string);
+function GetSpecialPath(CSIDL: word): string;
+function c_GetTempPath: String;
+function CreateFolders(const Root: string; const Path: string): Boolean;
 
 function SimpleShellExecute(
   hWnd: HWND;
@@ -54,18 +58,48 @@ function SimpleShellExecute(
 implementation
 
 uses
+  StrUtils,
   SysUtils,
+  IOUtils,
   ClipBrd,
   Classes,
   ShellApi,
+  ShlObj,
   System.Character,
   Vcl.Forms,
-  VCLTee.TeEngine,
-  frm_main,
-  unit_settings;
+  VCLTee.TeEngine;
 
 const
   TabSeparator = #9;
+
+function CreateFolders(const Root: string; const Path: string): Boolean;
+var
+  FullPath: string;
+begin
+  if Path = '\' then
+    FullPath := Root + Path
+  else
+    FullPath := TPath.Combine(Root, Path);
+
+  Result := SysUtils.ForceDirectories(FullPath);
+end;
+
+function c_GetTempPath: String;
+var
+  Buffer: array[0..65536] of Char;
+begin
+  SetString(Result, Buffer, GetTempPath(Sizeof(Buffer)-1,Buffer));
+end;
+
+function GetSpecialPath(CSIDL: word): string;
+var
+  S: string;
+begin
+  SetLength(S, MAX_PATH);
+  if not SHGetSpecialFolderPath(0, PChar(S), CSIDL, True) then
+    S := '';
+  Result := IncludeTrailingPathDelimiter(PChar(S));
+end;
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 var
@@ -74,7 +108,11 @@ var
   Offset, Window: integer;
 begin
   SetLength(Result, Length(Inp));
-  Window := Round(Length(Inp) * W);
+  if W > 1 then
+    Window := Trunc(W)
+  else
+    Window := Round(Length(Inp) * W);
+
   Offset := Window div 2;
 
   V := 0;
@@ -103,14 +141,14 @@ begin
 end;
 
 procedure OpenHelpFile(const FileName: string);
-var
-  FullPath: string;
+//var
+//  FullPath: string;
 begin
-  FullPath := Settings.AppPath + 'docs\' + FileName;
-  if FileExists(FullPath) then
-     SimpleShellExecute(frmMain.Handle, FullPath)
-  else
-    MessageDlg('Can''t find help files! Check "docs/" folder!', mtError, [mbOk], 0);
+//  FullPath := Settings.AppPath + 'docs\' + FileName;
+//  if FileExists(FullPath) then
+//     SimpleShellExecute(frmMain.Handle, FullPath)
+//  else
+//    MessageDlg('Can''t find help files! Check "docs/" folder!', mtError, [mbOk], 0);
 end;
 
 
@@ -222,8 +260,9 @@ var
   i, Pos: integer;
   Max: single;
 begin
+  Max := 0; Pos := 0;
   AutoNormalisation(Series);
-  // ���� ����� �������
+
   for I := 0 to Series.Count - 2 do
   begin
     Max := Series.YValue[i + 1] / Series.YValue[i];
@@ -234,7 +273,7 @@ begin
       Break;
     end;
   end;
-  // ����������
+
   for I := Pos to Series.Count - 1 do
     Series.YValue[i] := Series.YValue[i] / Max;
 end;
@@ -247,6 +286,15 @@ begin
   Pos := Series.XValues.Locate(X);
   for I := Pos to Series.Count - 1 do
     Series.YValue[i] := Series.YValue[i] / K;
+end;
+
+procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
+var
+  i: integer;
+begin
+  Series.Clear;
+  for I := 0 to High(Data) do
+   Series.AddXY(Data[i].t, Data[i].r);
 end;
 
 function SeriesToData( Series: TLineSeries): TDataArray;
@@ -296,6 +344,15 @@ var
   x, y: single;
   min: Double;
   Separator: string;
+
+  procedure FixDecimaPoint(var s: string); inline;
+  var
+    p: Integer;
+  begin
+    p := pos(',', s);
+    if p > 0 then s[p] := '.';
+  end;
+
 begin
   Separator := TabSeparator;
   min := 1000;
@@ -314,11 +371,12 @@ begin
 
     if p = 0 then Continue;
 
-
     s1 := Copy(s2, 1, p - 1);
     delete(s2, 1, p);
-    if (s1 <> '') and (s2 <> '') and IsNumber(s1[1]) and IsNumber(s2[1]) then
+    if (s1 <> '') and (s2 <> '') and s1[1].IsNumber and s2[1].IsNumber then
     try
+      FixDecimaPoint(s1);
+      FixDecimaPoint(s2);
       x := StrToFloat(s1);
       y := StrToFloat(s2);
       if (y < min) and (y > 0) then min := y;

@@ -74,7 +74,7 @@ implementation
 
 uses
   unit_helpers,
-  unit_settings,
+  unit_config,
   math_complex,
   math_globals,
   System.UITypes, frm_MaterialSelector;
@@ -183,7 +183,7 @@ begin
     StreamIn := TMemoryStream.Create;
     StreamOut := TMemoryStream.Create;
 
-    StreamIn.LoadFromFile(Settings.HenkePath + Grid.Cells[0,1] + '.bin');
+    StreamIn.LoadFromFile(Config.HenkePath + Grid.Cells[0,1] + '.bin');
 
     s := GetString(StreamIn);
     WriteString(Edit1.Text);
@@ -217,11 +217,11 @@ begin
       StreamOut.Write(f1.Re, Size);
       StreamOut.Write(f1.Im, Size);
     end;
-    StreamOut.SaveToFile(Settings.HenkePath + Edit1.Text + '.bin');
+    StreamOut.SaveToFile(Config.HenkePath + Edit1.Text + '.bin');
     Result := True;
   finally
-    StreamIn.Free;
-    StreamOut.Free;
+    FreeAndNil(StreamIn);
+    FreeAndNil(StreamOut);
   end;
 end;
 

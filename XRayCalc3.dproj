@@ -114,7 +114,7 @@
         <VerInfo_AutoGenVersion>true</VerInfo_AutoGenVersion>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.0.0.200;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\Multilayer(4x20).xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\ML(20x4)_Poly1_#1.xrcx&quot; -a</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -134,9 +134,9 @@
         <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>335</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.3.335;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.2;Comments=</VerInfo_Keys>
-        <VerInfo_Release>3</VerInfo_Release>
+        <VerInfo_Build>346</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.4.346;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.4;Comments=</VerInfo_Keys>
+        <VerInfo_Release>4</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -150,7 +150,6 @@
         </DCCReference>
         <DCCReference Include="units\unit_Types.pas"/>
         <DCCReference Include="math\math_complex.pas"/>
-        <DCCReference Include="units\unit_settings.pas"/>
         <DCCReference Include="units\unit_helpers.pas"/>
         <DCCReference Include="units\unit_consts.pas"/>
         <DCCReference Include="components\unit_XRCStructure.pas"/>
@@ -207,6 +206,17 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Poly.pas"/>
+        <DCCReference Include="math\unit_SavitzkyGolay.pas"/>
+        <DCCReference Include="forms\frm_Benchmark.pas">
+            <Form>frmBenchmark</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="components\unit_files_list.pas"/>
+        <DCCReference Include="units\unit_Config.pas"/>
+        <DCCReference Include="forms\frm_settings.pas">
+            <Form>frmSettings</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

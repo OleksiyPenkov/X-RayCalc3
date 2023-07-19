@@ -2,8 +2,8 @@ object edtrHenkeTable: TedtrHenkeTable
   Left = 0
   Top = 0
   Caption = 'Edit Henke table'
-  ClientHeight = 562
-  ClientWidth = 864
+  ClientHeight = 561
+  ClientWidth = 860
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,12 +18,11 @@ object edtrHenkeTable: TedtrHenkeTable
     Left = 3
     Top = 3
     Width = 326
-    Height = 537
+    Height = 536
     Align = alLeft
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitHeight = 536
     object Label1: TLabel
       Left = 11
       Top = 10
@@ -114,8 +113,8 @@ object edtrHenkeTable: TedtrHenkeTable
   end
   object rzstsbr1: TRzStatusBar
     Left = 0
-    Top = 543
-    Width = 864
+    Top = 542
+    Width = 860
     Height = 19
     BorderInner = fsNone
     BorderOuter = fsNone
@@ -123,21 +122,17 @@ object edtrHenkeTable: TedtrHenkeTable
     BorderWidth = 0
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 542
-    ExplicitWidth = 860
   end
   object rzpnl2: TRzPanel
     AlignWithMargins = True
     Left = 335
     Top = 3
-    Width = 526
-    Height = 537
+    Width = 522
+    Height = 536
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 2
-    ExplicitWidth = 522
-    ExplicitHeight = 536
     object Chart: TChart
       AlignWithMargins = True
       Left = 5

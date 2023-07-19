@@ -39,13 +39,12 @@ type
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelectedStack: Integer;
-      procedure ClearSelection(const Reset:boolean = False); inline;
       function FindBoolValue(const Value: string): boolean;
       function FindValue(const Value: string; Base: single): single;
       function FindStrValue(const Value: string): string;
       function GetSelectedLayer: Integer;
     public
-      constructor Create(AOwner: TComponent);
+      constructor Create(AOwner: TComponent); override;
       destructor  Destroy; override;
 
       property SelectedStack: Integer read GetSelectedStack;
@@ -59,16 +58,19 @@ type
       procedure InsertStack(const N: Integer; const Title: string);
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure Select(const ID: Integer);
+      procedure ClearSelection(const Reset:boolean = False); inline;
       procedure SelectLayer(const StackID, LayerID: Integer);
       procedure LinkLayer(const StackID, LayerID: Integer);
+      procedure MoveLayer(const StackID, LayerID, Direction: Integer);
       procedure EditStack(const ID: Integer);
       procedure DeleteStack;
-      procedure DeleteLayer;
+      procedure DeleteLayer; overload;
+      procedure DeleteLayer(const StackID, LayerID: Integer); overload;
 
       function Model(const ExpandProfiles: Boolean): TLayeredModel;
       function Materials: TMaterialsList;
 
-      function ToString: string;
+      function ToString: string; reintroduce; overload;
       procedure FromString(const S: string);
       function ToFitStructure: TFitStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
@@ -293,6 +295,13 @@ begin
   end;
 end;
 
+procedure TXRCStructure.DeleteLayer(const StackID, LayerID: Integer);
+begin
+    FStacks[StackID].DeleteLayer(LayerID);
+    FSelectedLayerParent := -1;
+    FSelectedLayer := -1;
+end;
+
 procedure TXRCStructure.DeleteStack;
 var
   i: integer;
@@ -333,7 +342,7 @@ end;
 
 procedure TXRCStructure.InsertLayer(const Data: TLayerData);
 var
-  Count, Pos, StackID: Integer;
+  StackID: Integer;
 begin
   StackID := FSelectedLayerParent;
   FStacks[StackID].AddLayer(Data, FSelectedLayer);
@@ -426,6 +435,11 @@ begin
   end;
 
   Result.AddSubstrate(Substrate.LayerData);
+end;
+
+procedure TXRCStructure.MoveLayer(const StackID, LayerID, Direction: Integer);
+begin
+  FStacks[StackID].MoveLayer(LayerID, Direction);
 end;
 
 procedure TXRCStructure.PasteLayer;
@@ -552,9 +566,9 @@ begin
 
     SetLength(Result.Stacks[i].Layers, Length(FStacks[i].LayerData));
 
+    D := 0;
     if FStacks[i].N > 1 then
     begin
-      D := 0;
       for j := 0 to High(FStacks[i].LayerData) do
       begin
         Result.Stacks[i].Layers[j].LayerID := j;
@@ -697,7 +711,6 @@ var
   JStstructure: TJSONObject;
   JStacks, JLayers : TJSONArray;
   PS: string;
-  LayerIndex: Integer;
 
 begin
   Visible := False;
@@ -736,7 +749,7 @@ begin
           end;
 
         end;
-        LayerIndex := FStacks[i].AddLayer(Data);
+        FStacks[i].AddLayer(Data);
       end;
     end;
 

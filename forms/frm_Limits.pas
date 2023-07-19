@@ -41,7 +41,7 @@ type
   public
     { Public declarations }
 
-    function Show(var Structure: TFitStructure): boolean;
+    function ShowLimits(var Structure: TFitStructure): boolean;
   end;
 
 var
@@ -201,7 +201,7 @@ begin
 
 end;
 
-function TfrmLimits.Show(var Structure: TFitStructure): boolean;
+function TfrmLimits.ShowLimits(var Structure: TFitStructure): boolean;
 begin
   Result := False;
   FStructure := Structure;

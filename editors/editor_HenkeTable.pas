@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, unit_helpers, unit_settings,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, unit_helpers, unit_Config,
   Vcl.StdCtrls, Vcl.Mask, RzEdit, RzBtnEdt, RzPanel, Vcl.ExtCtrls, Vcl.Grids,
   RzGrids, JvExMask, JvToolEdit, JvBaseEdits, math_globals, RzButton,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.Series, VCLTee.TeeProcs,

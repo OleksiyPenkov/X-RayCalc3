@@ -37,8 +37,8 @@ type
       procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
       procedure ProjectBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
     public
-      constructor Create(AOwner: TComponent);
-      destructor Free;
+      constructor Create(AOwner: TComponent); override;
+      destructor Destroy; override;
 
       property Version: Integer write FProjectVersion;
       property ActiveModel:PProjectData read FActiveModel write FActiveModel;
@@ -128,7 +128,7 @@ begin
   Header.Columns[1].Text := 'Project Items';
 end;
 
-destructor TXRCProjectTree.Free;
+destructor TXRCProjectTree.Destroy;
 begin
 
   inherited Free;
@@ -219,10 +219,10 @@ var
 begin
   Data := Sender.GetNodeData(Node);
   case Data.RowType of
-    prFolder: ContentRect.Left := ContentRect.Left + 5;
-    prGroup : ContentRect.Left := ContentRect.Left + Indent;
-    prItem  : ContentRect.Left := ContentRect.Left + Indent * 2;
-    prExtension: ContentRect.Left := ContentRect.Left + Indent * 3;
+    prFolder: ContentRect.Left    := ContentRect.Left + 5;
+    prGroup : ContentRect.Left    := ContentRect.Left + Integer(Indent);
+    prItem  : ContentRect.Left    := ContentRect.Left + Integer(Indent) * 2;
+    prExtension: ContentRect.Left := ContentRect.Left + Integer(Indent) * 3;
   end;
 end;
 

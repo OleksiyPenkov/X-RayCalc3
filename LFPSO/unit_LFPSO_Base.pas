@@ -77,8 +77,8 @@ type
       procedure InitVelocity; virtual;
       procedure UpdatePSO(const t: integer); virtual;
       procedure UpdateLFPSO(const t: integer); virtual;
-      procedure Seed;virtual;
-      procedure ReSeed;virtual;
+      procedure RangeSeed;virtual;
+      procedure XSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
       procedure UpdateStructure(Solution:TSolution); virtual;
       function FitModelToLayer(Solution: TSolution): TLayeredModel; virtual;
@@ -88,9 +88,9 @@ type
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
     private
-     procedure Shake(var SuccessCount, ReInitCount, t: integer; Vmax0: single);
+     procedure Shake(const t: integer; var  SuccessCount, ReInitCount: integer; Vmax0, Ksxr0: single);
      procedure SendUpdateStep(const Step: integer);
-    procedure CalcSolution(const X: TSolution);
+     procedure CalcSolution(const X: TSolution);
 
     public
       constructor Create;
@@ -203,7 +203,7 @@ begin
   Result := (-1 + 2 * Random) * dx;
 end;
 
-procedure TLFPSO_BASE.ReSeed;
+procedure TLFPSO_BASE.XSeed;
 begin
 
 end;
@@ -218,9 +218,30 @@ begin
   inherited ;
 end;
 
+procedure ClearArray(var A: TPopulation); inline;
+begin
+  Finalize(A);
+end;
+
+procedure ClearSolution(var A: TSolution); inline;
+begin
+//  SetLength(A, 0);
+  Finalize(A);
+end;
+
 destructor TLFPSO_BASE.Destroy;
 begin
+  ClearArray(X);
+  ClearArray(V);
+  ClearArray(Xmax);
+  ClearArray(Xmin);
+  ClearArray(Vmax);
+  ClearArray(Vmin);
+  ClearArray(XRange);
 
+  ClearSolution(pbest);
+  ClearSolution(abest);
+  ClearSolution(gbest);
   inherited;
 end;
 
@@ -277,7 +298,7 @@ end;
 
 procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
 begin
-  if FFitParams.CFactor and (CFactor > 0) then
+  if FFitParams.AdaptVel and (CFactor > 0) then
   begin
     c1 := c1m * CFactor;
     c2 := c2m * CFactor;
@@ -364,7 +385,7 @@ end;
 
 function TLFPSO_BASE.FindTheBest: boolean;
 var
-  i, Best:integer;
+  i : integer;
 begin
   Result := False;
   FLastBestChiSqr  := 1e12;
@@ -391,7 +412,6 @@ begin
 //      ShowMessage(Format('%f   %f  %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
     end;
     CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
-//    CFactor := 1;
   end
   else begin
     SetLength(FResultingCurve, 0);
@@ -404,10 +424,10 @@ procedure TLFPSO_BASE.Init(const Step: integer);
 begin
   FJammingCount := 0;
 
-  if Step = 0 then
-    Seed
+  if (Step = 0) and FFitParams.RangeSeed then
+    RangeSeed
   else
-    ReSeed;
+    XSeed;
 
   InitVelocity;
   FindTheBest;
@@ -416,7 +436,7 @@ begin
     SendUpdateMessage(Step);
 end;
 
-procedure TLFPSO_BASE.Shake(var  SuccessCount, ReInitCount, t: integer; Vmax0: single);
+procedure TLFPSO_BASE.Shake(const t: integer; var  SuccessCount, ReInitCount: integer; Vmax0, Ksxr0: single);
 var
   TmpStructure: TFitStructure;
 begin
@@ -427,11 +447,13 @@ begin
     gbest := Copy(abest, 0, MaxInt);   // recover to absolute best solution
     FGlobalBestChiSqr := FAbsoluteBestChiSqr;
     FFitParams.Vmax := Vmax0;
+    FFitParams.Ksxr := Ksxr0;
   end
   else
   begin
     FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
     FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
+    FFitParams.Ksxr := FFitParams.Ksxr * FFitParams.KVmax;
   end;
   UpdateStructure(gbest);        // re-init based on current global best solution
   TmpStructure := FStructure;
@@ -448,7 +470,7 @@ var
   t: integer;
   switch: double;
   ReInitCount: integer;
-  Vmax0: single;
+  Vmax0, Ksxr0: single;
   SuccessCount: integer;
 begin
   Randomize;
@@ -456,6 +478,7 @@ begin
   FReInit := False;
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
+  Ksxr0 := FFitParams.Ksxr ;
   ReInitCount := 0;
   SuccessCount := 0;
   FGlobalBestChiSqr:= 1e12;
@@ -468,6 +491,7 @@ begin
   for t := 1 to FTMax do
   begin
     if FTerminated then Break;
+    Randomize;
 
     switch := Random;
     if switch < 0.5 then
@@ -483,7 +507,7 @@ begin
     if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-      Shake(SuccessCount, ReInitCount, t, Vmax0)
+      Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0)
     else
       inc(SuccessCount);
   end;
@@ -491,7 +515,7 @@ begin
   UpdateStructure(abest);  // don't delete!
 end;
 
-procedure TLFPSO_BASE.Seed;
+procedure TLFPSO_BASE.RangeSeed;
 begin
 
 end;
@@ -536,7 +560,7 @@ end;
 
 procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
 var
-  i, j, k, p: integer;
+  i: integer;
 begin
   SetLength(X, FPopulation);
   for I := 0 to High(X) do

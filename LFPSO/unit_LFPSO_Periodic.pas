@@ -9,10 +9,10 @@ uses
 type
 
   TLFPSO_Periodic = class (TLFPSO_BASE)
-    private
+    protected
       procedure UpdateLFPSO(const t: integer); override;
-      procedure Seed; override;
-      procedure ReSeed; override;
+      procedure RangeSeed; override;
+      procedure XSeed; override;
       procedure NormalizeD(const ParticleIndex: integer);
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
@@ -104,7 +104,21 @@ begin
   end;
 end;
 
-procedure TLFPSO_Periodic.ReSeed;
+procedure TLFPSO_Periodic.XSeed;
+var
+  i, j, k: integer;
+begin
+  for i := 1 to High(X) do          // for every member of the population
+  begin
+    for j := 0 to High(X[i]) do     //for every layer
+      for k := 1 to 3 do            // for H, s, rho
+        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
+
+    NormalizeD(i);
+  end;
+end;
+
+procedure TLFPSO_Periodic.RangeSeed;
 var
   i, j, k: integer;
 begin
@@ -112,8 +126,7 @@ begin
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0]);
-
+       X[i][j][k][0] := Xmin[0][j][k][0] + Random * XRange[0][j][k][0];   // min + Random * (min-max)
     NormalizeD(i);
   end;
 end;
@@ -129,19 +142,6 @@ begin
     for j := 0 to High(V[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
         V[i][j][k][0] := Random * (Vmax[0][j][k][0] - Vmin[0][j][k][0]) + Vmin[0][j][k][0];
-end;
-
-procedure TLFPSO_Periodic.Seed;
-var
-  i, j, k: integer;
-begin
-  for i := 0 to High(X) do          // for every member of the population
-  begin
-    for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
-       X[i][j][k][0] := Xmin[0][j][k][0] + Random * XRange[0][j][k][0];   // min + Random * (min-max)
-    NormalizeD(i);
-  end;
 end;
 
 procedure TLFPSO_Periodic.SetStructure(const Inp: TFitStructure);

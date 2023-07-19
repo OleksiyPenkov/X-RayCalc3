@@ -306,6 +306,21 @@ type
     Fitting1: TMenuItem;
     N11: TMenuItem;
     MaterialsLibrary1: TMenuItem;
+    actDataSmooth: TAction;
+    N12: TMenuItem;
+    N13: TMenuItem;
+    acStructureUndo: TAction;
+    Undo1: TMenuItem;
+    cbAdaptiveVelocity: TRzCheckBox;
+    cbSeedRange: TRzCheckBox;
+    btnReopenProject: TRzToolButton;
+    rzspcr2: TRzSpacer;
+    actProjectReopen: TAction;
+    actCalcBenchmark: TAction;
+    N14: TMenuItem;
+    Benchmark1: TMenuItem;
+    actSystemSettings: TAction;
+    actSystemExit: TAction;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -374,6 +389,12 @@ type
       var AllowChange: Boolean);
     procedure actProjecEditModelTextExecute(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
+    procedure actDataSmoothExecute(Sender: TObject);
+    procedure acStructureUndoExecute(Sender: TObject);
+    procedure actProjectReopenExecute(Sender: TObject);
+    procedure actCalcBenchmarkExecute(Sender: TObject);
+    procedure actSystemSettingsExecute(Sender: TObject);
+    procedure actSystemExitExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -404,6 +425,12 @@ type
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
+
+    FStack: TStack<String>;
+    FTerminated: Boolean;
+    FBenchmarkMode: Boolean;
+    FBenchmarkPath: string;
+    FBenchmarkRuns: Integer;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -445,6 +472,9 @@ type
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
+    procedure SaveHistory;
+    procedure RescaleChart;
+    procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
     { Private declarations }
   public
     { Public declarations }
@@ -454,6 +484,10 @@ type
     //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
+    procedure OnLayerUPMsg(var Msg: TMessage); message WM_STR_LAYER_UP;
+    procedure OnLayerDownMsg(var Msg: TMessage); message WM_STR_LAYER_DOWN;
+    procedure OnLayerDeleteMsg(var Msg: TMessage); message WM_STR_LAYER_DELETE;
+    procedure OnLayerInsertMsg(var Msg: TMessage); message WM_STR_LAYER_INSERT;
   end;
 
 var
@@ -465,7 +499,6 @@ uses
   System.IniFiles,
   System.DateUtils,
   AbUtils,
-  unit_settings,
   unit_helpers,
   unit_consts,
   unit_XRCLayerControl,
@@ -482,7 +515,12 @@ uses
   math_globals,
   editor_HenkeTable,
   editor_JSON,
-  unit_LFPSO_Poly;
+  unit_LFPSO_Poly,
+  unit_SavitzkyGolay,
+  frm_Benchmark,
+  unit_files_list,
+  unit_config,
+  frm_settings, unit_XRCStackControl;
 
 {$R *.dfm}
 
@@ -560,6 +598,44 @@ begin
 
 end;
 
+procedure TfrmMain.OnLayerDeleteMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.DeleteLayer(LayerID, ID);
+end;
+
+procedure TfrmMain.OnLayerDownMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.MoveLayer(LayerID, ID, 1);
+end;
+
+procedure TfrmMain.OnLayerInsertMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.SelectLayer(LayerID, ID);
+  LayerInsertExecute(nil);
+  Structure.ClearSelection;
+end;
+
+procedure TfrmMain.OnLayerUPMsg(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.MoveLayer(LayerID, ID, -1);
+end;
+
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
   PlotProfile;
@@ -620,7 +696,11 @@ begin
   begin
      FLastModel := LastNode;
      if LastData.Data <> '' then
-        Structure.FromString(LastData.Data);
+     begin
+       Structure.FromString(LastData.Data);
+       FStack.Clear;
+       FStack.Push(LastData.Data);
+     end;
   end;
 end;
 
@@ -745,6 +825,7 @@ function TfrmMain.CreateChildNode(out Node: PVirtualNode): boolean;
 var
   Data: PProjectData;
 begin
+  Result := False;
   Node := Project.GetFirstSelected;
   if Node = Nil  then Exit;
 
@@ -757,10 +838,8 @@ begin
       Node := Project.AddChild(Node.Parent);
     Result := True;
   end
-  else begin
+  else
     ShowMessage('Parent model is not selected!');
-    Result := False;
-  end;
 end;
 
 function TfrmMain.FindParentModel(out Node: PVirtualNode): PVirtualNode;
@@ -832,7 +911,7 @@ const
 var
   Gradient: PVirtualNode;
   Data: PProjectData;
-  i, j: Integer;
+  i: Integer;
   S: string;
 begin
   for I := 0 to High(P) do
@@ -992,7 +1071,19 @@ begin
   if s <> '' then
   begin
     Normalize(StrToFloat(s), FSeriesList[Project.ActiveData.CurveID]);
+    SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
   end;
+end;
+
+procedure TfrmMain.actDataSmoothExecute(Sender: TObject);
+var
+  Data: TDataArray;
+begin
+  Data := SeriesToData(FSeriesList[Project.ActiveData.CurveID]);
+  //TSavitzkyGolay.SmoothCurve(Data, 2, 8);
+  Data := MovAvg(Data, 5);
+  DataToSeries(Data, FSeriesList[Project.ActiveData.CurveID]);
+  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
@@ -1007,6 +1098,8 @@ end;
 
 procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.CopyLayer(False);
 end;
 
@@ -1046,6 +1139,21 @@ begin
   Project.ActiveModel.Data := S;
 end;
 
+procedure TfrmMain.actProjectReopenExecute(Sender: TObject);
+begin
+  LoadProject(FProjectFileName, True);
+end;
+
+procedure TfrmMain.actSystemExitExecute(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TfrmMain.actSystemSettingsExecute(Sender: TObject);
+begin
+  frmSettings.ShowModal;
+end;
+
 procedure TfrmMain.actNewMaterialExecute(Sender: TObject);
 begin
   frmNewMaterial.ShowModal;
@@ -1066,7 +1174,7 @@ begin
   else
     Data.Color := FSeriesList[Count].Color;
 
-  FSeriesList[Count].LinePen.Width := 2;
+  FSeriesList[Count].LinePen.Width := Config.Section<TGraphOptions>.LineWidth;
   Data.Visible := True;
   FSeriesList[Count].Visible := Data.Visible;
   Data.CurveID := Count;
@@ -1077,7 +1185,7 @@ var
     FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
-  frmLimits.Show(FitStructure);
+  frmLimits.ShowLimits(FitStructure);
   Structure.UpdateInterfaceP(FitStructure);
 end;
 
@@ -1101,6 +1209,12 @@ begin
   SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
 end;
 
+procedure TfrmMain.SaveHistory;
+begin
+  FStack.Push(Structure.ToString);
+  FStack.TrimExcess;
+end;
+
 procedure TfrmMain.MatchToStructure;
 begin
   PrepareDistributionCharts;
@@ -1113,6 +1227,7 @@ var
   Name: string;
   N   : Integer;
 begin
+  SaveHistory;
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
@@ -1121,6 +1236,8 @@ end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.DeleteStack;
   MatchToStructure;
 end;
@@ -1130,6 +1247,8 @@ var
   Name: string;
   N   : Integer;
 begin
+  SaveHistory;
+
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
@@ -1141,7 +1260,7 @@ procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
 begin
   FProjectFileName := FileName;
   FProjectName := ExtractFileName(FileName);
-  FProjectDir := IncludeTrailingPathDelimiter(Settings.TempPath + FProjectName);
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
 
   if Clear then
   begin
@@ -1204,6 +1323,8 @@ begin
     edLFPSOkVmax.Text     := INF.ReadString('LFPSO', 'kVmax', '2');
     edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
     edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
+    cbAdaptiveVelocity.Checked := INF.ReadBool('LFPSO', 'AdaptV', False);
+    cbSeedRange.Checked  := INF.ReadBool('LFPSO', 'SeedRange', False);
 
     cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
   finally
@@ -1213,13 +1334,18 @@ end;
 
 function TfrmMain.GetFitParams: boolean;
 begin
-  Result := False;
-  FFitStructure := Structure.ToFitStructure;
-  if frmLimits.Show(FFitStructure) then
-        Structure.UpdateInterfaceP(FFitStructure)
-  else begin
-    Exit;
-  end;
+  if not FBenchmarkMode then
+  begin
+    Result := False;
+    FFitStructure := Structure.ToFitStructure;
+    if frmLimits.ShowLimits(FFitStructure) then
+          Structure.UpdateInterfaceP(FFitStructure)
+    else begin
+      Exit;
+    end;
+  end
+  else
+    FFitStructure := Structure.ToFitStructure;
 
   FFitParams.NMax := StrToInt(edFIter.Text);
   FFitParams.Pop  := StrToInt(edFPopulation.Text);
@@ -1234,8 +1360,11 @@ begin
 
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
-  FFitParams.CFactor     := True;
+  FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
+  FFitParams.RangeSeed      := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
+  FFitParams.Ksxr        := 0.2;
+
   Result := True;
 end;
 
@@ -1330,7 +1459,7 @@ begin
   if FSeriesList[Project.ActiveModel.CurveID].Count = 0 then
     Exit;
 
-  my := 0;
+  my := 0;  mx := 0;
   x1 := Chart.BottomAxis.Minimum;
   x2 := Chart.BottomAxis.Maximum;
   RI := 0;
@@ -1546,7 +1675,7 @@ end;
 
 procedure TfrmMain.PlotSimpleProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
+  StackIndex, LayerIndex, PeriodIndex, shift, d, p: integer;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1671,8 +1800,12 @@ end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
 begin
- if LFPSO <> nil then
+  FTerminated := True;
+
+  if LFPSO <> nil then
+  begin
        LFPSO.Terminate;
+  end;
 end;
 
 
@@ -1740,10 +1873,18 @@ begin
   Result := True;
 end;
 
+procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
+begin
+  if FStack.Count > 0 then
+  begin
+    Structure.FromString(FStack.Peek);
+    FStack.Extract;
+  end;
+end;
+
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
-  Node: PVirtualNode;
 begin
   if not GetFitParams then Exit;
 
@@ -1777,6 +1918,48 @@ begin
   finally
     Screen.Cursor := crDefault;
     FreeAndNil(LFPSO);
+  end;
+end;
+
+procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
+var
+  i: Integer;
+begin
+  FProjectFileName := FBenchmarkPath + F.Name;
+  frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
+  for i := 1 to FBenchmarkRuns do
+  begin
+    actProjectReopenExecute(nil);
+    actAutoFittingExecute(nil);
+    frmBenchmark.AddValue(i, spChiSqr.Caption);
+    frmBenchmark.CalcStats;
+    Application.ProcessMessages;
+    if FTerminated then Break;
+  end;
+  frmBenchmark.CalcStats;
+end;
+
+procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
+var
+  Files: TFilesList;
+begin
+  FBenchmarkRuns := 20;
+
+  try
+    FTerminated := False;
+    frmBenchmark.Clear(FBenchmarkRuns);
+    frmBenchmark.Show;
+    FBenchmarkMode := True;
+
+    Files := TFilesList.Create(nil);
+    FBenchmarkPath := Config.BenchPath;
+    Files.TargetPath := FBenchmarkPath;
+    Files.Mask := '*.xrcx';
+    Files.OnFile := ProcessBenchFile;
+    Files.Process;
+    FBenchmarkMode := False;
+  finally
+    FreeAndNil(Files);
   end;
 end;
 
@@ -1888,6 +2071,14 @@ begin
   end;
 end;
 
+procedure TfrmMain.RescaleChart;
+begin
+  Chart.BottomAxis.Minimum := StrToFloat(edStartTeta.Text);
+  Chart.BottomAxis.Maximum := StrToFloat(edEndTeta.Text);
+
+  Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+end;
+
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
 var
   Data: TLayerData;
@@ -1897,6 +2088,8 @@ begin
     ShowMessage('Stack is not selected!');
     Exit;
   end;
+
+  SaveHistory;
 
   Data.Material := 'Si';
 
@@ -1911,6 +2104,8 @@ end;
 
 procedure TfrmMain.LayerCutExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.CopyLayer(False);
   Structure.DeleteLayer;
   MatchToStructure;
@@ -1918,6 +2113,8 @@ end;
 
 procedure TfrmMain.LayerDeleteExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.DeleteLayer;
   MatchToStructure;
 end;
@@ -1932,6 +2129,8 @@ begin
     Exit;
   end;
 
+  SaveHistory;
+
   Data.Material := 'Si';
 
   Data.P[1].New(25);
@@ -1945,6 +2144,8 @@ end;
 
 procedure TfrmMain.LayerPasteExecute(Sender: TObject);
 begin
+  SaveHistory;
+
   Structure.PasteLayer;
   MatchToStructure;
 end;
@@ -1964,6 +2165,7 @@ begin
   Project.Repaint;
   Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
   MatchToStructure;
+  RescaleChart;
 end;
 
 procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
@@ -2068,6 +2270,8 @@ begin
     INF.WriteString('LFPSO', 'w1', edLFPSOOmega1.Text );
     INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
     INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
+    INF.WriteBool('LFPSO', 'AdaptV', cbAdaptiveVelocity.Checked);
+    INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
 
     INF.UpdateFile;
 
@@ -2116,7 +2320,7 @@ begin
     OldProjectDir := FProjectDir;
     FProjectName := ExtractFileName(dlgSaveProject.FileName);
     FProjectDir := IncludeTrailingPathDelimiter
-      (Settings.TempPath + FProjectName);
+      (Config.TempPath + FProjectName);
 
     if DirectoryExists(FProjectDir) then
         ClearDir(FProjectDir, True);
@@ -2196,7 +2400,7 @@ begin
 
   FLastID := 1;
   FProjectName := 'noname.xrcx';
-  FProjectDir := IncludeTrailingPathDelimiter(Settings.TempPath + FProjectName);
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
   FProjectFileName := FProjectDir + FProjectName;
   CreateDir(FProjectDir);
 
@@ -2230,16 +2434,20 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
 begin
+  FormatSettings.DecimalSeparator := '.';
+  Config := TConfig.Create;
   CreateProjectTree;
 
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
 
-  FormatSettings.DecimalSeparator := '.';
+  FStack := TStack<String>.Create;
+  FStack.Capacity := 10;
+
   Project.NodeDataSize := SizeOf(TProjectData);
 
-  CreateSettings;
-  CreateDir(Settings.TempDir);
+//  CreateSettings;
+  CreateDir(Config.TempDir);
   Pages.ActivePageindex := 0;
 
   if ParamCount <> 0 then
@@ -2265,7 +2473,8 @@ procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Project.Clear;
   FreeAndNil(Structure);
-  FreeAndNil(Settings);
+  FreeAndNil(FStack);
+  FreeAndNil(Config);
 end;
 
 

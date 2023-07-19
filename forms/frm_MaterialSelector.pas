@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Buttons, Vcl.WinXCtrls,
-  unit_helpers, unit_settings;
+  unit_helpers, unit_Config;
 
 type
   TfrmMaterialSelector = class(TForm)
@@ -31,7 +31,7 @@ implementation
 
 procedure TfrmMaterialSelector.SelectMaterial(var Name: string);
 begin
-  FillElementsList(Settings.HenkePath, lbFiles);
+  FillElementsList(Config.HenkePath, lbFiles);
   if ShowModal = mrOk then
   begin
     Name := lbFiles.Items[lbFiles.ItemIndex];

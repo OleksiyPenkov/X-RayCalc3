@@ -25,7 +25,7 @@ type
       FEnablePairing: Boolean;
       FLinkedLayers: array [0..1] of Integer;
 
-      procedure ClearLayers;
+//      procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
       procedure UpdateInfo;
       function GetLayersData: TLayersData;
@@ -40,13 +40,14 @@ type
       procedure FOnClick(Sender: TObject);
       procedure FOnDoubleClick(Sender: TObject);
     public
-      constructor Create(AOwner: TComponent; const Title: string; const N: integer);
+      constructor Create(AOwner: TComponent; const Title: string; const N: integer);reintroduce; overload;
       destructor  Destroy; override;
 
       function AddLayer(Data: TLayerData; Pos: integer = -1): integer;
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
       procedure DeleteLayer(const Index: integer);
+      procedure MoveLayer(const Index, Direction: integer);
       procedure UpdateLayersID;
 
       property Selected: Boolean write SetSelected;
@@ -79,7 +80,7 @@ end;
 
 function TXRCStack.AddLayer(Data: TLayerData; Pos: integer): integer;
 var
-  Count, i: Integer;
+  Count: Integer;
   Inserted: Boolean;
 begin
   Count := Length(FLayers);
@@ -138,15 +139,15 @@ begin
   FLayers[0].Top := ClientHeight - 10;
 end;
 
-procedure TXRCStack.ClearLayers;
-var
-  i: Integer;
-begin
-  for I := 0 to High(FLayers) do
-     FreeAndNil(FLayers[i]);
-
-  SetLength(FLayers, 0);
-end;
+//procedure TXRCStack.ClearLayers;
+//var
+//  i: Integer;
+//begin
+//  for I := 0 to High(FLayers) do
+//     FreeAndNil(FLayers[i]);
+//
+//  SetLength(FLayers, 0);
+//end;
 
 procedure TXRCStack.ClearSelection;
 var
@@ -218,12 +219,13 @@ begin
   lblLayers.Name := 'lblLayers';
   lblLayers.Parent := Self;
   lblLayers.AlignWithMargins := True;
-  lblLayers.Margins.Left := 50;
+  lblLayers.Margins.Left := ClientWidth - 50;
   lblLayers.Align := alTop;
   lblLayers.Alignment := taRightJustify;
   lblLayers.Font.Color := clNavy;
   lblLayers.Font.Style := [fsBold];
   lblLayers.ParentFont := False;
+
 
   //RzSeparator1
   RzSeparator.Name := 'RzSeparator1';
@@ -235,6 +237,8 @@ begin
 
   OnClick := FOnClick;
   OnDblClick := FOnDoubleClick;
+  lblLayers.OnClick := FOnClick;
+  lblLayers.OnDblClick := FOnDoubleClick;
 
   FLinkedLayers[0] := -1;
   FLinkedLayers[1] := -1;
@@ -303,7 +307,6 @@ end;
 function TXRCStack.GetMaterialsList: TMaterialsList;
 var
   i: integer;
-  Cache: array of string;
 begin
   SetLength(Result, Length(FLayers));
   for i := 0 to High(FLayers) do
@@ -365,6 +368,23 @@ begin
     FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
   end;
 
+end;
+
+procedure TXRCStack.MoveLayer(const Index, Direction: integer);
+var
+  NewPos: Integer;
+  Tmp: TXRCLayerControl;
+begin
+  NewPos := Index + Direction;
+  if (NewPos < 0) or (NewPos >= Length(FLayers)) then Exit;
+
+  Tmp := FLayers[NewPos];
+  FLayers[NewPos] := FLayers[Index];
+
+  FLayers[Index] := Tmp;
+
+  UpdateLayersID;
+  RealignLayers;
 end;
 
 procedure TXRCStack.RealignLayers;

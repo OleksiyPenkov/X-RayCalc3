@@ -9,17 +9,18 @@ uses
 type
 
   TLFPSO_Regular = class (TLFPSO_BASE)
-    private
+    protected
       FLinks : TIndexes;
 
       procedure UpdateLFPSO(const t: integer); override;
-      procedure Seed; override;
-      procedure ReSeed; override;
+      procedure RangeSeed; override;
+      procedure XSeed; override;
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
     public
       //
+    destructor Destroy; override;
   end;
 
 implementation
@@ -84,6 +85,12 @@ begin
   end;
 end;
 
+destructor TLFPSO_Regular.Destroy;
+begin
+  Finalize(FLinks);
+  inherited;
+end;
+
 procedure TLFPSO_Regular.InitVelocity;
 var
   i, j, k: integer;
@@ -101,19 +108,19 @@ begin
 
 end;
 
-procedure TLFPSO_Regular.ReSeed;
+procedure TLFPSO_Regular.XSeed;
 var
   i, j, k: integer;
 begin
-  for i := 0 to High(X) do          // for every member of the population
+  for i := 1 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
-        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0]);
+        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
   end;
 end;
 
-procedure TLFPSO_Regular.Seed;
+procedure TLFPSO_Regular.RangeSeed;
 var
   i, j, k: integer;
 begin
@@ -141,7 +148,6 @@ end;
 procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
 var
   i, j, k, l, p, Index: integer;
-  D: double;
   Links: TIndexes;
   NLayers: Integer;
 begin

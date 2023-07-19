@@ -3,8 +3,8 @@ object edtrProfileFunction: TedtrProfileFunction
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Profile function'
-  ClientHeight = 343
-  ClientWidth = 842
+  ClientHeight = 331
+  ClientWidth = 834
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -24,20 +24,18 @@ object edtrProfileFunction: TedtrProfileFunction
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 299
-    Width = 836
+    Top = 287
+    Width = 828
     Height = 41
     Align = alBottom
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 287
-    ExplicitWidth = 828
     DesignSize = (
-      836
+      828
       41)
     object btnOK: TRzBitBtn
-      Left = 753
+      Left = 737
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -62,14 +60,12 @@ object edtrProfileFunction: TedtrProfileFunction
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 836
-    Height = 290
+    Width = 828
+    Height = 278
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 828
-    ExplicitHeight = 278
     object Label1: TLabel
       Left = 9
       Top = 10
