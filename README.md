@@ -8,12 +8,13 @@ The X-Ray Calc distribution contents several demonstration projects located in t
 
 2023-07-18 3.0.4
 Added:
- - Popum menu for stacks
+ - Popup menu for stacks
  - Popup menu for layers
  - Some settings
 Fixed/Reworked
+ - Poly Fitting
  - Stack selection
- - Global refactoring (Cleraing [dcc32 Warnings/Hints] 
+ - Global refactoring (Clearing [dcc32 Warnings/Hints]) 
 
 2023-07-12 3.0.4 beta
 Fixed:
