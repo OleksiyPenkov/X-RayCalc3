@@ -12,7 +12,6 @@ type
     RzPanel1: TRzPanel;
     BitBtn1: TBitBtn;
     Grid: TStringGrid;
-    pnl1: TPanel;
     procedure BitBtn1Click(Sender: TObject);
   private
     FLine: Integer;

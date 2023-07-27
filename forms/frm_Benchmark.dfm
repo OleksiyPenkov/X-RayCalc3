@@ -1,10 +1,10 @@
 object frmBenchmark: TfrmBenchmark
   Left = 0
   Top = 0
-  BorderStyle = bsNone
+  BorderStyle = bsToolWindow
   Caption = 'Benchmark'
-  ClientHeight = 436
-  ClientWidth = 999
+  ClientHeight = 409
+  ClientWidth = 991
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,19 +18,18 @@ object frmBenchmark: TfrmBenchmark
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 993
-    Height = 430
+    Width = 985
+    Height = 403
     Align = alClient
     BorderOuter = fsGroove
     BorderWidth = 2
+    Color = 15987699
     TabOrder = 0
-    ExplicitLeft = 31
-    ExplicitTop = 152
-    ExplicitWidth = 185
-    ExplicitHeight = 41
+    ExplicitWidth = 993
+    ExplicitHeight = 430
     object BitBtn1: TBitBtn
       Left = 896
-      Top = 387
+      Top = 363
       Width = 75
       Height = 25
       Caption = 'Close'
@@ -40,9 +39,9 @@ object frmBenchmark: TfrmBenchmark
     object Grid: TStringGrid
       AlignWithMargins = True
       Left = 7
-      Top = 54
-      Width = 979
-      Height = 322
+      Top = 7
+      Width = 971
+      Height = 342
       Margins.Bottom = 50
       Align = alClient
       ColCount = 6
@@ -50,26 +49,9 @@ object frmBenchmark: TfrmBenchmark
       FixedCols = 0
       RowCount = 2
       TabOrder = 1
-    end
-    object pnl1: TPanel
-      AlignWithMargins = True
-      Left = 7
-      Top = 7
-      Width = 979
-      Height = 41
-      Align = alTop
-      Alignment = taLeftJustify
-      Caption = 'Benchmark'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -16
-      Font.Name = 'Segoe UI'
-      Font.Style = [fsBold]
-      ParentFont = False
-      TabOrder = 2
-      ExplicitLeft = 5
-      ExplicitTop = -3
-      ExplicitWidth = 200
+      ExplicitTop = 54
+      ExplicitWidth = 979
+      ExplicitHeight = 322
     end
   end
 end

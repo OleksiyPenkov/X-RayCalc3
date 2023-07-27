@@ -418,6 +418,7 @@ object frmMain: TfrmMain
             BottomAxis.Minimum = -1.000000000000000000
             BottomAxis.Title.Caption = 'Iteration'
             LeftAxis.AxisValuesFormat = '#.0 "x10" E+0'
+            LeftAxis.ExactDateTime = False
             LeftAxis.LabelsExponent = True
             LeftAxis.LabelsFormat.Margins.Left = 0
             LeftAxis.LabelsFormat.Margins.Right = 0
@@ -841,9 +842,9 @@ object frmMain: TfrmMain
             Width = 359
             Height = 101
             Hint = ''
-            ActivePage = TabSheet2
+            ActivePage = TabSheet1
             Align = alLeft
-            TabIndex = 1
+            TabIndex = 0
             TabOrder = 0
             FixedDimension = 21
             object TabSheet1: TRzTabSheet
@@ -1148,8 +1149,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 49
-                Width = 54
-                Height = 19
+                Width = 50
+                Height = 17
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1249,8 +1250,8 @@ object frmMain: TfrmMain
               object cbAdaptiveVelocity: TRzCheckBox
                 Left = 304
                 Top = 11
-                Width = 48
-                Height = 19
+                Width = 44
+                Height = 17
                 AlignmentVertical = avCenter
                 Caption = 'Ad.V'
                 State = cbUnchecked
@@ -1260,8 +1261,8 @@ object frmMain: TfrmMain
               object cbSeedRange: TRzCheckBox
                 Left = 234
                 Top = 11
-                Width = 55
-                Height = 19
+                Width = 51
+                Height = 17
                 AlignmentVertical = avCenter
                 Caption = 'SeedR'
                 Checked = True

@@ -583,8 +583,8 @@ var
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
-  if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
-    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
+//  if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
+//    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
 
 
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
