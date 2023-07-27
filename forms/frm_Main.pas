@@ -395,6 +395,7 @@ type
     procedure actCalcBenchmarkExecute(Sender: TObject);
     procedure actSystemSettingsExecute(Sender: TObject);
     procedure actSystemExitExecute(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -813,7 +814,11 @@ begin
   if IsModel and IsItem then
     DeleteModel(LastNode, LastData);
   if IsData and IsItem then
+  begin
+    if LastData = Project.LinkedData then
+      Project.LinkedData := nil;
     DeleteData(LastNode, LastData);
+  end;
   if IsFolder then
     DeleteFolder(LastNode);
   if IsExtension then
@@ -1816,7 +1821,7 @@ begin
   chFittingProgress.BottomAxis.Minimum := 0;
   chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
   chFittingProgress.BottomAxis.Minimum := -1;
-  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
+//  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
 end;
 
 function TfrmMain.PrepareCalc: Boolean;
@@ -2430,6 +2435,11 @@ begin
   Project.LinkedData := nil;
 end;
 
+procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  CanClose := MessageDlg('Exit application?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
@@ -2472,6 +2482,7 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Project.Clear;
+  FreeAndNil(Project);
   FreeAndNil(Structure);
   FreeAndNil(FStack);
   FreeAndNil(Config);

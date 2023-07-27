@@ -37,8 +37,8 @@ type
       procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
       procedure ProjectBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
     public
-      constructor Create(AOwner: TComponent); override;
-      destructor Destroy; override;
+      constructor Create(AOwner: TComponent);  override;
+      destructor Destroy;  reintroduce; overload;
 
       property Version: Integer write FProjectVersion;
       property ActiveModel:PProjectData read FActiveModel write FActiveModel;

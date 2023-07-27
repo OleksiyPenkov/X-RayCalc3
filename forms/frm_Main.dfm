@@ -14,6 +14,7 @@ object frmMain: TfrmMain
   Menu = mmMain
   Position = poDesigned
   WindowState = wsMaximized
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   TextHeight = 15
@@ -416,9 +417,6 @@ object frmMain: TfrmMain
             BottomAxis.Maximum = 100.000000000000000000
             BottomAxis.Minimum = -1.000000000000000000
             BottomAxis.Title.Caption = 'Iteration'
-            LeftAxis.Automatic = False
-            LeftAxis.AutomaticMaximum = False
-            LeftAxis.AutomaticMinimum = False
             LeftAxis.AxisValuesFormat = '#.0 "x10" E+0'
             LeftAxis.LabelsExponent = True
             LeftAxis.LabelsFormat.Margins.Left = 0
@@ -427,9 +425,7 @@ object frmMain: TfrmMain
             LeftAxis.LabelsFormat.Margins.Units = maPercentSize
             LeftAxis.LabelsSeparation = 20
             LeftAxis.Logarithmic = True
-            LeftAxis.Maximum = 20.000000000000000000
             LeftAxis.MaximumRound = True
-            LeftAxis.Minimum = 0.005000000000000000
             LeftAxis.Title.Caption = #967'2'
             LeftAxis.Title.Font.Height = -13
             View3D = False
@@ -845,9 +841,9 @@ object frmMain: TfrmMain
             Width = 359
             Height = 101
             Hint = ''
-            ActivePage = TabSheet1
+            ActivePage = TabSheet2
             Align = alLeft
-            TabIndex = 0
+            TabIndex = 1
             TabOrder = 0
             FixedDimension = 21
             object TabSheet1: TRzTabSheet
@@ -1257,9 +1253,9 @@ object frmMain: TfrmMain
                 Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Ad.V'
-                Checked = True
-                State = cbChecked
+                State = cbUnchecked
                 TabOrder = 8
+                Visible = False
               end
               object cbSeedRange: TRzCheckBox
                 Left = 234
