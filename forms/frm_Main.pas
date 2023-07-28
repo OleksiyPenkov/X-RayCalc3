@@ -1559,6 +1559,7 @@ procedure TfrmMain.FinalizeCalc(Calc: TCalc);
 var
   Hour, Min, Sec, MSec: Word;
 begin
+  RescaleChart;
   PlotResults(Calc.Results);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
