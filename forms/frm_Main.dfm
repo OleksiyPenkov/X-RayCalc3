@@ -1149,8 +1149,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 49
-                Width = 50
-                Height = 17
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1185,7 +1185,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 3
-                Text = '0'
+                Text = '0.1'
               end
               object edLFPSORImax: TEdit
                 Left = 106
@@ -1215,7 +1215,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 5
-                Text = '3'
+                Text = '1.41'
               end
               object edLFPSOkVmax: TEdit
                 Left = 291
@@ -1230,7 +1230,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 6
-                Text = '1'
+                Text = '1.41'
               end
               object edLFPSOSkip: TEdit
                 Left = 175
@@ -1250,8 +1250,8 @@ object frmMain: TfrmMain
               object cbAdaptiveVelocity: TRzCheckBox
                 Left = 304
                 Top = 11
-                Width = 44
-                Height = 17
+                Width = 48
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Ad.V'
                 State = cbUnchecked
@@ -1261,8 +1261,8 @@ object frmMain: TfrmMain
               object cbSeedRange: TRzCheckBox
                 Left = 234
                 Top = 11
-                Width = 51
-                Height = 17
+                Width = 55
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'SeedR'
                 Checked = True
