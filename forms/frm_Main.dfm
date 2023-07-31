@@ -1006,6 +1006,7 @@ object frmMain: TfrmMain
                 Checked = True
                 State = cbChecked
                 TabOrder = 6
+                OnClick = cbTreatPeriodicClick
               end
               object cbPoly: TRzCheckBox
                 Left = 264
@@ -1149,8 +1150,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 49
-                Width = 50
-                Height = 17
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1250,8 +1251,8 @@ object frmMain: TfrmMain
               object cbAdaptiveVelocity: TRzCheckBox
                 Left = 304
                 Top = 11
-                Width = 44
-                Height = 17
+                Width = 48
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Ad.V'
                 State = cbUnchecked
@@ -1261,8 +1262,8 @@ object frmMain: TfrmMain
               object cbSeedRange: TRzCheckBox
                 Left = 234
                 Top = 11
-                Width = 51
-                Height = 17
+                Width = 55
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'SeedR'
                 Checked = True

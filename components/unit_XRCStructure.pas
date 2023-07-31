@@ -35,6 +35,7 @@ type
 
       FClipBoardLayers: TLayersData;
       JLayer, JStack, JSub: TJSONValue;
+      FPeriodicMode: boolean;
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
@@ -43,6 +44,7 @@ type
       function FindValue(const Value: string; Base: single): single;
       function FindStrValue(const Value: string): string;
       function GetSelectedLayer: Integer;
+      procedure SetPeriodicMode(const Value: boolean);
     public
       constructor Create(AOwner: TComponent); override;
       destructor  Destroy; override;
@@ -51,6 +53,7 @@ type
       property SelectedLayer: Integer read GetSelectedLayer;
       property Stacks: TStacks read FStacks;
       property Period: single read FPeriod;
+      property PeriodicMode: boolean read FPeriodicMode write SetPeriodicMode;
 
       procedure AddLayer(const StackID: Integer; const Data: TLayerData);
       procedure InsertLayer(const Data: TLayerData);
@@ -87,7 +90,7 @@ type
       procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
       procedure GetLayersList(const ID: integer; List: TStrings);
       function GetStackSize(const ID: Integer): Integer;
-      procedure EnablePairing;
+//      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
     published
       property Increment: single read FIncrement write SetIncrement;
@@ -331,13 +334,13 @@ begin
   FStacks[ID].Edit;
 end;
 
-procedure TXRCStructure.EnablePairing;
-var
-  Stack: TXRCStack;
-begin
-  for Stack in FStacks do
-    Stack.EnablePairing(True);
-end;
+//procedure TXRCStructure.EnablePairing;
+//var
+//  Stack: TXRCStack;
+//begin
+//  for Stack in FStacks do
+//    Stack.EnablePairing(True);
+//end;
 
 
 procedure TXRCStructure.InsertLayer(const Data: TLayerData);
@@ -491,6 +494,14 @@ begin
   FIncrement := Value;
   for I := 0 to High(FStacks) do
     FStacks[i].Increment := Value;
+end;
+
+procedure TXRCStructure.SetPeriodicMode(const Value: boolean);
+var
+  Stack: TXRCStack;
+begin
+  for Stack in FStacks do
+    Stack.EnablePairing(Value);
 end;
 
 procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);

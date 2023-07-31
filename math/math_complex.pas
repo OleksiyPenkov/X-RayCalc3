@@ -461,7 +461,15 @@ function ExpZ(const Z: TComplex): TComplex;
 var
   x: single;
 begin
-  x := FastExp(Z.Re);
+  {$IFDEF  WIN32}
+    x := FastExp(Z.Re);
+  {$ELSE}
+    if (Z.Re > -1023) and (Z.Re < 1023) then
+       x := FastExp(Z.Re)
+    else
+       x := Exp(Z.Re);
+  {$ENDIF}
+
   Result.Re := x * FastCos(Z.Im);
   Result.Im := x * FastSin(Z.Im);
 end;

@@ -324,11 +324,15 @@ var
     Result := sqr(AbsZ(ALayers[0].R));
   end;
 
-  function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single;inline;
+  function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single; inline;
+  var
+    Pow: single;
   begin
     case RF of
-      rfError:
-        Result := FastExp(-1 * sqr(sigma / 1.41) * sqr(s));
+      rfError: begin
+                 Pow := -1 * sqr(sigma / 1.41) * sqr(s);
+                 Result := FastExp(Pow);
+               end;
       rfExp:
         Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
       rfLinear:
@@ -344,7 +348,7 @@ var
     end;
   end;
 
-  procedure LayerAmplitudeRefractionS;     { Коэффициент отражения Rs}
+  procedure LayerAmplitudeRefractionS;    { Коэффициент отражения Rs}
   var
     i: integer;
     b1, b2: TComplex;
@@ -362,7 +366,7 @@ var
     end;
   end;
 
-  procedure LayerAmplitudeRefractionP;     { Коэффициент отражения Rp }
+  procedure LayerAmplitudeRefractionP;      { Коэффициент отражения Rp }
   var
     i: integer;
     a1, a2, b1, b2: TComplex;

@@ -396,6 +396,7 @@ type
     procedure actSystemSettingsExecute(Sender: TObject);
     procedure actSystemExitExecute(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure cbTreatPeriodicClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -2032,7 +2033,9 @@ begin
   end;
 
   Structure.FromString(Project.ActiveModel.Data);
-  Structure.EnablePairing;
+//  if cbTreatPeriodic.Checked then
+//        Structure.EnablePairing;
+  Structure.PeriodicMode := not cbTreatPeriodic.Checked;
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
@@ -2525,6 +2528,11 @@ end;
 procedure TfrmMain.cbMinLimitChange(Sender: TObject);
 begin
   Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+end;
+
+procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
+begin
+  Structure.PeriodicMode := not cbTreatPeriodic.Checked;
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);
