@@ -395,6 +395,8 @@ type
     procedure actCalcBenchmarkExecute(Sender: TObject);
     procedure actSystemSettingsExecute(Sender: TObject);
     procedure actSystemExitExecute(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure cbTreatPeriodicClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -582,8 +584,8 @@ var
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
-  if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
-    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
+//  if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
+//    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
 
 
   spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
@@ -813,7 +815,11 @@ begin
   if IsModel and IsItem then
     DeleteModel(LastNode, LastData);
   if IsData and IsItem then
+  begin
+    if LastData = Project.LinkedData then
+      Project.LinkedData := nil;
     DeleteData(LastNode, LastData);
+  end;
   if IsFolder then
     DeleteFolder(LastNode);
   if IsExtension then
@@ -1554,6 +1560,7 @@ procedure TfrmMain.FinalizeCalc(Calc: TCalc);
 var
   Hour, Min, Sec, MSec: Word;
 begin
+  RescaleChart;
   PlotResults(Calc.Results);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
@@ -1816,7 +1823,7 @@ begin
   chFittingProgress.BottomAxis.Minimum := 0;
   chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
   chFittingProgress.BottomAxis.Minimum := -1;
-  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
+//  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
 end;
 
 function TfrmMain.PrepareCalc: Boolean;
@@ -2026,7 +2033,9 @@ begin
   end;
 
   Structure.FromString(Project.ActiveModel.Data);
-  Structure.EnablePairing;
+//  if cbTreatPeriodic.Checked then
+//        Structure.EnablePairing;
+  Structure.PeriodicMode := not cbTreatPeriodic.Checked;
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
@@ -2430,6 +2439,11 @@ begin
   Project.LinkedData := nil;
 end;
 
+procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+begin
+  CanClose := MessageDlg('Exit application?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
@@ -2472,6 +2486,7 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Project.Clear;
+  FreeAndNil(Project);
   FreeAndNil(Structure);
   FreeAndNil(FStack);
   FreeAndNil(Config);
@@ -2513,6 +2528,11 @@ end;
 procedure TfrmMain.cbMinLimitChange(Sender: TObject);
 begin
   Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+end;
+
+procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
+begin
+  Structure.PeriodicMode := not cbTreatPeriodic.Checked;
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);

@@ -41,6 +41,15 @@ uses
 
 { TLFPSO Periodic}
 
+function TP(const n: Integer): Integer;
+var
+  i : Integer;
+begin
+  Result := 10;
+  for I := 2 to n do
+    Result := Result * 10;
+end;
+
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
 var
   i, j, k,c, Ord: integer;
@@ -156,7 +165,7 @@ begin
         begin
           if p > 0 then
           begin
-            Vmax[0][j][k][p] :=  Vmax[0][j][k][0]/(p * 10 + 1);
+            Vmax[0][j][k][p] :=  Vmax[0][j][k][0]/TP(p);
             Vmin[0][j][k][p] := -Vmax[0][j][k][p];
           end;
           V[i][j][k][p] := Rand(Vmax[0][j][k][p]);
@@ -203,7 +212,7 @@ begin
             X[i][j][k][0] := X[0][Indexes[j]][k][0] + Val
           end
           else
-            X[i][j][k][p] := Rand(1)/sqr(1 + p);
+            X[i][j][k][p] := Rand(1)/TP(p);
         end;
         CheckLimits(i, j, k);
       end;
@@ -351,7 +360,7 @@ begin
     X[0][Index][ValueType][10]:= FFitParams.MaxPOrder;
 
     for p := 1 to Order(Index, ValueType) do
-      Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / Sqr(p + 1);
+      Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / TP(p);
   end;
 end;
 

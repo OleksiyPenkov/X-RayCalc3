@@ -120,9 +120,6 @@ const
   MaxC = 10;
   a = 0.5;
   eps = 1;
-  c1m = 1.412;
-  c2m = 1.412;
-
 
 implementation
 
@@ -300,12 +297,12 @@ procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
 begin
   if FFitParams.AdaptVel and (CFactor > 0) then
   begin
-    c1 := c1m * CFactor;
-    c2 := c2m * CFactor;
+    c1 := CFactor;
+    c2 := CFactor;
   end else
   begin
-    c1 := c1m;
-    c2 := c2m;
+    c1 := 1;
+    c2 := 1;
   end;
 end;
 
@@ -346,7 +343,6 @@ begin
   dX := X * S;
   Result := dX * Random;
 end;
-
 
 
 procedure TLFPSO_BASE.CalcSolution;
@@ -398,6 +394,8 @@ begin
     if FTerminated then Break;
   end;
 
+//  CFactor := eps + (FGlobalBestChiSqr- FLastBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
+  CFactor := 1;  // left for future
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
@@ -409,15 +407,12 @@ begin
       abest := Copy(gbest, 0, MaxInt);
       CalcSolution(abest);
       Result := True;
-//      ShowMessage(Format('%f   %f  %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
-    end;
-    CFactor := eps + (FLastBestChiSqr - FAbsoluteBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
+    end ;
   end
   else begin
     SetLength(FResultingCurve, 0);
     Inc(FJammingCount);
   end;
-
 end;
 
 procedure TLFPSO_BASE.Init(const Step: integer);
@@ -454,15 +449,15 @@ begin
     FGlobalBestChiSqr := FGlobalBestChiSqr  * FFitParams.KChiSqr;
     FFitParams.Vmax := FFitParams.Vmax * FFitParams.KVmax;
     FFitParams.Ksxr := FFitParams.Ksxr * FFitParams.KVmax;
+    Inc(ReInitCount);
+    dec(SuccessCount);
   end;
   UpdateStructure(gbest);        // re-init based on current global best solution
   TmpStructure := FStructure;
   SetStructure(TmpStructure);    // Don't use X[0] = abest! The full re-set is requred
 
   Init(t);
-  Inc(ReInitCount);
   FJammingCount := 0;
-  dec(SuccessCount);
 end;
 
 procedure TLFPSO_BASE.Run;
@@ -508,8 +503,11 @@ begin
 
     if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
       Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0)
-    else
+    else begin
+      FFitParams.Vmax := Vmax0;
+      FFitParams.Ksxr := Ksxr0;
       inc(SuccessCount);
+    end;
   end;
 //  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
   UpdateStructure(abest);  // don't delete!

@@ -14,6 +14,7 @@ object frmMain: TfrmMain
   Menu = mmMain
   Position = poDesigned
   WindowState = wsMaximized
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   TextHeight = 15
@@ -416,10 +417,8 @@ object frmMain: TfrmMain
             BottomAxis.Maximum = 100.000000000000000000
             BottomAxis.Minimum = -1.000000000000000000
             BottomAxis.Title.Caption = 'Iteration'
-            LeftAxis.Automatic = False
-            LeftAxis.AutomaticMaximum = False
-            LeftAxis.AutomaticMinimum = False
             LeftAxis.AxisValuesFormat = '#.0 "x10" E+0'
+            LeftAxis.ExactDateTime = False
             LeftAxis.LabelsExponent = True
             LeftAxis.LabelsFormat.Margins.Left = 0
             LeftAxis.LabelsFormat.Margins.Right = 0
@@ -427,9 +426,7 @@ object frmMain: TfrmMain
             LeftAxis.LabelsFormat.Margins.Units = maPercentSize
             LeftAxis.LabelsSeparation = 20
             LeftAxis.Logarithmic = True
-            LeftAxis.Maximum = 20.000000000000000000
             LeftAxis.MaximumRound = True
-            LeftAxis.Minimum = 0.005000000000000000
             LeftAxis.Title.Caption = #967'2'
             LeftAxis.Title.Font.Height = -13
             View3D = False
@@ -1009,6 +1006,7 @@ object frmMain: TfrmMain
                 Checked = True
                 State = cbChecked
                 TabOrder = 6
+                OnClick = cbTreatPeriodicClick
               end
               object cbPoly: TRzCheckBox
                 Left = 264
@@ -1188,7 +1186,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 3
-                Text = '0'
+                Text = '0.1'
               end
               object edLFPSORImax: TEdit
                 Left = 106
@@ -1218,7 +1216,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 5
-                Text = '3'
+                Text = '1.41'
               end
               object edLFPSOkVmax: TEdit
                 Left = 291
@@ -1233,7 +1231,7 @@ object frmMain: TfrmMain
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 6
-                Text = '1'
+                Text = '1.41'
               end
               object edLFPSOSkip: TEdit
                 Left = 175
@@ -1257,9 +1255,9 @@ object frmMain: TfrmMain
                 Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Ad.V'
-                Checked = True
-                State = cbChecked
+                State = cbUnchecked
                 TabOrder = 8
+                Visible = False
               end
               object cbSeedRange: TRzCheckBox
                 Left = 234

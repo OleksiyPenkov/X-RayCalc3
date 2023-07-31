@@ -53,6 +53,7 @@ type
       function GetStackID: Integer;
       procedure CreateMenu;
       procedure MenuOnClick(Sender: TObject);
+      procedure SetEnableLinking(const Value: boolean);
     public
       constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData); reintroduce; overload;
       destructor  Destroy; override;
@@ -69,7 +70,7 @@ type
       property Checked: Boolean read GetLinkChecked;
       property Selected: boolean read FSelected write SetSlected;
       property Pairable: boolean write SetPairable;
-
+      property EnableLinking: boolean write SetEnableLinking;
       property Data: TLayerData read FData write SetLayerData;
 
       procedure IncreaseThickness;
@@ -264,6 +265,11 @@ begin
   Enabled := Value;
 end;
 
+procedure TXRCLayerControl.SetEnableLinking(const Value: boolean);
+begin
+  FLinkCheckBox.Visible := Value;
+end;
+
 function TXRCLayerControl.GetCheckBox: TRzCheckBox;
 begin
   Result := FLinkCheckBox;
@@ -363,8 +369,6 @@ end;
 
 procedure TXRCLayerControl.SetPairable(const Value: boolean);
 begin
-  FLinkCheckBox.Visible := Value;
-
   PairedH.Visible := Value;
   PairedS.Visible := Value;
   PairedR.Visible := Value;

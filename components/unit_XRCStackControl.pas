@@ -32,7 +32,7 @@ type
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
       procedure SetID(const Value: Integer);
-      procedure UpdateLayersStatus(const Pairable: Boolean);
+      procedure UpdateLayersStatus(const Pairable, EnableLinking: Boolean);
       procedure SetLayerColor(const ID: Integer);
       procedure RealignLayers;
     protected
@@ -49,6 +49,7 @@ type
       procedure DeleteLayer(const Index: integer);
       procedure MoveLayer(const Index, Direction: integer);
       procedure UpdateLayersID;
+      procedure ForcePeriodicity(const Val: Boolean);
 
       property Selected: Boolean write SetSelected;
       property ID: Integer read FID write SetID;
@@ -181,12 +182,15 @@ begin
   end;
 end;
 
-procedure TXRCStack.UpdateLayersStatus(const Pairable: Boolean);
+procedure TXRCStack.UpdateLayersStatus(const Pairable, EnableLinking: Boolean);
 var
   i: integer;
 begin
   for I := 0 to High(FLayers) do
+  begin
     FLayers[i].Pairable := Pairable;
+    FLayers[i].EnableLinking := EnableLinking;
+  end;
 end;
 
 constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
@@ -273,7 +277,7 @@ end;
 procedure TXRCStack.EnablePairing(const Enabled: Boolean);
 begin
   FEnablePairing := Enabled;
-  UpdateLayersStatus((FN > 1) and Enabled);
+  UpdateLayersStatus((FN > 1) and Enabled, (FN > 1));
 end;
 
 procedure TXRCStack.FOnClick(Sender: TObject);
@@ -287,11 +291,21 @@ begin
   begin
     edtrStack.Edit(FTitle, FN);
     UpdateInfo;
-    UpdateLayersStatus((FN > 1) and FEnablePairing);
+    UpdateLayersStatus((FN > 1) and FEnablePairing, (FN > 1));
   end
   else begin
     FLayers[0].Edit;
   end;
+end;
+
+procedure TXRCStack.ForcePeriodicity(const Val: Boolean);
+var
+  I: Integer;
+begin
+  if FN = 1 then Exit;
+
+  for I := 0 to High(FLayers) do
+    FLayers[i].Pairable := Val;
 end;
 
 function TXRCStack.GetLayersData: TLayersData;
