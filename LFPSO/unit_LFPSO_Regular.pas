@@ -171,8 +171,7 @@ begin
     for k := 1 to Inp.Stacks[i].N do
     begin
       if (k = 1) and not FReInit then
-
-      InitArray(NLayers, Links);
+         InitArray(NLayers, Links);
 
       for j := 0 to NLayers - 1 do
       begin
@@ -193,7 +192,7 @@ begin
 
             for p := 1 to 3 do
                if Inp.Stacks[i].Layers[j].P[p].Paired then
-                  Links[j][1] := Index;
+                  Links[j][p] := Index;
           end
           else
             for l := 1 to 3 do

@@ -94,7 +94,7 @@ begin
         if mrGradient = vistaDlg.ModalResult then
           Result := etFunction
         else if mrProfile = vistaDlg.ModalResult  then
-          Result := etArb
+          Result := etTable
         else if mrRoughness = vistaDlg.ModalResult  then
           Result := etRough;
       end;
@@ -111,7 +111,7 @@ begin
         if xpDlg.rbGradient.Checked then
           Result := etFunction
         else if xpDlg.rbProfile.Checked then
-          Result := etArb
+          Result := etTable
       end;
     finally
       xpDlg.Free;

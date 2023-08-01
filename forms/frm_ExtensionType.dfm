@@ -37,7 +37,7 @@ object frmExtensionSelector: TfrmExtensionSelector
     object txtGradient: TLabel
       Left = 88
       Top = 49
-      Width = 261
+      Width = 257
       Height = 26
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -48,7 +48,7 @@ object frmExtensionSelector: TfrmExtensionSelector
     object txtUnregister: TLabel
       Left = 88
       Top = 119
-      Width = 317
+      Width = 313
       Height = 51
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False

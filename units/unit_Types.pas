@@ -17,7 +17,7 @@ type
 
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
-  TExtentionType = (etNone, etFunction, etArb, etRough);
+  TExtentionType = (etNone, etFunction, etTable, etRough);
   TFunctionForm = (ffNone, ffPoly, ffExp, ffParabolic, ffSQRT);
   TParameterType = (ptH, ptS, ptRho);
 
@@ -50,7 +50,7 @@ type
                Form: TFunctionForm;
                Subj: TParameterType;
                );
-            etArb:
+            etTable:
               ();
          )
   end;
@@ -144,7 +144,7 @@ type
     PP: array [1..3] of TFloatArray;
   public
     procedure ClearProfiles;
-    procedure AddProfilePoint(const H, s, r: Single);
+    procedure AddProfilePoint(const Val: Single; Index: integer);
     function ProfileFromSrting(const p: integer; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
   end;
@@ -258,11 +258,9 @@ begin
     SetLength(PP[p], 0);
 end;
 
-procedure TLayerData.AddProfilePoint(const H, s, r: Single);
+procedure TLayerData.AddProfilePoint(const Val: Single; Index: integer);
 begin
-  Insert(H, PP[1], MaxInt);
-  Insert(s, PP[2], MaxInt);
-  Insert(r, PP[3], MaxInt);
+  Insert(Val, PP[Index], MaxInt);
 end;
 
 function TLayerData.ProfileFromSrting(const p: integer; Profile: string): string;

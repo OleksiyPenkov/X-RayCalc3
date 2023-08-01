@@ -477,6 +477,7 @@ type
     procedure SaveHistory;
     procedure RescaleChart;
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
+    procedure EditTable(var Data: PProjectData);
     { Private declarations }
   public
     { Public declarations }
@@ -522,7 +523,7 @@ uses
   frm_Benchmark,
   unit_files_list,
   unit_config,
-  frm_settings, unit_XRCStackControl;
+  frm_settings, unit_XRCStackControl, editor_ProfileTable;
 
 {$R *.dfm}
 
@@ -878,7 +879,7 @@ begin
                     if CreateChildNode(Node) then
                           CreateFunctionProfileExtension(Node);
                   end;
-    etArb  : CreateProfileExtension;
+    etTable  : CreateProfileExtension;
   end;
 end;
 
@@ -899,11 +900,11 @@ begin
     Data.Group := gtModel;
     Data.Enabled := True;
     Data.RowType := prExtension;
-    Data.Title := 'Profile';
-    Data.ExtType := etArb;
+    Data.Title := 'Table';
+    Data.ExtType := etTable;
     Data.StackID := -1;
     Data.LayerID := -1;
-    Data.Form := ffPoly;
+    Data.Form := ffNone;
 
     Project.ClearSelection;
     Project.Selected[Node] := True;
@@ -995,13 +996,23 @@ begin
       begin
         case Data.ExtType of
           etFunction: EditGradient(Data);
-          etArb :;
+          etTable   : EditTable(Data);
         end;
 
       end;
   end;
 end;
 
+
+procedure TfrmMain.EditTable(var Data: PProjectData);
+begin
+  edtrProfileTable.Data := Data;
+  edtrProfileTable.Structure := Structure;
+  if edtrProfileTable.ShowModal = mrOk then
+  begin
+    mmDescription.Lines.Text := Data.Description;
+  end;
+end;
 
 procedure TfrmMain.EditGradient(var Data: PProjectData);
 begin
@@ -1549,7 +1560,7 @@ begin
                     pmiVisible.Visible := False;
                     pmiLinked.Visible  := False;
 
-                    IsProfile := LastData.ExtType = etArb;
+                    IsProfile := LastData.ExtType = etTable;
                     pmCopytoclipboard.Visible := IsProfile;
                     pmExporttofile.Visible    := IsProfile;
                  end;
@@ -1627,7 +1638,10 @@ begin
       for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[1]) do
       begin
         for p := 1 to 3 do
-         FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[p][k]);
+          if Length(Structure.Stacks[i].Layers[j].Data.PP[p]) > 0 then
+            FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[p][k])
+          else
+            FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.P[p].V);
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1757,7 +1771,7 @@ begin
   while Node <> nil do
   begin
     Data := Project.GetNodeData(Node);
-    if Data.ExtType = etArb then
+    if Data.ExtType = etTable then
     begin
       Result := Data.Enabled;
       Break;
@@ -1772,7 +1786,6 @@ begin
   try
     if not PrepareCalc then Exit;
     try
-      FCalc.Model.Profiles := GetProfileFunctions;
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
@@ -1843,6 +1856,7 @@ begin
   GetThreadParams;
   FCalc.Params := FCalcThreadParams;
   FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+  FCalc.Model.Profiles := GetProfileFunctions;
   Result := True;
 end;
 
@@ -1903,9 +1917,9 @@ begin
 
     if Structure.IsPeriodic then
     begin
-      Structure.UpdateInterfaceP(LFPSO.Structure);
       if not cbTreatPeriodic.Checked then
       begin
+        Structure.UpdateInterfaceNP(LFPSO.Structure);
         if cbPoly.Checked then
          CreateFitGradientExtensions(LFPSO.Polynomes)
         else begin
@@ -1913,7 +1927,8 @@ begin
           Structure.UpdateProfiles(LFPSO.Result);
         end;
 
-      end;
+      end else
+        Structure.UpdateInterfaceP(LFPSO.Structure);
     end
     else
       Structure.UpdateInterfaceNP(LFPSO.Structure);

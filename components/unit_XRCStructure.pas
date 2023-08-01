@@ -425,7 +425,8 @@ begin
       begin
         for k := 0 to High(StackLayers) do
           for p := 1 to 3 do
-            StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
+            if Length(StackLayers[k].PP[p]) > 0 then
+               StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
       end;
       Result.AddLayers(i, StackLayers);
     end;
@@ -531,7 +532,7 @@ var
 begin
   for I := 0 to High(FStacks) do
   begin
-    for j := 0 to High(FStacks[i].LayerData) do
+    for j := 0 to High(FStacks[i].Layers) do
     begin
       Data.Material := Inp.Stacks[i].Layers[j].Material;
       Data.P := Inp.Stacks[i].Layers[j].P;
@@ -542,7 +543,7 @@ end;
 
 procedure TXRCStructure.UpdateProfiles(const Inp: TLayeredModel);
 var
-  i, j, SID, LID: integer;
+  i, j, p, SID, LID: integer;
 begin
   for I := 0 to High(FStacks) do
      for j := 0 to High(FStacks[i].Layers) do
@@ -552,7 +553,13 @@ begin
   begin
     SID := Inp.Layers[i].StackID;
     LID := Inp.Layers[i].LayerID;
-    Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].L, Inp.Layers[i].s, Inp.Layers[i].ro);
+    for p := 1 to 3 do
+      if not Structure.FStacks[SID].Layers[LID].Data.P[p].Paired then
+        case p of
+          1: Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].L, 1);
+          2: Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].s, 2);
+          3: Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].ro, 3);
+        end;
   end;
 end;
 
