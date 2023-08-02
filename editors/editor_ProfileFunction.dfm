@@ -31,11 +31,13 @@ object edtrProfileFunction: TedtrProfileFunction
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
+    ExplicitTop = 275
+    ExplicitWidth = 820
     DesignSize = (
       828
       41)
     object btnOK: TRzBitBtn
-      Left = 737
+      Left = 729
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -44,7 +46,7 @@ object edtrProfileFunction: TedtrProfileFunction
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
-      ExplicitLeft = 745
+      ExplicitLeft = 721
     end
     object btnCancel: TRzBitBtn
       Left = 9
@@ -66,6 +68,8 @@ object edtrProfileFunction: TedtrProfileFunction
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
+    ExplicitWidth = 820
+    ExplicitHeight = 266
     object Label1: TLabel
       Left = 9
       Top = 10

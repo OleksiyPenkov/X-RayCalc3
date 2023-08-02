@@ -1,4 +1,13 @@
-﻿unit unit_Types;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
+unit unit_Types;
 
 interface
 
@@ -288,7 +297,7 @@ begin
   for I := 0 to High(PP[p]) do
   begin
     Val := PP[p][i];
-    Result := Format('%s%f;',[Result, Val])
+    Result := Format('%s%*.*f;',[Result, 5, 4, Val])
   end;
 end;
 

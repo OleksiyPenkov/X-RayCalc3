@@ -1,4 +1,13 @@
-﻿unit editor_HenkeTable;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
+unit editor_HenkeTable;
 
 interface
 

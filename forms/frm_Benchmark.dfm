@@ -25,8 +25,8 @@ object frmBenchmark: TfrmBenchmark
     BorderWidth = 2
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 993
-    ExplicitHeight = 430
+    ExplicitWidth = 977
+    ExplicitHeight = 391
     object BitBtn1: TBitBtn
       Left = 896
       Top = 363
@@ -49,9 +49,8 @@ object frmBenchmark: TfrmBenchmark
       FixedCols = 0
       RowCount = 2
       TabOrder = 1
-      ExplicitTop = 54
-      ExplicitWidth = 979
-      ExplicitHeight = 322
+      ExplicitWidth = 963
+      ExplicitHeight = 330
     end
   end
 end

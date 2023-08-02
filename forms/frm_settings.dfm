@@ -24,6 +24,8 @@ object frmSettings: TfrmSettings
     ActivePage = tsGraphics
     Align = alClient
     TabOrder = 1
+    ExplicitWidth = 447
+    ExplicitHeight = 383
     object tsPaths: TTabSheet
       HelpContext = 143
       Caption = 'tsPaths'
@@ -32,7 +34,7 @@ object frmSettings: TfrmSettings
         AlignWithMargins = True
         Left = 3
         Top = 3
-        Width = 437
+        Width = 86
         Height = 13
         Align = alTop
         Caption = 'FIles and Paths'
@@ -43,7 +45,6 @@ object frmSettings: TfrmSettings
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
-        ExplicitWidth = 86
       end
     end
     object tsBehavour: TTabSheet
@@ -65,7 +66,7 @@ object frmSettings: TfrmSettings
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 431
+          Width = 50
           Height = 13
           Align = alTop
           Caption = 'Behavior'
@@ -76,7 +77,6 @@ object frmSettings: TfrmSettings
           Font.Style = [fsBold]
           ParentFont = False
           Transparent = True
-          ExplicitWidth = 50
         end
         object chkCheckForUpdates: TCheckBox
           AlignWithMargins = True
@@ -124,7 +124,7 @@ object frmSettings: TfrmSettings
         AlignWithMargins = True
         Left = 3
         Top = 3
-        Width = 437
+        Width = 102
         Height = 13
         Align = alTop
         Caption = 'Interface settings'
@@ -135,7 +135,6 @@ object frmSettings: TfrmSettings
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
-        ExplicitWidth = 102
       end
     end
     object tsCalc: TTabSheet
@@ -225,8 +224,7 @@ object frmSettings: TfrmSettings
         Margins.Top = 5
         Align = alTop
         TabOrder = 0
-        ExplicitLeft = 6
-        ExplicitTop = 32
+        ExplicitWidth = 433
         object Label2: TLabel
           Left = 8
           Top = 11
@@ -263,7 +261,7 @@ object frmSettings: TfrmSettings
       613
       41)
     object btnOk: TButton
-      Left = 437
+      Left = 433
       Top = 10
       Width = 75
       Height = 25
@@ -273,10 +271,10 @@ object frmSettings: TfrmSettings
       ModalResult = 1
       TabOrder = 0
       OnClick = SaveSettingsClick
-      ExplicitLeft = 433
+      ExplicitLeft = 429
     end
     object btnCancel: TButton
-      Left = 518
+      Left = 514
       Top = 10
       Width = 75
       Height = 25
@@ -285,7 +283,7 @@ object frmSettings: TfrmSettings
       Caption = '&Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 514
+      ExplicitLeft = 510
     end
     object btnHelp: TButton
       Left = 12

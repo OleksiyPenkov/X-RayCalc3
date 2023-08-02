@@ -1917,7 +1917,9 @@ begin
 
     if Structure.IsPeriodic then
     begin
-      if not cbTreatPeriodic.Checked then
+      if  cbTreatPeriodic.Checked then
+        Structure.UpdateInterfaceP(LFPSO.Structure)
+      else
       begin
         Structure.UpdateInterfaceNP(LFPSO.Structure);
         if cbPoly.Checked then
@@ -1926,9 +1928,7 @@ begin
           CreateProfileExtension;
           Structure.UpdateProfiles(LFPSO.Result);
         end;
-
-      end else
-        Structure.UpdateInterfaceP(LFPSO.Structure);
+      end;
     end
     else
       Structure.UpdateInterfaceNP(LFPSO.Structure);
@@ -2456,7 +2456,7 @@ end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('Exit application?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
+  CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);

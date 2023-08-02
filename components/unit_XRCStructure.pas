@@ -1,4 +1,12 @@
-﻿unit unit_XRCStructure;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+unit unit_XRCStructure;
 
 interface
 
@@ -425,7 +433,7 @@ begin
       begin
         for k := 0 to High(StackLayers) do
           for p := 1 to 3 do
-            if Length(StackLayers[k].PP[p]) > 0 then
+            if not StackLayers[k].P[p].Paired then
                StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
       end;
       Result.AddLayers(i, StackLayers);
@@ -640,7 +648,7 @@ begin
           JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
-          Profile := Data.ProfileToSrting(ptH);
+          Profile := Data.ProfileToSrting(TParameterType(p - 1));
           JLayer.AddPair('Profile' + UpperCase(PAlias[p]), Profile);
         end;
 

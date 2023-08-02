@@ -1150,8 +1150,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 49
-                Width = 50
-                Height = 17
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1262,8 +1262,8 @@ object frmMain: TfrmMain
               object cbSeedRange: TRzCheckBox
                 Left = 234
                 Top = 11
-                Width = 51
-                Height = 17
+                Width = 55
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'SeedR'
                 Checked = True

@@ -23,6 +23,7 @@ object edtrHenkeTable: TedtrHenkeTable
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
+    ExplicitHeight = 535
     object Label1: TLabel
       Left = 11
       Top = 10
@@ -90,7 +91,7 @@ object edtrHenkeTable: TedtrHenkeTable
       Left = 5
       Top = 82
       Width = 316
-      Height = 450
+      Height = 449
       Margins.Top = 80
       Align = alClient
       ColCount = 4
@@ -101,7 +102,7 @@ object edtrHenkeTable: TedtrHenkeTable
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goFixedRowDefAlign]
       TabOrder = 3
       OnSetEditText = FGridSetEditText
-      ExplicitHeight = 449
+      ExplicitHeight = 448
     end
     object btnSave: TRzBitBtn
       Left = 241
@@ -122,6 +123,8 @@ object edtrHenkeTable: TedtrHenkeTable
     BorderWidth = 0
     Color = 15987699
     TabOrder = 1
+    ExplicitTop = 541
+    ExplicitWidth = 856
   end
   object rzpnl2: TRzPanel
     AlignWithMargins = True
@@ -133,12 +136,14 @@ object edtrHenkeTable: TedtrHenkeTable
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 2
+    ExplicitWidth = 518
+    ExplicitHeight = 535
     object Chart: TChart
       AlignWithMargins = True
       Left = 5
       Top = 5
-      Width = 516
-      Height = 527
+      Width = 512
+      Height = 526
       Cursor = crCross
       Title.Text.Strings = (
         'TChart')
@@ -147,8 +152,8 @@ object edtrHenkeTable: TedtrHenkeTable
       Align = alClient
       Color = clWhite
       TabOrder = 0
-      ExplicitWidth = 512
-      ExplicitHeight = 526
+      ExplicitWidth = 508
+      ExplicitHeight = 525
       DefaultCanvas = 'TGDIPlusCanvas'
       ColorPaletteIndex = 13
       object SeriesF1: TLineSeries

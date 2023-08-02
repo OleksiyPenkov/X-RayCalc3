@@ -1,4 +1,13 @@
-﻿unit unit_XRCProjectTree;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
+unit unit_XRCProjectTree;
 
 interface
 
