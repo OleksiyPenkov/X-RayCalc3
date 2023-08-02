@@ -15,7 +15,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VclTee.TeeGDIPlus, RzButton,
   VCLTee.TeEngine, VCLTee.Series, VCLTee.TeeProcs, VCLTee.Chart, Vcl.Grids,
-  RzGrids, Vcl.StdCtrls, Vcl.ExtCtrls, RzPanel, unit_types, unit_XRCStructure;
+  RzGrids, Vcl.StdCtrls, Vcl.ExtCtrls, RzPanel, unit_types, unit_XRCStructure,
+  RzTabs;
 
 type
 
@@ -26,21 +27,35 @@ type
     btnOK: TRzBitBtn;
     btnCancel: TRzBitBtn;
     RzPanel1: TRzPanel;
-    Label1: TLabel;
-    edTitle: TEdit;
-    Grid: TRzStringGrid;
-    Chart: TChart;
-    Series1: TLineSeries;
+    RzPageControl1: TRzPageControl;
+    tsThickness: TRzTabSheet;
+    grdThikness: TRzStringGrid;
+    chrtThickness: TChart;
+    tsRoughness: TRzTabSheet;
+    tsDensity: TRzTabSheet;
+    grdRoughness: TRzStringGrid;
+    chrtRougness: TChart;
+    grdDensity: TRzStringGrid;
+    chrtDensity: TChart;
     procedure FormShow(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     FStructure: TXRCStructure;
     FData: PProjectData;
-    FSeriesList: TSeriesList ;
+
+    Charts: array [1..3] of TChart;
+    Grids : array [1..3] of TRzStringGrid;
+    Series: array [1..3] of TSeriesList;
+
+    LastCol: array [1..3] of Integer;
 
     { Private declarations }
     procedure PlotProfiles;
-    procedure PlotProfile(const Data: TFloatArray);
-    procedure AddCurve(const Title: string; Index: integer);
+    procedure PlotProfile(const Data: TFloatArray; ChartIndex: integer);
+    procedure AddCurve(const Title: string; ChartIndex: integer);
+    procedure PrepareGrids;
+    procedure FillGrids(const Data: TFloatArray; GridIndex: integer);
+    procedure ClearCharts;
 
   public
     { Public declarations }
@@ -55,53 +70,122 @@ implementation
 
 {$R *.dfm}
 
+procedure TedtrProfileTable.FormCreate(Sender: TObject);
+begin
+  Charts[1] := chrtThickness;
+  Charts[2] := chrtRougness;
+  Charts[3] := chrtDensity;
+
+  Grids[1] := grdThikness;
+  Grids[2] := grdRoughness;
+  Grids[3] := grdDensity;
+end;
+
+procedure TedtrProfileTable.PrepareGrids;
+begin
+  Grids[1].ColCount := 2;
+  Grids[1].RowCount := 1;
+
+  Grids[2].ColCount := 2;
+  Grids[2].RowCount := 1;
+
+
+  Grids[3].ColCount := 2;
+  Grids[3].RowCount := 1;
+
+  Grids[1].Cells[0, 0] := 'N';
+
+  Grids[2].Cells[0, 0] := 'N';
+
+  Grids[3].Cells[0, 0] := 'N';
+
+  LastCol[1] := 1;
+  LastCol[2] := 1;
+  LastCol[3] := 1;
+end;
+
 procedure TedtrProfileTable.FormShow(Sender: TObject);
 begin
-  edTitle.Text := string(FData.Title);
+  ClearCharts;
+  PrepareGrids;
   PlotProfiles;
 end;
 
 
-procedure TedtrProfileTable.PlotProfile(const Data: TFloatArray);
+procedure TedtrProfileTable.FillGrids(const Data: TFloatArray; GridIndex: integer);
 var
-  n, Index: Integer;
+  n, ColumnIndex: Integer;
 begin
-  Index := High(FSeriesList);
-  FSeriesList[Index].Clear;
+  Grids[GridIndex].ColCount := LastCol[GridIndex] + 1;
+  Grids[GridIndex].RowCount := Length(Data) + 1;
 
   for n := 0 to High(Data) do
-    FSeriesList[Index].AddXY(n + 1, Data[n]);
+  begin
+    Grids[GridIndex].Cells[0, n + 1] := IntToStr(n + 1);
+    Grids[GridIndex].Cells[LastCol[GridIndex], n + 1] := Format('%*.*f',[5, 4, Data[n]])
+  end;
+  Inc(LastCol[GridIndex]);
+  Grids[GridIndex].Update;
+end;
+
+
+procedure TedtrProfileTable.PlotProfile(const Data: TFloatArray; ChartIndex: integer);
+var
+  n, SeriesIndex: Integer;
+begin
+  SeriesIndex := High(Series[ChartIndex]);
+  Series[ChartIndex][SeriesIndex].Clear;
+
+  for n := 0 to High(Data) do
+    Series[ChartIndex][SeriesIndex].AddXY(n + 1, Data[n]);
+end;
+
+procedure TedtrProfileTable.ClearCharts;
+begin
+  Charts[1].SeriesList.Clear;
+  SetLength(Series[1], 0);
+
+  Charts[2].SeriesList.Clear;
+  SetLength(Series[2], 0);
+
+  Charts[3].SeriesList.Clear;
+  SetLength(Series[3], 0);
 end;
 
 procedure TedtrProfileTable.PlotProfiles;
 var
   i, j, p: Integer;
 begin
+
+
   for I := 0 to High(FStructure.Stacks) do
     for j := 0 to High(FStructure.Stacks[i].Layers) do
         for p := 1 to 3 do
-          if not FStructure.Stacks[i].Layers[j].Data.P[p].Paired then
+          if (FStructure.Stacks[i].N > 1) and not FStructure.Stacks[i].Layers[j].Data.P[p].Paired then
           begin
             AddCurve(FStructure.Stacks[i].Layers[j].Data.Material, p);
-            PlotProfile(FStructure.Stacks[i].Layers[j].Data.PP[p]);
+            PlotProfile(FStructure.Stacks[i].Layers[j].Data.PP[p], p);
+            FillGrids(FStructure.Stacks[i].Layers[j].Data.PP[p], p);
           end;
 
-  Chart.Update;
+  Charts[1].Update;
+  Charts[2].Update;
+  Charts[3].Update;
 end;
 
 procedure TedtrProfileTable.AddCurve;
 var
   Count: integer;
 begin
-  Count := Length(FSeriesList);
-  SetLength(FSeriesList, Count + 1);
-  FSeriesList[Count] := TLineSeries.Create(Chart);
-  FSeriesList[Count].ParentChart := Chart;
-  FSeriesList[Count].Title := Title;
-  FSeriesList[Count] .LinePen.Width := 2;
-  FSeriesList[Count] .Stairs := True;
-  FSeriesList[Count] .Pointer.Visible := True;
-  FSeriesList[Count] .Pointer.Size := 2;
+  Count := Length(Series[ChartIndex]);
+  SetLength(Series[ChartIndex], Count + 1);
+  Series[ChartIndex][Count] := TLineSeries.Create(Charts[ChartIndex]);
+  Series[ChartIndex][Count].ParentChart := Charts[ChartIndex];
+  Series[ChartIndex][Count].Title := Title;
+  Series[ChartIndex][Count] .LinePen.Width := 2;
+  Series[ChartIndex][Count] .Stairs := True;
+  Series[ChartIndex][Count] .Pointer.Visible := True;
+  Series[ChartIndex][Count] .Pointer.Size := 2;
 end;
 
 end.

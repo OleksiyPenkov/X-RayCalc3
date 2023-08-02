@@ -2,7 +2,7 @@ object edtrHenkeTable: TedtrHenkeTable
   Left = 0
   Top = 0
   Caption = 'Edit Henke table'
-  ClientHeight = 561
+  ClientHeight = 557
   ClientWidth = 860
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,7 +18,7 @@ object edtrHenkeTable: TedtrHenkeTable
     Left = 3
     Top = 3
     Width = 326
-    Height = 536
+    Height = 532
     Align = alLeft
     BorderOuter = fsFlatRounded
     Color = 15987699
@@ -91,7 +91,7 @@ object edtrHenkeTable: TedtrHenkeTable
       Left = 5
       Top = 82
       Width = 316
-      Height = 449
+      Height = 445
       Margins.Top = 80
       Align = alClient
       ColCount = 4
@@ -114,7 +114,7 @@ object edtrHenkeTable: TedtrHenkeTable
   end
   object rzstsbr1: TRzStatusBar
     Left = 0
-    Top = 542
+    Top = 538
     Width = 860
     Height = 19
     BorderInner = fsNone
@@ -131,7 +131,7 @@ object edtrHenkeTable: TedtrHenkeTable
     Left = 335
     Top = 3
     Width = 522
-    Height = 536
+    Height = 532
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
@@ -143,7 +143,7 @@ object edtrHenkeTable: TedtrHenkeTable
       Left = 5
       Top = 5
       Width = 512
-      Height = 526
+      Height = 522
       Cursor = crCross
       Title.Text.Strings = (
         'TChart')
