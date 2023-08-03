@@ -152,7 +152,7 @@ type
     StackID, LayerID, Index: integer;
     PP: array [1..3] of TFloatArray;
   public
-    procedure ClearProfiles;
+    procedure ClearProfiles(const p: integer);
     procedure AddProfilePoint(const Val: Single; Index: integer);
     function ProfileFromSrting(const p: integer; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
@@ -260,11 +260,8 @@ end;
 { TLayerData }
 
 procedure TLayerData.ClearProfiles;
-var
-  p: Integer;
 begin
-  for p := 1 to 3 do
-    SetLength(PP[p], 0);
+  SetLength(PP[p], 0);
 end;
 
 procedure TLayerData.AddProfilePoint(const Val: Single; Index: integer);

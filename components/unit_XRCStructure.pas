@@ -555,7 +555,8 @@ var
 begin
   for I := 0 to High(FStacks) do
      for j := 0 to High(FStacks[i].Layers) do
-       FStacks[i].Layers[j].Data.ClearProfiles;
+       for p := 1 to 3 do
+         FStacks[i].Layers[j].Data.ClearProfiles(p);
 
   for I := 1 to High(Inp.Layers) - 1 do
   begin
@@ -770,7 +771,7 @@ begin
           PS := FindStrValue('Profile' + UpperCase(PAlias[p]));
           if PS <> '' then
           begin
-            Data.ClearProfiles;
+            Data.ClearProfiles(p);
             Data.ProfileFromSrting(p, PS);
           end;
 
