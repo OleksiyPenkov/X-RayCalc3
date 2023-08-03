@@ -292,20 +292,16 @@ object frmMain: TfrmMain
       BorderOuter = fsFlatRounded
       Color = 15987699
       TabOrder = 0
-      DesignSize = (
-        868
-        683)
       object Pages: TRzPageControl
         AlignWithMargins = True
         Left = 5
         Top = 515
-        Width = 786
+        Width = 858
         Height = 163
         Hint = ''
-        Margins.Right = 75
-        ActivePage = tsFittingProgress
+        ActivePage = tsDensity
         Align = alBottom
-        TabIndex = 3
+        TabIndex = 2
         TabOrder = 0
         ExplicitTop = 514
         ExplicitWidth = 782
@@ -313,25 +309,37 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitWidth = 782
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 776
+            Width = 848
             Height = 132
             Cursor = crCross
+            Legend.HorizMargin = 5
             Legend.TopPos = 0
-            MarginRight = 0
+            MarginBottom = 1
+            MarginLeft = 1
+            MarginRight = 1
+            MarginTop = 2
             MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
+            LeftAxis.MaximumOffset = 4
+            LeftAxis.MinimumOffset = 4
+            RightAxis.Labels = False
+            RightAxis.LabelsFormat.Visible = False
+            TopAxis.Labels = False
+            TopAxis.LabelsFormat.Visible = False
             View3D = False
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
+            ExplicitWidth = 776
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -339,25 +347,34 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitWidth = 782
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 776
+            Width = 848
             Height = 132
             Cursor = crCross
+            Legend.HorizMargin = 5
             Legend.TopPos = 0
             MarginRight = 0
             MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
+            LeftAxis.MaximumOffset = 4
+            LeftAxis.MinimumOffset = 4
+            RightAxis.Labels = False
+            RightAxis.LabelsFormat.Visible = False
+            TopAxis.Labels = False
+            TopAxis.LabelsFormat.Visible = False
             View3D = False
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 776
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -365,25 +382,34 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitWidth = 782
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 776
+            Width = 848
             Height = 132
             Cursor = crCross
+            Legend.HorizMargin = 5
             Legend.TopPos = 0
             MarginRight = 0
             MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
+            LeftAxis.MaximumOffset = 4
+            LeftAxis.MinimumOffset = 4
+            RightAxis.Labels = False
+            RightAxis.LabelsFormat.Visible = False
+            TopAxis.Labels = False
+            TopAxis.LabelsFormat.Visible = False
             View3D = False
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 776
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -396,7 +422,7 @@ object frmMain: TfrmMain
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 776
+            Width = 848
             Height = 132
             Cursor = crCross
             Border.Color = clDefault
@@ -404,12 +430,14 @@ object frmMain: TfrmMain
             Legend.TopPos = 0
             Legend.Visible = False
             MarginBottom = 2
-            MarginLeft = 1
-            MarginRight = 2
-            MarginTop = 2
+            MarginLeft = 2
+            MarginRight = 5
+            MarginTop = 5
+            MarginUnits = muPixels
             Title.Text.Strings = (
               'TChart')
             Title.Visible = False
+            Title.VertMargin = 3
             BottomAxis.Automatic = False
             BottomAxis.AutomaticMaximum = False
             BottomAxis.AutomaticMinimum = False
@@ -426,9 +454,11 @@ object frmMain: TfrmMain
             LeftAxis.LabelsFormat.Margins.Units = maPercentSize
             LeftAxis.LabelsSeparation = 20
             LeftAxis.Logarithmic = True
-            LeftAxis.MaximumRound = True
+            LeftAxis.MaximumOffset = 2
+            LeftAxis.MinimumOffset = 4
             LeftAxis.Title.Caption = #967'2'
             LeftAxis.Title.Font.Height = -13
+            LeftAxis.Title.Shadow.Visible = False
             View3D = False
             ZoomWheel = pmwNormal
             Align = alClient
@@ -436,8 +466,20 @@ object frmMain: TfrmMain
             Color = 16771538
             TabOrder = 0
             ExplicitWidth = 772
+            DesignSize = (
+              848
+              132)
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
+            object RzButton1: TRzButton
+              Left = 778
+              Top = 9
+              Width = 59
+              Anchors = [akTop, akRight]
+              Caption = 'Copy'
+              TabOrder = 0
+              OnClick = RzButton1Click
+            end
             object lsrConvergence: TLineSeries
               HoverElement = [heCurrent]
               SeriesColor = 16744448
@@ -580,8 +622,7 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
-        ExplicitTop = 458
-        ExplicitWidth = 854
+        ExplicitLeft = 3
         DesignSize = (
           858
           50)
@@ -1738,17 +1779,6 @@ object frmMain: TfrmMain
           Top = 2
           ImageIndex = 7
         end
-      end
-      object RzButton1: TRzButton
-        Left = 801
-        Top = 650
-        Width = 59
-        Anchors = [akRight, akBottom]
-        Caption = 'Copy'
-        TabOrder = 5
-        OnClick = RzButton1Click
-        ExplicitLeft = 797
-        ExplicitTop = 649
       end
     end
     object StructurePanel: TRzPanel

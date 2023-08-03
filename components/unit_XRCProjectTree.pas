@@ -61,7 +61,6 @@ type
 
 implementation
 
-
 { TXRCProjectTree }
 
 constructor TXRCProjectTree.Create(AOwner: TComponent);

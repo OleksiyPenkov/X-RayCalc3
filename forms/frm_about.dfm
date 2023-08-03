@@ -3,8 +3,8 @@ object frmAbout: TfrmAbout
   Top = 0
   BorderStyle = bsDialog
   Caption = 'About'
-  ClientHeight = 300
-  ClientWidth = 320
+  ClientHeight = 299
+  ClientWidth = 316
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,7 +17,7 @@ object frmAbout: TfrmAbout
     AlignWithMargins = True
     Left = 20
     Top = 3
-    Width = 297
+    Width = 293
     Height = 46
     Margins.Left = 20
     Margins.Bottom = 10
@@ -33,14 +33,13 @@ object frmAbout: TfrmAbout
     ParentFont = False
     BlinkColor = clBtnFace
     TextStyle = tsShadow
-    ExplicitLeft = 46
-    ExplicitWidth = 273
+    ExplicitWidth = 227
   end
   object RzVersionInfoStatus2: TRzVersionInfoStatus
     AlignWithMargins = True
     Left = 20
     Top = 62
-    Width = 297
+    Width = 293
     Margins.Left = 20
     Margins.Bottom = 0
     FrameStyle = fsNone
@@ -62,7 +61,7 @@ object frmAbout: TfrmAbout
     AlignWithMargins = True
     Left = 20
     Top = 92
-    Width = 297
+    Width = 293
     Height = 16
     Margins.Left = 20
     Margins.Top = 10
@@ -76,14 +75,13 @@ object frmAbout: TfrmAbout
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    ExplicitLeft = 3
     ExplicitWidth = 169
   end
   object Label1: TLabel
     AlignWithMargins = True
     Left = 20
     Top = 121
-    Width = 297
+    Width = 293
     Height = 32
     Margins.Left = 20
     Align = alTop
@@ -95,13 +93,12 @@ object frmAbout: TfrmAbout
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    ExplicitLeft = 3
     ExplicitWidth = 108
   end
   object RzURLLabel1: TRzURLLabel
     Left = 56
     Top = 208
-    Width = 256
+    Width = 222
     Height = 13
     Alignment = taCenter
     Caption = 'https://github.com/OleksiyPenkov/X-RayCalc3'

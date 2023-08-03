@@ -16,7 +16,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VclTee.TeeGDIPlus, RzButton,
   VCLTee.TeEngine, VCLTee.Series, VCLTee.TeeProcs, VCLTee.Chart, Vcl.Grids,
   RzGrids, Vcl.StdCtrls, Vcl.ExtCtrls, RzPanel, unit_types, unit_XRCStructure,
-  RzTabs;
+  RzTabs, unit_XRCGrid;
 
 type
 
@@ -27,24 +27,29 @@ type
     btnOK: TRzBitBtn;
     btnCancel: TRzBitBtn;
     RzPanel1: TRzPanel;
-    RzPageControl1: TRzPageControl;
+    Pages: TRzPageControl;
     tsThickness: TRzTabSheet;
-    grdThikness: TRzStringGrid;
     chrtThickness: TChart;
     tsRoughness: TRzTabSheet;
     tsDensity: TRzTabSheet;
-    grdRoughness: TRzStringGrid;
     chrtRougness: TChart;
-    grdDensity: TRzStringGrid;
     chrtDensity: TChart;
+    grdThickness: TXRCGrid;
+    grdDensity: TXRCGrid;
+    grdRoughness: TXRCGrid;
+    btnSave: TRzBitBtn;
+    btnCopy: TRzBitBtn;
+    dlgSaveResult: TSaveDialog;
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure btnCopyClick(Sender: TObject);
+    procedure btnSaveClick(Sender: TObject);
   private
     FStructure: TXRCStructure;
     FData: PProjectData;
 
     Charts: array [1..3] of TChart;
-    Grids : array [1..3] of TRzStringGrid;
+    Grids : array [1..3] of TXRCGrid;
     Series: array [1..3] of TSeriesList;
 
     LastCol: array [1..3] of Integer;
@@ -68,6 +73,9 @@ var
 
 implementation
 
+uses
+  Vcl.Clipbrd;
+
 {$R *.dfm}
 
 procedure TedtrProfileTable.FormCreate(Sender: TObject);
@@ -76,7 +84,7 @@ begin
   Charts[2] := chrtRougness;
   Charts[3] := chrtDensity;
 
-  Grids[1] := grdThikness;
+  Grids[1] := grdThickness;
   Grids[2] := grdRoughness;
   Grids[3] := grdDensity;
 end;
@@ -93,6 +101,7 @@ begin
   Grids[3].ColCount := 2;
   Grids[3].RowCount := 1;
 
+  Grids[1].Cells[0, 0] := 'N';
   Grids[1].Cells[0, 0] := 'N';
 
   Grids[2].Cells[0, 0] := 'N';
@@ -114,10 +123,11 @@ end;
 
 procedure TedtrProfileTable.FillGrids(const Data: TFloatArray; GridIndex: integer);
 var
-  n, ColumnIndex: Integer;
+  n: Integer;
 begin
   Grids[GridIndex].ColCount := LastCol[GridIndex] + 1;
   Grids[GridIndex].RowCount := Length(Data) + 1;
+  Grids[GridIndex].Cells[LastCol[GridIndex], 0] := Series[GridIndex][High(Series[GridIndex])].Title;
 
   for n := 0 to High(Data) do
   begin
@@ -138,6 +148,17 @@ begin
 
   for n := 0 to High(Data) do
     Series[ChartIndex][SeriesIndex].AddXY(n + 1, Data[n]);
+end;
+
+procedure TedtrProfileTable.btnCopyClick(Sender: TObject);
+begin
+  Clipboard.AsText := Grids[Pages.ActivePageIndex + 1].Text;
+end;
+
+procedure TedtrProfileTable.btnSaveClick(Sender: TObject);
+begin
+  if dlgSaveResult.Execute then
+    Grids[Pages.ActivePageIndex + 1].SaveToFile(dlgSaveResult.FileName);
 end;
 
 procedure TedtrProfileTable.ClearCharts;
@@ -182,10 +203,10 @@ begin
   Series[ChartIndex][Count] := TLineSeries.Create(Charts[ChartIndex]);
   Series[ChartIndex][Count].ParentChart := Charts[ChartIndex];
   Series[ChartIndex][Count].Title := Title;
-  Series[ChartIndex][Count] .LinePen.Width := 2;
+  Series[ChartIndex][Count] .LinePen.Width := 3;
   Series[ChartIndex][Count] .Stairs := True;
   Series[ChartIndex][Count] .Pointer.Visible := True;
-  Series[ChartIndex][Count] .Pointer.Size := 2;
+  Series[ChartIndex][Count] .Pointer.Size := 4;
 end;
 
 end.

@@ -186,7 +186,7 @@ object frmLimits: TfrmLimits
     TabOrder = 1
     ExplicitTop = 431
     ExplicitWidth = 549
-    object RzBitBtn1: TRzBitBtn
+    object btnSet: TRzBitBtn
       Left = 476
       Top = 8
       ModalResult = 1

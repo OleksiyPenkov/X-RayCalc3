@@ -292,7 +292,6 @@ type
     edLFPSOSkip: TEdit;
     Label15: TLabel;
     cbTreatPeriodic: TRzCheckBox;
-    RzButton1: TRzButton;
     NewFolder1: TMenuItem;
     N8: TMenuItem;
     actEditHenke: TAction;
@@ -321,6 +320,7 @@ type
     Benchmark1: TMenuItem;
     actSystemSettings: TAction;
     actSystemExit: TAction;
+    RzButton1: TRzButton;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -1202,7 +1202,7 @@ var
     FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
-  frmLimits.ShowLimits(FitStructure);
+  frmLimits.ShowLimits('Save', FitStructure);
   Structure.UpdateInterfaceP(FitStructure);
 end;
 
@@ -1355,7 +1355,7 @@ begin
   begin
     Result := False;
     FFitStructure := Structure.ToFitStructure;
-    if frmLimits.ShowLimits(FFitStructure) then
+    if frmLimits.ShowLimits('Run', FFitStructure) then
           Structure.UpdateInterfaceP(FFitStructure)
     else begin
       Exit;
@@ -1378,7 +1378,7 @@ begin
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
   FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
-  FFitParams.RangeSeed      := cbSeedRange.Checked;
+  FFitParams.RangeSeed   := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   FFitParams.Ksxr        := 0.2;
 
@@ -1595,10 +1595,10 @@ var
 
   procedure InitSereis(Series: TLineSeries);
   begin
-    Series.LinePen.Width := 2;
+    Series.LinePen.Width := 3;
     Series.Stairs := True;
     Series.Pointer.Visible := True;
-    Series.Pointer.Size := 2;
+    Series.Pointer.Size := 4;
   end;
 
   procedure CreateSeries(Chart: TChart; var SeriesList: TSeriesList);
@@ -1835,7 +1835,7 @@ begin
   Pages.ActivePage := tsFittingProgress;
   chFittingProgress.BottomAxis.Minimum := 0;
   chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
-  chFittingProgress.BottomAxis.Minimum := -1;
+//  chFittingProgress.BottomAxis.Minimum := -1;
 //  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
 end;
 
