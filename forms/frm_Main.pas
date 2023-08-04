@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
   unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Regular;
+  unit_LFPSO_Regular, Vcl.Imaging.pngimage;
 
 type
   TSeriesList = array of TLineSeries;
@@ -1991,17 +1991,19 @@ end;
 
 procedure TfrmMain.actCopyStructureBitmapExecute(Sender: TObject);
 var
-  Image: TImage;
+  Image: TPNGImage;
+  Bitmap: TBitmap;
   MyFormat: Word;
   AData: THandle;
   APalette: HPALETTE;
   MyRect : TRect;
 begin
-  Image := TImage.Create(nil);
+  Image := TPNGImage.Create;
+  Bitmap := TBitmap.Create;
   try
     MyRect := Rect(0, 0, Structure.Width, Structure.Height);
 
-    with Image do
+    with Bitmap do
     begin
       Width  := MyRect.Right;
       Height := MyRect.Bottom;
@@ -2009,7 +2011,8 @@ begin
       Canvas.CopyRect(MyRect, Structure.Canvas, MyRect);
     end;
 
-    Image.Picture.SaveToClipboardFormat(MyFormat, AData, APalette);
+    Image.Assign(Bitmap);
+    Image.SaveToClipboardFormat(MyFormat, AData, APalette);
     ClipBoard.SetAsHandle(MyFormat,AData);
   finally
     FreeAndNil(Image);
