@@ -44,6 +44,7 @@ type
       FClipBoardLayers: TLayersData;
       JLayer, JStack, JSub: TJSONValue;
       FPeriodicMode: boolean;
+      FRealHeight: Integer;
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
@@ -100,6 +101,7 @@ type
       function GetStackSize(const ID: Integer): Integer;
 //      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
+      property RealHeight: Integer read FRealHeight;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -135,7 +137,8 @@ begin
   for I := 0 to Count do
     FStacks[i].Align := alNone;
 
-  MaxHeigh := 20;
+  MaxHeigh := Header.Height;
+
   for I := 0 to Count do
   begin
     FStacks[i].Top := MaxHeigh + 5;
@@ -146,7 +149,7 @@ begin
   Substrate.Top := ClientHeight - 5;
   Substrate.Align := alTop;
 
-  Self.ClientHeight := MaxHeigh + Substrate.Height + 100;
+  FRealHeight := MaxHeigh + Substrate.ClientHeight;
   Visible := FVisibility;
 end;
 
@@ -795,6 +798,7 @@ begin
   for j := 0 to High(FStacks[ID].LayerData) do
          List.Add(FStacks[ID].LayerData[j].Material);
 end;
+
 
 function TXRCStructure.GetSelectedLayer: Integer;
 begin

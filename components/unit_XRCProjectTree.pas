@@ -351,14 +351,13 @@ begin
               Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
 
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
-          begin
             Data.Data := GetString;
-            p := pos('}}', Data.Data);
-            if p <> Length(Data.Data) - 1 then
-                Data.Data := copy(Data.Data, 1, p + 1);
-          end;
        end;
   end; // case
+
+  p := pos('}}', Data.Data);
+  if p <> Length(Data.Data) - 1 then
+      Data.Data := copy(Data.Data, 1, p + 1);
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;

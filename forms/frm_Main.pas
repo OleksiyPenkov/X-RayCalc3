@@ -123,7 +123,7 @@ type
     btnChartScale: TRzBitBtn;
     cbMinLimit: TRzComboBox;
     StructurePanel: TRzPanel;
-    RzToolbar2: TRzToolbar;
+    tlbStructure: TRzToolbar;
     btnPeriodAdd: TRzToolButton;
     btnPeriodInsert: TRzToolButton;
     btnPeriodDelete: TRzToolButton;
@@ -200,7 +200,6 @@ type
     dlgPrint: TPrintDialog;
     RzSpacer3: TRzSpacer;
     BtnFastForward: TRzToolButton;
-    BtnCancel: TRzToolButton;
     btnCopyLayer: TRzToolButton;
     actLayerCopy: TAction;
     actProjectItemDuplicate: TAction;
@@ -320,7 +319,10 @@ type
     Benchmark1: TMenuItem;
     actSystemSettings: TAction;
     actSystemExit: TAction;
-    RzButton1: TRzButton;
+    btnCopyConvergence: TRzButton;
+    actCopyStructureBitmap: TAction;
+    Copyasimage1: TMenuItem;
+    btnStop: TRzBitBtn;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -382,7 +384,7 @@ type
     procedure ChartMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ChartZoom(Sender: TObject);
-    procedure RzButton1Click(Sender: TObject);
+    procedure btnCopyConvergenceClick(Sender: TObject);
     procedure DataNormAutoExecute(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
@@ -397,6 +399,7 @@ type
     procedure actSystemExitExecute(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure cbTreatPeriodicClick(Sender: TObject);
+    procedure actCopyStructureBitmapExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -1421,10 +1424,13 @@ begin
   Screen.Cursor := crHourGlass;
   FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
 
-  CalcRun.Enabled := False;
-  CalcAll.Enabled := False;
-  actAutoFitting.Enabled := False;
-  CalcStop.Enabled := True;
+  tlbrFile.Enabled := False;
+  tlbStructure.Enabled := False;
+  ChartToolBar.Enabled := False;
+  btnCopyConvergence.Enabled := False;
+
+  btnStop.Left := Chart.ClientWidth div 2 - 40;
+  btnStop.Visible := True;
 
 
   StartT := StrToFloat(edStartTeta.Text);
@@ -1580,11 +1586,11 @@ begin
   StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
 
-  CalcRun.Enabled := True;
-  CalcAll.Enabled := True;
-  actAutoFitting.Enabled := True;
-  CalcStop.Enabled := False;
-
+  tlbrFile.Enabled := True;
+  tlbStructure.Enabled := True;
+  ChartToolBar.Enabled := True;
+  btnCopyConvergence.Enabled := True;
+  btnStop.Visible := False;
 
   PrintMax;
 end;
@@ -1835,8 +1841,6 @@ begin
   Pages.ActivePage := tsFittingProgress;
   chFittingProgress.BottomAxis.Minimum := 0;
   chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
-//  chFittingProgress.BottomAxis.Minimum := -1;
-//  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
 end;
 
 function TfrmMain.PrepareCalc: Boolean;
@@ -1982,6 +1986,33 @@ begin
     FBenchmarkMode := False;
   finally
     FreeAndNil(Files);
+  end;
+end;
+
+procedure TfrmMain.actCopyStructureBitmapExecute(Sender: TObject);
+var
+  Image: TImage;
+  MyFormat: Word;
+  AData: THandle;
+  APalette: HPALETTE;
+  MyRect : TRect;
+begin
+  Image := TImage.Create(nil);
+  try
+    MyRect := Rect(0, 0, Structure.Width, Structure.Height);
+
+    with Image do
+    begin
+      Width  := MyRect.Right;
+      Height := MyRect.Bottom;
+
+      Canvas.CopyRect(MyRect, Structure.Canvas, MyRect);
+    end;
+
+    Image.Picture.SaveToClipboardFormat(MyFormat, AData, APalette);
+    ClipBoard.SetAsHandle(MyFormat,AData);
+  finally
+    FreeAndNil(Image);
   end;
 end;
 
@@ -2527,7 +2558,7 @@ begin
 end;
 
 
-procedure TfrmMain.RzButton1Click(Sender: TObject);
+procedure TfrmMain.btnCopyConvergenceClick(Sender: TObject);
 begin
   case Pages.ActivePageIndex of
     0..2: ;

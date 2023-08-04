@@ -69,8 +69,6 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1458
-    ExplicitHeight = 688
     BarSize = (
       234
       0
@@ -299,17 +297,16 @@ object frmMain: TfrmMain
         Width = 858
         Height = 163
         Hint = ''
-        ActivePage = tsDensity
+        ActivePage = tsFittingProgress
         Align = alBottom
-        TabIndex = 2
+        TabIndex = 3
         TabOrder = 0
         ExplicitTop = 514
-        ExplicitWidth = 782
+        ExplicitWidth = 854
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitWidth = 782
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -339,7 +336,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
-            ExplicitWidth = 776
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -347,7 +343,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitWidth = 782
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -374,7 +369,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 776
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -382,7 +376,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitWidth = 782
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -409,7 +402,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 776
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -417,7 +409,7 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitWidth = 778
+          ExplicitWidth = 850
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -455,7 +447,9 @@ object frmMain: TfrmMain
             LeftAxis.LabelsSeparation = 20
             LeftAxis.Logarithmic = True
             LeftAxis.MaximumOffset = 2
+            LeftAxis.MaximumRound = True
             LeftAxis.MinimumOffset = 4
+            LeftAxis.MinimumRound = True
             LeftAxis.Title.Caption = #967'2'
             LeftAxis.Title.Font.Height = -13
             LeftAxis.Title.Shadow.Visible = False
@@ -465,20 +459,21 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
-            ExplicitWidth = 772
+            ExplicitWidth = 844
             DesignSize = (
               848
               132)
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
-            object RzButton1: TRzButton
+            object btnCopyConvergence: TRzButton
               Left = 778
               Top = 9
               Width = 59
               Anchors = [akTop, akRight]
               Caption = 'Copy'
               TabOrder = 0
-              OnClick = RzButton1Click
+              OnClick = btnCopyConvergenceClick
+              ExplicitLeft = 774
             end
             object lsrConvergence: TLineSeries
               HoverElement = [heCurrent]
@@ -524,10 +519,11 @@ object frmMain: TfrmMain
         Legend.TextStyle = ltsPlain
         Legend.Title.Transparent = False
         Legend.TopPos = 3
-        MarginBottom = 0
-        MarginLeft = 1
-        MarginRight = 1
-        MarginTop = 1
+        MarginBottom = 2
+        MarginLeft = 10
+        MarginRight = 2
+        MarginTop = 2
+        MarginUnits = muPixels
         PrintProportional = False
         SubFoot.Visible = False
         SubTitle.Visible = False
@@ -588,9 +584,15 @@ object frmMain: TfrmMain
         RightAxis.Automatic = False
         RightAxis.AutomaticMaximum = False
         RightAxis.AutomaticMinimum = False
+        RightAxis.Labels = False
+        RightAxis.LabelsFormat.Visible = False
+        RightAxis.LabelsOnAxis = False
         RightAxis.Logarithmic = True
         RightAxis.Maximum = 1.000000000000000000
         RightAxis.Minimum = 0.000001000000000000
+        RightAxis.RoundFirstLabel = False
+        TopAxis.Labels = False
+        TopAxis.LabelsFormat.Visible = False
         View3D = False
         Zoom.Pen.Color = clRed
         Zoom.Pen.Mode = pmNotXor
@@ -601,8 +603,6 @@ object frmMain: TfrmMain
         OnMouseDown = ChartMouseDown
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
-        ExplicitWidth = 854
-        ExplicitHeight = 304
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -610,6 +610,50 @@ object frmMain: TfrmMain
           5
           5)
         ColorPaletteIndex = 13
+        object btnStop: TRzBitBtn
+          Left = 500
+          Top = 19
+          Width = 80
+          Height = 30
+          Action = CalcStop
+          Caption = 'Stop'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -16
+          Font.Name = 'Segoe UI'
+          Font.Style = []
+          ParentFont = False
+          TabOrder = 0
+          Visible = False
+          Glyph.Data = {
+            36030000424D3603000000000000360000002800000010000000100000000100
+            18000000000000030000130B0000130B00000000000000000000FFFFFFFFFFFF
+            FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+            FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBABAB8A3A29996948F90
+            8D8B8E8C8796948AA8A8A5E4E4E4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+            E8E8E8A6A59AB8B5C38683D28684DD9896E38987DB7C78C89A95A5969486C0C0
+            C0FFFFFFFFFFFFFFFFFFFFFFFFEFEFEFC1C0B3A6A3DE3938E35C5CF68C8DFAA4
+            A5FB9393FC6566FA3D3CE67F7BC29F9B8BC0C0C0FFFFFFFFFFFFFFFFFFAFAFA3
+            ACAAE41C1BDD4243F15757ED7373F37D7DF37676F35B5BED4949F31E1FE78682
+            C3959184E5E5E5FFFFFFBABAB4C0BEC72121C91E1ED05353CD7878C04C4CE554
+            54F64D4DE67777BF5453CC2424D51F1FCBA9A4B0A7A6A3FFFFFFD2D0B47877C0
+            0000B51212B86D6DB5DBDBB18383BD2D2DD98080BEDADAB07070B51515BC0001
+            B57471C29B998EFFFFFFCFCCB44240B50000910B0BA41212B27D7CB4C3C3B3A4
+            A4B4C1C1B37C7CB41313B30D0DA8000092403EBA9D9B91FFFFFFBFBAAB5958BE
+            2928AC0F0FA40000A50202A2BCBCC7ECECD1BDBDC80403A30000A71111A62929
+            AD5F5EC69D9B96FFFFFFA4A0958C8AC67070E42E2EC71B1BBA9999D8FFFFFAE4
+            E4EDFFFFFB9F9FD92121BD3434C87172E2A19FDB9A9794FFFFFFABA79D8481B1
+            8181E33737C18F8FD4FFFFFFA9A9DF1B1BB8ADADE4FFFFFF9696D63E3EC27D7D
+            DEB0ADD4A4A29DFFFFFFD0D0CC8D88968E8ED77575DA6D6DC79797D43C3DC13C
+            3CCA403FC39A9AD67373C97676D98989D6CAC8D0B9B8B7FFFFFFFFFFFFB8B7B3
+            8E8AACA2A2E78686DC5D5DC86867D16A6AD06969D06060C98787DC8C8CD7B9B7
+            DAA3A29DFDFDFDFFFFFFFFFFFFFAFAFAA7A5A1908BA9A2A1D9A7A7E5A1A1E39D
+            9EE1A0A1E2A4A4E29C9BD4B0ADCDB7B5B0E7E7E7FFFFFFFFFFFFFFFFFFFFFFFF
+            F8F8F8BBB9B6918C998F8CAE918FBA9392C19390BC9694B5ADAAB4A8A7A3EDED
+            ECFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCFCFCBACA8A199948FA0
+            9A96A3A09BB6B5ADB6B6B2FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF}
+          ImageIndex = 46
+        end
       end
       object RzPanel3: TRzPanel
         AlignWithMargins = True
@@ -622,7 +666,8 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
-        ExplicitLeft = 3
+        ExplicitTop = 458
+        ExplicitWidth = 854
         DesignSize = (
           858
           50)
@@ -1674,7 +1719,6 @@ object frmMain: TfrmMain
           BtnFastForward
           BtnExecute
           RzSpacer2
-          BtnCancel
           rzspcr4
           btnResultSave
           btnBtnCopy
@@ -1684,7 +1728,7 @@ object frmMain: TfrmMain
           btnDataLoad
           btnDataPaste)
         object btnDataLoad: TRzToolButton
-          Left = 228
+          Left = 203
           Top = 2
           Hint = 'Load curve'
           ImageIndex = 8
@@ -1693,7 +1737,7 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnDataPaste: TRzToolButton
-          Left = 253
+          Left = 228
           Top = 2
           Hint = 'Paste curve'
           ImageIndex = 9
@@ -1702,7 +1746,7 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object rzspcr3: TRzSpacer
-          Left = 220
+          Left = 195
           Top = 2
         end
         object btnCalcRun: TRzToolButton
@@ -1715,11 +1759,11 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object rzspcr4: TRzSpacer
-          Left = 112
+          Left = 87
           Top = 2
         end
         object btnResultSave: TRzToolButton
-          Left = 120
+          Left = 95
           Top = 2
           Hint = 'Save resulting curve'
           DisabledIndex = 35
@@ -1729,7 +1773,7 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnBtnCopy: TRzToolButton
-          Left = 145
+          Left = 120
           Top = 2
           Hint = 'Copy resulting curve'
           DisabledIndex = 37
@@ -1758,24 +1802,15 @@ object frmMain: TfrmMain
           ImageIndex = 1
           Action = CalcAll
         end
-        object BtnCancel: TRzToolButton
-          Left = 87
-          Top = 2
-          Hint = 'Terminate'
-          DisabledIndex = 3
-          ImageIndex = 3
-          Action = CalcStop
-          Enabled = False
-        end
         object btnCopyImage: TRzToolButton
-          Left = 170
+          Left = 145
           Top = 2
           Hint = 'Save resulting curve as image'
           ImageIndex = 6
           Action = FilePlotCopyWMF
         end
         object btnPrintGraphics: TRzToolButton
-          Left = 195
+          Left = 170
           Top = 2
           ImageIndex = 7
         end
@@ -1792,7 +1827,7 @@ object frmMain: TfrmMain
       Color = 15987699
       ShowDockClientCaptions = False
       TabOrder = 1
-      object RzToolbar2: TRzToolbar
+      object tlbStructure: TRzToolbar
         Left = 2
         Top = 2
         Width = 346
@@ -2055,6 +2090,9 @@ object frmMain: TfrmMain
       end
       object actProjecEditModelText1: TMenuItem
         Action = actProjecEditModelText
+      end
+      object Copyasimage1: TMenuItem
+        Action = actCopyStructureBitmap
       end
       object N9: TMenuItem
         Caption = '-'
@@ -3267,6 +3305,11 @@ object frmMain: TfrmMain
       Category = 'System'
       Caption = 'Exit'
       OnExecute = actSystemExitExecute
+    end
+    object actCopyStructureBitmap: TAction
+      Category = 'Project Item'
+      Caption = 'Copy as image'
+      OnExecute = actCopyStructureBitmapExecute
     end
   end
   object ilProject: TImageList
