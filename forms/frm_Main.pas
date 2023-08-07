@@ -1934,14 +1934,17 @@ begin
 
     if Structure.IsPeriodic then
     begin
-      if  cbTreatPeriodic.Checked then
-        Structure.UpdateInterfaceP(LFPSO.Structure)
-      else
-      begin
-        Structure.UpdateInterfaceNP(LFPSO.Structure);
+      if cbTreatPeriodic.Checked then
+         Structure.UpdateInterfaceP(LFPSO.Structure)
+      else begin
         if cbPoly.Checked then
-         CreateFitGradientExtensions(LFPSO.Polynomes)
-        else begin
+        begin
+          Structure.UpdateInterfaceP(LFPSO.Structure);
+          CreateFitGradientExtensions(LFPSO.Polynomes)
+        end
+        else
+        begin
+          Structure.UpdateInterfaceNP(LFPSO.Structure);
           CreateProfileExtension;
           Structure.UpdateProfiles(LFPSO.Result);
         end;
@@ -1949,6 +1952,7 @@ begin
     end
     else
       Structure.UpdateInterfaceNP(LFPSO.Structure);
+
 
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -2602,6 +2606,10 @@ end;
 procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
 begin
   Structure.PeriodicMode := not cbTreatPeriodic.Checked;
+
+  cbPoly.Enabled      := not cbTreatPeriodic.Checked;
+  if cbTreatPeriodic.Checked then cbPoly.Checked := False;
+  edPolyOrder.Enabled := not cbTreatPeriodic.Checked;
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);
