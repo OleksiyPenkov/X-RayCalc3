@@ -158,7 +158,7 @@ type
     chFittingProgress: TChart;
     lsrConvergence: TLineSeries;
     spnFitTime: TRzStatusPane;
-    pnl1: TPanel;
+    pnlSettings: TPanel;
     RzPanel2: TRzPanel;
     Label6: TLabel;
     cbIncrement: TRzComboBox;
@@ -323,6 +323,7 @@ type
     actCopyStructureBitmap: TAction;
     Copyasimage1: TMenuItem;
     btnStop: TRzBitBtn;
+    ilIcons: TImageList;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -400,6 +401,7 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure cbTreatPeriodicClick(Sender: TObject);
     procedure actCopyStructureBitmapExecute(Sender: TObject);
+    procedure ChartResize(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -473,7 +475,6 @@ type
     procedure PlotGradedProfile;
     procedure PlotSimpleProfile;
     procedure ClearProfiles;
-    procedure PrepareInterfaceAF;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
@@ -481,6 +482,7 @@ type
     procedure RescaleChart;
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
     procedure EditTable(var Data: PProjectData);
+    procedure EnableControls(const Enable: boolean);
     { Private declarations }
   public
     { Public declarations }
@@ -504,6 +506,7 @@ implementation
 uses
   System.IniFiles,
   System.DateUtils,
+  System.UITypes,
   AbUtils,
   unit_helpers,
   unit_consts,
@@ -526,7 +529,9 @@ uses
   frm_Benchmark,
   unit_files_list,
   unit_config,
-  frm_settings, unit_XRCStackControl, editor_ProfileTable;
+  frm_settings,
+  unit_XRCStackControl,
+  editor_ProfileTable;
 
 {$R *.dfm}
 
@@ -706,6 +711,8 @@ begin
        Structure.FromString(LastData.Data);
        FStack.Clear;
        FStack.Push(LastData.Data);
+       PrepareDistributionCharts;
+       PlotProfile;
      end;
   end;
 end;
@@ -1421,17 +1428,8 @@ var
 begin
   StartTime := Now;
 
-  Screen.Cursor := crHourGlass;
+
   FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
-
-  tlbrFile.Enabled := False;
-  tlbStructure.Enabled := False;
-  ChartToolBar.Enabled := False;
-  btnCopyConvergence.Enabled := False;
-
-  btnStop.Left := Chart.ClientWidth div 2 - 40;
-  btnStop.Visible := True;
-
 
   StartT := StrToFloat(edStartTeta.Text);
   EndT := StrToFloat(edEndTeta.Text);
@@ -1585,13 +1583,6 @@ begin
   FSeriesList[Project.ActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
-
-  tlbrFile.Enabled := True;
-  tlbStructure.Enabled := True;
-  ChartToolBar.Enabled := True;
-  btnCopyConvergence.Enabled := True;
-  btnStop.Visible := False;
-
   PrintMax;
 end;
 
@@ -1633,21 +1624,27 @@ end;
 
 procedure TfrmMain.PlotProfileNP;
 var
-  i, j, k, p, shift: integer;
+  i, j,  p, n, shift: integer;
 begin
+  ClearProfiles;
   shift := 1;
   for i := 0 to High(Structure.Stacks) do
   begin
     if Structure.Stacks[i].N = 1 then Continue;
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
-      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[1]) do
+      for p := 1 to 3 do
       begin
-        for p := 1 to 3 do
-          if Length(Structure.Stacks[i].Layers[j].Data.PP[p]) > 0 then
-            FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[p][k])
-          else
-            FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.P[p].V);
+        FSeriesArray[p][j].Clear;
+        if not Structure.Stacks[i].Layers[j].Data.P[p].Paired then
+        begin
+          for n := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[p]) do
+               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.PP[p][n]);
+        end
+        else begin
+          for n := 0 to Structure.Stacks[i].N - 1 do
+               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.P[p].V);
+        end;
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1792,6 +1789,8 @@ begin
   try
     if not PrepareCalc then Exit;
     try
+     EnableControls(False);
+
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
@@ -1820,6 +1819,7 @@ begin
     end;
     FinalizeCalc(FCalc);
   finally
+    EnableControls(True);
     FCalc.Free;
   end;
 end;
@@ -1835,12 +1835,17 @@ begin
 end;
 
 
-procedure TfrmMain.PrepareInterfaceAF;
+procedure TfrmMain.EnableControls(const Enable: boolean);
 begin
-  lsrConvergence.Clear;
-  Pages.ActivePage := tsFittingProgress;
-  chFittingProgress.BottomAxis.Minimum := 0;
-  chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
+  tlbrFile.Enabled := Enable;
+  tlbStructure.Enabled := Enable;
+  ChartToolBar.Enabled := Enable;
+  btnCopyConvergence.Enabled := Enable;
+
+  btnStop.Visible := not Enable;
+  Structure.Enabled := Enable;
+  Project.Enabled := Enable;
+  pnlSettings.Enabled := Enable;
 end;
 
 function TfrmMain.PrepareCalc: Boolean;
@@ -1861,6 +1866,7 @@ begin
   FCalc.Params := FCalcThreadParams;
   FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
   FCalc.Model.Profiles := GetProfileFunctions;
+  Screen.Cursor := crHourGlass;
   Result := True;
 end;
 
@@ -1894,7 +1900,12 @@ begin
   end;
 
   LFPSO.Structure := FFitStructure;
-  PrepareInterfaceAF;
+
+  lsrConvergence.Clear;
+  Pages.ActivePage := tsFittingProgress;
+  chFittingProgress.BottomAxis.Minimum := 0;
+  chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
+
   Result := True;
 end;
 
@@ -1915,6 +1926,8 @@ begin
 
   try
     if not PrepareLFPSO then Exit;
+    Screen.Cursor := crHourGlass;
+    EnableControls(False);
     FitStartTime := Now;
 
     LFPSO.Run(FCalcThreadParams);
@@ -1943,6 +1956,7 @@ begin
     CalcRunExecute(nil);
   finally
     Screen.Cursor := crDefault;
+    EnableControls(True);
     FreeAndNil(LFPSO);
   end;
 end;
@@ -2373,6 +2387,7 @@ procedure TfrmMain.FileSaveAsExecute(Sender: TObject);
 var
   OldProjectDir: string;
 begin
+  dlgSaveProject.FileName := ExtractFileName(FProjectFileName);
   if dlgSaveProject.Execute then
   begin
     OldProjectDir := FProjectDir;
@@ -2393,7 +2408,7 @@ end;
 
 procedure TfrmMain.FileSaveExecute(Sender: TObject);
 begin
-  if FProjectName = 'noname.xrcx' then
+  if FProjectName = DEFAULT_PROJECT_NAME then
     FileSaveAsExecute(Sender)
   else
     SaveProject(FProjectFileName);
@@ -2438,6 +2453,11 @@ begin
     Screen.Cursor := crDefault;
 end;
 
+procedure TfrmMain.ChartResize(Sender: TObject);
+begin
+  btnStop.Left := Chart.ClientWidth div 2 - 40;
+end;
+
 procedure TfrmMain.ChartZoom(Sender: TObject);
 begin
   PrintMax;
@@ -2457,7 +2477,7 @@ begin
   Structure.AddSubstrate('Si', 5, 2.2);
 
   FLastID := 1;
-  FProjectName := 'noname.xrcx';
+  FProjectName := DEFAULT_PROJECT_NAME;
   FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
   FProjectFileName := FProjectDir + FProjectName;
   CreateDir(FProjectDir);

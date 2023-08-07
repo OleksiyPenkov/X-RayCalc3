@@ -32,6 +32,7 @@ const
   APP_HELP_FILENAME = 'xraycalc3.chm';
   VERINFO_FILENAME = 'version.info';
   LICENSE_FILENAME = 'xraycalc3.lic';
+  DEFAULT_PROJECT_NAME = 'NewProject.xrcx';
 implementation
 
 end.

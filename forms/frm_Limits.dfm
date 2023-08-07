@@ -187,7 +187,7 @@ object frmLimits: TfrmLimits
     ExplicitTop = 431
     ExplicitWidth = 549
     object btnSet: TRzBitBtn
-      Left = 476
+      Left = 473
       Top = 8
       ModalResult = 1
       Caption = 'Set'
