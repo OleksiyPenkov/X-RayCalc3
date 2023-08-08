@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
   unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Regular;
+  unit_LFPSO_Regular, Vcl.Imaging.pngimage;
 
 type
   TSeriesList = array of TLineSeries;
@@ -123,7 +123,7 @@ type
     btnChartScale: TRzBitBtn;
     cbMinLimit: TRzComboBox;
     StructurePanel: TRzPanel;
-    RzToolbar2: TRzToolbar;
+    tlbStructure: TRzToolbar;
     btnPeriodAdd: TRzToolButton;
     btnPeriodInsert: TRzToolButton;
     btnPeriodDelete: TRzToolButton;
@@ -158,7 +158,7 @@ type
     chFittingProgress: TChart;
     lsrConvergence: TLineSeries;
     spnFitTime: TRzStatusPane;
-    pnl1: TPanel;
+    pnlSettings: TPanel;
     RzPanel2: TRzPanel;
     Label6: TLabel;
     cbIncrement: TRzComboBox;
@@ -200,7 +200,6 @@ type
     dlgPrint: TPrintDialog;
     RzSpacer3: TRzSpacer;
     BtnFastForward: TRzToolButton;
-    BtnCancel: TRzToolButton;
     btnCopyLayer: TRzToolButton;
     actLayerCopy: TAction;
     actProjectItemDuplicate: TAction;
@@ -292,7 +291,6 @@ type
     edLFPSOSkip: TEdit;
     Label15: TLabel;
     cbTreatPeriodic: TRzCheckBox;
-    RzButton1: TRzButton;
     NewFolder1: TMenuItem;
     N8: TMenuItem;
     actEditHenke: TAction;
@@ -321,6 +319,11 @@ type
     Benchmark1: TMenuItem;
     actSystemSettings: TAction;
     actSystemExit: TAction;
+    btnCopyConvergence: TRzButton;
+    actCopyStructureBitmap: TAction;
+    Copyasimage1: TMenuItem;
+    btnStop: TRzBitBtn;
+    ilIcons: TImageList;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -382,7 +385,7 @@ type
     procedure ChartMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ChartZoom(Sender: TObject);
-    procedure RzButton1Click(Sender: TObject);
+    procedure btnCopyConvergenceClick(Sender: TObject);
     procedure DataNormAutoExecute(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
@@ -397,6 +400,8 @@ type
     procedure actSystemExitExecute(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure cbTreatPeriodicClick(Sender: TObject);
+    procedure actCopyStructureBitmapExecute(Sender: TObject);
+    procedure ChartResize(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -470,13 +475,14 @@ type
     procedure PlotGradedProfile;
     procedure PlotSimpleProfile;
     procedure ClearProfiles;
-    procedure PrepareInterfaceAF;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     procedure SaveHistory;
     procedure RescaleChart;
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
+    procedure EditTable(var Data: PProjectData);
+    procedure EnableControls(const Enable: boolean);
     { Private declarations }
   public
     { Public declarations }
@@ -500,6 +506,7 @@ implementation
 uses
   System.IniFiles,
   System.DateUtils,
+  System.UITypes,
   AbUtils,
   unit_helpers,
   unit_consts,
@@ -522,7 +529,9 @@ uses
   frm_Benchmark,
   unit_files_list,
   unit_config,
-  frm_settings, unit_XRCStackControl;
+  frm_settings,
+  unit_XRCStackControl,
+  editor_ProfileTable;
 
 {$R *.dfm}
 
@@ -702,6 +711,8 @@ begin
        Structure.FromString(LastData.Data);
        FStack.Clear;
        FStack.Push(LastData.Data);
+       PrepareDistributionCharts;
+       PlotProfile;
      end;
   end;
 end;
@@ -878,7 +889,7 @@ begin
                     if CreateChildNode(Node) then
                           CreateFunctionProfileExtension(Node);
                   end;
-    etArb  : CreateProfileExtension;
+    etTable  : CreateProfileExtension;
   end;
 end;
 
@@ -899,11 +910,11 @@ begin
     Data.Group := gtModel;
     Data.Enabled := True;
     Data.RowType := prExtension;
-    Data.Title := 'Profile';
-    Data.ExtType := etArb;
+    Data.Title := 'Table';
+    Data.ExtType := etTable;
     Data.StackID := -1;
     Data.LayerID := -1;
-    Data.Form := ffPoly;
+    Data.Form := ffNone;
 
     Project.ClearSelection;
     Project.Selected[Node] := True;
@@ -995,13 +1006,23 @@ begin
       begin
         case Data.ExtType of
           etFunction: EditGradient(Data);
-          etArb :;
+          etTable   : EditTable(Data);
         end;
 
       end;
   end;
 end;
 
+
+procedure TfrmMain.EditTable(var Data: PProjectData);
+begin
+  edtrProfileTable.Data := Data;
+  edtrProfileTable.Structure := Structure;
+  if edtrProfileTable.ShowModal = mrOk then
+  begin
+    mmDescription.Lines.Text := Data.Description;
+  end;
+end;
 
 procedure TfrmMain.EditGradient(var Data: PProjectData);
 begin
@@ -1191,7 +1212,7 @@ var
     FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
-  frmLimits.ShowLimits(FitStructure);
+  frmLimits.ShowLimits('Save', FitStructure);
   Structure.UpdateInterfaceP(FitStructure);
 end;
 
@@ -1344,7 +1365,7 @@ begin
   begin
     Result := False;
     FFitStructure := Structure.ToFitStructure;
-    if frmLimits.ShowLimits(FFitStructure) then
+    if frmLimits.ShowLimits('Run', FFitStructure) then
           Structure.UpdateInterfaceP(FFitStructure)
     else begin
       Exit;
@@ -1367,7 +1388,7 @@ begin
   FFitParams.Shake       := cbLFPSOShake.Checked;
   FFitParams.ThetaWieght := cbTWChi.ItemIndex;
   FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
-  FFitParams.RangeSeed      := cbSeedRange.Checked;
+  FFitParams.RangeSeed   := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   FFitParams.Ksxr        := 0.2;
 
@@ -1407,14 +1428,8 @@ var
 begin
   StartTime := Now;
 
-  Screen.Cursor := crHourGlass;
+
   FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
-
-  CalcRun.Enabled := False;
-  CalcAll.Enabled := False;
-  actAutoFitting.Enabled := False;
-  CalcStop.Enabled := True;
-
 
   StartT := StrToFloat(edStartTeta.Text);
   EndT := StrToFloat(edEndTeta.Text);
@@ -1549,7 +1564,7 @@ begin
                     pmiVisible.Visible := False;
                     pmiLinked.Visible  := False;
 
-                    IsProfile := LastData.ExtType = etArb;
+                    IsProfile := LastData.ExtType = etTable;
                     pmCopytoclipboard.Visible := IsProfile;
                     pmExporttofile.Visible    := IsProfile;
                  end;
@@ -1568,13 +1583,6 @@ begin
   FSeriesList[Project.ActiveModel.CurveID].Repaint;
   StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
-
-  CalcRun.Enabled := True;
-  CalcAll.Enabled := True;
-  actAutoFitting.Enabled := True;
-  CalcStop.Enabled := False;
-
-
   PrintMax;
 end;
 
@@ -1584,10 +1592,10 @@ var
 
   procedure InitSereis(Series: TLineSeries);
   begin
-    Series.LinePen.Width := 2;
+    Series.LinePen.Width := 3;
     Series.Stairs := True;
     Series.Pointer.Visible := True;
-    Series.Pointer.Size := 2;
+    Series.Pointer.Size := 4;
   end;
 
   procedure CreateSeries(Chart: TChart; var SeriesList: TSeriesList);
@@ -1616,18 +1624,27 @@ end;
 
 procedure TfrmMain.PlotProfileNP;
 var
-  i, j, k, p, shift: integer;
+  i, j,  p, n, shift: integer;
 begin
+  ClearProfiles;
   shift := 1;
   for i := 0 to High(Structure.Stacks) do
   begin
     if Structure.Stacks[i].N = 1 then Continue;
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
-      for k := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[1]) do
+      for p := 1 to 3 do
       begin
-        for p := 1 to 3 do
-         FSeriesArray[p][j].AddXY(k + shift, Structure.Stacks[i].Layers[j].Data.PP[p][k]);
+        FSeriesArray[p][j].Clear;
+        if not Structure.Stacks[i].Layers[j].Data.P[p].Paired then
+        begin
+          for n := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[p]) do
+               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.PP[p][n]);
+        end
+        else begin
+          for n := 0 to Structure.Stacks[i].N - 1 do
+               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.P[p].V);
+        end;
       end;
     end;
     Inc(shift, Structure.Stacks[i].N);
@@ -1757,7 +1774,7 @@ begin
   while Node <> nil do
   begin
     Data := Project.GetNodeData(Node);
-    if Data.ExtType = etArb then
+    if Data.ExtType = etTable then
     begin
       Result := Data.Enabled;
       Break;
@@ -1772,7 +1789,8 @@ begin
   try
     if not PrepareCalc then Exit;
     try
-      FCalc.Model.Profiles := GetProfileFunctions;
+     EnableControls(False);
+
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
@@ -1801,6 +1819,7 @@ begin
     end;
     FinalizeCalc(FCalc);
   finally
+    EnableControls(True);
     FCalc.Free;
   end;
 end;
@@ -1816,14 +1835,17 @@ begin
 end;
 
 
-procedure TfrmMain.PrepareInterfaceAF;
+procedure TfrmMain.EnableControls(const Enable: boolean);
 begin
-  lsrConvergence.Clear;
-  Pages.ActivePage := tsFittingProgress;
-  chFittingProgress.BottomAxis.Minimum := 0;
-  chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
-  chFittingProgress.BottomAxis.Minimum := -1;
-//  chFittingProgress.LeftAxis.Minimum := FFitParams.Tolerance / 5;
+  tlbrFile.Enabled := Enable;
+  tlbStructure.Enabled := Enable;
+  ChartToolBar.Enabled := Enable;
+  btnCopyConvergence.Enabled := Enable;
+
+  btnStop.Visible := not Enable;
+  Structure.Enabled := Enable;
+  Project.Enabled := Enable;
+  pnlSettings.Enabled := Enable;
 end;
 
 function TfrmMain.PrepareCalc: Boolean;
@@ -1843,6 +1865,8 @@ begin
   GetThreadParams;
   FCalc.Params := FCalcThreadParams;
   FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+  FCalc.Model.Profiles := GetProfileFunctions;
+  Screen.Cursor := crHourGlass;
   Result := True;
 end;
 
@@ -1876,7 +1900,12 @@ begin
   end;
 
   LFPSO.Structure := FFitStructure;
-  PrepareInterfaceAF;
+
+  lsrConvergence.Clear;
+  Pages.ActivePage := tsFittingProgress;
+  chFittingProgress.BottomAxis.Minimum := 0;
+  chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
+
   Result := True;
 end;
 
@@ -1897,26 +1926,33 @@ begin
 
   try
     if not PrepareLFPSO then Exit;
+    Screen.Cursor := crHourGlass;
+    EnableControls(False);
     FitStartTime := Now;
 
     LFPSO.Run(FCalcThreadParams);
 
     if Structure.IsPeriodic then
     begin
-      Structure.UpdateInterfaceP(LFPSO.Structure);
-      if not cbTreatPeriodic.Checked then
-      begin
+      if cbTreatPeriodic.Checked then
+         Structure.UpdateInterfaceP(LFPSO.Structure)
+      else begin
         if cbPoly.Checked then
-         CreateFitGradientExtensions(LFPSO.Polynomes)
-        else begin
+        begin
+          Structure.UpdateInterfaceP(LFPSO.Structure);
+          CreateFitGradientExtensions(LFPSO.Polynomes)
+        end
+        else
+        begin
+          Structure.UpdateInterfaceNP(LFPSO.Structure);
           CreateProfileExtension;
           Structure.UpdateProfiles(LFPSO.Result);
         end;
-
       end;
     end
     else
       Structure.UpdateInterfaceNP(LFPSO.Structure);
+
 
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -1924,6 +1960,7 @@ begin
     CalcRunExecute(nil);
   finally
     Screen.Cursor := crDefault;
+    EnableControls(True);
     FreeAndNil(LFPSO);
   end;
 end;
@@ -1967,6 +2004,36 @@ begin
     FBenchmarkMode := False;
   finally
     FreeAndNil(Files);
+  end;
+end;
+
+procedure TfrmMain.actCopyStructureBitmapExecute(Sender: TObject);
+var
+  Image: TPNGImage;
+  Bitmap: TBitmap;
+  MyFormat: Word;
+  AData: THandle;
+  APalette: HPALETTE;
+  MyRect : TRect;
+begin
+  Image := TPNGImage.Create;
+  Bitmap := TBitmap.Create;
+  try
+    MyRect := Rect(0, 0, Structure.Width, Structure.Height);
+
+    with Bitmap do
+    begin
+      Width  := MyRect.Right;
+      Height := MyRect.Bottom;
+
+      Canvas.CopyRect(MyRect, Structure.Canvas, MyRect);
+    end;
+
+    Image.Assign(Bitmap);
+    Image.SaveToClipboardFormat(MyFormat, AData, APalette);
+    ClipBoard.SetAsHandle(MyFormat,AData);
+  finally
+    FreeAndNil(Image);
   end;
 end;
 
@@ -2324,6 +2391,7 @@ procedure TfrmMain.FileSaveAsExecute(Sender: TObject);
 var
   OldProjectDir: string;
 begin
+  dlgSaveProject.FileName := ExtractFileName(FProjectFileName);
   if dlgSaveProject.Execute then
   begin
     OldProjectDir := FProjectDir;
@@ -2344,7 +2412,7 @@ end;
 
 procedure TfrmMain.FileSaveExecute(Sender: TObject);
 begin
-  if FProjectName = 'noname.xrcx' then
+  if FProjectName = DEFAULT_PROJECT_NAME then
     FileSaveAsExecute(Sender)
   else
     SaveProject(FProjectFileName);
@@ -2389,6 +2457,11 @@ begin
     Screen.Cursor := crDefault;
 end;
 
+procedure TfrmMain.ChartResize(Sender: TObject);
+begin
+  btnStop.Left := Chart.ClientWidth div 2 - 40;
+end;
+
 procedure TfrmMain.ChartZoom(Sender: TObject);
 begin
   PrintMax;
@@ -2408,7 +2481,7 @@ begin
   Structure.AddSubstrate('Si', 5, 2.2);
 
   FLastID := 1;
-  FProjectName := 'noname.xrcx';
+  FProjectName := DEFAULT_PROJECT_NAME;
   FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
   FProjectFileName := FProjectDir + FProjectName;
   CreateDir(FProjectDir);
@@ -2441,7 +2514,7 @@ end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('Exit application?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
+  CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -2512,7 +2585,7 @@ begin
 end;
 
 
-procedure TfrmMain.RzButton1Click(Sender: TObject);
+procedure TfrmMain.btnCopyConvergenceClick(Sender: TObject);
 begin
   case Pages.ActivePageIndex of
     0..2: ;
@@ -2533,6 +2606,10 @@ end;
 procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
 begin
   Structure.PeriodicMode := not cbTreatPeriodic.Checked;
+
+  cbPoly.Enabled      := not cbTreatPeriodic.Checked;
+  if cbTreatPeriodic.Checked then cbPoly.Checked := False;
+  edPolyOrder.Enabled := not cbTreatPeriodic.Checked;
 end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);

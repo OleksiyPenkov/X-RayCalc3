@@ -1,3 +1,12 @@
+(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
 unit frm_ExtensionType;
 
 interface
@@ -94,7 +103,7 @@ begin
         if mrGradient = vistaDlg.ModalResult then
           Result := etFunction
         else if mrProfile = vistaDlg.ModalResult  then
-          Result := etArb
+          Result := etTable
         else if mrRoughness = vistaDlg.ModalResult  then
           Result := etRough;
       end;
@@ -111,7 +120,7 @@ begin
         if xpDlg.rbGradient.Checked then
           Result := etFunction
         else if xpDlg.rbProfile.Checked then
-          Result := etArb
+          Result := etTable
       end;
     finally
       xpDlg.Free;

@@ -6,6 +6,19 @@ In this version, the automatic optimization based on modified LFPSO algorithm wa
 
 The X-Ray Calc distribution contents several demonstration projects located in the Examples folder To see the demos, click the Open button, navigate to the Examples folder, and select a project file.
 
+
+2023-08-08 3.0.6
+Fixed:
+ - Poly Fitting (using of high orders)
+ - Drawing of NP profiles
+ - Minor errors
+ - Interface fixes
+Added:
+ - Profile Table viewer
+ - Storing auto generated tables in the project file
+ - Copy structure as image (png) 
+ - GIU improvements
+
 2023-07-31 3.0.5
 Fixed:
  - Poly Fitting

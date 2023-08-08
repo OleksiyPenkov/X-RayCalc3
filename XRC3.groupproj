@@ -6,6 +6,9 @@
         <Projects Include="XRayCalc3.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="components\XRayCalcVisualControls.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -23,14 +26,23 @@
     <Target Name="XRayCalc3:Make">
         <MSBuild Projects="XRayCalc3.dproj" Targets="Make"/>
     </Target>
+    <Target Name="XRayCalcVisualControls">
+        <MSBuild Projects="components\XRayCalcVisualControls.dproj"/>
+    </Target>
+    <Target Name="XRayCalcVisualControls:Clean">
+        <MSBuild Projects="components\XRayCalcVisualControls.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="XRayCalcVisualControls:Make">
+        <MSBuild Projects="components\XRayCalcVisualControls.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="XRayCalc3"/>
+        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="XRayCalc3:Clean"/>
+        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="XRayCalc3:Make"/>
+        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

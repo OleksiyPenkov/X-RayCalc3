@@ -1,4 +1,13 @@
-﻿unit unit_XRCProjectTree;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
+unit unit_XRCProjectTree;
 
 interface
 
@@ -51,7 +60,6 @@ type
   end;
 
 implementation
-
 
 { TXRCProjectTree }
 
@@ -145,7 +153,7 @@ begin
   begin
     repeat
       Data := GetNodeData(Node);
-      if Data.ExtType = etArb then
+      if Data.ExtType = etTable then
       begin
         Result := True;
         Break;
@@ -330,10 +338,26 @@ begin
           Data.Data := GetString;
        end;
 
-  end;
+    5: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
+          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+
+          if (Data.Group = gtModel) and (Data.RowType = prExtension) then
+            for I := 1 to 10 do
+              Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+
+          if (Data.Group = gtModel) and (Data.RowType = prItem) then
+            Data.Data := GetString;
+       end;
+  end; // case
 
   p := pos('}}', Data.Data);
-  Data.Data := copy(Data.Data, 1, p + 1);
+  if p <> Length(Data.Data) - 1 then
+      Data.Data := copy(Data.Data, 1, p + 1);
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
@@ -382,9 +406,12 @@ begin
   Stream.Write(Data.StackID, SizeOf(Data.StackID));
   Stream.Write(Data.Form, SizeOf(Data.Form));
   Stream.Write(Data.Subj, SizeOf(Data.Subj));
-  for I := 1 to 10 do
-            Stream.Write(Data.Poly[i], SizeOf(Data.Poly[i]));
-  WriteString(Data.Data);
+
+  if (Data.Group = gtModel) and (Data.RowType = prExtension) then
+    for I := 1 to 10 do
+              Stream.Write(Data.Poly[i], SizeOf(Data.Poly[i]));
+  if (Data.Group = gtModel) and (Data.RowType = prItem) then
+    WriteString(Data.Data);
 end;
 
 end.

@@ -1,4 +1,13 @@
-﻿unit unit_Types;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
+unit unit_Types;
 
 interface
 
@@ -17,7 +26,7 @@ type
 
   TProjectGroupType = (gtModel, gtData);
   TProjRowType = (prGroup, prItem, prFolder, prExtension);
-  TExtentionType = (etNone, etFunction, etArb, etRough);
+  TExtentionType = (etNone, etFunction, etTable, etRough);
   TFunctionForm = (ffNone, ffPoly, ffExp, ffParabolic, ffSQRT);
   TParameterType = (ptH, ptS, ptRho);
 
@@ -50,7 +59,7 @@ type
                Form: TFunctionForm;
                Subj: TParameterType;
                );
-            etArb:
+            etTable:
               ();
          )
   end;
@@ -143,8 +152,8 @@ type
     StackID, LayerID, Index: integer;
     PP: array [1..3] of TFloatArray;
   public
-    procedure ClearProfiles;
-    procedure AddProfilePoint(const H, s, r: Single);
+    procedure ClearProfiles(const p: integer);
+    procedure AddProfilePoint(const Val: Single; Index: integer);
     function ProfileFromSrting(const p: integer; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
   end;
@@ -251,18 +260,13 @@ end;
 { TLayerData }
 
 procedure TLayerData.ClearProfiles;
-var
-  p: Integer;
 begin
-  for p := 1 to 3 do
-    SetLength(PP[p], 0);
+  SetLength(PP[p], 0);
 end;
 
-procedure TLayerData.AddProfilePoint(const H, s, r: Single);
+procedure TLayerData.AddProfilePoint(const Val: Single; Index: integer);
 begin
-  Insert(H, PP[1], MaxInt);
-  Insert(s, PP[2], MaxInt);
-  Insert(r, PP[3], MaxInt);
+  Insert(Val, PP[Index], MaxInt);
 end;
 
 function TLayerData.ProfileFromSrting(const p: integer; Profile: string): string;
@@ -290,7 +294,7 @@ begin
   for I := 0 to High(PP[p]) do
   begin
     Val := PP[p][i];
-    Result := Format('%s%f;',[Result, Val])
+    Result := Format('%s%*.*f;',[Result, 5, 4, Val])
   end;
 end;
 

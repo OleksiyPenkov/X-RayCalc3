@@ -37,7 +37,9 @@ uses
   frm_Benchmark in 'forms\frm_Benchmark.pas' {frmBenchmark},
   unit_files_list in 'components\unit_files_list.pas',
   unit_Config in 'units\unit_Config.pas',
-  frm_settings in 'forms\frm_settings.pas' {frmSettings};
+  frm_settings in 'forms\frm_settings.pas' {frmSettings},
+  editor_ProfileTable in 'editors\editor_ProfileTable.pas' {edtrProfileTable},
+  unit_XRCGrid in 'components\unit_XRCGrid.pas';
 
 {$R *.res}
 
@@ -59,5 +61,6 @@ begin
   Application.CreateForm(TfrmBenchmark, frmBenchmark);
   Application.CreateForm(TfrmSettings, frmSettings);
   Application.CreateForm(TfrmSettings, frmSettings);
+  Application.CreateForm(TedtrProfileTable, edtrProfileTable);
   Application.Run;
 end.

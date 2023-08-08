@@ -1,3 +1,12 @@
+(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
 unit frm_Benchmark;
 
 interface
@@ -5,18 +14,16 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.Grids, Vcl.StdCtrls,
-  Vcl.Buttons, RzPanel;
+  Vcl.Buttons, RzPanel, RzGrids, unit_XRCGrid;
 
 type
   TfrmBenchmark = class(TForm)
     RzPanel1: TRzPanel;
     BitBtn1: TBitBtn;
-    Grid: TStringGrid;
+    Grid: TXRCGrid;
     procedure BitBtn1Click(Sender: TObject);
   private
     FLine: Integer;
-    procedure AutoSizeCol(Grid: TStringGrid; Column: integer);
-    procedure StringGrid2File(StringGrid: TStringGrid; FileName: String);
     { Private declarations }
   public
     { Public declarations }
@@ -34,46 +41,13 @@ implementation
 
 {$R *.dfm}
 
-procedure TfrmBenchmark.StringGrid2File(StringGrid: TStringGrid; FileName: String);
-var
-  F: TextFile;
-  x, y: Integer;
-  S: string;
-begin
-  AssignFile(F, FileName);
-  Rewrite(F);
-  for y := 0 to StringGrid.RowCount-1 do
-  begin
-    S := StringGrid.Cells[0, y];
-    for x := 1 to StringGrid.ColCount-1 do
-      S := S + #9 + StringGrid.Cells[x, y];
-
-    Writeln(F, S);
-  end;
-  CloseFile(F);
-end;
-
-
-procedure TfrmBenchmark.AutoSizeCol(Grid: TStringGrid;
-Column: integer);
-var
-  i, W, WMax: integer;
-begin
-  WMax := 0;
-  for i := 0 to (Grid.RowCount - 1) do begin
-    W := Grid.Canvas.TextWidth(Grid.Cells[Column, i]);
-    if W > WMax then
-      WMax := W;
-  end;
-  Grid.ColWidths[Column] := WMax + 10;
-end;
 
 procedure TfrmBenchmark.AddFile(const Name: string);
 begin
   Grid.RowCount := Grid.RowCount + 1;
   FLine := Grid.RowCount  - 1;
   Grid.Cells[0, FLine] := Name;
-  AutoSizeCol(Grid, 0);
+  Grid.AutoSizeCol(0);
 end;
 
 procedure TfrmBenchmark.AddValue(const n: integer; Val: string);
@@ -88,7 +62,7 @@ end;
 
 procedure TfrmBenchmark.CalcStats;
 begin
-  StringGrid2File(Grid, 'benchmark.dat');
+  Grid.SaveToFile('benchmark.dat');
 end;
 
 procedure TfrmBenchmark.Clear;

@@ -29,15 +29,15 @@ object frmExtensionSelector: TfrmExtensionSelector
     Margins.Bottom = 50
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 480
-    ExplicitHeight = 219
+    ExplicitWidth = 472
+    ExplicitHeight = 217
     DesignSize = (
       476
       218)
     object txtGradient: TLabel
       Left = 88
       Top = 49
-      Width = 261
+      Width = 253
       Height = 26
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -48,7 +48,7 @@ object frmExtensionSelector: TfrmExtensionSelector
     object txtUnregister: TLabel
       Left = 88
       Top = 119
-      Width = 317
+      Width = 309
       Height = 51
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False

@@ -3,8 +3,8 @@ object frmMaterialSelector: TfrmMaterialSelector
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Select material'
-  ClientHeight = 390
-  ClientWidth = 280
+  ClientHeight = 403
+  ClientWidth = 286
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,6 +12,9 @@ object frmMaterialSelector: TfrmMaterialSelector
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poMainFormCenter
+  DesignSize = (
+    286
+    403)
   TextHeight = 15
   object SearchBox1: TSearchBox
     Left = 8
@@ -29,19 +32,22 @@ object frmMaterialSelector: TfrmMaterialSelector
     TabOrder = 1
   end
   object BitBtn1: TBitBtn
-    Left = 205
+    Left = 201
     Top = 372
     Width = 75
     Height = 25
+    Anchors = [akRight, akBottom]
     Caption = 'Select'
     ModalResult = 1
     TabOrder = 2
+    ExplicitLeft = 205
   end
   object BitBtn2: TBitBtn
     Left = 8
     Top = 372
     Width = 75
     Height = 25
+    Anchors = [akLeft, akBottom]
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 3

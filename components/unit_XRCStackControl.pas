@@ -1,4 +1,13 @@
-﻿unit unit_XRCStackControl;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
+unit unit_XRCStackControl;
 
 interface
 
@@ -101,7 +110,8 @@ begin
 
   FLayers[Pos] := TXRCLayerControl.Create(Self, 0, Data);
   FLayers[Pos].Parent := Self;
-  FLayers[Pos].Pairable := FN > 1;
+  FLayers[Pos].EnableLinking := FN > 1;
+  FLayers[Pos].Pairable      := FEnablePairing;
 
   lblLayers.Top := 1;
   ClientHeight := 45 + (Count + 1) * (FLayers[Pos].Height + 3);

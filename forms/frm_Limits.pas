@@ -1,3 +1,12 @@
+(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+
 unit frm_Limits;
 
 interface
@@ -22,7 +31,7 @@ type
     Label15: TLabel;
     edFdRho: TEdit;
     btnInit: TBitBtn;
-    RzBitBtn1: TRzBitBtn;
+    btnSet: TRzBitBtn;
     RzBitBtn2: TRzBitBtn;
     procedure ListViewClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -41,7 +50,7 @@ type
   public
     { Public declarations }
 
-    function ShowLimits(var Structure: TFitStructure): boolean;
+    function ShowLimits(const ACaption: string; var Structure: TFitStructure): boolean;
   end;
 
 var
@@ -201,10 +210,11 @@ begin
 
 end;
 
-function TfrmLimits.ShowLimits(var Structure: TFitStructure): boolean;
+function TfrmLimits.ShowLimits(const ACaption: string; var Structure: TFitStructure): boolean;
 begin
   Result := False;
   FStructure := Structure;
+  btnSet.Caption := ACaption;
 
   StructureToView;
 

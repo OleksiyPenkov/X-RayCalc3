@@ -2,7 +2,7 @@ object edtrHenkeTable: TedtrHenkeTable
   Left = 0
   Top = 0
   Caption = 'Edit Henke table'
-  ClientHeight = 561
+  ClientHeight = 557
   ClientWidth = 860
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,11 +18,12 @@ object edtrHenkeTable: TedtrHenkeTable
     Left = 3
     Top = 3
     Width = 326
-    Height = 536
+    Height = 532
     Align = alLeft
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
+    ExplicitHeight = 531
     object Label1: TLabel
       Left = 11
       Top = 10
@@ -90,7 +91,7 @@ object edtrHenkeTable: TedtrHenkeTable
       Left = 5
       Top = 82
       Width = 316
-      Height = 450
+      Height = 445
       Margins.Top = 80
       Align = alClient
       ColCount = 4
@@ -101,7 +102,7 @@ object edtrHenkeTable: TedtrHenkeTable
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goFixedRowDefAlign]
       TabOrder = 3
       OnSetEditText = FGridSetEditText
-      ExplicitHeight = 449
+      ExplicitHeight = 444
     end
     object btnSave: TRzBitBtn
       Left = 241
@@ -113,7 +114,7 @@ object edtrHenkeTable: TedtrHenkeTable
   end
   object rzstsbr1: TRzStatusBar
     Left = 0
-    Top = 542
+    Top = 538
     Width = 860
     Height = 19
     BorderInner = fsNone
@@ -122,24 +123,32 @@ object edtrHenkeTable: TedtrHenkeTable
     BorderWidth = 0
     Color = 15987699
     TabOrder = 1
+    ExplicitTop = 537
+    ExplicitWidth = 856
   end
   object rzpnl2: TRzPanel
     AlignWithMargins = True
     Left = 335
     Top = 3
     Width = 522
-    Height = 536
+    Height = 532
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 2
+    ExplicitWidth = 518
+    ExplicitHeight = 531
     object Chart: TChart
       AlignWithMargins = True
       Left = 5
       Top = 5
-      Width = 516
-      Height = 527
+      Width = 512
+      Height = 522
       Cursor = crCross
+      Legend.Alignment = laTop
+      Legend.ResizeChart = False
+      Legend.TopPos = 3
+      Legend.VertMargin = 3
       Title.Text.Strings = (
         'TChart')
       Title.Visible = False
@@ -147,8 +156,8 @@ object edtrHenkeTable: TedtrHenkeTable
       Align = alClient
       Color = clWhite
       TabOrder = 0
-      ExplicitWidth = 512
-      ExplicitHeight = 526
+      ExplicitWidth = 508
+      ExplicitHeight = 521
       DefaultCanvas = 'TGDIPlusCanvas'
       ColorPaletteIndex = 13
       object SeriesF1: TLineSeries

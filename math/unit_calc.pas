@@ -309,19 +309,23 @@ var
     Im: TComplex;
     a1, a2, b1, b2: TComplex;
   begin
-    Im := ToComplex(0, 1);
-    for i := High(ALayers) - 1 downto 0 do
-    begin
-      a1 := MulRZ(ALayers[i + 1].L * 2, ALayers[i + 1].K);
-      a1 := MulZZ(Im, a1);
-      a1 := ExpZ(a1);
-      a1 := MulZZ(ALayers[i + 1].R, a1);
-      b1 := AddZZ(ALayers[i].RF, a1);
-      a2 := MulZZ(ALayers[i].RF, a1);
-      b2 := AddZR(a2, 1);
-      ALayers[i].R := DivZZ(b1, b2);
+    try
+      Im := ToComplex(0, 1);
+      for i := High(ALayers) - 1 downto 0 do
+      begin
+        a1 := MulRZ(ALayers[i + 1].L * 2, ALayers[i + 1].K);
+        a1 := MulZZ(Im, a1);
+        a1 := ExpZ(a1);
+        a1 := MulZZ(ALayers[i + 1].R, a1);
+        b1 := AddZZ(ALayers[i].RF, a1);
+        a2 := MulZZ(ALayers[i].RF, a1);
+        b2 := AddZR(a2, 1);
+        ALayers[i].R := DivZZ(b1, b2);
+      end;
+      Result := sqr(AbsZ(ALayers[0].R));
+    except
+      on Exception do Result := 0;
     end;
-    Result := sqr(AbsZ(ALayers[0].R));
   end;
 
   function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single; inline;

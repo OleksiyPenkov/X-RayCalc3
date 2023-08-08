@@ -22,8 +22,8 @@ object frmJsonEditor: TfrmJsonEditor
     BorderWidth = 0
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 651
-    ExplicitWidth = 799
+    ExplicitTop = 649
+    ExplicitWidth = 791
   end
   object Editor: TSynEdit
     Left = 0
@@ -67,8 +67,8 @@ object frmJsonEditor: TfrmJsonEditor
     Lines.Strings = (
       'Editor')
     SelectedColor.Alpha = 0.400000005960464500
-    ExplicitWidth = 799
-    ExplicitHeight = 622
+    ExplicitWidth = 791
+    ExplicitHeight = 620
   end
   object MainToolBar: TRzToolbar
     Left = 0
@@ -81,7 +81,7 @@ object frmJsonEditor: TfrmJsonEditor
     BorderWidth = 0
     Color = 15987699
     TabOrder = 2
-    ExplicitWidth = 799
+    ExplicitWidth = 791
     ToolbarControls = (
       btnSave)
     object btnSave: TRzBitBtn

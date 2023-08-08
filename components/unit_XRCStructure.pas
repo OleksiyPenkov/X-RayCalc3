@@ -1,4 +1,12 @@
-﻿unit unit_XRCStructure;
+﻿(* *****************************************************************************
+  *
+  *   X-Ray Calc 3
+  *
+  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   e-mail: oleksiypenkov@intl.zju.edu.cn
+  *
+  ****************************************************************************** *)
+unit unit_XRCStructure;
 
 interface
 
@@ -36,6 +44,7 @@ type
       FClipBoardLayers: TLayersData;
       JLayer, JStack, JSub: TJSONValue;
       FPeriodicMode: boolean;
+      FRealHeight: Integer;
 
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
@@ -92,6 +101,7 @@ type
       function GetStackSize(const ID: Integer): Integer;
 //      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
+      property RealHeight: Integer read FRealHeight;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -127,7 +137,8 @@ begin
   for I := 0 to Count do
     FStacks[i].Align := alNone;
 
-  MaxHeigh := 20;
+  MaxHeigh := Header.Height;
+
   for I := 0 to Count do
   begin
     FStacks[i].Top := MaxHeigh + 5;
@@ -138,7 +149,7 @@ begin
   Substrate.Top := ClientHeight - 5;
   Substrate.Align := alTop;
 
-  Self.ClientHeight := MaxHeigh + Substrate.Height + 100;
+  FRealHeight := MaxHeigh + Substrate.ClientHeight;
   Visible := FVisibility;
 end;
 
@@ -425,7 +436,8 @@ begin
       begin
         for k := 0 to High(StackLayers) do
           for p := 1 to 3 do
-            StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
+            if not StackLayers[k].P[p].Paired then
+               StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
       end;
       Result.AddLayers(i, StackLayers);
     end;
@@ -531,7 +543,7 @@ var
 begin
   for I := 0 to High(FStacks) do
   begin
-    for j := 0 to High(FStacks[i].LayerData) do
+    for j := 0 to High(FStacks[i].Layers) do
     begin
       Data.Material := Inp.Stacks[i].Layers[j].Material;
       Data.P := Inp.Stacks[i].Layers[j].P;
@@ -542,17 +554,24 @@ end;
 
 procedure TXRCStructure.UpdateProfiles(const Inp: TLayeredModel);
 var
-  i, j, SID, LID: integer;
+  i, j, p, SID, LID: integer;
 begin
   for I := 0 to High(FStacks) do
      for j := 0 to High(FStacks[i].Layers) do
-       FStacks[i].Layers[j].Data.ClearProfiles;
+       for p := 1 to 3 do
+         FStacks[i].Layers[j].Data.ClearProfiles(p);
 
   for I := 1 to High(Inp.Layers) - 1 do
   begin
     SID := Inp.Layers[i].StackID;
     LID := Inp.Layers[i].LayerID;
-    Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].L, Inp.Layers[i].s, Inp.Layers[i].ro);
+    for p := 1 to 3 do
+      if not Structure.FStacks[SID].Layers[LID].Data.P[p].Paired then
+        case p of
+          1: Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].L, 1);
+          2: Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].s, 2);
+          3: Structure.FStacks[SID].Layers[LID].Data.AddProfilePoint(Inp.Layers[i].ro, 3);
+        end;
   end;
 end;
 
@@ -633,7 +652,7 @@ begin
           JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
-          Profile := Data.ProfileToSrting(ptH);
+          Profile := Data.ProfileToSrting(TParameterType(p - 1));
           JLayer.AddPair('Profile' + UpperCase(PAlias[p]), Profile);
         end;
 
@@ -755,7 +774,7 @@ begin
           PS := FindStrValue('Profile' + UpperCase(PAlias[p]));
           if PS <> '' then
           begin
-            Data.ClearProfiles;
+            Data.ClearProfiles(p);
             Data.ProfileFromSrting(p, PS);
           end;
 
@@ -779,6 +798,7 @@ begin
   for j := 0 to High(FStacks[ID].LayerData) do
          List.Add(FStacks[ID].LayerData[j].Material);
 end;
+
 
 function TXRCStructure.GetSelectedLayer: Integer;
 begin

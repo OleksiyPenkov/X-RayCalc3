@@ -23,8 +23,8 @@ object frmLimits: TfrmLimits
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 561
-    ExplicitHeight = 424
+    ExplicitWidth = 549
+    ExplicitHeight = 422
     object Label13: TLabel
       Left = 19
       Top = 393
@@ -68,8 +68,8 @@ object frmLimits: TfrmLimits
       AlignWithMargins = True
       Left = 5
       Top = 5
-      Width = 547
-      Height = 367
+      Width = 543
+      Height = 366
       Margins.Bottom = 50
       Align = alClient
       Columns = <
@@ -110,14 +110,14 @@ object frmLimits: TfrmLimits
       ColumnClick = False
       GridLines = True
       GroupView = True
-      Items.ItemData = {}
       ReadOnly = True
       ShowWorkAreas = True
       TabOrder = 0
       ViewStyle = vsReport
       FillLastColumn = False
       OnClick = ListViewClick
-      ExplicitWidth = 551
+      ExplicitWidth = 547
+      ExplicitHeight = 365
     end
     object edFdH: TEdit
       Left = 40
@@ -184,10 +184,10 @@ object frmLimits: TfrmLimits
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 434
-    ExplicitWidth = 561
-    object RzBitBtn1: TRzBitBtn
-      Left = 476
+    ExplicitTop = 431
+    ExplicitWidth = 549
+    object btnSet: TRzBitBtn
+      Left = 473
       Top = 8
       ModalResult = 1
       Caption = 'Set'
