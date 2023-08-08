@@ -111,7 +111,7 @@ end;
 procedure TLFPSO_Poly.CheckLimitsP(const i, j, k, Ord: integer);
 var
    Val, Max, Min: Single;
-   p, r: Integer;
+   p, r, Nmin, Nmax: Integer;
 begin
   for p := 0 to Ord do
   begin
@@ -130,11 +130,17 @@ begin
   begin
     for r := 1 to Counts[j] do
     begin
-      Val := Poly(r, X[i][j][k]);
+      Val := Poly(r, Xmin[0][Indexes[j]][k][0], Xmax[0][Indexes[j]][k][0], X[i][j][k]);
       if Val > Max then
-         Max := Val;
+      begin
+        Max := Val;
+        NMax := r;
+      end;
       if Val < Min then
+      begin
          Min := Val;
+         Nmin := r;
+      end;
     end
   end
   else begin
@@ -142,20 +148,34 @@ begin
     Min := X[i][j][k][0];
   end;
 
-  if Max > Xmax[0][Indexes[j]][k][0] then
+  if Max >= Xmax[0][Indexes[j]][k][0] then
   begin
-    X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
-    for p := 1 to Ord do
-      if X[i][j][k][p] > 0 then
-              X[i][j][k][p] := 0;
+    if X[i][j][k][0] > Xmax[0][Indexes[j]][k][0] then
+    begin
+      X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
+      for p := 1 to Ord do
+        X[i][j][k][p] := 0;
+    end
+    else begin
+      X[i][j][k][1] :=  (Xmax[0][Indexes[j]][k][0]  - X[i][j][k][0]) / Nmax;
+      for p := 2 to Ord do
+        X[i][j][k][p] := 0;
+    end;
   end;
 
-  if Min < Xmin[0][Indexes[j]][k][0] then
+  if Min <= Xmin[0][Indexes[j]][k][0] then
   begin
-    X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
-    for p := 1 to Ord do
-      if X[i][j][k][p] < 0 then
-              X[i][j][k][p] := 0;
+    if X[i][j][k][0] < Xmin[0][Indexes[j]][k][0] then
+    begin
+      X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
+      for p := 1 to Ord do
+        X[i][j][k][p] := 0;
+    end
+    else begin
+      X[i][j][k][1] :=  (Xmin[0][Indexes[j]][k][0]  - X[i][j][k][0]) / Nmin;
+      for p := 2 to Ord do
+        X[i][j][k][p] := 0;
+    end;
   end;
 end;
 

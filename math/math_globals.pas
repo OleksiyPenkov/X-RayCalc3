@@ -37,6 +37,7 @@ type
   procedure ReadHenkeTable(const N: string; var Na, Nro: single; var Table: THenkeTable);
   procedure WriteHenkeTable(const N: string; Na, Nro: single; Table: THenkeTable);
   function Poly(const x: Integer; const C: TPolyArray): Single; overload;
+  function Poly(const x: Integer; Min, Max: single; const C: TPolyArray): Single; overload;
   function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
   function FuncProfile(const x: integer; FuncProfile: TFuncProfileRec): single;
 
@@ -47,24 +48,44 @@ uses
   SysUtils,
   VCLTee.TeEngine;
 
-function Poly(const x: Integer; const C: TPolyArray): Single;
+function Poly(const x: Integer; const C: TPolyArray): Single; overload;
 var
-  i, Last: Integer;
+  i, Last: Int64;
+  Order: integer;
 begin
+  Order := Trunc(C[10]);
   Result := C[0]; Last := 1;
-  for I := 1 to Trunc(C[10]) do
+  for I := 1 to Order do
   begin
     Last := Last * (x - 1);
     Result := Result + C[i] * Last;
   end;
 end;
 
+
+function Poly(const x: Integer; Min, Max: single; const C: TPolyArray): Single; overload;
+var
+  i, Last: Int64;
+  Order: integer;
+begin
+  Order := Trunc(C[10]);
+  Result := C[0]; Last := 1;
+  for I := 1 to Order do
+  begin
+    Last := Last * (x - 1);
+    Result := Result + C[i] * Last;
+    if (Result > Max) or (Result < Min) then Break;
+  end;
+end;
+
 function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
 var
-  i, Last: LongInt;
+  i, Last: Int64;
+  Order: integer;
 begin
+  Order := Trunc(Polynome.C[10]);
   Result := Polynome.C[0]; Last := 1;
-  for I := 1 to Trunc(Polynome.C[10]) do
+  for I := 1 to Order do
   begin
     Last := Last * (x - 1);
     Result := Result + Polynome.C[i] * Last
