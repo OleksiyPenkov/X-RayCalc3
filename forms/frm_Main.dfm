@@ -2202,6 +2202,9 @@ object frmMain: TfrmMain
       object Smooth1: TMenuItem
         Action = actDataSmooth
       end
+      object rim1: TMenuItem
+        Action = actDataTrim
+      end
       object N7: TMenuItem
         Caption = '-'
       end
@@ -3376,6 +3379,11 @@ object frmMain: TfrmMain
       Category = 'Project Item'
       Caption = 'Copy as image'
       OnExecute = actCopyStructureBitmapExecute
+    end
+    object actDataTrim: TAction
+      Category = 'Data'
+      Caption = 'Trim'
+      OnExecute = actDataTrimExecute
     end
   end
   object ilProject: TImageList

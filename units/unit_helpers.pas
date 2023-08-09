@@ -32,7 +32,7 @@ procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr:
 procedure DataToFile(const FileName: string; Data: TDataArray);
 //procedure DataToClipboard(const Data: TDataArray);
 
-function SeriesToData( Series: TLineSeries): TDataArray;
+function SeriesToData(Series: TLineSeries): TDataArray;
 procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
 procedure AutoMerge( var Series: TLineSeries);
 procedure ManualMerge( X, K: single; var Series: TLineSeries);
@@ -296,6 +296,7 @@ begin
   for I := 0 to High(Data) do
    Series.AddXY(Data[i].t, Data[i].r);
 end;
+
 
 function SeriesToData( Series: TLineSeries): TDataArray;
 var

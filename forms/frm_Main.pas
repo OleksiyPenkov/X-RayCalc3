@@ -324,6 +324,8 @@ type
     Copyasimage1: TMenuItem;
     btnStop: TRzBitBtn;
     ilIcons: TImageList;
+    actDataTrim: TAction;
+    rim1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -402,6 +404,7 @@ type
     procedure cbTreatPeriodicClick(Sender: TObject);
     procedure actCopyStructureBitmapExecute(Sender: TObject);
     procedure ChartResize(Sender: TObject);
+    procedure actDataTrimExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -1111,6 +1114,25 @@ begin
   Data := MovAvg(Data, 5);
   DataToSeries(Data, FSeriesList[Project.ActiveData.CurveID]);
   SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
+end;
+
+procedure TfrmMain.actDataTrimExecute(Sender: TObject);
+var
+  t1, t2, t: single;
+  index: integer;
+begin
+  t1 := StrToFloat(edStartTeta.Text);
+  t2 := StrToFloat(edEndTeta.Text);
+
+  FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
+
+  index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t1);
+  FSeriesList[Project.ActiveData.CurveID].Delete(0, Index);
+
+  index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t2);
+  FSeriesList[Project.ActiveData.CurveID].Delete(index, FSeriesList[Project.ActiveData.CurveID].XValues.Count - Index - 1);
+
+  FSeriesList[Project.ActiveData.CurveID].EndUpdate;
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
