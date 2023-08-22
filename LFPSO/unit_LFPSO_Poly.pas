@@ -110,8 +110,31 @@ end;
 
 procedure TLFPSO_Poly.CheckLimitsP(const i, j, k, Ord: integer);
 var
-   Val, Max, Min: Single;
-   p, r, Nmin, Nmax: Integer;
+   Max, Min: Single;
+   p, Nmin, Nmax: Integer;
+
+   procedure Eval;
+   var
+     r: integer;
+     Val: single;
+   begin
+      Max := 0; Min := 1E9;
+      for r := 1 to Counts[j] do
+      begin
+        Val := Poly(r, Xmin[0][Indexes[j]][k][0], Xmax[0][Indexes[j]][k][0], X[i][j][k]);
+        if Val > Max then
+        begin
+          Max := Val;
+          NMax := r;
+        end;
+        if Val < Min then
+        begin
+           Min := Val;
+           Nmin := r;
+        end;
+      end;
+   end;
+
 begin
   for p := 0 to Ord do
   begin
@@ -124,57 +147,25 @@ begin
     X[i][j][k][p] := X[i][j][k][p] + V[i][j][k][p]
   end;
 
-  Max := 0; Min := 1E9;
-
   if Ord > 0 then
   begin
-    for r := 1 to Counts[j] do
+    Eval;
+    if (Min < Xmin[0][Indexes[j]][k][0]) or (Max > Xmax[0][Indexes[j]][k][0]) then
     begin
-      Val := Poly(r, Xmin[0][Indexes[j]][k][0], Xmax[0][Indexes[j]][k][0], X[i][j][k]);
-      if Val > Max then
+      for p := Ord downto 1 do
       begin
-        Max := Val;
-        NMax := r;
-      end;
-      if Val < Min then
-      begin
-         Min := Val;
-         Nmin := r;
+        X[i][j][k][p] := 0;
+        Eval;
+        if (Min >= Xmin[0][Indexes[j]][k][0]) and (Max <= Xmax[0][Indexes[j]][k][0]) then
+          Break;
       end;
     end
-  end
-  else begin
-    Max := X[i][j][k][0];
-    Min := X[i][j][k][0];
-  end;
-
-  if Max >= Xmax[0][Indexes[j]][k][0] then
-  begin
-    if X[i][j][k][0] > Xmax[0][Indexes[j]][k][0] then
-    begin
-      X[i][j][k][0] := Xmax[0][Indexes[j]][k][0];
-      for p := 1 to Ord do
-        X[i][j][k][p] := 0;
-    end
     else begin
-      X[i][j][k][1] :=  (Xmax[0][Indexes[j]][k][0]  - X[i][j][k][0]) / Nmax;
-      for p := 2 to Ord do
-        X[i][j][k][p] := 0;
-    end;
-  end;
+      if X[i][j][k][0] > Xmax[0][j][k][0] then
+               X[i][j][k][0] := Xmax[0][j][k][0];
 
-  if Min <= Xmin[0][Indexes[j]][k][0] then
-  begin
-    if X[i][j][k][0] < Xmin[0][Indexes[j]][k][0] then
-    begin
-      X[i][j][k][0] := Xmin[0][Indexes[j]][k][0];
-      for p := 1 to Ord do
-        X[i][j][k][p] := 0;
-    end
-    else begin
-      X[i][j][k][1] :=  (Xmin[0][Indexes[j]][k][0]  - X[i][j][k][0]) / Nmin;
-      for p := 2 to Ord do
-        X[i][j][k][p] := 0;
+      if X[i][j][k][0] < Xmin[0][j][k][0] then
+               X[i][j][k][0] := Xmin[0][j][k][0];
     end;
   end;
 end;
@@ -381,8 +372,8 @@ var
   p: Integer;
 begin
     X[0][Index][ValueType][0]    := Val.V;
-    Xmax[0][Index][ValueType][0] := Val.max;
     Xmin[0][Index][ValueType][0] := Val.min;
+    Xmax[0][Index][ValueType][0] := Val.max;
   Xrange[0][Index][ValueType][0] := Xmax[0][Index][ValueType][0] - Xmin[0][Index][ValueType][0];
 
   if not (Paired or (N = 1)) then

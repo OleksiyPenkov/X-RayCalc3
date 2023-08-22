@@ -1118,7 +1118,7 @@ end;
 
 procedure TfrmMain.actDataTrimExecute(Sender: TObject);
 var
-  t1, t2, t: single;
+  t1, t2: single;
   index: integer;
 begin
   t1 := StrToFloat(edStartTeta.Text);
@@ -1131,7 +1131,7 @@ begin
 
   index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t2);
   FSeriesList[Project.ActiveData.CurveID].Delete(index, FSeriesList[Project.ActiveData.CurveID].XValues.Count - Index - 1);
-
+  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
   FSeriesList[Project.ActiveData.CurveID].EndUpdate;
 end;
 

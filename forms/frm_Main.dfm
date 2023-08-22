@@ -2,8 +2,8 @@ object frmMain: TfrmMain
   Left = 381
   Top = 305
   Caption = 'X-Ray Calc 3'
-  ClientHeight = 708
-  ClientWidth = 1462
+  ClientHeight = 707
+  ClientWidth = 1458
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -20,8 +20,8 @@ object frmMain: TfrmMain
   TextHeight = 15
   object Status: TRzStatusBar
     Left = 0
-    Top = 689
-    Width = 1462
+    Top = 688
+    Width = 1458
     Height = 19
     BorderInner = fsNone
     BorderOuter = fsNone
@@ -29,8 +29,6 @@ object frmMain: TfrmMain
     BorderWidth = 0
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 688
-    ExplicitWidth = 1458
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
@@ -60,8 +58,8 @@ object frmMain: TfrmMain
   object LeftSplitter: TRzSplitter
     Left = 0
     Top = 0
-    Width = 1462
-    Height = 689
+    Width = 1458
+    Height = 688
     Position = 234
     Percent = 16
     UpperLeft.Color = 15987699
@@ -69,8 +67,6 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1458
-    ExplicitHeight = 688
     BarSize = (
       234
       0
@@ -309,6 +305,10 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -345,6 +345,10 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -378,6 +382,10 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -411,7 +419,10 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 850
+          ExplicitHeight = 0
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -968,7 +979,6 @@ object frmMain: TfrmMain
             '10E-7'
             '10E-8'
             '10E-9')
-          ExplicitLeft = 779
         end
       end
       object pnlSettings: TPanel
@@ -1006,6 +1016,10 @@ object frmMain: TfrmMain
             object TabSheet1: TRzTabSheet
               Color = 15987699
               Caption = 'Fitting'
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object Label7: TLabel
                 Left = 7
                 Top = 15
@@ -1197,6 +1211,10 @@ object frmMain: TfrmMain
             object TabSheet2: TRzTabSheet
               Color = 15987699
               Caption = 'LSPSO'
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object Label16: TLabel
                 Left = 11
                 Top = 14
@@ -1306,8 +1324,8 @@ object frmMain: TfrmMain
               object cbLFPSOShake: TRzCheckBox
                 Left = 5
                 Top = 49
-                Width = 50
-                Height = 17
+                Width = 54
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Shake'
                 Checked = True
@@ -1418,8 +1436,8 @@ object frmMain: TfrmMain
               object cbSeedRange: TRzCheckBox
                 Left = 234
                 Top = 11
-                Width = 51
-                Height = 17
+                Width = 55
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'SeedR'
                 Checked = True

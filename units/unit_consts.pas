@@ -27,7 +27,7 @@ const
   PAlias : array [1..3] of string = ('H','s','r');
 
 
-  APPDATA_DIR_NAME = 'X-Ray Calc3';
+  APPDATA_DIR_NAME = 'X-RayCalc3';
   SETTINGS_FILE_NAME = 'xrc3.ini';
   APP_HELP_FILENAME = 'xraycalc3.chm';
   VERINFO_FILENAME = 'version.info';
