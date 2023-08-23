@@ -54,9 +54,9 @@ function TP(const n: Integer): Integer;
 var
   i : Integer;
 begin
-  Result := 10;
+  Result := 7;
   for I := 2 to n do
-    Result := Result * 10;
+    Result := Result * 7;
 end;
 
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
@@ -300,7 +300,7 @@ begin
   begin
     if FStructure.Stacks[i].N = 1 then
     begin
-     Inc(Base, FStructure.Stacks[i].N);
+     Inc(Base, Length(FStructure.Stacks[i].Layers));
      Continue;
     end;
 
@@ -313,7 +313,7 @@ begin
           NewRecord.Subj := TParameterType(p - 1);
           NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
           NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-          NewRecord.C := abest[Indexes[Base + j]][p];
+          NewRecord.C := abest[Base + j][p];
           Result := Result + [NewRecord];
         end;
       end;
