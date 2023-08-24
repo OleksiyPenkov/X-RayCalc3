@@ -25,9 +25,6 @@ type
     sfLicenseFile
   );
 
-    /// <summary>
-    ///     јтрибут класса названи¤ секции в INI-файле
-    /// </summary>
     SectionAttribute = class(TCustomAttribute)
       strict private
         FSection : string;
@@ -36,31 +33,17 @@ type
         property Section : string read FSection;
     end;
 
-    /// <summary>
-    ///     «начение пол¤ по умолчанию (дл¤ int, bool, string)
-    /// </summary>
     DefaultValueAttribute = class(TCustomAttribute)
       strict private
         FValue : TValue;
       public
         constructor Create(aIntValue : integer); overload;
+        constructor Create(aFloatValue : single); overload;
         constructor Create(aBoolValue : boolean); overload;
         constructor Create(aStringValue : string); overload;
         property Value : TValue read FValue;
     end;
 
-    /// <summary>
-    ///    Ѕазовый класс доступа к свойствам.
-    ///     аждое свойство дл¤ сохранени¤/получани¤ в INI *ƒолжно* иметь индекс.
-    ///    в конечных классах дл¤ каждого типа свойсства следует указывать один из
-    ///    методов чтени¤/записи:
-    ///    - getIntegerValue/SetIntegerValue
-    ///    - getBooleanValue/setBooleanValue
-    ///    - getStringValue/SetStringValue
-    ///    ѕеред каждым свойством должен быть описан атрибут DefaulValue
-    ///    «начение по умолчанию строкового свойства может иметь подстроку
-    ///    %PATH% дл¤ замены ее директорией программы, двойные "/" удал¤ютс¤
-    /// </summary>
     TBaseOptions = class(TObject)
       strict protected
         FCtx : TRttiContext;
@@ -73,10 +56,12 @@ type
 
         function getBooleanValue(index : integer):boolean; virtual;
         function getIntegerValue(index : integer):integer; virtual;
+        function getFloatValue(index : integer):single; virtual;
         function getStringValue(index : integer):string; virtual;
 
         procedure SetBooleanValue(index : integer; value : boolean); virtual;
         procedure SetIntegerValue(index : integer; value : integer); virtual;
+        procedure SetFloatValue(index : integer; value : single); virtual;
         procedure SetStringValue(index : integer; value: string); virtual;
 
         function getProperty(index : integer) : TRttiProperty;
@@ -93,14 +78,22 @@ type
       [DefaultValue(False)]
       property CheckForUpdates : boolean index 0 read getBooleanValue write SetBooleanValue;
       [DefaultValue('https://raw.githubusercontent.com/OleksiyPenkov/X-RayCalc3/xraycalc3.info')]
-      property UpdateInfoURL : string index 1 read getStringValue write SetStringValue;
+      property UpdateInfoURL   : string index 1 read getStringValue write SetStringValue;
+      [DefaultValue(True)]
+      property AutoCalc : boolean index 2 read getBooleanValue write SetBooleanValue;
+      [DefaultValue(False)]
+      property AutoSave : boolean index 3 read getBooleanValue write SetBooleanValue;
     end;
 
     [Section('Calc')]
     TCalcOptions = class(TBaseOptions)
     public
-      [DefaultValue(-1)]
+      [DefaultValue(0)]
       property NumberOfThreads : integer index 0 read getIntegerValue write SetIntegerValue;
+      [DefaultValue(10)]
+      property PolyFactor      : integer index 1 read getIntegerValue write SetIntegerValue;
+      [DefaultValue(0.2)]
+      property Ksxr            : single index 2 read getFloatValue write SetFloatValue;
     end;
 
     [Section('Graphics')]
@@ -115,8 +108,12 @@ type
     public
       [DefaultValue('Henke')]
       property HenkeDir     : string index 0 read getStringValue write SetStringValue;
-      [DefaultValue('benchmark')]
+      [DefaultValue('Benchmark')]
       property BenchmarkDir : string index 1 read getStringValue write SetStringValue;
+      [DefaultValue('')]
+      property ProjectDir   : string index 2 read getStringValue write SetStringValue;
+      [DefaultValue('Output')]
+      property OutputDir    : string index 3 read getStringValue write SetStringValue;
     end;
 
     [Section('Window')]
@@ -389,6 +386,11 @@ begin
     result := getGenericValue<integer>(index);
 end;
 
+function TBaseOptions.getFloatValue(index: integer): single;
+begin
+    result := getGenericValue<single>(index);
+end;
+
 function TBaseOptions.getStringValue(index: integer): string;
 begin
     result := getGenericValue<string>(index);
@@ -429,6 +431,11 @@ begin
     setGenericValue<boolean>(index, value);
 end;
 
+
+procedure TBaseOptions.SetFloatValue(index: integer; value: single);
+begin
+    setGenericValue<single>(index, value);
+end;
 
 procedure TBaseOptions.SetIntegerValue(index, value: integer);
 begin
@@ -487,6 +494,11 @@ begin
     FValue := aStringValue;
 end;
 
+constructor DefaultValueAttribute.Create(aFloatValue: single);
+begin
+    inherited Create();
+    FValue := aFloatValue;
+end;
 {$ENDREGION}
 
 initialization

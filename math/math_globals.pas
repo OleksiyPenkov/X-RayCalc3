@@ -45,6 +45,7 @@ implementation
 
 uses
   unit_Config,
+  unit_helpers,
   SysUtils,
   VCLTee.TeEngine;
 
@@ -331,7 +332,7 @@ var
 
 
 begin
-  fn := Config.HenkePath + N + '.bin';
+  fn := GetFullPath(Config.HenkePath, TConfig.AppPath) + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -383,7 +384,7 @@ var
   end;
 
 begin
-  fn := Config.HenkePath + N + '.bin';
+  fn := GetFullPath(Config.HenkePath, TConfig.AppPath) + N + '.bin';
 
   try
     Stream := TMemoryStream.Create;

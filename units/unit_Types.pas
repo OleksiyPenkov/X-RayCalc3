@@ -96,6 +96,7 @@ type
          RangeSeed: Boolean;
       MaxPOrder: Integer;
           Ksxr : Single;
+     PolyFactor: Integer;
   end;
 
   // Calculation data types

@@ -18,8 +18,9 @@ uses
 type
 
   TLFPSO_Poly = class (TLFPSO_BASE)
+    private
+      function TP(const n: Integer): LongInt;
     protected
-      Indexes: TIntArray;
       Counts: TIntArray;
 
       procedure CheckLimitsP(const i, j, k, Ord: integer);
@@ -50,13 +51,13 @@ uses
 
 { TLFPSO Periodic}
 
-function TP(const n: Integer): Integer;
+function TLFPSO_Poly.TP(const n: Integer): LongInt;
 var
   i : Integer;
 begin
-  Result := 7;
+  Result := FFitParams.PolyFactor;
   for I := 2 to n do
-    Result := Result * 7;
+    Result := Result * FFitParams.PolyFactor;
 end;
 
 procedure TLFPSO_Poly.UpdateLFPSO(const t: integer);
@@ -121,7 +122,7 @@ var
       Max := 0; Min := 1E9;
       for r := 1 to Counts[j] do
       begin
-        Val := Poly(r, Xmin[0][Indexes[j]][k][0], Xmax[0][Indexes[j]][k][0], X[i][j][k]);
+        Val := Poly(r, Xmin[0][j][k][0], Xmax[0][j][k][0], X[i][j][k]);
         if Val > Max then
         begin
           Max := Val;
@@ -150,13 +151,13 @@ begin
   if Ord > 0 then
   begin
     Eval;
-    if (Min < Xmin[0][Indexes[j]][k][0]) or (Max > Xmax[0][Indexes[j]][k][0]) then
+    if (Min < Xmin[0][j][k][0]) or (Max > Xmax[0][j][k][0]) then
     begin
       for p := Ord downto 1 do
       begin
         X[i][j][k][p] := 0;
         Eval;
-        if (Min >= Xmin[0][Indexes[j]][k][0]) and (Max <= Xmax[0][Indexes[j]][k][0]) then
+        if (Min >= Xmin[0][j][k][0]) and (Max <= Xmax[0][j][k][0]) then
           Break;
       end;
     end
@@ -229,8 +230,8 @@ begin
         begin
           if p = 0 then
           begin
-            Val := Rand(XRange[0][Indexes[j]][k][0]);
-            X[i][j][k][0] := X[0][Indexes[j]][k][0] + Val
+            Val := Rand(XRange[0][j][k][0]);
+            X[i][j][k][0] := X[0][j][k][0] + Val
           end
           else
             X[i][j][k][p] := Rand(1)/TP(p);
@@ -242,7 +243,6 @@ end;
 
 destructor TLFPSO_Poly.Destroy;
 begin
-  Finalize(Indexes);
   Finalize(Counts);
 
   inherited;
@@ -332,9 +332,7 @@ begin
 
   Init_Domains;
 
-  SetLength(Indexes, 0);
   SetLength(Counts, 0);
-  SetLength(Indexes, FStructure.TotalNP);
   SetLength(Counts, FStructure.TotalNP);
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
@@ -354,7 +352,6 @@ begin
     for j := 1 to FStructure.Stacks[i].N do
       for k := 0 to High(FStructure.Stacks[i].Layers) do
       begin
-        Indexes[Index] := Base + k;
         Counts[Index]  := FStructure.Stacks[i].N;
         Inc(Index);
       end;

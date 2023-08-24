@@ -21,7 +21,7 @@ object frmSettings: TfrmSettings
     Top = 3
     Width = 451
     Height = 384
-    ActivePage = tsGraphics
+    ActivePage = tsCalc
     Align = alClient
     TabOrder = 1
     ExplicitWidth = 447
@@ -34,10 +34,10 @@ object frmSettings: TfrmSettings
         AlignWithMargins = True
         Left = 3
         Top = 3
-        Width = 86
+        Width = 437
         Height = 13
         Align = alTop
-        Caption = 'FIles and Paths'
+        Caption = 'Files and Paths'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -11
@@ -45,6 +45,140 @@ object frmSettings: TfrmSettings
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
+        ExplicitWidth = 84
+      end
+      object rzpnl1: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 63
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 0
+        ExplicitWidth = 433
+        object Label4: TLabel
+          Left = 8
+          Top = 11
+          Width = 110
+          Height = 13
+          Caption = 'Default Project'#39's folder'
+        end
+        object edProjectDir: TRzButtonEdit
+          Tag = 2
+          Left = 124
+          Top = 8
+          Width = 309
+          Height = 21
+          Text = ''
+          TabOrder = 0
+          AltBtnNumGlyphs = 1
+          ButtonNumGlyphs = 1
+          OnButtonClick = edBenchmarkDirButtonClick
+        end
+      end
+      object RzPanel3: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 104
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 1
+        ExplicitWidth = 433
+        object Label5: TLabel
+          Left = 8
+          Top = 11
+          Width = 101
+          Height = 13
+          Caption = 'Default output folder'
+        end
+        object edOutputDir: TRzButtonEdit
+          Tag = 3
+          Left = 124
+          Top = 8
+          Width = 309
+          Height = 21
+          Text = ''
+          TabOrder = 0
+          AltBtnNumGlyphs = 1
+          ButtonNumGlyphs = 1
+          OnButtonClick = edBenchmarkDirButtonClick
+        end
+      end
+      object RzPanel4: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 145
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 2
+        ExplicitWidth = 433
+        object Label7: TLabel
+          Left = 8
+          Top = 11
+          Width = 83
+          Height = 13
+          Caption = 'Benchmark folder'
+        end
+        object edBenchmarkDir: TRzButtonEdit
+          Tag = 4
+          Left = 124
+          Top = 8
+          Width = 309
+          Height = 21
+          Text = ''
+          TabOrder = 0
+          AltBtnNumGlyphs = 1
+          ButtonNumGlyphs = 1
+          OnButtonClick = edBenchmarkDirButtonClick
+        end
+      end
+      object btnRegisterExtensions: TButton
+        Left = 3
+        Top = 346
+        Width = 437
+        Height = 25
+        Caption = 'Register file associations (xrcx)'
+        TabOrder = 3
+        OnClick = btnRegisterExtensionsClick
+      end
+      object RzPanel6: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 22
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 4
+        ExplicitWidth = 433
+        object Label9: TLabel
+          Left = 8
+          Top = 11
+          Width = 59
+          Height = 13
+          Caption = 'Henke libray'
+        end
+        object edHenkeDir: TRzButtonEdit
+          Tag = 1
+          Left = 124
+          Top = 8
+          Width = 309
+          Height = 21
+          Text = ''
+          TabOrder = 0
+          AltBtnNumGlyphs = 1
+          ButtonNumGlyphs = 1
+          OnButtonClick = edBenchmarkDirButtonClick
+        end
       end
     end
     object tsBehavour: TTabSheet
@@ -66,7 +200,7 @@ object frmSettings: TfrmSettings
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 50
+          Width = 431
           Height = 13
           Align = alTop
           Caption = 'Behavior'
@@ -77,11 +211,12 @@ object frmSettings: TfrmSettings
           Font.Style = [fsBold]
           ParentFont = False
           Transparent = True
+          ExplicitWidth = 50
         end
         object chkCheckForUpdates: TCheckBox
           AlignWithMargins = True
           Left = 9
-          Top = 45
+          Top = 68
           Width = 425
           Height = 17
           Margins.Left = 9
@@ -90,18 +225,8 @@ object frmSettings: TfrmSettings
           Color = clBtnFace
           ParentColor = False
           TabOrder = 0
-          ExplicitTop = 22
         end
-        object btnRegisterExtensions: TButton
-          Left = 9
-          Top = 320
-          Width = 416
-          Height = 25
-          Caption = 'Register file associations (xrcx)'
-          TabOrder = 1
-          OnClick = btnRegisterExtensionsClick
-        end
-        object chkAutoClacOpen: TCheckBox
+        object chkAutoCalcOpen: TCheckBox
           AlignWithMargins = True
           Left = 9
           Top = 22
@@ -109,7 +234,20 @@ object frmSettings: TfrmSettings
           Height = 17
           Margins.Left = 9
           Align = alTop
-          Caption = 'Automatically calculate when file is open'
+          Caption = 'Automatically calculate when opening  poject'
+          Color = clBtnFace
+          ParentColor = False
+          TabOrder = 1
+        end
+        object chkAutoSaveResults: TCheckBox
+          AlignWithMargins = True
+          Left = 9
+          Top = 45
+          Width = 425
+          Height = 17
+          Margins.Left = 9
+          Align = alTop
+          Caption = 'Automatically save results to output folder after fitting'
           Color = clBtnFace
           ParentColor = False
           TabOrder = 2
@@ -124,7 +262,7 @@ object frmSettings: TfrmSettings
         AlignWithMargins = True
         Left = 3
         Top = 3
-        Width = 102
+        Width = 437
         Height = 13
         Align = alTop
         Caption = 'Interface settings'
@@ -135,10 +273,11 @@ object frmSettings: TfrmSettings
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
+        ExplicitWidth = 102
       end
     end
     object tsCalc: TTabSheet
-      Caption = 'Calc'
+      Caption = 'Calc & Fit'
       ImageIndex = 3
       TabVisible = False
       object lbl2: TLabel
@@ -158,16 +297,33 @@ object frmSettings: TfrmSettings
         Transparent = True
         ExplicitWidth = 72
       end
-      object pnlCores: TPanel
+      object lbl4: TLabel
         AlignWithMargins = True
         Left = 3
-        Top = 24
+        Top = 63
+        Width = 437
+        Height = 13
+        Align = alTop
+        Caption = 'Magic numbers'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        ParentFont = False
+        Transparent = True
+        ExplicitWidth = 86
+      end
+      object RzPanel1: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 22
         Width = 437
         Height = 35
-        Margins.Top = 5
         Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
         TabOrder = 0
-        ExplicitTop = 22
         object Label1: TLabel
           Left = 8
           Top = 11
@@ -176,14 +332,15 @@ object frmSettings: TfrmSettings
           Caption = 'Number od CPU cores to use'
         end
         object cbbCPUCores: TComboBox
-          Left = 184
+          Left = 275
           Top = 8
           Width = 145
           Height = 21
+          ItemIndex = 0
           TabOrder = 0
-          Text = 'All'
+          Text = 'Auto (Use all)'
           Items.Strings = (
-            'Auto'
+            'Auto (Use all)'
             '2'
             '4'
             '8'
@@ -191,6 +348,49 @@ object frmSettings: TfrmSettings
             '16'
             '32'
             '64')
+        end
+      end
+      object RzPanel5: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 82
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 1
+        object Label8: TLabel
+          Left = 9
+          Top = 9
+          Width = 82
+          Height = 13
+          Caption = 'Polynomial factor'
+        end
+        object Label10: TLabel
+          Left = 248
+          Top = 11
+          Width = 21
+          Height = 13
+          Caption = 'Ksxr'
+        end
+        object sePolyFactor: TSpinEdit
+          Left = 104
+          Top = 6
+          Width = 84
+          Height = 22
+          MaxValue = 15
+          MinValue = 1
+          TabOrder = 0
+          Value = 10
+        end
+        object edKsxr: TRzEdit
+          Left = 275
+          Top = 7
+          Width = 142
+          Height = 21
+          Text = ''
+          TabOrder = 1
         end
       end
     end
@@ -215,27 +415,27 @@ object frmSettings: TfrmSettings
         Transparent = True
         ExplicitWidth = 98
       end
-      object Panel1: TPanel
+      object RzPanel2: TRzPanel
         AlignWithMargins = True
         Left = 3
-        Top = 24
+        Top = 22
         Width = 437
         Height = 35
-        Margins.Top = 5
         Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
         TabOrder = 0
-        ExplicitWidth = 433
         object Label2: TLabel
-          Left = 8
-          Top = 11
+          Left = 9
+          Top = 9
           Width = 83
           Height = 13
           Caption = 'Default line width'
         end
         object seLineWidth: TSpinEdit
-          Left = 98
+          Left = 104
           Top = 6
-          Width = 90
+          Width = 84
           Height = 22
           MaxValue = 10
           MinValue = 1
@@ -261,7 +461,7 @@ object frmSettings: TfrmSettings
       613
       41)
     object btnOk: TButton
-      Left = 433
+      Left = 425
       Top = 10
       Width = 75
       Height = 25
@@ -271,10 +471,10 @@ object frmSettings: TfrmSettings
       ModalResult = 1
       TabOrder = 0
       OnClick = SaveSettingsClick
-      ExplicitLeft = 429
+      ExplicitLeft = 421
     end
     object btnCancel: TButton
-      Left = 514
+      Left = 506
       Top = 10
       Width = 75
       Height = 25
@@ -283,7 +483,7 @@ object frmSettings: TfrmSettings
       Caption = '&Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 510
+      ExplicitLeft = 502
     end
     object btnHelp: TButton
       Left = 12
@@ -315,14 +515,18 @@ object frmSettings: TfrmSettings
       00650073002E0000000000000000000000FFFFFFFFFFFFFFFF00000000000000
       000000000001084200650068006100760069006F007200300000000000000000
       000000FFFFFFFFFFFFFFFF000000000000000000000000010949006E00740065
-      0072006600610063006500260000000000000000000000FFFFFFFFFFFFFFFF00
-      00000000000000000000000104430061006C0063002E00000000000000000000
-      00FFFFFFFFFFFFFFFF0000000000000000000000000108470072006100700068
-      00690063007300}
+      0072006600610063006500320000000000000000000000FFFFFFFFFFFFFFFF00
+      0000000000000000000000010A430061006C0063002000260020004600690074
+      002E0000000000000000000000FFFFFFFFFFFFFFFF0000000000000000000000
+      00010847007200610070006800690063007300}
     ExplicitHeight = 380
   end
   object dlgColors: TColorDialog
     Left = 32
     Top = 176
+  end
+  object dlgFolder: TRzSelectFolderDialog
+    Left = 411
+    Top = 281
   end
 end

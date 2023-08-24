@@ -28,7 +28,7 @@ uses
   ComCtrls,
   ImgList,
   unit_AutoCompleteEdit,
-  RzPanel, Vcl.Samples.Spin;
+  RzPanel, Vcl.Samples.Spin, RzEdit, RzBtnEdt, MHLButtonedEdit, RzShellDialogs;
 
 type
   TfrmSettings = class(TForm)
@@ -44,21 +44,41 @@ type
     Panel3: TPanel;
     Label6: TLabel;
     chkCheckForUpdates: TCheckBox;
-    btnRegisterExtensions: TButton;
     tsInterface: TTabSheet;
     Label3: TLabel;
     lbl1: TLabel;
     tsCalc: TTabSheet;
     lbl2: TLabel;
-    chkAutoClacOpen: TCheckBox;
-    pnlCores: TPanel;
-    Label1: TLabel;
-    cbbCPUCores: TComboBox;
+    chkAutoCalcOpen: TCheckBox;
     tsGraphics: TTabSheet;
     lbl3: TLabel;
-    Panel1: TPanel;
+    chkAutoSaveResults: TCheckBox;
+    lbl4: TLabel;
+    rzpnl1: TRzPanel;
+    Label4: TLabel;
+    RzPanel1: TRzPanel;
+    Label1: TLabel;
+    cbbCPUCores: TComboBox;
+    RzPanel2: TRzPanel;
     Label2: TLabel;
     seLineWidth: TSpinEdit;
+    edProjectDir: TRzButtonEdit;
+    RzPanel3: TRzPanel;
+    Label5: TLabel;
+    edOutputDir: TRzButtonEdit;
+    RzPanel4: TRzPanel;
+    Label7: TLabel;
+    edBenchmarkDir: TRzButtonEdit;
+    btnRegisterExtensions: TButton;
+    RzPanel5: TRzPanel;
+    Label8: TLabel;
+    sePolyFactor: TSpinEdit;
+    RzPanel6: TRzPanel;
+    Label9: TLabel;
+    edHenkeDir: TRzButtonEdit;
+    dlgFolder: TRzSelectFolderDialog;
+    Label10: TLabel;
+    edKsxr: TRzEdit;
 
     procedure SaveSettingsClick(Sender: TObject);
     procedure ShowHelpClick(Sender: TObject);
@@ -68,6 +88,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure edTimeOutChange(Sender: TObject);
     procedure btnRegisterExtensionsClick(Sender: TObject);
+    procedure edBenchmarkDirButtonClick(Sender: TObject);
 
   private
 //    procedure SetPanelFontColor(Value: Graphics.TColor);
@@ -95,10 +116,13 @@ procedure TfrmSettings.LoadSetting;
 begin
   with TConfig.Section<TCalcOptions> do
   begin
-    if NumberOfThreads = -1 then
-       cbbCPUCores.Text := 'Auto'
+    if NumberOfThreads = 0 then
+       cbbCPUCores.ItemIndex := 0
     else
       cbbCPUCores.Text := IntToStr(NumberOfThreads);
+
+    sePolyFactor.Value := PolyFactor;
+    edKsxr.Text := FloatToStrF(Ksxr, ffFixed, 4, 2);
   end;
 
   with TConfig.Section<TGraphOptions> do
@@ -106,21 +130,51 @@ begin
     seLineWidth.Value := LineWidth;
   end;
 
+
+  with TConfig.Section<TOtherOptions> do
+  begin
+    chkAutoCalcOpen.Checked := AutoCalc;
+    chkAutoSaveResults.Checked := AutoSave;
+  end;
+
+  with TConfig.Section<TPathOptions> do
+  begin
+    edHenkeDir.Text        := HenkeDir;
+    edProjectDir.Text      := ProjectDir;
+    edBenchmarkDir.Text    := BenchmarkDir;
+    edOutputDir.Text       := OutputDir;
+  end;
 end;
 
 procedure TfrmSettings.SaveSettings;
 begin
   with TConfig.Section<TCalcOptions> do
   begin
-    if cbbCPUCores.Text = 'Auto' then
-       NumberOfThreads := -1
+    if cbbCPUCores.ItemIndex = 0 then
+      NumberOfThreads := 0
     else
       NumberOfThreads := StrToInt(cbbCPUCores.Text);
+    PolyFactor :=sePolyFactor.Value;
+    Ksxr := StrToFloat(edKsxr.Text);
   end;
 
   with TConfig.Section<TGraphOptions> do
   begin
     LineWidth := seLineWidth.Value;
+  end;
+
+  with TConfig.Section<TOtherOptions> do
+  begin
+    AutoCalc := chkAutoCalcOpen.Checked;
+    AutoSave := chkAutoSaveResults.Checked;
+  end;
+
+  with TConfig.Section<TPathOptions> do
+  begin
+    HenkeDir     := edHenkeDir.Text;
+    ProjectDir   := edProjectDir.Text;
+    BenchmarkDir := edBenchmarkDir.Text;
+    OutputDir    := edOutputDir.Text;
   end;
 end;
 
@@ -145,20 +199,6 @@ begin
   LoadSetting;
 end;
 
-
-//
-// ��������� ����������
-//
-//procedure TfrmSettings.SetPanelFontColor(Value: Graphics.TColor);
-//begin
-//end;
-
-//procedure TfrmSettings.SetCustomFontColor(Sender: TObject);
-//begin
-//end;
-
-//
-//
 //
 procedure TfrmSettings.tvSectionsChange(Sender: TObject; Node: TTreeNode);
 begin
@@ -192,6 +232,13 @@ end;
 
 
 // ============================================================================
+
+procedure TfrmSettings.edBenchmarkDirButtonClick(Sender: TObject);
+begin
+  dlgFolder.SelectedPathName := GetFullPath((Sender as TRzButtonEdit).Text, TConfig.AppPath);
+  if dlgFolder.Execute then
+    (Sender as TRzButtonEdit).Text := RemoveAppPath(dlgFolder.SelectedPathName, TConfig.AppPath);
+end;
 
 procedure TfrmSettings.edTimeOutChange(Sender: TObject);
 begin

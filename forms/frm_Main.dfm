@@ -29,6 +29,8 @@ object frmMain: TfrmMain
     BorderWidth = 0
     Color = 15987699
     TabOrder = 0
+    ExplicitTop = 687
+    ExplicitWidth = 1454
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
@@ -67,6 +69,8 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
+    ExplicitWidth = 1454
+    ExplicitHeight = 687
     BarSize = (
       234
       0
@@ -165,6 +169,7 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 1
+        ExplicitTop = 594
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 5
@@ -298,19 +303,17 @@ object frmMain: TfrmMain
         Align = alBottom
         TabIndex = 3
         TabOrder = 0
+        ExplicitTop = 513
+        ExplicitWidth = 850
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 848
+            Width = 844
             Height = 132
             Cursor = crCross
             Legend.HorizMargin = 5
@@ -342,15 +345,11 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 848
+            Width = 844
             Height = 132
             Cursor = crCross
             Legend.HorizMargin = 5
@@ -379,15 +378,11 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
             Top = 3
-            Width = 848
+            Width = 844
             Height = 132
             Cursor = crCross
             Legend.HorizMargin = 5
@@ -416,6 +411,7 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
+          ExplicitWidth = 846
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -465,6 +461,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
+            ExplicitWidth = 840
             DesignSize = (
               844
               132)
@@ -478,6 +475,7 @@ object frmMain: TfrmMain
               Caption = 'Copy'
               TabOrder = 0
               OnClick = btnCopyConvergenceClick
+              ExplicitLeft = 770
             end
             object lsrConvergence: TLineSeries
               HoverElement = [heCurrent]
@@ -608,6 +606,8 @@ object frmMain: TfrmMain
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
         OnResize = ChartResize
+        ExplicitWidth = 850
+        ExplicitHeight = 303
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -736,6 +736,8 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
+        ExplicitTop = 457
+        ExplicitWidth = 850
         DesignSize = (
           854
           50)
@@ -942,6 +944,7 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
+          ExplicitLeft = 694
         end
         object cbMinLimit: TRzComboBox
           Left = 779
@@ -965,6 +968,7 @@ object frmMain: TfrmMain
             '10E-7'
             '10E-8'
             '10E-9')
+          ExplicitLeft = 775
         end
       end
       object pnlSettings: TPanel
@@ -975,6 +979,7 @@ object frmMain: TfrmMain
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
+        ExplicitWidth = 856
         object RzPanel6: TRzPanel
           AlignWithMargins = True
           Left = 387
@@ -986,15 +991,16 @@ object frmMain: TfrmMain
           BorderOuter = fsFlatRounded
           Color = 15987699
           TabOrder = 0
+          ExplicitWidth = 466
           object RzPageControl1: TRzPageControl
             Left = 2
             Top = 2
             Width = 359
             Height = 101
             Hint = ''
-            ActivePage = TabSheet1
+            ActivePage = TabSheet2
             Align = alLeft
-            TabIndex = 0
+            TabIndex = 1
             TabOrder = 0
             FixedDimension = 21
             object TabSheet1: TRzTabSheet
@@ -1094,8 +1100,8 @@ object frmMain: TfrmMain
               object cbPWChiSqr: TRzCheckBox
                 Left = 113
                 Top = 49
-                Width = 56
-                Height = 19
+                Width = 52
+                Height = 17
                 Caption = 'PW '#967'2'
                 Checked = True
                 State = cbChecked
@@ -1150,8 +1156,8 @@ object frmMain: TfrmMain
               object cbTreatPeriodic: TRzCheckBox
                 Left = 192
                 Top = 13
-                Width = 66
-                Height = 19
+                Width = 62
+                Height = 17
                 Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
@@ -1161,8 +1167,8 @@ object frmMain: TfrmMain
               object cbPoly: TRzCheckBox
                 Left = 264
                 Top = 13
-                Width = 46
-                Height = 19
+                Width = 42
+                Height = 17
                 Caption = 'Poly'
                 State = cbUnchecked
                 TabOrder = 7
@@ -1190,11 +1196,7 @@ object frmMain: TfrmMain
             end
             object TabSheet2: TRzTabSheet
               Color = 15987699
-              Caption = 'LSPSO'
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
+              Caption = 'LFPSO'
               object Label16: TLabel
                 Left = 11
                 Top = 14
@@ -1405,8 +1407,8 @@ object frmMain: TfrmMain
               object cbAdaptiveVelocity: TRzCheckBox
                 Left = 304
                 Top = 11
-                Width = 44
-                Height = 17
+                Width = 48
+                Height = 19
                 AlignmentVertical = avCenter
                 Caption = 'Ad.V'
                 State = cbUnchecked
@@ -1781,6 +1783,7 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
+        ExplicitWidth = 856
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -4356,7 +4359,7 @@ object frmMain: TfrmMain
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Title = 'Save project'
     Left = 336
-    Top = 408
+    Top = 424
   end
   object dlgExport: TSaveDialog
     Filter = 

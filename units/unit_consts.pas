@@ -33,6 +33,7 @@ const
   VERINFO_FILENAME = 'version.info';
   LICENSE_FILENAME = 'xraycalc3.lic';
   DEFAULT_PROJECT_NAME = 'NewProject.xrcx';
+  PROJECT_EXT = '.xrcx';
 implementation
 
 end.

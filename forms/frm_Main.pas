@@ -486,6 +486,7 @@ type
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
     procedure EditTable(var Data: PProjectData);
     procedure EnableControls(const Enable: boolean);
+    procedure AutoSave;
     { Private declarations }
   public
     { Public declarations }
@@ -1229,6 +1230,26 @@ begin
   Data.CurveID := Count;
 end;
 
+procedure TfrmMain.AutoSave;
+var
+  FileName, Path: string;
+  p: Integer;
+begin
+  if TConfig.Section<TOtherOptions>.AutoSave then
+  begin
+    FileName := FProjectName;
+    if TConfig.Section<TPathOptions>.OutputDir <> '' then
+      Path := GetFullPath(TConfig.Section<TPathOptions>.OutputDir, TConfig.AppPath)
+    else
+      Path := ExtractFilePath(FileName);
+
+    p := pos(PROJECT_EXT, FileName);
+    Delete(FileName, p, Length(PROJECT_EXT));
+    FileName := Path + FileName + '-fitted.xrcx';
+    SaveProject(FileName);
+  end;
+end;
+
 procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
 var
     FitStructure: TFitStructure;
@@ -1412,8 +1433,8 @@ begin
   FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
   FFitParams.RangeSeed   := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
-  FFitParams.Ksxr        := 0.2;
-
+  FFitParams.Ksxr        := TConfig.Section<TCalcOptions>.Ksxr;
+  FFitParams.PolyFactor  := TConfig.Section<TCalcOptions>.PolyFactor;
   Result := True;
 end;
 
@@ -1985,6 +2006,7 @@ begin
     EnableControls(True);
     FreeAndNil(LFPSO);
   end;
+  AutoSave;
 end;
 
 procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
@@ -2280,9 +2302,14 @@ end;
 
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
 begin
+  if TConfig.Section<TPathOptions>.ProjectDir <> '' then
+    dlgOpenProject.InitialDir := TConfig.Section<TPathOptions>.ProjectDir;
+
   if dlgOpenProject.Execute then
   begin
     LoadProject(dlgOpenProject.FileName, True);
+    if TConfig.Section<TOtherOptions>.AutoCalc then
+      CalcRunExecute(frmMain);
 //    AddRecentItem(FProjectFileName , True);
   end;
 end;
@@ -2567,7 +2594,7 @@ begin
         begin
           FProjectFileName := Value;
           LoadProject(FProjectFileName, True);
-          if FindCmdLineSwitch('a') then
+          if FindCmdLineSwitch('a') or TConfig.Section<TOtherOptions>.AutoCalc then
             CalcRunExecute(frmMain);
         end
         else

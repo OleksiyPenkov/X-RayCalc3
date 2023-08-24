@@ -144,7 +144,7 @@ var
   Count, j, n: Integer;
   dt, step: single;
 begin
-  if Config.Section<TCalcOptions>.NumberOfThreads = -1 then
+  if Config.Section<TCalcOptions>.NumberOfThreads = 0 then
      NThreads := Environment.Process.Affinity.Count
   else
     NThreads := Config.Section<TCalcOptions>.NumberOfThreads;
