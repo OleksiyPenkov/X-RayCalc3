@@ -216,29 +216,31 @@ begin
 end;
 
 procedure TLFPSO_Poly.RangeSeed;
-var
-  i, j, k, p, Ord: integer;
-  Val: Single;
+//var
+//  i, j, k, p, Ord: integer;
+//  Val: Single;
+//begin
+//  for i := 0 to High(X) do          // for every member of the population
+//  begin
+//    for j := 0 to High(X[i]) do     //for every layer
+//      for k := 1 to 3 do            // for H, s, rho
+//      begin
+//        Ord := Order(j, k);
+//        for p := 0 to Ord do  // for every oefficient of polynome
+//        begin
+//          if p = 0 then
+//          begin
+//            Val := Rand(XRange[0][j][k][0]);
+//            X[i][j][k][0] := X[0][j][k][0] + Val
+//          end
+//          else
+//            X[i][j][k][p] := Rand(1)/TP(p);
+//        end;
+//        CheckLimitsP(i, j, k, Ord);
+//      end;
+//  end;
 begin
-  for i := 0 to High(X) do          // for every member of the population
-  begin
-    for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
-      begin
-        Ord := Order(j, k);
-        for p := 0 to Ord do  // for every oefficient of polynome
-        begin
-          if p = 0 then
-          begin
-            Val := Rand(XRange[0][j][k][0]);
-            X[i][j][k][0] := X[0][j][k][0] + Val
-          end
-          else
-            X[i][j][k][p] := Rand(1)/TP(p);
-        end;
-        CheckLimitsP(i, j, k, Ord);
-      end;
-  end;
+  XSeed;
 end;
 
 destructor TLFPSO_Poly.Destroy;
