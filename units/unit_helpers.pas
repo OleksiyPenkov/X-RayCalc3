@@ -45,8 +45,6 @@ procedure OpenHelpFile(const FileName: string);
 function GetSpecialPath(CSIDL: word): string;
 function c_GetTempPath: String;
 function CreateFolders(const Root: string; const Path: string): Boolean;
-function GetFullPath(const Path: string; AppPath: string): string;
-function RemoveAppPath(const Path: string; AppPath: string): string;
 
 function SimpleShellExecute(
   hWnd: HWND;
@@ -517,16 +515,6 @@ begin
           end;
 end;
 {$WARNINGS ON}
-
-function GetFullPath(const Path: string; AppPath: string): string;
-begin
-  if Pos(':', Path) <> 0 then
-  begin
-    Result := IncludeTrailingPathDelimiter(Path);
-    Exit;
-  end;
-  Result := IncludeTrailingPathDelimiter(AppPath + Path);
-end;
 
 function RemoveAppPath(const Path: string; AppPath: string): string;
 var

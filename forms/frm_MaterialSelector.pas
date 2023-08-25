@@ -40,7 +40,7 @@ implementation
 
 procedure TfrmMaterialSelector.SelectMaterial(var Name: string);
 begin
-  FillElementsList(Config.HenkePath, lbFiles);
+  FillElementsList(Config.SystemDir[sdHenke], lbFiles);
   if ShowModal = mrOk then
   begin
     Name := lbFiles.Items[lbFiles.ItemIndex];

@@ -18,11 +18,19 @@ const
 
 type
 
-  TSciRefSystemFile = (
+  TXRCSystemFile = (
     sfSystemIniFile,
     sfAppHelp,
     sfAppVerInfo,
     sfLicenseFile
+  );
+
+  TXRCSystemDir = (
+    sdHenke,
+    sdProjDir,
+    sdOutDir,
+    sdBenchDir,
+    sdBenchOutDir
   );
 
     SectionAttribute = class(TCustomAttribute)
@@ -94,6 +102,8 @@ type
       property PolyFactor      : integer index 1 read getIntegerValue write SetIntegerValue;
       [DefaultValue(0.2)]
       property Ksxr            : single index 2 read getFloatValue write SetFloatValue;
+      [DefaultValue(20)]
+      property BenchmarkRuns   : integer index 3 read getIntegerValue write SetIntegerValue;
     end;
 
     [Section('Graphics')]
@@ -114,6 +124,8 @@ type
       property ProjectDir   : string index 2 read getStringValue write SetStringValue;
       [DefaultValue('Output')]
       property OutputDir    : string index 3 read getStringValue write SetStringValue;
+      [DefaultValue('BenchResults')]
+      property BenchOutputDir : string index 4 read getStringValue write SetStringValue;
     end;
 
     [Section('Window')]
@@ -148,13 +160,16 @@ type
 
         FOptions : TObjectList<TBaseOptions>;
   private
-    class function GetSystemFileName(fileType: TSciRefSystemFile): string; static;
-    class function GetHenkePath: string; static;
+    class function GetSystemFileName(fileType: TXRCSystemFile): string; static;
+
+    class function GetSystemDir(DirType: TXRCSystemDir): string; static;
+    class procedure SetSystemDir(DirType: TXRCSystemDir; const Value: string); static;
+
     class function GetTempPath: string; static;
-    class function GetHenkeDir: string; static;
     class function GetWorkPath: string; static;
-    class function GetBenchDir: string; static;
-    class function GetBenchPath: string; static;
+
+    class function GetSystemDirS(DirType: TXRCSystemDir): string; static;
+    class procedure SetSystemDirS(DirType: TXRCSystemDir; const Value: string); static;
   public
     class constructor Create();
     class destructor  Destroy();
@@ -165,19 +180,15 @@ type
     class property ErrorLog: Boolean read FErrorLog write FErrorLog;
     class property AppPath : string read FAppPath;
 
-    class property HenkeDir: string read GetHenkeDir;
-    class property HenkePath: string read GetHenkePath;
-
-    class property BenchDir: string read GetBenchDir;
-    class property BenchPath: string read GetBenchPath;
-
     class property WorkDir: string read FWorkDir;
     class property WorkPath: string read GetWorkPath;
 
     class property TempDir: string read FTempDir;
     class property TempPath: string read GetTempPath;
 
-    class property SystemFileName[fileType: TSciRefSystemFile]: string read GetSystemFileName;
+    class property SystemFileName[fileType: TXRCSystemFile]: string read GetSystemFileName;
+    class property SystemDir[DirType: TXRCSystemDir]: string read GetSystemDir write SetSystemDir;
+    class property SystemDirS[DirType: TXRCSystemDir]: string read GetSystemDirS write SetSystemDirS;
   end;
 
     EConfigException = Exception;
@@ -234,23 +245,43 @@ begin
   FIni.Free();
 end;
 
-class function TConfig.GetBenchDir: string;
+
+class function TConfig.GetSystemDir(DirType: TXRCSystemDir): string;
+var
+  Dir: string;
 begin
-  Result := FAppPath + TConfig.Section<TPathOptions>.BenchmarkDir;
+ case DirType of
+           sdHenke: Dir := TConfig.Section<TPathOptions>.HenkeDir;
+        sdBenchDir: Dir := TConfig.Section<TPathOptions>.BenchmarkDir;
+         sdProjDir: Dir := TConfig.Section<TPathOptions>.ProjectDir;
+          sdOutDir: Dir := TConfig.Section<TPathOptions>.OutputDir;
+     sdBenchOutDir: Dir := TConfig.Section<TPathOptions>.BenchOutputDir;
+  else
+    Assert(False);
+  end;
+
+  if Pos(':', Dir) <> 0 then
+  begin
+    Result := IncludeTrailingPathDelimiter(Dir);
+    Exit;
+  end;
+  Result := IncludeTrailingPathDelimiter(AppPath + Dir);
 end;
 
-
-class function TConfig.GetHenkeDir: string;
+class function TConfig.GetSystemDirS(DirType: TXRCSystemDir): string;
 begin
-  Result := FAppPath + TConfig.Section<TPathOptions>.HenkeDir;
+ case DirType of
+           sdHenke: Result := TConfig.Section<TPathOptions>.HenkeDir;
+        sdBenchDir: Result := TConfig.Section<TPathOptions>.BenchmarkDir;
+         sdProjDir: Result := TConfig.Section<TPathOptions>.ProjectDir;
+          sdOutDir: Result := TConfig.Section<TPathOptions>.OutputDir;
+     sdBenchOutDir: Result := TConfig.Section<TPathOptions>.BenchOutputDir;
+  else
+    Assert(False);
+  end;
 end;
 
-class function TConfig.GetHenkePath: string;
-begin
-  Result := IncludeTrailingPathDelimiter(GetHenkeDir);
-end;
-
-class function TConfig.GetSystemFileName(fileType: TSciRefSystemFile): string;
+class function TConfig.GetSystemFileName(fileType: TXRCSystemFile): string;
 begin
  case fileType of
     sfAppHelp: Result          := AppPath + APP_HELP_FILENAME;
@@ -270,10 +301,6 @@ begin
   Result := IncludeTrailingPathDelimiter(FWorkDir);
 end;
 
-class function TConfig.GetBenchPath: string;
-begin
-  Result := IncludeTrailingPathDelimiter(GetBenchDir);
-end;
 
 class procedure TConfig.RegisterOptions(OptionsClass: TBaseOptionsClass);
 var opt : TBaseOptions;
@@ -298,6 +325,41 @@ begin
     end;
 
     raise EConfigException.Create('Unregistered option group' + string(PTypeInfo(typeinfo(t)).Name));
+end;
+
+class procedure TConfig.SetSystemDir(DirType: TXRCSystemDir;
+  const Value: string);
+begin
+ case DirType of
+           sdHenke: TConfig.Section<TPathOptions>.HenkeDir := Value;
+        sdBenchDir: TConfig.Section<TPathOptions>.BenchmarkDir := Value;
+         sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Value;
+          sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Value;
+     sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Value;
+  else
+    Assert(False);
+  end;
+end;
+
+class procedure TConfig.SetSystemDirS(DirType: TXRCSystemDir;
+  const Value: string);
+var
+ Dir: string;
+  p: Integer;
+begin
+  Dir := Value;
+  p := Pos(AppPath, Dir);
+  if p > 0 then
+    Delete(Dir, 1, Length(AppPath));
+ case DirType of
+           sdHenke: TConfig.Section<TPathOptions>.HenkeDir := Dir;
+        sdBenchDir: TConfig.Section<TPathOptions>.BenchmarkDir := Dir;
+         sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Dir;
+          sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Dir;
+     sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Dir;
+  else
+    Assert(False);
+  end;
 end;
 
 {$ENDREGION}
@@ -362,6 +424,7 @@ begin
 
         case prop.PropertyType.TypeKind of
             tkInteger : value := FIni.ReadInteger(FSection, prop.name, Default.Value.AsInteger);
+            tkFloat   : value := FIni.ReadFloat(FSection, prop.name, Default.Value.AsExtended);
             tkString,
             tkUString : value := FIni.ReadString(FSection, prop.Name, Default.Value.asString);
             tkEnumeration : value := FIni.ReadInteger(FSection, prop.Name, ord(Default.Value.AsBoolean)) <> 0;
@@ -419,6 +482,7 @@ begin
     newValue := TValue.From<T>(value);
 
     case PTypeInfo(TypeInfo(T)).Kind of
+        tkFloat   : FIni.WriteFloat(FSection, prop.Name, newValue.AsExtended);
         tkInteger : FIni.WriteInteger(FSection, prop.Name, newValue.AsInteger);
         tkString,
         tkUString : Fini.WriteString(FSection, prop.Name, newValue.AsString);

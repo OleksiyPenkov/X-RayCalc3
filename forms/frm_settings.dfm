@@ -21,7 +21,7 @@ object frmSettings: TfrmSettings
     Top = 3
     Width = 451
     Height = 384
-    ActivePage = tsCalc
+    ActivePage = tsPaths
     Align = alClient
     TabOrder = 1
     ExplicitWidth = 447
@@ -57,7 +57,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 0
-        ExplicitWidth = 433
         object Label4: TLabel
           Left = 8
           Top = 11
@@ -66,10 +65,10 @@ object frmSettings: TfrmSettings
           Caption = 'Default Project'#39's folder'
         end
         object edProjectDir: TRzButtonEdit
-          Tag = 2
-          Left = 124
-          Top = 8
-          Width = 309
+          Tag = 1
+          Left = 132
+          Top = 14
+          Width = 301
           Height = 21
           Text = ''
           TabOrder = 0
@@ -88,7 +87,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
-        ExplicitWidth = 433
         object Label5: TLabel
           Left = 8
           Top = 11
@@ -97,10 +95,10 @@ object frmSettings: TfrmSettings
           Caption = 'Default output folder'
         end
         object edOutputDir: TRzButtonEdit
-          Tag = 3
-          Left = 124
+          Tag = 2
+          Left = 132
           Top = 8
-          Width = 309
+          Width = 301
           Height = 21
           Text = ''
           TabOrder = 0
@@ -119,19 +117,18 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 2
-        ExplicitWidth = 433
         object Label7: TLabel
           Left = 8
           Top = 11
-          Width = 83
+          Width = 110
           Height = 13
-          Caption = 'Benchmark folder'
+          Caption = 'Benchmark input folder'
         end
         object edBenchmarkDir: TRzButtonEdit
-          Tag = 4
-          Left = 124
+          Tag = 3
+          Left = 132
           Top = 8
-          Width = 309
+          Width = 301
           Height = 21
           Text = ''
           TabOrder = 0
@@ -159,7 +156,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 4
-        ExplicitWidth = 433
         object Label9: TLabel
           Left = 8
           Top = 11
@@ -168,10 +164,40 @@ object frmSettings: TfrmSettings
           Caption = 'Henke libray'
         end
         object edHenkeDir: TRzButtonEdit
-          Tag = 1
-          Left = 124
+          Left = 132
           Top = 8
-          Width = 309
+          Width = 301
+          Height = 21
+          Text = ''
+          TabOrder = 0
+          AltBtnNumGlyphs = 1
+          ButtonNumGlyphs = 1
+          OnButtonClick = edBenchmarkDirButtonClick
+        end
+      end
+      object RzPanel8: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 186
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 5
+        ExplicitTop = 227
+        object Label13: TLabel
+          Left = 8
+          Top = 11
+          Width = 118
+          Height = 13
+          Caption = 'Benchmark output folder'
+        end
+        object edBenchOutputDir: TRzButtonEdit
+          Tag = 4
+          Left = 132
+          Top = 8
+          Width = 301
           Height = 21
           Text = ''
           TabOrder = 0
@@ -314,6 +340,23 @@ object frmSettings: TfrmSettings
         Transparent = True
         ExplicitWidth = 86
       end
+      object Label11: TLabel
+        AlignWithMargins = True
+        Left = 3
+        Top = 123
+        Width = 437
+        Height = 13
+        Align = alTop
+        Caption = 'Benchmark'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        ParentFont = False
+        Transparent = True
+        ExplicitWidth = 64
+      end
       object RzPanel1: TRzPanel
         AlignWithMargins = True
         Left = 3
@@ -324,6 +367,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 0
+        ExplicitWidth = 433
         object Label1: TLabel
           Left = 8
           Top = 11
@@ -360,6 +404,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
+        ExplicitWidth = 433
         object Label8: TLabel
           Left = 9
           Top = 9
@@ -391,6 +436,36 @@ object frmSettings: TfrmSettings
           Height = 21
           Text = ''
           TabOrder = 1
+        end
+      end
+      object RzPanel7: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 142
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 2
+        ExplicitLeft = -4
+        ExplicitTop = 183
+        object Label12: TLabel
+          Left = 9
+          Top = 9
+          Width = 74
+          Height = 13
+          Caption = 'Number of runs'
+        end
+        object seBenchRuns: TSpinEdit
+          Left = 104
+          Top = 6
+          Width = 84
+          Height = 22
+          MaxValue = 100
+          MinValue = 1
+          TabOrder = 0
+          Value = 10
         end
       end
     end
@@ -461,7 +536,7 @@ object frmSettings: TfrmSettings
       613
       41)
     object btnOk: TButton
-      Left = 425
+      Left = 421
       Top = 10
       Width = 75
       Height = 25
@@ -471,10 +546,10 @@ object frmSettings: TfrmSettings
       ModalResult = 1
       TabOrder = 0
       OnClick = SaveSettingsClick
-      ExplicitLeft = 421
+      ExplicitLeft = 417
     end
     object btnCancel: TButton
-      Left = 506
+      Left = 502
       Top = 10
       Width = 75
       Height = 25
@@ -483,7 +558,7 @@ object frmSettings: TfrmSettings
       Caption = '&Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 502
+      ExplicitLeft = 498
     end
     object btnHelp: TButton
       Left = 12

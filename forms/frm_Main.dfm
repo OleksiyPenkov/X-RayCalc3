@@ -998,9 +998,9 @@ object frmMain: TfrmMain
             Width = 359
             Height = 101
             Hint = ''
-            ActivePage = TabSheet2
+            ActivePage = TabSheet1
             Align = alLeft
-            TabIndex = 1
+            TabIndex = 0
             TabOrder = 0
             FixedDimension = 21
             object TabSheet1: TRzTabSheet
@@ -1100,8 +1100,8 @@ object frmMain: TfrmMain
               object cbPWChiSqr: TRzCheckBox
                 Left = 113
                 Top = 49
-                Width = 52
-                Height = 17
+                Width = 56
+                Height = 19
                 Caption = 'PW '#967'2'
                 Checked = True
                 State = cbChecked
@@ -1156,8 +1156,8 @@ object frmMain: TfrmMain
               object cbTreatPeriodic: TRzCheckBox
                 Left = 192
                 Top = 13
-                Width = 62
-                Height = 17
+                Width = 66
+                Height = 19
                 Caption = 'Periodic'
                 Checked = True
                 State = cbChecked
@@ -1167,8 +1167,8 @@ object frmMain: TfrmMain
               object cbPoly: TRzCheckBox
                 Left = 264
                 Top = 13
-                Width = 42
-                Height = 17
+                Width = 46
+                Height = 19
                 Caption = 'Poly'
                 State = cbUnchecked
                 TabOrder = 7

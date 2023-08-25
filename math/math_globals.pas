@@ -208,7 +208,7 @@ var
 begin
   if E = 0 then
     E := H / L;
-  fn := Config.HenkePath + '\' + N + '.txt';
+  fn := Config.SystemDir[sdHenke] + '\' + N + '.txt';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -272,7 +272,7 @@ begin
   if E = 0 then
     E := H / L;
 
-  fn := Config.HenkePath + N + '.bin';
+  fn := Config.SystemDir[sdHenke] + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -332,7 +332,7 @@ var
 
 
 begin
-  fn := GetFullPath(Config.HenkePath, TConfig.AppPath) + N + '.bin';
+  fn := Config.SystemDir[sdHenke] + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -384,7 +384,7 @@ var
   end;
 
 begin
-  fn := GetFullPath(Config.HenkePath, TConfig.AppPath) + N + '.bin';
+  fn := Config.SystemDir[sdHenke] + N + '.bin';
 
   try
     Stream := TMemoryStream.Create;

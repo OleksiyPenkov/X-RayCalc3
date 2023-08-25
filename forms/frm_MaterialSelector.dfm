@@ -3,8 +3,8 @@ object frmMaterialSelector: TfrmMaterialSelector
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Select material'
-  ClientHeight = 403
-  ClientWidth = 286
+  ClientHeight = 391
+  ClientWidth = 278
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,8 +13,8 @@ object frmMaterialSelector: TfrmMaterialSelector
   Font.Style = []
   Position = poMainFormCenter
   DesignSize = (
-    286
-    403)
+    278
+    391)
   TextHeight = 15
   object SearchBox1: TSearchBox
     Left = 8
@@ -32,8 +32,8 @@ object frmMaterialSelector: TfrmMaterialSelector
     TabOrder = 1
   end
   object BitBtn1: TBitBtn
-    Left = 201
-    Top = 372
+    Left = 185
+    Top = 360
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -41,15 +41,17 @@ object frmMaterialSelector: TfrmMaterialSelector
     ModalResult = 1
     TabOrder = 2
     ExplicitLeft = 205
+    ExplicitTop = 372
   end
   object BitBtn2: TBitBtn
     Left = 8
-    Top = 372
+    Top = 360
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 3
+    ExplicitTop = 372
   end
 end

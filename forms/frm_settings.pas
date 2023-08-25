@@ -79,6 +79,13 @@ type
     dlgFolder: TRzSelectFolderDialog;
     Label10: TLabel;
     edKsxr: TRzEdit;
+    Label11: TLabel;
+    RzPanel7: TRzPanel;
+    Label12: TLabel;
+    seBenchRuns: TSpinEdit;
+    RzPanel8: TRzPanel;
+    Label13: TLabel;
+    edBenchOutputDir: TRzButtonEdit;
 
     procedure SaveSettingsClick(Sender: TObject);
     procedure ShowHelpClick(Sender: TObject);
@@ -123,6 +130,7 @@ begin
 
     sePolyFactor.Value := PolyFactor;
     edKsxr.Text := FloatToStrF(Ksxr, ffFixed, 4, 2);
+    seBenchRuns.Value := BenchmarkRuns;
   end;
 
   with TConfig.Section<TGraphOptions> do
@@ -137,13 +145,11 @@ begin
     chkAutoSaveResults.Checked := AutoSave;
   end;
 
-  with TConfig.Section<TPathOptions> do
-  begin
-    edHenkeDir.Text        := HenkeDir;
-    edProjectDir.Text      := ProjectDir;
-    edBenchmarkDir.Text    := BenchmarkDir;
-    edOutputDir.Text       := OutputDir;
-  end;
+  edHenkeDir.Text        := Config.SystemDirS[sdHenke];
+  edProjectDir.Text      := Config.SystemDirS[sdProjDir];
+  edBenchmarkDir.Text    := Config.SystemDirS[sdBenchDir];
+  edOutputDir.Text       := Config.SystemDirS[sdOutDir];
+  edBenchOutputDir.Text  := Config.SystemDirS[sdBenchOutDir];
 end;
 
 procedure TfrmSettings.SaveSettings;
@@ -156,6 +162,7 @@ begin
       NumberOfThreads := StrToInt(cbbCPUCores.Text);
     PolyFactor :=sePolyFactor.Value;
     Ksxr := StrToFloat(edKsxr.Text);
+    BenchmarkRuns := seBenchRuns.Value;
   end;
 
   with TConfig.Section<TGraphOptions> do
@@ -169,13 +176,11 @@ begin
     AutoSave := chkAutoSaveResults.Checked;
   end;
 
-  with TConfig.Section<TPathOptions> do
-  begin
-    HenkeDir     := edHenkeDir.Text;
-    ProjectDir   := edProjectDir.Text;
-    BenchmarkDir := edBenchmarkDir.Text;
-    OutputDir    := edOutputDir.Text;
-  end;
+  Config.SystemDir[sdHenke]   := edHenkeDir.Text;
+  Config.SystemDir[sdProjDir] := edProjectDir.Text;
+  Config.SystemDir[sdBenchDir] := edBenchmarkDir.Text;
+  Config.SystemDir[sdOutDir] := edOutputDir.Text;
+  Config.SystemDir[sdBenchOutDir] := edBenchOutputDir.Text;
 end;
 
 
@@ -234,10 +239,17 @@ end;
 // ============================================================================
 
 procedure TfrmSettings.edBenchmarkDirButtonClick(Sender: TObject);
+var
+  DirType: TXRCSystemDir;
 begin
-  dlgFolder.SelectedPathName := GetFullPath((Sender as TRzButtonEdit).Text, TConfig.AppPath);
+  DirType := TXRCSystemDir((Sender as TRzButtonEdit).Tag);
+
+  dlgFolder.SelectedPathName := TConfig.SystemDir[DirType];
   if dlgFolder.Execute then
-    (Sender as TRzButtonEdit).Text := RemoveAppPath(dlgFolder.SelectedPathName, TConfig.AppPath);
+  begin
+    TConfig.SystemDirS[DirType] := dlgFolder.SelectedPathName;
+    (Sender as TRzButtonEdit).Text := TConfig.SystemDirS[DirType];
+  end;
 end;
 
 procedure TfrmSettings.edTimeOutChange(Sender: TObject);

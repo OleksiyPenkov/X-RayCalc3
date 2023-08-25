@@ -1238,8 +1238,8 @@ begin
   if TConfig.Section<TOtherOptions>.AutoSave then
   begin
     FileName := FProjectName;
-    if TConfig.Section<TPathOptions>.OutputDir <> '' then
-      Path := GetFullPath(TConfig.Section<TPathOptions>.OutputDir, TConfig.AppPath)
+    if TConfig.SystemDir[sdOutDir] <> '' then
+      Path := TConfig.SystemDir[sdOutDir]
     else
       Path := ExtractFilePath(FileName);
 
@@ -2014,33 +2014,35 @@ var
   i: Integer;
 begin
   FProjectFileName := FBenchmarkPath + F.Name;
+
   frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
   for i := 1 to FBenchmarkRuns do
   begin
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
     frmBenchmark.AddValue(i, spChiSqr.Caption);
-    frmBenchmark.CalcStats;
+    frmBenchmark.CalcStats(False);
     Application.ProcessMessages;
     if FTerminated then Break;
   end;
-  frmBenchmark.CalcStats;
+  frmBenchmark.CalcStats(True);
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 var
   Files: TFilesList;
 begin
-  FBenchmarkRuns := 20;
+  FBenchmarkRuns := TConfig.Section<TCalcOptions>.BenchmarkRuns;
 
   try
     FTerminated := False;
     frmBenchmark.Clear(FBenchmarkRuns);
+    frmBenchmark.Init(TConfig.SystemDir[sdBenchOutDir]);
     frmBenchmark.Show;
     FBenchmarkMode := True;
 
     Files := TFilesList.Create(nil);
-    FBenchmarkPath := Config.BenchPath;
+    FBenchmarkPath := TConfig.SystemDir[sdBenchDir];
     Files.TargetPath := FBenchmarkPath;
     Files.Mask := '*.xrcx';
     Files.OnFile := ProcessBenchFile;
@@ -2302,8 +2304,8 @@ end;
 
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
 begin
-  if TConfig.Section<TPathOptions>.ProjectDir <> '' then
-    dlgOpenProject.InitialDir := TConfig.Section<TPathOptions>.ProjectDir;
+  if TConfig.SystemDir[sdProjDir] <> '' then
+    dlgOpenProject.InitialDir := TConfig.SystemDir[sdProjDir];
 
   if dlgOpenProject.Execute then
   begin

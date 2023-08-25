@@ -3,8 +3,8 @@ object frmBenchmark: TfrmBenchmark
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Benchmark'
-  ClientHeight = 409
-  ClientWidth = 991
+  ClientHeight = 397
+  ClientWidth = 983
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -18,15 +18,13 @@ object frmBenchmark: TfrmBenchmark
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 985
-    Height = 403
+    Width = 977
+    Height = 391
     Align = alClient
     BorderOuter = fsGroove
     BorderWidth = 2
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 977
-    ExplicitHeight = 391
     object BitBtn1: TBitBtn
       Left = 896
       Top = 363

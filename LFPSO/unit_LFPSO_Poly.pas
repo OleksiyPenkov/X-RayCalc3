@@ -112,7 +112,7 @@ end;
 procedure TLFPSO_Poly.CheckLimitsP(const i, j, k, Ord: integer);
 var
    Max, Min: Single;
-   p, Nmin, Nmax: Integer;
+   p: Integer;
 
    procedure Eval;
    var
@@ -124,26 +124,20 @@ var
       begin
         Val := Poly(r, Xmin[0][j][k][0], Xmax[0][j][k][0], X[i][j][k]);
         if Val > Max then
-        begin
           Max := Val;
-          NMax := r;
-        end;
         if Val < Min then
-        begin
            Min := Val;
-           Nmin := r;
-        end;
       end;
    end;
 
 begin
   for p := 0 to Ord do
   begin
-    if V[i][j][k][p] > Vmax[0][j][k][p] then
-               V[i][j][k][p] := Vmax[0][j][k][p];
-
-    if V[i][j][k][p] < Vmin[0][j][k][p] then
-               V[i][j][k][p] := Vmin[0][j][k][p];
+//    if V[i][j][k][p] > Vmax[0][j][k][p] then
+//               V[i][j][k][p] := Vmax[0][j][k][p];
+//
+//    if V[i][j][k][p] < Vmin[0][j][k][p] then
+//               V[i][j][k][p] := Vmin[0][j][k][p];
 
     X[i][j][k][p] := X[i][j][k][p] + V[i][j][k][p]
   end;
@@ -156,6 +150,7 @@ begin
       for p := Ord downto 1 do
       begin
         X[i][j][k][p] := 0;
+        V[i][j][k][p] := 0;
         Eval;
         if (Min >= Xmin[0][j][k][0]) and (Max <= Xmax[0][j][k][0]) then
           Break;
@@ -163,10 +158,15 @@ begin
     end
     else begin
       if X[i][j][k][0] > Xmax[0][j][k][0] then
-               X[i][j][k][0] := Xmax[0][j][k][0];
+      begin
+        X[i][j][k][0] := Xmax[0][j][k][0];
 
+      end;
       if X[i][j][k][0] < Xmin[0][j][k][0] then
-               X[i][j][k][0] := Xmin[0][j][k][0];
+      begin
+        X[i][j][k][0] := Xmin[0][j][k][0];
+
+      end;
     end;
   end;
 end;
@@ -326,7 +326,7 @@ end;
 
 procedure TLFPSO_Poly.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, p, Index, Base: integer;
+  i, j, k, p, Index: integer;
 begin
   SetLength(FStructure.Stacks, 0);
   FStructure := Inp;
@@ -348,7 +348,7 @@ begin
     end;
   end;
 
-  Index := 0; Base := 0;
+  Index := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
     for j := 1 to FStructure.Stacks[i].N do
@@ -357,7 +357,6 @@ begin
         Counts[Index]  := FStructure.Stacks[i].N;
         Inc(Index);
       end;
-    Inc(Base, FStructure.Stacks[i].N );
   end;
 
   for i := 1 to High(X) do          // for every member of the population

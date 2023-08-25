@@ -24,6 +24,7 @@ type
     procedure BitBtn1Click(Sender: TObject);
   private
     FLine: Integer;
+    FFileName: string;
     { Private declarations }
   public
     { Public declarations }
@@ -31,7 +32,9 @@ type
     procedure AddValue(const n: integer; Val: string);
     procedure AddFile(const Name: string);
 
-    procedure CalcStats;
+    procedure CalcStats(const Full: Boolean);
+    procedure Init(const OutputDir: string);
+
   end;
 
 var
@@ -62,7 +65,8 @@ end;
 
 procedure TfrmBenchmark.CalcStats;
 begin
-  Grid.SaveToFile('benchmark.dat');
+  if Full then Grid.CalcStat;
+  Grid.SaveToFile(FFileName);
 end;
 
 procedure TfrmBenchmark.Clear;
@@ -78,6 +82,18 @@ begin
 
   for I := 1 to N do
     Grid.Cells[i, 0] := 'Run ' + IntToStr(i);
+
+  Grid.EnableStat := True;
+end;
+
+procedure TfrmBenchmark.Init;
+var
+  FileName, Date: string;
+begin
+  DateTimeToString(Date, 'yymmdd-hh-mm', Now);
+  FileName := Format('%s-%s.dat',['benchmark', Date]);
+
+  FFileName := OutputDir + FileName;
 end;
 
 end.
