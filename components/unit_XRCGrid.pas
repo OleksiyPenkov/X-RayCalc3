@@ -86,27 +86,33 @@ var
   Values: array of Single;
   Mean, Std: single;
 begin
-  N := Self.ColCount - 3;
-  SetLength(Values, N);
+  try
+    N := Self.ColCount - 3;
+    if N < 1 then Exit;
 
-  for y := 1 to Self.RowCount-1 do
-  begin
-    Mean := 0;
-    for x := 1 to N do
+    SetLength(Values, N);
+
+    for y := 1 to Self.RowCount-1 do
     begin
-      Values[x - 1] := StrToFloat(Self.Cells[x, y]);
-      Mean := Mean + Values[x - 1];
+      Mean := 0;
+      for x := 1 to N do
+      begin
+        Values[x - 1] := StrToFloat(Self.Cells[x, y]);
+        Mean := Mean + Values[x - 1];
+      end;
+      Mean := Mean / N;
+
+      Std := 0;
+      for x := 0 to High(Values) do
+        Std := Std + Sqr(Values[x] - Mean);
+
+      Std := Sqrt(Std/(N - 1));
+
+      Self.Cells[N + 1, y] := FloatToStrF(Mean, ffFixed, 4, 3);
+      Self.Cells[N + 2, y] := FloatToStrF(Std, ffFixed, 4, 3);
     end;
-    Mean := Mean / N;
-
-    Std := 0;
-    for x := 0 to High(Values) do
-      Std := Std + Sqr(Values[x] - Mean);
-
-    Std := Sqrt(Std/N - 1);
-
-    Self.Cells[N + 1, y] := FloatToStrF(Mean, ffFixed, 4, 3);
-    Self.Cells[N + 2, y] := FloatToStrF(Std, ffFixed, 4, 3);
+  except
+    on Exception do;
   end;
 end;
 
