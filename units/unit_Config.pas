@@ -30,7 +30,8 @@ type
     sdProjDir,
     sdOutDir,
     sdBenchDir,
-    sdBenchOutDir
+    sdBenchOutDir,
+    sdJobsDir
   );
 
     SectionAttribute = class(TCustomAttribute)
@@ -126,6 +127,8 @@ type
       property OutputDir    : string index 3 read getStringValue write SetStringValue;
       [DefaultValue('BenchResults')]
       property BenchOutputDir : string index 4 read getStringValue write SetStringValue;
+      [DefaultValue('Jobs')]
+      property JobsDir        : string index 5 read getStringValue write SetStringValue;
     end;
 
     [Section('Window')]
@@ -256,6 +259,7 @@ begin
          sdProjDir: Dir := TConfig.Section<TPathOptions>.ProjectDir;
           sdOutDir: Dir := TConfig.Section<TPathOptions>.OutputDir;
      sdBenchOutDir: Dir := TConfig.Section<TPathOptions>.BenchOutputDir;
+         sdJobsDir: Dir := TConfig.Section<TPathOptions>.JobsDir;
   else
     Assert(False);
   end;
@@ -276,6 +280,7 @@ begin
          sdProjDir: Result := TConfig.Section<TPathOptions>.ProjectDir;
           sdOutDir: Result := TConfig.Section<TPathOptions>.OutputDir;
      sdBenchOutDir: Result := TConfig.Section<TPathOptions>.BenchOutputDir;
+         sdJobsDir: Result := TConfig.Section<TPathOptions>.JobsDir;
   else
     Assert(False);
   end;
@@ -336,6 +341,7 @@ begin
          sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Value;
           sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Value;
      sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Value;
+         sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
   else
     Assert(False);
   end;
@@ -357,6 +363,7 @@ begin
          sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Dir;
           sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Dir;
      sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Dir;
+         sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
   else
     Assert(False);
   end;

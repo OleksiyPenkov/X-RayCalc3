@@ -326,6 +326,8 @@ type
     ilIcons: TImageList;
     actDataTrim: TAction;
     rim1: TMenuItem;
+    actCalcFitJobs: TAction;
+    Calcbatchjobs1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -405,6 +407,7 @@ type
     procedure actCopyStructureBitmapExecute(Sender: TObject);
     procedure ChartResize(Sender: TObject);
     procedure actDataTrimExecute(Sender: TObject);
+    procedure actCalcFitJobsExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -487,6 +490,7 @@ type
     procedure EditTable(var Data: PProjectData);
     procedure EnableControls(const Enable: boolean);
     procedure AutoSave;
+    procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
     { Private declarations }
   public
     { Public declarations }
@@ -1245,7 +1249,7 @@ begin
 
     p := pos(PROJECT_EXT, FileName);
     Delete(FileName, p, Length(PROJECT_EXT));
-    FileName := Path + FileName + '-fitted.xrcx';
+    FileName := Path + FileName + '-fitted' + PROJECT_EXT;
     SaveProject(FileName);
   end;
 end;
@@ -2009,6 +2013,18 @@ begin
   AutoSave;
 end;
 
+procedure TfrmMain.ProcessJobFile(Sender: TObject; const F: TSearchRec);
+begin
+  Application.ProcessMessages;
+  if FTerminated then Exit;
+
+  FProjectFileName := FBenchmarkPath + F.Name;
+
+  actProjectReopenExecute(nil);
+  actAutoFittingExecute(nil);
+  AutoSave;
+end;
+
 procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
 var
   i: Integer;
@@ -2044,12 +2060,35 @@ begin
     Files := TFilesList.Create(nil);
     FBenchmarkPath := TConfig.SystemDir[sdBenchDir];
     Files.TargetPath := FBenchmarkPath;
-    Files.Mask := '*.xrcx';
+    Files.Mask := '*' + PROJECT_EXT;
     Files.OnFile := ProcessBenchFile;
     Files.Process;
     FBenchmarkMode := False;
   finally
     FreeAndNil(Files);
+  end;
+end;
+
+procedure TfrmMain.actCalcFitJobsExecute(Sender: TObject);
+var
+  Files: TFilesList;
+begin
+  try
+    FTerminated := False;
+    FBenchmarkMode := True;
+    Files := TFilesList.Create(nil);
+    FBenchmarkPath := TConfig.SystemDir[sdJobsDir];
+    Files.TargetPath := FBenchmarkPath;
+    Files.Mask := '*' + PROJECT_EXT;
+    Files.OnFile := ProcessJobFile;
+    Files.Process;
+    if not FTerminated then
+      ShowMessage('All jobs done')
+    else
+      ShowMessage('Batch was terminated!');
+  finally
+    FreeAndNil(Files);
+    FBenchmarkMode := False;
   end;
 end;
 

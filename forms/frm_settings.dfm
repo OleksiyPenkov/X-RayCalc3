@@ -57,6 +57,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 0
+        ExplicitWidth = 433
         object Label4: TLabel
           Left = 8
           Top = 11
@@ -87,6 +88,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
+        ExplicitWidth = 433
         object Label5: TLabel
           Left = 8
           Top = 11
@@ -117,6 +119,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 2
+        ExplicitWidth = 433
         object Label7: TLabel
           Left = 8
           Top = 11
@@ -156,6 +159,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 4
+        ExplicitWidth = 433
         object Label9: TLabel
           Left = 8
           Top = 11
@@ -185,7 +189,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 5
-        ExplicitTop = 227
+        ExplicitWidth = 433
         object Label13: TLabel
           Left = 8
           Top = 11
@@ -194,6 +198,37 @@ object frmSettings: TfrmSettings
           Caption = 'Benchmark output folder'
         end
         object edBenchOutputDir: TRzButtonEdit
+          Tag = 4
+          Left = 132
+          Top = 8
+          Width = 301
+          Height = 21
+          Text = ''
+          TabOrder = 0
+          AltBtnNumGlyphs = 1
+          ButtonNumGlyphs = 1
+          OnButtonClick = edBenchmarkDirButtonClick
+        end
+      end
+      object RzPanel9: TRzPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 227
+        Width = 437
+        Height = 35
+        Align = alTop
+        BorderOuter = fsFlatRounded
+        Color = 15987699
+        TabOrder = 6
+        ExplicitTop = 268
+        object Label14: TLabel
+          Left = 8
+          Top = 11
+          Width = 81
+          Height = 13
+          Caption = 'Batch jobs folder'
+        end
+        object edJobsDir: TRzButtonEdit
           Tag = 4
           Left = 132
           Top = 8
@@ -367,7 +402,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 0
-        ExplicitWidth = 433
         object Label1: TLabel
           Left = 8
           Top = 11
@@ -404,7 +438,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
-        ExplicitWidth = 433
         object Label8: TLabel
           Left = 9
           Top = 9
@@ -448,8 +481,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 2
-        ExplicitLeft = -4
-        ExplicitTop = 183
         object Label12: TLabel
           Left = 9
           Top = 9
@@ -536,7 +567,7 @@ object frmSettings: TfrmSettings
       613
       41)
     object btnOk: TButton
-      Left = 421
+      Left = 417
       Top = 10
       Width = 75
       Height = 25
@@ -546,10 +577,10 @@ object frmSettings: TfrmSettings
       ModalResult = 1
       TabOrder = 0
       OnClick = SaveSettingsClick
-      ExplicitLeft = 417
+      ExplicitLeft = 413
     end
     object btnCancel: TButton
-      Left = 502
+      Left = 498
       Top = 10
       Width = 75
       Height = 25
@@ -558,7 +589,7 @@ object frmSettings: TfrmSettings
       Caption = '&Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 498
+      ExplicitLeft = 494
     end
     object btnHelp: TButton
       Left = 12

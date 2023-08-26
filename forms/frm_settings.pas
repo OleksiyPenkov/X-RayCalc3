@@ -86,6 +86,9 @@ type
     RzPanel8: TRzPanel;
     Label13: TLabel;
     edBenchOutputDir: TRzButtonEdit;
+    RzPanel9: TRzPanel;
+    Label14: TLabel;
+    edJobsDir: TRzButtonEdit;
 
     procedure SaveSettingsClick(Sender: TObject);
     procedure ShowHelpClick(Sender: TObject);
@@ -150,6 +153,7 @@ begin
   edBenchmarkDir.Text    := Config.SystemDirS[sdBenchDir];
   edOutputDir.Text       := Config.SystemDirS[sdOutDir];
   edBenchOutputDir.Text  := Config.SystemDirS[sdBenchOutDir];
+  edJobsDir.Text         := Config.SystemDirS[sdJobsDir];
 end;
 
 procedure TfrmSettings.SaveSettings;
@@ -176,11 +180,12 @@ begin
     AutoSave := chkAutoSaveResults.Checked;
   end;
 
-  Config.SystemDir[sdHenke]   := edHenkeDir.Text;
-  Config.SystemDir[sdProjDir] := edProjectDir.Text;
-  Config.SystemDir[sdBenchDir] := edBenchmarkDir.Text;
-  Config.SystemDir[sdOutDir] := edOutputDir.Text;
+  Config.SystemDir[sdHenke]       := edHenkeDir.Text;
+  Config.SystemDir[sdProjDir]     := edProjectDir.Text;
+  Config.SystemDir[sdBenchDir]    := edBenchmarkDir.Text;
+  Config.SystemDir[sdOutDir]      := edOutputDir.Text;
   Config.SystemDir[sdBenchOutDir] := edBenchOutputDir.Text;
+  Config.SystemDirS[sdJobsDir]    := edJobsDir.Text;
 end;
 
 
