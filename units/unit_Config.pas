@@ -192,6 +192,11 @@ type
     class property SystemFileName[fileType: TXRCSystemFile]: string read GetSystemFileName;
     class property SystemDir[DirType: TXRCSystemDir]: string read GetSystemDir write SetSystemDir;
     class property SystemDirS[DirType: TXRCSystemDir]: string read GetSystemDirS write SetSystemDirS;
+
+    class procedure WiteStringList(const Section: string;
+      var List: array of string); static;
+    class procedure ReadStringList(const Section: string;
+      var List: array of string); static;
   end;
 
     EConfigException = Exception;
@@ -369,6 +374,22 @@ begin
   end;
 end;
 
+class procedure TConfig.WiteStringList(const Section: string; var List: array of string);
+var
+  i: Integer;
+begin
+  for I := 0 to High(List) do
+    FIni.WriteString(Section, 'Recent' + IntToStr(i + 1), List[i]);
+end;
+
+
+class procedure TConfig.ReadStringList(const Section: string; var List: array of string);
+var
+  i: Integer;
+begin
+  for I := 0 to High(List) do
+    List[i] := FIni.ReadString(Section, 'Recent' + IntToStr(i + 1), '');
+end;
 {$ENDREGION}
 
 {$REGION '--------------------- TBaseOptions --------------------------'}

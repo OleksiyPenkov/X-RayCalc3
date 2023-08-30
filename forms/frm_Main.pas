@@ -96,7 +96,7 @@ type
     About1: TMenuItem;
     Calc3: TMenuItem;
     Calcall1: TMenuItem;
-    Reopen1: TMenuItem;
+    miRecent: TMenuItem;
     dlgOpenProject: TOpenDialog;
     Zip: TAbZipper;
     UnZip: TAbUnZipper;
@@ -328,6 +328,8 @@ type
     rim1: TMenuItem;
     actCalcFitJobs: TAction;
     Calcbatchjobs1: TMenuItem;
+    pmRecentList: TPopupMenu;
+    pmRecentList1: TMenuItem;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -439,7 +441,9 @@ type
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
 
-    FStack: TStack<String>;
+    FOperationsStack: TStack<String>;
+    FRecentProjects : TStack<String>;
+
     FTerminated: Boolean;
     FBenchmarkMode: Boolean;
     FBenchmarkPath: string;
@@ -491,6 +495,10 @@ type
     procedure EnableControls(const Enable: boolean);
     procedure AutoSave;
     procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
+    procedure AddRecentItem(const FileName: string);
+    procedure RecentListOnClick(Sender: TObject);
+    procedure FillRecentMenu;
+    procedure LoadRecentProjectsList;
     { Private declarations }
   public
     { Public declarations }
@@ -717,8 +725,8 @@ begin
      if LastData.Data <> '' then
      begin
        Structure.FromString(LastData.Data);
-       FStack.Clear;
-       FStack.Push(LastData.Data);
+       FOperationsStack.Clear;
+       FOperationsStack.Push(LastData.Data);
        PrepareDistributionCharts;
        PlotProfile;
      end;
@@ -1285,8 +1293,8 @@ end;
 
 procedure TfrmMain.SaveHistory;
 begin
-  FStack.Push(Structure.ToString);
-  FStack.TrimExcess;
+  FOperationsStack.Push(Structure.ToString);
+  FOperationsStack.TrimExcess;
 end;
 
 procedure TfrmMain.MatchToStructure;
@@ -1958,10 +1966,10 @@ end;
 
 procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
 begin
-  if FStack.Count > 0 then
+  if FOperationsStack.Count > 0 then
   begin
-    Structure.FromString(FStack.Peek);
-    FStack.Extract;
+    Structure.FromString(FOperationsStack.Peek);
+    FOperationsStack.Extract;
   end;
 end;
 
@@ -2351,8 +2359,54 @@ begin
     LoadProject(dlgOpenProject.FileName, True);
     if TConfig.Section<TOtherOptions>.AutoCalc then
       CalcRunExecute(frmMain);
-//    AddRecentItem(FProjectFileName , True);
+
+    AddRecentItem(FProjectFileName);
   end;
+end;
+
+
+procedure TfrmMain.RecentListOnClick(Sender: TObject);
+var
+  Index : Integer;
+begin
+  Index := (Sender as TMenuItem).Tag - 100;
+  FProjectFileName := FRecentProjects.List[Index];
+  LoadProject(FProjectFileName, True);
+  if TConfig.Section<TOtherOptions>.AutoCalc then
+        CalcRunExecute(frmMain);
+end;
+
+
+procedure TfrmMain.FillRecentMenu;
+var
+  i: Integer;
+  Item, PopupItem: TMenuItem;
+begin
+  miRecent.Clear;
+  pmRecentList.Items.Clear;
+  for I := 0 to FRecentProjects.Count - 1 do
+  begin
+    Item := TMenuItem.Create(miRecent);
+    miRecent.Add(Item);
+    Item.Caption := ExtractFileName(FRecentProjects.List[i]);
+    Item.Tag := 100 + i;
+    Item.OnClick := RecentListOnClick;
+
+    PopupItem := TMenuItem.Create(pmRecentList);
+    pmRecentList.Items.Add(PopupItem);
+    PopupItem.Caption := ExtractFileName(FRecentProjects.List[i]);
+    PopupItem.Tag := 100 + i;
+    PopupItem.OnClick := RecentListOnClick;
+  end;
+end;
+
+procedure TfrmMain.AddRecentItem(const FileName: string);
+begin
+  FRecentProjects.Push(FileName);
+  FRecentProjects.TrimExcess;
+
+  TConfig.WiteStringList('Recent', FRecentProjects.List);
+  FillRecentMenu;
 end;
 
 procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
@@ -2607,6 +2661,24 @@ begin
   CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
 end;
 
+procedure TfrmMain.LoadRecentProjectsList;
+var
+  RecentList: array of String;
+  i: Integer;
+begin
+  FRecentProjects := TStack<String>.Create;
+  FRecentProjects.Capacity := 10;
+
+  SetLength(RecentList, 10);
+  TConfig.ReadStringList('Recent', RecentList);
+
+  for i := 0 to High(RecentList) do
+    if RecentList[i] <> '' then
+      FRecentProjects.Push(RecentList[i]);
+
+  FillRecentMenu;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
@@ -2618,8 +2690,10 @@ begin
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
 
-  FStack := TStack<String>.Create;
-  FStack.Capacity := 10;
+  FOperationsStack := TStack<String>.Create;
+  FOperationsStack.Capacity := 10;
+
+  LoadRecentProjectsList;
 
   Project.NodeDataSize := SizeOf(TProjectData);
 
@@ -2651,7 +2725,7 @@ begin
   Project.Clear;
   FreeAndNil(Project);
   FreeAndNil(Structure);
-  FreeAndNil(FStack);
+  FreeAndNil(FOperationsStack);
   FreeAndNil(Config);
 end;
 

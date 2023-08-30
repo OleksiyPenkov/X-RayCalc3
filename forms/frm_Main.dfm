@@ -124,37 +124,40 @@ object frmMain: TfrmMain
         object BtnOpen: TRzToolButton
           Left = 29
           Top = 2
+          Width = 39
           DisabledIndex = 3
+          DropDownMenu = pmRecentList
           ImageIndex = 2
+          ToolStyle = tsDropDown
           Action = FileOpen
         end
         object BtnSave: TRzToolButton
-          Left = 87
+          Left = 101
           Top = 2
           DisabledIndex = 5
           ImageIndex = 4
           Action = FileSave
         end
         object RzSpacer1: TRzSpacer
-          Left = 112
+          Left = 126
           Top = 2
         end
         object BtnPrint: TRzToolButton
-          Left = 120
+          Left = 134
           Top = 2
           DisabledIndex = 7
           ImageIndex = 6
           Action = FilePrint
         end
         object btnReopenProject: TRzToolButton
-          Left = 54
+          Left = 68
           Top = 2
           DisabledIndex = 23
           ImageIndex = 22
           Action = actProjectReopen
         end
         object rzspcr2: TRzSpacer
-          Left = 79
+          Left = 93
           Top = 2
         end
       end
@@ -2073,8 +2076,8 @@ object frmMain: TfrmMain
       object Openproject1: TMenuItem
         Action = FileOpen
       end
-      object Reopen1: TMenuItem
-        Caption = 'Reopen ...'
+      object miRecent: TMenuItem
+        Caption = 'Recent projects'
       end
       object Openproject2: TMenuItem
         Action = FileSave
@@ -5783,5 +5786,12 @@ object frmMain: TfrmMain
       FFFFFFFF000000000000000000000000FFFFFFFF000000000000000000000000
       FFFFFFFF00000000000000000000000000000000000000000000000000000000
       000000000000}
+  end
+  object pmRecentList: TPopupMenu
+    Left = 155
+    Top = 235
+    object pmRecentList1: TMenuItem
+      Caption = 'pmRecentList'
+    end
   end
 end
