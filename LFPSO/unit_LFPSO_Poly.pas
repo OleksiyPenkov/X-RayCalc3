@@ -133,11 +133,11 @@ var
 begin
   for p := 0 to Ord do
   begin
-//    if V[i][j][k][p] > Vmax[0][j][k][p] then
-//               V[i][j][k][p] := Vmax[0][j][k][p];
-//
-//    if V[i][j][k][p] < Vmin[0][j][k][p] then
-//               V[i][j][k][p] := Vmin[0][j][k][p];
+    if V[i][j][k][p] > Vmax[0][j][k][p] then
+               V[i][j][k][p] := Vmax[0][j][k][p];
+
+    if V[i][j][k][p] < Vmin[0][j][k][p] then
+               V[i][j][k][p] := Vmin[0][j][k][p];
 
     X[i][j][k][p] := X[i][j][k][p] + V[i][j][k][p]
   end;
@@ -168,6 +168,13 @@ begin
 
       end;
     end;
+  end
+  else begin
+    if X[i][j][k][0] > Xmax[0][j][k][0] then
+               X[i][j][k][0] := Xmax[0][j][k][0];
+
+    if X[i][j][k][0] < Xmin[0][j][k][0] then
+               X[i][j][k][0] := Xmin[0][j][k][0];
   end;
 end;
 

@@ -30,10 +30,6 @@ type
   TLayerIndexes = array [1..3] of Integer;
   TIndexes  = array of TLayerIndexes;
 
-  TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
-  TSolution = array of TLayer; // H, Sigma, rho x N Layers
-  TPopulation = array of TSolution;
-
   TLFPSO_BASE = class
     protected
       FCalc: TCalc;

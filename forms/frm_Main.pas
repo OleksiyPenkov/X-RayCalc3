@@ -547,7 +547,7 @@ uses
   unit_config,
   frm_settings,
   unit_XRCStackControl,
-  editor_ProfileTable;
+  editor_ProfileTable, unit_sys_helpers;
 
 {$R *.dfm}
 
@@ -2700,6 +2700,9 @@ begin
 //  CreateSettings;
   CreateDir(Config.TempDir);
   Pages.ActivePageindex := 0;
+
+
+//  FindPCores;
 
   if ParamCount <> 0 then
   begin

@@ -20,6 +20,10 @@ type
   TIntArray = array of Integer;
   TPolyArray = array [0..10] of single;
 
+  TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
+  TSolution = array of TLayer; // H, Sigma, rho x N Layers
+  TPopulation = array of TSolution;
+
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
   TCalcMode = (cmTheta, cmLambda, cmTest);
   TPolarisation = (cmS, cmSP);
