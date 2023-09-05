@@ -45,6 +45,7 @@ type
     Series1: TLineSeries;
     btnPreview: TBitBtn;
     btnFunctionHelp: TBitBtn;
+    btnCopy: TBitBtn;
     procedure FormShow(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
     procedure cbbStackChange(Sender: TObject);
@@ -52,6 +53,7 @@ type
     procedure seOrderChange(Sender: TObject);
     procedure btnPreviewClick(Sender: TObject);
     procedure cbLayerChange(Sender: TObject);
+    procedure btnCopyClick(Sender: TObject);
   private
     { Private declarations }
     FData: PProjectData;
@@ -75,7 +77,12 @@ implementation
 
 {$R *.dfm}
 
-uses frm_main, math_globals;
+uses frm_main, math_globals, unit_helpers;
+
+procedure TedtrProfileFunction.btnCopyClick(Sender: TObject);
+begin
+  SeriesToClipboard('N', FData.Title, '', 'A', Series1);
+end;
 
 procedure TedtrProfileFunction.btnOKClick(Sender: TObject);
 begin

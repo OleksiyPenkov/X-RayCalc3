@@ -326,6 +326,9 @@ begin
 
   if X[i][j][k][0] < Xmin[0][j][k][0] then
              X[i][j][k][0] := Xmin[0][j][k][0];
+
+  if X[i][j][k][0] < 0 then ShowMessage(Format('%d %d %d',[i,j,k]));
+
 end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;
