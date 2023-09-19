@@ -17,7 +17,7 @@ uses
 type
 
   TFloatArray = array of Single;
-  TIntArray = array of ShortInt;
+  TIntArray = array of Word;
   TPolyArray = array of single;
 
   TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
@@ -112,7 +112,7 @@ type
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
     RF, r: TComplex; { Френелевский коэф. }
-    LayerID, StackID: ShortInt;
+    LayerID, StackID: Word;
   end;
 
 
@@ -122,16 +122,16 @@ type
     public
       Func: TFunctionForm;
       Subj: TParameterType;
-      LayerID: ShortInt;
-      StackID: ShortInt;
+      LayerID: Word;
+      StackID: Word;
       C: TPolyArray;
 
-      function X(const i: ShortInt): ShortInt;
-      function Ord: ShortInt;
+      function X(const i: Word): Word;
+      function Ord: Word;
       procedure Assign(const Data: PProjectData);
-      function PIndex: ShortInt;
+      function PIndex: Word;
     private
-       IntX: ShortInt;
+       IntX: Word;
   end;
 
   TProfileFunctions = array of TFuncProfileRec;
@@ -155,12 +155,12 @@ type
   TLayerData = record
     Material: string;
     P: array [1..3] of TFitValue;
-    StackID, LayerID, Index: ShortInt;
+    StackID, LayerID, Index: Word;
     PP: array [1..3] of TFloatArray;
   public
-    procedure ClearProfiles(const p: ShortInt);
-    procedure AddProfilePoint(const Val: Single; Index: ShortInt);
-    function ProfileFromSrting(const p: ShortInt; Profile: string): string;
+    procedure ClearProfiles(const p: Word);
+    procedure AddProfilePoint(const Val: Single; Index: Word);
+    function ProfileFromSrting(const p: Word; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
   end;
 
@@ -193,8 +193,8 @@ type
   TFitStructure = record
     Stacks: array of TFitStack;
     Subs: TLayerData;
-    function Total: ShortInt;
-    function TotalNP: ShortInt;
+    function Total: Word;
+    function TotalNP: Word;
   end;
 
 
@@ -264,9 +264,9 @@ end;
 
 { TFitPeriodicStructure }
 
-function TFitStructure.Total: ShortInt;
+function TFitStructure.Total: Word;
 var
-  i: ShortInt;
+  i: Word;
 begin
   Result := 0;
   for I := 0 to High(Stacks) do
@@ -275,9 +275,9 @@ end;
 
 { TFitStructure }
 
-function TFitStructure.TotalNP: ShortInt;
+function TFitStructure.TotalNP: Word;
 var
-  i: ShortInt;
+  i: Word;
 begin
   Result := 0;
   for I := 0 to High(Stacks) do
@@ -291,12 +291,12 @@ begin
   SetLength(PP[p], 0);
 end;
 
-procedure TLayerData.AddProfilePoint(const Val: Single; Index: ShortInt);
+procedure TLayerData.AddProfilePoint(const Val: Single; Index: Word);
 begin
   Insert(Val, PP[Index], MaxInt);
 end;
 
-function TLayerData.ProfileFromSrting(const p: ShortInt; Profile: string): string;
+function TLayerData.ProfileFromSrting(const p: Word; Profile: string): string;
 var
   i, k: Integer;
   val: single;
@@ -335,17 +335,17 @@ begin
   C := Data.PolyD;
 end;
 
-function TFuncProfileRec.Ord: ShortInt;
+function TFuncProfileRec.Ord: Word;
 begin
   Result := Trunc(C[10]);
 end;
 
-function TFuncProfileRec.PIndex: ShortInt;
+function TFuncProfileRec.PIndex: Word;
 begin
   Result := System.Ord(Subj) + 1;
 end;
 
-function TFuncProfileRec.X(const i: ShortInt): ShortInt;
+function TFuncProfileRec.X(const i: Word): Word;
 begin
   if i = 1 then IntX := 0;
   Inc(IntX);

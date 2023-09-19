@@ -120,8 +120,8 @@ begin
     L    := 1E8;
     s    := Data[0].P[2].V;
     ro   := Data[0].P[3].V;
-    StackID := -99;
-    LayerID := -99;
+    StackID := 65535;
+    LayerID := 65535;
   end;
 end;
 
