@@ -139,13 +139,13 @@ var
   i: integer;
   N: Integer;
 begin
-  N := Trunc(FData.Poly[10]);
+  N := High(Data.PolyD);
   seOrder.IntValue := N;
   Grid.RowCount := N + 1;
   for i := 1 to N do
   begin
     Grid.Cells[0, i] := Format('c%d',[i]);
-    Grid.Cells[1, i] := FloatToStrF(FData.Poly[i], ffGeneral, 4, 3);
+    Grid.Cells[1, i] := FloatToStrF(FData.PolyD[i], ffGeneral, 4, 3);
   end;
 end;
 

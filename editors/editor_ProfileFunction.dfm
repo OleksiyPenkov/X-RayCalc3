@@ -37,7 +37,7 @@ object edtrProfileFunction: TedtrProfileFunction
       828
       41)
     object btnOK: TRzBitBtn
-      Left = 753
+      Left = 745
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -46,6 +46,7 @@ object edtrProfileFunction: TedtrProfileFunction
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
+      ExplicitLeft = 737
     end
     object btnCancel: TRzBitBtn
       Left = 9

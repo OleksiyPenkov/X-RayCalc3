@@ -52,11 +52,9 @@ uses
 function Poly(const x: Integer; const C: TPolyArray): Single; overload;
 var
   i, Last: Int64;
-  Order: integer;
 begin
-  Order := Trunc(C[10]);
   Result := C[0]; Last := 1;
-  for I := 1 to Order do
+  for I := 1 to High(C) do
   begin
     Last := Last * (x - 1);
     Result := Result + C[i] * Last;
@@ -67,11 +65,9 @@ end;
 function Poly(const x: Integer; Min, Max: single; const C: TPolyArray): Single; overload;
 var
   i, Last: Int64;
-  Order: integer;
 begin
-  Order := Trunc(C[10]);
   Result := C[0]; Last := 1;
-  for I := 1 to Order do
+  for I := 1 to High(C) do
   begin
     Last := Last * (x - 1);
     Result := Result + C[i] * Last;
@@ -82,11 +78,9 @@ end;
 function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
 var
   i, Last: Int64;
-  Order: integer;
 begin
-  Order := Trunc(Polynome.C[10]);
   Result := Polynome.C[0]; Last := 1;
-  for I := 1 to Order do
+  for I := 1 to High(Polynome.C) do
   begin
     Last := Last * (x - 1);
     Result := Result + Polynome.C[i] * Last

@@ -454,7 +454,7 @@ type
     function DataName(Data: PProjectData): string;
     procedure CreateDefaultProject;
     procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
-    procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
+    procedure LoadProjectParams(var LinkedID, ActiveID: System.Integer);
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure FinalizeCalc(Calc: TCalc);
@@ -965,7 +965,7 @@ begin
     Data.Subj := P[i].Subj;
     Data.StackID := P[i].StackID;
     Data.LayerID := P[i].LayerID;
-    Data.Poly    := P[i].C;
+    Data.SetPoly(P[i].C);
   end;
 
   MatchToStructure;
@@ -1361,7 +1361,7 @@ begin
 end;
 
 
-procedure TfrmMain.LoadProjectParams(var LinkedID, ActiveID: Integer);
+procedure TfrmMain.LoadProjectParams(var LinkedID, ActiveID: System.Integer);
 var
   INF: TMemIniFile;
 begin
@@ -1465,7 +1465,7 @@ begin
     if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) then
     begin
       SetLength(Result, Count + 1);
-      Result[Count].C       := Data.Poly;
+      Result[Count].C       := Data.PolyD;
       Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.P[Ord(Data.Subj) + 1].V;
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
@@ -2321,7 +2321,7 @@ end;
 
 procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
 var
-  LinkedID, ActiveID: Integer;
+  LinkedID, ActiveID: System.Integer;
 begin
   FIgnoreFocusChange := True;
   PrepareProjectFolder(FileName, Clear);

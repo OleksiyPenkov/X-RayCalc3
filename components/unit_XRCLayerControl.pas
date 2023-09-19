@@ -162,7 +162,7 @@ begin
   Name := TRzLabel.Create(Self);
 
   //Thickness
-  Thickness := AddSpinEdit(1, 90, 99999);
+  Thickness := AddSpinEdit(1, 90, 9999);
   PairedH   := AddCheckBox(1, 150);
 
   //Sigma

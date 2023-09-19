@@ -275,7 +275,7 @@ begin
   Parallel.ForEach(0, NThreads - 1, 1)
       .TaskConfig(Config)
       .Execute(
-          procedure(const elem:Integer)
+          procedure(const elem:System.Integer)
           begin
             CalcTet(CalcParams[elem]);
           end);

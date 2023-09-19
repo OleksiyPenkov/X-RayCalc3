@@ -17,8 +17,8 @@ uses
 type
 
   TFloatArray = array of Single;
-  TIntArray = array of Integer;
-  TPolyArray = array [0..10] of single;
+  TIntArray = array of ShortInt;
+  TPolyArray = array of single;
 
   TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
   TSolution = array of TLayer; // H, Sigma, rho x N Layers
@@ -43,7 +43,8 @@ type
     Description: string;
     Data: string;
     function IsModel: Boolean;
-
+    function PolyD: TPolyArray;
+    procedure SetPoly(var PolyD: TPolyArray);
     case RowType: TProjRowType of
       prGroup, prFolder:
         ();
@@ -59,7 +60,7 @@ type
             etFunction:
               (StackID: integer;
                LayerID: integer;
-               Poly: TPolyArray;
+               Poly: array [0..10] of single;
                Form: TFunctionForm;
                Subj: TParameterType;
                );
@@ -111,7 +112,7 @@ type
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
     RF, r: TComplex; { Френелевский коэф. }
-    LayerID, StackID: integer;
+    LayerID, StackID: ShortInt;
   end;
 
 
@@ -121,16 +122,16 @@ type
     public
       Func: TFunctionForm;
       Subj: TParameterType;
-      LayerID: integer;
-      StackID: integer;
+      LayerID: ShortInt;
+      StackID: ShortInt;
       C: TPolyArray;
 
-      function X(const i: integer): Integer;
-      function Ord: Integer;
+      function X(const i: ShortInt): ShortInt;
+      function Ord: ShortInt;
       procedure Assign(const Data: PProjectData);
-      function PIndex: Integer;
+      function PIndex: ShortInt;
     private
-       IntX: Integer;
+       IntX: ShortInt;
   end;
 
   TProfileFunctions = array of TFuncProfileRec;
@@ -154,12 +155,12 @@ type
   TLayerData = record
     Material: string;
     P: array [1..3] of TFitValue;
-    StackID, LayerID, Index: integer;
+    StackID, LayerID, Index: ShortInt;
     PP: array [1..3] of TFloatArray;
   public
-    procedure ClearProfiles(const p: integer);
-    procedure AddProfilePoint(const Val: Single; Index: integer);
-    function ProfileFromSrting(const p: integer; Profile: string): string;
+    procedure ClearProfiles(const p: ShortInt);
+    procedure AddProfilePoint(const Val: Single; Index: ShortInt);
+    function ProfileFromSrting(const p: ShortInt; Profile: string): string;
     function ProfileToSrting(const Subj: TParameterType): string;
   end;
 
@@ -192,8 +193,8 @@ type
   TFitStructure = record
     Stacks: array of TFitStack;
     Subs: TLayerData;
-    function Total: integer;
-    function TotalNP: integer;
+    function Total: ShortInt;
+    function TotalNP: ShortInt;
   end;
 
 
@@ -205,6 +206,27 @@ implementation
 function TProjectData.IsModel: Boolean;
 begin
   Result := (Group = gtModel) and (RowType = prItem);
+end;
+
+function TProjectData.PolyD: TPolyArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, Trunc(Poly[10] + 1));
+  for I := 0 to High(Result) do
+    Result[i] := Poly[i];
+end;
+
+procedure TProjectData.SetPoly(var PolyD: TPolyArray);
+var
+  i: Integer;
+begin
+  for I := 0 to High(PolyD) do
+  begin
+    Poly[i] := PolyD[i];
+    if i = 10 then Break;
+  end;
+  Poly[10] := High(PolyD);
 end;
 
 { TFitValue }
@@ -242,9 +264,9 @@ end;
 
 { TFitPeriodicStructure }
 
-function TFitStructure.Total: integer;
+function TFitStructure.Total: ShortInt;
 var
-  i: integer;
+  i: ShortInt;
 begin
   Result := 0;
   for I := 0 to High(Stacks) do
@@ -253,9 +275,9 @@ end;
 
 { TFitStructure }
 
-function TFitStructure.TotalNP: integer;
+function TFitStructure.TotalNP: ShortInt;
 var
-  i: integer;
+  i: ShortInt;
 begin
   Result := 0;
   for I := 0 to High(Stacks) do
@@ -269,12 +291,12 @@ begin
   SetLength(PP[p], 0);
 end;
 
-procedure TLayerData.AddProfilePoint(const Val: Single; Index: integer);
+procedure TLayerData.AddProfilePoint(const Val: Single; Index: ShortInt);
 begin
   Insert(Val, PP[Index], MaxInt);
 end;
 
-function TLayerData.ProfileFromSrting(const p: integer; Profile: string): string;
+function TLayerData.ProfileFromSrting(const p: ShortInt; Profile: string): string;
 var
   i, k: Integer;
   val: single;
@@ -310,20 +332,20 @@ begin
   LayerID := Data.LayerID;
   StackID := Data.StackID;
   Subj := Data.Subj;
-  C := Data.Poly;
+  C := Data.PolyD;
 end;
 
-function TFuncProfileRec.Ord: Integer;
+function TFuncProfileRec.Ord: ShortInt;
 begin
   Result := Trunc(C[10]);
 end;
 
-function TFuncProfileRec.PIndex: Integer;
+function TFuncProfileRec.PIndex: ShortInt;
 begin
   Result := System.Ord(Subj) + 1;
 end;
 
-function TFuncProfileRec.X(const i: integer): Integer;
+function TFuncProfileRec.X(const i: ShortInt): ShortInt;
 begin
   if i = 1 then IntX := 0;
   Inc(IntX);
