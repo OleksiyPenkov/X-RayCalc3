@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
   unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Regular, Vcl.Imaging.pngimage;
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage;
 
 type
   TSeriesList = array of TLineSeries;
@@ -442,7 +442,7 @@ type
     FLastChiSquare: Single;
 
     FOperationsStack: TStack<String>;
-    FRecentProjects : TStack<String>;
+    FRecentProjects : TList<String>;
 
     FTerminated: Boolean;
     FBenchmarkMode: Boolean;
@@ -1309,11 +1309,14 @@ var
   Name: string;
   N   : Integer;
 begin
-  SaveHistory;
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
-     Structure.AddStack(N, Name);
+  begin
+    SaveHistory;
+    Structure.AddStack(N, Name);
+    MatchToStructure;
+  end;
 end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
@@ -1329,13 +1332,14 @@ var
   Name: string;
   N   : Integer;
 begin
-  SaveHistory;
-
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
-     Structure.InsertStack(N, Name);
-  MatchToStructure;
+  begin
+    SaveHistory;
+    Structure.InsertStack(N, Name);
+    MatchToStructure;
+  end;
 end;
 
 procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
@@ -1935,7 +1939,7 @@ begin
     if cbPoly.Checked then
        LFPSO := TLFPSO_Poly.Create
      else
-       LFPSO := TLFPSO_Regular.Create;
+       LFPSO := TLFPSO_Irregular.Create;
 
   GetThreadParams;
 
@@ -2371,6 +2375,9 @@ var
 begin
   Index := (Sender as TMenuItem).Tag - 100;
   FProjectFileName := FRecentProjects.List[Index];
+  FRecentProjects.Move(Index, 0);
+  FillRecentMenu;
+
   LoadProject(FProjectFileName, True);
   if TConfig.Section<TOtherOptions>.AutoCalc then
         CalcRunExecute(frmMain);
@@ -2394,19 +2401,21 @@ begin
 
     PopupItem := TMenuItem.Create(pmRecentList);
     pmRecentList.Items.Add(PopupItem);
-    PopupItem.Caption := ExtractFileName(FRecentProjects.List[i]);
-    PopupItem.Tag := 100 + i;
+    PopupItem.Caption := Item.Caption;
+    PopupItem.Tag := Item.Tag;
     PopupItem.OnClick := RecentListOnClick;
   end;
 end;
 
+
 procedure TfrmMain.AddRecentItem(const FileName: string);
 begin
-  FRecentProjects.Push(FileName);
-  FRecentProjects.TrimExcess;
+    FRecentProjects.Insert(0, FileName);
+    if FRecentProjects.Count > MAX_RECENT_CAPACITY then
+          FRecentProjects.Delete(FRecentProjects.Count - 1);
 
-  TConfig.WiteStringList('Recent', FRecentProjects.List);
-  FillRecentMenu;
+    TConfig.WiteStringList('Recent', FRecentProjects.List);
+    FillRecentMenu;
 end;
 
 procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
@@ -2666,15 +2675,14 @@ var
   RecentList: array of String;
   i: Integer;
 begin
-  FRecentProjects := TStack<String>.Create;
-  FRecentProjects.Capacity := 10;
+  FRecentProjects := TList<String>.Create;
 
-  SetLength(RecentList, 10);
+  SetLength(RecentList, MAX_RECENT_CAPACITY);
   TConfig.ReadStringList('Recent', RecentList);
 
   for i := 0 to High(RecentList) do
     if RecentList[i] <> '' then
-      FRecentProjects.Push(RecentList[i]);
+      FRecentProjects.Add(RecentList[i]);
 
   FillRecentMenu;
 end;

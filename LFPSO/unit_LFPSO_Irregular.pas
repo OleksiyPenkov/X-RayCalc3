@@ -7,7 +7,7 @@
   *
   ****************************************************************************** *)
 
-unit unit_LFPSO_Regular;
+unit unit_LFPSO_Irregular;
 
 interface
 
@@ -17,9 +17,17 @@ uses
 
 type
 
-  TLFPSO_Regular = class (TLFPSO_BASE)
+  TSmoothieLayers = record
+    StackID, LayerID, ParamID: Word;
+        Layers: array of Word;
+  end;
+
+  TLFPSO_Irregular = class (TLFPSO_BASE)
+  private
+      procedure Smooth(const i: Word);
     protected
       FLinks : TIndexes;
+      FSmoothies: array of TSmoothieLayers;
 
       procedure UpdateLFPSO(const t: integer); override;
       procedure RangeSeed; override;
@@ -43,7 +51,29 @@ uses
 
 { TLFPSO Periodic}
 
-procedure TLFPSO_Regular.UpdateLFPSO(const t: integer);
+procedure TLFPSO_Irregular.Smooth(const i: Word);
+var
+  Data: TDataArray;
+  s, n : Word;
+begin
+  for s :=  0 to High(FSmoothies) do
+  begin
+    SetLength(Data, Length(FSmoothies[s].Layers));
+    for n := 0 to High(Data) do
+    begin
+      Data[n].t := n;
+      Data[n].r := X[i][FSmoothies[s].Layers[n]][FSmoothies[s].ParamID][0];
+    end;
+
+    Data := unit_helpers.Smooth(Data, FFitParams.SmoothWindow);
+
+    for n := 0 to High(Data) do
+      X[i][FSmoothies[s].Layers[n]][FSmoothies[s].ParamID][0] := Data[n].r;
+  end;
+end;
+
+
+procedure TLFPSO_Irregular.UpdateLFPSO(const t: integer);
 var
   i, j, k: integer;
   c1, c2: single;
@@ -66,10 +96,11 @@ begin
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0];
       end;
 
+    if FFitParams.Smooth then Smooth(i);
   end;
 end;
 
-procedure TLFPSO_Regular.UpdatePSO(const t: integer);
+procedure TLFPSO_Irregular.UpdatePSO(const t: integer);
 var
   i, j, k: integer;
   c1, c2: single;
@@ -91,18 +122,20 @@ begin
         else
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0];
       end;
+
+    if FFitParams.Smooth then Smooth(i);
   end;
 end;
 
-destructor TLFPSO_Regular.Destroy;
+destructor TLFPSO_Irregular.Destroy;
 begin
   Finalize(FLinks);
   inherited;
 end;
 
-procedure TLFPSO_Regular.InitVelocity;
+procedure TLFPSO_Irregular.InitVelocity;
 var
-  i, j, k: integer;
+  i, j, k: Word;
 begin
   MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
@@ -117,21 +150,23 @@ begin
 
 end;
 
-procedure TLFPSO_Regular.XSeed;
+procedure TLFPSO_Irregular.XSeed;
 var
-  i, j, k: integer;
+  i, j, k: Word;
 begin
   for i := 1 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
         X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
+
+    if FFitParams.Smooth then Smooth(i);
   end;
 end;
 
-procedure TLFPSO_Regular.RangeSeed;
+procedure TLFPSO_Irregular.RangeSeed;
 var
-  i, j, k: integer;
+  i, j, k: Word;
 begin
   Randomize;
 
@@ -145,20 +180,22 @@ begin
         else
           X[i][j][k][0] := Xmin[0][j][k][0] + Random * (Xmax[0][j][k][0] - Xmin[0][j][k][0]);   // min + Random * (min-max)
       end;
+
+    if FFitParams.Smooth then Smooth(i);
   end;
 end;
 
-procedure InitArray(const Length: Integer; var A: TIndexes);
+procedure InitArray(const Length: Word; var A: TIndexes);
 begin
   SetLength(A, 0);
   SetLength(A, Length);
 end;
 
-procedure TLFPSO_Regular.SetStructure(const Inp: TFitStructure);
+procedure TLFPSO_Irregular.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, l, p, Index: integer;
+  i, j, k, l, p, Index, s: Word;
   Links: TIndexes;
-  NLayers: Integer;
+  NLayers: Word;
 begin
   FLayersCount := Inp.TotalNP;
 
@@ -172,12 +209,14 @@ begin
   Init_Domains(0);
 
   InitArray(FLayersCount, FLinks);
+  if not FReInit then
+      SetLength(FSmoothies, 0);
 
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
   begin
     NLayers := Length(Inp.Stacks[i].Layers);
-    for k := 1 to Inp.Stacks[i].N do
+    for k := 1 to Inp.Stacks[i].N do         // for every layer in stack
     begin
       if (k = 1) and not FReInit then
          InitArray(NLayers, Links);
@@ -200,17 +239,50 @@ begin
             end;
 
             for p := 1 to 3 do
+            begin
                if Inp.Stacks[i].Layers[j].P[p].Paired then
-                  Links[j][p] := Index;
+                  Links[j][p] := Index
+               else
+               if FFitParams.Smooth and (Inp.Stacks[i].N > 1) then   // create Smooths indexes for this layer
+               begin
+                 s := Length(FSmoothies);
+                 SetLength(FSmoothies, s + 1);
+                 SetLength(FSmoothies[s].Layers, Inp.Stacks[i].N);
+
+                 FSmoothies[s].StackID := i;
+                 FSmoothies[s].LayerID := j;
+                 FSmoothies[s].ParamID := p;
+               end;
+            end;
           end
           else
             for l := 1 to 3 do
-              FLinks[Index][l] := Links[j][l] ;
+              FLinks[Index][l] := Links[j][l];
         end;
         Inc(Index);
       end;
     end;
   end;
+
+  if not FReInit and FFitParams.Smooth then
+  begin
+    Index := 0;
+
+    for i := 0 to High(Inp.Stacks) do
+     for k := 0 to Inp.Stacks[i].N - 1 do
+     begin
+       for j := 0 to High(Inp.Stacks[i].Layers) do
+       begin
+         for s := 0 to High(FSmoothies) do
+           if (FSmoothies[s].StackID = i) and
+              (FSmoothies[s].LayerID = j)
+           then
+             FSmoothies[s].Layers[k] := Index;
+         Inc(Index);
+       end;
+     end;
+  end;
+
 end;
 
 end.

@@ -39,6 +39,7 @@ procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
+function Smooth(const Inp: TDataArray; W: word): TDataArray;
 
 procedure FillElementsList(const Path: string; var List: TListBox);
 procedure OpenHelpFile(const FileName: string);
@@ -99,6 +100,12 @@ begin
   if not SHGetSpecialFolderPath(0, PChar(S), CSIDL, True) then
     S := '';
   Result := IncludeTrailingPathDelimiter(PChar(S));
+end;
+
+
+function Smooth(const Inp: TDataArray; W: word): TDataArray;
+begin
+  Result := Inp;
 end;
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;

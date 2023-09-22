@@ -102,6 +102,8 @@ type
       MaxPOrder: Integer;
           Ksxr : Single;
      PolyFactor: Integer;
+         Smooth: Boolean;
+   SmoothWindow: Word;
   end;
 
   // Calculation data types

@@ -24,7 +24,6 @@ uses
   frm_about in 'forms\frm_about.pas' {frmAbout},
   frm_NewMaterial in 'forms\frm_NewMaterial.pas' {frmNewMaterial},
   unit_LFPSO_Periodic in 'LFPSO\unit_LFPSO_Periodic.pas',
-  unit_LFPSO_Regular in 'LFPSO\unit_LFPSO_Regular.pas',
   frm_MaterialSelector in 'forms\frm_MaterialSelector.pas' {frmMaterialSelector},
   editor_ProfileFunction in 'editors\editor_ProfileFunction.pas' {edtrProfileFunction},
   frm_ExtensionType in 'forms\frm_ExtensionType.pas' {frmExtensionSelector},
@@ -40,7 +39,8 @@ uses
   frm_settings in 'forms\frm_settings.pas' {frmSettings},
   editor_ProfileTable in 'editors\editor_ProfileTable.pas' {edtrProfileTable},
   unit_XRCGrid in 'components\unit_XRCGrid.pas',
-  unit_sys_helpers in 'units\unit_sys_helpers.pas';
+  unit_sys_helpers in 'units\unit_sys_helpers.pas',
+  unit_LFPSO_Irregular in 'LFPSO\unit_LFPSO_Irregular.pas';
 
 {$R *.res}
 

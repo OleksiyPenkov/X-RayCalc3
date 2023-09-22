@@ -21,6 +21,8 @@ const
   PARAMETERS_FILE_NAME = 'params.dsc';
   PROJECT_FILE_NAME = 'project.dsc';
 
+  MAX_RECENT_CAPACITY = 10;
+
   WM_RECALC = WM_USER + 1;
   WM_STARTEDITING = WM_USER + 2;
 

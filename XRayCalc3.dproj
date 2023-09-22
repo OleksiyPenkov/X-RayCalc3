@@ -4,7 +4,7 @@
         <ProjectVersion>19.5</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -191,7 +191,6 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Periodic.pas"/>
-        <DCCReference Include="LFPSO\unit_LFPSO_Regular.pas"/>
         <DCCReference Include="forms\frm_MaterialSelector.pas">
             <Form>frmMaterialSelector</Form>
             <FormType>dfm</FormType>
@@ -230,6 +229,7 @@
         </DCCReference>
         <DCCReference Include="components\unit_XRCGrid.pas"/>
         <DCCReference Include="units\unit_sys_helpers.pas"/>
+        <DCCReference Include="LFPSO\unit_LFPSO_Irregular.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
