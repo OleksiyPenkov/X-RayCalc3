@@ -104,8 +104,30 @@ end;
 
 
 function Smooth(const Inp: TDataArray; W: word): TDataArray;
+var
+  i, j, Max: word;
+  s: single;
 begin
-  Result := Inp;
+  Max := Length(Inp) - 1;
+  SetLength(Result, Max + 1);
+
+  for I := 0 to Max - W do
+  begin
+    S := 0;
+    for j := i to i + W do
+      S := S + Inp[j].r;
+    Result[i].r := S/(W + 1);
+  end;
+
+  for I := Max - W + 1 to Max do
+  begin
+    S := 0;
+    for j := i - W to i - 1 do
+      S := S + Inp[j].r;
+    Result[i].r := S/W;
+  end;
+
+
 end;
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;

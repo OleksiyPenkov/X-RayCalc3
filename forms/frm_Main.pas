@@ -1451,6 +1451,10 @@ begin
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
   FFitParams.Ksxr        := TConfig.Section<TCalcOptions>.Ksxr;
   FFitParams.PolyFactor  := TConfig.Section<TCalcOptions>.PolyFactor;
+
+  FFitParams.Smooth       := True;
+  FFitParams.SmoothWindow := 3;
+
   Result := True;
 end;
 

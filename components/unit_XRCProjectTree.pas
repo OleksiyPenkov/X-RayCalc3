@@ -378,6 +378,9 @@ begin
   p := pos('}}', Data.Data);
   if p <> Length(Data.Data) - 1 then
       Data.Data := copy(Data.Data, 1, p + 1);
+
+  if pos('Models', Data.Data) > 0 then Data.Data := 'Models';
+  if pos('Data', Data.Data) > 0 then Data.Data := 'Data';
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
