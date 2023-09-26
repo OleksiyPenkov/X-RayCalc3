@@ -110,8 +110,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label18: TLabel
-        Left = 105
-        Top = 23
+        Left = 20
+        Top = 55
         Width = 17
         Height = 13
         Caption = ' '#969'1'
@@ -123,8 +123,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label19: TLabel
-        Left = 180
-        Top = 23
+        Left = 95
+        Top = 55
         Width = 17
         Height = 13
         Caption = ' '#969'2'
@@ -136,8 +136,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label15: TLabel
-        Left = 99
-        Top = 53
+        Left = 198
+        Top = 24
         Width = 25
         Height = 13
         Caption = 'Jmax'
@@ -149,8 +149,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label17: TLabel
-        Left = 4
-        Top = 52
+        Left = 103
+        Top = 23
         Width = 33
         Height = 13
         Caption = 'SHmax'
@@ -162,8 +162,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label13: TLabel
-        Left = 260
-        Top = 23
+        Left = 183
+        Top = 55
         Width = 11
         Height = 13
         Caption = 'k1'
@@ -175,8 +175,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label14: TLabel
-        Left = 329
-        Top = 23
+        Left = 256
+        Top = 55
         Width = 11
         Height = 13
         Caption = 'k2'
@@ -205,8 +205,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOOmega1: TEdit
-        Left = 128
-        Top = 19
+        Left = 43
+        Top = 51
         Width = 50
         Height = 22
         Hint = 'Velocity scale factor (permanent)'
@@ -222,8 +222,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOOmega2: TEdit
-        Left = 203
-        Top = 19
+        Left = 118
+        Top = 51
         Width = 50
         Height = 22
         Hint = 'Velocity reducing factor'
@@ -239,8 +239,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOSkip: TEdit
-        Left = 129
-        Top = 48
+        Left = 233
+        Top = 19
         Width = 50
         Height = 22
         Hint = 'Number of iterations without improvement to perform shake'
@@ -256,8 +256,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSORImax: TEdit
-        Left = 43
-        Top = 48
+        Left = 142
+        Top = 19
         Width = 50
         Height = 22
         Hint = 'Max. number of consequent shakes'
@@ -273,8 +273,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOChiFactor: TEdit
-        Left = 273
-        Top = 19
+        Left = 200
+        Top = 51
         Width = 50
         Height = 22
         Hint = 'Velocity shake coefficient'
@@ -290,8 +290,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOkVmax: TEdit
-        Left = 349
-        Top = 19
+        Left = 276
+        Top = 51
         Width = 50
         Height = 22
         Hint = 'Best cost functuion shake coefficient'
@@ -361,8 +361,6 @@ object frmFitSettings: TfrmFitSettings
       Caption = 'Polynomial'
       Color = 15987699
       TabOrder = 3
-      ExplicitLeft = 9
-      ExplicitTop = 271
       object Label8: TLabel
         Left = 10
         Top = 25

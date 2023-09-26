@@ -69,8 +69,8 @@ begin
   edFVmax.Text            := Params.Vmax.ToString(ffFixed, 2, 2);
   edLFPSOSkip.Text        := Params.JammingMax.ToString;
   edLFPSORImax.Text       := Params.ReInitMax.ToString;
-  edLFPSOChiFactor.Text   := Params.KChiSqr.ToString(ffFixed, 3, 2);
-  edLFPSOkVmax.Text       := Params.KVmax.ToString(ffFixed, 3, 2);
+  edLFPSOChiFactor.Text   := Params.KChiSqr.ToString(ffFixed, 2, 2);
+  edLFPSOkVmax.Text       := Params.KVmax.ToString(ffFixed, 2, 2);
   edLFPSOOmega1.Text      := Params.w1.ToString(ffFixed, 2, 2);
   edLFPSOOmega2.Text      := Params.w2.ToString(ffFixed, 2, 2);
   edFitTolerance.Text     := Params.Tolerance.ToString(ffFixed, 2, 3);

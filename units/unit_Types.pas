@@ -120,7 +120,6 @@ type
     LayerID, StackID: Word;
   end;
 
-
   TCalcLayers = array of TCalcLayer;
 
   TFuncProfileRec = record
