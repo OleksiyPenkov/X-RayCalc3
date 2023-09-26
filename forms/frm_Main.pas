@@ -1438,7 +1438,7 @@ begin
   FFitParams.NMax := StrToInt(edFIter.Text);
   FFitParams.Pop  := StrToInt(edFPopulation.Text);
   FFitParams.Shake       := cbLFPSOShake.Checked;
-  FFitParams.ThetaWieght := cbTWChi.ItemIndex;
+  FFitParams.ThetaWeight := cbTWChi.ItemIndex;
 
   FFitParams.RangeSeed   := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);

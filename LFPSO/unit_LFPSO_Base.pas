@@ -371,7 +371,7 @@ begin
     if Length(FMaterials) = 0 then
       FMaterials := FCalc.Model.Materials;    // saving to cache
 
-    FCalc.CalcChiSquare(FFitParams.ThetaWieght);
+    FCalc.CalcChiSquare(FFitParams.ThetaWeight);
 
     if FCalc.ChiSQR < FLastBestChiSqr then
     begin

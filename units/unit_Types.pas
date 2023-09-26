@@ -99,7 +99,7 @@ type
   MovAvgWindow: Single;
 
          Shake : boolean;
-    ThetaWieght: integer;
+    ThetaWeight: integer;
        AdaptVel: Boolean;
          RangeSeed: Boolean;
       MaxPOrder: Integer;
@@ -180,8 +180,8 @@ type
 
   TMaterialsList = array of record
                         Name: string;
-                     StackID: integer;
-                     LayerID: integer;
+                     StackID: word;
+                     LayerID: word;
                    end;
 
   // Fitting data types
