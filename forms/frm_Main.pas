@@ -1410,7 +1410,7 @@ begin
     FFitParams.KChiSqr      := StrToFloat(INF.ReadString('LFPSO', 'kChi', '1.41'));
     FFitParams.KVmax        := StrToFloat(INF.ReadString('LFPSO', 'kVmax', '1.41'));
     FFitParams.w1           := StrToFloat(INF.ReadString('LFPSO', 'w1', '0.3'));
-    FFitParams.w1           := StrToFloat(INF.ReadString('LFPSO', 'w2', '0.3'));
+    FFitParams.w2           := StrToFloat(INF.ReadString('LFPSO', 'w2', '0.3'));
     FFitParams.AdaptVel     := INF.ReadBool('LFPSO', 'AdaptV', False);
     FFitParams.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
     FFitParams.Ksxr         := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
@@ -2674,7 +2674,7 @@ begin
   FFitParams.KChiSqr      := 1.41;
   FFitParams.KVmax        := 1.41;
   FFitParams.w1           := 0.3;
-  FFitParams.w1           := 0.3;
+  FFitParams.w2           := 0.3;
   FFitParams.AdaptVel     := False;
   FFitParams.SmoothWindow := -1;
   FFitParams.Ksxr         := 0.2;

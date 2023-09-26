@@ -91,14 +91,14 @@ object frmFitSettings: TfrmFitSettings
       Left = 5
       Top = 66
       Width = 431
-      Height = 79
+      Height = 103
       Align = alTop
       Caption = 'LFPSO'
       Color = 15987699
       TabOrder = 1
       object Label16: TLabel
         Left = 11
-        Top = 23
+        Top = 48
         Width = 26
         Height = 13
         Caption = 'Vmax'
@@ -110,8 +110,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label18: TLabel
-        Left = 20
-        Top = 55
+        Left = 108
+        Top = 49
         Width = 17
         Height = 13
         Caption = ' '#969'1'
@@ -123,8 +123,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label19: TLabel
-        Left = 95
-        Top = 55
+        Left = 189
+        Top = 49
         Width = 17
         Height = 13
         Caption = ' '#969'2'
@@ -136,7 +136,7 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label15: TLabel
-        Left = 198
+        Left = 99
         Top = 24
         Width = 25
         Height = 13
@@ -149,7 +149,7 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label17: TLabel
-        Left = 103
+        Left = 4
         Top = 23
         Width = 33
         Height = 13
@@ -162,8 +162,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label13: TLabel
-        Left = 183
-        Top = 55
+        Left = 26
+        Top = 74
         Width = 11
         Height = 13
         Caption = 'k1'
@@ -175,8 +175,8 @@ object frmFitSettings: TfrmFitSettings
         ParentFont = False
       end
       object Label14: TLabel
-        Left = 256
-        Top = 55
+        Left = 110
+        Top = 74
         Width = 11
         Height = 13
         Caption = 'k2'
@@ -189,7 +189,7 @@ object frmFitSettings: TfrmFitSettings
       end
       object edFVmax: TEdit
         Left = 43
-        Top = 19
+        Top = 44
         Width = 50
         Height = 22
         Hint = 'Max. particle velocity factor'
@@ -205,8 +205,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOOmega1: TEdit
-        Left = 43
-        Top = 51
+        Left = 131
+        Top = 44
         Width = 50
         Height = 22
         Hint = 'Velocity scale factor (permanent)'
@@ -222,8 +222,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOOmega2: TEdit
-        Left = 118
-        Top = 51
+        Left = 212
+        Top = 45
         Width = 50
         Height = 22
         Hint = 'Velocity reducing factor'
@@ -239,9 +239,9 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOSkip: TEdit
-        Left = 233
+        Left = 130
         Top = 19
-        Width = 50
+        Width = 51
         Height = 22
         Hint = 'Number of iterations without improvement to perform shake'
         Alignment = taRightJustify
@@ -256,7 +256,7 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSORImax: TEdit
-        Left = 142
+        Left = 43
         Top = 19
         Width = 50
         Height = 22
@@ -273,8 +273,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOChiFactor: TEdit
-        Left = 200
-        Top = 51
+        Left = 43
+        Top = 70
         Width = 50
         Height = 22
         Hint = 'Velocity shake coefficient'
@@ -290,8 +290,8 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
       object edLFPSOkVmax: TEdit
-        Left = 276
-        Top = 51
+        Left = 130
+        Top = 70
         Width = 50
         Height = 22
         Hint = 'Best cost functuion shake coefficient'
@@ -310,13 +310,14 @@ object frmFitSettings: TfrmFitSettings
     object RzGroupBox3: TRzGroupBox
       AlignWithMargins = True
       Left = 5
-      Top = 151
+      Top = 175
       Width = 431
       Height = 55
       Align = alTop
       Caption = 'Irregular'
       Color = 15987699
       TabOrder = 2
+      ExplicitTop = 151
       object Label1: TLabel
         Left = 12
         Top = 23
@@ -354,13 +355,14 @@ object frmFitSettings: TfrmFitSettings
     object RzGroupBox4: TRzGroupBox
       AlignWithMargins = True
       Left = 5
-      Top = 212
+      Top = 236
       Width = 431
       Height = 55
       Align = alTop
       Caption = 'Polynomial'
       Color = 15987699
       TabOrder = 3
+      ExplicitTop = 212
       object Label8: TLabel
         Left = 10
         Top = 25

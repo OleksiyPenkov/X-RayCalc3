@@ -100,7 +100,7 @@ type
       [DefaultValue(0)]
       property NumberOfThreads : integer index 0 read getIntegerValue write SetIntegerValue;
       [DefaultValue(20)]
-      property BenchmarkRuns   : integer index 3 read getIntegerValue write SetIntegerValue;
+      property BenchmarkRuns   : integer index 1 read getIntegerValue write SetIntegerValue;
     end;
 
     [Section('Graphics')]
