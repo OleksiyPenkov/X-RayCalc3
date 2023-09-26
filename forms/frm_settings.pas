@@ -53,7 +53,6 @@ type
     tsGraphics: TTabSheet;
     lbl3: TLabel;
     chkAutoSaveResults: TCheckBox;
-    lbl4: TLabel;
     rzpnl1: TRzPanel;
     Label4: TLabel;
     RzPanel1: TRzPanel;
@@ -70,15 +69,10 @@ type
     Label7: TLabel;
     edBenchmarkDir: TRzButtonEdit;
     btnRegisterExtensions: TButton;
-    RzPanel5: TRzPanel;
-    Label8: TLabel;
-    sePolyFactor: TSpinEdit;
     RzPanel6: TRzPanel;
     Label9: TLabel;
     edHenkeDir: TRzButtonEdit;
     dlgFolder: TRzSelectFolderDialog;
-    Label10: TLabel;
-    edKsxr: TRzEdit;
     Label11: TLabel;
     RzPanel7: TRzPanel;
     Label12: TLabel;
@@ -130,9 +124,6 @@ begin
        cbbCPUCores.ItemIndex := 0
     else
       cbbCPUCores.Text := IntToStr(NumberOfThreads);
-
-    sePolyFactor.Value := PolyFactor;
-    edKsxr.Text := FloatToStrF(Ksxr, ffFixed, 4, 2);
     seBenchRuns.Value := BenchmarkRuns;
   end;
 
@@ -164,8 +155,6 @@ begin
       NumberOfThreads := 0
     else
       NumberOfThreads := StrToInt(cbbCPUCores.Text);
-    PolyFactor :=sePolyFactor.Value;
-    Ksxr := StrToFloat(edKsxr.Text);
     BenchmarkRuns := seBenchRuns.Value;
   end;
 

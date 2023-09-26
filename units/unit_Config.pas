@@ -99,10 +99,6 @@ type
     public
       [DefaultValue(0)]
       property NumberOfThreads : integer index 0 read getIntegerValue write SetIntegerValue;
-      [DefaultValue(10)]
-      property PolyFactor      : integer index 1 read getIntegerValue write SetIntegerValue;
-      [DefaultValue(0.2)]
-      property Ksxr            : single index 2 read getFloatValue write SetFloatValue;
       [DefaultValue(20)]
       property BenchmarkRuns   : integer index 3 read getIntegerValue write SetIntegerValue;
     end;

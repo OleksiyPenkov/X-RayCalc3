@@ -1413,6 +1413,8 @@ begin
     FFitParams.w1           := StrToFloat(INF.ReadString('LFPSO', 'w2', '0.3'));
     FFitParams.AdaptVel     := INF.ReadBool('LFPSO', 'AdaptV', False);
     FFitParams.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
+    FFitParams.Ksxr         := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
+    FFitParams.PolyFactor   := INF.ReadInteger('LFPSO', 'PolyFactor', 10);
   finally
     INF.Free;
   end;
@@ -1440,8 +1442,6 @@ begin
 
   FFitParams.RangeSeed   := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
-  FFitParams.Ksxr        := TConfig.Section<TCalcOptions>.Ksxr;
-  FFitParams.PolyFactor  := TConfig.Section<TCalcOptions>.PolyFactor;
   FFitParams.Smooth       := cbSmooth.Checked;
 
   Result := True;
@@ -2502,7 +2502,8 @@ begin
     INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
     INF.WriteBool('LFPSO', 'Smooth', cbSmooth.Checked);
     INF.WriteInteger('LFPSO', 'SmoothWindow', FFitParams.SmoothWindow);
-
+    INF.WriteString('LFPSO', 'Ksxr', FFitParams.Ksxr.ToString);
+    INF.WriteInteger('LFPSO', 'PolyFactor', FFitParams.PolyFactor );
     INF.UpdateFile;
 
     if FileExists(FileName) then
@@ -2676,6 +2677,8 @@ begin
   FFitParams.w1           := 0.3;
   FFitParams.AdaptVel     := False;
   FFitParams.SmoothWindow := -1;
+  FFitParams.Ksxr         := 0.2;
+  FFitParams.PolyFactor   := 10;
 end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);

@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, RzPanel, RzButton,
-  RzRadChk, Vcl.StdCtrls, RzTabs, unit_Types, Vcl.Buttons, unit_StaticTip;
+  RzRadChk, Vcl.StdCtrls, RzTabs, unit_Types, Vcl.Buttons, unit_StaticTip,
+  Vcl.Mask, RzEdit, Vcl.Samples.Spin;
 
 type
   TfrmFitSettings = class(TForm)
@@ -36,6 +37,11 @@ type
     Tip: TMHLStaticTip;
     btnSave: TRzBitBtn;
     btnCancel: TBitBtn;
+    RzGroupBox4: TRzGroupBox;
+    sePolyFactor: TSpinEdit;
+    Label8: TLabel;
+    Label10: TLabel;
+    edKsxr: TEdit;
     procedure ShowParamHint(Sender: TObject);
   private
     { Private declarations }
@@ -70,6 +76,9 @@ begin
   edFitTolerance.Text     := Params.Tolerance.ToString(ffFixed, 2, 3);
   edIrrSmoothWindow.Text  := Params.SmoothWindow.ToString;
 
+  sePolyFactor.Value      := Params.PolyFactor;
+  edKsxr.Text             := Params.Ksxr.ToString(ffFixed, 2, 2);
+
   cbAdaptiveVelocity.Checked := Params.AdaptVel;
 
   if ShowModal = mrOk then
@@ -84,6 +93,10 @@ begin
     Params.Tolerance    := StrToFloat(edFitTolerance.Text);
     Params.AdaptVel     := cbAdaptiveVelocity.Checked;
     Params.SmoothWindow := StrToInt(edIrrSmoothWindow.Text);
+
+    Params.PolyFactor   := sePolyFactor.Value;
+    Params.Ksxr         := StrToFloat(edKsxr.Text);
+
   end;
 end;
 

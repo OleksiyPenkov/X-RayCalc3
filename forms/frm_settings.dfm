@@ -21,7 +21,7 @@ object frmSettings: TfrmSettings
     Top = 3
     Width = 451
     Height = 384
-    ActivePage = tsPaths
+    ActivePage = tsCalc
     Align = alClient
     TabOrder = 1
     ExplicitWidth = 447
@@ -220,7 +220,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 6
-        ExplicitTop = 268
+        ExplicitWidth = 433
         object Label14: TLabel
           Left = 8
           Top = 11
@@ -358,27 +358,10 @@ object frmSettings: TfrmSettings
         Transparent = True
         ExplicitWidth = 72
       end
-      object lbl4: TLabel
-        AlignWithMargins = True
-        Left = 3
-        Top = 63
-        Width = 437
-        Height = 13
-        Align = alTop
-        Caption = 'Magic numbers'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'Tahoma'
-        Font.Style = [fsBold]
-        ParentFont = False
-        Transparent = True
-        ExplicitWidth = 86
-      end
       object Label11: TLabel
         AlignWithMargins = True
         Left = 3
-        Top = 123
+        Top = 63
         Width = 437
         Height = 13
         Align = alTop
@@ -390,6 +373,7 @@ object frmSettings: TfrmSettings
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
+        ExplicitTop = 123
         ExplicitWidth = 64
       end
       object RzPanel1: TRzPanel
@@ -428,7 +412,7 @@ object frmSettings: TfrmSettings
             '64')
         end
       end
-      object RzPanel5: TRzPanel
+      object RzPanel7: TRzPanel
         AlignWithMargins = True
         Left = 3
         Top = 82
@@ -438,49 +422,7 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
-        object Label8: TLabel
-          Left = 9
-          Top = 9
-          Width = 82
-          Height = 13
-          Caption = 'Polynomial factor'
-        end
-        object Label10: TLabel
-          Left = 248
-          Top = 11
-          Width = 21
-          Height = 13
-          Caption = 'Ksxr'
-        end
-        object sePolyFactor: TSpinEdit
-          Left = 104
-          Top = 6
-          Width = 84
-          Height = 22
-          MaxValue = 15
-          MinValue = 1
-          TabOrder = 0
-          Value = 10
-        end
-        object edKsxr: TRzEdit
-          Left = 275
-          Top = 7
-          Width = 142
-          Height = 21
-          Text = ''
-          TabOrder = 1
-        end
-      end
-      object RzPanel7: TRzPanel
-        AlignWithMargins = True
-        Left = 3
-        Top = 142
-        Width = 437
-        Height = 35
-        Align = alTop
-        BorderOuter = fsFlatRounded
-        Color = 15987699
-        TabOrder = 2
+        ExplicitTop = 142
         object Label12: TLabel
           Left = 9
           Top = 9
@@ -567,7 +509,7 @@ object frmSettings: TfrmSettings
       613
       41)
     object btnOk: TButton
-      Left = 417
+      Left = 413
       Top = 10
       Width = 75
       Height = 25
@@ -577,10 +519,10 @@ object frmSettings: TfrmSettings
       ModalResult = 1
       TabOrder = 0
       OnClick = SaveSettingsClick
-      ExplicitLeft = 413
+      ExplicitLeft = 409
     end
     object btnCancel: TButton
-      Left = 498
+      Left = 494
       Top = 10
       Width = 75
       Height = 25
@@ -589,7 +531,7 @@ object frmSettings: TfrmSettings
       Caption = '&Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 494
+      ExplicitLeft = 490
     end
     object btnHelp: TButton
       Left = 12

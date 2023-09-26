@@ -1180,8 +1180,7 @@ object frmMain: TfrmMain
             Width = 65
             Height = 19
             Caption = 'Smooth'
-            Checked = True
-            State = cbChecked
+            State = cbUnchecked
             TabOrder = 9
           end
         end

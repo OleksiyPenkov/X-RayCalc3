@@ -351,6 +351,54 @@ object frmFitSettings: TfrmFitSettings
         OnEnter = ShowParamHint
       end
     end
+    object RzGroupBox4: TRzGroupBox
+      AlignWithMargins = True
+      Left = 5
+      Top = 212
+      Width = 431
+      Height = 55
+      Align = alTop
+      Caption = 'Polynomial'
+      Color = 15987699
+      TabOrder = 3
+      ExplicitLeft = 9
+      ExplicitTop = 271
+      object Label8: TLabel
+        Left = 10
+        Top = 25
+        Width = 94
+        Height = 15
+        Caption = 'Polynomial factor'
+      end
+      object Label10: TLabel
+        Left = 249
+        Top = 27
+        Width = 22
+        Height = 15
+        Caption = 'Ksxr'
+      end
+      object sePolyFactor: TSpinEdit
+        Left = 105
+        Top = 22
+        Width = 84
+        Height = 24
+        MaxValue = 15
+        MinValue = 1
+        TabOrder = 0
+        Value = 10
+      end
+      object edKsxr: TEdit
+        Left = 279
+        Top = 23
+        Width = 49
+        Height = 23
+        Hint = 'Velocity scale factor for polynomes'
+        NumbersOnly = True
+        TabOrder = 1
+        Text = '0.2'
+        OnEnter = ShowParamHint
+      end
+    end
   end
   object rzpnl1: TRzPanel
     AlignWithMargins = True
