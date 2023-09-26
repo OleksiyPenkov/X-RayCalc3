@@ -9,3 +9,10 @@ Old
 /*.local
 /*.identcache
 test_data
+DCU64
+BIN64
+Resources
+*.tvsconfig
+*.local
+*.~pas
+*.identcache

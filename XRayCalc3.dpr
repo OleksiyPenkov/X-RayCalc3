@@ -40,7 +40,8 @@ uses
   editor_ProfileTable in 'editors\editor_ProfileTable.pas' {edtrProfileTable},
   unit_XRCGrid in 'components\unit_XRCGrid.pas',
   unit_sys_helpers in 'units\unit_sys_helpers.pas',
-  unit_LFPSO_Irregular in 'LFPSO\unit_LFPSO_Irregular.pas';
+  unit_LFPSO_Irregular in 'LFPSO\unit_LFPSO_Irregular.pas',
+  frm_FitSettings in 'forms\frm_FitSettings.pas' {frmFitSettings};
 
 {$R *.res}
 
@@ -63,5 +64,6 @@ begin
   Application.CreateForm(TfrmSettings, frmSettings);
   Application.CreateForm(TfrmSettings, frmSettings);
   Application.CreateForm(TedtrProfileTable, edtrProfileTable);
+  Application.CreateForm(TfrmFitSettings, frmFitSettings);
   Application.Run;
 end.

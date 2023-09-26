@@ -16,6 +16,8 @@ uses
 
 type
 
+  TFittingMode = (fmIrregular, fmPeriodic, fmPoly);
+
   TFloatArray = array of Single;
   TIntArray = array of Word;
   TPolyArray = array of single;
@@ -94,6 +96,7 @@ type
        KChiSqr: single;
        KVmax  : single;
         w1, w2: single;
+  MovAvgWindow: Single;
 
          Shake : boolean;
     ThetaWieght: integer;
@@ -103,7 +106,7 @@ type
           Ksxr : Single;
      PolyFactor: Integer;
          Smooth: Boolean;
-   SmoothWindow: Word;
+   SmoothWindow: ShortInt;
   end;
 
   // Calculation data types

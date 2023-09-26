@@ -39,7 +39,7 @@ procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
-function Smooth(const Inp: TDataArray; W: word): TDataArray;
+function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
 
 procedure FillElementsList(const Path: string; var List: TListBox);
 procedure OpenHelpFile(const FileName: string);
@@ -103,13 +103,19 @@ begin
 end;
 
 
-function Smooth(const Inp: TDataArray; W: word): TDataArray;
+function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
 var
   i, j, Max: word;
   s: single;
 begin
   Max := Length(Inp) - 1;
   SetLength(Result, Max + 1);
+
+  if W = -1 then
+  begin
+    W := Round(Max / 10);
+    if W < 1 then W := 1;
+  end;
 
   for I := 0 to Max - W do
   begin

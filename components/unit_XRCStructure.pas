@@ -507,7 +507,7 @@ var
   Stack: TXRCStack;
 begin
   for Stack in FStacks do
-    Stack.EnablePairing(Value);
+    Stack.EnablePairing(not Value);
 end;
 
 procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);
