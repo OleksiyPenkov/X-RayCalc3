@@ -1453,7 +1453,7 @@ begin
   FFitParams.PolyFactor  := TConfig.Section<TCalcOptions>.PolyFactor;
 
   FFitParams.Smooth       := True;
-  FFitParams.SmoothWindow := 3;
+  FFitParams.SmoothWindow := 2;
 
   Result := True;
 end;
