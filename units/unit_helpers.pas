@@ -32,13 +32,14 @@ procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr:
 procedure DataToFile(const FileName: string; Data: TDataArray);
 //procedure DataToClipboard(const Data: TDataArray);
 
-function SeriesToData( Series: TLineSeries): TDataArray;
+function SeriesToData(Series: TLineSeries): TDataArray;
 procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
 procedure AutoMerge( var Series: TLineSeries);
 procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
+function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
 
 procedure FillElementsList(const Path: string; var List: TListBox);
 procedure OpenHelpFile(const FileName: string);
@@ -99,6 +100,40 @@ begin
   if not SHGetSpecialFolderPath(0, PChar(S), CSIDL, True) then
     S := '';
   Result := IncludeTrailingPathDelimiter(PChar(S));
+end;
+
+
+function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
+var
+  i, j, Max: word;
+  s: single;
+begin
+  Max := Length(Inp) - 1;
+  SetLength(Result, Max + 1);
+
+  if W = -1 then
+  begin
+    W := Round(Max / 10);
+    if W < 1 then W := 1;
+  end;
+
+  for I := 0 to Max - W do
+  begin
+    S := 0;
+    for j := i to i + W do
+      S := S + Inp[j].r;
+    Result[i].r := S/(W + 1);
+  end;
+
+  for I := Max - W + 1 to Max do
+  begin
+    S := 0;
+    for j := i - W to i - 1 do
+      S := S + Inp[j].r;
+    Result[i].r := S/W;
+  end;
+
+
 end;
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
@@ -296,6 +331,7 @@ begin
   for I := 0 to High(Data) do
    Series.AddXY(Data[i].t, Data[i].r);
 end;
+
 
 function SeriesToData( Series: TLineSeries): TDataArray;
 var
@@ -514,5 +550,15 @@ begin
           end;
 end;
 {$WARNINGS ON}
+
+function RemoveAppPath(const Path: string; AppPath: string): string;
+var
+  p: Integer;
+begin
+  Result := Path;
+  p := Pos(AppPath, Result);
+  if p > 0 then
+    Delete(Result, 1, Length(AppPath));
+end;
 
 end.

@@ -345,14 +345,6 @@ begin
   FStacks[ID].Edit;
 end;
 
-//procedure TXRCStructure.EnablePairing;
-//var
-//  Stack: TXRCStack;
-//begin
-//  for Stack in FStacks do
-//    Stack.EnablePairing(True);
-//end;
-
 
 procedure TXRCStructure.InsertLayer(const Data: TLayerData);
 var
@@ -366,7 +358,9 @@ procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   Count, pos: Integer;
 begin
+  FVisibility := Visible;
   Visible := False;
+
   Count := Length(FStacks);
 
   if FSelectedStack <> -1 then Pos := FSelectedStack
@@ -513,7 +507,7 @@ var
   Stack: TXRCStack;
 begin
   for Stack in FStacks do
-    Stack.EnablePairing(Value);
+    Stack.EnablePairing(not Value);
 end;
 
 procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);

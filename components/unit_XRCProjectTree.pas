@@ -269,7 +269,7 @@ procedure TXRCProjectTree.ProjectLoadNode(Sender: TBaseVirtualTree;
 var
   Data: PProjectData;
   S: string;
-  p, i: Integer;
+  p, i, Order: Integer;
 
   function GetString: string;
   var
@@ -293,7 +293,7 @@ var
 
 begin
   Data := Sender.GetNodeData(Node);
-  Stream.Read(Data.ID, SizeOf(Data.ID));
+  Stream.Read(Data.ID, SizeOf(Integer));
   Data.Title := GetString;
   Stream.Read(Data.RowType, SizeOf(Data.RowType));
   Stream.Read(Data.Group, SizeOf(Data.Group));
@@ -318,8 +318,8 @@ begin
     3: begin
           Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
           Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
-          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.LayerID, SizeOf(Integer));
+          Stream.Read(Data.StackID, SizeOf(Integer));
           Stream.Read(Data.Form, SizeOf(Data.Form));
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
           for I := 1 to 3 do
@@ -329,8 +329,8 @@ begin
     4: begin
           Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
           Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
-          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.LayerID, SizeOf(Integer));
+          Stream.Read(Data.StackID, SizeOf(Integer));
           Stream.Read(Data.Form, SizeOf(Data.Form));
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
           for I := 1 to 10 do
@@ -341,8 +341,8 @@ begin
     5: begin
           Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
           Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Data.LayerID));
-          Stream.Read(Data.StackID, SizeOf(Data.StackID));
+          Stream.Read(Data.LayerID, SizeOf(Integer));
+          Stream.Read(Data.StackID, SizeOf(Integer));
           Stream.Read(Data.Form, SizeOf(Data.Form));
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
 
@@ -353,11 +353,34 @@ begin
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
             Data.Data := GetString;
        end;
+    6: begin
+          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
+          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
+          Stream.Read(Data.LayerID, SizeOf(Integer));
+          Stream.Read(Data.StackID, SizeOf(Integer));
+          Stream.Read(Data.Form, SizeOf(Data.Form));
+          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+
+          if (Data.Group = gtModel) and (Data.RowType = prExtension) then
+          begin
+            Stream.Read(Order, SizeOf(Order));
+            for I := 1 to Order do
+              Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+            Data.Poly[10] := Order;
+          end;
+
+          if (Data.Group = gtModel) and (Data.RowType = prItem) then
+            Data.Data := GetString;
+       end;
+
   end; // case
 
   p := pos('}}', Data.Data);
   if p <> Length(Data.Data) - 1 then
       Data.Data := copy(Data.Data, 1, p + 1);
+
+  if pos('Models', Data.Title) > 0 then Data.Title := 'Models';
+  if pos('Data', Data.Title) > 0 then Data.Title := 'Data';
 end;
 
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
@@ -379,7 +402,7 @@ procedure TXRCProjectTree.ProjectSaveNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Stream: TStream);
 var
   Data: PProjectData;
-  size, i: Integer;
+  size, i, order: Integer;
 
   procedure WriteString(const s: string);
   begin
@@ -408,8 +431,12 @@ begin
   Stream.Write(Data.Subj, SizeOf(Data.Subj));
 
   if (Data.Group = gtModel) and (Data.RowType = prExtension) then
-    for I := 1 to 10 do
+  begin
+    Order := Trunc(Data.Poly[10]);
+    Stream.Write(Order, SizeOf(Order));
+    for I := 1 to Order do
               Stream.Write(Data.Poly[i], SizeOf(Data.Poly[i]));
+  end;
   if (Data.Group = gtModel) and (Data.RowType = prItem) then
     WriteString(Data.Data);
 end;

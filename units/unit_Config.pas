@@ -18,16 +18,22 @@ const
 
 type
 
-  TSciRefSystemFile = (
+  TXRCSystemFile = (
     sfSystemIniFile,
     sfAppHelp,
     sfAppVerInfo,
     sfLicenseFile
   );
 
-    /// <summary>
-    ///     јтрибут класса названи¤ секции в INI-файле
-    /// </summary>
+  TXRCSystemDir = (
+    sdHenke,
+    sdProjDir,
+    sdOutDir,
+    sdBenchDir,
+    sdBenchOutDir,
+    sdJobsDir
+  );
+
     SectionAttribute = class(TCustomAttribute)
       strict private
         FSection : string;
@@ -36,31 +42,17 @@ type
         property Section : string read FSection;
     end;
 
-    /// <summary>
-    ///     «начение пол¤ по умолчанию (дл¤ int, bool, string)
-    /// </summary>
     DefaultValueAttribute = class(TCustomAttribute)
       strict private
         FValue : TValue;
       public
         constructor Create(aIntValue : integer); overload;
+        constructor Create(aFloatValue : single); overload;
         constructor Create(aBoolValue : boolean); overload;
         constructor Create(aStringValue : string); overload;
         property Value : TValue read FValue;
     end;
 
-    /// <summary>
-    ///    Ѕазовый класс доступа к свойствам.
-    ///     аждое свойство дл¤ сохранени¤/получани¤ в INI *ƒолжно* иметь индекс.
-    ///    в конечных классах дл¤ каждого типа свойсства следует указывать один из
-    ///    методов чтени¤/записи:
-    ///    - getIntegerValue/SetIntegerValue
-    ///    - getBooleanValue/setBooleanValue
-    ///    - getStringValue/SetStringValue
-    ///    ѕеред каждым свойством должен быть описан атрибут DefaulValue
-    ///    «начение по умолчанию строкового свойства может иметь подстроку
-    ///    %PATH% дл¤ замены ее директорией программы, двойные "/" удал¤ютс¤
-    /// </summary>
     TBaseOptions = class(TObject)
       strict protected
         FCtx : TRttiContext;
@@ -73,10 +65,12 @@ type
 
         function getBooleanValue(index : integer):boolean; virtual;
         function getIntegerValue(index : integer):integer; virtual;
+        function getFloatValue(index : integer):single; virtual;
         function getStringValue(index : integer):string; virtual;
 
         procedure SetBooleanValue(index : integer; value : boolean); virtual;
         procedure SetIntegerValue(index : integer; value : integer); virtual;
+        procedure SetFloatValue(index : integer; value : single); virtual;
         procedure SetStringValue(index : integer; value: string); virtual;
 
         function getProperty(index : integer) : TRttiProperty;
@@ -93,14 +87,20 @@ type
       [DefaultValue(False)]
       property CheckForUpdates : boolean index 0 read getBooleanValue write SetBooleanValue;
       [DefaultValue('https://raw.githubusercontent.com/OleksiyPenkov/X-RayCalc3/xraycalc3.info')]
-      property UpdateInfoURL : string index 1 read getStringValue write SetStringValue;
+      property UpdateInfoURL   : string index 1 read getStringValue write SetStringValue;
+      [DefaultValue(True)]
+      property AutoCalc : boolean index 2 read getBooleanValue write SetBooleanValue;
+      [DefaultValue(False)]
+      property AutoSave : boolean index 3 read getBooleanValue write SetBooleanValue;
     end;
 
     [Section('Calc')]
     TCalcOptions = class(TBaseOptions)
     public
-      [DefaultValue(-1)]
+      [DefaultValue(0)]
       property NumberOfThreads : integer index 0 read getIntegerValue write SetIntegerValue;
+      [DefaultValue(20)]
+      property BenchmarkRuns   : integer index 1 read getIntegerValue write SetIntegerValue;
     end;
 
     [Section('Graphics')]
@@ -115,8 +115,16 @@ type
     public
       [DefaultValue('Henke')]
       property HenkeDir     : string index 0 read getStringValue write SetStringValue;
-      [DefaultValue('benchmark')]
+      [DefaultValue('Benchmark')]
       property BenchmarkDir : string index 1 read getStringValue write SetStringValue;
+      [DefaultValue('')]
+      property ProjectDir   : string index 2 read getStringValue write SetStringValue;
+      [DefaultValue('Output')]
+      property OutputDir    : string index 3 read getStringValue write SetStringValue;
+      [DefaultValue('BenchResults')]
+      property BenchOutputDir : string index 4 read getStringValue write SetStringValue;
+      [DefaultValue('Jobs')]
+      property JobsDir        : string index 5 read getStringValue write SetStringValue;
     end;
 
     [Section('Window')]
@@ -151,13 +159,16 @@ type
 
         FOptions : TObjectList<TBaseOptions>;
   private
-    class function GetSystemFileName(fileType: TSciRefSystemFile): string; static;
-    class function GetHenkePath: string; static;
+    class function GetSystemFileName(fileType: TXRCSystemFile): string; static;
+
+    class function GetSystemDir(DirType: TXRCSystemDir): string; static;
+    class procedure SetSystemDir(DirType: TXRCSystemDir; const Value: string); static;
+
     class function GetTempPath: string; static;
-    class function GetHenkeDir: string; static;
     class function GetWorkPath: string; static;
-    class function GetBenchDir: string; static;
-    class function GetBenchPath: string; static;
+
+    class function GetSystemDirS(DirType: TXRCSystemDir): string; static;
+    class procedure SetSystemDirS(DirType: TXRCSystemDir; const Value: string); static;
   public
     class constructor Create();
     class destructor  Destroy();
@@ -168,19 +179,20 @@ type
     class property ErrorLog: Boolean read FErrorLog write FErrorLog;
     class property AppPath : string read FAppPath;
 
-    class property HenkeDir: string read GetHenkeDir;
-    class property HenkePath: string read GetHenkePath;
-
-    class property BenchDir: string read GetBenchDir;
-    class property BenchPath: string read GetBenchPath;
-
     class property WorkDir: string read FWorkDir;
     class property WorkPath: string read GetWorkPath;
 
     class property TempDir: string read FTempDir;
     class property TempPath: string read GetTempPath;
 
-    class property SystemFileName[fileType: TSciRefSystemFile]: string read GetSystemFileName;
+    class property SystemFileName[fileType: TXRCSystemFile]: string read GetSystemFileName;
+    class property SystemDir[DirType: TXRCSystemDir]: string read GetSystemDir write SetSystemDir;
+    class property SystemDirS[DirType: TXRCSystemDir]: string read GetSystemDirS write SetSystemDirS;
+
+    class procedure WiteStringList(const Section: string;
+      var List: array of string); static;
+    class procedure ReadStringList(const Section: string;
+      var List: array of string); static;
   end;
 
     EConfigException = Exception;
@@ -237,23 +249,45 @@ begin
   FIni.Free();
 end;
 
-class function TConfig.GetBenchDir: string;
+
+class function TConfig.GetSystemDir(DirType: TXRCSystemDir): string;
+var
+  Dir: string;
 begin
-  Result := FAppPath + TConfig.Section<TPathOptions>.BenchmarkDir;
+ case DirType of
+           sdHenke: Dir := TConfig.Section<TPathOptions>.HenkeDir;
+        sdBenchDir: Dir := TConfig.Section<TPathOptions>.BenchmarkDir;
+         sdProjDir: Dir := TConfig.Section<TPathOptions>.ProjectDir;
+          sdOutDir: Dir := TConfig.Section<TPathOptions>.OutputDir;
+     sdBenchOutDir: Dir := TConfig.Section<TPathOptions>.BenchOutputDir;
+         sdJobsDir: Dir := TConfig.Section<TPathOptions>.JobsDir;
+  else
+    Assert(False);
+  end;
+
+  if Pos(':', Dir) <> 0 then
+  begin
+    Result := IncludeTrailingPathDelimiter(Dir);
+    Exit;
+  end;
+  Result := IncludeTrailingPathDelimiter(AppPath + Dir);
 end;
 
-
-class function TConfig.GetHenkeDir: string;
+class function TConfig.GetSystemDirS(DirType: TXRCSystemDir): string;
 begin
-  Result := FAppPath + TConfig.Section<TPathOptions>.HenkeDir;
+ case DirType of
+           sdHenke: Result := TConfig.Section<TPathOptions>.HenkeDir;
+        sdBenchDir: Result := TConfig.Section<TPathOptions>.BenchmarkDir;
+         sdProjDir: Result := TConfig.Section<TPathOptions>.ProjectDir;
+          sdOutDir: Result := TConfig.Section<TPathOptions>.OutputDir;
+     sdBenchOutDir: Result := TConfig.Section<TPathOptions>.BenchOutputDir;
+         sdJobsDir: Result := TConfig.Section<TPathOptions>.JobsDir;
+  else
+    Assert(False);
+  end;
 end;
 
-class function TConfig.GetHenkePath: string;
-begin
-  Result := IncludeTrailingPathDelimiter(GetHenkeDir);
-end;
-
-class function TConfig.GetSystemFileName(fileType: TSciRefSystemFile): string;
+class function TConfig.GetSystemFileName(fileType: TXRCSystemFile): string;
 begin
  case fileType of
     sfAppHelp: Result          := AppPath + APP_HELP_FILENAME;
@@ -273,10 +307,6 @@ begin
   Result := IncludeTrailingPathDelimiter(FWorkDir);
 end;
 
-class function TConfig.GetBenchPath: string;
-begin
-  Result := IncludeTrailingPathDelimiter(GetBenchDir);
-end;
 
 class procedure TConfig.RegisterOptions(OptionsClass: TBaseOptionsClass);
 var opt : TBaseOptions;
@@ -303,6 +333,59 @@ begin
     raise EConfigException.Create('Unregistered option group' + string(PTypeInfo(typeinfo(t)).Name));
 end;
 
+class procedure TConfig.SetSystemDir(DirType: TXRCSystemDir;
+  const Value: string);
+begin
+ case DirType of
+           sdHenke: TConfig.Section<TPathOptions>.HenkeDir := Value;
+        sdBenchDir: TConfig.Section<TPathOptions>.BenchmarkDir := Value;
+         sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Value;
+          sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Value;
+     sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Value;
+         sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
+  else
+    Assert(False);
+  end;
+end;
+
+class procedure TConfig.SetSystemDirS(DirType: TXRCSystemDir;
+  const Value: string);
+var
+ Dir: string;
+  p: Integer;
+begin
+  Dir := Value;
+  p := Pos(AppPath, Dir);
+  if p > 0 then
+    Delete(Dir, 1, Length(AppPath));
+ case DirType of
+           sdHenke: TConfig.Section<TPathOptions>.HenkeDir := Dir;
+        sdBenchDir: TConfig.Section<TPathOptions>.BenchmarkDir := Dir;
+         sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Dir;
+          sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Dir;
+     sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Dir;
+         sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
+  else
+    Assert(False);
+  end;
+end;
+
+class procedure TConfig.WiteStringList(const Section: string; var List: array of string);
+var
+  i: Integer;
+begin
+  for I := 0 to High(List) do
+    FIni.WriteString(Section, 'Recent' + IntToStr(i + 1), List[i]);
+end;
+
+
+class procedure TConfig.ReadStringList(const Section: string; var List: array of string);
+var
+  i: Integer;
+begin
+  for I := 0 to High(List) do
+    List[i] := FIni.ReadString(Section, 'Recent' + IntToStr(i + 1), '');
+end;
 {$ENDREGION}
 
 {$REGION '--------------------- TBaseOptions --------------------------'}
@@ -365,6 +448,7 @@ begin
 
         case prop.PropertyType.TypeKind of
             tkInteger : value := FIni.ReadInteger(FSection, prop.name, Default.Value.AsInteger);
+            tkFloat   : value := FIni.ReadFloat(FSection, prop.name, Default.Value.AsExtended);
             tkString,
             tkUString : value := FIni.ReadString(FSection, prop.Name, Default.Value.asString);
             tkEnumeration : value := FIni.ReadInteger(FSection, prop.Name, ord(Default.Value.AsBoolean)) <> 0;
@@ -387,6 +471,11 @@ end;
 function TBaseOptions.getIntegerValue(index: integer): integer;
 begin
     result := getGenericValue<integer>(index);
+end;
+
+function TBaseOptions.getFloatValue(index: integer): single;
+begin
+    result := getGenericValue<single>(index);
 end;
 
 function TBaseOptions.getStringValue(index: integer): string;
@@ -417,6 +506,7 @@ begin
     newValue := TValue.From<T>(value);
 
     case PTypeInfo(TypeInfo(T)).Kind of
+        tkFloat   : FIni.WriteFloat(FSection, prop.Name, newValue.AsExtended);
         tkInteger : FIni.WriteInteger(FSection, prop.Name, newValue.AsInteger);
         tkString,
         tkUString : Fini.WriteString(FSection, prop.Name, newValue.AsString);
@@ -429,6 +519,11 @@ begin
     setGenericValue<boolean>(index, value);
 end;
 
+
+procedure TBaseOptions.SetFloatValue(index: integer; value: single);
+begin
+    setGenericValue<single>(index, value);
+end;
 
 procedure TBaseOptions.SetIntegerValue(index, value: integer);
 begin
@@ -487,6 +582,11 @@ begin
     FValue := aStringValue;
 end;
 
+constructor DefaultValueAttribute.Create(aFloatValue: single);
+begin
+    inherited Create();
+    FValue := aFloatValue;
+end;
 {$ENDREGION}
 
 initialization

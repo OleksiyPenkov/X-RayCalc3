@@ -114,7 +114,7 @@
         <VerInfo_AutoGenVersion>true</VerInfo_AutoGenVersion>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.0.0.200;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
-        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\Mo-B(230314B)_Poly.xrcx&quot; -a</Debugger_RunParams>
+        <Debugger_RunParams>-f &quot;d:\DelphiProjects\X-Ray Calc\X-Ray Calc 3\test_data\W-BN(221101A).xrcx&quot; -a</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -134,12 +134,18 @@
         <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
         <Icon_MainIcon>Resources\XRayCalc3_Icon.ico</Icon_MainIcon>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Build>360</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.6.360;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.4;Comments=</VerInfo_Keys>
-        <VerInfo_Release>6</VerInfo_Release>
+        <VerInfo_Build>415</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Zhejiang University;FileDescription=$(MSBuildProjectName);FileVersion=3.0.7.415;InternalName=;LegalCopyright=Oleksiy Penkov;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.4;Comments=</VerInfo_Keys>
+        <VerInfo_Release>7</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
+        <DCC_ExeOutput>.\OUT\BIN64</DCC_ExeOutput>
+        <DCC_DcpOutput>.\OUT\DCP64</DCC_DcpOutput>
+        <DCC_DcuOutput>.\OUT\DCU64</DCC_DcuOutput>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <Icon_MainIcon>Resources\XRayCalc3_x64_Icon.ico</Icon_MainIcon>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
@@ -184,7 +190,6 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Periodic.pas"/>
-        <DCCReference Include="LFPSO\unit_LFPSO_Regular.pas"/>
         <DCCReference Include="forms\frm_MaterialSelector.pas">
             <Form>frmMaterialSelector</Form>
             <FormType>dfm</FormType>
@@ -222,6 +227,12 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="components\unit_XRCGrid.pas"/>
+        <DCCReference Include="units\unit_sys_helpers.pas"/>
+        <DCCReference Include="LFPSO\unit_LFPSO_Irregular.pas"/>
+        <DCCReference Include="forms\frm_FitSettings.pas">
+            <Form>frmFitSettings</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
   unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Regular, Vcl.Imaging.pngimage;
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage;
 
 type
   TSeriesList = array of TLineSeries;
@@ -96,7 +96,7 @@ type
     About1: TMenuItem;
     Calc3: TMenuItem;
     Calcall1: TMenuItem;
-    Reopen1: TMenuItem;
+    miRecent: TMenuItem;
     dlgOpenProject: TOpenDialog;
     Zip: TAbZipper;
     UnZip: TAbUnZipper;
@@ -261,36 +261,6 @@ type
     N7: TMenuItem;
     Copytoclipboad1: TMenuItem;
     Exporttofile1: TMenuItem;
-    RzPageControl1: TRzPageControl;
-    TabSheet1: TRzTabSheet;
-    TabSheet2: TRzTabSheet;
-    edFIter: TEdit;
-    Label7: TLabel;
-    Label8: TLabel;
-    edFPopulation: TEdit;
-    Label20: TLabel;
-    cbPWChiSqr: TRzCheckBox;
-    Label5: TLabel;
-    edFWindow: TEdit;
-    cbTWChi: TComboBox;
-    Label21: TLabel;
-    edFitTolerance: TEdit;
-    Label16: TLabel;
-    edFVmax: TEdit;
-    cbLFPSOShake: TRzCheckBox;
-    Label18: TLabel;
-    Label19: TLabel;
-    edLFPSOOmega1: TEdit;
-    edLFPSOOmega2: TEdit;
-    Label17: TLabel;
-    edLFPSORImax: TEdit;
-    Label13: TLabel;
-    edLFPSOChiFactor: TEdit;
-    edLFPSOkVmax: TEdit;
-    Label14: TLabel;
-    edLFPSOSkip: TEdit;
-    Label15: TLabel;
-    cbTreatPeriodic: TRzCheckBox;
     NewFolder1: TMenuItem;
     N8: TMenuItem;
     actEditHenke: TAction;
@@ -298,8 +268,6 @@ type
     actProjecEditModelText: TAction;
     actProjecEditModelText1: TMenuItem;
     N9: TMenuItem;
-    cbPoly: TRzCheckBox;
-    edPolyOrder: TEdit;
     N10: TMenuItem;
     Fitting1: TMenuItem;
     N11: TMenuItem;
@@ -309,8 +277,6 @@ type
     N13: TMenuItem;
     acStructureUndo: TAction;
     Undo1: TMenuItem;
-    cbAdaptiveVelocity: TRzCheckBox;
-    cbSeedRange: TRzCheckBox;
     btnReopenProject: TRzToolButton;
     rzspcr2: TRzSpacer;
     actProjectReopen: TAction;
@@ -324,6 +290,26 @@ type
     Copyasimage1: TMenuItem;
     btnStop: TRzBitBtn;
     ilIcons: TImageList;
+    actDataTrim: TAction;
+    rim1: TMenuItem;
+    actCalcFitJobs: TAction;
+    Calcbatchjobs1: TMenuItem;
+    pmRecentList: TPopupMenu;
+    pmRecentList1: TMenuItem;
+    rgFittingMode: TRzRadioGroup;
+    edFIter: TEdit;
+    Label7: TLabel;
+    Label8: TLabel;
+    edFPopulation: TEdit;
+    cbLFPSOShake: TRzCheckBox;
+    cbSeedRange: TRzCheckBox;
+    edPolyOrder: TEdit;
+    lblPolyOrder: TLabel;
+    Label21: TLabel;
+    cbTWChi: TComboBox;
+    cbPWChiSqr: TRzCheckBox;
+    btnAdvFitSettings: TRzBitBtn;
+    cbSmooth: TRzCheckBox;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -399,9 +385,12 @@ type
     procedure actSystemSettingsExecute(Sender: TObject);
     procedure actSystemExitExecute(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    procedure cbTreatPeriodicClick(Sender: TObject);
     procedure actCopyStructureBitmapExecute(Sender: TObject);
     procedure ChartResize(Sender: TObject);
+    procedure actDataTrimExecute(Sender: TObject);
+    procedure actCalcFitJobsExecute(Sender: TObject);
+    procedure rgFittingModeClick(Sender: TObject);
+    procedure btnAdvFitSettingsClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -433,7 +422,9 @@ type
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
 
-    FStack: TStack<String>;
+    FOperationsStack: TStack<String>;
+    FRecentProjects : TList<String>;
+
     FTerminated: Boolean;
     FBenchmarkMode: Boolean;
     FBenchmarkPath: string;
@@ -444,7 +435,7 @@ type
     function DataName(Data: PProjectData): string;
     procedure CreateDefaultProject;
     procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
-    procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
+    procedure LoadProjectParams(var LinkedID, ActiveID: System.Integer);
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure FinalizeCalc(Calc: TCalc);
@@ -483,6 +474,13 @@ type
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
     procedure EditTable(var Data: PProjectData);
     procedure EnableControls(const Enable: boolean);
+    procedure AutoSave;
+    procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
+    procedure AddRecentItem(const FileName: string);
+    procedure RecentListOnClick(Sender: TObject);
+    procedure FillRecentMenu;
+    procedure LoadRecentProjectsList;
+    function FittingMode: TFittingMode; inline;
     { Private declarations }
   public
     { Public declarations }
@@ -531,9 +529,14 @@ uses
   unit_config,
   frm_settings,
   unit_XRCStackControl,
-  editor_ProfileTable;
+  editor_ProfileTable, unit_sys_helpers, frm_FitSettings;
 
 {$R *.dfm}
+
+procedure TfrmMain.btnAdvFitSettingsClick(Sender: TObject);
+begin
+  frmFitSettings.ShowSettings(FFitParams);
+end;
 
 procedure TfrmMain.btnChartScaleClick(Sender: TObject);
 begin
@@ -709,8 +712,8 @@ begin
      if LastData.Data <> '' then
      begin
        Structure.FromString(LastData.Data);
-       FStack.Clear;
-       FStack.Push(LastData.Data);
+       FOperationsStack.Clear;
+       FOperationsStack.Push(LastData.Data);
        PrepareDistributionCharts;
        PlotProfile;
      end;
@@ -949,7 +952,7 @@ begin
     Data.Subj := P[i].Subj;
     Data.StackID := P[i].StackID;
     Data.LayerID := P[i].LayerID;
-    Data.Poly    := P[i].C;
+    Data.SetPoly(P[i].C);
   end;
 
   MatchToStructure;
@@ -1113,6 +1116,25 @@ begin
   SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
 end;
 
+procedure TfrmMain.actDataTrimExecute(Sender: TObject);
+var
+  t1, t2: single;
+  index: integer;
+begin
+  t1 := StrToFloat(edStartTeta.Text);
+  t2 := StrToFloat(edEndTeta.Text);
+
+  FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
+
+  index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t1);
+  FSeriesList[Project.ActiveData.CurveID].Delete(0, Index);
+
+  index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t2);
+  FSeriesList[Project.ActiveData.CurveID].Delete(index, FSeriesList[Project.ActiveData.CurveID].XValues.Count - Index - 1);
+  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
+  FSeriesList[Project.ActiveData.CurveID].EndUpdate;
+end;
+
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
 begin
   edtrHenkeTable.ShowModal;
@@ -1207,6 +1229,26 @@ begin
   Data.CurveID := Count;
 end;
 
+procedure TfrmMain.AutoSave;
+var
+  FileName, Path: string;
+  p: Integer;
+begin
+  if TConfig.Section<TOtherOptions>.AutoSave then
+  begin
+    FileName := FProjectName;
+    if TConfig.SystemDir[sdOutDir] <> '' then
+      Path := TConfig.SystemDir[sdOutDir]
+    else
+      Path := ExtractFilePath(FileName);
+
+    p := pos(PROJECT_EXT, FileName);
+    Delete(FileName, p, Length(PROJECT_EXT));
+    FileName := Path + FileName + '-fitted' + PROJECT_EXT;
+    SaveProject(FileName);
+  end;
+end;
+
 procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
 var
     FitStructure: TFitStructure;
@@ -1238,8 +1280,8 @@ end;
 
 procedure TfrmMain.SaveHistory;
 begin
-  FStack.Push(Structure.ToString);
-  FStack.TrimExcess;
+  FOperationsStack.Push(Structure.ToString);
+  FOperationsStack.TrimExcess;
 end;
 
 procedure TfrmMain.MatchToStructure;
@@ -1254,11 +1296,14 @@ var
   Name: string;
   N   : Integer;
 begin
-  SaveHistory;
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
-     Structure.AddStack(N, Name);
+  begin
+    SaveHistory;
+    Structure.AddStack(N, Name);
+    MatchToStructure;
+  end;
 end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
@@ -1274,13 +1319,14 @@ var
   Name: string;
   N   : Integer;
 begin
-  SaveHistory;
-
   N := 1;
   edtrStack.Edit(Name, N);
   if Name <> '' then
-     Structure.InsertStack(N, Name);
-  MatchToStructure;
+  begin
+    SaveHistory;
+    Structure.InsertStack(N, Name);
+    MatchToStructure;
+  end;
 end;
 
 procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
@@ -1306,9 +1352,11 @@ begin
 end;
 
 
-procedure TfrmMain.LoadProjectParams(var LinkedID, ActiveID: Integer);
+procedure TfrmMain.LoadProjectParams(var LinkedID, ActiveID: System.Integer);
 var
   INF: TMemIniFile;
+  Periodic, Poly: boolean;
+  FitMode: Integer;
 begin
   INF := TMemIniFile.Create(FProjectDir + PARAMETERS_FILE_NAME);
   try
@@ -1334,26 +1382,39 @@ begin
 
     edFIter.Text            := INF.ReadString('FIT', 'Namx', '100');
     edFPopulation.Text      := INF.ReadString('FIT', 'Pop', '100');
-    edFitTolerance.Text     := INF.ReadString('FIT', 'Tol', '0.005');
-    cbTreatPeriodic.Checked := INF.ReadBool('FIT', 'Periodic', True);
-    cbPoly.Checked          := INF.ReadBool('FIT', 'Poly', False);
+
+    FitMode := INF.ReadInteger('FIT', 'Mode', -1);
+    if FitMode = -1 then
+    begin
+      Periodic := INF.ReadBool('FIT', 'Periodic', False);
+      Poly     := INF.ReadBool('FIT', 'Poly', False);
+
+      if Periodic then rgFittingMode.ItemIndex := Ord(fmPeriodic);
+      if Poly then rgFittingMode.ItemIndex := Ord(fmPoly);
+    end
+    else
+      rgFittingMode.ItemIndex := FitMode;
+
     edPolyOrder.Text        := INF.ReadString('FIT', 'PolyOrder', '1');
-
     cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
-    edFWindow.Text      := INF.ReadString('FIT', 'Window', '0.05');
     cbTWChi.ItemIndex   := INF.ReadInteger('FIT', 'TWChi', 0);
-
-    edFVmax.Text          := INF.ReadString('LFPSO', 'Vmax', '0.1');
-    edLFPSOSkip.Text      := INF.ReadString('LFPSO', 'Jmax', '1');
-    edLFPSORImax.Text     := INF.ReadString('LFPSO', 'RIMax', '3');
-    edLFPSOChiFactor.Text := INF.ReadString('LFPSO', 'kChi', '2');
-    edLFPSOkVmax.Text     := INF.ReadString('LFPSO', 'kVmax', '2');
-    edLFPSOOmega1.Text    := INF.ReadString('LFPSO', 'w1', '0.1');
-    edLFPSOOmega2.Text    := INF.ReadString('LFPSO', 'w2', '0.1');
-    cbAdaptiveVelocity.Checked := INF.ReadBool('LFPSO', 'AdaptV', False);
     cbSeedRange.Checked  := INF.ReadBool('LFPSO', 'SeedRange', False);
+    cbLFPSOShake.Checked    := INF.ReadBool('LFPSO', 'Shake', True);
+    cbSmooth.Checked        := INF.ReadBool('LFPSO', 'Smooth', False);
 
-    cbLFPSOShake.Checked  := INF.ReadBool('LFPSO', 'Shake', True);
+    FFitParams.Tolerance := StrToFloat(INF.ReadString('FIT', 'Tol', '0.005'));
+    FFitParams.MovAvgWindow := StrToFloat(INF.ReadString('FIT', 'Window', '0.05'));
+    FFitParams.Vmax         := StrToFloat(INF.ReadString('LFPSO', 'Vmax', '0.1'));
+    FFitParams.JammingMax   := StrToInt(INF.ReadString('LFPSO', 'Jmax', '1'));
+    FFitParams.ReInitMax    := StrToInt(INF.ReadString('LFPSO', 'RIMax', '3'));
+    FFitParams.KChiSqr      := StrToFloat(INF.ReadString('LFPSO', 'kChi', '1.41'));
+    FFitParams.KVmax        := StrToFloat(INF.ReadString('LFPSO', 'kVmax', '1.41'));
+    FFitParams.w1           := StrToFloat(INF.ReadString('LFPSO', 'w1', '0.3'));
+    FFitParams.w2           := StrToFloat(INF.ReadString('LFPSO', 'w2', '0.3'));
+    FFitParams.AdaptVel     := INF.ReadBool('LFPSO', 'AdaptV', False);
+    FFitParams.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
+    FFitParams.Ksxr         := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
+    FFitParams.PolyFactor   := INF.ReadInteger('LFPSO', 'PolyFactor', 10);
   finally
     INF.Free;
   end;
@@ -1376,21 +1437,12 @@ begin
 
   FFitParams.NMax := StrToInt(edFIter.Text);
   FFitParams.Pop  := StrToInt(edFPopulation.Text);
-  FFitParams.Vmax  := StrToFloat(edFVmax.Text);
-  FFitParams.JammingMax := StrToInt(edLFPSOSkip.Text);
-  FFitParams.ReInitMax  := StrToInt(edLFPSORImax.Text);
-  FFitParams.KChiSqr    := StrToFloat(edLFPSOChiFactor.Text);
-  FFitParams.KVmax      := StrToFloat(edLFPSOkVmax.Text);
-  FFitParams.w1         := StrToFloat(edLFPSOOmega1.Text);
-  FFitParams.w2         := StrToFloat(edLFPSOOmega2.Text);
-  FFitParams.Tolerance := StrToFloat(edFitTolerance.Text);
-
   FFitParams.Shake       := cbLFPSOShake.Checked;
-  FFitParams.ThetaWieght := cbTWChi.ItemIndex;
-  FFitParams.AdaptVel    := cbAdaptiveVelocity.Checked;
+  FFitParams.ThetaWeight := cbTWChi.ItemIndex;
+
   FFitParams.RangeSeed   := cbSeedRange.Checked;
   FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
-  FFitParams.Ksxr        := 0.2;
+  FFitParams.Smooth       := cbSmooth.Checked;
 
   Result := True;
 end;
@@ -1410,7 +1462,7 @@ begin
     if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) then
     begin
       SetLength(Result, Count + 1);
-      Result[Count].C       := Data.Poly;
+      Result[Count].C       := Data.PolyD;
       Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.P[Ord(Data.Subj) + 1].V;
       Result[Count].StackID := Data.StackID;
       Result[Count].LayerID := Data.LayerID;
@@ -1728,6 +1780,12 @@ begin
       FSeriesArray[p][StackIndex].Clear;
 end;
 
+
+function  TfrmMain.FittingMode: TFittingMode;
+begin
+  Result := TFittingMode(rgFittingMode.ItemIndex);
+end;
+
 procedure TfrmMain.PlotProfile;
 begin
   ClearProfiles;
@@ -1736,7 +1794,7 @@ begin
   if Length(FProfiles) > 0 then
     PlotGradedProfile
   else
-      if IsProfileEnbled and not cbTreatPeriodic.Checked then
+      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
          PlotProfileNP
       else
         PlotSimpleProfile;
@@ -1803,7 +1861,7 @@ begin
         FLastChiSquare := 0;
       end;
 
-      if IsProfileEnbled and not cbTreatPeriodic.Checked then
+      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
          PlotProfileNP
      else
         PlotProfile;
@@ -1859,12 +1917,12 @@ begin
   begin
     FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
     if cbPWChiSqr.Checked then
-      FCalc.MovAvg := MovAvg(FCalc.ExpValues, StrToFloat(edFWindow.Text));
+      FCalc.MovAvg := MovAvg(FCalc.ExpValues, FFitParams.MovAvgWindow);
   end;
 
   GetThreadParams;
   FCalc.Params := FCalcThreadParams;
-  FCalc.Model := Structure.Model(IsProfileEnbled and not cbTreatPeriodic.Checked);
+  FCalc.Model := Structure.Model(IsProfileEnbled and (FittingMode <> fmPeriodic));
   FCalc.Model.Profiles := GetProfileFunctions;
   Screen.Cursor := crHourGlass;
   Result := True;
@@ -1874,13 +1932,13 @@ end;
 function TfrmMain.PrepareLFPSO: Boolean;
 begin
   Result := False;
-  if cbTreatPeriodic.Checked then
-     LFPSO := TLFPSO_Periodic.Create
-  else
-    if cbPoly.Checked then
-       LFPSO := TLFPSO_Poly.Create
-     else
-       LFPSO := TLFPSO_Regular.Create;
+  case FittingMode of
+    fmIrregular : LFPSO := TLFPSO_Irregular.Create;
+    fmPeriodic  : LFPSO := TLFPSO_Periodic.Create;
+    fmPoly      : LFPSO := TLFPSO_Poly.Create;
+  end;
+
+
 
   GetThreadParams;
 
@@ -1891,7 +1949,7 @@ begin
   begin
     LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
     if cbPWChiSqr.Checked then
-      LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, StrToFloat(edFWindow.Text));
+      LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, FFitParams.MovAvgWindow);
   end else
   begin
      FreeAndNil(LFPSO);
@@ -1911,10 +1969,10 @@ end;
 
 procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
 begin
-  if FStack.Count > 0 then
+  if FOperationsStack.Count > 0 then
   begin
-    Structure.FromString(FStack.Peek);
-    FStack.Extract;
+    Structure.FromString(FOperationsStack.Peek);
+    FOperationsStack.Extract;
   end;
 end;
 
@@ -1934,10 +1992,10 @@ begin
 
     if Structure.IsPeriodic then
     begin
-      if cbTreatPeriodic.Checked then
+      if FittingMode = fmPeriodic then
          Structure.UpdateInterfaceP(LFPSO.Structure)
       else begin
-        if cbPoly.Checked then
+        if FittingMode = fmPoly then
         begin
           Structure.UpdateInterfaceP(LFPSO.Structure);
           CreateFitGradientExtensions(LFPSO.Polynomes)
@@ -1963,6 +2021,19 @@ begin
     EnableControls(True);
     FreeAndNil(LFPSO);
   end;
+  AutoSave;
+end;
+
+procedure TfrmMain.ProcessJobFile(Sender: TObject; const F: TSearchRec);
+begin
+  Application.ProcessMessages;
+  if FTerminated then Exit;
+
+  FProjectFileName := FBenchmarkPath + F.Name;
+
+  actProjectReopenExecute(nil);
+  actAutoFittingExecute(nil);
+  AutoSave;
 end;
 
 procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
@@ -1970,40 +2041,65 @@ var
   i: Integer;
 begin
   FProjectFileName := FBenchmarkPath + F.Name;
+
   frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
   for i := 1 to FBenchmarkRuns do
   begin
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
     frmBenchmark.AddValue(i, spChiSqr.Caption);
-    frmBenchmark.CalcStats;
+    frmBenchmark.CalcStats(False);
     Application.ProcessMessages;
     if FTerminated then Break;
   end;
-  frmBenchmark.CalcStats;
+  frmBenchmark.CalcStats(True);
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 var
   Files: TFilesList;
 begin
-  FBenchmarkRuns := 20;
+  FBenchmarkRuns := TConfig.Section<TCalcOptions>.BenchmarkRuns;
 
   try
     FTerminated := False;
     frmBenchmark.Clear(FBenchmarkRuns);
+    frmBenchmark.Init(TConfig.SystemDir[sdBenchOutDir]);
     frmBenchmark.Show;
     FBenchmarkMode := True;
 
     Files := TFilesList.Create(nil);
-    FBenchmarkPath := Config.BenchPath;
+    FBenchmarkPath := TConfig.SystemDir[sdBenchDir];
     Files.TargetPath := FBenchmarkPath;
-    Files.Mask := '*.xrcx';
+    Files.Mask := '*' + PROJECT_EXT;
     Files.OnFile := ProcessBenchFile;
     Files.Process;
     FBenchmarkMode := False;
   finally
     FreeAndNil(Files);
+  end;
+end;
+
+procedure TfrmMain.actCalcFitJobsExecute(Sender: TObject);
+var
+  Files: TFilesList;
+begin
+  try
+    FTerminated := False;
+    FBenchmarkMode := True;
+    Files := TFilesList.Create(nil);
+    FBenchmarkPath := TConfig.SystemDir[sdJobsDir];
+    Files.TargetPath := FBenchmarkPath;
+    Files.Mask := '*' + PROJECT_EXT;
+    Files.OnFile := ProcessJobFile;
+    Files.Process;
+    if not FTerminated then
+      ShowMessage('All jobs done')
+    else
+      ShowMessage('Batch was terminated!');
+  finally
+    FreeAndNil(Files);
+    FBenchmarkMode := False;
   end;
 end;
 
@@ -2102,7 +2198,7 @@ begin
   Structure.FromString(Project.ActiveModel.Data);
 //  if cbTreatPeriodic.Checked then
 //        Structure.EnablePairing;
-  Structure.PeriodicMode := not cbTreatPeriodic.Checked;
+  Structure.PeriodicMode := FittingMode = fmPeriodic;
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
@@ -2228,7 +2324,7 @@ end;
 
 procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
 var
-  LinkedID, ActiveID: Integer;
+  LinkedID, ActiveID: System.Integer;
 begin
   FIgnoreFocusChange := True;
   PrepareProjectFolder(FileName, Clear);
@@ -2258,11 +2354,67 @@ end;
 
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
 begin
+  if TConfig.SystemDir[sdProjDir] <> '' then
+    dlgOpenProject.InitialDir := TConfig.SystemDir[sdProjDir];
+
   if dlgOpenProject.Execute then
   begin
     LoadProject(dlgOpenProject.FileName, True);
-//    AddRecentItem(FProjectFileName , True);
+    if TConfig.Section<TOtherOptions>.AutoCalc then
+      CalcRunExecute(frmMain);
+
+    AddRecentItem(FProjectFileName);
   end;
+end;
+
+
+procedure TfrmMain.RecentListOnClick(Sender: TObject);
+var
+  Index : Integer;
+begin
+  Index := (Sender as TMenuItem).Tag - 100;
+  FProjectFileName := FRecentProjects.List[Index];
+  FRecentProjects.Move(Index, 0);
+  FillRecentMenu;
+
+  LoadProject(FProjectFileName, True);
+  if TConfig.Section<TOtherOptions>.AutoCalc then
+        CalcRunExecute(frmMain);
+end;
+
+
+procedure TfrmMain.FillRecentMenu;
+var
+  i: Integer;
+  Item, PopupItem: TMenuItem;
+begin
+  miRecent.Clear;
+  pmRecentList.Items.Clear;
+  for I := 0 to FRecentProjects.Count - 1 do
+  begin
+    Item := TMenuItem.Create(miRecent);
+    miRecent.Add(Item);
+    Item.Caption := ExtractFileName(FRecentProjects.List[i]);
+    Item.Tag := 100 + i;
+    Item.OnClick := RecentListOnClick;
+
+    PopupItem := TMenuItem.Create(pmRecentList);
+    pmRecentList.Items.Add(PopupItem);
+    PopupItem.Caption := Item.Caption;
+    PopupItem.Tag := Item.Tag;
+    PopupItem.OnClick := RecentListOnClick;
+  end;
+end;
+
+
+procedure TfrmMain.AddRecentItem(const FileName: string);
+begin
+    FRecentProjects.Insert(0, FileName);
+    if FRecentProjects.Count > MAX_RECENT_CAPACITY then
+          FRecentProjects.Delete(FRecentProjects.Count - 1);
+
+    TConfig.WiteStringList('Recent', FRecentProjects.List);
+    FillRecentMenu;
 end;
 
 procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
@@ -2329,26 +2481,29 @@ begin
 
     INF.WriteString('FIT', 'Namx', edFIter.Text);
     INF.WriteString('FIT', 'Pop', edFPopulation.Text);
-    INF.WriteString('FIT', 'Tol', edFitTolerance.Text);
-    INF.WriteBool('FIT', 'Periodic', cbTreatPeriodic.Checked);
-    INF.WriteBool('FIT', 'Poly', cbPoly.Checked);
+    INF.WriteInteger('FIT', 'Mode', rgFittingMode.ItemIndex);
     INF.WriteString('FIT', 'PolyOrder', edPolyOrder.Text);
 
     INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
-    INF.WriteString('FIT', 'Window', edFWindow.Text);
+    INF.WriteFloat('FIT', 'Window', FFitParams.MovAvgWindow);
     INF.WriteInteger('FIT', 'TWChi', cbTWChi.ItemIndex);
 
-    INF.WriteString('LFPSO', 'Vmax', edFVmax.Text);
-    INF.WriteString('LFPSO', 'Jmax', edLFPSOSkip.Text );
-    INF.WriteString('LFPSO', 'RIMax', edLFPSORImax.Text );
-    INF.WriteString('LFPSO', 'kChi', edLFPSOChiFactor.Text);
-    INF.WriteString('LFPSO', 'kVmax', edLFPSOkVmax.Text );
-    INF.WriteString('LFPSO', 'w1', edLFPSOOmega1.Text );
-    INF.WriteString('LFPSO', 'w2', edLFPSOOmega2.Text);
-    INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
-    INF.WriteBool('LFPSO', 'AdaptV', cbAdaptiveVelocity.Checked);
-    INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
+    INF.WriteString('FIT', 'Tol', FFitParams.Tolerance.ToString);
+    INF.WriteString('LFPSO', 'Vmax', FFitParams.Vmax.ToString);
+    INF.WriteString('LFPSO', 'Jmax', FFitParams.JammingMax.ToString);
+    INF.WriteString('LFPSO', 'RIMax', FFitParams.ReInitMax.ToString);
+    INF.WriteString('LFPSO', 'kChi', FFitParams.KChiSqr.ToString);
+    INF.WriteString('LFPSO', 'kVmax', FFitParams.KVmax.ToString);
+    INF.WriteString('LFPSO', 'w1', FFitParams.w1.ToString);
+    INF.WriteString('LFPSO', 'w2', FFitParams.w2.ToString);
+    INF.WriteBool('LFPSO', 'AdaptV', FFitParams.AdaptVel);
 
+    INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
+    INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
+    INF.WriteBool('LFPSO', 'Smooth', cbSmooth.Checked);
+    INF.WriteInteger('LFPSO', 'SmoothWindow', FFitParams.SmoothWindow);
+    INF.WriteString('LFPSO', 'Ksxr', FFitParams.Ksxr.ToString);
+    INF.WriteInteger('LFPSO', 'PolyFactor', FFitParams.PolyFactor );
     INF.UpdateFile;
 
     if FileExists(FileName) then
@@ -2510,11 +2665,42 @@ begin
   FDataRoot := PG;
   Caption := 'X-Ray Calc 3: ' + FProjectName;
   Project.LinkedData := nil;
+
+  FFitParams.Tolerance    := 0.005;
+  FFitParams.MovAvgWindow := 0.05;
+  FFitParams.Vmax         := 0.3;
+  FFitParams.JammingMax   := 1;
+  FFitParams.ReInitMax    := 3;
+  FFitParams.KChiSqr      := 1.41;
+  FFitParams.KVmax        := 1.41;
+  FFitParams.w1           := 0.3;
+  FFitParams.w2           := 0.3;
+  FFitParams.AdaptVel     := False;
+  FFitParams.SmoothWindow := -1;
+  FFitParams.Ksxr         := 0.2;
+  FFitParams.PolyFactor   := 10;
 end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
+end;
+
+procedure TfrmMain.LoadRecentProjectsList;
+var
+  RecentList: array of String;
+  i: Integer;
+begin
+  FRecentProjects := TList<String>.Create;
+
+  SetLength(RecentList, MAX_RECENT_CAPACITY);
+  TConfig.ReadStringList('Recent', RecentList);
+
+  for i := 0 to High(RecentList) do
+    if RecentList[i] <> '' then
+      FRecentProjects.Add(RecentList[i]);
+
+  FillRecentMenu;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -2528,14 +2714,19 @@ begin
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
 
-  FStack := TStack<String>.Create;
-  FStack.Capacity := 10;
+  FOperationsStack := TStack<String>.Create;
+  FOperationsStack.Capacity := 10;
+
+  LoadRecentProjectsList;
 
   Project.NodeDataSize := SizeOf(TProjectData);
 
 //  CreateSettings;
   CreateDir(Config.TempDir);
   Pages.ActivePageindex := 0;
+
+
+//  FindPCores;
 
   if ParamCount <> 0 then
   begin
@@ -2545,7 +2736,7 @@ begin
         begin
           FProjectFileName := Value;
           LoadProject(FProjectFileName, True);
-          if FindCmdLineSwitch('a') then
+          if FindCmdLineSwitch('a') or TConfig.Section<TOtherOptions>.AutoCalc then
             CalcRunExecute(frmMain);
         end
         else
@@ -2561,7 +2752,7 @@ begin
   Project.Clear;
   FreeAndNil(Project);
   FreeAndNil(Structure);
-  FreeAndNil(FStack);
+  FreeAndNil(FOperationsStack);
   FreeAndNil(Config);
 end;
 
@@ -2585,6 +2776,17 @@ begin
 end;
 
 
+procedure TfrmMain.rgFittingModeClick(Sender: TObject);
+var
+  Mode: TFittingMode;
+begin
+  Mode := FittingMode;
+  Structure.PeriodicMode := FittingMode = fmPeriodic;
+  cbSmooth.Enabled := FittingMode = fmIrregular;
+  edPolyOrder.Enabled := Mode = fmPoly;
+  lblPolyOrder.Enabled := edPolyOrder.Enabled;
+end;
+
 procedure TfrmMain.btnCopyConvergenceClick(Sender: TObject);
 begin
   case Pages.ActivePageIndex of
@@ -2603,14 +2805,6 @@ begin
   Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
 end;
 
-procedure TfrmMain.cbTreatPeriodicClick(Sender: TObject);
-begin
-  Structure.PeriodicMode := not cbTreatPeriodic.Checked;
-
-  cbPoly.Enabled      := not cbTreatPeriodic.Checked;
-  if cbTreatPeriodic.Checked then cbPoly.Checked := False;
-  edPolyOrder.Enabled := not cbTreatPeriodic.Checked;
-end;
 
 procedure TfrmMain.WMLayerClick(var Msg: TMessage);
 var

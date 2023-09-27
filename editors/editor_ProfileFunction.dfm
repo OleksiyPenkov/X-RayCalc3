@@ -37,7 +37,7 @@ object edtrProfileFunction: TedtrProfileFunction
       828
       41)
     object btnOK: TRzBitBtn
-      Left = 729
+      Left = 745
       Top = 10
       Width = 66
       Alignment = taRightJustify
@@ -46,7 +46,7 @@ object edtrProfileFunction: TedtrProfileFunction
       TabStop = False
       OnClick = btnOKClick
       Kind = bkOK
-      ExplicitLeft = 721
+      ExplicitLeft = 737
     end
     object btnCancel: TRzBitBtn
       Left = 9
@@ -209,8 +209,21 @@ object edtrProfileFunction: TedtrProfileFunction
       Title.Visible = False
       View3D = False
       TabOrder = 8
+      DesignSize = (
+        476
+        271)
       DefaultCanvas = 'TGDIPlusCanvas'
       ColorPaletteIndex = 13
+      object btnCopy: TBitBtn
+        Left = 384
+        Top = 15
+        Width = 75
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Copy'
+        TabOrder = 0
+        OnClick = btnCopyClick
+      end
       object Series1: TLineSeries
         HoverElement = [heCurrent]
         Brush.BackColor = clDefault

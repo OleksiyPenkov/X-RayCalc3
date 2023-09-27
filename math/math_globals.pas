@@ -45,17 +45,16 @@ implementation
 
 uses
   unit_Config,
+  unit_helpers,
   SysUtils,
   VCLTee.TeEngine;
 
 function Poly(const x: Integer; const C: TPolyArray): Single; overload;
 var
   i, Last: Int64;
-  Order: integer;
 begin
-  Order := Trunc(C[10]);
   Result := C[0]; Last := 1;
-  for I := 1 to Order do
+  for I := 1 to High(C) do
   begin
     Last := Last * (x - 1);
     Result := Result + C[i] * Last;
@@ -66,11 +65,9 @@ end;
 function Poly(const x: Integer; Min, Max: single; const C: TPolyArray): Single; overload;
 var
   i, Last: Int64;
-  Order: integer;
 begin
-  Order := Trunc(C[10]);
   Result := C[0]; Last := 1;
-  for I := 1 to Order do
+  for I := 1 to High(C) do
   begin
     Last := Last * (x - 1);
     Result := Result + C[i] * Last;
@@ -81,11 +78,9 @@ end;
 function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
 var
   i, Last: Int64;
-  Order: integer;
 begin
-  Order := Trunc(Polynome.C[10]);
   Result := Polynome.C[0]; Last := 1;
-  for I := 1 to Order do
+  for I := 1 to High(Polynome.C) do
   begin
     Last := Last * (x - 1);
     Result := Result + Polynome.C[i] * Last
@@ -207,7 +202,7 @@ var
 begin
   if E = 0 then
     E := H / L;
-  fn := Config.HenkePath + '\' + N + '.txt';
+  fn := Config.SystemDir[sdHenke] + '\' + N + '.txt';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -271,7 +266,7 @@ begin
   if E = 0 then
     E := H / L;
 
-  fn := Config.HenkePath + N + '.bin';
+  fn := Config.SystemDir[sdHenke] + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -331,7 +326,7 @@ var
 
 
 begin
-  fn := Config.HenkePath + N + '.bin';
+  fn := Config.SystemDir[sdHenke] + N + '.bin';
   if not FileExists(fn) then
   begin
     Msg := Format('Error! Material %s not found in the database!', [N]);
@@ -383,7 +378,7 @@ var
   end;
 
 begin
-  fn := Config.HenkePath + N + '.bin';
+  fn := Config.SystemDir[sdHenke] + N + '.bin';
 
   try
     Stream := TMemoryStream.Create;

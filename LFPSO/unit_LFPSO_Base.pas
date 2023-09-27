@@ -27,12 +27,8 @@ type
     Curve   : TDataArray;
   end;
 
-  TLayerIndexes = array [1..3] of Integer;
+  TLayerIndexes = array [1..3] of SmallInt;
   TIndexes  = array of TLayerIndexes;
-
-  TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
-  TSolution = array of TLayer; // H, Sigma, rho x N Layers
-  TPopulation = array of TSolution;
 
   TLFPSO_BASE = class
     protected
@@ -81,7 +77,7 @@ type
       procedure SetParams(const Value: TFitParams); virtual;
       procedure Init(const Step: integer); //inline;
       function Omega(const t, TMax: integer): single; inline;
-      procedure SetDomain(const Count: integer; var X: TPopulation);
+      procedure SetDomain(const Count, Order: integer; var X: TPopulation);
 
       procedure InitVelocity; virtual;
       procedure UpdatePSO(const t: integer); virtual;
@@ -92,7 +88,7 @@ type
       procedure UpdateStructure(Solution:TSolution); virtual;
       function FitModelToLayer(Solution: TSolution): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
-      procedure Init_Domains;
+      procedure Init_Domains(const Order: Integer);
       procedure ApplyCFactor(var c1, c2: single);// inline;
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
@@ -330,6 +326,9 @@ begin
 
   if X[i][j][k][0] < Xmin[0][j][k][0] then
              X[i][j][k][0] := Xmin[0][j][k][0];
+
+  if X[i][j][k][0] < 0 then ShowMessage(Format('%d %d %d',[i,j,k]));
+
 end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;
@@ -372,7 +371,7 @@ begin
     if Length(FMaterials) = 0 then
       FMaterials := FCalc.Model.Materials;    // saving to cache
 
-    FCalc.CalcChiSquare(FFitParams.ThetaWieght);
+    FCalc.CalcChiSquare(FFitParams.ThetaWeight);
 
     if FCalc.ChiSQR < FLastBestChiSqr then
     begin
@@ -565,14 +564,17 @@ begin
   Application.ProcessMessages;
 end;
 
-procedure TLFPSO_BASE.SetDomain(const Count: integer; var X: TPopulation);
+procedure TLFPSO_BASE.SetDomain(const Count, Order: integer; var X: TPopulation);
 var
-  i: integer;
+  i, j, k: integer;
 begin
   SetLength(X, FPopulation);
   for I := 0 to High(X) do
   begin
     SetLength(X[i], Count);
+    for j := 0 to Count - 1 do
+      for k := 1 to 3 do
+      SetLength(X[i][j][k], Order + 1);
   end;
 end;
 
@@ -637,13 +639,13 @@ end;
 
 procedure TLFPSO_BASE.Init_Domains;
 begin
-  SetDomain(FLayersCount, X);
-  SetDomain(FLayersCount, Xmax);
-  SetDomain(FLayersCount, Xmin);
-  SetDomain(FLayersCount, Xrange);
-  SetDomain(FLayersCount, Vmin);
-  SetDomain(FLayersCount, Vmax);
-  SetDomain(FLayersCount, V);
+  SetDomain(FLayersCount, Order, X);
+  SetDomain(FLayersCount, Order, Xmax);
+  SetDomain(FLayersCount, Order, Xmin);
+  SetDomain(FLayersCount, Order, Xrange);
+  SetDomain(FLayersCount, Order, Vmin);
+  SetDomain(FLayersCount, Order, Vmax);
+  SetDomain(FLayersCount, Order, V);
 end;
 
 end.

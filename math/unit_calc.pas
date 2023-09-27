@@ -55,7 +55,7 @@ type
       FChiSQR: single;
 
       Tasks: array of TProc;
-      NThreads : byte;
+      NThreads : integer;
 
       FTail: Integer;
 
@@ -72,7 +72,6 @@ type
       destructor Destroy; override;
       procedure Run;
       function CalcChiSquare(const ThetaWieght: integer): single;
-
       property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
@@ -86,7 +85,7 @@ type
 implementation
 
 uses
-  math_globals, unit_helpers, unit_Config;
+  math_globals, unit_helpers, unit_Config, unit_sys_helpers;
 
   { TCalc }
 
@@ -139,15 +138,13 @@ begin
   FChiSQR := Result / High(FData) * 1000;
 end;
 
+
 procedure TCalc.PrepareWorkers;
 var
   Count, j, n: Integer;
   dt, step: single;
 begin
-  if Config.Section<TCalcOptions>.NumberOfThreads = -1 then
-     NThreads := Environment.Process.Affinity.Count
-  else
-    NThreads := Config.Section<TCalcOptions>.NumberOfThreads;
+  NThreads := GetNThreads;
 
   SetLength(Tasks, NThreads);
   SetLength(CalcParams,  NThreads);
@@ -263,7 +260,6 @@ begin
   inherited;
 end;
 
-
 procedure TCalc.RunThetaThreads;
 var
   Config: IOmniTaskConfig;
@@ -279,7 +275,7 @@ begin
   Parallel.ForEach(0, NThreads - 1, 1)
       .TaskConfig(Config)
       .Execute(
-          procedure(const elem:Integer)
+          procedure(const elem:System.Integer)
           begin
             CalcTet(CalcParams[elem]);
           end);
