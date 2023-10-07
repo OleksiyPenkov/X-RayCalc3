@@ -1810,15 +1810,16 @@ begin
   else
     Exit;
 
-  while Node <> FDataRoot do
+  while Node <> nil do
   begin
     Data := Project.GetNodeData(Node);
-    if Data.RowType = prItem then
+    if Data.IsModel then
     begin
-      Project.FocusedNode := Node;
+      Project.ActiveModel := Data;
+      Structure.FromString(Data.Data);
       CalcRunExecute(Sender);
     end;
-    Node := Project.GetNext(Node);
+    Node := Project.GetNextSibling(Node);
   end;
 end;
 
@@ -2245,9 +2246,18 @@ end;
 
 procedure TfrmMain.RescaleChart;
 begin
-  Chart.BottomAxis.Minimum := StrToFloat(edStartTeta.Text);
-  Chart.BottomAxis.Maximum := StrToFloat(edEndTeta.Text);
+  Chart.BottomAxis.Minimum := 0;
 
+  case rgCalcMode.ItemIndex of
+    0:begin
+        Chart.BottomAxis.Maximum := StrToFloat(edEndTeta.Text);
+        Chart.BottomAxis.Minimum := StrToFloat(edStartTeta.Text);
+      end;
+    1:begin
+        Chart.BottomAxis.Maximum := StrToFloat(edEndL.Text);
+        Chart.BottomAxis.Minimum := StrToFloat(edStartL.Text);
+      end;
+  end;
   Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
 end;
 
