@@ -33,12 +33,18 @@ type
     btnPrev: TRzBitBtn;
     btnNext: TRzBitBtn;
     procedure edMaterialButtonClick(Sender: TObject);
+    procedure btnNextClick(Sender: TObject);
+    procedure btnOKClick(Sender: TObject);
 
   private
     { Private declarations }
+    FData: TLayerData;
+    FSeq: boolean;
   public
     { Public declarations }
-    function ShowEditor(const IsSubstrate: Boolean; var Data: TLayerData): boolean;
+    procedure SetData(const IsSubstrate: Boolean; Data: TLayerData);
+    function GetData: TLayerData;
+    property Seq: boolean read FSeq;
   end;
 
 var
@@ -46,34 +52,22 @@ var
 
 implementation
 
+uses
+  unit_SMessages;
+
 //uses frm_MList;
 
 {$R *.dfm}
 
 
-function TedtrLayer.ShowEditor(const IsSubstrate: Boolean; var Data: TLayerData): boolean;
+procedure TedtrLayer.btnNextClick(Sender: TObject);
 begin
-  Result := False;
-  edMaterial.Text := Data.Material;
-  edH.Value := Data.P[1].V;
-  edSigma.Value := Data.P[2].V;
-  edRo.Value := Data.P[3].V;
+  LayerEditNext(FData.StackID, FData.LayerID);
+end;
 
-  edH.Visible := not IsSubstrate;
-  Label2.Visible :=  not IsSubstrate;
-
-
-  ActiveControl := edMaterial;
-
-  if ShowModal = mrOk then
-  begin
-    Data.Material := edMaterial.Text;
-    Data.P[1].V := edH.Value;
-    Data.P[2].V := edSigma.Value;
-    Data.P[3].V := edRo.Value;
-    Result := True;
-  end;
-
+procedure TedtrLayer.btnOKClick(Sender: TObject);
+begin
+  FSeq := False;
 end;
 
 procedure TedtrLayer.edMaterialButtonClick(Sender: TObject);
@@ -82,6 +76,34 @@ var
 begin
   frmMaterialSelector.SelectMaterial(S);
   edMaterial.Text := S;
+end;
+
+function TedtrLayer.GetData: TLayerData;
+begin
+  Result := FData;
+
+  Result.Material := edMaterial.Text;
+  Result.P[1].V := edH.Value;
+  Result.P[2].V := edSigma.Value;
+  Result.P[3].V := edRo.Value;
+
+end;
+
+procedure TedtrLayer.SetData(const IsSubstrate: Boolean; Data: TLayerData);
+begin
+  FSeq := Self.Showing;
+
+  FData := Data;
+
+  edMaterial.Text := Data.Material;
+  edH.Value := Data.P[1].V;
+  edSigma.Value := Data.P[2].V;
+  edRo.Value := Data.P[3].V;
+
+  edH.Visible := not IsSubstrate;
+  Label2.Visible :=  not IsSubstrate;
+
+  ActiveControl := edMaterial;
 end;
 
 end.

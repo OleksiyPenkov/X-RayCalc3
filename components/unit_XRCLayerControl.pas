@@ -255,10 +255,17 @@ end;
 
 procedure TXRCLayerControl.Edit;
 begin
-  if edtrLayer.ShowEditor(FSubstrate, FData) then
+  edtrLayer.SetData(FSubstrate, FData);
+
+
+  if edtrLayer.ShowModal = mrOk then
   begin
-    Name.Caption    := Data.Material;
-    SetLayerData(FData);
+    if not edtrLayer.Seq then
+    begin
+      FData := edtrLayer.GetData;
+      Name.Caption    := FData.Material;
+      SetLayerData(FData);
+    end;
   end;
 
   SetSlected(False);
@@ -331,7 +338,7 @@ end;
 
 procedure TXRCLayerControl.InternalOnDblClick(Sender: TObject);
 begin
-  Edit;
+  LayerDoubleClick(FData.StackID, FData.LayerID);
 end;
 
 procedure TXRCLayerControl.LinkedOnClick(Sender: TObject);

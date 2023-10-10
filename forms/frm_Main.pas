@@ -486,6 +486,9 @@ type
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
     procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
+    procedure WMLayerDoubleClick(var Msg: TMessage); message WM_STR_LAYER_DOUBLECLICK;
+    procedure WMLayerEditNext(var Msg: TMessage); message WM_STR_EDIT_NEXT;
+    procedure WMLayerEditPrev(var Msg: TMessage); message WM_STR_EDIT_PREV;
     procedure WMLinkedClick(var Msg: TMessage); message WM_STR_Linked_CLICK;
     //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
@@ -2279,8 +2282,9 @@ begin
   Data.P[2].New(3);
   Data.P[3].New(0);
 
-  if edtrLayer.ShowEditor(False, Data) then
-    Structure.AddLayer(Structure.SelectedStack, Data);
+  edtrLayer.SetData(False, Data);
+  if edtrLayer.ShowModal = mrOk then
+    Structure.AddLayer(Structure.SelectedStack, edtrLayer.GetData);
   MatchToStructure;
 end;
 
@@ -2319,8 +2323,9 @@ begin
   Data.P[2].New(3);
   Data.P[3].New(0);
 
-  if edtrLayer.ShowEditor(False, Data) then
-        Structure.InsertLayer(Data);
+  edtrLayer.SetData(False, Data);
+  if edtrLayer.ShowModal = mrOk then
+        Structure.InsertLayer(edtrLayer.GetData);
   MatchToStructure;
 end;
 
@@ -2823,6 +2828,37 @@ begin
   LayerID := Msg.WParam;
   ID := Msg.LParam;
   Structure.SelectLayer(LayerID, ID);
+end;
+
+procedure TfrmMain.WMLayerDoubleClick(var Msg: TMessage);
+var
+  StackID, LayerID: Integer;
+begin
+  LayerID := Msg.LParam;
+  StackID := Msg.WParam;
+  edtrLayer.SetData(False, Structure.Stacks[StackID].Layers[LayerID].Data);
+  if edtrLayer.ShowModal = mrOk then
+  begin
+    Structure.LayerData := edtrLayer.GetData;
+  end;
+end;
+
+procedure TfrmMain.WMLayerEditNext(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.EditNextLayer(LayerID, ID, True);
+end;
+
+procedure TfrmMain.WMLayerEditPrev(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.EditNextLayer(LayerID, ID, False);
 end;
 
 procedure TfrmMain.WMLinkedClick(var Msg: TMessage);
