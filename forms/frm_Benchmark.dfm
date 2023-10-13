@@ -25,28 +25,30 @@ object frmBenchmark: TfrmBenchmark
     BorderWidth = 2
     Color = 15987699
     TabOrder = 0
-    object BitBtn1: TBitBtn
-      Left = 896
-      Top = 363
+    ExplicitWidth = 969
+    ExplicitHeight = 379
+    object btnCancel: TBitBtn
+      Left = 895
+      Top = 354
       Width = 75
       Height = 25
-      Caption = 'Close'
+      Caption = 'Cancel'
       TabOrder = 0
-      OnClick = BitBtn1Click
+      OnClick = btnCancelClick
     end
     object Grid: TXRCGrid
       AlignWithMargins = True
       Left = 7
       Top = 7
-      Width = 971
-      Height = 342
+      Width = 963
+      Height = 330
       Margins.Bottom = 50
       Align = alClient
       TabOrder = 1
       AutoFit = False
       Text = #9#9#9#9
-      ExplicitWidth = 963
-      ExplicitHeight = 330
+      ExplicitWidth = 955
+      ExplicitHeight = 318
     end
   end
 end

@@ -152,6 +152,7 @@ object edtrLayer: TedtrLayer
       ParentColor = True
       TabOrder = 0
       TabStop = False
+      OnClick = btnPrevClick
     end
     object btnNext: TRzBitBtn
       Tag = 1

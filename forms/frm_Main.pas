@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
   unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage;
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark;
 
 type
   TSeriesList = array of TLineSeries;
@@ -497,6 +497,7 @@ type
     procedure OnLayerDownMsg(var Msg: TMessage); message WM_STR_LAYER_DOWN;
     procedure OnLayerDeleteMsg(var Msg: TMessage); message WM_STR_LAYER_DELETE;
     procedure OnLayerInsertMsg(var Msg: TMessage); message WM_STR_LAYER_INSERT;
+    procedure OnCancelBenchmarkMsg(var Msg: TMessage); message WM_BENCH_CANCEL;
   end;
 
 var
@@ -527,12 +528,13 @@ uses
   editor_JSON,
   unit_LFPSO_Poly,
   unit_SavitzkyGolay,
-  frm_Benchmark,
   unit_files_list,
   unit_config,
   frm_settings,
   unit_XRCStackControl,
-  editor_ProfileTable, unit_sys_helpers, frm_FitSettings;
+  editor_ProfileTable,
+  unit_sys_helpers,
+  frm_FitSettings;
 
 {$R *.dfm}
 
@@ -590,6 +592,11 @@ end;
 procedure TfrmMain.actItemProperitesExecute(Sender: TObject);
 begin
   EditProjectItem;
+end;
+
+procedure TfrmMain.OnCancelBenchmarkMsg(var Msg: TMessage);
+begin
+  CalcStopExecute(nil);
 end;
 
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
@@ -1856,8 +1863,8 @@ begin
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
-        FLastChiSquare := FCalc.ChiSQR;
         FCalc.CalcChiSquare(cbTWChi.ItemIndex);
+        FLastChiSquare := FCalc.ChiSQR;
         spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 4);
       end
       else begin
@@ -2049,20 +2056,21 @@ begin
   frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
   for i := 1 to FBenchmarkRuns do
   begin
+    if FTerminated then Break;
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
-    frmBenchmark.AddValue(i, spChiSqr.Caption);
+    frmBenchmark.AddValue(i, FloatToStrF(FLastChiSquare, ffFixed, 8, 4));
     frmBenchmark.CalcStats(False);
     Application.ProcessMessages;
-    if FTerminated then Break;
   end;
-  frmBenchmark.CalcStats(True);
+  if not FTerminated then frmBenchmark.CalcStats(True);
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 var
   Files: TFilesList;
 begin
+  FLastChiSquare := 0;
   FBenchmarkRuns := TConfig.Section<TCalcOptions>.BenchmarkRuns;
 
   try
@@ -2833,13 +2841,23 @@ end;
 procedure TfrmMain.WMLayerDoubleClick(var Msg: TMessage);
 var
   StackID, LayerID: Integer;
+  ifSubstrate : boolean;
+
 begin
   LayerID := Msg.LParam;
   StackID := Msg.WParam;
-  edtrLayer.SetData(False, Structure.Stacks[StackID].Layers[LayerID].Data);
+  ifSubstrate := (LayerID = 65535) and (StackID = 65535);
+  if IfSubstrate then
+        edtrLayer.SetData(True, Structure.SubstrateData)
+  else
+    edtrLayer.SetData(False, Structure.Stacks[StackID].Layers[LayerID].Data);
+
   if edtrLayer.ShowModal = mrOk then
   begin
-    Structure.LayerData := edtrLayer.GetData;
+    if IfSubstrate then
+      Structure.SubstrateData := edtrLayer.GetData
+    else
+      Structure.LayerData := edtrLayer.GetData;
   end;
 end;
 

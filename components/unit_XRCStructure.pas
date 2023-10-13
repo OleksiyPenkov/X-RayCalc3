@@ -56,6 +56,8 @@ type
       procedure SetPeriodicMode(const Value: boolean);
       function GetCurrentLayerData: TLayerData;
       procedure SetCurrentLayerData(const Value: TLayerData);
+      function GetSubstrateData: TLayerData;
+      procedure SetSubstrateData(const Value: TLayerData);
     public
       constructor Create(AOwner: TComponent); override;
       destructor  Destroy; override;
@@ -107,6 +109,7 @@ type
       function IfValidLayerSelected: Boolean; inline;
       property RealHeight: Integer read FRealHeight;
       property LayerData: TLayerData read GetCurrentLayerData write SetCurrentLayerData;
+      property SubstrateData: TLayerData read GetSubstrateData write SetSubstrateData;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -350,12 +353,25 @@ procedure TXRCStructure.EditNextLayer(const StackID, LayerID: Integer;
 begin
   Stacks[StackID].UpdateLayer(LayerID, edtrLayer.GetData);
 
-
   if Frwrd then
   begin
     if LayerID < High(Stacks[StackID].Layers) then
     begin
       edtrLayer.SetData(False, Stacks[StackID].Layers[LayerID + 1].Data);
+    end
+    else if StackID < High(Stacks) then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID + 1].Layers[0].Data);
+    end;
+  end
+  else begin
+    if LayerID > 0 then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID].Layers[LayerID - 1].Data);
+    end
+    else if StackID > 0 then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID - 1].Layers[High(Stacks[StackID - 1].Layers)].Data);
     end;
   end;
 
@@ -534,6 +550,11 @@ var
 begin
   for Stack in FStacks do
     Stack.EnablePairing(not Value);
+end;
+
+procedure TXRCStructure.SetSubstrateData(const Value: TLayerData);
+begin
+  Substrate.UpdateLayer(0, Value);
 end;
 
 procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);
@@ -862,6 +883,11 @@ begin
         RealID[count - 1] := i;
       end;
   end;
+end;
+
+function TXRCStructure.GetSubstrateData: TLayerData;
+begin
+  Result := Substrate.Layers[0].Data;
 end;
 
 end.

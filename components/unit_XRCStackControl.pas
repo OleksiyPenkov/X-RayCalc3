@@ -132,6 +132,9 @@ var
   Data: TLayerData;
 begin
   SetLength(FLayers, 1);
+  Data.StackID := 65535;
+  Data.LayerID := 65535;
+
   Data.Material := Material;
   Data.P[1].V := 1E8;
   Data.P[2].V := s;

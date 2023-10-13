@@ -35,6 +35,7 @@ type
     procedure edMaterialButtonClick(Sender: TObject);
     procedure btnNextClick(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
+    procedure btnPrevClick(Sender: TObject);
 
   private
     { Private declarations }
@@ -70,6 +71,11 @@ begin
   FSeq := False;
 end;
 
+procedure TedtrLayer.btnPrevClick(Sender: TObject);
+begin
+  LayerEditPrev(FData.StackID, FData.LayerID);
+end;
+
 procedure TedtrLayer.edMaterialButtonClick(Sender: TObject);
 var
   S: string;
@@ -102,6 +108,9 @@ begin
 
   edH.Visible := not IsSubstrate;
   Label2.Visible :=  not IsSubstrate;
+
+  btnPrev.Visible := not IsSubstrate;
+  btnNext.Visible := not IsSubstrate;
 
   ActiveControl := edMaterial;
 end;
