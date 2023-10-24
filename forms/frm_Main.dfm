@@ -1878,15 +1878,15 @@ object frmMain: TfrmMain
       ImageIndex = 1
       object Add1: TMenuItem
         Action = PeriodAdd
-        Caption = 'Add Period'
+        Caption = 'Add Stack'
       end
       object Insert1: TMenuItem
         Action = PeriodInsert
-        Caption = 'Insert Period'
+        Caption = 'Insert Stack'
       end
       object Delete1: TMenuItem
         Action = PeriodDelete
-        Caption = 'Delete Period'
+        Caption = 'Delete Stack'
       end
       object N3: TMenuItem
         Caption = '-'

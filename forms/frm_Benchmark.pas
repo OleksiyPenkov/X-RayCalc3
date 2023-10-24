@@ -16,16 +16,25 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.Grids, Vcl.StdCtrls,
   Vcl.Buttons, RzPanel, RzGrids, unit_XRCGrid;
 
+const
+  WM_STR_BASE = WM_APP + $0900;
+
+  WM_BENCH_CANCEL = WM_STR_BASE + 0;
+
+
 type
   TfrmBenchmark = class(TForm)
     RzPanel1: TRzPanel;
-    BitBtn1: TBitBtn;
+    btnCancel: TBitBtn;
     Grid: TXRCGrid;
-    procedure BitBtn1Click(Sender: TObject);
+    procedure btnCancelClick(Sender: TObject);
   private
     FLine: Integer;
     FFileName: string;
+    FOnProgress: Boolean;
     { Private declarations }
+
+  procedure SendCancelMessage;
   public
     { Public declarations }
     procedure Clear(const N: integer);
@@ -34,7 +43,6 @@ type
 
     procedure CalcStats(const Full: Boolean);
     procedure Init(const OutputDir: string);
-
   end;
 
 var
@@ -58,15 +66,25 @@ begin
   Grid.Cells[n, FLine] := Val;
 end;
 
-procedure TfrmBenchmark.BitBtn1Click(Sender: TObject);
+procedure TfrmBenchmark.btnCancelClick(Sender: TObject);
 begin
+  if FOnProgress then SendCancelMessage;
   Close;
 end;
 
 procedure TfrmBenchmark.CalcStats;
 begin
-  if Full then Grid.CalcStat;
+  if Full then
+  begin
+    Grid.CalcStat;
+    btnCancel.Caption := 'Close';
+  end
+  else
+    btnCancel.Caption := 'Abort';
+
   Grid.SaveToFile(FFileName);
+  FOnProgress := not Full;
+
 end;
 
 procedure TfrmBenchmark.Clear;
@@ -94,6 +112,19 @@ begin
   FileName := Format('%s-%s.dat',['benchmark', Date]);
 
   FFileName := OutputDir + FileName;
+
+  FOnProgress := True;
+  btnCancel.Caption := 'Cancel';
+end;
+
+procedure TfrmBenchmark.SendCancelMessage;
+begin
+  PostMessage(
+    Application.MainFormHandle,
+    WM_BENCH_CANCEL,
+    0,
+    0
+  );
 end;
 
 end.

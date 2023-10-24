@@ -54,6 +54,10 @@ type
       function FindStrValue(const Value: string): string;
       function GetSelectedLayer: Integer;
       procedure SetPeriodicMode(const Value: boolean);
+      function GetCurrentLayerData: TLayerData;
+      procedure SetCurrentLayerData(const Value: TLayerData);
+      function GetSubstrateData: TLayerData;
+      procedure SetSubstrateData(const Value: TLayerData);
     public
       constructor Create(AOwner: TComponent); override;
       destructor  Destroy; override;
@@ -72,6 +76,8 @@ type
       procedure Select(const ID: Integer);
       procedure ClearSelection(const Reset:boolean = False); inline;
       procedure SelectLayer(const StackID, LayerID: Integer);
+      procedure EditNextLayer(const StackID, LayerID: Integer; Frwrd: boolean);
+
       procedure LinkLayer(const StackID, LayerID: Integer);
       procedure MoveLayer(const StackID, LayerID, Direction: Integer);
       procedure EditStack(const ID: Integer);
@@ -102,6 +108,8 @@ type
 //      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
       property RealHeight: Integer read FRealHeight;
+      property LayerData: TLayerData read GetCurrentLayerData write SetCurrentLayerData;
+      property SubstrateData: TLayerData read GetSubstrateData write SetSubstrateData;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -112,7 +120,7 @@ var
 implementation
 
 uses
-  unit_consts;
+  unit_consts, editor_Layer;
 
 { TXRCStructure }
 
@@ -340,6 +348,35 @@ begin
   inherited Destroy;
 end;
 
+procedure TXRCStructure.EditNextLayer(const StackID, LayerID: Integer;
+  Frwrd: boolean);
+begin
+  Stacks[StackID].UpdateLayer(LayerID, edtrLayer.GetData);
+
+  if Frwrd then
+  begin
+    if LayerID < High(Stacks[StackID].Layers) then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID].Layers[LayerID + 1].Data);
+    end
+    else if StackID < High(Stacks) then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID + 1].Layers[0].Data);
+    end;
+  end
+  else begin
+    if LayerID > 0 then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID].Layers[LayerID - 1].Data);
+    end
+    else if StackID > 0 then
+    begin
+      edtrLayer.SetData(False, Stacks[StackID - 1].Layers[High(Stacks[StackID - 1].Layers)].Data);
+    end;
+  end;
+
+end;
+
 procedure TXRCStructure.EditStack;
 begin
   FStacks[ID].Edit;
@@ -493,6 +530,11 @@ begin
   end;
 end;
 
+procedure TXRCStructure.SetCurrentLayerData(const Value: TLayerData);
+begin
+  Stacks[Value.StackID].UpdateLayer(Value.LayerID, Value);
+end;
+
 procedure TXRCStructure.SetIncrement(const Value: single);
 var
   i: Integer;
@@ -508,6 +550,11 @@ var
 begin
   for Stack in FStacks do
     Stack.EnablePairing(not Value);
+end;
+
+procedure TXRCStructure.SetSubstrateData(const Value: TLayerData);
+begin
+  Substrate.UpdateLayer(0, Value);
 end;
 
 procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);
@@ -784,6 +831,11 @@ begin
   Visible := True;
 end;
 
+function TXRCStructure.GetCurrentLayerData: TLayerData;
+begin
+
+end;
+
 procedure TXRCStructure.GetLayersList(const ID: integer; List: TStrings);
 var
   j: Integer;
@@ -831,6 +883,11 @@ begin
         RealID[count - 1] := i;
       end;
   end;
+end;
+
+function TXRCStructure.GetSubstrateData: TLayerData;
+begin
+  Result := Substrate.Layers[0].Data;
 end;
 
 end.

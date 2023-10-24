@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
   unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage;
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark;
 
 type
   TSeriesList = array of TLineSeries;
@@ -486,6 +486,9 @@ type
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
     procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
+    procedure WMLayerDoubleClick(var Msg: TMessage); message WM_STR_LAYER_DOUBLECLICK;
+    procedure WMLayerEditNext(var Msg: TMessage); message WM_STR_EDIT_NEXT;
+    procedure WMLayerEditPrev(var Msg: TMessage); message WM_STR_EDIT_PREV;
     procedure WMLinkedClick(var Msg: TMessage); message WM_STR_Linked_CLICK;
     //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
@@ -494,6 +497,7 @@ type
     procedure OnLayerDownMsg(var Msg: TMessage); message WM_STR_LAYER_DOWN;
     procedure OnLayerDeleteMsg(var Msg: TMessage); message WM_STR_LAYER_DELETE;
     procedure OnLayerInsertMsg(var Msg: TMessage); message WM_STR_LAYER_INSERT;
+    procedure OnCancelBenchmarkMsg(var Msg: TMessage); message WM_BENCH_CANCEL;
   end;
 
 var
@@ -524,12 +528,13 @@ uses
   editor_JSON,
   unit_LFPSO_Poly,
   unit_SavitzkyGolay,
-  frm_Benchmark,
   unit_files_list,
   unit_config,
   frm_settings,
   unit_XRCStackControl,
-  editor_ProfileTable, unit_sys_helpers, frm_FitSettings;
+  editor_ProfileTable,
+  unit_sys_helpers,
+  frm_FitSettings;
 
 {$R *.dfm}
 
@@ -589,6 +594,11 @@ begin
   EditProjectItem;
 end;
 
+procedure TfrmMain.OnCancelBenchmarkMsg(var Msg: TMessage);
+begin
+  CalcStopExecute(nil);
+end;
+
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
@@ -600,11 +610,12 @@ begin
 //    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
 
 
-  spChiSqr.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
+  spChiSqr.Caption := FloatToStrF(msg_prm.LastChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
+  FLastChiSquare :=  msg_prm.BestChi;
   if (Length(msg_prm.Curve) > 1) then
   begin
-     PlotResults(msg_prm.Curve);
+    PlotResults(msg_prm.Curve);
   end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -1853,7 +1864,6 @@ begin
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
-        FLastChiSquare := FCalc.ChiSQR;
         FCalc.CalcChiSquare(cbTWChi.ItemIndex);
         spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 4);
       end
@@ -2046,20 +2056,21 @@ begin
   frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
   for i := 1 to FBenchmarkRuns do
   begin
+    if FTerminated then Break;
     actProjectReopenExecute(nil);
     actAutoFittingExecute(nil);
-    frmBenchmark.AddValue(i, spChiSqr.Caption);
-    frmBenchmark.CalcStats(False);
     Application.ProcessMessages;
-    if FTerminated then Break;
+    frmBenchmark.AddValue(i, FloatToStrF(FLastChiSquare, ffFixed, 8, 4));
+    frmBenchmark.CalcStats(False);
   end;
-  frmBenchmark.CalcStats(True);
+  if not FTerminated then frmBenchmark.CalcStats(True);
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 var
   Files: TFilesList;
 begin
+  FLastChiSquare := 0;
   FBenchmarkRuns := TConfig.Section<TCalcOptions>.BenchmarkRuns;
 
   try
@@ -2279,8 +2290,9 @@ begin
   Data.P[2].New(3);
   Data.P[3].New(0);
 
-  if edtrLayer.ShowEditor(False, Data) then
-    Structure.AddLayer(Structure.SelectedStack, Data);
+  edtrLayer.SetData(False, Data);
+  if edtrLayer.ShowModal = mrOk then
+    Structure.AddLayer(Structure.SelectedStack, edtrLayer.GetData);
   MatchToStructure;
 end;
 
@@ -2319,8 +2331,9 @@ begin
   Data.P[2].New(3);
   Data.P[3].New(0);
 
-  if edtrLayer.ShowEditor(False, Data) then
-        Structure.InsertLayer(Data);
+  edtrLayer.SetData(False, Data);
+  if edtrLayer.ShowModal = mrOk then
+        Structure.InsertLayer(edtrLayer.GetData);
   MatchToStructure;
 end;
 
@@ -2823,6 +2836,47 @@ begin
   LayerID := Msg.WParam;
   ID := Msg.LParam;
   Structure.SelectLayer(LayerID, ID);
+end;
+
+procedure TfrmMain.WMLayerDoubleClick(var Msg: TMessage);
+var
+  StackID, LayerID: Integer;
+  ifSubstrate : boolean;
+
+begin
+  LayerID := Msg.LParam;
+  StackID := Msg.WParam;
+  ifSubstrate := (LayerID = 65535) and (StackID = 65535);
+  if IfSubstrate then
+        edtrLayer.SetData(True, Structure.SubstrateData)
+  else
+    edtrLayer.SetData(False, Structure.Stacks[StackID].Layers[LayerID].Data);
+
+  if edtrLayer.ShowModal = mrOk then
+  begin
+    if IfSubstrate then
+      Structure.SubstrateData := edtrLayer.GetData
+    else
+      Structure.LayerData := edtrLayer.GetData;
+  end;
+end;
+
+procedure TfrmMain.WMLayerEditNext(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.EditNextLayer(LayerID, ID, True);
+end;
+
+procedure TfrmMain.WMLayerEditPrev(var Msg: TMessage);
+var
+  ID, LayerID: Integer;
+begin
+  LayerID := Msg.WParam;
+  ID := Msg.LParam;
+  Structure.EditNextLayer(LayerID, ID, False);
 end;
 
 procedure TfrmMain.WMLinkedClick(var Msg: TMessage);

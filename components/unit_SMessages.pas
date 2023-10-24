@@ -24,6 +24,9 @@ const
   WM_RECALC = WM_STR_BASE + 2;
   WM_STR_LAYER_CLICK = WM_STR_BASE + 3;
   WM_STR_LINKED_CLICK = WM_STR_BASE + 4;
+  WM_STR_EDIT_NEXT    = WM_STR_BASE + 5;
+  WM_STR_EDIT_PREV    = WM_STR_BASE + 6;
+  WM_STR_LAYER_DOUBLECLICK = WM_STR_BASE + 7;
 
   WM_STR_LAYER_UP = WM_STR_BASE + 20;
   WM_STR_LAYER_DOWN = WM_STR_BASE + 21;
@@ -35,9 +38,11 @@ const
   procedure StackDoubleClick(const ID: integer);
   procedure SendRecalcMessage;
   procedure LayerClick(const StackID, ID: integer);
+  procedure LayerDoubleClick(const StackID, ID: integer);
   procedure LinkedClick(const StackID, ID: integer);
   procedure ArrangeLayer(const Msg: Cardinal; const StackID, ID: integer);
-
+  procedure LayerEditNext(const StackID, ID: integer);
+  procedure LayerEditPrev(const StackID, ID: integer);
 
 implementation
 
@@ -68,7 +73,39 @@ procedure LayerClick(const StackID, ID: integer);
 begin
   PostMessage(
     Application.MainFormHandle,
-    WM_STR_LAYER_CLICK ,
+    WM_STR_LAYER_CLICK,
+    StackID,
+    ID
+  );
+end;
+
+procedure LayerDoubleClick(const StackID, ID: integer);
+begin
+  PostMessage(
+    Application.MainFormHandle,
+    WM_STR_LAYER_DOUBLECLICK,
+    StackID,
+    ID
+  );
+end;
+
+procedure LayerEditNext(const StackID, ID: integer);
+begin
+  PostMessage(
+    Application.MainFormHandle,
+    WM_STR_EDIT_NEXT,
+    StackID,
+    ID
+  );
+end;
+
+
+
+procedure LayerEditPrev(const StackID, ID: integer);
+begin
+  PostMessage(
+    Application.MainFormHandle,
+    WM_STR_EDIT_PREV,
     StackID,
     ID
   );
