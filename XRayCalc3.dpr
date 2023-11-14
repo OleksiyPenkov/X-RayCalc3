@@ -41,7 +41,10 @@ uses
   unit_XRCGrid in 'components\unit_XRCGrid.pas',
   unit_sys_helpers in 'units\unit_sys_helpers.pas',
   unit_LFPSO_Irregular in 'LFPSO\unit_LFPSO_Irregular.pas',
-  frm_FitSettings in 'forms\frm_FitSettings.pas' {frmFitSettings};
+  frm_FitSettings in 'forms\frm_FitSettings.pas' {frmFitSettings},
+  unit_AutoCompleteEdit in 'components\unit_AutoCompleteEdit.pas',
+  MHLButtonedEdit in 'components\MHLButtonedEdit.pas',
+  unit_StaticTip in 'components\unit_StaticTip.pas';
 
 {$R *.res}
 

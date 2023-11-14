@@ -29,8 +29,6 @@ object frmMain: TfrmMain
     BorderWidth = 0
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 677
-    ExplicitWidth = 1714
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
@@ -69,8 +67,6 @@ object frmMain: TfrmMain
     Align = alClient
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 1714
-    ExplicitHeight = 677
     BarSize = (
       234
       0
@@ -172,7 +168,6 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 1
-        ExplicitTop = 584
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 5
@@ -306,8 +301,6 @@ object frmMain: TfrmMain
         Align = alBottom
         TabIndex = 3
         TabOrder = 0
-        ExplicitTop = 503
-        ExplicitWidth = 1110
         FixedDimension = 21
         object tsThickness: TRzTabSheet
           Color = 15987699
@@ -414,7 +407,6 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitWidth = 1106
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -464,7 +456,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
-            ExplicitWidth = 1100
             DesignSize = (
               1104
               132)
@@ -478,7 +469,6 @@ object frmMain: TfrmMain
               Caption = 'Copy'
               TabOrder = 0
               OnClick = btnCopyConvergenceClick
-              ExplicitLeft = 1030
             end
             object lsrConvergence: TLineSeries
               HoverElement = [heCurrent]
@@ -609,8 +599,6 @@ object frmMain: TfrmMain
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
         OnResize = ChartResize
-        ExplicitWidth = 1110
-        ExplicitHeight = 293
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -739,8 +727,6 @@ object frmMain: TfrmMain
         Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
-        ExplicitTop = 447
-        ExplicitWidth = 1110
         DesignSize = (
           1114
           50)
@@ -947,7 +933,6 @@ object frmMain: TfrmMain
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
-          ExplicitLeft = 954
         end
         object cbMinLimit: TRzComboBox
           Left = 1039
@@ -971,7 +956,6 @@ object frmMain: TfrmMain
             '10E-7'
             '10E-8'
             '10E-9')
-          ExplicitLeft = 1035
         end
       end
       object pnlSettings: TPanel
@@ -982,7 +966,6 @@ object frmMain: TfrmMain
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitWidth = 1116
         object RzPanel6: TRzPanel
           AlignWithMargins = True
           Left = 387
@@ -997,7 +980,6 @@ object frmMain: TfrmMain
           Caption = 'Fitting'
           Color = 15987699
           TabOrder = 0
-          ExplicitWidth = 726
           object Label7: TLabel
             Left = 8
             Top = 29
@@ -1538,7 +1520,6 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
-        ExplicitWidth = 1116
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -2786,7 +2767,7 @@ object frmMain: TfrmMain
       end>
     Left = 688
     Top = 200
-    StyleName = 'Ribbon - Luna'
+    StyleName = 'Platform Default'
     object FileNew: TAction
       Category = 'Project'
       Caption = 'New project'
