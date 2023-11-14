@@ -13,9 +13,9 @@ uses
   Vcl.ImgList, System.Actions, Vcl.ActnList,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
   unit_SMessages,
-  unit_calc, unit_XRCProjectTree, RzRadGrp, Vcl.RibbonLunaStyleActnCtrls,
-  unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark;
+  unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark,
+  Vcl.PlatformDefaultStyleActnCtrls;
 
 type
   TSeriesList = array of TLineSeries;
@@ -1131,19 +1131,40 @@ procedure TfrmMain.actDataTrimExecute(Sender: TObject);
 var
   t1, t2: single;
   index: integer;
+
+  function FindIndex(const val: single): integer;
+  var
+    i: integer;
+  begin
+    Result := -1;
+    for I := 0 to FSeriesList[Project.ActiveData.CurveID].XValues.Count do
+      if FSeriesList[Project.ActiveData.CurveID].XValues[i] >= val then
+      begin
+        Result := i;
+        Break;
+      end;
+  end;
+
 begin
   t1 := StrToFloat(edStartTeta.Text);
   t2 := StrToFloat(edEndTeta.Text);
 
-  FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
+  index := FindIndex(t1);
+  if index > 1 then
+  begin
+    FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
+    FSeriesList[Project.ActiveData.CurveID].Delete(0, Index);
+    FSeriesList[Project.ActiveData.CurveID].EndUpdate;
+  end;
 
-  index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t1);
-  FSeriesList[Project.ActiveData.CurveID].Delete(0, Index);
-
-  index := FSeriesList[Project.ActiveData.CurveID].XValues.Locate(t2);
-  FSeriesList[Project.ActiveData.CurveID].Delete(index, FSeriesList[Project.ActiveData.CurveID].XValues.Count - Index - 1);
+  index := FindIndex(t2);
+  if index > 1 then
+  begin
+    FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
+    FSeriesList[Project.ActiveData.CurveID].Delete(index, FSeriesList[Project.ActiveData.CurveID].XValues.Count - Index - 1);
+    FSeriesList[Project.ActiveData.CurveID].EndUpdate;
+  end;
   SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
-  FSeriesList[Project.ActiveData.CurveID].EndUpdate;
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
