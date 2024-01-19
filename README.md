@@ -6,6 +6,10 @@ In this version, the automatic optimization based on modified LFPSO algorithm wa
 
 The X-Ray Calc distribution contents several demonstration projects located in the Examples folder To see the demos, click the Open button, navigate to the Examples folder, and select a project file.
 
+2024-01-19 3.1.0
+Added:
+ - AutoSave project after each successful fitting iteration
+ - x64 version was added to the distribution
 
 2023-08-08 3.0.6
 Fixed:

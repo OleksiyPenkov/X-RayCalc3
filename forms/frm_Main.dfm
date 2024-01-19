@@ -45,14 +45,23 @@ object frmMain: TfrmMain
       Caption = ''
     end
     object RzVersionInfoStatus1: TRzVersionInfoStatus
-      Left = 1618
+      Left = 1588
       Top = 0
       Height = 19
       Align = alRight
       Field = vifFileVersion
-      VersionInfo = frmAbout.RzVersionInfo1
+      VersionInfo = frmAbout.RzVersionInfo
       ExplicitLeft = 1592
       ExplicitTop = -2
+    end
+    object pnlX64: TRzStatusPane
+      Left = 1688
+      Top = 0
+      Width = 30
+      Height = 19
+      Align = alRight
+      Caption = 'x64'
+      ExplicitLeft = 1618
     end
   end
   object LeftSplitter: TRzSplitter

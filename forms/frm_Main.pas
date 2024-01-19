@@ -310,6 +310,7 @@ type
     cbPWChiSqr: TRzCheckBox;
     btnAdvFitSettings: TRzBitBtn;
     cbSmooth: TRzCheckBox;
+    pnlX64: TRzStatusPane;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -391,6 +392,7 @@ type
     procedure actCalcFitJobsExecute(Sender: TObject);
     procedure rgFittingModeClick(Sender: TObject);
     procedure btnAdvFitSettingsClick(Sender: TObject);
+    procedure actRecoverModelExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -429,6 +431,8 @@ type
     FBenchmarkMode: Boolean;
     FBenchmarkPath: string;
     FBenchmarkRuns: Integer;
+    FLastModelName: String;
+    FFirstUpdate: Boolean;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -469,6 +473,7 @@ type
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
+    procedure UpdateFitGradientExtensions(const P: TProfileFunctions);
     procedure SaveHistory;
     procedure RescaleChart;
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
@@ -481,6 +486,12 @@ type
     procedure FillRecentMenu;
     procedure LoadRecentProjectsList;
     function FittingMode: TFittingMode; inline;
+    procedure RunCalc(const Recover: boolean);
+    procedure UpdateInterface(FitStructure: TFitStructure;
+                              Poly: TProfileFunctions;
+                              Res: TLayeredModel;
+                              CreateExtension: boolean = True);
+    procedure UpdateProfileExtension;
     { Private declarations }
   public
     { Public declarations }
@@ -613,14 +624,19 @@ begin
   spChiSqr.Caption := FloatToStrF(msg_prm.LastChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
   FLastChiSquare :=  msg_prm.BestChi;
-  if (Length(msg_prm.Curve) > 1) then
+  if msg_prm.Full then
   begin
     PlotResults(msg_prm.Curve);
+    if TConfig.Section<TOtherOptions>.LiveUpdate then
+    begin
+      UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.Res, FFirstUpdate);
+      FFirstUpdate := False;
+      AutoSave;
+    end;
   end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
   spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
-
 end;
 
 procedure TfrmMain.OnLayerDeleteMsg(var Msg: TMessage);
@@ -691,7 +707,10 @@ begin
   begin
     IsModel := (LastData.Group = gtModel) and IsItem;
     if IsModel then
+    begin
       LastData.Data := Structure.ToString;
+      FLastModelName := LastData.Title;
+    end;
   end;
 
   LastNode := Project.GetFirstSelected;
@@ -907,6 +926,12 @@ begin
   end;
 end;
 
+procedure TfrmMain.UpdateProfileExtension;
+begin
+  //
+end;
+
+
 procedure TfrmMain.CreateProfileExtension;
 var
   Data: PProjectData;
@@ -933,6 +958,42 @@ begin
     Project.ClearSelection;
     Project.Selected[Node] := True;
   end;
+end;
+
+procedure TfrmMain.UpdateFitGradientExtensions(const P: TProfileFunctions);
+const
+  L : array [0..2] of string = ('H','S','rho');
+var
+  Gradient: PVirtualNode;
+  Data: PProjectData;
+  i: Integer;
+  Title: string;
+  Found: Boolean;
+begin
+  for I := 0 to High(P) do
+  begin
+    Title := Format('F(%s %s/%s)', [L[Ord(P[i].Subj)],
+                 Structure.Stacks[P[i].StackID].Title,
+                 Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
+
+    Gradient := FLastModel.FirstChild;
+    Found := False;
+    repeat
+      Data := Project.GetNodeData(Gradient);
+      if Data.Title = Title then
+      begin
+        Data.SetPoly(P[i].C);
+        Found := True;
+      end
+      else
+        Gradient := Gradient.NextSibling;
+    until Found or (Gradient <> FLastModel.LastChild);
+  end;
+
+  MatchToStructure;
+  Project.Expanded[FLastModel] := True;
+  Project.ClearSelection;
+  Project.Selected[FLastModel] := True;
 end;
 
 procedure TfrmMain.CreateFitGradientExtensions(const P: TProfileFunctions);
@@ -1223,6 +1284,11 @@ end;
 procedure TfrmMain.actProjectReopenExecute(Sender: TObject);
 begin
   LoadProject(FProjectFileName, True);
+end;
+
+procedure TfrmMain.actRecoverModelExecute(Sender: TObject);
+begin
+  RunCalc(True);
 end;
 
 procedure TfrmMain.actSystemExitExecute(Sender: TObject);
@@ -1875,13 +1941,12 @@ begin
 
 end;
 
-procedure TfrmMain.CalcRunExecute(Sender: TObject);
+procedure TfrmMain.RunCalc(const Recover: boolean);
 begin
   try
     if not PrepareCalc then Exit;
     try
-     EnableControls(False);
-
+      EnableControls(False);
       FCalc.Run;
       if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
       begin
@@ -1912,6 +1977,11 @@ begin
     EnableControls(True);
     FCalc.Free;
   end;
+end;
+
+procedure TfrmMain.CalcRunExecute(Sender: TObject);
+begin
+  RunCalc(False);
 end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
@@ -2008,6 +2078,37 @@ begin
   end;
 end;
 
+
+procedure TfrmMain.UpdateInterface;
+begin
+  if Structure.IsPeriodic then
+  begin
+    if FittingMode = fmPeriodic then
+       Structure.UpdateInterfaceP(FitStructure)
+    else begin
+      if FittingMode = fmPoly then
+      begin
+        Structure.UpdateInterfaceP(FitStructure);
+        if CreateExtension then
+          CreateFitGradientExtensions(Poly)
+        else
+          UpdateFitGradientExtensions(Poly)
+      end
+      else
+      begin
+        Structure.UpdateInterfaceNP(FitStructure);
+        if CreateExtension then
+           CreateProfileExtension
+        else
+          UpdateProfileExtension;
+        Structure.UpdateProfiles(Res);
+      end;
+    end;
+  end
+  else
+    Structure.UpdateInterfaceNP(FitStructure);
+end;
+
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
@@ -2020,29 +2121,10 @@ begin
     EnableControls(False);
     FitStartTime := Now;
 
+    FFirstUpdate := True;
+
     LFPSO.Run(FCalcThreadParams);
-
-    if Structure.IsPeriodic then
-    begin
-      if FittingMode = fmPeriodic then
-         Structure.UpdateInterfaceP(LFPSO.Structure)
-      else begin
-        if FittingMode = fmPoly then
-        begin
-          Structure.UpdateInterfaceP(LFPSO.Structure);
-          CreateFitGradientExtensions(LFPSO.Polynomes)
-        end
-        else
-        begin
-          Structure.UpdateInterfaceNP(LFPSO.Structure);
-          CreateProfileExtension;
-          Structure.UpdateProfiles(LFPSO.Result);
-        end;
-      end;
-    end
-    else
-      Structure.UpdateInterfaceNP(LFPSO.Structure);
-
+    UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, LFPSO.Result, FFirstUpdate);
 
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -2751,6 +2833,13 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
 begin
+  {$IFDEF  WIN64}
+     pnlX64.Visible := True;
+  {$ELSE}
+     pnlX64.Visible := False;
+  {$ENDIF}
+
+
   FormatSettings.DecimalSeparator := '.';
   Config := TConfig.Create;
   CreateProjectTree;

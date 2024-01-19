@@ -36,6 +36,8 @@ const
   LICENSE_FILENAME = 'xraycalc3.lic';
   DEFAULT_PROJECT_NAME = 'NewProject.xrcx';
   PROJECT_EXT = '.xrcx';
+  BACKUP_DIR_NAME = 'Backup';
+
 implementation
 
 end.

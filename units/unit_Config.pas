@@ -92,6 +92,8 @@ type
       property AutoCalc : boolean index 2 read getBooleanValue write SetBooleanValue;
       [DefaultValue(False)]
       property AutoSave : boolean index 3 read getBooleanValue write SetBooleanValue;
+      [DefaultValue(False)]
+      property LiveUpdate : boolean index 4 read getBooleanValue write SetBooleanValue;
     end;
 
     [Section('Calc')]

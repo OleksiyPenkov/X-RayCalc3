@@ -44,6 +44,7 @@ type
     procedure AddSubstrate(const Data: TLayersData);
 
     procedure ExportToFile(const FileName: string);
+    procedure LoadFromFile(const FileName: string);
     procedure Generate(const Lambda: Single);
 
     property Layers: TCalcLayers read GetLayers;
@@ -236,6 +237,33 @@ begin
   FLayers[0].e.im := 0;
 
   CurrentLayer := 1;
+end;
+
+procedure TLayeredModel.LoadFromFile(const FileName: string);
+var
+  sdata, srow: TStrings;
+  i:integer;
+begin
+  try
+    sdata:=TStringList.Create;
+    srow:=TStringList.Create;
+    srow.Delimiter := ';';
+    srow.StrictDelimiter:= true;
+    sdata.LoadFromFile(FileName, TEncoding.UTF8);
+    SetLength(FLayers, 0);
+    SetLength(FLayers, sdata.Count);
+    for I := 0 to High(FLayers) do
+    begin
+      srow.DelimitedText := sdata[i];
+      FLayers[i].Name := srow[0];
+      FLayers[i].L    := StrToFloat(srow[1]);
+      FLayers[i].s    :=  StrToFloat(srow[2]);
+      FLayers[i].ro   :=  StrToFloat(srow[3]);
+    end;
+  finally
+    srow.Free;
+    sdata.Free;
+  end;
 end;
 
 end.
