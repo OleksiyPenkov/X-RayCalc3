@@ -149,7 +149,7 @@
         <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_Build>440</VerInfo_Build>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.1.0.440;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <OutputExt>_x64.exe</OutputExt>
+        <OutputExt>x64.exe</OutputExt>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
