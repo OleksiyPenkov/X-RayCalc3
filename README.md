@@ -2,10 +2,18 @@
 
 X-Ray Calc 3 is a revised and improved version of software for computer simulation of X-ray reflectivity, including normal incidence and grazing incidence X-ray reflectometry (NIXR and GIXR). Find more information about the previous version here https://linkinghub.elsevier.com/retrieve/pii/S2352711019303681
 
-In this version, the automatic optimization based on modified LFPSO algorithm was implemented (see https://ieeexplore.ieee.org/document/10066334/ for further details).
+In this version, the automatic optimization based on a modified LFPSO algorithm was implemented (see https://ieeexplore.ieee.org/document/10066334/ for further details).
 
-The X-Ray Calc distribution contents several demonstration projects located in the Examples folder To see the demos, click the Open button, navigate to the Examples folder, and select a project file.
+The X-Ray Calc distribution contains several demonstration projects located in the Examples folder To see the demos, click the Open button, navigate to the Examples folder, and select a project file.
 
+## Help
+You can find  manuals, troubleshooting, and lessons here:
+
+https://github.com/OleksiyPenkov/X-RayCalc3/wiki
+
+
+
+## Changelog
 2024-01-19 3.1.0
 Added:
  - AutoSave project after each successful fitting iteration
@@ -27,7 +35,7 @@ Added:
 Fixed:
  - Poly Fitting
  - Shake (k2 error)
- - "Paired" check-box behaviour
+ - "Paired" check-box behavior
  - Deleting exp. curve
  - Decimal separator mismatch
  - Main graph scaling
