@@ -83,6 +83,7 @@ type
     RzPanel9: TRzPanel;
     Label14: TLabel;
     edJobsDir: TRzButtonEdit;
+    chkLiveUpdate: TCheckBox;
 
     procedure SaveSettingsClick(Sender: TObject);
     procedure ShowHelpClick(Sender: TObject);
@@ -135,8 +136,9 @@ begin
 
   with TConfig.Section<TOtherOptions> do
   begin
-    chkAutoCalcOpen.Checked := AutoCalc;
+    chkAutoCalcOpen.Checked    := AutoCalc;
     chkAutoSaveResults.Checked := AutoSave;
+    chkLiveUpdate.Checked      := LiveUpdate;
   end;
 
   edHenkeDir.Text        := Config.SystemDirS[sdHenke];
@@ -165,8 +167,9 @@ begin
 
   with TConfig.Section<TOtherOptions> do
   begin
-    AutoCalc := chkAutoCalcOpen.Checked;
-    AutoSave := chkAutoSaveResults.Checked;
+    AutoCalc   := chkAutoCalcOpen.Checked;
+    AutoSave   := chkAutoSaveResults.Checked;
+    LiveUpdate := chkLiveUpdate.Checked;
   end;
 
   Config.SystemDir[sdHenke]       := edHenkeDir.Text;

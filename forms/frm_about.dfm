@@ -12,6 +12,7 @@ object frmAbout: TfrmAbout
   Font.Name = 'Tahoma'
   Font.Style = []
   Position = poOwnerFormCenter
+  OnCreate = FormCreate
   TextHeight = 13
   object RzLabel1: TRzLabel
     AlignWithMargins = True
@@ -35,32 +36,10 @@ object frmAbout: TfrmAbout
     TextStyle = tsShadow
     ExplicitWidth = 227
   end
-  object RzVersionInfoStatus2: TRzVersionInfoStatus
+  object lblCopyRight: TLabel
     AlignWithMargins = True
     Left = 20
-    Top = 62
-    Width = 293
-    Margins.Left = 20
-    Margins.Bottom = 0
-    FrameStyle = fsNone
-    Align = alTop
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -16
-    Font.Name = 'Tahoma'
-    Font.Style = [fsBold]
-    ParentFont = False
-    Alignment = taCenter
-    Field = vifFileVersion
-    VersionInfo = RzVersionInfo1
-    ExplicitLeft = 3
-    ExplicitTop = 61
-    ExplicitWidth = 259
-  end
-  object RzLabel2: TLabel
-    AlignWithMargins = True
-    Left = 20
-    Top = 92
+    Top = 88
     Width = 293
     Height = 16
     Margins.Left = 20
@@ -75,12 +54,13 @@ object frmAbout: TfrmAbout
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    ExplicitWidth = 169
+    ExplicitLeft = 15
+    ExplicitTop = 111
   end
   object Label1: TLabel
     AlignWithMargins = True
     Left = 20
-    Top = 121
+    Top = 117
     Width = 293
     Height = 32
     Margins.Left = 20
@@ -93,6 +73,7 @@ object frmAbout: TfrmAbout
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
+    ExplicitTop = 121
     ExplicitWidth = 108
   end
   object RzURLLabel1: TRzURLLabel
@@ -1151,6 +1132,22 @@ object frmAbout: TfrmAbout
       0000000000000000000000000000000000000000000000000000000000000000
       0000}
   end
+  object lblVersionInfo: TLabel
+    Left = 0
+    Top = 59
+    Width = 316
+    Height = 19
+    Align = alTop
+    Alignment = taCenter
+    Caption = 'lblVersionInfo'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -16
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+    ExplicitWidth = 114
+  end
   object BitBtn1: TBitBtn
     Left = 237
     Top = 267
@@ -1160,7 +1157,7 @@ object frmAbout: TfrmAbout
     ModalResult = 8
     TabOrder = 0
   end
-  object RzVersionInfo1: TRzVersionInfo
+  object RzVersionInfo: TRzVersionInfo
     Left = 48
     Top = 160
   end

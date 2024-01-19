@@ -21,10 +21,14 @@ type
 
   PUpdateFitProgressMsg = ^TUpdateFitProgressMsg ;
   TUpdateFitProgressMsg  = record
-    LastChi : single;
-    BestChi : single;
-    Step    : integer;
-    Curve   : TDataArray;
+         Full : Boolean;
+    LastChi   : single;
+    BestChi   : single;
+    Step      : integer;
+    Curve     : TDataArray;
+    Structure : TFitStructure;
+         Poly : TProfileFunctions;
+         Res  : TLayeredModel;
   end;
 
   TLayerIndexes = array [1..3] of SmallInt;
@@ -376,7 +380,7 @@ begin
     if FCalc.ChiSQR < FLastBestChiSqr then
     begin
       FLastBestChiSqr  := FCalc.ChiSQR;
-      FResultingCurve := FCalc.Results;
+      FResultingCurve  := FCalc.Results;
       pbest := Copy(X, 0, MaxInt);
     end;
 
@@ -414,6 +418,7 @@ begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
       abest := Copy(gbest, 0, MaxInt);
       CalcSolution(abest);
+      UpdateStructure(abest);
       Result := True;
     end ;
   end
@@ -519,6 +524,7 @@ begin
   end;
 //  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
   UpdateStructure(abest);  // don't delete!
+
 end;
 
 procedure TLFPSO_BASE.RangeSeed;
@@ -531,10 +537,13 @@ var
   msg_prm: PUpdateFitProgressMsg;
 begin
   New(msg_prm);
-  msg_prm.LastChi := FGlobalBestChiSqr;
-  msg_prm.BestChi := FAbsoluteBestChiSqr;
-  msg_prm.Step := Step;
-  msg_prm.Curve := FResultingCurve;
+  msg_prm.Full := True;
+  msg_prm.LastChi   := FGlobalBestChiSqr;
+  msg_prm.BestChi   := FAbsoluteBestChiSqr;
+  msg_prm.Step      := Step;
+  msg_prm.Curve     := FResultingCurve;
+  msg_prm.Structure := FStructure;
+  msg_prm.Poly      := GetPolynomes;
 
   PostMessage(
     Application.MainFormHandle,
@@ -550,6 +559,7 @@ var
   msg_prm: PUpdateFitProgressMsg;
 begin
   New(msg_prm);
+  msg_prm.Full := False;
   msg_prm.LastChi := FGlobalBestChiSqr;
   msg_prm.BestChi := FAbsoluteBestChiSqr;
   msg_prm.Step := Step;

@@ -21,11 +21,9 @@ object frmSettings: TfrmSettings
     Top = 3
     Width = 451
     Height = 384
-    ActivePage = tsCalc
+    ActivePage = tsBehavour
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 447
-    ExplicitHeight = 383
     object tsPaths: TTabSheet
       HelpContext = 143
       Caption = 'tsPaths'
@@ -57,7 +55,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 0
-        ExplicitWidth = 433
         object Label4: TLabel
           Left = 8
           Top = 11
@@ -88,7 +85,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
-        ExplicitWidth = 433
         object Label5: TLabel
           Left = 8
           Top = 11
@@ -119,7 +115,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 2
-        ExplicitWidth = 433
         object Label7: TLabel
           Left = 8
           Top = 11
@@ -159,7 +154,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 4
-        ExplicitWidth = 433
         object Label9: TLabel
           Left = 8
           Top = 11
@@ -189,7 +183,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 5
-        ExplicitWidth = 433
         object Label13: TLabel
           Left = 8
           Top = 11
@@ -220,7 +213,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 6
-        ExplicitWidth = 433
         object Label14: TLabel
           Left = 8
           Top = 11
@@ -277,7 +269,7 @@ object frmSettings: TfrmSettings
         object chkCheckForUpdates: TCheckBox
           AlignWithMargins = True
           Left = 9
-          Top = 68
+          Top = 91
           Width = 425
           Height = 17
           Margins.Left = 9
@@ -286,6 +278,7 @@ object frmSettings: TfrmSettings
           Color = clBtnFace
           ParentColor = False
           TabOrder = 0
+          ExplicitTop = 68
         end
         object chkAutoCalcOpen: TCheckBox
           AlignWithMargins = True
@@ -303,7 +296,7 @@ object frmSettings: TfrmSettings
         object chkAutoSaveResults: TCheckBox
           AlignWithMargins = True
           Left = 9
-          Top = 45
+          Top = 68
           Width = 425
           Height = 17
           Margins.Left = 9
@@ -312,6 +305,20 @@ object frmSettings: TfrmSettings
           Color = clBtnFace
           ParentColor = False
           TabOrder = 2
+          ExplicitTop = 45
+        end
+        object chkLiveUpdate: TCheckBox
+          AlignWithMargins = True
+          Left = 9
+          Top = 45
+          Width = 425
+          Height = 17
+          Margins.Left = 9
+          Align = alTop
+          Caption = 'Live update structure panel during fitting '
+          Color = clBtnFace
+          ParentColor = False
+          TabOrder = 3
         end
       end
     end
@@ -373,7 +380,6 @@ object frmSettings: TfrmSettings
         Font.Style = [fsBold]
         ParentFont = False
         Transparent = True
-        ExplicitTop = 123
         ExplicitWidth = 64
       end
       object RzPanel1: TRzPanel
@@ -422,7 +428,6 @@ object frmSettings: TfrmSettings
         BorderOuter = fsFlatRounded
         Color = 15987699
         TabOrder = 1
-        ExplicitTop = 142
         object Label12: TLabel
           Left = 9
           Top = 9
@@ -503,8 +508,6 @@ object frmSettings: TfrmSettings
     Caption = 'pnButtons'
     ShowCaption = False
     TabOrder = 2
-    ExplicitTop = 389
-    ExplicitWidth = 609
     DesignSize = (
       613
       41)
@@ -519,7 +522,6 @@ object frmSettings: TfrmSettings
       ModalResult = 1
       TabOrder = 0
       OnClick = SaveSettingsClick
-      ExplicitLeft = 409
     end
     object btnCancel: TButton
       Left = 494
@@ -531,7 +533,6 @@ object frmSettings: TfrmSettings
       Caption = '&Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 490
     end
     object btnHelp: TButton
       Left = 12
@@ -558,16 +559,16 @@ object frmSettings: TfrmSettings
     TabOrder = 0
     OnChange = tvSectionsChange
     Items.NodeData = {
-      03050000003C0000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000
-      0000000000010F50006100740068007300200061006E0064002000460069006C
-      00650073002E0000000000000000000000FFFFFFFFFFFFFFFF00000000000000
-      000000000001084200650068006100760069006F007200300000000000000000
-      000000FFFFFFFFFFFFFFFF000000000000000000000000010949006E00740065
-      0072006600610063006500320000000000000000000000FFFFFFFFFFFFFFFF00
-      0000000000000000000000010A430061006C0063002000260020004600690074
-      002E0000000000000000000000FFFFFFFFFFFFFFFF0000000000000000000000
+      070500000009540054007200650065004E006F00640065003D00000000000000
+      00000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000000000010F5000610074
+      0068007300200061006E0064002000460069006C006500730000002F00000000
+      00000000000000FFFFFFFFFFFFFFFF0000000000000000000000000001084200
+      650068006100760069006F0072000000310000000000000000000000FFFFFFFF
+      FFFFFFFF00000000000000000000000000010949006E00740065007200660061
+      00630065000000330000000000000000000000FFFFFFFFFFFFFFFF0000000000
+      0000000000000000010A430061006C0063002000260020004600690074000000
+      2F0000000000000000000000FFFFFFFFFFFFFFFF000000000000000000000000
       00010847007200610070006800690063007300}
-    ExplicitHeight = 380
   end
   object dlgColors: TColorDialog
     Left = 32

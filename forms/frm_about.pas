@@ -19,12 +19,13 @@ type
   TfrmAbout = class(TForm)
     RzLabel1: TRzLabel;
     BitBtn1: TBitBtn;
-    RzVersionInfo1: TRzVersionInfo;
-    RzVersionInfoStatus2: TRzVersionInfoStatus;
-    RzLabel2: TLabel;
+    RzVersionInfo: TRzVersionInfo;
+    lblCopyRight: TLabel;
     Label1: TLabel;
     RzURLLabel1: TRzURLLabel;
     Image1: TImage;
+    lblVersionInfo: TLabel;
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
   public
@@ -34,8 +35,24 @@ type
 var
   frmAbout: TfrmAbout;
 
+
+resourcestring
+  rstrAppVersionInfo   = 'Version: %s';
+  rstrAppVersionInfo64 = 'Version: %s x64';
+  rstrAppCopyRight = '(c) 2001-%d Oleksiy Penkov';
 implementation
 
 {$R *.dfm}
+
+procedure TfrmAbout.FormCreate(Sender: TObject);
+begin
+  {$IFDEF  WIN64}
+     lblVersionInfo.Caption := Format(rstrAppVersionInfo64, [RzVersionInfo.FileVersion]);
+  {$ELSE}
+    lblVersionInfo.Caption := Format(rstrAppVersionInfo, [RzVersionInfo.FileVersion]);
+  {$ENDIF}
+
+  lblCopyRight.Caption := Format(rstrAppCopyRight, [CurrentYear]);
+end;
 
 end.
