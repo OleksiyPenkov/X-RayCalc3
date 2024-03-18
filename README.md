@@ -21,12 +21,19 @@ _O.V. Penkov, M. Li, S. Mikki, A.Devizenko, I. Kopylets. X-Ray Calc 3: improved 
 
 
 ## Changelog
+2024-03-18 3.1.1
+
+Changed:
+ - Layer editing logic
+
 2024-01-19 3.1.0
+
 Added:
  - AutoSave project after each successful fitting iteration
  - x64 version was added to the distribution
 
 2023-08-08 3.0.6
+
 Fixed:
  - Poly Fitting (using of high orders)
  - Drawing of NP profiles
@@ -39,6 +46,7 @@ Added:
  - GIU improvements
 
 2023-07-31 3.0.5
+
 Fixed:
  - Poly Fitting
  - Shake (k2 error)
@@ -51,6 +59,7 @@ Reworked
  - Defalt Shake LFPSO parameters
 
 2023-07-18 3.0.4
+
 Added:
  - Popup menu for stacks
  - Popup menu for layers
@@ -69,6 +78,7 @@ Added:
 
 
 2023-07-06 3.0.3
+
 Fixed:
  - Bugs in the interface (GitHub #12,8,9,13,14,18)
  - internal LFPSO optimizations
