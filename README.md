@@ -2,7 +2,7 @@
 
 X-ray Calc 3 is a revised and improved version of the software for computer simulation of X-ray reflectivity, including normal incidence and grazing incidence X-ray reflectometry (NIXR and GIXR). Find more information about the previous version here https://linkinghub.elsevier.com/retrieve/pii/S2352711019303681
 
-In this version, the automatic optimization based on a modified LFPSO algorithm was implemented (see https://ieeexplore.ieee.org/document/10066334/ for further details).
+In this version, the automatic optimization based on a modified LFPSO algorithm was implemented (see https://ieeexplore.ieee.org/document/10066334/ and https://journals.iucr.org/j/issues/2024/02/00/te5127/index.html for further details).
 
 The X-Ray Calc distribution contains several demonstration projects located in the Examples folder. To see the demos, click the Open button, navigate to the Examples folder, and select a project file.
 
@@ -15,7 +15,8 @@ https://github.com/OleksiyPenkov/X-RayCalc3/wiki
 
 If you use X-Ray Calc in your research, please cite the following paper:
 
-_O.V. Penkov, M. Li, S. Mikki, A.Devizenko, I. Kopylets. X-Ray Calc 3: improved software for simulation and inverse problem-solving for X-Ray reflectivity.	Journal of Applied Crystallography (2024)._
+_O.V. Penkov, M. Li, S. Mikki, A.Devizenko, I. Kopylets. X-Ray Calc 3: improved software for simulation and inverse problem-solving for X-Ray reflectivity.	Journal of Applied Crystallography, 57(2):1-12 (2024)._
+ http://dx.doi.org/10.1107/S1600576724001031
 
 
 
