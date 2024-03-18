@@ -32,6 +32,7 @@ type
 
       FData : TLayerData;
       FOnSet:  boolean;
+      FKeyPressed: boolean;
       FHandler: HWND;
 
       FLinked : TXRCLayerControl;
@@ -40,6 +41,8 @@ type
 
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
+      procedure SpinButtonClick(Sender: TObject; Button: TSpinButtonType);
+      procedure KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
       procedure SetIncrement(const Value: Double);
       procedure SetEnabled(const Value: Boolean); reintroduce; overload;
       function GetEnabled: Boolean; reintroduce; overload;
@@ -121,7 +124,9 @@ begin
   Result.CheckRange := True;
   Result.Tag := Index;
 
-  Result.OnChange := ValueChange
+  Result.OnChange  := ValueChange;
+  Result.OnKeyDown :=  KeyDown;
+  Result.OnButtonClick := SpinButtonClick;
 end;
 
 function TXRCLayerControl.AddCheckBox(const index, Left: integer):TRzCheckBox;
@@ -341,6 +346,11 @@ begin
   LayerDoubleClick(FData.StackID, FData.LayerID);
 end;
 
+procedure TXRCLayerControl.KeyDown;
+begin
+  FKeyPressed := True;
+end;
+
 procedure TXRCLayerControl.LinkedOnClick(Sender: TObject);
 begin
   LinkedClick(FData.StackID, FData.LayerID);
@@ -408,6 +418,15 @@ begin
   Color := clLtGray;
 end;
 
+procedure TXRCLayerControl.SpinButtonClick;
+begin
+  if FKeyPressed then
+  begin
+    FKeyPressed := False;
+    ValueChange(Sender);
+  end;
+end;
+
 procedure TXRCLayerControl.UpdateID(const StackID, LayerID: integer);
 begin
   FData.StackID := StackID;
@@ -421,7 +440,7 @@ var
   OldValue: single;
 begin
   if FOnSet then Exit;
-  
+
   OnSetOld := FOnSet;
   FOnSet := True;
 
@@ -444,7 +463,7 @@ begin
    end;
 
   FOnSet := OnSetOld;
-  if not FOnSet then
+  if not FOnSet and not FKeyPressed then
      SendRecalcMessage;
 end;
 

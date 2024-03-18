@@ -25,8 +25,8 @@ type
     edTitle: TLabeledEdit;
     mmDescription: TMemo;
     Color: TLabel;
-    cbColor: TRzColorComboBox;
     rzfrmcntrlr1: TRzFrameController;
+    cbColor: TColorBox;
     procedure FormShow(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
   private
@@ -47,14 +47,14 @@ implementation
 procedure TedtrProjectItem.btnOKClick(Sender: TObject);
 begin
   FData.Title := edTitle.Text;
-  FData.Color := cbColor.SelectedColor;
+  FData.Color := cbColor.Selected;
   FData.Description := mmDescription.Lines.Text;
 end;
 
 procedure TedtrProjectItem.FormShow(Sender: TObject);
 begin
   edTitle.Text := FData.Title;
-  cbColor.SelectedColor := FData.Color;
+  cbColor.Selected := FData.Color;
   mmDescription.Lines.Text := FData.Description;
 end;
 

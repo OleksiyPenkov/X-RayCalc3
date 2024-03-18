@@ -1,2 +1,0 @@
-# X-RayCalc2
-
