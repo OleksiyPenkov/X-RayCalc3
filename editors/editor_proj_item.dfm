@@ -24,8 +24,6 @@ object edtrProjectItem: TedtrProjectItem
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitTop = 172
-    ExplicitWidth = 376
     object btnOK: TRzBitBtn
       Left = 19
       Top = 10
@@ -56,8 +54,6 @@ object edtrProjectItem: TedtrProjectItem
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitWidth = 376
-    ExplicitHeight = 163
     object Color: TLabel
       Left = 257
       Top = 5
@@ -84,32 +80,13 @@ object edtrProjectItem: TedtrProjectItem
       ScrollBars = ssVertical
       TabOrder = 1
     end
-    object cbColor: TRzColorComboBox
+    object cbColor: TColorBox
       Left = 257
       Top = 24
-      Width = 111
+      Width = 104
       Height = 22
-      CustomColors.Strings = (
-        'Default'
-        'Black'
-        'Maroon'
-        'Green'
-        'Olive'
-        'Navy'
-        'Purple'
-        'Teal'
-        'Gray'
-        'Silver'
-        'Red'
-        'Lime'
-        'Yellow'
-        'Blue'
-        'Fuchsia'
-        'Aqua')
-      ColorDlgOptions = [cdFullOpen, cdSolidColor]
-      DefaultColor = clBlue
-      ShowDefaultColor = False
-      ShowSysColors = False
+      DefaultColorColor = clRed
+      Style = [cbStandardColors, cbExtendedColors, cbCustomColor, cbPrettyNames, cbCustomColors]
       TabOrder = 2
     end
   end

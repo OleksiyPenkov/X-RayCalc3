@@ -109,7 +109,7 @@ begin
   ParentFont := False;
   TreeOptions.MiscOptions := [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning];
   TreeOptions.PaintOptions := [toShowButtons,toShowDropmark,toThemeAware,toUseBlendedImages,toUseExplorerTheme];
-  TreeOptions.SelectionOptions := [toFullRowSelect, toRightClickSelect];
+  TreeOptions.SelectionOptions := [toFullRowSelect, toRightClickSelect, toMultiSelect];
   Touch.InteractiveGestures := [TInteractiveGesture.igPan, TInteractiveGesture.igPressAndTap];
   Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough];
 

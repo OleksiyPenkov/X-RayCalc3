@@ -855,19 +855,30 @@ begin
 end;
 
 procedure TfrmMain.ProjectItemDeleteExecute(Sender: TObject);
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
 begin
-  if IsModel and IsItem then
-    DeleteModel(LastNode, LastData);
-  if IsData and IsItem then
+  Node := Project.GetFirstSelected;
+  while Node <> nil do
   begin
-    if LastData = Project.LinkedData then
-      Project.LinkedData := nil;
-    DeleteData(LastNode, LastData);
+    Data := Project.GetNodeData(Node);
+    if (Data.Group = gtModel) and (Data.RowType = prItem) then
+      DeleteModel(Node, Data);
+
+    if (Data.Group = gtData) and (Data.RowType = prItem) then
+    begin
+      if Data = Project.LinkedData then
+        Project.LinkedData := nil;
+      DeleteData(Node, Data);
+    end;
+
+    if (Data.RowType = prFolder) then
+      DeleteFolder(Node);
+    if (Data.RowType = prExtension) then
+      DeleteExtension(Node);
+    Node := Project.GetFirstSelected;
   end;
-  if IsFolder then
-    DeleteFolder(LastNode);
-  if IsExtension then
-    DeleteExtension(LastNode);
   ProjectChange(Project, Nil);
 end;
 
