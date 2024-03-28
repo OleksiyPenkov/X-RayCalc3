@@ -537,13 +537,14 @@ var
   msg_prm: PUpdateFitProgressMsg;
 begin
   New(msg_prm);
-  msg_prm.Full := True;
+  msg_prm.Full      := True;
   msg_prm.LastChi   := FGlobalBestChiSqr;
   msg_prm.BestChi   := FAbsoluteBestChiSqr;
   msg_prm.Step      := Step;
   msg_prm.Curve     := FResultingCurve;
   msg_prm.Structure := FStructure;
   msg_prm.Poly      := GetPolynomes;
+  msg_prm.Res       := GetResult;
 
   PostMessage(
     Application.MainFormHandle,

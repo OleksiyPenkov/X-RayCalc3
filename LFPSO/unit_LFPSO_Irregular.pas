@@ -90,10 +90,11 @@ begin
           V[i][j][k][0] := Omega(t, FTMax) * LevyWalk(X[i][j][k][0], gbest[j][k][0])  +
                         c1 * Random * (pbest[j][k][0] - X[i][j][k][0]) +
                         c2 * Random * (gbest[j][k][0] - X[i][j][k][0]);
-          CheckLimits(i, j, k);
         end
         else
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0];
+
+        CheckLimits(i, j, k);
       end;
 
     if FFitParams.Smooth then Smooth(i);
@@ -117,10 +118,11 @@ begin
           V[i][j][k][0] := Omega(t, FTMax) * V[i][j][k][0]  +
                       c1 * Random * (pbest[j][k][0] - X[i][j][k][0]) +
                       c2 * Random * (gbest[j][k][0] - X[i][j][k][0]);
-          CheckLimits(i, j, k);
         end
         else
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0];
+
+        CheckLimits(i, j, k);
       end;
 
     if FFitParams.Smooth then Smooth(i);
@@ -157,8 +159,11 @@ begin
   for i := 1 to High(X) do          // for every member of the population
   begin
     for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
+      for k := 1 to 3 do
+      begin            // for H, s, rho
         X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
+        CheckLimits(i, j, k);
+      end;
 
     if FFitParams.Smooth then Smooth(i);
   end;
@@ -179,6 +184,8 @@ begin
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0]
         else
           X[i][j][k][0] := Xmin[0][j][k][0] + Random * (Xmax[0][j][k][0] - Xmin[0][j][k][0]);   // min + Random * (min-max)
+
+        CheckLimits(i, j, k);
       end;
 
     if FFitParams.Smooth then Smooth(i);
