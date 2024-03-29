@@ -18,6 +18,8 @@ uses
 
 type
   TXRCLayerControl = class (TRzPanel)
+    protected
+      procedure MyKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     private
       Name: TRzLabel;
       Thickness: TRzSpinEdit;
@@ -42,7 +44,6 @@ type
       procedure CheckBoxClick(Sender: TObject);
       procedure ValueChange(Sender: TObject);
       procedure SpinButtonClick(Sender: TObject; Button: TSpinButtonType);
-      procedure KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
       procedure SetIncrement(const Value: Double);
       procedure SetEnabled(const Value: Boolean); reintroduce; overload;
       function GetEnabled: Boolean; reintroduce; overload;
@@ -55,7 +56,7 @@ type
       procedure InternalOnDblClick(Sender: TObject);
       procedure InternalOnClick(Sender: TObject);
       procedure LinkedOnClick(Sender: TObject);
-      function AddSpinEdit(const index, Left, Max: integer): TRzSpinEdit;
+      function AddSpinEdit(const index, Left, Max: integer; Width:Integer = 50): TRzSpinEdit;
       procedure SetLayerData(const Value: TLayerData);
       procedure SetSlected(const Value: boolean);
       function AddCheckBox(const index, Left: integer): TRzCheckBox;
@@ -106,14 +107,14 @@ const
 
 { TXRCLayerControl }
 
-function TXRCLayerControl.AddSpinEdit(const index, Left, Max: integer):TRzSpinEdit;
+function TXRCLayerControl.AddSpinEdit;
 begin
   Result := TRzSpinEdit.Create(Self);
 
   Result.Parent := Self;
   Result.Left := Left;
   Result.Top := 11;
-  Result.Width := 58;
+  Result.Width := Width;
   Result.Height := 21;
   Result.Decimals := 2;
   Result.Increment := 0.1;
@@ -125,7 +126,7 @@ begin
   Result.Tag := Index;
 
   Result.OnChange  := ValueChange;
-  Result.OnKeyDown :=  KeyDown;
+  Result.OnKeyDown :=  MyKeyDown;
   Result.OnButtonClick := SpinButtonClick;
 end;
 
@@ -167,15 +168,15 @@ begin
   Name := TRzLabel.Create(Self);
 
   //Thickness
-  Thickness := AddSpinEdit(1, 90, 9999);
-  PairedH   := AddCheckBox(1, 150);
+  Thickness := AddSpinEdit(1, 85, 9999, 80);
+  PairedH   := AddCheckBox(1, 167);
 
   //Sigma
-  Sigma := AddSpinEdit(2, 170, 50);
-  PairedS   := AddCheckBox(2, 230);
+  Sigma := AddSpinEdit(2, 186, 50);
+  PairedS   := AddCheckBox(2, 240);
 
   //Rho
-  Rho := AddSpinEdit(3, 250, 30);
+  Rho := AddSpinEdit(3, 258, 30);
   PairedR   := AddCheckBox(3, 310);
 
   //RzCheckBox1
@@ -346,7 +347,7 @@ begin
   LayerDoubleClick(FData.StackID, FData.LayerID);
 end;
 
-procedure TXRCLayerControl.KeyDown;
+procedure TXRCLayerControl.MyKeyDown;
 begin
   FKeyPressed := True;
 end;

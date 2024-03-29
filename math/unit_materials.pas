@@ -244,9 +244,9 @@ var
   sdata, srow: TStrings;
   i:integer;
 begin
+  sdata:=TStringList.Create;
+  srow:=TStringList.Create;
   try
-    sdata:=TStringList.Create;
-    srow:=TStringList.Create;
     srow.Delimiter := ';';
     srow.StrictDelimiter:= true;
     sdata.LoadFromFile(FileName, TEncoding.UTF8);
