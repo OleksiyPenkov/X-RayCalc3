@@ -54,8 +54,7 @@ object frmAbout: TfrmAbout
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    ExplicitLeft = 15
-    ExplicitTop = 111
+    ExplicitWidth = 169
   end
   object Label1: TLabel
     AlignWithMargins = True
@@ -73,7 +72,6 @@ object frmAbout: TfrmAbout
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    ExplicitTop = 121
     ExplicitWidth = 108
   end
   object RzURLLabel1: TRzURLLabel

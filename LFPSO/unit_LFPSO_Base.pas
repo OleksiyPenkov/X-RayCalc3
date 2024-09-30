@@ -28,7 +28,7 @@ type
     Curve     : TDataArray;
     Structure : TFitStructure;
          Poly : TProfileFunctions;
-         Res  : TLayeredModel;
+         LayeredModel  : TLayeredModel;
   end;
 
   TLayerIndexes = array [1..3] of SmallInt;
@@ -57,12 +57,14 @@ type
       gbest: TSolution; // best global solution
       abest: TSolution;
 
+      abest_val: single;
+      gbest_val: single;
+
       FLastBestChiSqr  : single;
       FLastWorseChiSQR : single;
       FGlobalBestChiSqr: single;
       FAbsoluteBestChiSqr: single;
       FJammingCount    : integer;
-
 
       FTMax: integer;
       FPopulation: integer;
@@ -73,7 +75,7 @@ type
       CFactor: single;
 
       function FindTheBest: Boolean;
-      function GetResult: TLayeredModel; virtual;
+//      function GetResult: TLayeredModel; virtual;
 
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
@@ -89,8 +91,8 @@ type
       procedure RangeSeed;virtual;
       procedure XSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
-      procedure UpdateStructure(Solution:TSolution); virtual;
-      function FitModelToLayer(Solution: TSolution): TLayeredModel; virtual;
+      procedure UpdateStructure(var Solution:TSolution); virtual;
+      function FitModelToLayer(const Solution: TSolution): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_Domains(const Order: Integer);
       procedure ApplyCFactor(var c1, c2: single);// inline;
@@ -107,7 +109,7 @@ type
 
       property Materials: TMaterials read FMaterials write FMaterials;
       property Structure: TFitStructure read FStructure write SetStructure;
-      property Result : TLayeredModel read GetResult;
+//      property Result : TLayeredModel read GetResult;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
@@ -122,6 +124,8 @@ type
   function Gamma( x : single) : single;
   procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
   function RS: integer;
+  function SolutionToString(var Solution: TSolution): string;
+  procedure LineToFile(const Name, S: string; val: single);
 
 const
   w_max = 0.9;
@@ -140,6 +144,38 @@ uses
   Dialogs;
 
 { Supplementary}
+
+function SolutionToString(var Solution: TSolution): string;
+const
+  clrl = #13#10;
+var
+  i,j: integer;
+  layer: TLayer;
+  S: string;
+begin
+  Result := '';
+  for layer in Solution do
+  begin
+    S := '';
+    for i := 1 to 3 do
+    begin
+      for j := 0 to High(layer[i]) do
+        S := S + FloatToStrF(layer[i][j], ffFixed, 4, 2) + ' ';
+    end;
+    Result := Result + S + clrl;
+  end;
+end;
+
+procedure LineToFile(const Name, S: string; val: single);
+var
+  F: Text;
+begin
+  Assign(F, 'D:\temp\' + Name + '.txt');
+  Rewrite(F);
+  Writeln(F, Name, val);
+  Writeln(F, S);
+  CloseFile(F);
+end;
 
 function Gamma( x : single) : single;
 const COF : array [0..14] of single =
@@ -251,7 +287,7 @@ begin
   inherited;
 end;
 
-function TLFPSO_BASE.FitModelToLayer(Solution: TSolution): TLayeredModel;
+function TLFPSO_BASE.FitModelToLayer(const Solution: TSolution): TLayeredModel;
 var
   i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;
@@ -292,10 +328,11 @@ begin
 
 end;
 
-function TLFPSO_BASE.GetResult: TLayeredModel;
-begin
-  Result := FitModelToLayer(abest);
-end;
+//function TLFPSO_BASE.GetResult: TLayeredModel;
+//begin
+//  Result := FitModelToLayer(gbest);
+//  LineToFile('result_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
+//end;
 
 procedure TLFPSO_BASE.InitVelocity;
 begin
@@ -413,13 +450,16 @@ begin
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
     gbest := Copy(pbest, 0, MaxInt);
+    gbest_val := FLastBestChiSqr;
     if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
       abest := Copy(gbest, 0, MaxInt);
-      CalcSolution(abest);
-      UpdateStructure(abest);
+      abest_val := FGlobalBestChiSqr;
+      CalcSolution(gbest);
+      UpdateStructure(gbest);
       Result := True;
+//      LineToFile('current_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
     end ;
   end
   else begin
@@ -466,7 +506,7 @@ begin
     dec(SuccessCount);
   end;
   UpdateStructure(gbest);        // re-init based on current global best solution
-  TmpStructure := FStructure;
+  FStructure.CopyContent(TmpStructure);
   SetStructure(TmpStructure);    // Don't use X[0] = abest! The full re-set is requred
 
   Init(t);
@@ -523,8 +563,9 @@ begin
     end;
   end;
 //  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
-  UpdateStructure(abest);  // don't delete!
-
+//   UpdateStructure(gbest);  // don't delete!
+//  LineToFile('final_gbest', SolutionToString(gbest), FGlobalBestChiSqr);
+  SendUpdateMessage(t);
 end;
 
 procedure TLFPSO_BASE.RangeSeed;
@@ -537,14 +578,14 @@ var
   msg_prm: PUpdateFitProgressMsg;
 begin
   New(msg_prm);
-  msg_prm.Full      := True;
-  msg_prm.LastChi   := FGlobalBestChiSqr;
-  msg_prm.BestChi   := FAbsoluteBestChiSqr;
-  msg_prm.Step      := Step;
-  msg_prm.Curve     := FResultingCurve;
-  msg_prm.Structure := FStructure;
-  msg_prm.Poly      := GetPolynomes;
-  msg_prm.Res       := GetResult;
+  msg_prm.Full         := True;
+  msg_prm.LastChi      := FGlobalBestChiSqr;
+  msg_prm.BestChi      := FAbsoluteBestChiSqr;
+  msg_prm.Step         := Step;
+  msg_prm.Curve        := FResultingCurve;
+  msg_prm.Structure    := FStructure;
+  msg_prm.Poly         := GetPolynomes;
+  msg_prm.LayeredModel := FitModelToLayer(gbest);
 
   PostMessage(
     Application.MainFormHandle,
@@ -624,7 +665,7 @@ begin
 end;
 
 
-procedure TLFPSO_BASE.UpdateStructure(Solution: TSolution);
+procedure TLFPSO_BASE.UpdateStructure(var Solution: TSolution);
 var
   i, j, p, LayerIndex: integer;
 begin

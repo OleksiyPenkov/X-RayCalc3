@@ -34,7 +34,7 @@ type
       procedure InitVelocity; override;
       procedure Set_Init_XPoly(const N, Index, ValueType: Integer;
       const Paired: Boolean; Val: TFitValue);
-      function FitModelToLayer(Solution: TSolution): TLayeredModel; override;
+      function FitModelToLayer(const Solution: TSolution): TLayeredModel; override;
       function GetPolynomes: TProfileFunctions; override;
     public
       destructor Destroy; override;
@@ -229,7 +229,7 @@ begin
   inherited;
 end;
 
-function TLFPSO_Poly.FitModelToLayer(Solution: TSolution): TLayeredModel;
+function TLFPSO_Poly.FitModelToLayer(const Solution: TSolution): TLayeredModel;
 var
   i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;

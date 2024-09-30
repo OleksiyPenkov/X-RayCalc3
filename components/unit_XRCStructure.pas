@@ -451,7 +451,7 @@ end;
 
 function TXRCStructure.Model(const ExpandProfiles: Boolean): TLayeredModel;
 var
-  i, j, k, p: Integer;
+  i, j, k, p, slN: Integer;
   StackLayers: TLayersData;
 begin
   FPeriod := 0;
@@ -465,7 +465,8 @@ begin
     begin
       if ExpandProfiles and (FStacks[i].N > 1) then
       begin
-        for k := 0 to High(StackLayers) do
+        slN := High(StackLayers);
+        for k := 0 to slN do
           for p := 1 to 3 do
             if not StackLayers[k].P[p].Paired then
                StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];

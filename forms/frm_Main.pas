@@ -150,9 +150,9 @@ type
     N5: TMenuItem;
     pmCopytoclipboard: TMenuItem;
     pmExporttofile: TMenuItem;
-    chThickness: TChart;
     chRoughness: TChart;
     chDensity: TChart;
+    chThickness: TChart;
     RzStatusPane7: TRzStatusPane;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
@@ -311,6 +311,9 @@ type
     btnAdvFitSettings: TRzBitBtn;
     cbSmooth: TRzCheckBox;
     pnlX64: TRzStatusPane;
+    tsProfile: TRzTabSheet;
+    chProfile: TChart;
+    DensityProfile: TLineSeries;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -423,6 +426,7 @@ type
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
+    FABestChiSquare: Single;
 
     FOperationsStack: TStack<String>;
     FRecentProjects : TList<String>;
@@ -487,11 +491,12 @@ type
     procedure LoadRecentProjectsList;
     function FittingMode: TFittingMode; inline;
     procedure RunCalc(const Recover: boolean);
-    procedure UpdateInterface(FitStructure: TFitStructure;
-                              Poly: TProfileFunctions;
-                              Res: TLayeredModel;
-                              CreateExtension: boolean = True);
+    procedure UpdateInterface(const FitStructure: TFitStructure;
+                              const Poly: TProfileFunctions;
+                              const Res: TLayeredModel;
+                              const CreateExtension: boolean = True);
     procedure UpdateProfileExtension;
+    procedure PlotDensityProfile;
     { Private declarations }
   public
     { Public declarations }
@@ -614,6 +619,7 @@ procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
+  NeedsSaving: boolean;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
@@ -623,15 +629,25 @@ begin
 
   spChiSqr.Caption := FloatToStrF(msg_prm.LastChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
+
   FLastChiSquare :=  msg_prm.BestChi;
+  if FABestChiSquare > FLastChiSquare then
+  Begin
+    NeedsSaving := True;
+    FABestChiSquare := FLastChiSquare
+  End
+  else
+    NeedsSaving := False;
+
   if msg_prm.Full then
   begin
     PlotResults(msg_prm.Curve);
     if TConfig.Section<TOtherOptions>.LiveUpdate then
     begin
-      UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.Res, FFirstUpdate);
+      UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.LayeredModel, FFirstUpdate);
       FFirstUpdate := False;
-      AutoSave;
+      if NeedsSaving then
+           AutoSave;
     end;
   end;
   Dispose(msg_prm);
@@ -1353,7 +1369,7 @@ begin
 
     p := pos(PROJECT_EXT, FileName);
     Delete(FileName, p, Length(PROJECT_EXT));
-    FileName := Path + FileName + '-fitted' + PROJECT_EXT;
+    FileName := Path + FileName + '-fitted'+ PROJECT_EXT;
     SaveProject(FileName);
   end;
 end;
@@ -1810,6 +1826,7 @@ begin
     end;
     Inc(shift, Structure.Stacks[i].N);
   end;
+  PlotDensityProfile;
 end;
 
 procedure TfrmMain.PlotGradedProfile;
@@ -1861,6 +1878,7 @@ end;
 procedure TfrmMain.PlotSimpleProfile;
 var
   StackIndex, LayerIndex, PeriodIndex, shift, d, p: integer;
+  Val: single;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(Structure.Stacks) do
@@ -1872,11 +1890,43 @@ begin
       for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
       begin
         for p := 1 to 3 do
-          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+        begin
+          Val := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V;
+          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Val);
+        end;
       end;
     end;
     Inc(shift, Structure.Stacks[StackIndex].N);
     Inc(d, Length(Structure.Stacks[StackIndex].Layers));
+  end;
+end;
+
+procedure TfrmMain.PlotDensityProfile;
+var
+  StackIndex, LayerIndex, PeriodIndex: integer;
+  InLayerDepth, Depth, Val: single;
+begin
+
+  Depth := 0;
+
+  for StackIndex := 0 to High(Structure.Stacks) do
+  begin
+    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
+    begin
+      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
+      begin
+        InLayerDepth := 0;
+        while InLayerDepth < Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V do
+        begin
+          InLayerDepth := InLayerDepth + 0.1;
+          Depth := Depth + 0.1;
+          Val := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V;
+          if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3]) > 1 then
+             Val := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3][PeriodIndex - 1];
+          DensityProfile.AddXY(Depth, Val);
+        end;
+      end;
+    end;
   end;
 end;
 
@@ -1887,6 +1937,8 @@ begin
   for p := 1 to 3 do
     for StackIndex := 0 to High(FSeriesArray[p]) do
       FSeriesArray[p][StackIndex].Clear;
+
+  DensityProfile.Clear;
 end;
 
 
@@ -1907,6 +1959,8 @@ begin
          PlotProfileNP
       else
         PlotSimpleProfile;
+
+  PlotDensityProfile;
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
@@ -2051,8 +2105,6 @@ begin
     fmPoly      : LFPSO := TLFPSO_Poly.Create;
   end;
 
-
-
   GetThreadParams;
 
   LFPSO.Params := FFitParams;
@@ -2134,8 +2186,9 @@ begin
 
     FFirstUpdate := True;
 
+    FABestChiSquare := 1e32;
     LFPSO.Run(FCalcThreadParams);
-    UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, LFPSO.Result, FFirstUpdate);
+//    UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, LFPSO.Result, FFirstUpdate);
 
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -2146,7 +2199,7 @@ begin
     EnableControls(True);
     FreeAndNil(LFPSO);
   end;
-  AutoSave;
+  //AutoSave;
 end;
 
 procedure TfrmMain.ProcessJobFile(Sender: TObject; const F: TSearchRec);
@@ -2158,7 +2211,7 @@ begin
 
   actProjectReopenExecute(nil);
   actAutoFittingExecute(nil);
-  AutoSave;
+  //AutoSave;
 end;
 
 procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
