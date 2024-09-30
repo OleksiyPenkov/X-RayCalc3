@@ -243,6 +243,7 @@
         <DCCReference Include="components\unit_AutoCompleteEdit.pas"/>
         <DCCReference Include="components\MHLButtonedEdit.pas"/>
         <DCCReference Include="components\unit_StaticTip.pas"/>
+        <DCCReference Include="units\unit_Profiles.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -270,6 +271,12 @@
             </Delphi.Personality>
             <Deployment Version="5">
                 <DeployFile LocalName="OUT\BIN\XRayCalc3.exe" Configuration="Debug" Class="ProjectOutput"/>
+                <DeployFile LocalName="OUT\BIN\XRayCalc3.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>XRayCalc3.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="OUT\BIN\XRayCalc3.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="iOSSimulator">

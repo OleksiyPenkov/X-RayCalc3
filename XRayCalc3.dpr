@@ -44,7 +44,8 @@ uses
   frm_FitSettings in 'forms\frm_FitSettings.pas' {frmFitSettings},
   unit_AutoCompleteEdit in 'components\unit_AutoCompleteEdit.pas',
   MHLButtonedEdit in 'components\MHLButtonedEdit.pas',
-  unit_StaticTip in 'components\unit_StaticTip.pas';
+  unit_StaticTip in 'components\unit_StaticTip.pas',
+  unit_Profiles in 'units\unit_Profiles.pas';
 
 {$R *.res}
 
