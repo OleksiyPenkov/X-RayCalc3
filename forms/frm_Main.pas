@@ -15,7 +15,7 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
   unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark,
-  Vcl.PlatformDefaultStyleActnCtrls, unit_Profiles;
+  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager;
 
 type
   TfrmMain = class(TForm)
@@ -429,6 +429,8 @@ type
     FBenchmarkRuns: Integer;
     FLastModelName: String;
     FFirstUpdate: Boolean;
+    FSeriesList: TSeriesList ;
+    PM: TProfileManager;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -459,7 +461,6 @@ type
     function GetProfileFunctions: TProfileFunctions;
     procedure CreateProfileExtension;
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
-    procedure PlotProfile;
     function IsProfileEnbled: Boolean;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
@@ -681,7 +682,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PlotProfile;
+  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
   CalcRunExecute(Self);
 end;
 
@@ -746,8 +747,8 @@ begin
        Structure.FromString(LastData.Data);
        FOperationsStack.Clear;
        FOperationsStack.Push(LastData.Data);
-       PrepareDistributionCharts(Structure, chThickness, chRoughness, chDensity);
-       PlotProfile;
+       PM.Prepare(Structure, chThickness, chRoughness, chDensity);
+       PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
      end;
   end;
 end;
@@ -1397,8 +1398,8 @@ end;
 
 procedure TfrmMain.MatchToStructure;
 begin
-  PrepareDistributionCharts(Structure, chThickness, chRoughness, chDensity);
-  PlotProfile;
+  PM.Prepare(Structure, chThickness, chRoughness, chDensity);
+  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
   Project.ActiveModel.Data := Structure.ToString;
 end;
 
@@ -1757,22 +1758,6 @@ begin
   Result := TFittingMode(rgFittingMode.ItemIndex);
 end;
 
-procedure TfrmMain.PlotProfile;
-begin
-  ClearProfiles;
-
-  FProfiles := GetProfileFunctions;
-  if Length(FProfiles) > 0 then
-    PlotGradedProfile
-  else
-      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
-         PlotProfileNP
-      else
-        PlotSimpleProfile;
-
-  PlotDensityProfile;
-end;
-
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
 var
   Node: PVirtualNode;
@@ -1834,9 +1819,9 @@ begin
       end;
 
       if IsProfileEnbled and (FittingMode <> fmPeriodic) then
-         PlotProfileNP
+         PM.PlotProfileNP
      else
-        PlotProfile;
+        PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
     except
       on E: exception do
       begin
@@ -2332,7 +2317,7 @@ begin
   RecoverProjectTree(ActiveID);
   RecoverDataCurves(LinkedID);
 
-  ClearProfiles;
+  PM.ClearProfiles;
   FIgnoreFocusChange := False;
   Project.Repaint;
   Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
@@ -2348,7 +2333,7 @@ end;
 procedure TfrmMain.FileNewExecute(Sender: TObject);
 begin
   Structure.Clear;
-  ClearProfiles;
+  PM.ClearProfiles;
   CreateDefaultProject;
 end;
 
@@ -2718,7 +2703,9 @@ begin
   Config := TConfig.Create;
   CreateProjectTree;
 
-  FDensityProfile := DensityProfile;
+  PM := TProfileManager.Create;
+  PM.DensityProfile := DensityProfile;
+
   Structure := TXRCStructure.Create(StructurePanel);
   Structure.Parent := StructurePanel;
 

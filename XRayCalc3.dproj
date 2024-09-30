@@ -243,7 +243,7 @@
         <DCCReference Include="components\unit_AutoCompleteEdit.pas"/>
         <DCCReference Include="components\MHLButtonedEdit.pas"/>
         <DCCReference Include="components\unit_StaticTip.pas"/>
-        <DCCReference Include="units\unit_Profiles.pas"/>
+        <DCCReference Include="units\unit_ProfilesManager.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
