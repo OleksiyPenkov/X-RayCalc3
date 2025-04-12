@@ -2,7 +2,7 @@ object frmMain: TfrmMain
   Left = 381
   Top = 305
   Caption = 'X-Ray Calc 3'
-  ClientHeight = 791
+  ClientHeight = 801
   ClientWidth = 1672
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -14,13 +14,14 @@ object frmMain: TfrmMain
   Menu = mmMain
   Position = poDesigned
   WindowState = wsMaximized
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   TextHeight = 15
   object Status: TRzStatusBar
     Left = 0
-    Top = 772
+    Top = 782
     Width = 1672
     Height = 19
     BorderInner = fsNone
@@ -68,7 +69,7 @@ object frmMain: TfrmMain
     Left = 0
     Top = 0
     Width = 1672
-    Height = 772
+    Height = 782
     Position = 234
     Percent = 14
     UpperLeft.Color = 15987699
@@ -80,7 +81,7 @@ object frmMain: TfrmMain
       234
       0
       238
-      772)
+      782)
     UpperLeftControls = (
       RzPanel1)
     LowerRightControls = (
@@ -91,7 +92,7 @@ object frmMain: TfrmMain
       Left = 3
       Top = 3
       Width = 228
-      Height = 766
+      Height = 776
       Align = alClient
       BorderOuter = fsFlatRounded
       Color = 15987699
@@ -169,7 +170,7 @@ object frmMain: TfrmMain
       object RzPanel5: TRzPanel
         AlignWithMargins = True
         Left = 5
-        Top = 679
+        Top = 689
         Width = 218
         Height = 82
         Align = alBottom
@@ -292,7 +293,7 @@ object frmMain: TfrmMain
       Left = 356
       Top = 3
       Width = 1078
-      Height = 766
+      Height = 776
       Margins.Left = 0
       Margins.Right = 0
       Align = alClient
@@ -302,7 +303,7 @@ object frmMain: TfrmMain
       object Pages: TRzPageControl
         AlignWithMargins = True
         Left = 5
-        Top = 598
+        Top = 608
         Width = 1068
         Height = 163
         Hint = ''
@@ -350,10 +351,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -387,10 +384,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -424,10 +417,6 @@ object frmMain: TfrmMain
         object tsProfile: TRzTabSheet
           Color = 15987699
           Caption = 'Profile'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chProfile: TChart
             AlignWithMargins = True
             Left = 3
@@ -474,10 +463,6 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -564,7 +549,7 @@ object frmMain: TfrmMain
         Left = 5
         Top = 148
         Width = 1068
-        Height = 388
+        Height = 398
         Cursor = crCross
         Foot.Visible = False
         Legend.Brush.Color = clSilver
@@ -644,7 +629,6 @@ object frmMain: TfrmMain
         LeftAxis.TicksInner.Width = 2
         LeftAxis.Title.Caption = 'Reflectivity'
         LeftAxis.Title.Font.Height = -16
-        LeftAxis.Title.Font.Style = [fsBold]
         LeftAxis.TitleSize = 15
         Pages.AutoScale = True
         RightAxis.Automatic = False
@@ -790,7 +774,7 @@ object frmMain: TfrmMain
       object RzPanel3: TRzPanel
         AlignWithMargins = True
         Left = 5
-        Top = 542
+        Top = 552
         Width = 1068
         Height = 50
         Align = alBottom
@@ -1094,7 +1078,7 @@ object frmMain: TfrmMain
           object Label21: TLabel
             Left = 256
             Top = 83
-            Width = 32
+            Width = 33
             Height = 15
             Caption = ' TW'#967'2'
           end
@@ -1430,11 +1414,11 @@ object frmMain: TfrmMain
               ParentFont = False
             end
             object Label3: TLabel
-              Left = 99
+              Left = 92
               Top = 10
-              Width = 8
+              Width = 28
               Height = 19
-              Caption = 'l'
+              Caption = 'l(A)'
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
               Font.Height = -15
@@ -1501,9 +1485,9 @@ object frmMain: TfrmMain
               Text = '0.015'
             end
             object edLambda: TEdit
-              Left = 115
+              Left = 126
               Top = 9
-              Width = 86
+              Width = 75
               Height = 22
               Alignment = taRightJustify
               Font.Charset = DEFAULT_CHARSET
@@ -1694,7 +1678,7 @@ object frmMain: TfrmMain
       Left = 3
       Top = 3
       Width = 350
-      Height = 766
+      Height = 776
       Align = alLeft
       BorderOuter = fsFlatRounded
       Color = 15987699

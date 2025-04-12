@@ -394,6 +394,8 @@ type
     procedure rgFittingModeClick(Sender: TObject);
     procedure btnAdvFitSettingsClick(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
+    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+      NewDPI: Integer);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -431,6 +433,7 @@ type
     FFirstUpdate: Boolean;
     FSeriesList: TSeriesList ;
     PM: TProfileManager;
+    FDPI: Integer;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -688,7 +691,7 @@ end;
 
 procedure TfrmMain.CreateProjectTree;
 begin
-  Project := TXRCProjectTree.Create(RzPanel1);
+  Project := TXRCProjectTree.Create(RzPanel1, FDPI);
   Project.Parent := RzPanel1;
 
   Project.OnChange := ProjectChange;
@@ -1750,9 +1753,6 @@ begin
   PrintMax;
 end;
 
-
-
-
 function  TfrmMain.FittingMode: TFittingMode;
 begin
   Result := TFittingMode(rgFittingMode.ItemIndex);
@@ -1854,11 +1854,11 @@ begin
   end;
 end;
 
-
 procedure TfrmMain.EnableControls(const Enable: boolean);
 begin
   tlbrFile.Enabled := Enable;
   tlbStructure.Enabled := Enable;
+  tlbrProject.Enabled := Enable;
   ChartToolBar.Enabled := Enable;
   btnCopyConvergence.Enabled := Enable;
 
@@ -2666,6 +2666,26 @@ begin
   FFitParams.PolyFactor   := 10;
 end;
 
+procedure TfrmMain.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+  NewDPI: Integer);
+begin
+  FDPI := NewDPI;
+  if Project.TargetDPI <> NewDPI then
+  begin
+    Project.TargetDPI := NewDPI;
+    Project.ScaleForPPI(NewDPI);
+  end;
+  if Structure.TargetDPI <> NewDPI then
+  begin
+    Structure.TargetDPI := NewDPI;
+    if LastData <> nil then
+    begin
+      LastData.Data :=Structure.ToString;
+      Structure.FromString(LastData.Data);
+    end;
+  end;
+end;
+
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
@@ -2698,7 +2718,7 @@ begin
      pnlX64.Visible := False;
   {$ENDIF}
 
-
+  FDPI := Screen.PixelsPerInch;
   FormatSettings.DecimalSeparator := '.';
   Config := TConfig.Create;
   CreateProjectTree;
@@ -2706,7 +2726,7 @@ begin
   PM := TProfileManager.Create;
   PM.DensityProfile := DensityProfile;
 
-  Structure := TXRCStructure.Create(StructurePanel);
+  Structure := TXRCStructure.Create(StructurePanel, FDPI);
   Structure.Parent := StructurePanel;
 
   FOperationsStack := TStack<String>.Create;
@@ -2760,11 +2780,13 @@ begin
       begin
         pnlAngleParams.Enabled := True;
         pnlWaveParams.Enabled := False;
+        Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
       end;
     1:
       begin
         pnlAngleParams.Enabled := False;
         pnlWaveParams.Enabled := True;
+        Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
       end;
   end;
   AllowChange := True;
