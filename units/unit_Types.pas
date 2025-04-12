@@ -199,6 +199,8 @@ type
     Subs: TLayerData;
     function Total: Word;
     function TotalNP: Word;
+
+    procedure CopyContent(var Dest: TFitStructure);
   end;
 
 
@@ -264,6 +266,12 @@ procedure TFitValue.Init(const dev: single);
 begin
   min := V * (1 - dev);
   max := V * (1 + dev);
+end;
+
+procedure TFitStructure.CopyContent(var Dest: TFitStructure);
+begin
+  Dest.Stacks := Copy(Stacks, 0, MaxInt);
+  Dest.Subs := Subs;
 end;
 
 { TFitPeriodicStructure }

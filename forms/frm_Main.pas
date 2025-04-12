@@ -15,11 +15,9 @@ uses
   unit_SMessages,
   unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
   unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark,
-  Vcl.PlatformDefaultStyleActnCtrls;
+  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager;
 
 type
-  TSeriesList = array of TLineSeries;
-
   TfrmMain = class(TForm)
     mmMain: TMainMenu;
     File1: TMenuItem;
@@ -150,9 +148,9 @@ type
     N5: TMenuItem;
     pmCopytoclipboard: TMenuItem;
     pmExporttofile: TMenuItem;
-    chThickness: TChart;
     chRoughness: TChart;
     chDensity: TChart;
+    chThickness: TChart;
     RzStatusPane7: TRzStatusPane;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
@@ -311,6 +309,9 @@ type
     btnAdvFitSettings: TRzBitBtn;
     cbSmooth: TRzCheckBox;
     pnlX64: TRzStatusPane;
+    tsProfile: TRzTabSheet;
+    chProfile: TChart;
+    DensityProfile: TLineSeries;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -393,6 +394,8 @@ type
     procedure rgFittingModeClick(Sender: TObject);
     procedure btnAdvFitSettingsClick(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
+    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+      NewDPI: Integer);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -412,17 +415,12 @@ type
     FLastID: integer;
     IsFolder, IsItem, IsData, IsModel, IsExtension: Boolean;
     StartTime, FitStartTime: TDateTime;
-
-    FSeriesList: TSeriesList ;
-
-    FSeriesArray: array [1..3] of TSeriesList;
-
-    FProfiles: TProfileFunctions;
     FFitParams: TFitParams;
     FCalc: TCalc;
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
+    FABestChiSquare: Single;
 
     FOperationsStack: TStack<String>;
     FRecentProjects : TList<String>;
@@ -433,6 +431,9 @@ type
     FBenchmarkRuns: Integer;
     FLastModelName: String;
     FFirstUpdate: Boolean;
+    FSeriesList: TSeriesList ;
+    PM: TProfileManager;
+    FDPI: Integer;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -449,7 +450,6 @@ type
     procedure SaveProject(const FileName: string);
     procedure SaveData;
     procedure AddCurve(Data: PProjectData);
-    procedure PrepareDistributionCharts;
     function GetFitParams: boolean;
     procedure EditProjectItem;
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -464,12 +464,7 @@ type
     function GetProfileFunctions: TProfileFunctions;
     procedure CreateProfileExtension;
     function FindParentModel(out Node: PVirtualNode): PVirtualNode;
-    procedure PlotProfileNP;
-    procedure PlotProfile;
     function IsProfileEnbled: Boolean;
-    procedure PlotGradedProfile;
-    procedure PlotSimpleProfile;
-    procedure ClearProfiles;
     function PrepareCalc: boolean;
     function PrepareLFPSO : boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
@@ -487,10 +482,10 @@ type
     procedure LoadRecentProjectsList;
     function FittingMode: TFittingMode; inline;
     procedure RunCalc(const Recover: boolean);
-    procedure UpdateInterface(FitStructure: TFitStructure;
-                              Poly: TProfileFunctions;
-                              Res: TLayeredModel;
-                              CreateExtension: boolean = True);
+    procedure UpdateInterface(const FitStructure: TFitStructure;
+                              const Poly: TProfileFunctions;
+                              const Res: TLayeredModel;
+                              const CreateExtension: boolean = True);
     procedure UpdateProfileExtension;
     { Private declarations }
   public
@@ -614,6 +609,7 @@ procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
   Hour, Min, Sec, MSec: Word;
+  NeedsSaving: boolean;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
@@ -623,15 +619,25 @@ begin
 
   spChiSqr.Caption := FloatToStrF(msg_prm.LastChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
+
   FLastChiSquare :=  msg_prm.BestChi;
+  if FABestChiSquare > FLastChiSquare then
+  Begin
+    NeedsSaving := True;
+    FABestChiSquare := FLastChiSquare
+  End
+  else
+    NeedsSaving := False;
+
   if msg_prm.Full then
   begin
     PlotResults(msg_prm.Curve);
     if TConfig.Section<TOtherOptions>.LiveUpdate then
     begin
-      UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.Res, FFirstUpdate);
+      UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.LayeredModel, FFirstUpdate);
       FFirstUpdate := False;
-      AutoSave;
+      if NeedsSaving then
+           AutoSave;
     end;
   end;
   Dispose(msg_prm);
@@ -679,13 +685,13 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PlotProfile;
+  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
   CalcRunExecute(Self);
 end;
 
 procedure TfrmMain.CreateProjectTree;
 begin
-  Project := TXRCProjectTree.Create(RzPanel1);
+  Project := TXRCProjectTree.Create(RzPanel1, FDPI);
   Project.Parent := RzPanel1;
 
   Project.OnChange := ProjectChange;
@@ -744,8 +750,8 @@ begin
        Structure.FromString(LastData.Data);
        FOperationsStack.Clear;
        FOperationsStack.Push(LastData.Data);
-       PrepareDistributionCharts;
-       PlotProfile;
+       PM.Prepare(Structure, chThickness, chRoughness, chDensity);
+       PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
      end;
   end;
 end;
@@ -1353,7 +1359,7 @@ begin
 
     p := pos(PROJECT_EXT, FileName);
     Delete(FileName, p, Length(PROJECT_EXT));
-    FileName := Path + FileName + '-fitted' + PROJECT_EXT;
+    FileName := Path + FileName + '-fitted'+ PROJECT_EXT;
     SaveProject(FileName);
   end;
 end;
@@ -1395,8 +1401,8 @@ end;
 
 procedure TfrmMain.MatchToStructure;
 begin
-  PrepareDistributionCharts;
-  PlotProfile;
+  PM.Prepare(Structure, chThickness, chRoughness, chDensity);
+  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
   Project.ActiveModel.Data := Structure.ToString;
 end;
 
@@ -1747,166 +1753,9 @@ begin
   PrintMax;
 end;
 
-procedure TfrmMain.PrepareDistributionCharts;
-var
-  Materials: TMaterialsList;
-
-  procedure InitSereis(Series: TLineSeries);
-  begin
-    Series.LinePen.Width := 3;
-    Series.Stairs := True;
-    Series.Pointer.Visible := True;
-    Series.Pointer.Size := 4;
-  end;
-
-  procedure CreateSeries(Chart: TChart; var SeriesList: TSeriesList);
-  var
-    i: integer;
-  begin
-    Chart.SeriesList.Clear;
-    SetLength(SeriesList, High(Materials) + 1);
-
-    for I := 0 to High(Materials) do
-    begin
-      SeriesList[i] := TLineSeries.Create(Chart);
-      SeriesList[i].Title := Materials[i].Name;
-      SeriesList[i].ParentChart := Chart;
-      InitSereis(SeriesList[i]);
-    end;
-  end;
-
-begin
-  Materials := Structure.Materials;
-
-  CreateSeries(chThickness, FSeriesArray[1]);
-  CreateSeries(chRoughness, FSeriesArray[2]);
-  CreateSeries(chDensity,   FSeriesArray[3]);
-end;
-
-procedure TfrmMain.PlotProfileNP;
-var
-  i, j,  p, n, shift: integer;
-begin
-  ClearProfiles;
-  shift := 1;
-  for i := 0 to High(Structure.Stacks) do
-  begin
-    if Structure.Stacks[i].N = 1 then Continue;
-    for j := 0 to High(Structure.Stacks[i].Layers) do
-    begin
-      for p := 1 to 3 do
-      begin
-        FSeriesArray[p][j].Clear;
-        if not Structure.Stacks[i].Layers[j].Data.P[p].Paired then
-        begin
-          for n := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[p]) do
-               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.PP[p][n]);
-        end
-        else begin
-          for n := 0 to Structure.Stacks[i].N - 1 do
-               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.P[p].V);
-        end;
-      end;
-    end;
-    Inc(shift, Structure.Stacks[i].N);
-  end;
-end;
-
-procedure TfrmMain.PlotGradedProfile;
-var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
-  Profiled: Boolean;
-
-  function IsProfile: boolean;
-  begin
-     Result := (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) and
-               (FProfiles[GradientIndex].PIndex = p);
-  end;
-
-begin
-  shift := 0; d := 0;
-  for StackIndex := 0 to High(Structure.Stacks) do
-  begin
-    if Structure.Stacks[StackIndex].N = 1 then Continue;
-
-    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
-    begin
-      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
-      begin
-        for p := 1 to 3 do
-        begin
-          Profiled := False;
-          for GradientIndex := 0 to High(FProfiles) do
-          begin
-            if IsProfile then
-            begin
-              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                    FuncProfile(PeriodIndex + shift, FProfiles[GradientIndex]));
-              Profiled := True;
-            end;
-          end;
-          if not Profiled then
-              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                     Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
-         end;
-        end;
-    end;
-    Inc(shift, Structure.Stacks[StackIndex].N);
-    Inc(d, Length(Structure.Stacks[StackIndex].Layers));
-  end;
-end;
-
-
-procedure TfrmMain.PlotSimpleProfile;
-var
-  StackIndex, LayerIndex, PeriodIndex, shift, d, p: integer;
-begin
-  shift := 0; d := 0;
-  for StackIndex := 0 to High(Structure.Stacks) do
-  begin
-    if Structure.Stacks[StackIndex].N = 1 then Continue;
-
-    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
-    begin
-      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
-      begin
-        for p := 1 to 3 do
-          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
-      end;
-    end;
-    Inc(shift, Structure.Stacks[StackIndex].N);
-    Inc(d, Length(Structure.Stacks[StackIndex].Layers));
-  end;
-end;
-
-procedure TfrmMain.ClearProfiles;
-var
-  StackIndex, p: integer;
-begin
-  for p := 1 to 3 do
-    for StackIndex := 0 to High(FSeriesArray[p]) do
-      FSeriesArray[p][StackIndex].Clear;
-end;
-
-
 function  TfrmMain.FittingMode: TFittingMode;
 begin
   Result := TFittingMode(rgFittingMode.ItemIndex);
-end;
-
-procedure TfrmMain.PlotProfile;
-begin
-  ClearProfiles;
-
-  FProfiles := GetProfileFunctions;
-  if Length(FProfiles) > 0 then
-    PlotGradedProfile
-  else
-      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
-         PlotProfileNP
-      else
-        PlotSimpleProfile;
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
@@ -1970,9 +1819,9 @@ begin
       end;
 
       if IsProfileEnbled and (FittingMode <> fmPeriodic) then
-         PlotProfileNP
+         PM.PlotProfileNP
      else
-        PlotProfile;
+        PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
     except
       on E: exception do
       begin
@@ -2005,11 +1854,11 @@ begin
   end;
 end;
 
-
 procedure TfrmMain.EnableControls(const Enable: boolean);
 begin
   tlbrFile.Enabled := Enable;
   tlbStructure.Enabled := Enable;
+  tlbrProject.Enabled := Enable;
   ChartToolBar.Enabled := Enable;
   btnCopyConvergence.Enabled := Enable;
 
@@ -2050,8 +1899,6 @@ begin
     fmPeriodic  : LFPSO := TLFPSO_Periodic.Create;
     fmPoly      : LFPSO := TLFPSO_Poly.Create;
   end;
-
-
 
   GetThreadParams;
 
@@ -2134,8 +1981,9 @@ begin
 
     FFirstUpdate := True;
 
+    FABestChiSquare := 1e32;
     LFPSO.Run(FCalcThreadParams);
-    UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, LFPSO.Result, FFirstUpdate);
+//    UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, LFPSO.Result, FFirstUpdate);
 
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -2146,7 +1994,7 @@ begin
     EnableControls(True);
     FreeAndNil(LFPSO);
   end;
-  AutoSave;
+  //AutoSave;
 end;
 
 procedure TfrmMain.ProcessJobFile(Sender: TObject; const F: TSearchRec);
@@ -2158,7 +2006,7 @@ begin
 
   actProjectReopenExecute(nil);
   actAutoFittingExecute(nil);
-  AutoSave;
+  //AutoSave;
 end;
 
 procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
@@ -2469,7 +2317,7 @@ begin
   RecoverProjectTree(ActiveID);
   RecoverDataCurves(LinkedID);
 
-  ClearProfiles;
+  PM.ClearProfiles;
   FIgnoreFocusChange := False;
   Project.Repaint;
   Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
@@ -2485,7 +2333,7 @@ end;
 procedure TfrmMain.FileNewExecute(Sender: TObject);
 begin
   Structure.Clear;
-  ClearProfiles;
+  PM.ClearProfiles;
   CreateDefaultProject;
 end;
 
@@ -2818,6 +2666,26 @@ begin
   FFitParams.PolyFactor   := 10;
 end;
 
+procedure TfrmMain.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+  NewDPI: Integer);
+begin
+  FDPI := NewDPI;
+  if Project.TargetDPI <> NewDPI then
+  begin
+    Project.TargetDPI := NewDPI;
+    Project.ScaleForPPI(NewDPI);
+  end;
+  if Structure.TargetDPI <> NewDPI then
+  begin
+    Structure.TargetDPI := NewDPI;
+    if LastData <> nil then
+    begin
+      LastData.Data :=Structure.ToString;
+      Structure.FromString(LastData.Data);
+    end;
+  end;
+end;
+
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
@@ -2850,12 +2718,15 @@ begin
      pnlX64.Visible := False;
   {$ENDIF}
 
-
+  FDPI := Screen.PixelsPerInch;
   FormatSettings.DecimalSeparator := '.';
   Config := TConfig.Create;
   CreateProjectTree;
 
-  Structure := TXRCStructure.Create(StructurePanel);
+  PM := TProfileManager.Create;
+  PM.DensityProfile := DensityProfile;
+
+  Structure := TXRCStructure.Create(StructurePanel, FDPI);
   Structure.Parent := StructurePanel;
 
   FOperationsStack := TStack<String>.Create;
@@ -2909,11 +2780,13 @@ begin
       begin
         pnlAngleParams.Enabled := True;
         pnlWaveParams.Enabled := False;
+        Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
       end;
     1:
       begin
         pnlAngleParams.Enabled := False;
         pnlWaveParams.Enabled := True;
+        Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
       end;
   end;
   AllowChange := True;

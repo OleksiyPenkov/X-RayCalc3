@@ -14,10 +14,10 @@ interface
 uses
   SysUtils, Classes, Controls, ExtCtrls, RzEdit, RzSpnEdt,
   RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, VCL.Menus, unit_types,
-  Messages, Winapi.Windows, unit_consts, editor_Layer;
+  Messages, Winapi.Windows, unit_consts, editor_Layer, unit_XRCPanel;
 
 type
-  TXRCLayerControl = class (TRzPanel)
+  TXRCLayerControl = class (TXRCPanel)
     protected
       procedure MyKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     private
@@ -68,11 +68,9 @@ type
       procedure MenuOnClick(Sender: TObject);
       procedure SetEnableLinking(const Value: boolean);
     public
-      constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData); reintroduce; overload;
+      constructor Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData; const DPI: integer); reintroduce; overload;
       destructor  Destroy; override;
-
       property Substrate: boolean read FSubstrate write SetSubstrate;
-
       procedure Edit;
     published
       property Increment: Double write SetIncrement;
@@ -104,7 +102,6 @@ const
   Captions: array [1..5] of string = ('Move up','Move down','Insert above','-','Delete');
   Tags    : array [1..5] of Cardinal = (WM_STR_LAYER_UP, WM_STR_LAYER_DOWN, WM_STR_LAYER_INSERT, 0, WM_STR_LAYER_DELETE);
 
-
 { TXRCLayerControl }
 
 function TXRCLayerControl.AddSpinEdit;
@@ -112,10 +109,10 @@ begin
   Result := TRzSpinEdit.Create(Self);
 
   Result.Parent := Self;
-  Result.Left := Left;
-  Result.Top := 11;
-  Result.Width := Width;
-  Result.Height := 21;
+  Result.Left := ScaleForDPI(Left);
+  Result.Top := ScaleForDPI(11);
+  Result.Width := ScaleForDPI(Width);
+  Result.Height := ScaleForDPI(21);
   Result.Decimals := 2;
   Result.Increment := 0.1;
   Result.Max := Max;
@@ -135,8 +132,8 @@ begin
   Result := TRzCheckBox.Create(Self);
 
   Result.Parent := Self;
-  Result.Left := Left;
-  Result.Top := 13;
+  Result.Left := ScaleForDPI(Left);
+  Result.Top := ScaleForDPI(13);
   Result.Tag := Index;
   Result.ShowHint := True;
   Result.Hint := 'Mark this parameter as paired accross all repeated stacks';
@@ -149,19 +146,19 @@ begin
   FData.P[(Sender as TRzCheckBox).Tag].Paired := (Sender as TRzCheckBox).Checked;
 end;
 
-constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData);
+constructor TXRCLayerControl.Create(AOwner: TComponent; const Handler: HWND; const Data: TLayerData; const DPI: integer);
 begin
   inherited Create(AOwner);
+  FTargetDPI := DPI;
   Parent := AOwner as TWinControl;
   FHandler := Handler;
 
   FOnset := True;
 //  FData  := Data;
 
-
   AlignWithMargins := True;
   Align := alTop;
-  BevelWidth := 5;
+  BevelWidth := 2;
   BorderOuter := fsFlatRounded;
 
   //Name
@@ -169,30 +166,29 @@ begin
 
   //Thickness
   Thickness := AddSpinEdit(1, 85, 9999, 80);
-  PairedH   := AddCheckBox(1, 167);
+  PairedH   := AddCheckBox(1, 168);
 
   //Sigma
   Sigma := AddSpinEdit(2, 186, 50);
   PairedS   := AddCheckBox(2, 240);
 
   //Rho
-  Rho := AddSpinEdit(3, 258, 30);
+  Rho := AddSpinEdit(3, 257, 30);
   PairedR   := AddCheckBox(3, 310);
 
   //RzCheckBox1
   FLinkCheckBox := TRzCheckBox.Create(Self);
 
-
   //Name
   Name.Name := 'Name';
   Name.Parent := Self;
-  Name.Left := 25;
-  Name.Top := 14;
-  Name.Width := 129;
-  Name.Height := 13;
+  Name.Left := ScaleForDPI(25);
+  Name.Top := ScaleForDPI(14);
+  Name.Width := ScaleForDPI(129);
+  Name.Height := ScaleForDPI(13);
   Name.AutoSize := False;
   Name.Caption := 'Name';
-  Name.Font.Height := -11;
+  Name.Font.Height := ScaleForDPI(14);
   Name.Font.Name := 'Tahoma';
   Name.Font.Style := [fsBold];
   Name.ParentFont := False;
@@ -200,14 +196,13 @@ begin
   //Link
   FLinkCheckBox.Name := '';
   FLinkCheckBox.Parent := Self;
-  FLinkCheckBox.Left := 5;
-  FLinkCheckBox.Top := 13;
-  FLinkCheckBox.Width := 19;
-  FLinkCheckBox.Height := 15;
-  FLinkCheckBox.TabOrder := 3;
+  FLinkCheckBox.Left := ScaleForDPI(5);
+  FLinkCheckBox.Top := ScaleForDPI(13);
+  FLinkCheckBox.Width := ScaleForDPI(19);
+  FLinkCheckBox.Height := ScaleForDPI(15);
+  FLinkCheckBox.TabOrder := ScaleForDPI(3);
   FLinkCheckBox.ShowHint := True;
   FLinkCheckBox.Hint := 'Pair to another layer';
-
 
   Name.Caption    := Data.Material;
   SetLayerData(Data);
@@ -263,7 +258,6 @@ procedure TXRCLayerControl.Edit;
 begin
   edtrLayer.SetData(FSubstrate, FData);
 
-
   if edtrLayer.ShowModal = mrOk then
   begin
     if not edtrLayer.Seq then
@@ -289,7 +283,7 @@ end;
 
 procedure TXRCLayerControl.SetEnableLinking(const Value: boolean);
 begin
-  FLinkCheckBox.Visible := Value;
+  FLinkCheckBox.Enabled := Value;
 end;
 
 function TXRCLayerControl.GetCheckBox: TRzCheckBox;
@@ -314,7 +308,7 @@ end;
 
 function TXRCLayerControl.GetLinkChecked: Boolean;
 begin
-  if FLinkCheckBox.Visible then
+  if FLinkCheckBox.Enabled then
     Result := FLinkCheckBox.Checked
   else
     Result := False;
@@ -396,9 +390,9 @@ end;
 
 procedure TXRCLayerControl.SetPairable(const Value: boolean);
 begin
-  PairedH.Visible := Value;
-  PairedS.Visible := Value;
-  PairedR.Visible := Value;
+  PairedH.Enabled := Value;
+  PairedS.Enabled := Value;
+  PairedR.Enabled := Value;
 end;
 
 procedure TXRCLayerControl.SetSlected(const Value: boolean);
@@ -415,6 +409,10 @@ begin
   FSubstrate := Value;
   Thickness.Visible := not FSubstrate;
   FLinkCheckBox.Visible := not FSubstrate;
+  PairedH.Visible := not FSubstrate;
+  PairedS.Visible := not FSubstrate;
+  PairedR.Visible := not FSubstrate;
+
   SetPairable(False);
   Color := clLtGray;
 end;

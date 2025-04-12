@@ -13,18 +13,18 @@ interface
 
 uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
-  VCL.Forms, RzBckgnd, unit_XRCLayerControl,
-  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface, unit_Types;
+  VCL.Forms, RzBckgnd, unit_XRCLayerControl, unit_XRCPanel,
+  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface,
+  unit_Types;
 
 type
 
   TLayers = array of TXRCLayerControl;
 
-  TXRCStack = class (TRzPanel)
+  TXRCStack = class (TXRCPanel)
     private
       lblLayers: TRzLabel;
       RzSeparator: TRzSeparator;
-
 
       FLayers: TLayers;
       FID: Integer;
@@ -49,7 +49,7 @@ type
       procedure FOnClick(Sender: TObject);
       procedure FOnDoubleClick(Sender: TObject);
     public
-      constructor Create(AOwner: TComponent; const Title: string; const N: integer);reintroduce; overload;
+      constructor Create(AOwner: TComponent; const Title: string; const N: integer; const DPI: integer);reintroduce; overload;
       destructor  Destroy; override;
 
       function AddLayer(Data: TLayerData; Pos: integer = -1): integer;
@@ -78,7 +78,7 @@ type
 implementation
 
 uses
-  unit_SMessages, editor_Stack;
+  unit_SMessages, editor_Stack, WinApi.Windows;
 
 { TXRCStack }
 
@@ -108,13 +108,13 @@ begin
   Data.StackID := FID;
   Data.LayerID := Pos;
 
-  FLayers[Pos] := TXRCLayerControl.Create(Self, 0, Data);
+  FLayers[Pos] := TXRCLayerControl.Create(Self, 0, Data, FTargetDPI);
   FLayers[Pos].Parent := Self;
   FLayers[Pos].EnableLinking := FN > 1;
   FLayers[Pos].Pairable      := FEnablePairing;
 
   lblLayers.Top := 1;
-  ClientHeight := 45 + (Count + 1) * (FLayers[Pos].Height + 3);
+  ClientHeight :=  ScaleForDPI(45) + (Count + 1) * (FLayers[Pos].Height + 3);
   if Inserted then
   begin
     UpdateLayersID;
@@ -141,7 +141,7 @@ begin
   Data.P[3].V := rho;
 
 
-  FLayers[0] := TXRCLayerControl.Create(Self, 0, Data);
+  FLayers[0] := TXRCLayerControl.Create(Self, 0, Data, FTargetDPI);
   FLayers[0].Parent := Self;
   FLayers[0].Substrate := True;
 
@@ -206,16 +206,17 @@ begin
   end;
 end;
 
-constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer);
+constructor TXRCStack.Create(AOwner: TComponent; const Title: string; const N: integer; const DPI: integer);
 begin
   inherited Create(AOwner);
+  FTargetDPI := DPI;
   FN := N;
   FTitle := Title;
 
   Parent := AOwner as TWinControl;
 //  Top := 10;
 //  Align := alNone;
-  Height := 80;
+  Height := ScaleForDPI(80);
 
   Alignment := taLeftJustify;
   AlignmentVertical := avTop;
@@ -236,7 +237,7 @@ begin
   lblLayers.Name := 'lblLayers';
   lblLayers.Parent := Self;
   lblLayers.AlignWithMargins := True;
-  lblLayers.Margins.Left := ClientWidth - 50;
+  lblLayers.Margins.Left := ClientWidth - ScaleForDPI(50);
   lblLayers.Align := alTop;
   lblLayers.Alignment := taRightJustify;
   lblLayers.Font.Color := clNavy;
@@ -271,7 +272,7 @@ begin
   if Length(FLayers) > 0 then
     Height := Height - FLayers[0].Height
   else
-    Height := 80;
+    Height := ScaleForDPI(80);
 
   UpdateLayersID;
 end;

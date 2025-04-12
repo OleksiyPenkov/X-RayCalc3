@@ -14,13 +14,13 @@ uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
   VCL.Forms, unit_XRCLayerControl, unit_XRCStackControl,
   RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface,
-  unit_materials, unit_Types, System.JSON, System.Generics.Collections;
+  unit_materials, unit_Types, System.JSON, System.Generics.Collections, unit_XRCPanel;
 
 type
 
   TStacks = array of TXRCStack;
 
-  TXRCStructure = class (TRzPanel)
+  TXRCStructure = class (TXRCPanel)
     private
       Header: TRzPanel;
       Label1: TRzLabel;
@@ -59,7 +59,7 @@ type
       function GetSubstrateData: TLayerData;
       procedure SetSubstrateData(const Value: TLayerData);
     public
-      constructor Create(AOwner: TComponent); override;
+      constructor Create(AOwner: TComponent; const DPI: integer); reintroduce; overload;
       destructor  Destroy; override;
 
       property SelectedStack: Integer read GetSelectedStack;
@@ -187,7 +187,7 @@ begin
   Count := Length(FStacks);
 
   SetLength(FStacks, Count + 1);
-  FStacks[Count] := TXRCStack.Create(Box, Title, N);
+  FStacks[Count] := TXRCStack.Create(Box, Title, N, FTargetDPI);
   FStacks[Count].ID := Count;
 
   RealignStacks;
@@ -196,7 +196,7 @@ end;
 procedure TXRCStructure.AddSubstrate(const Material: string; s,
   rho: single);
 begin
-  Substrate := TXRCStack.Create(Box, 'Substrate', 1);
+  Substrate := TXRCStack.Create(Box, 'Substrate', 1, FTargetDPI);
   Substrate.Width := ClientWidth;
 
   Substrate.AddSubstrate(Material, s, rho);
@@ -241,7 +241,7 @@ begin
   ClearSelection(Reset);
 end;
 
-constructor TXRCStructure.Create(AOwner: TComponent);
+constructor TXRCStructure.Create(AOwner: TComponent; const DPI: integer);
 
   procedure CreateLabel(const Caption: string; Left: Integer; var MyLabel: TRzLabel);
   begin
@@ -250,7 +250,7 @@ constructor TXRCStructure.Create(AOwner: TComponent);
     MyLabel.Parent := Header;
     MyLabel.Left := Left;
     MyLabel.Top := 6;
-    MyLabel.Width := 37;
+    MyLabel.Width := ScaleForDPI(37);
     MyLabel.Height := 16;
     MyLabel.Caption := Caption;
     MyLabel.Font.Color := clWindowText;
@@ -262,6 +262,7 @@ constructor TXRCStructure.Create(AOwner: TComponent);
 
 begin
   inherited Create(AOwner);
+  FTargetDPI := DPI;
   Align := alClient;
   BorderInner := fsNone;
   BorderOuter := fsNone;
@@ -272,8 +273,8 @@ begin
   //Labels
   CreateLabel('Stack / Layer', 6, Label1);
   CreateLabel('H (Å)', 110, Label2);
-  CreateLabel('σ (Å)', 181, Label3);
-  CreateLabel('ρ (g/cm³)   N', 250, Label4);
+  CreateLabel('σ (Å)', 185, Label3);
+  CreateLabel('ρ (g/cm³)   N', 248, Label4);
 
   //Box
   Box := TJvDesignScrollBox.Create(Self);
@@ -405,7 +406,7 @@ begin
 
   Insert(Nil, FStacks, pos);
 
-  FStacks[Pos] := TXRCStack.Create(Box, Title, N);
+  FStacks[Pos] := TXRCStack.Create(Box, Title, N, FTargetDPI);
   FStacks[Pos].ID := Pos;
 
   RealignStacks;
@@ -451,7 +452,7 @@ end;
 
 function TXRCStructure.Model(const ExpandProfiles: Boolean): TLayeredModel;
 var
-  i, j, k, p: Integer;
+  i, j, k, p, slN: Integer;
   StackLayers: TLayersData;
 begin
   FPeriod := 0;
@@ -465,7 +466,8 @@ begin
     begin
       if ExpandProfiles and (FStacks[i].N > 1) then
       begin
-        for k := 0 to High(StackLayers) do
+        slN := High(StackLayers);
+        for k := 0 to slN do
           for p := 1 to 3 do
             if not StackLayers[k].P[p].Paired then
                StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];

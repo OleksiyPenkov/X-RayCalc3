@@ -35,6 +35,7 @@ type
       FLinkedData: PProjectData;
       FIgnoreFocusChange: boolean;
       FActiveData: PProjectData;
+      FTargetDPI: integer;
 
       procedure ProjectAdvancedHeaderDraw(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
       procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -45,16 +46,19 @@ type
       procedure ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode; Stream: TStream);
       procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
       procedure ProjectBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
+      function ScaleForDPI(Value: Integer): integer;
+      function ScaleRect(const X1, Y1, X2, Y2: integer): TRect; inline;
+      procedure SetTargetDPI(const Value: integer);
     public
-      constructor Create(AOwner: TComponent);  override;
+      constructor Create(AOwner: TComponent; const DPI: integer); reintroduce; overload;
       destructor Destroy;  reintroduce; overload;
-
       property Version: Integer write FProjectVersion;
       property ActiveModel:PProjectData read FActiveModel write FActiveModel;
       property ActiveData:PProjectData read FActiveData write FActiveData;
       property LinkedData:PProjectData read FLinkedData write FLinkedData;
       property IgnoreFocusChange: boolean read FIgnoreFocusChange write FIgnoreFocusChange;
       function ProfileAttached(Node: PVirtualNode): Boolean;
+      property TargetDPI: integer read FTargetDPI write FTargetDPI;
     published
 
   end;
@@ -63,9 +67,38 @@ implementation
 
 { TXRCProjectTree }
 
-constructor TXRCProjectTree.Create(AOwner: TComponent);
+function TXRCProjectTree.ScaleForDPI(Value: Integer): integer;
+const
+  DefaultDPI = 96;
+begin
+  if FTargetDPI = DefaultDPI then
+    Result := Value
+  else
+    Result := MulDiv(Value, FTargetDPI, DefaultDPI);
+end;
+
+function TXRCProjectTree.ScaleRect(const X1, Y1, X2, Y2: integer): TRect;
+const
+  DefaultDPI = 96;
+begin
+  if FTargetDPI = DefaultDPI then
+    Result := Rect(X1, Y1, X2, Y2)
+  else
+    Result := Rect(MulDiv(X1, FTargetDPI, DefaultDPI),
+                   MulDiv(Y1, FTargetDPI, DefaultDPI),
+                   MulDiv(X2, FTargetDPI, DefaultDPI),
+                   MulDiv(Y2, FTargetDPI, DefaultDPI))
+end;
+
+procedure TXRCProjectTree.SetTargetDPI(const Value: integer);
+begin
+
+end;
+
+constructor TXRCProjectTree.Create(AOwner: TComponent; const DPI: integer);
 begin
   inherited Create(AOwner);
+  FTargetDPI := DPI;
 
   //Project
   AlignWithMargins := True;
@@ -90,17 +123,17 @@ begin
   Colors.UnfocusedColor := clGray;
   Colors.UnfocusedSelectionColor := clSkyBlue;
   Colors.UnfocusedSelectionBorderColor := clSkyBlue;
-  DefaultNodeHeight := 25;
+  DefaultNodeHeight := ScaleForDPI(25);
   DragMode := dmAutomatic;
   DragType := dtVCL;
   Font.Color := clWindowText;
-  Font.Height := -13;
+  Font.Height := ScaleForDPI(16);
   Font.Name := 'Tahoma';
   Font.Style := [];
-  Indent := 10;
+  Indent := ScaleForDPI(10);
   Header.AutoSizeIndex := 0;
   Header.Background := 16765595;
-  Header.Height := 23;
+  Header.Height := ScaleForDPI(23);
   Header.MainColumn := 1;
   Header.Options := [hoAutoResize, hoColumnResize, hoDrag, hoOwnerDraw, hoVisible];
   Header.ParentFont := False;
@@ -126,11 +159,11 @@ begin
   Header.Columns.Add;
   Header.Columns.Add;
 
-  Header.Columns[0].Width    := 41;
+  Header.Columns[0].Width    := ScaleForDPI(41);
   Header.Columns[0].CheckBox := True;
   Header.Columns[0].Options  := [coAllowClick,coDraggable,coEnabled,coFixed,coParentBidiMode,coParentColor,coShowDropMark,coVisible,coAllowFocus];
 
-  Header.Columns[1].Width    := 180;
+  Header.Columns[1].Width    := ScaleForDPI(180);
   Header.Columns[1].CheckBox := False;
   Header.Columns[1].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus];
   Header.Columns[1].Text := 'Project Items';
@@ -179,9 +212,8 @@ procedure TXRCProjectTree.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
   TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
   CellRect: TRect);
 const
-  Points: array [0 .. 2] of TPoint = ((X: 22; Y: 5), (X: 32; Y: 10),
-    (X: 22; Y: 15));
-
+  PointsLo: array [0 .. 2] of TPoint = ((X: 22; Y: 5), (X: 32; Y: 10), (X: 22; Y: 15));
+  PointsHi: array [0 .. 2] of TPoint = ((X: 32; Y: 6), (X: 47; Y: 14), (X: 32; Y: 22));
 var
   Data: PProjectData;
 begin
@@ -194,17 +226,21 @@ begin
   begin
     TargetCanvas.Brush.Color := clRed;
     TargetCanvas.Pen.Color := clRed;
-    TargetCanvas.Polygon(Points);
+    if TargetDPI = 96 then
+      TargetCanvas.Polygon(PointsLo)
+    else
+      TargetCanvas.Polygon(PointsHi)
   end;
 
   if Data = FLinkedData then
   begin
     TargetCanvas.Pen.Color := clBlack;
 
-    TargetCanvas.Ellipse(25, 2, 35, 15);
+    TargetCanvas.Ellipse(ScaleRect(22, 2, 32, 15));
+    TargetCanvas.Ellipse(ScaleRect(24, 3, 30, 15));
     TargetCanvas.Brush.Color := clGreen;
-    TargetCanvas.Rectangle(25, 7, 35, 15);
-    TargetCanvas.Rectangle(29, 9, 31, 13);
+    TargetCanvas.Rectangle(ScaleRect(22, 7, 32, 15));
+    TargetCanvas.Rectangle(ScaleRect(24, 9, 30, 13));
   end;
 
   TargetCanvas.Pen.Color := clGray;
@@ -215,7 +251,8 @@ begin
       TargetCanvas.Brush.Color := Data.Color
     else
       TargetCanvas.Brush.Color := clLtGray;
-    TargetCanvas.Rectangle(5, 5, 16, 16);
+
+    TargetCanvas.Rectangle(ScaleRect(5, 5, 16, 16))
   end;
 end;
 
