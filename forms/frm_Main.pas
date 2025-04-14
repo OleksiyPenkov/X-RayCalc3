@@ -375,7 +375,6 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure ChartZoom(Sender: TObject);
     procedure btnCopyConvergenceClick(Sender: TObject);
-    procedure DataNormAutoExecute(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
       var AllowChange: Boolean);
@@ -397,6 +396,7 @@ type
     procedure actRecoverModelExecute(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
+    procedure DataNormAutoExecute(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -886,6 +886,7 @@ begin
       DeleteExtension(Node);
     Node := Project.GetFirstSelected;
   end;
+  LastNode := nil;
   ProjectChange(Project, Nil);
 end;
 
@@ -1170,7 +1171,6 @@ begin
 
   Project.ActiveData := Data;
   Project.Expanded[FDataRoot] := True;
-
 end;
 
 function TfrmMain.DataName(Data: PProjectData): string;
@@ -1180,7 +1180,8 @@ end;
 
 procedure TfrmMain.DataNormAutoExecute(Sender: TObject);
 begin
-  //
+  NormalizeAuto(FSeriesList[Project.ActiveModel.CurveID], FSeriesList[Project.ActiveData.CurveID]);
+  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
 end;
 
 procedure TfrmMain.DataNormExecute(Sender: TObject);
