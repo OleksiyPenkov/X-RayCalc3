@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 3
   *
-  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   Copyright (C) 2001-2025 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -48,7 +48,6 @@ type
       procedure ProjectBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
       function ScaleForDPI(Value: Integer): integer;
       function ScaleRect(const X1, Y1, X2, Y2: integer): TRect; inline;
-      procedure SetTargetDPI(const Value: integer);
     public
       constructor Create(AOwner: TComponent; const DPI: integer); reintroduce; overload;
       destructor Destroy;  reintroduce; overload;
@@ -88,11 +87,6 @@ begin
                    MulDiv(Y1, FTargetDPI, DefaultDPI),
                    MulDiv(X2, FTargetDPI, DefaultDPI),
                    MulDiv(Y2, FTargetDPI, DefaultDPI))
-end;
-
-procedure TXRCProjectTree.SetTargetDPI(const Value: integer);
-begin
-
 end;
 
 constructor TXRCProjectTree.Create(AOwner: TComponent; const DPI: integer);

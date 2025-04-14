@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 3
   *
-  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   Copyright (C) 2001-2025 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -21,7 +21,7 @@ uses
 
 function ClearDir(const DirectoryName: string; Full: boolean = False): boolean;
 
-procedure SeriesToClipboard(Series: TLineSeries); overload;
+procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte); overload;
 procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries); overload;
 
 procedure SeriesToFile(Series: TLineSeries; const FileName: string);
@@ -37,6 +37,7 @@ procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
 procedure AutoMerge( var Series: TLineSeries);
 procedure ManualMerge( X, K: single; var Series: TLineSeries);
 procedure Normalize(K: single;  var Series: TLineSeries);
+procedure NormalizeAuto(const Calc: TLineSeries; var Exp: TLineSeries);
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
@@ -273,21 +274,23 @@ begin
       Series.YValue[i] := Series.YValue[i] / K;
 end;
 
-procedure AutoNormalisation( var Series: TLineSeries);
+procedure NormalizeAuto(const Calc: TLineSeries; var Exp: TLineSeries);
 var
   i: integer;
-  Max: single;
+  Max, MaxX, Min: single;
 begin
-  // ����������
-  Series.XValues.Sort;
-  if Cmpr(Series.XValue[0], -0.01) and Cmpr(Series.XValue[1], -0.005) then
-  begin
-    Max := (Series.YValue[0] + Series.YValue[1]) /2;
-    Series.Delete(0); Series.Delete(0);
+  Max := Exp.YValues.MaxValue;
+  i := Exp.YValues.Locate(Max);
+  MaxX := Exp.XValue[i];
 
-    for I := 0 to Series.Count - 1 do
-      Series.YValue[i] := Series.YValue[i] / Max;
-  end;
+  i := 0;
+  while (Calc.XValues[i] < MaxX) and (i < Calc.XValues.Count)  do inc(i);
+
+  Min := Calc.YValues[i];
+  Max := Max/Min;
+
+  for I := 0 to Exp.Count - 1 do
+    Exp.YValue[i] := Exp.YValue[i] / Max;
 end;
 
 procedure AutoMerge( var Series: TLineSeries);
@@ -296,7 +299,7 @@ var
   Max: single;
 begin
   Max := 0; Pos := 0;
-  AutoNormalisation(Series);
+  //AutoNormalisation(Series);
 
   for I := 0 to Series.Count - 2 do
   begin
@@ -317,7 +320,7 @@ procedure ManualMerge( X, K: single; var Series: TLineSeries);
 var
   i, pos: integer;
 begin
-  AutoNormalisation(Series);
+  //AutoNormalisation(Series);
   Pos := Series.XValues.Locate(X);
   for I := Pos to Series.Count - 1 do
     Series.YValue[i] := Series.YValue[i] / K;
@@ -437,9 +440,12 @@ begin
   end;
 end;
 
-procedure SeriesToClipboard(Series: TLineSeries);
+procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte);
 begin
-  SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
+  case Mode of
+    0: SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
+    1: SeriesToClipboard('Wavelength', 'Reflectivity', 'A', '', Series);
+  end;
 end;
 
 function SeriesToString(Series: TLineSeries): string;

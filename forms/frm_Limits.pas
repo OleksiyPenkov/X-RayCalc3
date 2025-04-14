@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 3
   *
-  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   Copyright (C) 2001-2025 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -212,7 +212,6 @@ end;
 
 function TfrmLimits.ShowLimits(const ACaption: string; var Structure: TFitStructure): boolean;
 begin
-  Result := False;
   FStructure := Structure;
   btnSet.Caption := ACaption;
 

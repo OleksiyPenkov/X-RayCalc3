@@ -23,8 +23,6 @@ object frmLimits: TfrmLimits
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 0
-    ExplicitWidth = 549
-    ExplicitHeight = 422
     object Label13: TLabel
       Left = 19
       Top = 393
@@ -110,14 +108,13 @@ object frmLimits: TfrmLimits
       ColumnClick = False
       GridLines = True
       GroupView = True
+      Items.ItemData = {050000000000000000}
       ReadOnly = True
       ShowWorkAreas = True
       TabOrder = 0
       ViewStyle = vsReport
       FillLastColumn = False
       OnClick = ListViewClick
-      ExplicitWidth = 547
-      ExplicitHeight = 365
     end
     object edFdH: TEdit
       Left = 40

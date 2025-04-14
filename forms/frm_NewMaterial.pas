@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 3
   *
-  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   Copyright (C) 2001-2025 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -169,7 +169,6 @@ var
   end;
 
 begin
-  Result := False;
   N := SpinEdit1.Value;
 
   sNa := 0;
