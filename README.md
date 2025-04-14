@@ -21,6 +21,14 @@ _O.V. Penkov, M. Li, S. Mikki, A.Devizenko, I. Kopylets. X-Ray Calc 3: improved 
 
 
 ## Changelog
+2025-04-14 3.1.4
+Added
+ - Auto norm. exp. dat
+ - High DPI support
+ - Density profile (experimental)
+ - Interface fixes
+ - Minor bug fixes
+
 2024-03-18 3.1.1
 
 Changed:
