@@ -2,7 +2,7 @@
   *
   *   X-Ray Calc 3
   *
-  *   Copyright (C) 2001-2023 Oleksiy Penkov
+  *   Copyright (C) 2001-2025 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
   ****************************************************************************** *)
@@ -21,7 +21,7 @@ uses
 
 function ClearDir(const DirectoryName: string; Full: boolean = False): boolean;
 
-procedure SeriesToClipboard(Series: TLineSeries); overload;
+procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte); overload;
 procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries); overload;
 
 procedure SeriesToFile(Series: TLineSeries; const FileName: string);
@@ -437,9 +437,12 @@ begin
   end;
 end;
 
-procedure SeriesToClipboard(Series: TLineSeries);
+procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte);
 begin
-  SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
+  case Mode of
+    0: SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
+    1: SeriesToClipboard('Wavelength', 'Reflectivity', 'A', '', Series);
+  end;
 end;
 
 function SeriesToString(Series: TLineSeries): string;

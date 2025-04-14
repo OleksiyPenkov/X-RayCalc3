@@ -7,7 +7,8 @@ uses
   System.Generics.Collections,
   Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, RzSplit, Vcl.ExtCtrls, RzPanel,
-  Vcl.Menus, RzTabs, Vcl.ToolWin, Vcl.ComCtrls, RzButton, VirtualTrees,
+  Vcl.Menus, RzTabs, Vcl.ToolWin, Vcl.ComCtrls, RzButton,
+  VirtualTrees, VirtualTrees.BaseTree, VirtualTrees.Types,
   Vcl.StdCtrls, RzEdit, VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs,
   VCLTee.Chart, RzCmboBx, RzStatus, VCLTee.Series, RzRadChk, System.ImageList,
   Vcl.ImgList, System.Actions, Vcl.ActnList,
@@ -827,7 +828,7 @@ begin
     ClipBoard.AsText := Structure.ToString;
   end;
   if (Data.Group = gtData) and (Data.RowType = prItem) then
-    SeriesToClipboard(FSeriesList[Data.CurveID]);
+    SeriesToClipboard(FSeriesList[Data.CurveID], rgCalcMode.ItemIndex);
 end;
 
 procedure TfrmMain.DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -1128,7 +1129,7 @@ end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FSeriesList[Project.ActiveData.CurveID]);
+  SeriesToClipboard(FSeriesList[Project.ActiveData.CurveID], rgCalcMode.ItemIndex);
 end;
 
 procedure TfrmMain.DataExportExecute(Sender: TObject);
@@ -2177,7 +2178,7 @@ end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FSeriesList[Project.ActiveModel.CurveID]);
+  SeriesToClipboard(FSeriesList[Project.ActiveModel.CurveID], rgCalcMode.ItemIndex);
 end;
 
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
@@ -2340,7 +2341,9 @@ end;
 procedure TfrmMain.FileOpenExecute(Sender: TObject);
 begin
   if TConfig.SystemDir[sdProjDir] <> '' then
-    dlgOpenProject.InitialDir := TConfig.SystemDir[sdProjDir];
+    dlgOpenProject.InitialDir := TConfig.SystemDir[sdProjDir]
+  else
+    dlgOpenProject.InitialDir := '';
 
   if dlgOpenProject.Execute then
   begin
@@ -2509,7 +2512,6 @@ begin
   end;
 end;
 
-
 procedure TfrmMain.SaveData;
 var
   Data: PProjectData;
@@ -2531,6 +2533,11 @@ procedure TfrmMain.FileSaveAsExecute(Sender: TObject);
 var
   OldProjectDir: string;
 begin
+  if TConfig.SystemDir[sdProjDir] <> '' then
+    dlgSaveProject.InitialDir := TConfig.SystemDir[sdProjDir]
+  else
+    dlgSaveProject.InitialDir := '';
+
   dlgSaveProject.FileName := ExtractFileName(FProjectFileName);
   if dlgSaveProject.Execute then
   begin

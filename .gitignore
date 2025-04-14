@@ -16,3 +16,5 @@ Resources
 *.local
 *.~pas
 *.identcache
+/*.json
+/components/*.RES
