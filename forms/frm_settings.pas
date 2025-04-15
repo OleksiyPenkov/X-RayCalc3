@@ -62,28 +62,32 @@ type
     Label2: TLabel;
     seLineWidth: TSpinEdit;
     edProjectDir: TRzButtonEdit;
+    btnRegisterExtensions: TButton;
+    dlgFolder: TRzSelectFolderDialog;
+    Label11: TLabel;
+    RzPanel7: TRzPanel;
+    Label12: TLabel;
+    seBenchRuns: TSpinEdit;
+    RzPanel9: TRzPanel;
+    Label14: TLabel;
+    edStorageDir: TRzButtonEdit;
+    chkLiveUpdate: TCheckBox;
+    GroupBox1: TGroupBox;
+    RzPanel6: TRzPanel;
+    Label9: TLabel;
+    edHenkeDir: TRzButtonEdit;
+    RzPanel5: TRzPanel;
+    Label8: TLabel;
+    edJobsDir: TRzButtonEdit;
     RzPanel3: TRzPanel;
     Label5: TLabel;
     edOutputDir: TRzButtonEdit;
     RzPanel4: TRzPanel;
     Label7: TLabel;
     edBenchmarkDir: TRzButtonEdit;
-    btnRegisterExtensions: TButton;
-    RzPanel6: TRzPanel;
-    Label9: TLabel;
-    edHenkeDir: TRzButtonEdit;
-    dlgFolder: TRzSelectFolderDialog;
-    Label11: TLabel;
-    RzPanel7: TRzPanel;
-    Label12: TLabel;
-    seBenchRuns: TSpinEdit;
     RzPanel8: TRzPanel;
     Label13: TLabel;
     edBenchOutputDir: TRzButtonEdit;
-    RzPanel9: TRzPanel;
-    Label14: TLabel;
-    edJobsDir: TRzButtonEdit;
-    chkLiveUpdate: TCheckBox;
 
     procedure SaveSettingsClick(Sender: TObject);
     procedure ShowHelpClick(Sender: TObject);
@@ -143,10 +147,12 @@ begin
 
   edHenkeDir.Text        := Config.SystemDirS[sdHenke];
   edProjectDir.Text      := Config.SystemDirS[sdProjDir];
+  edStorageDir.Text      := Config.SystemDirS[sdStorageDir];
   edBenchmarkDir.Text    := Config.SystemDirS[sdBenchDir];
   edOutputDir.Text       := Config.SystemDirS[sdOutDir];
   edBenchOutputDir.Text  := Config.SystemDirS[sdBenchOutDir];
   edJobsDir.Text         := Config.SystemDirS[sdJobsDir];
+
 end;
 
 procedure TfrmSettings.SaveSettings;
@@ -174,6 +180,7 @@ begin
 
   Config.SystemDir[sdHenke]       := edHenkeDir.Text;
   Config.SystemDir[sdProjDir]     := edProjectDir.Text;
+  Config.SystemDir[sdStorageDir]  := edStorageDir.Text;
   Config.SystemDir[sdBenchDir]    := edBenchmarkDir.Text;
   Config.SystemDir[sdOutDir]      := edOutputDir.Text;
   Config.SystemDir[sdBenchOutDir] := edBenchOutputDir.Text;

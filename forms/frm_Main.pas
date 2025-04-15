@@ -2371,7 +2371,6 @@ begin
         CalcRunExecute(frmMain);
 end;
 
-
 procedure TfrmMain.FillRecentMenu;
 var
   i: Integer;
@@ -2394,7 +2393,6 @@ begin
     PopupItem.OnClick := RecentListOnClick;
   end;
 end;
-
 
 procedure TfrmMain.AddRecentItem(const FileName: string);
 begin

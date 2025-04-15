@@ -21,7 +21,7 @@ object frmSettings: TfrmSettings
     Top = 3
     Width = 451
     Height = 384
-    ActivePage = tsBehavour
+    ActivePage = tsPaths
     Align = alClient
     TabOrder = 1
     object tsPaths: TTabSheet
@@ -48,7 +48,7 @@ object frmSettings: TfrmSettings
       object rzpnl1: TRzPanel
         AlignWithMargins = True
         Left = 3
-        Top = 63
+        Top = 22
         Width = 437
         Height = 35
         Align = alTop
@@ -58,75 +58,17 @@ object frmSettings: TfrmSettings
         object Label4: TLabel
           Left = 8
           Top = 11
-          Width = 110
+          Width = 120
           Height = 13
-          Caption = 'Default Project'#39's folder'
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = 'Default Project'#39's Folder'
         end
         object edProjectDir: TRzButtonEdit
           Tag = 1
           Left = 132
-          Top = 14
-          Width = 301
-          Height = 21
-          Text = ''
-          TabOrder = 0
-          AltBtnNumGlyphs = 1
-          ButtonNumGlyphs = 1
-          OnButtonClick = edBenchmarkDirButtonClick
-        end
-      end
-      object RzPanel3: TRzPanel
-        AlignWithMargins = True
-        Left = 3
-        Top = 104
-        Width = 437
-        Height = 35
-        Align = alTop
-        BorderOuter = fsFlatRounded
-        Color = 15987699
-        TabOrder = 1
-        object Label5: TLabel
-          Left = 8
-          Top = 11
-          Width = 101
-          Height = 13
-          Caption = 'Default output folder'
-        end
-        object edOutputDir: TRzButtonEdit
-          Tag = 2
-          Left = 132
           Top = 8
-          Width = 301
-          Height = 21
-          Text = ''
-          TabOrder = 0
-          AltBtnNumGlyphs = 1
-          ButtonNumGlyphs = 1
-          OnButtonClick = edBenchmarkDirButtonClick
-        end
-      end
-      object RzPanel4: TRzPanel
-        AlignWithMargins = True
-        Left = 3
-        Top = 145
-        Width = 437
-        Height = 35
-        Align = alTop
-        BorderOuter = fsFlatRounded
-        Color = 15987699
-        TabOrder = 2
-        object Label7: TLabel
-          Left = 8
-          Top = 11
-          Width = 110
-          Height = 13
-          Caption = 'Benchmark input folder'
-        end
-        object edBenchmarkDir: TRzButtonEdit
-          Tag = 3
-          Left = 132
-          Top = 8
-          Width = 301
+          Width = 295
           Height = 21
           Text = ''
           TabOrder = 0
@@ -137,100 +79,211 @@ object frmSettings: TfrmSettings
       end
       object btnRegisterExtensions: TButton
         Left = 3
-        Top = 346
+        Top = 394
         Width = 437
         Height = 25
         Caption = 'Register file associations (xrcx)'
-        TabOrder = 3
+        TabOrder = 1
         OnClick = btnRegisterExtensionsClick
-      end
-      object RzPanel6: TRzPanel
-        AlignWithMargins = True
-        Left = 3
-        Top = 22
-        Width = 437
-        Height = 35
-        Align = alTop
-        BorderOuter = fsFlatRounded
-        Color = 15987699
-        TabOrder = 4
-        object Label9: TLabel
-          Left = 8
-          Top = 11
-          Width = 59
-          Height = 13
-          Caption = 'Henke libray'
-        end
-        object edHenkeDir: TRzButtonEdit
-          Left = 132
-          Top = 8
-          Width = 301
-          Height = 21
-          Text = ''
-          TabOrder = 0
-          AltBtnNumGlyphs = 1
-          ButtonNumGlyphs = 1
-          OnButtonClick = edBenchmarkDirButtonClick
-        end
-      end
-      object RzPanel8: TRzPanel
-        AlignWithMargins = True
-        Left = 3
-        Top = 186
-        Width = 437
-        Height = 35
-        Align = alTop
-        BorderOuter = fsFlatRounded
-        Color = 15987699
-        TabOrder = 5
-        object Label13: TLabel
-          Left = 8
-          Top = 11
-          Width = 118
-          Height = 13
-          Caption = 'Benchmark output folder'
-        end
-        object edBenchOutputDir: TRzButtonEdit
-          Tag = 4
-          Left = 132
-          Top = 8
-          Width = 301
-          Height = 21
-          Text = ''
-          TabOrder = 0
-          AltBtnNumGlyphs = 1
-          ButtonNumGlyphs = 1
-          OnButtonClick = edBenchmarkDirButtonClick
-        end
       end
       object RzPanel9: TRzPanel
         AlignWithMargins = True
         Left = 3
-        Top = 227
+        Top = 63
         Width = 437
         Height = 35
         Align = alTop
         BorderOuter = fsFlatRounded
         Color = 15987699
-        TabOrder = 6
+        TabOrder = 2
         object Label14: TLabel
           Left = 8
           Top = 11
-          Width = 81
+          Width = 120
           Height = 13
-          Caption = 'Batch jobs folder'
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = 'Work Folder'
         end
-        object edJobsDir: TRzButtonEdit
-          Tag = 4
+        object edStorageDir: TRzButtonEdit
+          Tag = 6
           Left = 132
           Top = 8
-          Width = 301
+          Width = 295
           Height = 21
           Text = ''
           TabOrder = 0
           AltBtnNumGlyphs = 1
           ButtonNumGlyphs = 1
           OnButtonClick = edBenchmarkDirButtonClick
+        end
+      end
+      object GroupBox1: TGroupBox
+        Left = 0
+        Top = 101
+        Width = 443
+        Height = 228
+        Align = alTop
+        Caption = 'Work Subfolders'
+        TabOrder = 3
+        object RzPanel6: TRzPanel
+          AlignWithMargins = True
+          Left = 5
+          Top = 18
+          Width = 433
+          Height = 35
+          Align = alTop
+          BorderOuter = fsFlatRounded
+          Color = 15987699
+          TabOrder = 0
+          object Label9: TLabel
+            Left = 8
+            Top = 11
+            Width = 120
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = 'Henke libray'
+          end
+          object edHenkeDir: TRzButtonEdit
+            Left = 132
+            Top = 8
+            Width = 295
+            Height = 21
+            Text = ''
+            TabOrder = 0
+            AltBtnNumGlyphs = 1
+            ButtonNumGlyphs = 1
+            OnButtonClick = edBenchmarkDirButtonClick
+          end
+        end
+        object RzPanel5: TRzPanel
+          AlignWithMargins = True
+          Left = 5
+          Top = 59
+          Width = 433
+          Height = 35
+          Align = alTop
+          BorderOuter = fsFlatRounded
+          Color = 15987699
+          TabOrder = 1
+          object Label8: TLabel
+            Left = 8
+            Top = 11
+            Width = 120
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = 'Jobs'
+          end
+          object edJobsDir: TRzButtonEdit
+            Tag = 2
+            Left = 132
+            Top = 8
+            Width = 295
+            Height = 21
+            Text = ''
+            TabOrder = 0
+            AltBtnNumGlyphs = 1
+            ButtonNumGlyphs = 1
+            OnButtonClick = edBenchmarkDirButtonClick
+          end
+        end
+        object RzPanel3: TRzPanel
+          AlignWithMargins = True
+          Left = 5
+          Top = 182
+          Width = 433
+          Height = 35
+          Align = alTop
+          BorderOuter = fsFlatRounded
+          Color = 15987699
+          TabOrder = 2
+          object Label5: TLabel
+            Left = 8
+            Top = 11
+            Width = 120
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = 'Fitting Output'
+          end
+          object edOutputDir: TRzButtonEdit
+            Tag = 2
+            Left = 132
+            Top = 8
+            Width = 295
+            Height = 21
+            Text = ''
+            TabOrder = 0
+            AltBtnNumGlyphs = 1
+            ButtonNumGlyphs = 1
+            OnButtonClick = edBenchmarkDirButtonClick
+          end
+        end
+        object RzPanel4: TRzPanel
+          AlignWithMargins = True
+          Left = 5
+          Top = 141
+          Width = 433
+          Height = 35
+          Align = alTop
+          BorderOuter = fsFlatRounded
+          Color = 15987699
+          TabOrder = 3
+          object Label7: TLabel
+            Left = 8
+            Top = 11
+            Width = 120
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = 'Benchmark'
+          end
+          object edBenchmarkDir: TRzButtonEdit
+            Tag = 3
+            Left = 132
+            Top = 8
+            Width = 295
+            Height = 21
+            Text = ''
+            TabOrder = 0
+            AltBtnNumGlyphs = 1
+            ButtonNumGlyphs = 1
+            OnButtonClick = edBenchmarkDirButtonClick
+          end
+        end
+        object RzPanel8: TRzPanel
+          AlignWithMargins = True
+          Left = 5
+          Top = 100
+          Width = 433
+          Height = 35
+          Align = alTop
+          BorderOuter = fsFlatRounded
+          Color = 15987699
+          TabOrder = 4
+          object Label13: TLabel
+            Left = 8
+            Top = 11
+            Width = 120
+            Height = 13
+            Alignment = taRightJustify
+            AutoSize = False
+            Caption = 'Benchmark output'
+          end
+          object edBenchOutputDir: TRzButtonEdit
+            Tag = 4
+            Left = 132
+            Top = 8
+            Width = 295
+            Height = 21
+            Text = ''
+            TabOrder = 0
+            AltBtnNumGlyphs = 1
+            ButtonNumGlyphs = 1
+            OnButtonClick = edBenchmarkDirButtonClick
+          end
         end
       end
     end
@@ -243,12 +296,13 @@ object frmSettings: TfrmSettings
         Left = 3
         Top = 3
         Width = 437
-        Height = 362
+        Height = 412
         Margins.Bottom = 9
         Align = alClient
         BevelOuter = bvNone
         ShowCaption = False
         TabOrder = 0
+        ExplicitHeight = 362
         object Label6: TLabel
           AlignWithMargins = True
           Left = 3
@@ -278,7 +332,6 @@ object frmSettings: TfrmSettings
           Color = clBtnFace
           ParentColor = False
           TabOrder = 0
-          ExplicitTop = 68
         end
         object chkAutoCalcOpen: TCheckBox
           AlignWithMargins = True
@@ -305,7 +358,6 @@ object frmSettings: TfrmSettings
           Color = clBtnFace
           ParentColor = False
           TabOrder = 2
-          ExplicitTop = 45
         end
         object chkLiveUpdate: TCheckBox
           AlignWithMargins = True

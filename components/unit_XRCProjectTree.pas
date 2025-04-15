@@ -121,7 +121,7 @@ begin
   DragMode := dmAutomatic;
   DragType := dtVCL;
   Font.Color := clWindowText;
-  Font.Height := ScaleForDPI(16);
+  Font.Height := -13;//ScaleForDPI(16);
   Font.Name := 'Tahoma';
   Font.Style := [];
   Indent := ScaleForDPI(10);

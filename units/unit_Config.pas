@@ -31,7 +31,8 @@ type
     sdOutDir,
     sdBenchDir,
     sdBenchOutDir,
-    sdJobsDir
+    sdJobsDir,
+    sdStorageDir
   );
 
     SectionAttribute = class(TCustomAttribute)
@@ -117,16 +118,18 @@ type
     public
       [DefaultValue('Henke')]
       property HenkeDir     : string index 0 read getStringValue write SetStringValue;
-      [DefaultValue('Benchmark')]
-      property BenchmarkDir : string index 1 read getStringValue write SetStringValue;
       [DefaultValue('')]
-      property ProjectDir   : string index 2 read getStringValue write SetStringValue;
+      property StorageDir     : string index 1 read getStringValue write SetStringValue;
+      [DefaultValue('Benchmark')]
+      property BenchmarkDir : string index 2 read getStringValue write SetStringValue;
+      [DefaultValue('')]
+      property ProjectDir   : string index 3 read getStringValue write SetStringValue;
       [DefaultValue('Output')]
-      property OutputDir    : string index 3 read getStringValue write SetStringValue;
+      property OutputDir    : string index 4 read getStringValue write SetStringValue;
       [DefaultValue('BenchResults')]
-      property BenchOutputDir : string index 4 read getStringValue write SetStringValue;
+      property BenchOutputDir : string index 5 read getStringValue write SetStringValue;
       [DefaultValue('Jobs')]
-      property JobsDir        : string index 5 read getStringValue write SetStringValue;
+      property JobsDir        : string index 6 read getStringValue write SetStringValue;
     end;
 
     [Section('Window')]
@@ -158,7 +161,6 @@ type
         FErrorLog: Boolean;
         FTempDir: string;
         FWorkDir: string;
-
         FOptions : TObjectList<TBaseOptions>;
   private
     class function GetSystemFileName(fileType: TXRCSystemFile): string; static;
@@ -263,30 +265,40 @@ begin
           sdOutDir: Dir := TConfig.Section<TPathOptions>.OutputDir;
      sdBenchOutDir: Dir := TConfig.Section<TPathOptions>.BenchOutputDir;
          sdJobsDir: Dir := TConfig.Section<TPathOptions>.JobsDir;
-  else
-    Assert(False);
   end;
 
-  if Pos(':', Dir) <> 0 then
+  if DirType <> sdStorageDir then
   begin
-    Result := IncludeTrailingPathDelimiter(Dir);
-    Exit;
-  end;
-  Result := IncludeTrailingPathDelimiter(AppPath + Dir);
+    if Pos(':', Dir) <> 0 then
+    begin
+      Result := IncludeTrailingPathDelimiter(Dir);
+      Exit;
+    end;
+    if TConfig.Section<TPathOptions>.StorageDir = '' then
+      Result := IncludeTrailingPathDelimiter(AppPath + Dir)
+    else
+      Result := IncludeTrailingPathDelimiter(GetSystemDir(sdStorageDir) + Dir);
+  end
+  else
+    Result := IncludeTrailingPathDelimiter(TConfig.Section<TPathOptions>.StorageDir);
 end;
 
 class function TConfig.GetSystemDirS(DirType: TXRCSystemDir): string;
+var
+  Dir: string;
 begin
  case DirType of
-           sdHenke: Result := TConfig.Section<TPathOptions>.HenkeDir;
-        sdBenchDir: Result := TConfig.Section<TPathOptions>.BenchmarkDir;
-         sdProjDir: Result := TConfig.Section<TPathOptions>.ProjectDir;
-          sdOutDir: Result := TConfig.Section<TPathOptions>.OutputDir;
-     sdBenchOutDir: Result := TConfig.Section<TPathOptions>.BenchOutputDir;
-         sdJobsDir: Result := TConfig.Section<TPathOptions>.JobsDir;
+           sdHenke: Dir := TConfig.Section<TPathOptions>.HenkeDir;
+      sdStorageDir: Dir := TConfig.Section<TPathOptions>.StorageDir;
+        sdBenchDir: Dir := TConfig.Section<TPathOptions>.BenchmarkDir;
+         sdProjDir: Dir := TConfig.Section<TPathOptions>.ProjectDir;
+          sdOutDir: Dir := TConfig.Section<TPathOptions>.OutputDir;
+     sdBenchOutDir: Dir := TConfig.Section<TPathOptions>.BenchOutputDir;
+         sdJobsDir: Dir := TConfig.Section<TPathOptions>.JobsDir;
   else
     Assert(False);
   end;
+  Result := Dir;
 end;
 
 class function TConfig.GetSystemFileName(fileType: TXRCSystemFile): string;
@@ -345,6 +357,7 @@ begin
           sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Value;
      sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Value;
          sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
+      sdStorageDir: TConfig.Section<TPathOptions>.JobsDir := Value;
   else
     Assert(False);
   end;
@@ -366,7 +379,8 @@ begin
          sdProjDir: TConfig.Section<TPathOptions>.ProjectDir := Dir;
           sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Dir;
      sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Dir;
-         sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
+         sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Dir;
+      sdStorageDir: TConfig.Section<TPathOptions>.StorageDir := Value;
   else
     Assert(False);
   end;

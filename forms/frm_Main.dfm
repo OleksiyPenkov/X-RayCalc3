@@ -315,6 +315,10 @@ object frmMain: TfrmMain
         object tsThickness: TRzTabSheet
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 3
@@ -351,6 +355,10 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -384,6 +392,10 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -417,6 +429,10 @@ object frmMain: TfrmMain
         object tsProfile: TRzTabSheet
           Color = 15987699
           Caption = 'Profile'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chProfile: TChart
             AlignWithMargins = True
             Left = 3
@@ -463,6 +479,10 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
@@ -1137,8 +1157,8 @@ object frmMain: TfrmMain
           object cbLFPSOShake: TRzCheckBox
             Left = 7
             Top = 81
-            Width = 54
-            Height = 19
+            Width = 50
+            Height = 17
             AlignmentVertical = avCenter
             Caption = 'Shake'
             Checked = True
@@ -1148,8 +1168,8 @@ object frmMain: TfrmMain
           object cbSeedRange: TRzCheckBox
             Left = 71
             Top = 81
-            Width = 55
-            Height = 19
+            Width = 51
+            Height = 17
             AlignmentVertical = avCenter
             Caption = 'SeedR'
             Checked = True
@@ -1196,8 +1216,8 @@ object frmMain: TfrmMain
           object cbPWChiSqr: TRzCheckBox
             Left = 141
             Top = 81
-            Width = 56
-            Height = 19
+            Width = 52
+            Height = 17
             Caption = 'PW '#967'2'
             Checked = True
             State = cbChecked
@@ -1502,7 +1522,7 @@ object frmMain: TfrmMain
             object cb2Theta: TRzCheckBox
               Left = 169
               Top = 36
-              Width = 39
+              Width = 35
               Height = 21
               Caption = '2q'
               Checked = True
