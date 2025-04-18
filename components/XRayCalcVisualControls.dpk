@@ -33,6 +33,7 @@ requires
   RaizeComponentsVcl;
 
 contains
-  unit_XRCGrid in 'unit_XRCGrid.pas';
+  unit_XRCGrid in 'unit_XRCGrid.pas',
+  unit_StaticTip in 'unit_StaticTip.pas';
 
 end.

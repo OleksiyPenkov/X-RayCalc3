@@ -34,7 +34,6 @@ type
     RzGroupBox3: TRzGroupBox;
     Label1: TLabel;
     edIrrSmoothWindow: TEdit;
-    Tip: TMHLStaticTip;
     btnSave: TRzBitBtn;
     btnCancel: TBitBtn;
     RzGroupBox4: TRzGroupBox;
@@ -42,6 +41,7 @@ type
     Label8: TLabel;
     Label10: TLabel;
     edKsxr: TEdit;
+    Tip: TStaticTip;
     procedure ShowParamHint(Sender: TObject);
   private
     { Private declarations }

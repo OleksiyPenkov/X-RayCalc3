@@ -36,7 +36,7 @@ uses
   System.Types;
 
 type
-  TMHLStaticTip = class(TCustomLabel)
+  TStaticTip = class(TCustomLabel)
   private
     FArcSize: Integer;
     FTextMargin: Integer;
@@ -69,11 +69,18 @@ type
     property Caption;
   end;
 
+procedure Register;
+
 implementation
+
+procedure Register;
+begin
+  RegisterComponents('X-RayCalcComponents', [TStaticTip]);
+end;
 
 { TMHLStaticTip }
 
-constructor TMHLStaticTip.Create(AOwner: TComponent);
+constructor TStaticTip.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
@@ -92,13 +99,13 @@ begin
   FTextMargin := 10;
 end;
 
-destructor TMHLStaticTip.Destroy;
+destructor TStaticTip.Destroy;
 begin
   FreeAndNil(FImageChangeLink);
   inherited Destroy;
 end;
 
-procedure TMHLStaticTip.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TStaticTip.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited Notification(AComponent, Operation);
   if (Operation = opRemove) and (AComponent = FImages) then
@@ -122,7 +129,7 @@ begin
   end;
 end;
 
-procedure TMHLStaticTip.Paint;
+procedure TStaticTip.Paint;
 var
   Rect, CalcRect, CaptionRect: TRect;
   DrawStyle: Longint;
@@ -178,7 +185,7 @@ begin
   DoDrawText(CaptionRect, DrawStyle);
 end;
 
-procedure TMHLStaticTip.SetArcSize(const Value: Integer);
+procedure TStaticTip.SetArcSize(const Value: Integer);
 begin
   if FArcSize <> Value then
   begin
@@ -187,7 +194,7 @@ begin
   end;
 end;
 
-procedure TMHLStaticTip.SetTextMargin(const Value: Integer);
+procedure TStaticTip.SetTextMargin(const Value: Integer);
 begin
   if FTextMargin <> Value then
   begin
@@ -196,7 +203,7 @@ begin
   end;
 end;
 
-procedure TMHLStaticTip.SetImageIndex(const Value: TImageIndex);
+procedure TStaticTip.SetImageIndex(const Value: TImageIndex);
 begin
   if FImageIndex <> Value then
   begin
@@ -205,7 +212,7 @@ begin
   end;
 end;
 
-procedure TMHLStaticTip.SetImages(const Value: TCustomImageList);
+procedure TStaticTip.SetImages(const Value: TCustomImageList);
 begin
   if Value <> FImages then
   begin
@@ -227,7 +234,7 @@ begin
   end;
 end;
 
-procedure TMHLStaticTip.ImageListChange(Sender: TObject);
+procedure TStaticTip.ImageListChange(Sender: TObject);
 begin
   Invalidate;
 end;

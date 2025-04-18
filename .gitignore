@@ -18,3 +18,5 @@ Resources
 *.identcache
 /*.json
 /components/*.RES
+/*.dsk
+*.dsv

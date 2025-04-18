@@ -23,17 +23,11 @@ object frmFitSettings: TfrmFitSettings
     Align = alClient
     BorderOuter = fsFlatRounded
     TabOrder = 0
-    object Tip: TMHLStaticTip
-      AlignWithMargins = True
-      Left = 5
-      Top = 332
-      Width = 431
-      Height = 51
-      Align = alBottom
-      Caption = 'Select a parameter to see its description'
-      ExplicitLeft = 2
-      ExplicitTop = 336
-      ExplicitWidth = 441
+    object Tip: TStaticTip
+      Left = 9
+      Top = 297
+      Width = 426
+      Height = 80
     end
     object RzGroupBox1: TRzGroupBox
       AlignWithMargins = True
@@ -317,7 +311,6 @@ object frmFitSettings: TfrmFitSettings
       Caption = 'Irregular'
       Color = 15987699
       TabOrder = 2
-      ExplicitTop = 151
       object Label1: TLabel
         Left = 12
         Top = 23
@@ -362,7 +355,6 @@ object frmFitSettings: TfrmFitSettings
       Caption = 'Polynomial'
       Color = 15987699
       TabOrder = 3
-      ExplicitTop = 212
       object Label8: TLabel
         Left = 10
         Top = 25
@@ -373,7 +365,7 @@ object frmFitSettings: TfrmFitSettings
       object Label10: TLabel
         Left = 249
         Top = 27
-        Width = 22
+        Width = 21
         Height = 15
         Caption = 'Ksxr'
       end
