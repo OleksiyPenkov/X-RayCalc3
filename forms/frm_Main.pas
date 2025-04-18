@@ -2690,6 +2690,7 @@ begin
       Structure.FromString(LastData.Data);
     end;
   end;
+
 end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);

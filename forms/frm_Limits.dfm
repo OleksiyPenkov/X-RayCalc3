@@ -11,6 +11,7 @@ object frmLimits: TfrmLimits
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poMainFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCreate = FormCreate
   TextHeight = 15
   object RzPanel1: TRzPanel
@@ -108,7 +109,6 @@ object frmLimits: TfrmLimits
       ColumnClick = False
       GridLines = True
       GroupView = True
-      Items.ItemData = {050000000000000000}
       ReadOnly = True
       ShowWorkAreas = True
       TabOrder = 0
@@ -181,8 +181,6 @@ object frmLimits: TfrmLimits
     BorderOuter = fsFlatRounded
     Color = 15987699
     TabOrder = 1
-    ExplicitTop = 431
-    ExplicitWidth = 549
     object btnSet: TRzBitBtn
       Left = 473
       Top = 8

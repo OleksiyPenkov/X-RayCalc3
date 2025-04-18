@@ -37,10 +37,13 @@ type
     procedure FormCreate(Sender: TObject);
     procedure btnInitClick(Sender: TObject);
     procedure RzBitBtn2Click(Sender: TObject);
+    procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+      NewDPI: Integer);
   private
     ListViewEditor: TRzEdit;
     LItem: TListitem;
     FStructure: TFitStructure ;
+    FDPI: integer;
 
     procedure UserEditListView( Var Message: TMessage ); message USER_EDITLISTVIEW;
     procedure ListViewEditorExit(Sender: TObject);
@@ -108,6 +111,12 @@ begin
     ListViewEditor.Visible:=False;
 end;
 
+procedure TfrmLimits.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
+  NewDPI: Integer);
+begin
+  FDPI := NewDPI;
+end;
+
 procedure TfrmLimits.FormCreate(Sender: TObject);
 begin
   //create the TEdit and assign the OnExit event
@@ -116,6 +125,8 @@ begin
   ListViewEditor.OnExit:=ListViewEditorExit;
   ListViewEditor.Visible:=False;
   ListViewEditor.OnKeyDown := EditorKeyDown;
+
+  FDPI := Screen.PixelsPerInch;
 end;
 
 procedure TfrmLimits.ListViewClick(Sender: TObject);
@@ -124,8 +135,11 @@ var
   LVHitTestInfo: TLVHitTestInfo;
 
   function GetColumns(const X: integer):integer;
+  var
+    Pos: integer;
   begin
-    Result := (X - 100) div 70 + 1;
+    Pos := (X - 100) div 70 + 1;
+    Result := MulDiv(Pos, 96, FDPI);
   end;
 
 begin
