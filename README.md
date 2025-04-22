@@ -6,6 +6,11 @@ In this version, the automatic optimization based on a modified LFPSO algorithm 
 
 The X-Ray Calc distribution contains several demonstration projects located in the Examples folder. To see the demos, click the Open button, navigate to the Examples folder, and select a project file.
 
+**Pre-built package with x86 and x64 executables for Windows and Henke tables (_X-Ray_Calc_3.zip_):**
+
+https://github.com/OleksiyPenkov/X-RayCalc3/releases/  
+
+
 ## Help
 You can find  manuals, troubleshooting, and lessons here:
 
