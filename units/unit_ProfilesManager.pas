@@ -193,9 +193,9 @@ begin
 
   for StackIndex := 0 to High(Structure.Stacks) do
   begin
-    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
+    for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
     begin
-      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
+      for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
       begin
         InLayerDepth := 0;
         while InLayerDepth < Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V do
