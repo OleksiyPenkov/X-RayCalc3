@@ -8,11 +8,20 @@ uses
 type
   TSeriesList = array of TLineSeries;
 
+  TPLayer = record
+    h, s, r: single;
+  end;
+
   TProfileManager = class
     private
       FSeriesArray: array [1..4] of TSeriesList;
+      FLayers: array of TPLayer;
+
       FDensityProfile: TLineSeries;
       FProfiles: TProfileFunctions;
+      function GetSigma(const StackIndex, LayerIndex, PeriodIndex: integer): single;
+      function GetRho(const StackIndex, LayerIndex, PeriodIndex: integer): single;
+      procedure FillLayers;
     public
       constructor Create;
       destructor Destroy; override;
@@ -32,7 +41,25 @@ type
 implementation
 
 uses
-  unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs, math_globals;
+  unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs, math_globals,
+   NesLib.FastMath;
+
+
+function Erf(const sigma, xmax: single): single;
+const
+  dx = 0.01;
+var
+  x, i, pow: single;
+begin
+  x := -sigma; i:= 0;
+  while x < xmax/(sigma/1.77) do
+  begin
+    Pow := -1 * sqr(x);
+    i := i + dx * exp(Pow);
+    x := x + dx;
+  end;
+  Result := 1/sqrt(pi) * i;
+end;
 
 procedure TProfileManager.Prepare(Structure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
 var
@@ -183,28 +210,68 @@ begin
   inherited;
 end;
 
+procedure TProfileManager.FillLayers;
+var
+  StackIndex, LayerIndex, PeriodIndex: integer;
+begin
+
+end;
+
+function TProfileManager.GetSigma(const StackIndex, LayerIndex, PeriodIndex: integer): single;
+begin
+  if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[2]) > 1 then
+     Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[2][PeriodIndex - 1]
+  else
+    Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[2].V;
+end;
+
+function TProfileManager.GetRho(const StackIndex, LayerIndex, PeriodIndex: integer): single;
+begin
+  if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3]) > 1 then
+     Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3][PeriodIndex - 1]
+  else
+    Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V;
+end;
+
+
 procedure TProfileManager.PlotDensityProfile;
 var
   StackIndex, LayerIndex, PeriodIndex: integer;
   InLayerDepth, Depth, Val: single;
+  s, tots, lasts, lastrho, rho, thickness, scale,EndDepth: single;
 begin
-
-  Depth := 0;
-
   for StackIndex := 0 to High(Structure.Stacks) do
   begin
     for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
     begin
       for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
       begin
-        InLayerDepth := 0;
-        while InLayerDepth < Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[1].V do
+        if (StackIndex = 0) and (PeriodIndex = 1) and (LayerIndex = 0) then // surface layer
+        begin
+          s := GetSigma(0, 0, 1);
+          InLayerDepth := -s;
+          Depth := InLayerDepth;
+          lastrho := 0;
+          rho := GetRho(0, 0, 1);
+          scale := rho - lastrho;
+          EndDepth := Structure.Stacks[0].Layers[0].Data.P[1].V;
+        end
+        else begin
+          InLayerDepth := 0;
+          lastrho := rho;
+          rho := GetRho(StackIndex, LayerIndex, PeriodIndex);
+          scale := rho - lastrho;
+          EndDepth := Structure.Stacks[0].Layers[0].Data.P[1].V;
+        end;
+        tots := 0;
+        while InLayerDepth < EndDepth do
         begin
           InLayerDepth := InLayerDepth + 0.1;
           Depth := Depth + 0.1;
-          Val := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V;
-          if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3]) > 1 then
-             Val := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3][PeriodIndex - 1];
+          if s > 0 then
+            Val := lastrho + scale * Erf(s, InlayerDepth)
+          else
+            Val := rho;
           FDensityProfile.AddXY(Depth, Val);
         end;
       end;

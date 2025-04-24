@@ -313,6 +313,7 @@ type
     tsProfile: TRzTabSheet;
     chProfile: TChart;
     DensityProfile: TLineSeries;
+    btnProfileCopy: TRzButton;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -397,6 +398,7 @@ type
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
     procedure DataNormAutoExecute(Sender: TObject);
+    procedure btnProfileCopyClick(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -2817,6 +2819,11 @@ begin
     0..2: ;
     3: SeriesToClipboard('N','ChiSqr','','', lsrConvergence);
   end;
+end;
+
+procedure TfrmMain.btnProfileCopyClick(Sender: TObject);
+begin
+  SeriesToClipboard('A','g/cm3','','', DensityProfile);
 end;
 
 procedure TfrmMain.cbIncrementChange(Sender: TObject);

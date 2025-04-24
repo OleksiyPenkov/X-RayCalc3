@@ -307,9 +307,9 @@ object frmMain: TfrmMain
         Width = 1068
         Height = 163
         Hint = ''
-        ActivePage = tsThickness
+        ActivePage = tsProfile
         Align = alBottom
-        TabIndex = 0
+        TabIndex = 3
         TabOrder = 0
         FixedDimension = 21
         object tsThickness: TRzTabSheet
@@ -351,10 +351,6 @@ object frmMain: TfrmMain
         object tsRoughness: TRzTabSheet
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 3
@@ -388,10 +384,6 @@ object frmMain: TfrmMain
         object tsDensity: TRzTabSheet
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 3
@@ -425,10 +417,6 @@ object frmMain: TfrmMain
         object tsProfile: TRzTabSheet
           Color = 15987699
           Caption = 'Profile'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chProfile: TChart
             AlignWithMargins = True
             Left = 3
@@ -456,8 +444,20 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            DesignSize = (
+              1058
+              132)
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
+            object btnProfileCopy: TRzButton
+              Left = 996
+              Top = 0
+              Width = 59
+              Anchors = [akTop, akRight]
+              Caption = 'Copy'
+              TabOrder = 0
+              OnClick = btnProfileCopyClick
+            end
             object DensityProfile: TLineSeries
               HoverElement = [heCurrent]
               Title = 'DensityProfile'
@@ -475,10 +475,6 @@ object frmMain: TfrmMain
         object tsFittingProgress: TRzTabSheet
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 3
