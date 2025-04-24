@@ -307,9 +307,9 @@ object frmMain: TfrmMain
         Width = 1068
         Height = 163
         Hint = ''
-        ActivePage = tsProfile
+        ActivePage = tsDensity
         Align = alBottom
-        TabIndex = 3
+        TabIndex = 2
         TabOrder = 0
         FixedDimension = 21
         object tsThickness: TRzTabSheet

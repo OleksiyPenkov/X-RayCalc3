@@ -19,15 +19,14 @@ type
 
       FDensityProfile: TLineSeries;
       FProfiles: TProfileFunctions;
-      function GetSigma(const StackIndex, LayerIndex, PeriodIndex: integer): single;
-      function GetRho(const StackIndex, LayerIndex, PeriodIndex: integer): single;
+      function GetVal(const StackIndex, LayerIndex, PeriodIndex, Val: integer): single;
       procedure FillLayers;
     public
       constructor Create;
       destructor Destroy; override;
 
-      procedure PlotProfile(const PlotNP: boolean);
-      procedure PlotProfileNP;
+      procedure PlotProfile(const PlotNP, PlotD: boolean);
+      procedure PlotProfileNP(const PlotD: boolean);
       procedure PlotGradedProfile;
       procedure PlotSimpleProfile;
       procedure PlotDensityProfile;
@@ -42,12 +41,12 @@ implementation
 
 uses
   unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs, math_globals,
-   NesLib.FastMath;
+  NesLib.FastMath;
 
 
-function Erf(const sigma, xmax: single): single;
+function Erf(const sigma, xmax: single): single; inline;
 const
-  dx = 0.01;
+  dx = 0.05;
 var
   x, i, pow: single;
 begin
@@ -55,7 +54,7 @@ begin
   while x < xmax/(sigma/1.77) do
   begin
     Pow := -1 * sqr(x);
-    i := i + dx * exp(Pow);
+    i := i + dx * FastExp(Pow);
     x := x + dx;
   end;
   Result := 1/sqrt(pi) * i;
@@ -124,7 +123,8 @@ begin
     end;
     Inc(shift, Structure.Stacks[i].N);
   end;
-  PlotDensityProfile;
+  if PlotD then
+      PlotDensityProfile;
 end;
 
 procedure TProfileManager.PlotGradedProfile;
@@ -213,68 +213,75 @@ end;
 procedure TProfileManager.FillLayers;
 var
   StackIndex, LayerIndex, PeriodIndex: integer;
+  Layer: TPLayer;
 begin
-
-end;
-
-function TProfileManager.GetSigma(const StackIndex, LayerIndex, PeriodIndex: integer): single;
-begin
-  if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[2]) > 1 then
-     Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[2][PeriodIndex - 1]
-  else
-    Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[2].V;
-end;
-
-function TProfileManager.GetRho(const StackIndex, LayerIndex, PeriodIndex: integer): single;
-begin
-  if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3]) > 1 then
-     Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[3][PeriodIndex - 1]
-  else
-    Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[3].V;
-end;
-
-
-procedure TProfileManager.PlotDensityProfile;
-var
-  StackIndex, LayerIndex, PeriodIndex: integer;
-  InLayerDepth, Depth, Val: single;
-  s, tots, lasts, lastrho, rho, thickness, scale,EndDepth: single;
-begin
+  SetLength(FLayers, 0);
   for StackIndex := 0 to High(Structure.Stacks) do
   begin
     for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
     begin
       for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
       begin
-        if (StackIndex = 0) and (PeriodIndex = 1) and (LayerIndex = 0) then // surface layer
-        begin
-          s := GetSigma(0, 0, 1);
-          InLayerDepth := -s;
-          Depth := InLayerDepth;
-          lastrho := 0;
-          rho := GetRho(0, 0, 1);
-          scale := rho - lastrho;
-          EndDepth := Structure.Stacks[0].Layers[0].Data.P[1].V;
-        end
-        else begin
-          InLayerDepth := 0;
-          lastrho := rho;
-          rho := GetRho(StackIndex, LayerIndex, PeriodIndex);
-          scale := rho - lastrho;
-          EndDepth := Structure.Stacks[0].Layers[0].Data.P[1].V;
-        end;
-        tots := 0;
-        while InLayerDepth < EndDepth do
-        begin
-          InLayerDepth := InLayerDepth + 0.1;
-          Depth := Depth + 0.1;
-          if s > 0 then
-            Val := lastrho + scale * Erf(s, InlayerDepth)
-          else
-            Val := rho;
-          FDensityProfile.AddXY(Depth, Val);
-        end;
+        Layer.h := GetVal(StackIndex, LayerIndex, PeriodIndex, 1);
+        Layer.s := GetVal(StackIndex, LayerIndex, PeriodIndex, 2);
+        Layer.r := GetVal(StackIndex, LayerIndex, PeriodIndex, 3);
+
+        FLayers := FLayers +[Layer];
       end;
+    end;
+  end;
+end;
+
+function TProfileManager.GetVal(const StackIndex, LayerIndex, PeriodIndex, Val: integer): single;
+begin
+  if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val]) > 1 then
+     Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val][PeriodIndex - 1]
+  else
+    Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[Val].V;
+end;
+
+procedure TProfileManager.PlotDensityProfile;
+var
+  InLayerDepth, Depth, Val: single;
+  s, rho, scale, EndDepth: single;
+  i: integer;
+begin
+  FillLayers;
+  for I := 0 to High(FLayers) do
+  begin
+    s := FLayers[i].s;
+    if (i = 0)  then // surface layer
+    begin
+      Depth := -s;
+      rho := 0;
+      scale := - FLayers[i].r;
+      if Length(FLayers) > 1 then
+        EndDepth := FLayers[0].h - FLayers[1].s
+      else
+        EndDepth := FLayers[0].h;
+    end
+    else begin
+      if FLayers[i].s > FLayers[i].h / 2 then
+          s :=FLayers[i].h / 2;
+      rho := FLayers[i - 1].r;
+      scale := rho - FLayers[i].r;
+      if i < High(FLayers) then
+      begin
+        EndDepth := FLayers[i].h - FLayers[i + 1].s;
+      end
+      else
+        EndDepth := FLayers[i].h;
+    end;
+    InLayerDepth := -s;
+    while InLayerDepth < EndDepth do
+    begin
+      InLayerDepth := InLayerDepth + 0.1;
+      Depth := Depth + 0.1;
+      if s > 0 then
+        Val := rho - scale * Erf(s, InlayerDepth)
+      else
+        Val := rho;
+      FDensityProfile.AddXY(Depth, Val);
     end;
   end;
 end;
@@ -292,7 +299,7 @@ end;
 
 //      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
 
-procedure TProfileManager.PlotProfile(const PlotNP: boolean);
+procedure TProfileManager.PlotProfile(const PlotNP, PlotD: boolean);
 begin
   ClearProfiles;
 
@@ -300,11 +307,12 @@ begin
     PlotGradedProfile
   else
       if PlotNP then
-         PlotProfileNP
+         PlotProfileNP(false)
       else
         PlotSimpleProfile;
 
-  PlotDensityProfile;
+  if PlotD then
+      PlotDensityProfile;
 end;
 
 end.

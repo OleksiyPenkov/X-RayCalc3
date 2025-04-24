@@ -688,7 +688,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
+  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
   CalcRunExecute(Self);
 end;
 
@@ -754,7 +754,7 @@ begin
        FOperationsStack.Clear;
        FOperationsStack.Push(LastData.Data);
        PM.Prepare(Structure, chThickness, chRoughness, chDensity);
-       PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
+       PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
      end;
   end;
 end;
@@ -1406,7 +1406,7 @@ end;
 procedure TfrmMain.MatchToStructure;
 begin
   PM.Prepare(Structure, chThickness, chRoughness, chDensity);
-  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
+  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
   Project.ActiveModel.Data := Structure.ToString;
 end;
 
@@ -1823,9 +1823,9 @@ begin
       end;
 
       if IsProfileEnbled and (FittingMode <> fmPeriodic) then
-         PM.PlotProfileNP
+         PM.PlotProfileNP(Pages.ActivePage = tsProfile)
      else
-        PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic));
+        PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
     except
       on E: exception do
       begin
