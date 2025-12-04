@@ -20,3 +20,6 @@ Resources
 /components/*.RES
 /*.dsk
 *.dsv
+/*.~dsk
+Debug
+__history

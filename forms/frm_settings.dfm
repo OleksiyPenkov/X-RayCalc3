@@ -79,7 +79,7 @@ object frmSettings: TfrmSettings
       end
       object btnRegisterExtensions: TButton
         Left = 3
-        Top = 394
+        Top = 346
         Width = 437
         Height = 25
         Caption = 'Register file associations (xrcx)'
@@ -296,13 +296,12 @@ object frmSettings: TfrmSettings
         Left = 3
         Top = 3
         Width = 437
-        Height = 412
+        Height = 362
         Margins.Bottom = 9
         Align = alClient
         BevelOuter = bvNone
         ShowCaption = False
         TabOrder = 0
-        ExplicitHeight = 362
         object Label6: TLabel
           AlignWithMargins = True
           Left = 3
