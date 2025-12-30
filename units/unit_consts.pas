@@ -12,11 +12,11 @@ unit unit_consts;
 interface
 
 uses
-Messages;
+  Messages;
 
 const
 
-  CURRENT_PROJECT_VERSION = 6;
+  CURRENT_PROJECT_VERSION = 7;
 
   PARAMETERS_FILE_NAME = 'params.dsc';
   PROJECT_FILE_NAME = 'project.dsc';

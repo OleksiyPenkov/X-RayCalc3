@@ -1497,6 +1497,7 @@ begin
 
     LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
+    Chart.LeftAxis.Logarithmic := INF.ReadBool('STATE', 'LogScale', True);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
     edFIter.Text            := INF.ReadString('FIT', 'Namx', '100');
@@ -2468,6 +2469,8 @@ begin
       Project.ActiveModel.Data := Structure.ToString;
     end;
 
+    INF.WriteBool('STATE', 'LogScale', Chart.LeftAxis.Logarithmic);
+
     INF.WriteString('FIT', 'Namx', edFIter.Text);
     INF.WriteString('FIT', 'Pop', edFPopulation.Text);
     INF.WriteInteger('FIT', 'Mode', rgFittingMode.ItemIndex);
@@ -2499,6 +2502,8 @@ begin
       DeleteFile(FileName);
 
     Project.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
+
+    SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], FProjectDir + 'calc.dat' );
 
     Zip.ArchiveType := atZip;
     Zip.AutoSave := True;

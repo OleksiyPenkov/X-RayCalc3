@@ -384,7 +384,7 @@ begin
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
             Data.Data := GetString;
        end;
-    6: begin
+    6, 7: begin
           Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
           Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
           Stream.Read(Data.LayerID, SizeOf(Integer));

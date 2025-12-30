@@ -1,22 +1,15 @@
-object XRCXPreviewFrom: TXRCXPreviewFrom
+object frmChart: TfrmChart
   Left = 0
   Top = 0
-  Width = 640
-  Height = 480
-  Caption = 'XRCXPreviewFrom'
-  Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -12
-  Font.Name = 'Segoe UI'
-  Font.Style = []
-  TextHeight = 15
+  Width = 555
+  Height = 440
+  TabOrder = 0
   object Chart: TChart
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 634
-    Height = 474
+    Width = 549
+    Height = 434
     Cursor = crCross
     Foot.Visible = False
     Legend.Brush.Color = clSilver
@@ -49,11 +42,7 @@ object XRCXPreviewFrom: TXRCXPreviewFrom
     Title.Text.Strings = (
       'TChart')
     Title.Visible = False
-    BottomAxis.Automatic = False
-    BottomAxis.AutomaticMaximum = False
-    BottomAxis.AutomaticMinimum = False
     BottomAxis.LabelsFormat.Font.Height = -13
-    BottomAxis.Maximum = 10.000000000000000000
     BottomAxis.MinorTicks.Visible = False
     BottomAxis.TickInnerLength = 5
     BottomAxis.TickLength = 0
@@ -116,10 +105,6 @@ object XRCXPreviewFrom: TXRCXPreviewFrom
     BevelOuter = bvLowered
     Color = clCream
     TabOrder = 0
-    ExplicitLeft = -428
-    ExplicitTop = 82
-    ExplicitWidth = 1068
-    ExplicitHeight = 398
     DefaultCanvas = 'TGDIPlusCanvas'
     PrintMargins = (
       5

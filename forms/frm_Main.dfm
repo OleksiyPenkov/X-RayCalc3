@@ -52,6 +52,7 @@ object frmMain: TfrmMain
       Align = alRight
       Field = vifFileVersion
       VersionInfo = frmAbout.RzVersionInfo
+      FileVersionFormat = fvfFull
       ExplicitLeft = 1592
       ExplicitTop = -2
     end
@@ -95,8 +96,8 @@ object frmMain: TfrmMain
       Height = 776
       Align = alClient
       BorderOuter = fsFlatRounded
-      Color = 15987699
       TabOrder = 0
+      Color = 15987699
       object tlbrFile: TRzToolbar
         Left = 2
         Top = 2
@@ -175,9 +176,9 @@ object frmMain: TfrmMain
         Height = 82
         Align = alBottom
         BorderOuter = fsFlatRounded
-        Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 1
+        Color = 15987699
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 5
@@ -298,8 +299,8 @@ object frmMain: TfrmMain
       Margins.Right = 0
       Align = alClient
       BorderOuter = fsFlatRounded
-      Color = 15987699
       TabOrder = 0
+      Color = 15987699
       object Pages: TRzPageControl
         AlignWithMargins = True
         Left = 5
@@ -459,7 +460,6 @@ object frmMain: TfrmMain
               OnClick = btnProfileCopyClick
             end
             object DensityProfile: TLineSeries
-              HoverElement = [heCurrent]
               Title = 'DensityProfile'
               Brush.BackColor = clDefault
               LinePen.Width = 3
@@ -539,7 +539,6 @@ object frmMain: TfrmMain
               OnClick = btnCopyConvergenceClick
             end
             object lsrConvergence: TLineSeries
-              HoverElement = [heCurrent]
               SeriesColor = 16744448
               Title = 'srFitProgress'
               Brush.BackColor = clDefault
@@ -791,9 +790,9 @@ object frmMain: TfrmMain
         Height = 50
         Align = alBottom
         BorderOuter = fsFlatRounded
-        Color = 15987699
         FlatColor = clSkyBlue
         TabOrder = 2
+        Color = 15987699
         DesignSize = (
           1068
           50)
@@ -1045,8 +1044,8 @@ object frmMain: TfrmMain
           AlignmentVertical = avTop
           BorderOuter = fsFlatRounded
           Caption = 'Fitting'
-          Color = 15987699
           TabOrder = 0
+          Color = 15987699
           object Label7: TLabel
             Left = 8
             Top = 29
@@ -1104,7 +1103,6 @@ object frmMain: TfrmMain
             Caption = 'Mode'
             Color = 15987699
             Columns = 3
-            ItemHeight = 17
             ItemIndex = 0
             Items.Strings = (
               'Irregualr'
@@ -1152,6 +1150,7 @@ object frmMain: TfrmMain
             Width = 54
             Height = 19
             AlignmentVertical = avCenter
+            AutoSizeWidth = 54
             Caption = 'Shake'
             Checked = True
             State = cbChecked
@@ -1163,6 +1162,7 @@ object frmMain: TfrmMain
             Width = 55
             Height = 19
             AlignmentVertical = avCenter
+            AutoSizeWidth = 55
             Caption = 'SeedR'
             Checked = True
             State = cbChecked
@@ -1210,6 +1210,7 @@ object frmMain: TfrmMain
             Top = 81
             Width = 56
             Height = 19
+            AutoSizeWidth = 56
             Caption = 'PW '#967'2'
             Checked = True
             State = cbChecked
@@ -1228,6 +1229,7 @@ object frmMain: TfrmMain
             Top = 48
             Width = 65
             Height = 19
+            AutoSizeWidth = 65
             Caption = 'Smooth'
             State = cbUnchecked
             TabOrder = 9
@@ -1240,8 +1242,8 @@ object frmMain: TfrmMain
           Height = 114
           Align = alLeft
           BorderOuter = fsNone
-          Color = 15987699
           TabOrder = 1
+          Color = 15987699
           object rgPolarisation: TRzRadioGroup
             Left = 170
             Top = 0
@@ -1251,7 +1253,6 @@ object frmMain: TfrmMain
             Caption = 'Polarization'
             Color = 15987699
             Columns = 2
-            ItemHeight = 17
             ItemIndex = 0
             Items.Strings = (
               's-type'
@@ -1265,10 +1266,10 @@ object frmMain: TfrmMain
             Width = 157
             Height = 64
             BorderOuter = fsFlatRounded
-            Color = 15987699
             Enabled = False
             TabOrder = 1
             Transparent = True
+            Color = 15987699
             object Label9: TLabel
               Left = 8
               Top = 36
@@ -1396,9 +1397,9 @@ object frmMain: TfrmMain
             Width = 215
             Height = 64
             BorderOuter = fsFlatRounded
-            Color = 15987699
             TabOrder = 2
             Transparent = True
+            Color = 15987699
             object Label1: TLabel
               Left = 6
               Top = 36
@@ -1516,6 +1517,7 @@ object frmMain: TfrmMain
               Top = 36
               Width = 39
               Height = 21
+              AutoSizeWidth = 39
               Caption = '2q'
               Checked = True
               Font.Charset = DEFAULT_CHARSET
@@ -1538,7 +1540,6 @@ object frmMain: TfrmMain
             Caption = 'Mode'
             Color = 15987699
             Columns = 2
-            ItemHeight = 17
             ItemIndex = 0
             Items.Strings = (
               'by angle'
@@ -1693,9 +1694,9 @@ object frmMain: TfrmMain
       Height = 776
       Align = alLeft
       BorderOuter = fsFlatRounded
-      Color = 15987699
       ShowDockClientCaptions = False
       TabOrder = 1
+      Color = 15987699
       object tlbStructure: TRzToolbar
         Left = 2
         Top = 2
@@ -1814,8 +1815,8 @@ object frmMain: TfrmMain
         Height = 41
         Align = alTop
         BorderOuter = fsNone
-        Color = 15987699
         TabOrder = 1
+        Color = 15987699
         object Label6: TLabel
           Left = 6
           Top = 10

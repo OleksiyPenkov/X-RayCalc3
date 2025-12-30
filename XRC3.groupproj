@@ -9,7 +9,10 @@
         <Projects Include="components\XRayCalcVisualControls.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="XRCXPreview\XRCXPreview.dproj">
+        <Projects Include="XRCXPreview\XRCPreviewHandlerLib.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="XRC_CMD\xrccmd.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -38,23 +41,32 @@
     <Target Name="XRayCalcVisualControls:Make">
         <MSBuild Projects="components\XRayCalcVisualControls.dproj" Targets="Make"/>
     </Target>
-    <Target Name="XRCXPreview">
-        <MSBuild Projects="XRCXPreview\XRCXPreview.dproj"/>
+    <Target Name="XRCPreviewHandlerLib">
+        <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj"/>
     </Target>
-    <Target Name="XRCXPreview:Clean">
-        <MSBuild Projects="XRCXPreview\XRCXPreview.dproj" Targets="Clean"/>
+    <Target Name="XRCPreviewHandlerLib:Clean">
+        <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="XRCXPreview:Make">
-        <MSBuild Projects="XRCXPreview\XRCXPreview.dproj" Targets="Make"/>
+    <Target Name="XRCPreviewHandlerLib:Make">
+        <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="xrccmd">
+        <MSBuild Projects="XRC_CMD\xrccmd.dproj"/>
+    </Target>
+    <Target Name="xrccmd:Clean">
+        <MSBuild Projects="XRC_CMD\xrccmd.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="xrccmd:Make">
+        <MSBuild Projects="XRC_CMD\xrccmd.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;XRCXPreview"/>
+        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;XRCPreviewHandlerLib;xrccmd"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;XRCXPreview:Clean"/>
+        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;XRCPreviewHandlerLib:Clean;xrccmd:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;XRCXPreview:Make"/>
+        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;XRCPreviewHandlerLib:Make;xrccmd:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

@@ -23,3 +23,5 @@ Resources
 /*.~dsk
 Debug
 __history
+CMDBin
+*.dsk
