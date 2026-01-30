@@ -16,11 +16,11 @@ uses
   cmd_unit_helpers in 'units\cmd_unit_helpers.pas',
   cmd_unit_main in 'units\cmd_unit_main.pas',
   cmd_unit_materials in 'units\cmd_unit_materials.pas',
-  cmd_unit_types in 'units\cmd_unit_types.pas';
+  cmd_unit_types in 'units\cmd_unit_types.pas',
+  cmd_unit_load in 'units\cmd_unit_load.pas';
 
 var
   Value: string;
-  C: single;
   OperationMode: (omHelp, omSingleCalc, omFolderCalc, omFitting);
   VerboseMode : boolean = False;
 begin

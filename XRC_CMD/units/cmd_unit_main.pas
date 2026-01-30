@@ -11,7 +11,8 @@ uses
   cmd_unit_calc,
   cmd_unit_types,
   cmd_unit_materials,
-  cmd_unit_helpers;
+  cmd_unit_helpers,
+  cmd_unit_load;
 
 var
   CalcParams : TCalcParams;
@@ -57,8 +58,9 @@ begin
     Calc := TCalc.Create;
 
     try
-      Calc.CalcData := ReadINI;
-      Calc.Model := ReadLayeredModel;
+      CalcParams := ReadINI;
+      Calc.Model := LoadModel(InputStructureFileName, CalcParams);
+      Calc.CalcData := CalcParams;
 
       if Calc.Model <> nil then
       begin
@@ -114,7 +116,7 @@ begin
   begin
     InputStructureFileName := StringReplace(FN, '#', IntToStr(i),[]);
     if i =  1 then
-      Model := ReadLayeredModel
+      Model := LoadModel(InputStructureFileName, CalcParams)
     else
       UpdateLayeredModel(Model);
     CalcInline(ChiSquares[i-1]);

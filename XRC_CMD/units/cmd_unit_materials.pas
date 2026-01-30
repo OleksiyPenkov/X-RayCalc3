@@ -12,7 +12,6 @@ unit cmd_unit_materials;
 interface
 
 uses
-//  FastMM4,
   SysUtils,
   cmd_unit_types,
   cmd_math_globals;

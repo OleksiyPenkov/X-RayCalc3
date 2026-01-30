@@ -104,7 +104,7 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
-        <Debugger_RunParams>-a fitted_structure.txt -i exp_data.dat -v</Debugger_RunParams>
+        <Debugger_RunParams>-s mosi_000001.json -v</Debugger_RunParams>
         <DCC_ExeOutput>.\Out\CMDBin</DCC_ExeOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
@@ -119,7 +119,7 @@
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
-        <Debugger_RunParams>-s input_structure.txt -i exp_data.dat -v</Debugger_RunParams>
+        <Debugger_RunParams>-s mosi_000001.json -v</Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <Debugger_HostApplication>-s input_structure.txt -o reflectivity.txt</Debugger_HostApplication>
@@ -137,6 +137,7 @@
         <DCCReference Include="units\cmd_unit_main.pas"/>
         <DCCReference Include="units\cmd_unit_materials.pas"/>
         <DCCReference Include="units\cmd_unit_types.pas"/>
+        <DCCReference Include="units\cmd_unit_load.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -168,6 +169,12 @@
                 <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule"/>
                 <DeployFile LocalName="Out\CMDBin\xrccmd.exe" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="Out\CMDBin\xrccmd.exe" Configuration="Release" Class="ProjectOutput"/>
+                <DeployFile LocalName="Out\CMDBin\xrccmd.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>xrccmd.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="iOSSimulator">
                         <Operation>1</Operation>

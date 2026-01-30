@@ -8,7 +8,7 @@ uses
 
   procedure ShowHelp;
   function ReadINI:TCalcParams;
-  function ReadLayeredModel:TLayeredModel;
+
 
   function LoadFittedStructure: TFittedStructure; // periodic structure
   function ConvertFit2Layers(const FitStructure: TFittedStructure):TLayeredModel;
@@ -304,57 +304,6 @@ begin
   end;
 end;
 
-
-function ReadLayeredModel:TLayeredModel;
-var
-  i: Integer;
-  SL, Line: TStringList;
-  H, rho, sigma: Single;
-  Name: string;
-
-  procedure Convert;
-  begin
-    Name  := Line[0];
-    H     := StrToFloat(Line[1]);
-    sigma := StrToFloat(Line[2]);
-    rho   := StrToFloat(Line[3]);
-  end;
-
-begin
-  if not FileExists(InputStructureFileName) then
-  begin
-    Writeln('File ', InputStructureFileName, ' not found');
-    Exit;
-  end;
-
-  Result := TLayeredModel.Create;
-
-  SL   := TStringList.Create;
-  Line := TStringList.Create;
-  Line.StrictDelimiter := True;
-  Line.Delimiter := ';';
-
-  try
-    SL.LoadFromFile(InputStructureFileName);
-
-    Result.Size := SL.Count - 1;
-
-    for I := 0 to SL.Count - 2 do
-    begin
-      Line.DelimitedText := SL[i];
-      Convert;
-      Result.InitLayer(I + 1, Name, H, sigma, rho);
-    end;
-
-    Line.DelimitedText := SL[SL.Count - 1];
-    Convert;
-    Result.InitSubstrate(Name, H, sigma, rho);
-  finally
-    FreeAndNil(SL);
-    FreeAndNil(Line);
-  end;
-end;
-
 procedure ShowHelp;
 begin
   Writeln('<xrccmd.exe> [parameter value ...]');
@@ -364,6 +313,9 @@ begin
   Writeln('-o <file.name> : output reflectivity file name. Default: none');
   Writeln('-f <folder/file.name> : input structures folder');
   Writeln('-a <file.name> : auto-fitting based on the input structure');
+  Writeln('-n :  Number of files in the folder to process. Default: 50');
+  Writeln('-iter :  Number of iterations for AF');
+  Writeln('-pop  :  Popultion size for AF');
   Writeln('-v : verbose mode');
   Writeln('-h : this help');
   Readln;
@@ -397,7 +349,7 @@ begin
     Result.StartT := Ini.ReadFloat('Angle', 'Start', 0.1);
     Result.EndT   := Ini.ReadFloat('Angle', 'End', 16);
     Result.Lambda := Ini.ReadFloat('Angle', 'Lambda', 1.54043);
-    Result.DT     := Ini.ReadFloat('Angle', 'DTheta', 0);
+    Result.DT     := Ini.ReadFloat('Angle', 'DTheta', 0.02);
     Result.K      := Ini.ReadInteger('Angle', 'Theta', 2);
 
     // [Wavelength]
