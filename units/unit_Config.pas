@@ -22,7 +22,8 @@ type
     sfSystemIniFile,
     sfAppHelp,
     sfAppVerInfo,
-    sfLicenseFile
+    sfLicenseFile,
+    sfLock
   );
 
   TXRCSystemDir = (
@@ -304,8 +305,9 @@ end;
 class function TConfig.GetSystemFileName(fileType: TXRCSystemFile): string;
 begin
  case fileType of
-    sfAppHelp: Result          := AppPath + APP_HELP_FILENAME;
-    sfLicenseFile: Result      := WorkPath + LICENSE_FILENAME;
+    sfAppHelp    : Result := AppPath + APP_HELP_FILENAME;
+    sfLicenseFile: Result := WorkPath + LICENSE_FILENAME;
+    sfLock       : Result := TempPath + LOCK_FILE;
   else
     Assert(False);
   end;

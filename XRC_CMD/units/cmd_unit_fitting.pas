@@ -235,7 +235,7 @@ const
   w_max = 1;
 var
   w: Single;
-  i, j, Min: Integer;
+  j, Min: Integer;
 begin
   Writeln('Population: ', Population, ' in ', Iterations);
 

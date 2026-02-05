@@ -437,6 +437,8 @@ type
     FSeriesList: TSeriesList ;
     PM: TProfileManager;
     FDPI: Integer;
+    FFirstEntity: Boolean;
+    FLockFile: File;
 
     procedure CreateProjectTree;
     procedure LoadProject(const FileName: string; Clear: Boolean);
@@ -490,6 +492,9 @@ type
                               const Res: TLayeredModel;
                               const CreateExtension: boolean = True);
     procedure UpdateProfileExtension;
+    procedure CreateTmpLock;
+    procedure ReleaseTmpLock;
+    function SaveProjectINI(const IniFileName: string):boolean;
     { Private declarations }
   public
     { Public declarations }
@@ -515,6 +520,7 @@ var
 implementation
 
 uses
+  ComObj,
   System.IniFiles,
   System.DateUtils,
   System.UITypes,
@@ -1452,7 +1458,7 @@ procedure TfrmMain.PrepareProjectFolder(const FileName: string; Clear: Boolean);
 begin
   FProjectFileName := FileName;
   FProjectName := ExtractFileName(FileName);
-  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + CreateClassID);
 
   if Clear then
   begin
@@ -2436,11 +2442,13 @@ begin
   end;
 end;
 
-procedure TfrmMain.SaveProject(const FileName: string);
+
+function TfrmMain.SaveProjectINI(const IniFileName: string):boolean;
 var
   INF: TMemIniFile;
 begin
-  INF := TMemIniFile.Create(FProjectDir + PARAMETERS_FILE_NAME);
+  Result := false;
+  INF := TMemIniFile.Create(IniFileName);
 
   try
     INF.WriteString('PARAMS', 'N', edN.Text);
@@ -2497,10 +2505,17 @@ begin
     INF.WriteString('LFPSO', 'Ksxr', FFitParams.Ksxr.ToString);
     INF.WriteInteger('LFPSO', 'PolyFactor', FFitParams.PolyFactor );
     INF.UpdateFile;
+    Result := True;
+  finally
+    INF.Free;
+  end;
+end;
 
-    if FileExists(FileName) then
-      DeleteFile(FileName);
+procedure TfrmMain.SaveProject(const FileName: string);
 
+begin
+  if SaveProjectINI(FProjectDir + PARAMETERS_FILE_NAME) then
+  begin
     Project.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
 
     SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], FProjectDir + 'calc.dat' );
@@ -2513,8 +2528,6 @@ begin
 
     Zip.AddFiles('*.*', faAnyFile and faDirectory);
     Zip.CloseArchive;
-  finally
-    INF.Free;
   end;
 end;
 
@@ -2547,19 +2560,20 @@ begin
   dlgSaveProject.FileName := ExtractFileName(FProjectFileName);
   if dlgSaveProject.Execute then
   begin
-    OldProjectDir := FProjectDir;
+//    OldProjectDir := FProjectDir;
     FProjectName := ExtractFileName(dlgSaveProject.FileName);
-    FProjectDir := IncludeTrailingPathDelimiter
-      (Config.TempPath + FProjectName);
-
-    if DirectoryExists(FProjectDir) then
-        ClearDir(FProjectDir, True);
-
-    CreateDir(FProjectDir);
+//    FProjectDir := IncludeTrailingPathDelimiter
+//      (Config.TempPath + FProjectName);
+//
+//    if DirectoryExists(FProjectDir) then
+//        ClearDir(FProjectDir, True);
+//
+//    CreateDir(FProjectDir);
     SaveData;
     SaveProject(dlgSaveProject.FileName);
-    LoadProject(dlgSaveProject.FileName, False);
+//    LoadProject(dlgSaveProject.FileName, False);
     FProjectFileName := dlgSaveProject.FileName;
+    Caption := 'X-Ray Calc 3: ' + FProjectName;
   end;
 end;
 
@@ -2625,9 +2639,9 @@ var
   PD: PProjectData;
   PG: PVirtualNode;
 begin
-  if DirectoryExists(FProjectDir) then
-    ClearDir(FProjectDir);
-  RemoveDirectory(PChar(FProjectDir));
+//  if DirectoryExists(FProjectDir) then
+//    ClearDir(FProjectDir);
+//  RemoveDirectory(PChar(FProjectDir));
 
   Chart.SeriesList.Clear;
   Project.Clear;
@@ -2635,8 +2649,8 @@ begin
 
   FLastID := 1;
   FProjectName := DEFAULT_PROJECT_NAME;
-  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + FProjectName);
-  FProjectFileName := FProjectDir + FProjectName;
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + CreateClassID);
+  FProjectFileName := FProjectName;
   CreateDir(FProjectDir);
 
   // дефолтный проект
@@ -2722,6 +2736,27 @@ begin
   FillRecentMenu;
 end;
 
+procedure TfrmMain.CreateTmpLock;
+begin
+  if FileExists(Config.SystemFileName[sfLock]) then
+    FFirstEntity := False
+  else begin
+    AssignFile(FLockFile, Config.SystemFileName[sfLock]);
+    Rewrite(FLockFile);
+    FFirstEntity := True;
+  end;
+end;
+
+procedure TfrmMain.ReleaseTmpLock;
+begin
+  if FFirstEntity then
+  begin
+    CloseFile(FLockFile);
+    DeleteFile(Config.SystemFileName[sfLock]);
+    ClearDir(Config.TempDir, True);
+  end;
+end;
+
 procedure TfrmMain.FormCreate(Sender: TObject);
 var
   Value: string;
@@ -2752,6 +2787,7 @@ begin
 
 //  CreateSettings;
   CreateDir(Config.TempDir);
+  CreateTmpLock;
   Pages.ActivePageindex := 0;
 
 
@@ -2779,6 +2815,7 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   Project.Clear;
+  ReleaseTmpLock;
   FreeAndNil(Project);
   FreeAndNil(Structure);
   FreeAndNil(FOperationsStack);

@@ -40,8 +40,8 @@ type
     Lambda: Double;
     Mode: Integer;
     TwoTheta: Boolean;
-    BeginVal: Integer;
-    EndVal: Integer;
+    BeginVal: Double;
+    EndVal: Double;
     class function FromJSON(const AJsonObj: TJSONObject): TOverride; static;
   end;
 
@@ -54,8 +54,6 @@ type
     Structure: TArray<TStack>;
     class function LoadFromFile(const AFileName: string): TStructure; static;
   end;
-
-
 
   function LoadModel(const FileName: string; var Params: TCalcParams):TLayeredModel;
 
@@ -88,7 +86,7 @@ end;
 class function TStack.FromJSON(const AItemObj: TJSONObject): TStack;
 var
   LPair: TJSONPair;
-  LSectionObj, LLayerObj: TJSONObject;
+  LSectionObj: TJSONObject;
   LLayersArr: TJSONArray;
   LLayerVal: TJSONValue;
 begin
@@ -121,8 +119,8 @@ begin
   Result.Lambda   := AJsonObj.GetValue<Double>('lambda');
   Result.Mode     := AJsonObj.GetValue<Integer>('mode');
   Result.TwoTheta := AJsonObj.GetValue<Boolean>('x2theta');
-  Result.BeginVal := AJsonObj.GetValue<Integer>('begin');
-  Result.EndVal   := AJsonObj.GetValue<Integer>('end');
+  Result.BeginVal := AJsonObj.GetValue<Double>('begin');
+  Result.EndVal   := AJsonObj.GetValue<Double>('end');
 end;
 
 { TStructure }
@@ -156,6 +154,7 @@ begin
           Result.Structure[i] := TStack.FromJSON(LItemVal as TJSONObject);
       end;
     end;
+    writeln('Loaded: ' + AFileName);
   finally
     LRootObj.Free;
   end;
@@ -205,6 +204,7 @@ begin
     Line.DelimitedText := SL[SL.Count - 1];
     Convert;
     Result.InitSubstrate(Name, H, sigma, rho);
+    writeln('Loaded: ' + FileName);
   finally
     FreeAndNil(SL);
     FreeAndNil(Line);

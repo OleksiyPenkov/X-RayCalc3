@@ -37,7 +37,7 @@ begin
     except
       on E: exception do
       begin
-//        ShowMessage(E.Message);
+        Writeln(E.Message);
       end;
     end;
   finally
@@ -78,7 +78,7 @@ begin
     except
       on E: exception do
       begin
-//        ShowMessage(E.Message);
+        Writeln(E.Message);
       end;
     end;
   finally
@@ -96,7 +96,6 @@ end;
 
 procedure cmdFolderCalc(const Verbose : Boolean);
 var
-  Calc: TCalc;
   StartTime : TDateTime;
   Hour, Min, Sec, MSec: Word;
   FN: string;

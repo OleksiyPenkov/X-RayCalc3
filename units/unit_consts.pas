@@ -37,6 +37,7 @@ const
   DEFAULT_PROJECT_NAME = 'NewProject.xrcx';
   PROJECT_EXT = '.xrcx';
   BACKUP_DIR_NAME = 'Backup';
+  LOCK_FILE       = 'temp.lock';
 
 implementation
 

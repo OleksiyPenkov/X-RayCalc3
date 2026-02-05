@@ -533,27 +533,15 @@ end;
 
 function ClearDir(const DirectoryName: string; Full: boolean): boolean;
 var
-  SearchRec: TSearchRec;
   ACurrentDir: string;
 begin
-  Result := False;
+  Result := True;
   ACurrentDir := IncludeTrailingPathDelimiter(DirectoryName);
 
-  try
-    if FindFirst(ACurrentDir + '*.*', faAnyFile, SearchRec) = 0 then
-      try
-        repeat
-          if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
-            SysUtils.DeleteFile(ACurrentDir + SearchRec.Name) until FindNext
-              (SearchRec) <> 0;
-          finally
-            SysUtils.FindClose(SearchRec);
-          end;
-          if Full then
-            RemoveDirectory(PChar(DirectoryName));
-          except
-            Result := False;
-          end;
+  if TDirectory.Exists(ACurrentDir) then
+  begin
+    TDirectory.Delete(ACurrentDir, True);
+  end;
 end;
 {$WARNINGS ON}
 

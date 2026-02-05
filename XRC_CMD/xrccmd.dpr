@@ -71,8 +71,12 @@ begin
        omFitting    : cmdFitting(VerboseMode);
      end;
 
-     write('Done. ');
-     if VerboseMode then Readln(Value);
+     write('Done.');
+     if VerboseMode then
+     begin
+       write(' Press <Enter> to close');
+       Readln;
+     end;
 
   except
     on E: Exception do
