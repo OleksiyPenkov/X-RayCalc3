@@ -424,6 +424,7 @@ type
     FFitStructure: TFitStructure;
     FLastChiSquare: Single;
     FABestChiSquare: Single;
+    FAutoSaveFileName: string;
 
     FOperationsStack: TStack<String>;
     FRecentProjects : TList<String>;
@@ -441,7 +442,7 @@ type
     FLockFile: File;
 
     procedure CreateProjectTree;
-    procedure LoadProject(const FileName: string; Clear: Boolean);
+    procedure LoadProject(const FileName: string);
     function DataName(Data: PProjectData): string;
     procedure CreateDefaultProject;
     procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
@@ -495,6 +496,10 @@ type
     procedure CreateTmpLock;
     procedure ReleaseTmpLock;
     function SaveProjectINI(const IniFileName: string):boolean;
+    procedure LoadAutoSave;
+    procedure ClearAutoSave;
+    procedure ExtractProject(const FileName: string);
+    procedure GenerateAutosaveName;
     { Private declarations }
   public
     { Public declarations }
@@ -1310,7 +1315,8 @@ end;
 
 procedure TfrmMain.actProjectReopenExecute(Sender: TObject);
 begin
-  LoadProject(FProjectFileName, True);
+  PrepareProjectFolder(FProjectFileName, True);
+  LoadProject(FProjectFileName);
 end;
 
 procedure TfrmMain.actRecoverModelExecute(Sender: TObject);
@@ -1354,23 +1360,28 @@ begin
   Data.CurveID := Count;
 end;
 
-procedure TfrmMain.AutoSave;
+procedure TfrmMain.GenerateAutosaveName;
 var
   FileName, Path: string;
   p: Integer;
 begin
+  FileName := FProjectName;
+  if TConfig.SystemDir[sdOutDir] <> '' then
+    Path := TConfig.SystemDir[sdOutDir]
+  else
+    Path := ExtractFilePath(FileName);
+
+  p := pos(PROJECT_EXT, FileName);
+  Delete(FileName, p, Length(PROJECT_EXT));
+  FAutoSaveFileName := Path + FileName + '-fitted'+ PROJECT_EXT;
+end;
+
+procedure TfrmMain.AutoSave;
+
+begin
   if TConfig.Section<TOtherOptions>.AutoSave then
   begin
-    FileName := FProjectName;
-    if TConfig.SystemDir[sdOutDir] <> '' then
-      Path := TConfig.SystemDir[sdOutDir]
-    else
-      Path := ExtractFilePath(FileName);
-
-    p := pos(PROJECT_EXT, FileName);
-    Delete(FileName, p, Length(PROJECT_EXT));
-    FileName := Path + FileName + '-fitted'+ PROJECT_EXT;
-    SaveProject(FileName);
+    SaveProject(FAutoSaveFileName);
   end;
 end;
 
@@ -1468,7 +1479,10 @@ begin
     //
     CreateDir(FProjectDir);
   end;
+end;
 
+procedure TfrmMain.ExtractProject(const FileName:string);
+begin
   UnZip.BaseDirectory := FProjectDir;
   UnZip.FileName := FileName;
   unZip.OpenArchive(FileName);
@@ -1978,6 +1992,21 @@ begin
     Structure.UpdateInterfaceNP(FitStructure);
 end;
 
+procedure TfrmMain.LoadAutoSave;
+begin
+  if FileExists(FAutoSaveFileName) then
+  begin
+    LoadProject(FAutoSaveFileName);
+    CalcRunExecute(frmMain);
+  end;
+end;
+
+procedure TfrmMain.ClearAutoSave;
+begin
+  if FileExists(TConfig.SystemFileName[sfAutoSave]) then
+    DeleteFile(TConfig.SystemFileName[sfAutoSave]);
+end;
+
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
@@ -1987,6 +2016,8 @@ begin
   try
     if not PrepareLFPSO then Exit;
     Screen.Cursor := crHourGlass;
+//    ClearAutoSave;
+    GenerateAutosaveName;
     EnableControls(False);
     FitStartTime := Now;
 
@@ -2005,7 +2036,7 @@ begin
     EnableControls(True);
     FreeAndNil(LFPSO);
   end;
-  //AutoSave;
+  LoadAutoSave;
 end;
 
 procedure TfrmMain.ProcessJobFile(Sender: TObject; const F: TSearchRec);
@@ -2318,12 +2349,12 @@ begin
   MatchToStructure;
 end;
 
-procedure TfrmMain.LoadProject(const FileName: string; Clear: Boolean);
+procedure TfrmMain.LoadProject(const FileName: string);
 var
   LinkedID, ActiveID: System.Integer;
 begin
   FIgnoreFocusChange := True;
-  PrepareProjectFolder(FileName, Clear);
+  ExtractProject(FileName);
   LoadProjectParams(LinkedID, ActiveID);
   RecoverProjectTree(ActiveID);
   RecoverDataCurves(LinkedID);
@@ -2357,7 +2388,8 @@ begin
 
   if dlgOpenProject.Execute then
   begin
-    LoadProject(dlgOpenProject.FileName, True);
+    PrepareProjectFolder(dlgOpenProject.FileName, True);
+    LoadProject(dlgOpenProject.FileName);
     if TConfig.Section<TOtherOptions>.AutoCalc then
       CalcRunExecute(frmMain);
 
@@ -2375,7 +2407,8 @@ begin
   FRecentProjects.Move(Index, 0);
   FillRecentMenu;
 
-  LoadProject(FProjectFileName, True);
+  PrepareProjectFolder(FProjectFileName, True);
+  LoadProject(FProjectFileName);
   if TConfig.Section<TOtherOptions>.AutoCalc then
         CalcRunExecute(frmMain);
 end;
@@ -2448,6 +2481,9 @@ var
   INF: TMemIniFile;
 begin
   Result := false;
+  if FileExists(IniFileName) then
+    DeleteFile(IniFileName);
+
   INF := TMemIniFile.Create(IniFileName);
 
   try
@@ -2519,6 +2555,9 @@ begin
     Project.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
 
     SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], FProjectDir + 'calc.dat' );
+
+    if FileExists(FileName) then
+      DeleteFile(FileName);         // must be here!
 
     Zip.ArchiveType := atZip;
     Zip.AutoSave := True;
@@ -2800,7 +2839,8 @@ begin
         if FileExists(Value) then
         begin
           FProjectFileName := Value;
-          LoadProject(FProjectFileName, True);
+           PrepareProjectFolder(FProjectFileName, True);
+          LoadProject(FProjectFileName);
           if FindCmdLineSwitch('a') or TConfig.Section<TOtherOptions>.AutoCalc then
             CalcRunExecute(frmMain);
         end

@@ -23,7 +23,8 @@ type
     sfAppHelp,
     sfAppVerInfo,
     sfLicenseFile,
-    sfLock
+    sfLock,
+    sfAutoSave
   );
 
   TXRCSystemDir = (
@@ -308,6 +309,7 @@ begin
     sfAppHelp    : Result := AppPath + APP_HELP_FILENAME;
     sfLicenseFile: Result := WorkPath + LICENSE_FILENAME;
     sfLock       : Result := TempPath + LOCK_FILE;
+    sfAutoSave   : Result := TempPath + AUTO_SAVE;
   else
     Assert(False);
   end;

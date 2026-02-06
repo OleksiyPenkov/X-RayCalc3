@@ -1675,9 +1675,11 @@ object frmMain: TfrmMain
         object btnCopyImage: TRzToolButton
           Left = 145
           Top = 2
-          Hint = 'Save resulting curve as image'
+          Hint = 'Copy resulting curve as image'
           ImageIndex = 6
           Action = FilePlotCopyWMF
+          ParentShowHint = False
+          ShowHint = True
         end
         object btnPrintGraphics: TRzToolButton
           Left = 170
