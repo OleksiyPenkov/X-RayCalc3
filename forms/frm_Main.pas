@@ -14,9 +14,12 @@ uses
   Vcl.ImgList, System.Actions, Vcl.ActnList,
   Vcl.ActnMan, AbUnzper, AbBase, AbBrowse, AbZBrows, AbZipper, unit_Types,
   unit_SMessages,
-  unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials, VCLTee.TeeFunci, unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
+  unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials,
+  VCLTee.TeeFunci, VCLTee.TeCanvas,
+  unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
   unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark,
-  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager;
+  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, Vcl.VirtualImageList,
+  Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
   TfrmMain = class(TForm)
@@ -87,7 +90,6 @@ type
     DataExport: TAction;
     actNewMaterial: TAction;
     actAutoFitting: TAction;
-    ilProject: TImageList;
     Project1: TMenuItem;
     Project2: TMenuItem;
     Calc1: TMenuItem;
@@ -203,7 +205,6 @@ type
     actLayerCopy: TAction;
     actProjectItemDuplicate: TAction;
     tlbrProject: TRzToolbar;
-    ilStructure: TImageList;
     ilCalc: TImageList;
     BtnNew: TRzToolButton;
     BtnOpen: TRzToolButton;
@@ -314,6 +315,10 @@ type
     chProfile: TChart;
     DensityProfile: TLineSeries;
     btnProfileCopy: TRzButton;
+    ImageCollection: TImageCollection;
+    vliProject: TVirtualImageList;
+    vilModel: TVirtualImageList;
+    vilCalc: TVirtualImageList;
     procedure btnChartScaleClick(Sender: TObject);
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -399,6 +404,7 @@ type
       NewDPI: Integer);
     procedure DataNormAutoExecute(Sender: TObject);
     procedure btnProfileCopyClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     Project : TXRCProjectTree;
     LFPSO: TLFPSO_Base;
@@ -500,6 +506,9 @@ type
     procedure ClearAutoSave;
     procedure ExtractProject(const FileName: string);
     procedure GenerateAutosaveName;
+    procedure ScaleInterface;
+    procedure ScaleChartFonts(AChart: TCustomChart; ABaseSize,
+      ATargetDPI: Integer);
     { Private declarations }
   public
     { Public declarations }
@@ -2159,6 +2168,9 @@ begin
   Project.Version := FProjectVersion;
   Project.LoadFromFile(FProjectDir + PROJECT_FILE_NAME);
 
+  Project.Rescale;
+  Project.Repaint;
+
   FModelsRoot := Project.GetFirst;
   FDataRoot := Project.GetNextSibling(FModelsRoot);
 
@@ -2354,14 +2366,12 @@ var
   LinkedID, ActiveID: System.Integer;
 begin
   FIgnoreFocusChange := True;
+  PM.ClearProfiles;
   ExtractProject(FileName);
   LoadProjectParams(LinkedID, ActiveID);
   RecoverProjectTree(ActiveID);
   RecoverDataCurves(LinkedID);
-
-  PM.ClearProfiles;
   FIgnoreFocusChange := False;
-  Project.Repaint;
   Caption := 'X-Ray Calc 3: ' + ExtractFileName(FileName);
   MatchToStructure;
   RescaleChart;
@@ -2588,8 +2598,6 @@ begin
 end;
 
 procedure TfrmMain.FileSaveAsExecute(Sender: TObject);
-var
-  OldProjectDir: string;
 begin
   if TConfig.SystemDir[sdProjDir] <> '' then
     dlgSaveProject.InitialDir := TConfig.SystemDir[sdProjDir]
@@ -2599,18 +2607,9 @@ begin
   dlgSaveProject.FileName := ExtractFileName(FProjectFileName);
   if dlgSaveProject.Execute then
   begin
-//    OldProjectDir := FProjectDir;
     FProjectName := ExtractFileName(dlgSaveProject.FileName);
-//    FProjectDir := IncludeTrailingPathDelimiter
-//      (Config.TempPath + FProjectName);
-//
-//    if DirectoryExists(FProjectDir) then
-//        ClearDir(FProjectDir, True);
-//
-//    CreateDir(FProjectDir);
     SaveData;
     SaveProject(dlgSaveProject.FileName);
-//    LoadProject(dlgSaveProject.FileName, False);
     FProjectFileName := dlgSaveProject.FileName;
     Caption := 'X-Ray Calc 3: ' + FProjectName;
   end;
@@ -2730,6 +2729,8 @@ begin
   FFitParams.SmoothWindow := -1;
   FFitParams.Ksxr         := 0.2;
   FFitParams.PolyFactor   := 10;
+
+  Project.Rescale;
 end;
 
 procedure TfrmMain.FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
@@ -2739,7 +2740,8 @@ begin
   if Project.TargetDPI <> NewDPI then
   begin
     Project.TargetDPI := NewDPI;
-    Project.ScaleForPPI(NewDPI);
+    Project.Rescale;
+    ScaleInterface;
   end;
   if Structure.TargetDPI <> NewDPI then
   begin
@@ -2796,9 +2798,67 @@ begin
   end;
 end;
 
-procedure TfrmMain.FormCreate(Sender: TObject);
+procedure TfrmMain.ScaleInterface;
 var
-  Value: string;
+  Size : integer;
+begin
+  FDPI := Screen.PixelsPerInch;
+  if FDPI < 150 then
+    Size := 10
+  else
+    Size := 6;
+
+  ScaleChartFonts(Chart, Size, FDPI);
+  ScaleChartFonts(chThickness, Size - 2, FDPI);
+  ScaleChartFonts(chRoughness, Size - 2, FDPI);
+  ScaleChartFonts(chDensity, Size - 2, FDPI);
+  ScaleChartFonts(chFittingProgress, Size - 2, FDPI);
+  ScaleChartFonts(chProfile, Size - 2, FDPI);
+end;
+
+procedure TfrmMain.ScaleChartFonts(AChart: TCustomChart; ABaseSize: Integer; ATargetDPI: Integer);
+var
+  I: Integer;
+  ScaledBaseSize: Integer;
+  ScaledLargeSize: Integer;
+begin
+  if not Assigned(AChart) then Exit;
+
+  // Calculate the base DPI-scaled size
+  ScaledBaseSize := MulDiv(ABaseSize, ATargetDPI, 96);
+
+  // Calculate the 20% larger size for titles and legends
+  ScaledLargeSize := Round(ScaledBaseSize * 1.2);
+
+  AChart.DefaultFont.Size := ScaledBaseSize;
+  // Apply larger size to Main Chart Titles and Footers
+  AChart.Title.Font.Size := ScaledLargeSize;
+  AChart.SubTitle.Font.Size := ScaledLargeSize;
+  AChart.Foot.Font.Size := ScaledLargeSize;
+  AChart.SubFoot.Font.Size := ScaledLargeSize;
+
+  // Apply larger size to the Legend and Legend Title
+  AChart.Legend.Font.Size := ScaledLargeSize;
+  AChart.Legend.Title.Font.Size := ScaledLargeSize;
+
+  // Iterate through all Axes
+  for I := 0 to AChart.Axes.Count - 1 do
+  begin
+    // Axis Labels get the base size
+    AChart.Axes[I].LabelsFont.Size := ScaledBaseSize;
+    // Axis Titles get the 20% larger size
+    AChart.Axes[I].Title.Font.Size := ScaledLargeSize;
+  end;
+
+  // Iterate through all Series
+  for I := 0 to AChart.SeriesCount - 1 do
+  begin
+    // Series Marks (data labels) get the base size
+    AChart.Series[I].Marks.Font.Size := ScaledBaseSize;
+  end;
+end;
+
+procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   {$IFDEF  WIN64}
      pnlX64.Visible := True;
@@ -2806,8 +2866,9 @@ begin
      pnlX64.Visible := False;
   {$ENDIF}
 
-  FDPI := Screen.PixelsPerInch;
+
   FormatSettings.DecimalSeparator := '.';
+  ScaleInterface;
   Config := TConfig.Create;
   CreateProjectTree;
 
@@ -2828,28 +2889,6 @@ begin
   CreateDir(Config.TempDir);
   CreateTmpLock;
   Pages.ActivePageindex := 0;
-
-
-//  FindPCores;
-
-  if ParamCount <> 0 then
-  begin
-     if FindCmdLineSwitch('f', Value, True, [clstValueNextParam]) then
-      begin
-        if FileExists(Value) then
-        begin
-          FProjectFileName := Value;
-           PrepareProjectFolder(FProjectFileName, True);
-          LoadProject(FProjectFileName);
-          if FindCmdLineSwitch('a') or TConfig.Section<TOtherOptions>.AutoCalc then
-            CalcRunExecute(frmMain);
-        end
-        else
-          CreateDefaultProject;
-     end;
-  end
-  else
-    CreateDefaultProject;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -2916,6 +2955,30 @@ end;
 procedure TfrmMain.cbMinLimitChange(Sender: TObject);
 begin
   Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+end;
+
+procedure TfrmMain.FormShow(Sender: TObject);
+var
+  Value: string;
+begin
+  if ParamCount <> 0 then
+  begin
+     if FindCmdLineSwitch('f', Value, True, [clstValueNextParam]) then
+      begin
+        if FileExists(Value) then
+        begin
+          FProjectFileName := Value;
+           PrepareProjectFolder(FProjectFileName, True);
+          LoadProject(FProjectFileName);
+          if FindCmdLineSwitch('a') or TConfig.Section<TOtherOptions>.AutoCalc then
+            CalcRunExecute(frmMain);
+        end
+        else
+          CreateDefaultProject;
+     end;
+  end
+  else
+    CreateDefaultProject;
 end;
 
 

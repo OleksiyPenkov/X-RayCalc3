@@ -138,8 +138,8 @@ var
   var
     Pos: integer;
   begin
-    Pos := (X - 100) div 70 + 1;
-    Result := MulDiv(Pos, 96, FDPI);
+    Pos := (X - ListView.Columns[0].Width) div ListView.Columns[1].Width + 1;
+    Result := Pos; //MulDiv(Pos, 96, FDPI);
   end;
 
 begin

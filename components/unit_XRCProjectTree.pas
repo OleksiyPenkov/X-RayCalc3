@@ -37,6 +37,8 @@ type
       FActiveData: PProjectData;
       FTargetDPI: integer;
 
+      procedure ProjectMeasureItem(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode;
+                    var NodeHeight: TDimension);
       procedure ProjectAdvancedHeaderDraw(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
       procedure ProjectFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
       procedure ProjectGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
@@ -58,6 +60,7 @@ type
       property IgnoreFocusChange: boolean read FIgnoreFocusChange write FIgnoreFocusChange;
       function ProfileAttached(Node: PVirtualNode): Boolean;
       property TargetDPI: integer read FTargetDPI write FTargetDPI;
+      procedure Rescale;
     published
 
   end;
@@ -124,7 +127,7 @@ begin
   Font.Height := -13;//ScaleForDPI(16);
   Font.Name := 'Tahoma';
   Font.Style := [];
-  Indent := ScaleForDPI(10);
+  Indent := 10; //ScaleForDPI(10);
   Header.AutoSizeIndex := 0;
   Header.Background := 16765595;
   Header.Height := ScaleForDPI(23);
@@ -149,6 +152,7 @@ begin
   OnSaveNode := ProjectSaveNode;
   OnAfterCellPaint := ProjectAfterCellPaint;
   OnBeforeCellPaint := ProjectBeforeCellPaint;
+  OnMeasureItem     := ProjectMeasureItem;
 
   Header.Columns.Add;
   Header.Columns.Add;
@@ -157,7 +161,7 @@ begin
   Header.Columns[0].CheckBox := True;
   Header.Columns[0].Options  := [coAllowClick,coDraggable,coEnabled,coFixed,coParentBidiMode,coParentColor,coShowDropMark,coVisible,coAllowFocus];
 
-  Header.Columns[1].Width    := ScaleForDPI(180);
+  Header.Columns[1].Width    := 180; //ScaleForDPI(180);
   Header.Columns[1].CheckBox := False;
   Header.Columns[1].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus];
   Header.Columns[1].Text := 'Project Items';
@@ -207,7 +211,7 @@ procedure TXRCProjectTree.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
   CellRect: TRect);
 const
   PointsLo: array [0 .. 2] of TPoint = ((X: 22; Y: 5), (X: 32; Y: 10), (X: 22; Y: 15));
-  PointsHi: array [0 .. 2] of TPoint = ((X: 32; Y: 6), (X: 47; Y: 14), (X: 32; Y: 22));
+  PointsHi: array [0 .. 2] of TPoint = ((X: 37; Y: 10), (X: 62; Y: 20), (X: 37; Y: 30));
 var
   Data: PProjectData;
 begin
@@ -414,6 +418,12 @@ begin
   if pos('Data', Data.Title) > 0 then Data.Title := 'Data';
 end;
 
+procedure TXRCProjectTree.ProjectMeasureItem(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; var NodeHeight: TDimension);
+begin
+  NodeHeight := ScaleForDPI(NodeHeight);
+end;
+
 procedure TXRCProjectTree.ProjectPaintText(Sender: TBaseVirtualTree;
   const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
   TextType: TVSTTextType);
@@ -470,6 +480,19 @@ begin
   end;
   if (Data.Group = gtModel) and (Data.RowType = prItem) then
     WriteString(Data.Data);
+end;
+
+procedure TXRCProjectTree.Rescale;
+var
+  Node: PVirtualNode;
+begin
+   ScaleForPPI(FTargetDPI);
+  Node := GetFirstNoInit;
+  while Assigned(Node) do
+  begin
+    Node.SetNodeHeight(ScaleForDPI(23));
+    Node := GetNextNoInit(Node, True);
+  end;
 end;
 
 end.

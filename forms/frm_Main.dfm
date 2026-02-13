@@ -1,13 +1,17 @@
 object frmMain: TfrmMain
   Left = 381
   Top = 305
+  Margins.Left = 6
+  Margins.Top = 6
+  Margins.Right = 6
+  Margins.Bottom = 6
   Caption = 'X-Ray Calc 3'
-  ClientHeight = 801
-  ClientWidth = 1672
+  ClientHeight = 1602
+  ClientWidth = 3344
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -12
+  Font.Height = -24
   Font.Name = 'Segoe UI'
   Font.Style = []
   KeyPreview = True
@@ -18,12 +22,19 @@ object frmMain: TfrmMain
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  TextHeight = 15
+  OnShow = FormShow
+  PixelsPerInch = 192
+  TextHeight = 32
   object Status: TRzStatusBar
     Left = 0
-    Top = 782
-    Width = 1672
-    Height = 19
+    Top = 1564
+    Width = 3344
+    Height = 38
+    Margins.Left = 6
+    Margins.Top = 6
+    Margins.Right = 6
+    Margins.Bottom = 6
+    BevelWidth = 2
     BorderInner = fsNone
     BorderOuter = fsNone
     BorderSides = [sdLeft, sdTop, sdRight, sdBottom]
@@ -33,56 +44,77 @@ object frmMain: TfrmMain
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
-      Height = 19
+      Width = 200
+      Height = 38
+      Margins.Left = 6
+      Margins.Top = 6
+      Margins.Right = 6
+      Margins.Bottom = 6
       Align = alLeft
       Caption = ''
     end
     object spnFitTime: TRzStatusPane
-      Left = 100
+      Left = 200
       Top = 0
-      Width = 150
-      Height = 19
+      Width = 300
+      Height = 38
+      Margins.Left = 6
+      Margins.Top = 6
+      Margins.Right = 6
+      Margins.Bottom = 6
       Align = alLeft
       Caption = ''
     end
     object RzVersionInfoStatus1: TRzVersionInfoStatus
-      Left = 1542
+      Left = 3084
       Top = 0
-      Height = 19
+      Width = 200
+      Height = 38
+      Margins.Left = 6
+      Margins.Top = 6
+      Margins.Right = 6
+      Margins.Bottom = 6
       Align = alRight
       Field = vifFileVersion
       VersionInfo = frmAbout.RzVersionInfo
       FileVersionFormat = fvfFull
-      ExplicitLeft = 1592
-      ExplicitTop = -2
     end
     object pnlX64: TRzStatusPane
-      Left = 1642
+      Left = 3284
       Top = 0
-      Width = 30
-      Height = 19
+      Width = 60
+      Height = 38
+      Margins.Left = 6
+      Margins.Top = 6
+      Margins.Right = 6
+      Margins.Bottom = 6
       Align = alRight
       Caption = 'x64'
-      ExplicitLeft = 1618
     end
   end
   object LeftSplitter: TRzSplitter
     Left = 0
     Top = 0
-    Width = 1672
-    Height = 782
-    Position = 234
-    Percent = 14
+    Width = 3344
+    Height = 1564
+    Margins.Left = 6
+    Margins.Top = 6
+    Margins.Right = 6
+    Margins.Bottom = 6
+    Position = 508
+    Percent = 15
     UpperLeft.Color = 15987699
     LowerRight.Color = 15987699
+    SplitterWidth = 8
     Align = alClient
+    BevelWidth = 2
     Color = 15987699
     TabOrder = 1
     BarSize = (
-      234
+      508
       0
-      238
-      782)
+      516
+      1564)
     UpperLeftControls = (
       RzPanel1)
     LowerRightControls = (
@@ -90,21 +122,35 @@ object frmMain: TfrmMain
       StructurePanel)
     object RzPanel1: TRzPanel
       AlignWithMargins = True
-      Left = 3
-      Top = 3
-      Width = 228
-      Height = 776
+      Left = 6
+      Top = 6
+      Width = 496
+      Height = 1552
+      Margins.Left = 6
+      Margins.Top = 6
+      Margins.Right = 6
+      Margins.Bottom = 6
       Align = alClient
+      BevelWidth = 2
       BorderOuter = fsFlatRounded
       TabOrder = 0
       Color = 15987699
       object tlbrFile: TRzToolbar
-        Left = 2
-        Top = 2
-        Width = 224
-        Height = 29
-        Images = ilProject
+        AlignWithMargins = True
+        Left = 10
+        Top = 10
+        Width = 476
+        Height = 54
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Images = vliProject
+        RowHeight = 50
+        ButtonWidth = 50
+        ButtonHeight = 50
         TextOptions = ttoCustom
+        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
@@ -113,6 +159,9 @@ object frmMain: TfrmMain
         ShowHint = True
         StyleName = 'Windows'
         TabOrder = 0
+        ExplicitLeft = 4
+        ExplicitTop = 4
+        ExplicitWidth = 448
         ToolbarControls = (
           BtnNew
           BtnOpen
@@ -122,69 +171,112 @@ object frmMain: TfrmMain
           RzSpacer1
           BtnPrint)
         object BtnNew: TRzToolButton
-          Left = 4
+          Left = 10
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 1
           ImageIndex = 0
           Action = FileNew
         end
         object BtnOpen: TRzToolButton
-          Left = 29
+          Left = 66
           Top = 2
-          Width = 39
+          Width = 78
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 3
           DropDownMenu = pmRecentList
-          ImageIndex = 2
+          ImageIndex = 1
           ToolStyle = tsDropDown
           Action = FileOpen
         end
         object BtnSave: TRzToolButton
-          Left = 101
+          Left = 228
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 5
-          ImageIndex = 4
+          ImageIndex = 3
           Action = FileSave
         end
         object RzSpacer1: TRzSpacer
-          Left = 126
+          Left = 284
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object BtnPrint: TRzToolButton
-          Left = 134
+          Left = 306
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 7
-          ImageIndex = 6
+          ImageIndex = 4
           Action = FilePrint
         end
         object btnReopenProject: TRzToolButton
-          Left = 68
+          Left = 150
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 23
-          ImageIndex = 22
+          ImageIndex = 2
           Action = actProjectReopen
         end
         object rzspcr2: TRzSpacer
-          Left = 93
+          Left = 206
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
       end
       object RzPanel5: TRzPanel
         AlignWithMargins = True
-        Left = 5
-        Top = 689
-        Width = 218
-        Height = 82
+        Left = 10
+        Top = 1378
+        Width = 476
+        Height = 164
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
         Align = alBottom
+        BevelWidth = 2
         BorderOuter = fsFlatRounded
         FlatColor = clSkyBlue
         TabOrder = 1
         Color = 15987699
+        ExplicitWidth = 436
         object mmDescription: TRzMemo
           AlignWithMargins = True
-          Left = 5
-          Top = 5
-          Width = 208
-          Height = 72
+          Left = 10
+          Top = 10
+          Width = 456
+          Height = 144
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Align = alClient
           BevelInner = bvNone
           BevelOuter = bvNone
@@ -197,16 +289,26 @@ object frmMain: TfrmMain
           FrameHotStyle = fsNone
           FrameVisible = True
           ReadOnlyColor = clBtnFace
+          ExplicitWidth = 416
         end
       end
       object tlbrProject: TRzToolbar
-        Left = 2
-        Top = 31
-        Width = 224
-        Height = 29
+        AlignWithMargins = True
+        Left = 10
+        Top = 76
+        Width = 476
+        Height = 54
         Hint = 'Delete item'
-        Images = ilProject
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Images = vliProject
+        RowHeight = 50
+        ButtonWidth = 50
+        ButtonHeight = 50
         TextOptions = ttoCustom
+        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
@@ -215,6 +317,7 @@ object frmMain: TfrmMain
         ShowHint = True
         StyleName = 'Windows'
         TabOrder = 2
+        ExplicitWidth = 444
         ToolbarControls = (
           btnAddModel
           BtnExport
@@ -226,103 +329,162 @@ object frmMain: TfrmMain
           RzSpacer5
           BtnRecycle)
         object btnAddModel: TRzToolButton
-          Left = 4
+          Left = 10
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 9
-          ImageIndex = 8
+          ImageIndex = 5
           Action = ModelCreate
         end
         object BtnExport: TRzToolButton
-          Left = 29
+          Left = 66
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 11
-          ImageIndex = 10
+          ImageIndex = 6
           Action = actProjectItemDuplicate
         end
         object BtnCopy: TRzToolButton
-          Left = 54
+          Left = 122
           Top = 2
           Hint = 'Copy model to clipboard'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 13
-          ImageIndex = 12
+          ImageIndex = 7
           Action = actModelCopy
         end
         object BtnPaste: TRzToolButton
-          Left = 79
+          Left = 178
           Top = 2
           Hint = 'Paste model'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 15
-          ImageIndex = 14
+          ImageIndex = 8
           Action = actModelPaste
         end
         object BtnEdit: TRzToolButton
-          Left = 104
+          Left = 234
           Top = 2
           Hint = 'Properites'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 17
-          ImageIndex = 16
+          ImageIndex = 9
           Action = actItemProperites
         end
         object RzSpacer4: TRzSpacer
-          Left = 129
+          Left = 290
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object btnAddExtension: TRzToolButton
-          Left = 137
+          Left = 312
           Top = 2
           Hint = 'Add extension'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 19
-          ImageIndex = 18
+          ImageIndex = 10
           Action = ProjectItemExtension
         end
         object RzSpacer5: TRzSpacer
-          Left = 162
+          Left = 368
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object BtnRecycle: TRzToolButton
-          Left = 170
+          Left = 390
           Top = 2
           Hint = 'Delete item'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           DisabledIndex = 21
-          ImageIndex = 20
+          ImageIndex = 11
           Action = ProjectItemDelete
         end
       end
     end
     object pnlMain: TRzPanel
       AlignWithMargins = True
-      Left = 356
-      Top = 3
-      Width = 1078
-      Height = 776
+      Left = 712
+      Top = 6
+      Width = 2116
+      Height = 1552
       Margins.Left = 0
+      Margins.Top = 6
       Margins.Right = 0
+      Margins.Bottom = 6
       Align = alClient
+      BevelWidth = 2
       BorderOuter = fsFlatRounded
       TabOrder = 0
       Color = 15987699
       object Pages: TRzPageControl
         AlignWithMargins = True
-        Left = 5
-        Top = 608
-        Width = 1068
-        Height = 163
+        Left = 10
+        Top = 1216
+        Width = 2096
+        Height = 326
         Hint = ''
-        ActivePage = tsDensity
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        ActivePage = tsFittingProgress
         Align = alBottom
-        TabIndex = 2
+        TabOverlap = -2
+        TabIndex = 4
         TabOrder = 0
-        FixedDimension = 21
+        ExplicitWidth = 2136
+        FixedDimension = 42
         object tsThickness: TRzTabSheet
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitWidth = 2132
           object chThickness: TChart
             AlignWithMargins = True
-            Left = 3
-            Top = 3
-            Width = 1058
-            Height = 132
+            Left = 6
+            Top = 6
+            Width = 2080
+            Height = 268
             Cursor = crCross
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            Legend.Font.DefaultFont = True
             Legend.HorizMargin = 5
             Legend.TopPos = 0
             MarginBottom = 1
@@ -340,25 +502,39 @@ object frmMain: TfrmMain
             TopAxis.Labels = False
             TopAxis.LabelsFormat.Visible = False
             View3D = False
+            View3DOptions.FontZoom = 200
+            View3DOptions.PenZoom = 200
+            View3DOptions.CheckBoxZoom = 200
+            View3DOptions.ZoomText = ztNo
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
+            ExplicitWidth = 2120
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
         end
         object tsRoughness: TRzTabSheet
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitWidth = 2132
           object chRoughness: TChart
             AlignWithMargins = True
-            Left = 3
-            Top = 3
-            Width = 1058
-            Height = 132
+            Left = 6
+            Top = 6
+            Width = 2080
+            Height = 268
             Cursor = crCross
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Legend.HorizMargin = 5
             Legend.TopPos = 0
             MarginRight = 0
@@ -373,25 +549,38 @@ object frmMain: TfrmMain
             TopAxis.Labels = False
             TopAxis.LabelsFormat.Visible = False
             View3D = False
+            View3DOptions.PenZoom = 200
+            View3DOptions.CheckBoxZoom = 200
+            View3DOptions.ZoomText = ztManual
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 2120
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
         end
         object tsDensity: TRzTabSheet
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Color = 15987699
           Caption = 'Density'
+          ExplicitWidth = 2132
           object chDensity: TChart
             AlignWithMargins = True
-            Left = 3
-            Top = 3
-            Width = 1058
-            Height = 132
+            Left = 6
+            Top = 6
+            Width = 2080
+            Height = 268
             Cursor = crCross
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Legend.HorizMargin = 5
             Legend.TopPos = 0
             MarginRight = 0
@@ -406,25 +595,38 @@ object frmMain: TfrmMain
             TopAxis.Labels = False
             TopAxis.LabelsFormat.Visible = False
             View3D = False
+            View3DOptions.PenZoom = 200
+            View3DOptions.CheckBoxZoom = 200
+            View3DOptions.ZoomText = ztManual
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 2120
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
         end
         object tsProfile: TRzTabSheet
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Color = 15987699
           Caption = 'Profile'
+          ExplicitWidth = 2132
           object chProfile: TChart
             AlignWithMargins = True
-            Left = 3
-            Top = 3
-            Width = 1058
-            Height = 132
+            Left = 6
+            Top = 6
+            Width = 2080
+            Height = 268
             Cursor = crCross
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Legend.HorizMargin = 5
             Legend.TopPos = 0
             Legend.Visible = False
@@ -440,24 +642,34 @@ object frmMain: TfrmMain
             TopAxis.Labels = False
             TopAxis.LabelsFormat.Visible = False
             View3D = False
+            View3DOptions.PenZoom = 200
+            View3DOptions.CheckBoxZoom = 200
+            View3DOptions.ZoomText = ztManual
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
+            ExplicitWidth = 2120
             DesignSize = (
-              1058
-              132)
+              2080
+              268)
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object btnProfileCopy: TRzButton
-              Left = 996
+              Left = 1956
               Top = 0
-              Width = 59
+              Width = 118
+              Height = 50
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Anchors = [akTop, akRight]
               Caption = 'Copy'
               TabOrder = 0
               OnClick = btnProfileCopyClick
+              ExplicitLeft = 1996
             end
             object DensityProfile: TLineSeries
               Title = 'DensityProfile'
@@ -473,15 +685,24 @@ object frmMain: TfrmMain
           end
         end
         object tsFittingProgress: TRzTabSheet
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Color = 15987699
           Caption = 'Convergence'
+          ExplicitWidth = 2132
           object chFittingProgress: TChart
             AlignWithMargins = True
-            Left = 3
-            Top = 3
-            Width = 1058
-            Height = 132
+            Left = 6
+            Top = 6
+            Width = 2080
+            Height = 268
             Cursor = crCross
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Border.Color = clDefault
             Border.Visible = True
             Legend.TopPos = 0
@@ -519,24 +740,34 @@ object frmMain: TfrmMain
             LeftAxis.Title.Font.Height = -13
             LeftAxis.Title.Shadow.Visible = False
             View3D = False
+            View3DOptions.PenZoom = 200
+            View3DOptions.CheckBoxZoom = 200
+            View3DOptions.ZoomText = ztManual
             ZoomWheel = pmwNormal
             Align = alClient
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
+            ExplicitWidth = 2120
             DesignSize = (
-              1058
-              132)
+              2080
+              268)
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object btnCopyConvergence: TRzButton
-              Left = 988
-              Top = 9
-              Width = 59
+              Left = 1940
+              Top = 18
+              Width = 118
+              Height = 50
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Anchors = [akTop, akRight]
               Caption = 'Copy'
               TabOrder = 0
               OnClick = btnCopyConvergenceClick
+              ExplicitLeft = 1980
             end
             object lsrConvergence: TLineSeries
               SeriesColor = 16744448
@@ -557,11 +788,16 @@ object frmMain: TfrmMain
       end
       object Chart: TChart
         AlignWithMargins = True
-        Left = 5
-        Top = 148
-        Width = 1068
-        Height = 398
+        Left = 10
+        Top = 323
+        Width = 2096
+        Height = 769
         Cursor = crCross
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Foot.Font.Height = -32
         Foot.Visible = False
         Legend.Brush.Color = clSilver
         Legend.Brush.BackColor = clSilver
@@ -570,7 +806,7 @@ object frmMain: TfrmMain
         Legend.Brush.Gradient.MidColor = 7548915
         Legend.Brush.Gradient.StartColor = 10109259
         Legend.Color = 14210754
-        Legend.Font.Height = -13
+        Legend.Font.Height = -32
         Legend.Font.Style = [fsBold]
         Legend.Frame.Width = 2
         Legend.Frame.Visible = False
@@ -579,17 +815,20 @@ object frmMain: TfrmMain
         Legend.Shadow.Color = 9211020
         Legend.ShapeStyle = fosRoundRectangle
         Legend.TextStyle = ltsPlain
+        Legend.Title.Font.Height = -32
         Legend.Title.Transparent = False
         Legend.TopPos = 3
-        MarginBottom = 2
-        MarginLeft = 10
-        MarginRight = 2
-        MarginTop = 2
-        MarginUnits = muPixels
+        MarginBottom = 1
+        MarginLeft = 2
+        MarginRight = 1
+        MarginTop = 1
         PrintProportional = False
+        SubFoot.Font.Height = -32
         SubFoot.Visible = False
+        SubTitle.Font.Height = -32
         SubTitle.Visible = False
         Title.Alignment = taLeftJustify
+        Title.Font.Height = -32
         Title.Text.Strings = (
           'TChart')
         Title.Visible = False
@@ -597,7 +836,8 @@ object frmMain: TfrmMain
         BottomAxis.Automatic = False
         BottomAxis.AutomaticMaximum = False
         BottomAxis.AutomaticMinimum = False
-        BottomAxis.LabelsFormat.Font.Height = -13
+        BottomAxis.LabelsFormat.Font.Height = -32
+        BottomAxis.LabelsFormat.Font.DefaultFont = True
         BottomAxis.Maximum = 10.000000000000000000
         BottomAxis.MinorTicks.Visible = False
         BottomAxis.TickInnerLength = 5
@@ -605,25 +845,31 @@ object frmMain: TfrmMain
         BottomAxis.Ticks.Width = 2
         BottomAxis.TicksInner.Width = 2
         BottomAxis.Title.Caption = 'Incidence angle (deg)'
-        BottomAxis.Title.Font.Height = -16
+        BottomAxis.Title.Font.Height = -32
+        BottomAxis.Title.Font.DefaultFont = True
         BottomAxis.Title.Pen.Visible = False
         DepthAxis.Automatic = False
         DepthAxis.AutomaticMaximum = False
         DepthAxis.AutomaticMinimum = False
+        DepthAxis.LabelsFormat.Font.Height = -32
         DepthAxis.Maximum = 0.439999999999999900
         DepthAxis.Minimum = -0.560000000000000300
+        DepthAxis.Title.Font.Height = -32
         DepthTopAxis.Automatic = False
         DepthTopAxis.AutomaticMaximum = False
         DepthTopAxis.AutomaticMinimum = False
+        DepthTopAxis.LabelsFormat.Font.Height = -32
         DepthTopAxis.Maximum = 0.439999999999999900
         DepthTopAxis.Minimum = -0.560000000000000300
+        DepthTopAxis.Title.Font.Height = -32
         LeftAxis.Automatic = False
         LeftAxis.AutomaticMaximum = False
         LeftAxis.AutomaticMinimum = False
         LeftAxis.Axis.SmallSpace = 1
         LeftAxis.AxisValuesFormat = '0x10E-0'
         LeftAxis.LabelsExponent = True
-        LeftAxis.LabelsFormat.Font.Height = -13
+        LeftAxis.LabelsFormat.Font.Height = -32
+        LeftAxis.LabelsFormat.Font.DefaultFont = True
         LeftAxis.LabelsFormat.Margins.Left = 0
         LeftAxis.LabelsFormat.Margins.Top = 0
         LeftAxis.LabelsFormat.Margins.Right = 0
@@ -639,22 +885,30 @@ object frmMain: TfrmMain
         LeftAxis.TickLength = 0
         LeftAxis.TicksInner.Width = 2
         LeftAxis.Title.Caption = 'Reflectivity'
-        LeftAxis.Title.Font.Height = -16
+        LeftAxis.Title.Font.Height = -32
+        LeftAxis.Title.Font.DefaultFont = True
         LeftAxis.TitleSize = 15
         Pages.AutoScale = True
         RightAxis.Automatic = False
         RightAxis.AutomaticMaximum = False
         RightAxis.AutomaticMinimum = False
         RightAxis.Labels = False
+        RightAxis.LabelsFormat.Font.Height = -32
         RightAxis.LabelsFormat.Visible = False
         RightAxis.LabelsOnAxis = False
         RightAxis.Logarithmic = True
         RightAxis.Maximum = 1.000000000000000000
         RightAxis.Minimum = 0.000001000000000000
         RightAxis.RoundFirstLabel = False
+        RightAxis.Title.Font.Height = -32
         TopAxis.Labels = False
+        TopAxis.LabelsFormat.Font.Height = -32
         TopAxis.LabelsFormat.Visible = False
+        TopAxis.Title.Font.Height = -32
         View3D = False
+        View3DOptions.PenZoom = 200
+        View3DOptions.CheckBoxZoom = 200
+        View3DOptions.ZoomText = ztManual
         Zoom.Pen.Color = clRed
         Zoom.Pen.Mode = pmNotXor
         Align = alClient
@@ -665,6 +919,8 @@ object frmMain: TfrmMain
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
         OnResize = ChartResize
+        ExplicitLeft = 6
+        ExplicitWidth = 2128
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -673,17 +929,21 @@ object frmMain: TfrmMain
           5)
         ColorPaletteIndex = 13
         object btnStop: TRzBitBtn
-          Left = 500
-          Top = 19
-          Width = 109
-          Height = 40
+          Left = 1000
+          Top = 38
+          Width = 218
+          Height = 80
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           FrameColor = clRed
           ModalResult = 3
           Action = CalcStop
           Caption = 'Abort '
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clRed
-          Font.Height = -19
+          Font.Height = -38
           Font.Name = 'Segoe UI'
           Font.Style = [fsBold]
           ParentFont = False
@@ -780,29 +1040,42 @@ object frmMain: TfrmMain
             92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF}
           ImageIndex = 0
           Images = ilIcons
+          Margin = 4
+          Spacing = 8
         end
       end
       object RzPanel3: TRzPanel
         AlignWithMargins = True
-        Left = 5
-        Top = 552
-        Width = 1068
-        Height = 50
+        Left = 10
+        Top = 1104
+        Width = 2096
+        Height = 100
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
         Align = alBottom
+        BevelWidth = 2
         BorderOuter = fsFlatRounded
         FlatColor = clSkyBlue
         TabOrder = 2
         Color = 15987699
+        ExplicitWidth = 2136
         DesignSize = (
-          1068
-          50)
+          2096
+          100)
         object RzStatusPane1: TRzStatusPane
-          Left = 5
-          Top = 4
-          Width = 25
+          Left = 10
+          Top = 8
+          Width = 50
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -810,12 +1083,17 @@ object frmMain: TfrmMain
           Caption = 'X'
         end
         object RzStatusPane2: TRzStatusPane
-          Left = 5
-          Top = 28
-          Width = 25
+          Left = 10
+          Top = 56
+          Width = 50
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -823,36 +1101,51 @@ object frmMain: TfrmMain
           Caption = 'Y'
         end
         object StatusY: TRzStatusPane
-          Left = 33
-          Top = 28
-          Width = 64
+          Left = 66
+          Top = 56
+          Width = 128
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
           Caption = '0.00'
         end
         object StatusX: TRzStatusPane
-          Left = 33
-          Top = 4
-          Width = 64
+          Left = 66
+          Top = 8
+          Width = 128
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
           Caption = '0.00'
         end
         object RzStatusPane3: TRzStatusPane
-          Left = 103
-          Top = 5
-          Width = 46
+          Left = 206
+          Top = 10
+          Width = 92
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -860,12 +1153,17 @@ object frmMain: TfrmMain
           Caption = 'Rmax'
         end
         object RzStatusPane4: TRzStatusPane
-          Left = 104
-          Top = 28
-          Width = 44
+          Left = 208
+          Top = 56
+          Width = 88
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -873,36 +1171,51 @@ object frmMain: TfrmMain
           Caption = 'Xmax'
         end
         object StatusMaxX: TRzStatusPane
-          Left = 153
-          Top = 28
-          Width = 64
+          Left = 306
+          Top = 56
+          Width = 128
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
           Caption = '0.00'
         end
         object StatusRMax: TRzStatusPane
-          Left = 153
-          Top = 4
-          Width = 64
+          Left = 306
+          Top = 8
+          Width = 128
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
           Caption = '0.00'
         end
         object RzStatusPane5: TRzStatusPane
-          Left = 221
-          Top = 4
-          Width = 25
+          Left = 442
+          Top = 8
+          Width = 50
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -910,24 +1223,34 @@ object frmMain: TfrmMain
           Caption = 'Ri'
         end
         object StatusD: TRzStatusPane
-          Left = 252
-          Top = 28
-          Width = 89
+          Left = 504
+          Top = 56
+          Width = 178
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
           Caption = '0.00'
         end
         object RzStatusPane6: TRzStatusPane
-          Left = 221
-          Top = 28
-          Width = 25
+          Left = 442
+          Top = 56
+          Width = 50
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -935,24 +1258,34 @@ object frmMain: TfrmMain
           Caption = 'D'
         end
         object StatusRi: TRzStatusPane
-          Left = 252
-          Top = 4
-          Width = 89
+          Left = 504
+          Top = 8
+          Width = 178
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
           Caption = '0.00'
         end
         object spChiSqr: TRzStatusPane
-          Left = 392
-          Top = 5
-          Width = 89
+          Left = 784
+          Top = 10
+          Width = 178
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
@@ -960,13 +1293,17 @@ object frmMain: TfrmMain
           Caption = '0.00'
         end
         object RzStatusPane7: TRzStatusPane
-          Left = 364
-          Top = 5
-          Width = 25
-          Height = 41
+          Left = 728
+          Top = 10
+          Width = 50
+          Height = 82
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -974,12 +1311,17 @@ object frmMain: TfrmMain
           Caption = #967'2'
         end
         object spChiBest: TRzStatusPane
-          Left = 392
-          Top = 27
-          Width = 89
+          Left = 784
+          Top = 54
+          Width = 178
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
@@ -987,28 +1329,41 @@ object frmMain: TfrmMain
           Caption = '0.00'
         end
         object btnChartScale: TRzBitBtn
-          Left = 912
-          Top = 7
+          Left = 1784
+          Top = 14
+          Width = 150
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Anchors = [akTop, akRight]
           Caption = 'Linear'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
           TabOrder = 0
           OnClick = btnChartScaleClick
+          Margin = 4
+          Spacing = 8
+          ExplicitLeft = 1824
         end
         object cbMinLimit: TRzComboBox
-          Left = 993
-          Top = 8
-          Width = 66
-          Height = 24
+          Left = 1946
+          Top = 16
+          Width = 132
+          Height = 39
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Anchors = [akRight, akBottom]
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -13
+          Font.Height = -26
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
           ParentFont = False
@@ -1022,105 +1377,147 @@ object frmMain: TfrmMain
             '10E-7'
             '10E-8'
             '10E-9')
+          ExplicitLeft = 1986
         end
       end
       object pnlSettings: TPanel
-        Left = 2
-        Top = 31
-        Width = 1074
-        Height = 114
+        AlignWithMargins = True
+        Left = 10
+        Top = 76
+        Width = 2096
+        Height = 235
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
+        ExplicitWidth = 2136
         object RzPanel6: TRzPanel
           AlignWithMargins = True
-          Left = 387
-          Top = 6
-          Width = 684
-          Height = 105
-          Margins.Top = 6
+          Left = 786
+          Top = 12
+          Width = 1304
+          Height = 217
+          Margins.Left = 6
+          Margins.Top = 12
+          Margins.Right = 6
+          Margins.Bottom = 6
           Align = alClient
           Alignment = taLeftJustify
           AlignmentVertical = avTop
+          BevelWidth = 2
           BorderOuter = fsFlatRounded
           Caption = 'Fitting'
           TabOrder = 0
           Color = 15987699
+          ExplicitLeft = 774
+          ExplicitWidth = 1368
+          ExplicitHeight = 210
           object Label7: TLabel
-            Left = 8
-            Top = 29
-            Width = 47
-            Height = 13
+            Left = 16
+            Top = 58
+            Width = 93
+            Height = 27
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Caption = 'Iterations'
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -22
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
           end
           object Label8: TLabel
-            Left = 6
-            Top = 57
-            Width = 50
-            Height = 13
+            Left = 12
+            Top = 114
+            Width = 101
+            Height = 27
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Caption = 'Population'
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -22
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
           end
           object lblPolyOrder: TLabel
-            Left = 291
-            Top = 51
-            Width = 28
-            Height = 13
+            Left = 582
+            Top = 102
+            Width = 56
+            Height = 27
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Caption = 'Order'
             Enabled = False
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
+            Font.Height = -22
             Font.Name = 'Tahoma'
             Font.Style = []
             ParentFont = False
           end
           object Label21: TLabel
-            Left = 256
-            Top = 83
-            Width = 33
-            Height = 15
+            Left = 512
+            Top = 166
+            Width = 69
+            Height = 32
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Caption = ' TW'#967'2'
           end
           object rgFittingMode: TRzRadioGroup
             AlignWithMargins = True
-            Left = 132
-            Top = 3
-            Width = 237
-            Height = 39
-            Margins.Top = 15
+            Left = 264
+            Top = 6
+            Width = 474
+            Height = 78
+            Margins.Left = 6
+            Margins.Top = 30
+            Margins.Right = 6
+            Margins.Bottom = 6
+            BevelWidth = 2
             Caption = 'Mode'
             Color = 15987699
             Columns = 3
+            HorizontalSpacing = 16
             ItemIndex = 0
             Items.Strings = (
               'Irregualr'
               'Periodic'
               'Polynomial')
             SpaceEvenly = True
+            StartXPos = 16
+            StartYPos = 4
             TabOrder = 0
+            VerticalSpacing = 6
             OnClick = rgFittingModeClick
           end
           object edFIter: TEdit
-            Left = 60
-            Top = 25
-            Width = 50
-            Height = 22
+            Left = 120
+            Top = 50
+            Width = 100
+            Height = 37
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -12
+            Font.Height = -24
             Font.Name = 'Tahoma'
             Font.Style = []
             NumbersOnly = True
@@ -1129,14 +1526,18 @@ object frmMain: TfrmMain
             Text = '100'
           end
           object edFPopulation: TEdit
-            Left = 60
-            Top = 53
-            Width = 50
-            Height = 22
+            Left = 120
+            Top = 106
+            Width = 100
+            Height = 37
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Alignment = taRightJustify
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -12
+            Font.Height = -24
             Font.Name = 'Tahoma'
             Font.Style = []
             NumbersOnly = True
@@ -1145,40 +1546,52 @@ object frmMain: TfrmMain
             Text = '100'
           end
           object cbLFPSOShake: TRzCheckBox
-            Left = 7
-            Top = 81
-            Width = 54
-            Height = 19
+            Left = 14
+            Top = 162
+            Width = 110
+            Height = 38
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             AlignmentVertical = avCenter
-            AutoSizeWidth = 54
+            AutoSizeWidth = 110
             Caption = 'Shake'
             Checked = True
             State = cbChecked
             TabOrder = 3
           end
           object cbSeedRange: TRzCheckBox
-            Left = 71
-            Top = 81
-            Width = 55
-            Height = 19
+            Left = 142
+            Top = 162
+            Width = 113
+            Height = 38
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             AlignmentVertical = avCenter
-            AutoSizeWidth = 55
+            AutoSizeWidth = 113
             Caption = 'SeedR'
             Checked = True
             State = cbChecked
             TabOrder = 4
           end
           object edPolyOrder: TEdit
-            Left = 335
-            Top = 48
-            Width = 34
-            Height = 22
+            Left = 670
+            Top = 96
+            Width = 68
+            Height = 37
             Hint = 'Polynomial order'
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Alignment = taRightJustify
             Enabled = False
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -12
+            Font.Height = -24
             Font.Name = 'Tahoma'
             Font.Style = []
             MaxLength = 1
@@ -1190,10 +1603,14 @@ object frmMain: TfrmMain
             Text = '1'
           end
           object cbTWChi: TComboBox
-            Left = 297
-            Top = 78
-            Width = 72
-            Height = 23
+            Left = 594
+            Top = 156
+            Width = 144
+            Height = 40
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             ItemIndex = 0
             TabOrder = 6
             Text = 'None'
@@ -1206,136 +1623,194 @@ object frmMain: TfrmMain
               '1/sqrt')
           end
           object cbPWChiSqr: TRzCheckBox
-            Left = 141
-            Top = 81
-            Width = 56
-            Height = 19
-            AutoSizeWidth = 56
+            Left = 282
+            Top = 162
+            Width = 114
+            Height = 38
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            AutoSizeWidth = 114
             Caption = 'PW '#967'2'
             Checked = True
             State = cbChecked
             TabOrder = 7
           end
           object btnAdvFitSettings: TRzBitBtn
-            Left = 375
-            Top = 9
-            Height = 92
+            Left = 750
+            Top = 18
+            Width = 150
+            Height = 184
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
             Caption = 'Advanced'#13'Settings'
             TabOrder = 8
             OnClick = btnAdvFitSettingsClick
+            Margin = 4
+            Spacing = 8
           end
           object cbSmooth: TRzCheckBox
-            Left = 141
-            Top = 48
-            Width = 65
-            Height = 19
-            AutoSizeWidth = 65
+            Left = 282
+            Top = 96
+            Width = 130
+            Height = 38
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            AutoSizeWidth = 130
             Caption = 'Smooth'
             State = cbUnchecked
             TabOrder = 9
           end
         end
         object RzPanel7: TRzPanel
-          Left = 0
-          Top = 0
-          Width = 384
-          Height = 114
+          AlignWithMargins = True
+          Left = 6
+          Top = 6
+          Width = 768
+          Height = 223
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Align = alLeft
+          BevelWidth = 2
           BorderOuter = fsNone
           TabOrder = 1
           Color = 15987699
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitHeight = 228
           object rgPolarisation: TRzRadioGroup
-            Left = 170
+            Left = 340
             Top = 0
-            Width = 143
-            Height = 42
+            Width = 286
+            Height = 84
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            BevelWidth = 2
             BorderOuter = fsFlatRounded
             Caption = 'Polarization'
             Color = 15987699
             Columns = 2
+            HorizontalSpacing = 16
             ItemIndex = 0
             Items.Strings = (
               's-type'
               'sp-type')
             SpaceEvenly = True
+            StartXPos = 16
+            StartYPos = 4
             TabOrder = 0
+            VerticalSpacing = 6
           end
           object pnlWaveParams: TRzPanel
-            Left = 224
-            Top = 47
-            Width = 157
-            Height = 64
+            Left = 448
+            Top = 94
+            Width = 314
+            Height = 128
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            BevelWidth = 2
             BorderOuter = fsFlatRounded
             Enabled = False
             TabOrder = 1
             Transparent = True
             Color = 15987699
             object Label9: TLabel
-              Left = 8
-              Top = 36
-              Width = 16
-              Height = 19
+              Left = 16
+              Top = 72
+              Width = 32
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'l2'
               Enabled = False
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object Label10: TLabel
-              Left = 7
-              Top = 13
-              Width = 16
-              Height = 19
+              Left = 14
+              Top = 26
+              Width = 32
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'l1'
               Enabled = False
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object Label11: TLabel
-              Left = 89
-              Top = 10
-              Width = 8
-              Height = 19
+              Left = 178
+              Top = 20
+              Width = 16
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'q'
               Enabled = False
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object Label12: TLabel
-              Left = 86
-              Top = 37
-              Width = 17
-              Height = 19
+              Left = 172
+              Top = 74
+              Width = 35
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'Dl'
               Enabled = False
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object edStartL: TEdit
-              Left = 28
-              Top = 9
-              Width = 47
-              Height = 22
+              Left = 56
+              Top = 18
+              Width = 94
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Enabled = False
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1343,15 +1818,19 @@ object frmMain: TfrmMain
               Text = '1'
             end
             object edEndL: TEdit
-              Left = 28
-              Top = 35
-              Width = 47
-              Height = 22
+              Left = 56
+              Top = 70
+              Width = 94
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Enabled = False
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1359,15 +1838,19 @@ object frmMain: TfrmMain
               Text = '10'
             end
             object edTheta: TEdit
-              Left = 109
-              Top = 9
-              Width = 40
-              Height = 22
+              Left = 218
+              Top = 18
+              Width = 80
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Enabled = False
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1375,15 +1858,19 @@ object frmMain: TfrmMain
               Text = '85'
             end
             object edDL: TEdit
-              Left = 109
-              Top = 36
-              Width = 40
-              Height = 22
+              Left = 218
+              Top = 72
+              Width = 80
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Enabled = False
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1392,75 +1879,100 @@ object frmMain: TfrmMain
             end
           end
           object pnlAngleParams: TRzPanel
-            Left = 3
-            Top = 47
-            Width = 215
-            Height = 64
+            Left = 6
+            Top = 94
+            Width = 430
+            Height = 128
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            BevelWidth = 2
             BorderOuter = fsFlatRounded
             TabOrder = 2
             Transparent = True
             Color = 15987699
             object Label1: TLabel
-              Left = 6
-              Top = 36
-              Width = 16
-              Height = 19
+              Left = 12
+              Top = 72
+              Width = 31
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'q2'
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object Label2: TLabel
-              Left = 6
-              Top = 10
-              Width = 16
-              Height = 19
+              Left = 12
+              Top = 20
+              Width = 31
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'q1'
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object Label3: TLabel
-              Left = 92
-              Top = 10
-              Width = 28
-              Height = 19
+              Left = 184
+              Top = 20
+              Width = 59
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'l(A)'
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object Label4: TLabel
-              Left = 94
-              Top = 36
-              Width = 17
-              Height = 19
+              Left = 188
+              Top = 72
+              Width = 34
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Caption = 'Dq'
               Font.Charset = GREEK_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
             end
             object edStartTeta: TEdit
-              Left = 26
-              Top = 9
-              Width = 50
-              Height = 22
+              Left = 52
+              Top = 18
+              Width = 100
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1468,14 +1980,18 @@ object frmMain: TfrmMain
               Text = '0.01'
             end
             object edEndTeta: TEdit
-              Left = 26
-              Top = 36
-              Width = 50
-              Height = 22
+              Left = 52
+              Top = 72
+              Width = 100
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1483,14 +1999,18 @@ object frmMain: TfrmMain
               Text = '10'
             end
             object edWidth: TEdit
-              Left = 115
-              Top = 35
-              Width = 48
-              Height = 22
+              Left = 230
+              Top = 70
+              Width = 96
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1498,14 +2018,18 @@ object frmMain: TfrmMain
               Text = '0.015'
             end
             object edLambda: TEdit
-              Left = 126
-              Top = 9
-              Width = 75
-              Height = 22
+              Left = 252
+              Top = 18
+              Width = 150
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               ParentFont = False
@@ -1513,16 +2037,20 @@ object frmMain: TfrmMain
               Text = '1.54043'
             end
             object cb2Theta: TRzCheckBox
-              Left = 169
-              Top = 36
-              Width = 39
-              Height = 21
-              AutoSizeWidth = 39
+              Left = 338
+              Top = 72
+              Width = 77
+              Height = 41
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
+              AutoSizeWidth = 77
               Caption = '2q'
               Checked = True
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -15
+              Font.Height = -30
               Font.Name = 'Symbol'
               Font.Style = []
               ParentFont = False
@@ -1532,39 +2060,58 @@ object frmMain: TfrmMain
             end
           end
           object rgCalcMode: TRzRadioGroup
-            Left = 3
-            Top = -1
-            Width = 161
-            Height = 42
+            AlignWithMargins = True
+            Left = 6
+            Top = -2
+            Width = 322
+            Height = 84
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            BevelWidth = 2
             BorderOuter = fsFlatRounded
             Caption = 'Mode'
             Color = 15987699
             Columns = 2
+            HorizontalSpacing = 16
             ItemIndex = 0
             Items.Strings = (
               'by angle'
               'by wave')
             SpaceEvenly = True
+            StartXPos = 16
+            StartYPos = 4
             TabOrder = 3
+            VerticalSpacing = 6
             OnChanging = rgCalcModeChanging
           end
           object RzGroupBox2: TRzGroupBox
-            Left = 319
+            Left = 638
             Top = 0
-            Width = 62
-            Height = 41
+            Width = 124
+            Height = 82
+            Margins.Left = 6
+            Margins.Top = 6
+            Margins.Right = 6
+            Margins.Bottom = 6
+            BevelWidth = 2
             Caption = 'N'
             Color = 15987699
             TabOrder = 4
             object edN: TEdit
-              Left = 4
-              Top = 15
-              Width = 53
-              Height = 22
+              Left = 8
+              Top = 30
+              Width = 106
+              Height = 37
+              Margins.Left = 6
+              Margins.Top = 6
+              Margins.Right = 6
+              Margins.Bottom = 6
               Alignment = taRightJustify
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
-              Font.Height = -12
+              Font.Height = -24
               Font.Name = 'Tahoma'
               Font.Style = []
               NumbersOnly = True
@@ -1576,18 +2123,30 @@ object frmMain: TfrmMain
         end
       end
       object ChartToolBar: TRzToolbar
-        Left = 2
-        Top = 2
-        Width = 1074
-        Height = 29
-        Images = ilCalc
+        AlignWithMargins = True
+        Left = 10
+        Top = 10
+        Width = 2096
+        Height = 54
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Images = vilCalc
+        RowHeight = 50
+        ButtonWidth = 50
+        ButtonHeight = 50
         TextOptions = ttoCustom
+        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
+        ExplicitLeft = 4
+        ExplicitTop = 4
+        ExplicitWidth = 2148
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -1602,116 +2161,187 @@ object frmMain: TfrmMain
           btnDataLoad
           btnDataPaste)
         object btnDataLoad: TRzToolButton
-          Left = 203
+          Left = 468
           Top = 2
           Hint = 'Load curve'
-          ImageIndex = 8
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 3
           Action = DataLoad
           ParentShowHint = False
           ShowHint = True
         end
         object btnDataPaste: TRzToolButton
-          Left = 228
+          Left = 524
           Top = 2
           Hint = 'Paste curve'
-          ImageIndex = 9
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 4
           Action = DataPaste
           ParentShowHint = False
           ShowHint = True
         end
         object rzspcr3: TRzSpacer
-          Left = 195
+          Left = 446
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object btnCalcRun: TRzToolButton
-          Left = 4
+          Left = 10
           Top = 2
           Hint = 'Calculate'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           ImageIndex = 0
           Action = CalcRun
           ParentShowHint = False
           ShowHint = True
         end
         object rzspcr4: TRzSpacer
-          Left = 87
+          Left = 200
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object btnResultSave: TRzToolButton
-          Left = 95
+          Left = 222
           Top = 2
           Hint = 'Save resulting curve'
-          ImageIndex = 4
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 5
           Action = ResultSave
           ParentShowHint = False
           ShowHint = True
         end
         object btnBtnCopy: TRzToolButton
-          Left = 120
+          Left = 278
           Top = 2
           Hint = 'Copy resulting curve'
-          ImageIndex = 5
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 6
           Action = ResultCopy
           ParentShowHint = False
           ShowHint = True
         end
         object RzSpacer2: TRzSpacer
-          Left = 79
+          Left = 178
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object BtnExecute: TRzToolButton
-          Left = 54
+          Left = 122
           Top = 2
           Hint = 'Auto Fitting'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           ImageIndex = 2
           Action = actAutoFitting
         end
         object BtnFastForward: TRzToolButton
-          Left = 29
+          Left = 66
           Top = 2
           Hint = 'Calculate all'
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           ImageIndex = 1
           Action = CalcAll
         end
         object btnCopyImage: TRzToolButton
-          Left = 145
+          Left = 334
           Top = 2
           Hint = 'Copy resulting curve as image'
-          ImageIndex = 6
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 7
           Action = FilePlotCopyWMF
           ParentShowHint = False
           ShowHint = True
         end
         object btnPrintGraphics: TRzToolButton
-          Left = 170
+          Left = 390
           Top = 2
-          ImageIndex = 7
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 8
         end
       end
     end
     object StructurePanel: TRzPanel
       AlignWithMargins = True
-      Left = 3
-      Top = 3
-      Width = 350
-      Height = 776
+      Left = 6
+      Top = 6
+      Width = 700
+      Height = 1552
+      Margins.Left = 6
+      Margins.Top = 6
+      Margins.Right = 6
+      Margins.Bottom = 6
       Align = alLeft
+      BevelWidth = 2
       BorderOuter = fsFlatRounded
       ShowDockClientCaptions = False
       TabOrder = 1
       Color = 15987699
       object tlbStructure: TRzToolbar
-        Left = 2
-        Top = 2
-        Width = 346
-        Height = 29
-        Images = ilStructure
+        AlignWithMargins = True
+        Left = 10
+        Top = 10
+        Width = 680
+        Height = 54
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Images = vilModel
+        RowHeight = 50
+        ButtonWidth = 50
+        ButtonHeight = 50
         TextOptions = ttoCustom
+        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 0
+        ExplicitLeft = 4
+        ExplicitTop = 4
+        ExplicitWidth = 692
         ToolbarControls = (
           btnPeriodAdd
           btnPeriodInsert
@@ -1725,118 +2355,183 @@ object frmMain: TfrmMain
           RzSpacer3
           btnLayerDelete)
         object btnPeriodAdd: TRzToolButton
-          Left = 4
+          Left = 10
           Top = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           ImageIndex = 0
           Action = PeriodAdd
           ParentShowHint = False
           ShowHint = True
         end
         object btnPeriodInsert: TRzToolButton
-          Left = 29
+          Left = 66
           Top = 2
-          ImageIndex = 1
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 2
           Action = PeriodInsert
           ParentShowHint = False
           ShowHint = True
         end
         object btnPeriodDelete: TRzToolButton
-          Left = 54
+          Left = 122
           Top = 2
-          ImageIndex = 2
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 6
           Action = PeriodDelete
           ParentShowHint = False
           ShowHint = True
         end
         object rzspcr1: TRzSpacer
-          Left = 79
+          Left = 178
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object btnLayerAdd: TRzToolButton
-          Left = 87
+          Left = 200
           Top = 2
           Hint = 'Add Layer'
-          ImageIndex = 3
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 1
           Action = LayerAdd
           ParentShowHint = False
           ShowHint = True
         end
         object btnLayerInsert: TRzToolButton
-          Left = 112
+          Left = 256
           Top = 2
           Hint = 'Insert Layer'
-          ImageIndex = 4
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 5
           Action = LayerInsert
           ParentShowHint = False
           ShowHint = True
         end
         object btnLayerPaste: TRzToolButton
-          Left = 187
+          Left = 424
           Top = 2
           Hint = 'Paste layer'
-          ImageIndex = 7
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 4
           Action = LayerPaste
           ParentShowHint = False
           ShowHint = True
         end
         object btnLayerDelete: TRzToolButton
-          Left = 220
+          Left = 502
           Top = 2
           Hint = 'Delete layer'
-          ImageIndex = 8
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 7
           Action = LayerDelete
           ParentShowHint = False
           ShowHint = True
         end
         object btnLayerCut: TRzToolButton
-          Left = 162
+          Left = 368
           Top = 2
           Hint = 'Cut layer'
-          ImageIndex = 6
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 3
           Action = LayerCut
           ParentShowHint = False
           ShowHint = True
         end
         object RzSpacer3: TRzSpacer
-          Left = 212
+          Left = 480
           Top = 2
+          Width = 16
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
         end
         object btnCopyLayer: TRzToolButton
-          Left = 137
+          Left = 312
           Top = 2
-          ImageIndex = 5
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
+          ImageIndex = 8
           Action = actLayerCopy
           ParentShowHint = False
           ShowHint = True
         end
       end
       object RzPanel2: TRzPanel
-        Left = 2
-        Top = 31
-        Width = 346
-        Height = 41
+        AlignWithMargins = True
+        Left = 10
+        Top = 76
+        Width = 680
+        Height = 82
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
         Align = alTop
+        BevelWidth = 2
         BorderOuter = fsNone
         TabOrder = 1
         Color = 15987699
+        ExplicitLeft = 4
+        ExplicitTop = 58
+        ExplicitWidth = 692
         object Label6: TLabel
-          Left = 6
-          Top = 10
-          Width = 49
-          Height = 13
+          Left = 12
+          Top = 20
+          Width = 99
+          Height = 27
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Caption = 'Increment'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -11
+          Font.Height = -22
           Font.Name = 'Tahoma'
           Font.Style = []
           ParentFont = False
         end
         object cbIncrement: TRzComboBox
-          Left = 61
-          Top = 6
-          Width = 52
-          Height = 23
+          Left = 122
+          Top = 12
+          Width = 104
+          Height = 40
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           TabOrder = 0
           Text = '0.1'
           OnChange = cbIncrementChange
@@ -1857,10 +2552,14 @@ object frmMain: TfrmMain
             '0.01')
         end
         object btnSetFitLimits: TBitBtn
-          Left = 265
-          Top = 5
-          Width = 75
-          Height = 25
+          Left = 530
+          Top = 10
+          Width = 150
+          Height = 50
+          Margins.Left = 6
+          Margins.Top = 6
+          Margins.Right = 6
+          Margins.Bottom = 6
           Caption = 'Limits'
           TabOrder = 1
           OnClick = btnSetFitLimitsClick
@@ -1869,8 +2568,8 @@ object frmMain: TfrmMain
     end
   end
   object mmMain: TMainMenu
-    Left = 472
-    Top = 232
+    Left = 1024
+    Top = 736
     object File1: TMenuItem
       Caption = 'File'
       object File2: TMenuItem
@@ -2835,8 +3534,8 @@ object frmMain: TfrmMain
             CommandProperties.ButtonSize = bsLarge
           end>
       end>
-    Left = 688
-    Top = 200
+    Left = 752
+    Top = 632
     StyleName = 'Platform Default'
     object FileNew: TAction
       Category = 'Project'
@@ -3200,942 +3899,6 @@ object frmMain: TfrmMain
       OnExecute = actCalcFitJobsExecute
     end
   end
-  object ilProject: TImageList
-    ColorDepth = cd32Bit
-    Left = 176
-    Top = 72
-    Bitmap = {
-      494C010118002800040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
-      0000000000003600000028000000400000007000000001002000000000000070
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000000000000000000000000000E2EF
-      F100E5E5E500E5E5E500E5E5E500E5E5E500E5E5E50000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000003399CC000066
-      9900006699000066990000669900006699000066990000669900006699000066
-      9900006699000066990000000000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990000000000000000000000000000000000E5E5E500C0C0
-      C0009999990080808000808080009999990099A8AC00C0C0C000CCCCCC00E2EF
-      F10000000000000000000000000000000000000000000000000000000000C0C0
-      C00099999900999999008080800099999900CCCCCC00C0C0C000CCCCCC000000
-      000000000000000000000000000000000000000000003399CC0066CCFF003399
-      CC0099FFFF0066CCFF0066CCFF0066CCFF0066CCFF0066CCFF0066CCFF0066CC
-      FF003399CC0099FFFF0000669900000000000000000099999900CCCCCC009999
-      9900E5E5E500CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC0099999900E5E5E50099999900000000000000000000000000CCCCCC00CCCC
-      CC00CCCC9900CCCC9900CCCC990099999900808080006666660080808000B2B2
-      B200E5E5E5000000000000000000000000000000000000000000CCCCCC00CCCC
-      CC00C0C0C000C0C0C000C0C0C00099999900808080009999990080808000B2B2
-      B20000000000000000000000000000000000000000003399CC0066CCFF003399
-      CC0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0066CCFF0099FFFF0000669900000000000000000099999900CCCCCC009999
-      9900E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5
-      E500CCCCCC00E5E5E500999999000000000000000000E5E5E500FFFFCC00F2EA
-      BF00F2EABF00CCCC9900ECC6D900FFCC9900F2EABF00F2EABF00808080006666
-      660099999900E5E5E50000000000000000000000000000000000000000000000
-      000000000000C0C0C000CCCCCC00C0C0C0000000000000000000808080009999
-      990099999900000000000000000000000000000000003399CC0066CCFF003399
-      CC0099FFFF0099FFFF00006600003399660099FFFF0099FFFF0099FFFF0099FF
-      FF0066CCFF0099FFFF0000669900000000000000000099999900CCCCCC009999
-      9900E5E5E500E5E5E50099999900CCCCCC00E5E5E500E5E5E500E5E5E500E5E5
-      E500CCCCCC00E5E5E500999999000000000000000000FFCC9900F2EABF00F2EA
-      BF00CCCCCC00ECC6D90000990000CCCCCC00CCCCCC00CCCCCC00FFFFCC00B2B2
-      B200646F7100CCCCCC00000000000000000000000000C0C0C000000000000000
-      0000CCCCCC00CCCCCC0099999900CCCCCC00CCCCCC00CCCCCC0000000000B2B2
-      B20099999900CCCCCC000000000000000000000000003399CC0066CCFF003399
-      CC0099FFFF0099FFFF0033999900339933003399330099FFFF0099FFFF0099FF
-      FF0066CCFF0099FFFF0000669900000000000000000099999900CCCCCC009999
-      9900E5E5E500E5E5E500CCCCCC009999990099999900E5E5E500E5E5E500E5E5
-      E500CCCCCC00E5E5E500999999000000000000000000FFCC9900FFCC9900E5E5
-      E500ECC6D900ECC6D9000099000000990000009900000099000099CC9900F2EA
-      BF0080808000B2B2B200E2EFF1000000000000000000C0C0C000C0C0C0000000
-      0000CCCCCC00CCCCCC0099999900999999009999990099999900B2B2B2000000
-      000080808000B2B2B2000000000000000000000000003399CC0066CCFF003399
-      CC0099FFFF0099FFFF0099FFCC003399330033CC66003399660099FFFF0099FF
-      FF0066CCFF0099FFFF0000669900000000000000000099999900CCCCCC009999
-      9900E5E5E500E5E5E500E5E5E50099999900E5E5E500CCCCCC00E5E5E500E5E5
-      E500CCCCCC00E5E5E5009999990000000000E5E5E500FFCC9900E5E5E500E5E5
-      E500ECC6D900C0C0C000009900000099000066CC6600CCFFCC0033CC3300FFCC
-      990080808000B2B2B200E2EFF1000000000000000000C0C0C000000000000000
-      0000CCCCCC00C0C0C0009999990099999900CCCCCC000000000099999900C0C0
-      C00080808000B2B2B2000000000000000000000000003399CC0066CCFF003399
-      CC0099FFFF0099FFFF0099FFFF000099330066FF99003399330099FFCC0099FF
-      FF0066CCFF0099FFFF0000669900000000000000000099999900CCCCCC009999
-      9900E5E5E500E5E5E500E5E5E50099999900E5E5E50099999900E5E5E500E5E5
-      E500CCCCCC00E5E5E5009999990000000000F2EABF00F2EABF00FFFFFF00FFFF
-      FF00CC999900ECC6D90099CC9900CCCC990033CC330099CC990099CC9900CCCC
-      99009999990099999900E5E5E50000000000CCCCCC0000000000000000000000
-      000099999900CCCCCC00B2B2B200C0C0C00099999900B2B2B200B2B2B200C0C0
-      C00099999900999999000000000000000000000000003399CC0099FFFF0099FF
-      FF003399CC003399CC003399CC000066330033CC660033CC6600339966003399
-      CC003399CC003399CC003399CC00000000000000000099999900E5E5E500E5E5
-      E50099999900999999009999990099999900E5E5E500E5E5E500CCCCCC009999
-      990099999900999999009999990000000000F2EABF00FFFFCC00FFFFFF00ECC6
-      D900CC999900ECC6D90066993300FFFFFF0066CC66000099000000990000F2EA
-      BF009999990099999900E5E5E50000000000CCCCCC000000000000000000CCCC
-      CC0099999900CCCCCC009999990000000000CCCCCC0099999900999999000000
-      000099999900999999000000000000000000000000003399CC0099FFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF000080000033CC660033CC66003399330099FF
-      FF00006699000000000000000000000000000000000099999900E5E5E500E5E5
-      E500E5E5E500E5E5E500E5E5E50099999900E5E5E500E5E5E50099999900E5E5
-      E50099999900000000000000000000000000F2EABF00FFFFFF00FFFFFF00ECC6
-      D900ECC6D900ECC6D90099CC990000990000339933000099000000990000F2EA
-      BF00CCCC990080808000E5E5E50000000000CCCCCC000000000000000000CCCC
-      CC00CCCCCC00CCCCCC00B2B2B200999999009999990099999900999999000000
-      0000C0C0C00080808000000000000000000000000000000000003399CC0099FF
-      FF0099FFFF0099FFFF0099FFFF000080000033CC660033CC6600339933003399
-      CC0000000000000000000000000000000000000000000000000099999900E5E5
-      E500E5E5E500E5E5E500E5E5E50099999900E5E5E500E5E5E500999999009999
-      990000000000000000000000000000000000FFFFCC00FFFFCC00FFFFCC00FFFF
-      FF00FFFFFF00E2EFF100E5E5E50099CC990099CC990066CC660000990000FFFF
-      CC00C0C0C00080808000CCCCCC0000000000CCCCCC0000000000000000000000
-      0000000000000000000000000000B2B2B200B2B2B200CCCCCC00999999000000
-      0000C0C0C00080808000CCCCCC00000000000000000000000000000000003399
-      CC003399CC003399CC003399CC000099330033CC660033CC6600339933000000
-      0000000000000000000000000000000000000000000000000000000000009999
-      990099999900999999009999990099999900E5E5E500E5E5E500999999000000
-      000000000000000000000000000000000000FFFFCC00FFFFCC00FFFFCC00FFFF
-      CC00E2EFF100E2EFF100E2EFF100FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFCC00646F7100CCCCCC0000000000CCCCCC0000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000099999900CCCCCC00000000000000000000000000000000000000
-      00000066000000800000008000003399330033CC660033CC6600336633000080
-      0000008000000000000000000000000000000000000000000000000000000000
-      000099999900999999009999990099999900E5E5E500E5E5E500999999009999
-      990099999900000000000000000000000000F2EABF00F2EABF00F2EABF00E5E5
-      E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E2EFF100F2EABF00FFFF
-      CC00FFFFCC00646F7100CCCCCC000000000000000000CCCCCC00CCCCCC000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000099999900CCCCCC00000000000000000000000000000000000000
-      0000669966000080000033CC330033CC330033CC660033CC6600339933000066
-      0000669966000000000000000000000000000000000000000000000000000000
-      0000CCCCCC0099999900E5E5E500E5E5E500E5E5E500E5E5E500999999009999
-      9900CCCCCC0000000000000000000000000000000000E5E5E500E5E5E50099CC
-      FF00CCFFFF00CCFFFF00CCFFFF00CCFFFF00E2EFF10099CCFF00FFCC9900FFCC
-      9900FFFFCC0080808000E5E5E50000000000000000000000000000000000CCCC
-      CC000000000000000000000000000000000000000000CCCCCC00C0C0C000C0C0
-      C000000000008080800000000000000000000000000000000000000000000000
-      000000000000336633000099330033CC330033CC33000099330033663300C0C0
-      C000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990099999900E5E5E500E5E5E5009999990099999900C0C0
-      C00000000000000000000000000000000000000000000000000000000000E2EF
-      F10099CCFF0099CCFF0099CCFF00CCFFFF00CCFFFF0099CCFF00FFCC9900FFCC
-      9900FFCC9900C0C0C000E2EFF100000000000000000000000000000000000000
-      0000CCCCCC00CCCCCC00CCCCCC000000000000000000CCCCCC00C0C0C000C0C0
-      C000C0C0C000C0C0C00000000000000000000000000000000000000000000000
-      00000000000099CC990000800000009900000080000066999900000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000E5E5E500999999009999990099999900CCCCCC00000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000099CCFF0099CCFF0099CCFF00F2EABF00F2EA
-      BF00E5E5E500E2EFF10000000000000000000000000000000000000000000000
-      0000000000000000000000000000CCCCCC00CCCCCC00CCCCCC00000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000006699660033993300CCCCCC0000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000CCCCCC0099999900CCCCCC0000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000033333300000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000006666660099999900000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC99660000000000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990000000000000000003333330066666600666666006666
-      6600000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000009999990066666600666666006666
-      6600000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000000000000099999900CCCCCC009999
-      9900666666006666660000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000099999900CCCCCC009999
-      9900666666006666660000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00CCCCCC00CCCCCC00CCCCCC00CCCCCC00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00CCCCCC000000000000000000000000000000
-      0000000000009999990000000000000000000000000099999900CCCCCC00CCCC
-      CC00999999009999990066666600666666000000000000000000000000000000
-      0000000000000000000000000000000000000000000099999900CCCCCC00CCCC
-      CC00999999009999990066666600666666000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF0099330000FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      000000000000999999000000000000000000000000000000000099999900CCCC
-      CC00CCCCCC009999990099999900999999006666660066666600000000000000
-      000000000000000000000000000000000000000000000000000099999900CCCC
-      CC00CCCCCC009999990099999900999999006666660066666600000000000000
-      0000000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00CCCCCC00CCCCCC00FFFFFF00FFFFFF009933000099330000FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC0000000000000000009999990099999900000000000000
-      000000000000999999000000000000000000000000000000000099999900E5E5
-      E500CCCCCC00CCCCCC0099999900999999009999990099330000663300006633
-      000000000000000000000000000000000000000000000000000099999900E5E5
-      E500CCCCCC00CCCCCC0099999900999999009999990099999900666666006666
-      6600000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF0099330000993300009933000099330000CC99
-      6600FFFFFF00CC99660000000000000000000000000000000000999999000000
-      000000000000000000000000000099999900999999009999990099999900CCCC
-      CC00000000009999990000000000000000000000000000000000000000009999
-      9900E5E5E500CCCCCC00CCCCCC00999999009933000099330000993300009933
-      0000663300000000000000000000000000000000000000000000000000009999
-      9900E5E5E500CCCCCC00CCCCCC00999999009999990099999900999999009999
-      9900666666000000000000000000000000000000000000000000CC996600FFFF
-      FF00CCCCCC00CCCCCC00FFFFFF00FFFFFF009933000099330000FFFFFF009933
-      0000FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC0000000000000000009999990099999900000000009999
-      9900000000009999990000000000000000000000000000000000000000009999
-      9900FFFFFF00E5E5E500CCCCCC00993300009933000099330000993300009933
-      0000993300006633000000000000000000000000000000000000000000009999
-      9900FFFFFF00E5E5E500CCCCCC00999999009999990099999900999999009999
-      9900999999006666660000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF0099330000FFFFFF009933
-      0000FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000099999900000000009999
-      9900000000009999990000000000000000000000000000000000000000000000
-      000099999900FFFFFF0099330000CC6633009933000099330000993300009933
-      0000993300009933000066330000000000000000000000000000000000000000
-      000099999900FFFFFF0099999900CCCCCC009999990099999900999999009999
-      9900999999009999990066666600000000000000000000000000CC996600FFFF
-      FF00CCCCCC00CCCCCC00CCCCCC00FFFFFF00FFFFFF00FFFFFF00FFFFFF009933
-      0000FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00000000000000000000000000000000009999
-      9900000000009999990000000000000000000000000000000000000000000000
-      00009999990099330000CC66330099330000CC66330099330000993300009933
-      0000993300009933000099330000663300000000000000000000000000000000
-      00009999990099999900CCCCCC0099999900CCCCCC0099999900999999009999
-      9900999999009999990099999900666666000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF009933
-      0000FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000009999
-      9900000000009999990000000000000000000000000000000000000000000000
-      0000000000009933000099330000CC66330099330000CC663300993300009933
-      0000993300009933000099330000993300000000000000000000000000000000
-      0000000000009999990099999900CCCCCC0099999900CCCCCC00999999009999
-      9900999999009999990099999900999999000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF009933000099330000993300009933000099330000CC99
-      6600FFFFFF00CC99660000000000000000000000000000000000999999000000
-      000000000000000000009999990099999900999999009999990099999900CCCC
-      CC00000000009999990000000000000000000000000000000000000000000000
-      000000000000993300009933000099330000CC66330099330000CC6633009933
-      0000993300009933000099330000999999000000000000000000000000000000
-      000000000000999999009999990099999900CCCCCC0099999900CCCCCC009999
-      9900999999009999990099999900999999000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000000000000000000000000000000000
-      00000000000000000000993300009933000099330000CC66330099330000CC66
-      3300993300009933000099999900999999000000000000000000000000000000
-      00000000000000000000999999009999990099999900CCCCCC0099999900CCCC
-      CC00999999009999990099999900999999000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000000000000000000000000000000000
-      0000000000000000000000000000993300009933000099330000CC6633009933
-      000099330000CCCCCC00CCCCCC00999999000000000000000000000000000000
-      0000000000000000000000000000999999009999990099999900CCCCCC009999
-      990099999900CCCCCC00CCCCCC00999999000000000000000000CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC99660000000000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000009933000099330000993300009933
-      0000E5E5E500E5E5E500CCCCCC00CCCCCC000000000000000000000000000000
-      0000000000000000000000000000000000009999990099999900999999009999
-      9900E5E5E500E5E5E500CCCCCC00CCCCCC000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000003399CC00006699000066990000669900006699000066
-      9900006699000066990000669900000000000000000000000000000000000000
-      0000000000000000000099999900999999009999990099999900999999009999
-      9900999999009999990099999900000000000000000000000000000000000000
-      0000000000000000000000000000CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC996600CC996600CC9966000000000000000000000000000000
-      0000000000000000000000000000999999009999990099999900999999009999
-      9900999999009999990099999900999999000000000000000000000000000000
-      000000000000000000003399CC0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF0000669900000000000000000000000000000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC0099999900000000000000000000000000000000000000
-      0000000000000000000000000000CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      000000000000000000003399CC0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF0000669900000000000000000000000000000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC0099999900000000000000000000000000006699000066
-      9900006699000066990000669900CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966000000000000000000999999009999
-      9900999999009999990099999900999999000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      000000000000000000003399CC0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF0000669900000000000000000000000000000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC009999990000000000000000003399CC0099FFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      000000000000000000003399CC0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF0000669900000000000000000000000000000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC009999990000000000000000003399CC00CCFFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      00000000000000000000000000009999990000000000CC996600CC996600CC99
-      6600CC996600CC9966003399CC0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF0000669900000000000000000099999900999999009999
-      9900999999009999990099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC009999990000000000000000003399CC0099FFFF00CCFF
-      FF0099FFFF0099FFFF0099FFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      00000000000000000000000000009999990000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF003399CC0099FFFF0099FFFF0099FFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF0000669900000000000000000099999900000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC009999990000000000000000003399CC00CCFFFF0099FF
-      FF00CCFFFF0099FFFF0099FFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      00000000000000000000000000009999990000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF003399CC0099FFFF0099FFFF0099FFFF0099FFFF003399
-      CC003399CC003399CC003399CC00000000000000000099999900000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC009999
-      990099999900999999009999990000000000000000003399CC0099FFFF00CCFF
-      FF0099FFFF00CCFFFF0099FFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00CC996600CC996600CC996600CC9966000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      00009999990099999900999999009999990000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF003399CC0099FFFF0099FFFF0099FFFF0099FFFF003399
-      CC00CCFFFF000066990000000000000000000000000099999900000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC009999
-      9900CCCCCC00999999000000000000000000000000003399CC00CCFFFF0099FF
-      FF00CCFFFF0099FFFF00CCFFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00CC996600E5E5E500CC996600000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      00009999990000000000999999000000000000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF003399CC0099FFFF0099FFFF0099FFFF0099FFFF003399
-      CC00006699000000000000000000000000000000000099999900000000000000
-      0000000000000000000099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC009999
-      990099999900000000000000000000000000000000003399CC0099FFFF00CCFF
-      FF0099FFFF00CCFFFF0099FFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00CC996600CC99660000000000000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999000000000000000000000000000000
-      00009999990099999900000000000000000000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF003399CC003399CC003399CC003399CC003399CC003399
-      CC00000000000000000000000000000000000000000099999900000000000000
-      0000000000000000000099999900999999009999990099999900999999009999
-      990000000000000000000000000000000000000000003399CC00CCFFFF0099FF
-      FF00CCFFFF0099FFFF00CCFFFF00CC996600CC996600CC996600CC996600CC99
-      6600CC9966000000000000000000000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00999999009999990099999900999999009999
-      99009999990000000000000000000000000000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00CC996600000000000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      000000000000000000000000000000000000000000003399CC00CCFFFF00CCFF
-      FF0099FFFF00CCFFFF0099FFFF00CCFFFF0099FFFF00CCFFFF0099FFFF0099FF
-      FF00006699000000000000000000000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC009999990000000000000000000000000000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC996600CC996600CC996600CC996600000000000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      0000000000000000000099999900999999009999990099999900000000000000
-      000000000000000000000000000000000000000000003399CC00CCFFFF00CCFF
-      FF00CC6600009933000099330000993300009933000099330000CCFFFF0099FF
-      FF00006699000000000000000000000000000000000099999900CCCCCC00CCCC
-      CC00999999009999990099999900999999009999990099999900CCCCCC00CCCC
-      CC009999990000000000000000000000000000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC996600E5E5E500CC99660000000000000000000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      0000000000000000000099999900000000009999990000000000000000000000
-      000000000000000000000000000000000000000000003399CC00CCFFFF00CCFF
-      FF00CC660000FFFFFF00FF990000FF990000FF9900009933000099FFFF00CCFF
-      FF00006699000000000000000000000000000000000099999900CCCCCC00CCCC
-      CC0099999900FFFFFF00CCCCCC00CCCCCC00CCCCCC0099999900CCCCCC00CCCC
-      CC009999990000000000000000000000000000000000CC996600FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC996600CC9966000000000000000000000000000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      0000000000000000000099999900999999000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000003399CC003399
-      CC003399CC00CC660000FFFFFF00FF990000993300003399CC003399CC003399
-      CC00000000000000000000000000000000000000000000000000999999009999
-      99009999990099999900FFFFFF00CCCCCC009999990099999900999999009999
-      99000000000000000000000000000000000000000000CC996600CC996600CC99
-      6600CC996600CC996600CC996600000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000099999900999999009999
-      9900999999009999990099999900000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000CC660000CC6600000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000099999900999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000CC996600CC996600CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC996600CC996600CC9966009999990099999900999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990099999900999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000993300000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000999999000000
-      000000000000000000000000000000000000CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000993300009933
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000999999009999
-      990000000000000000000000000000000000CC996600FFFFFF00CC996600CC99
-      6600CC996600CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000009933
-      0000993300009933000099330000993300009933000099330000993300009933
-      0000993300000000000000000000000000000000000000000000000000009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      990099999900000000000000000000000000CC996600FFFFFF00CC996600FFFF
-      FF00FFFFFF00CC996600FFFFFF00993300009933000099330000993300009933
-      00009933000099330000FFFFFF00CC9966009999990000000000999999000000
-      0000000000009999990000000000999999009999990099999900999999009999
-      9900999999009999990000000000999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000993300009933
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000999999009999
-      990000000000000000000000000000000000CC996600FFFFFF00CC996600FFFF
-      FF00FFFFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000999999000000
-      0000000000009999990000000000000000000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000993300000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000999999000000
-      000000000000000000000000000000000000CC996600FFFFFF00CC996600CC99
-      6600CC996600CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      0000000000000000000000000000999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000099999900CC996600CC996600CC996600CC99
-      6600CC996600CC996600CC99660000000000000000003399CC00006699000066
-      9900006699000066990000669900006699009999990099999900999999009999
-      9900999999009999990099999900000000000000000099999900999999009999
-      990099999900999999009999990099999900CC996600FFFFFF00CC996600CC99
-      6600CC996600CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      000000000000000000000000000099999900CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC99660000000000000000003399CC0099FFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF00006699009999990000000000000000000000
-      0000000000000000000099999900000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC0099999900CC996600FFFFFF00CC996600FFFF
-      FF00FFFFFF00CC996600FFFFFF00993300009933000099330000993300009933
-      00009933000099330000FFFFFF00CC9966009999990000000000999999000000
-      0000000000009999990000000000999999009999990099999900999999009999
-      990099999900999999000000000099999900CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC99660000000000000000003399CC0099FFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF00006699009999990000000000000000000000
-      0000000000000000000099999900000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC0099999900CC996600FFFFFF00CC996600FFFF
-      FF00FFFFFF00CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000999999000000
-      0000000000009999990000000000000000000000000000000000000000000000
-      000000000000000000000000000099999900CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC99660000000000000000003399CC0099FFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF00006699009999990000000000000000000000
-      0000000000000000000099999900000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC0099999900CC996600FFFFFF00CC996600CC99
-      6600CC996600CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      000000000000000000000000000099999900CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC99660000000000000000003399CC0099FFFF0099FF
-      FF0099FFFF0099FFFF0099FFFF00006699009999990000000000000000000000
-      0000000000000000000099999900000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC0099999900CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00CC9966009999990000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000099999900CC996600FFFFFF00FFFFFF00CC99
-      6600CC996600CC996600CC99660000000000000000003399CC0099FFFF0099FF
-      FF003399CC003399CC003399CC003399CC009999990000000000000000009999
-      9900999999009999990099999900000000000000000099999900CCCCCC00CCCC
-      CC0099999900999999009999990099999900CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00CC996600CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC996600CC996600CC9966009999990000000000000000000000
-      0000000000000000000099999900999999009999990099999900999999009999
-      990099999900999999009999990099999900CC996600FFFFFF00FFFFFF00CC99
-      6600E5E5E500CC9966000000000000000000000000003399CC0099FFFF0099FF
-      FF003399CC00CCFFFF0000669900000000009999990000000000000000009999
-      9900E5E5E5009999990000000000000000000000000099999900CCCCCC00CCCC
-      CC0099999900CCCCCC009999990000000000CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC996600CC996600CCCCCC00CCCCCC00CCCCCC00CCCCCC00CC99
-      6600000000000000000000000000000000009999990000000000000000000000
-      0000000000009999990099999900CCCCCC00CCCCCC00CCCCCC00CCCCCC009999
-      990000000000000000000000000000000000CC996600FFFFFF00FFFFFF00CC99
-      6600CC996600000000000000000000000000000000003399CC0099FFFF0099FF
-      FF003399CC000066990000000000000000009999990000000000000000009999
-      9900999999000000000000000000000000000000000099999900CCCCCC00CCCC
-      CC009999990099999900000000000000000000000000CC996600CC996600CC99
-      6600CC9966000000000000000000CC996600CC996600CC996600CC9966000000
-      0000000000000000000000000000000000000000000099999900999999009999
-      9900999999000000000000000000999999009999990099999900999999000000
-      000000000000000000000000000000000000CC996600CC996600CC996600CC99
-      660000000000000000000000000000000000000000003399CC003399CC003399
-      CC003399CC000000000000000000000000009999990099999900999999009999
-      9900000000000000000000000000000000000000000099999900999999009999
-      9900999999000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000993300009933
-      0000993300009933000099330000993300009933000099330000993300009933
-      0000993300009933000099330000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990099999900000000000000000000000000993300009933
-      0000993300009933000099330000993300009933000099330000993300009933
-      0000993300000000000000000000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999000000000000000000000000000000000099330000CC660000CC66
-      000099330000E5E5E500CC66000099330000E5E5E500E5E5E500E5E5E5009933
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC0099999900E5E5E500CCCCCC0099999900E5E5E500E5E5E500E5E5E5009999
-      9900CCCCCC00CCCCCC00999999000000000000000000CC996600FFCC9900FFCC
-      9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900CC99
-      6600CC99660099330000000000000000000000000000B2B2B200CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00B2B2
-      B200B2B2B2009999990000000000000000000000000099330000CC660000CC66
-      000099330000E5E5E500CC66000099330000E5E5E500E5E5E500E5E5E5009933
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC0099999900E5E5E500CCCCCC0099999900E5E5E500E5E5E500E5E5E5009999
-      9900CCCCCC00CCCCCC009999990000000000CC996600CC996600CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC996600CC99
-      660099330000CC9966009933000000000000B2B2B200B2B2B200B2B2B200B2B2
-      B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2
-      B20099999900B2B2B20099999900000000000000000099330000CC660000CC66
-      000099330000E5E5E500CC66000099330000E5E5E500E5E5E500E5E5E5009933
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC0099999900E5E5E500CCCCCC0099999900E5E5E500E5E5E500E5E5E5009999
-      9900CCCCCC00CCCCCC009999990000000000CC996600FFFFFF00FFCC9900FFCC
-      9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC
-      9900CC996600993300009933000000000000B2B2B20000000000CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00B2B2B2009999990099999900000000000000000099330000CC660000CC66
-      000099330000E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E5009933
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC0099999900E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E5009999
-      9900CCCCCC00CCCCCC009999990000000000CC996600FFFFFF00FFCC9900FFCC
-      9900FFCC9900FFCC990000CC000000990000FFCC99000000FF000000CC00FFCC
-      9900CC996600CC9966009933000000000000B2B2B20000000000CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00B2B2B20099999900CCCCCC00B2B2B20099999900CCCC
-      CC00B2B2B200B2B2B20099999900000000000000000099330000CC660000CC66
-      0000CC660000993300009933000099330000993300009933000099330000CC66
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00999999009999990099999900999999009999990099999900CCCC
-      CC00CCCCCC00CCCCCC009999990000000000CC996600FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00CC996600CC996600CC99660099330000B2B2B20000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000B2B2B200B2B2B200B2B2B200999999000000000099330000CC660000CC66
-      0000CC660000CC660000CC660000CC660000CC660000CC660000CC660000CC66
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC009999990000000000CC996600FFFFFF00FFCC9900FFCC
-      9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC9900FFCC
-      9900CC996600CC996600CC99660099330000B2B2B20000000000CCCCCC00CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00B2B2B200B2B2B200B2B2B200999999000000000099330000CC660000CC66
-      0000993300009933000099330000993300009933000099330000993300009933
-      0000CC660000CC66000099330000000000000000000099999900CCCCCC00CCCC
-      CC00999999009999990099999900999999009999990099999900999999009999
-      9900CCCCCC00CCCCCC00999999000000000000000000CC996600CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC996600FFCC
-      9900FFCC9900CC996600CC9966009933000000000000B2B2B200B2B2B200B2B2
-      B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200CCCC
-      CC00CCCCCC00B2B2B200B2B2B200999999000000000099330000CC6600009933
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF0099330000CC66000099330000000000000000000099999900CCCCCC009999
-      9900FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF0099999900CCCCCC0099999900000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00CC99
-      6600FFCC9900FFCC9900CC996600993300000000000000000000B2B2B2000000
-      000000000000000000000000000000000000000000000000000000000000B2B2
-      B200CCCCCC00CCCCCC00B2B2B200999999000000000099330000CC6600009933
-      0000FFFFFF00993300009933000099330000993300009933000099330000FFFF
-      FF0099330000CC66000099330000000000000000000099999900CCCCCC009999
-      9900FFFFFF00999999009999990099999900999999009999990099999900FFFF
-      FF0099999900CCCCCC009999990000000000000000000000000000000000CC99
-      6600FFFFFF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500FFFFFF00CC99
-      6600CC996600CC9966009933000000000000000000000000000000000000B2B2
-      B20000000000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC0000000000B2B2
-      B200B2B2B200B2B2B20099999900000000000000000099330000CC6600009933
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF0099330000CC66000099330000000000000000000099999900CCCCCC009999
-      9900FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF0099999900CCCCCC009999990000000000000000000000000000000000CC99
-      6600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00CC996600000000000000000000000000000000000000000000000000B2B2
-      B200000000000000000000000000000000000000000000000000000000000000
-      0000B2B2B2000000000000000000000000000000000099330000E5E5E5009933
-      0000FFFFFF00993300009933000099330000993300009933000099330000FFFF
-      FF00993300009933000099330000000000000000000099999900E5E5E5009999
-      9900FFFFFF00999999009999990099999900999999009999990099999900FFFF
-      FF00999999009999990099999900000000000000000000000000000000000000
-      0000CC996600FFFFFF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500FFFF
-      FF00CC9966000000000000000000000000000000000000000000000000000000
-      0000B2B2B20000000000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC000000
-      0000B2B2B2000000000000000000000000000000000099330000CC6600009933
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF0099330000CC66000099330000000000000000000099999900CCCCCC009999
-      9900FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF0099999900CCCCCC0099999900000000000000000000000000000000000000
-      0000CC996600FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000000000000000
-      0000B2B2B2000000000000000000000000000000000000000000000000000000
-      000000000000B2B2B20000000000000000000000000099330000993300009933
-      0000993300009933000099330000993300009933000099330000993300009933
-      0000993300009933000099330000000000000000000099999900999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990099999900000000000000000000000000000000000000
-      000000000000CC996600CC996600CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC99660000000000000000000000000000000000000000000000
-      000000000000B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2B200B2B2
-      B200B2B2B200B2B2B20000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC996600CC99
-      6600CC996600CC99660000000000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000999999000000000000000000000000003399CC00006699000066
-      9900006699000066990000669900006699000066990000669900006699000066
-      990066CCCC000000000000000000000000000000000099999900999999009999
-      9900999999009999990099999900999999009999990099999900999999009999
-      9900CCCCCC000000000000000000000000000000000000000000CC996600FFFF
-      FF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5
-      E500FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00000000009999990000000000000000003399CC003399CC0099FFFF0066CC
-      FF0066CCFF0066CCFF0066CCFF0066CCFF0066CCFF0066CCFF0066CCFF003399
-      CC00006699000000000000000000000000009999990099999900E5E5E500CCCC
-      CC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC009999
-      9900999999000000000000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000003399CC003399CC0066CCFF0099FF
-      FF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0066CC
-      FF00006699003399CC0000000000000000009999990099999900CCCCCC00E5E5
-      E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500CCCC
-      CC00999999009999990000000000000000000000000000000000CC996600FFFF
-      FF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5
-      E500FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00000000009999990000000000000000003399CC003399CC0066CCFF0099FF
-      FF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0066CC
-      FF0066CCCC000066990000000000000000009999990099999900CCCCCC00E5E5
-      E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500CCCC
-      CC00CCCCCC009999990000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000003399CC0066CCFF003399CC0099FF
-      FF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0066CC
-      FF0099FFFF00006699003399CC000000000099999900CCCCCC0099999900E5E5
-      E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500CCCC
-      CC00E5E5E5009999990099999900000000000000000000000000CC996600FFFF
-      FF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5
-      E500FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00000000009999990000000000000000003399CC0066CCFF0066CCCC0066CC
-      CC0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0099FFFF0066CC
-      FF0099FFFF0066CCCC00006699000000000099999900CCCCCC00CCCCCC00CCCC
-      CC00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500CCCC
-      CC00E5E5E500CCCCCC0099999900000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000003399CC0099FFFF0066CCFF003399
-      CC00CCFFFF00CCFFFF00CCFFFF00CCFFFF00CCFFFF00CCFFFF00CCFFFF0099FF
-      FF00CCFFFF00CCFFFF00006699000000000099999900E5E5E500CCCCCC009999
-      9900E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5
-      E500E5E5E500E5E5E50099999900000000000000000000000000CC996600FFFF
-      FF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5
-      E500FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCC
-      CC00000000009999990000000000000000003399CC0099FFFF0099FFFF0066CC
-      FF003399CC003399CC003399CC003399CC003399CC003399CC003399CC003399
-      CC003399CC003399CC0066CCFF000000000099999900E5E5E500E5E5E500CCCC
-      CC00999999009999990099999900999999009999990099999900999999009999
-      99009999990099999900CCCCCC00000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00CC99660000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000009999990000000000000000003399CC00CCFFFF0099FFFF0099FF
-      FF0099FFFF0099FFFF00CCFFFF00CCFFFF00CCFFFF00CCFFFF00CCFFFF000066
-      99000000000000000000000000000000000099999900E5E5E500E5E5E500E5E5
-      E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500E5E5E5009999
-      9900000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00E5E5E500E5E5E500E5E5E500E5E5E500E5E5E500FFFFFF00CC996600CC99
-      6600CC996600CC99660000000000000000000000000000000000999999000000
-      0000CCCCCC00CCCCCC00CCCCCC00CCCCCC00CCCCCC0000000000999999009999
-      990099999900999999000000000000000000000000003399CC00CCFFFF00CCFF
-      FF00CCFFFF00CCFFFF003399CC003399CC003399CC003399CC003399CC000000
-      0000000000000000000000000000000000000000000099999900E5E5E500E5E5
-      E500E5E5E500E5E5E50099999900999999009999990099999900999999000000
-      0000000000000000000000000000000000000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00CC996600E5E5
-      E500CC9966000000000000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000999999000000
-      00009999990000000000000000000000000000000000000000003399CC003399
-      CC003399CC003399CC0000000000000000000000000000000000000000000000
-      0000000000009933000099330000993300000000000000000000999999009999
-      9900999999009999990000000000000000000000000000000000000000000000
-      0000000000009999990099999900999999000000000000000000CC996600FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00CC996600CC99
-      6600000000000000000000000000000000000000000000000000999999000000
-      0000000000000000000000000000000000000000000000000000999999009999
-      9900000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000099330000993300000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000099999900999999000000000000000000CC996600CC99
-      6600CC996600CC996600CC996600CC996600CC996600CC996600CC9966000000
-      0000000000000000000000000000000000000000000000000000999999009999
-      9900999999009999990099999900999999009999990099999900999999000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000099330000000000000000
-      0000000000009933000000000000993300000000000000000000000000000000
-      0000000000000000000000000000000000000000000099999900000000000000
-      0000000000009999990000000000999999000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000993300009933
-      0000993300000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000999999009999
-      990099999900000000000000000000000000424D3E000000000000003E000000
-      2800000040000000700000000100010000000000800300000000000000000000
-      000000000000000000000000FFFFFF0000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000E07FFFFFC003C003C00FE01F80018001
-      C007C00F800180018003F8C7800180018003B023800180018001901380018001
-      0001B043800180010001700380018001000161138007800700016013C00FC00F
-      00017E11E01FE01F00017FF9F007F00700019FF9F007F0078001EF8BF80FF80F
-      E001F183F83FF83FFE03FE3FFC7FFC7FFFFFFFFFFFFFFFFF3FFF3FFFC003C003
-      0FFF0FFFC003DFFB83FF83FFC003D0FB80FF80FFC003DFBBC03FC03FC003D33B
-      C00FC00FC003DE0BE007E007C003D32BE003E003C003DFABF001F001C003D1EB
-      F000F000C003DFEBF800F800C003DC0BF800F800C003DFFBFC00FC00C003DFFB
-      FE00FE00C003C003FF00FF00FFFFFFFFFC01FC01FE00FE00FC01FC01FE00FEFE
-      FC01FC01C000C0FEFC01FC01800080FEFC01FC01800080FE80018001800080FE
-      8001BC01800080FE8001BC01800080F08003BC03800180F58007BC07800380F3
-      800FBC0F80078007803FBFBF80078007803FBC3F80078007807FBD7F80078007
-      80FFBCFFC00FC00F81FF81FFFCFFFCFFFFFFFFFFFFFFFFFF00000000FFDFFFDF
-      00007FFEFFCFFFCF000043FEE007E00700005A02FFCFFFCF00005BFEFFDFFFDF
-      000043FEFFFFFFFF00007FFE01800180000043FE01807D8000005A0201807D80
-      00005BFE01807D80000043FE01807D8000007FFE0180618000007C0003816381
-      000F780F07836783861F861F0F870F87FFFFFFFFFFFFFFFFC001C001C007C007
-      8001800180038003800180010001000180018001000140018001800100014001
-      8001800100007FF08001800100004000800180018000800080018001C000DFE0
-      80018001E001E82180018001E007EFF780018001F007F41780018001F003F7FB
-      80018001F803F803FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC003C003FFFFFFFF
-      C003DFFB80078007C003D00B00070007C003DFFB00030003C003D00B00030003
-      C003DFFB00010001C003D00B00010001C003DFFB00010001C003D00B00010001
-      C003DFFB000F000FC003D043801F801FC007DFD7C3F8C3F8C00FDFCFFFFCFFFC
-      C01FC01FFFBAFFBAFFFFFFFFFFC7FFC700000000000000000000000000000000
-      000000000000}
-  end
   object dlgOpenProject: TOpenDialog
     DefaultExt = 'xrcx'
     Filter = 'X-Ray Calc project|*.xrcx'
@@ -4184,8 +3947,8 @@ object frmMain: TfrmMain
   end
   object pmProject: TPopupMenu
     OnPopup = pmProjectPopup
-    Left = 128
-    Top = 368
+    Left = 64
+    Top = 816
     object pmiEnabled: TMenuItem
       AutoCheck = True
       Caption = 'Enabled'
@@ -4233,418 +3996,10 @@ object frmMain: TfrmMain
     Left = 552
     Top = 465
   end
-  object ilStructure: TImageList
-    ColorDepth = cd32Bit
-    Left = 392
-    Top = 80
-    Bitmap = {
-      494C010109004800040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
-      0000000000003600000028000000400000003000000001002000000000000030
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000AF9E75FFAC9A
-      71FFAA976DFFA69369FFA49064FFA08E60FF9E8A5CFF9C8759FF988354FF9680
-      50FF000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000AF9E75FFAC9A
-      71FFAA976DFFA69369FFA49064FFA08E60FF9E8A5CFF9C8759FF988354FF9680
-      50FF000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000000000000000000000000000658A
-      A8EF658AA8EF3F3F3F400000000000000000AF9E74FFAB996EFFA69569FFA38F
-      62FF9F8A5DFF9A8656FF978151FF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000658AA8EF004182FF0041
-      82FF4079B7F7004182FF7F7F7F80000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000004182FF9CC1DEEDA2C4
-      E0ED8AB6E0ED4D82C3F5004182FF00000000AF9E74FFAB996EFFA69569FFA38F
-      62FF9F8A5DFF9A8656FF978151FF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000658AA8EF004182FF0041
-      82FF5290BEF6004182FF8D8D8D8F000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000000000000000000000000000658A
-      A8EF658AA8EF4F4F4F500000000000000000AF9E74FFAB996EFFA69569FFA38F
-      62FF9F8A5DFF9A8656FF978151FF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000AF9E75FFAC9A
-      71FFAA976DFFA69369FFA49064FFA08E60FF9E8A5CFF9C8759FF988354FF9680
-      50FF000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000AF9E75FFAC9A
-      71FFAA976DFFA69369FFA49064FFA08E60FF9E8A5CFF9C8759FF988354FF9680
-      50FF000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000636363FF636363FF626262FF616161FF606060FF606060FF5F5F5FFF5E5E
-      5EFF5E5E5EFF5D5D5DFF00000000000000000000000000000000000000000000
-      0000000000009696959F6F4701FF5D3A00FF7E7E7D8000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000626262FF626262FF616161FF616161FF606060FF5F5F5FFF5F5F5FFF5E5E
-      5EFF5D5D5DFF5D5D5DFF5D5D5DFF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000737373FFF7F7F7FF98A9CBFFEFEFEFFFEFEFEFFFEFEFEFFFEEEEEEFFEEEE
-      EEFFF6F6F6FF6E6E6EFF00000000000000000000000000000000000000000000
-      00002F2F2F30653F00FF8A8A898F9F9D9CAF512E00FF4F4F4F50000000000000
-      000000000000000000000000000000000000000000001E5F95FF1E5F95FF1E5F
-      95FF727272FFF7F7F7FF98A9CBFFEFEFEFFFEFEFEFFFEFEFEFFFEEEEEEFFEEEE
-      EEFFEEEEEEFFF6F6F6FF6C6C6CFF000000000000000000000000AF9E78FFAC9A
-      74FFAA9770FFA6936CFFA49067FFA08E63FF9E8A5FFF9C875CFF988357FF9680
-      53FF000000000000000000000000000000000000000000000000000000000000
-      0000888888FF767677FF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFF838383FF00000000000000000000000000000000000000000000
-      00002F2F2F305B3600FF4F4F4F5000000000A4A19BBFA4A19CBF000000000000
-      000000000000000000000000000000000000000000001E5F95FF469DC1FF489F
-      C4FF868686FF767677FF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFFD9B08CFF818181FF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000636363FF636363FF5C5C
-      5CFF939393FFF3F3F3FF98A9CBFFE7E7E7FFE7E7E7FFE7E7E7FFE6E6E6FFE3E3
-      E3FFF0F0F0FF909090FF00000000000000000000000000000000000000000000
-      000000000000928779DF7F6A4DEF4F4F4F50A3A19BBFA5A19CBF000000000000
-      000000000000000000000000000000000000000000001E5F95FF48A0C5FF4AA3
-      C6FF919191FFF2F2F2FF98A9CBFFE6E6E6FFE6E6E6FFE6E6E6FFE6E6E6FFE5E5
-      E5FFE2E2E2FFF0F0F0FF8C8C8CFF000000000000000000000000AF9E78FFAC9A
-      74FFAA9770FFA6936CFFA49067FFA08E63FF9E8A5FFF9C875CFF988357FF9680
-      53FF0000000000000000000000000000000000000000737373FFF7F7F7FF8E96
-      AAFF9D9D9DFFD9B08CFF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFF999999FF00000000000000002F2F2F308A8A898F8A8A898F3F3F
-      3F40000000003F3F3F406F3F01FFA45F0EFF774202FF7E7E7D80000000000000
-      00000000000000000000000000000000000000000000236599FF4BA4C7FF4CA7
-      C9FF999999FFD9B08CFF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFFD9B08CFF979797FF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000888888FF767677FF8E96
-      AAFFA3A3A3FFF6F6F6FF98A9CBFFEFEFEFFFEFEFEFFFEFEFEFFFEEEEEEFFEBEB
-      EBFFF4F4F4FFA0A0A0FF00000000000000007F6A4BEF866E4BEF9B8C7ADF532C
-      00FF9F9E9CAF0F0F0F108A8A898FA45308FFA09A92CF00000000000000000000
-      00000000000000000000000000000000000000000000296C9FFF4DA9CAFF4EAB
-      CCFFA0A0A0FFF6F6F6FF98A9CBFFEEEEEEFFEEEEEEFFEEEEEEFFEDEDEDFFEBEB
-      EBFFEAEAEAFFF3F3F3FF9E9E9EFF0000000000000000000000003F3F3F409BA4
-      A9BF004589FF000000000000000000000000AF9E77FFAB9971FFA6956CFFA38F
-      65FF9F8A60FF9A8659FF978154FF0000000000000000939393FFF3F3F3FF8E96
-      AAFFA7A7A7FF767677FF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFFA6A6A6FF00000000000000005C3700FF7E7E7D80000000009695
-      959F914E04FF978B7ADF3F3F3F407B644BEF998C7ADF00000000000000000000
-      000000000000000000000000000000000000000000002E71A4FF4FACCCFF50AF
-      CFFFA6A6A6FF767677FF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFFD9B08CFFA4A4A4FF0000000000000000898A8B8F00559DFF2D84
-      D7FB025BB1FF004589FF004589FF000000000000000000000000000000000000
-      000000000000000000000000000000000000000000009D9D9DFFD9B08CFF8E96
-      AAFFABABABFFFAFAFAFF98A9CBFFF6F6F6FFF6F6F6FFF4F4F4FFF3F3F3FFF2F2
-      F2FFF7F7F7FFAAAAAAFF0000000000000000A29C93CF79654AEF3F3F3F404F4F
-      4F508F4C04FFA55408FF623200FFA29F9BBF402300FF5F5F5F60000000000000
-      000000000000000000000000000000000000000000003683ADFF51B0D0FF53B2
-      D3FFA9A9A9FFF8F8F8FF98A9CBFFF3F3F3FFF4F4F4FFF3F3F3FFF3F3F3FFF2F2
-      F2FFEFEFEFFFF6F6F6FFA7A7A7FF0000000000000000004E90FF60B3E6FA7DBD
-      E7F5509DE3F54485DFF5004589FF00000000AF9E77FFAB9971FFA6956CFFA38F
-      65FF9F8A60FF9A8659FF978154FF0000000000000000A3A3A3FFF6F6F6FF8E96
-      AAFFADADADFFD9B08CFF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFFACACACFF00000000000000002F2F2F30928779DF4E2A00FF542C
-      00FF81694BEFA8A49DBEA3A19BBF402300FF5C554BFF888888EF2F2F2F300000
-      000000000000000000000000000000000000000000003C8AB2FF53B4D4FF55B6
-      D7FFACACACFFD9B08CFF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFD9B0
-      8CFFD9B08CFFD9B08CFFABABABFF00000000000000006E6F6F700C5D97FF84BD
-      E0FA0C67B2FF004589FF004589FF000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000A7A7A7FF767677FF8E96
-      AAFFADADADFFFBFBFBFF98A9CBFFFAFAFAFFFAFAFAFFF8F8F8FFA5A5A5FFA5A5
-      A5FFBFBFBFFFADADADFF000000000000000000000000000000003F3F3F403F3F
-      3F401F1F1F2000000000000000003F3F3F40878787EFA0A0A0FF858585EF2F2F
-      2F3000000000000000000000000000000000000000004191B8FF55B7D7FF57BA
-      D9FFADADADFFFBFBFBFF98A9CBFFF8F8F8FFF8F8F8FFF8F8F8FFF7F7F7FFF6F6
-      F6FFF3F3F3FFF8F8F8FFADADADFF0000000000000000000000003F3F3F407996
-      A9DF004589FF000000000000000000000000AF9E77FFAB9971FFA6956CFFA38F
-      65FF9F8A60FF9A8659FF978154FF0000000000000000ABABABFFFAFAFAFF8E96
-      AAFFAFAFAFFF767677FF98A9CBFFD9B08CFFD9B08CFFD9B08CFFA5A5A5FFF2F2
-      F2FFC9C9C9FFB3B3B3CF00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000002F2F2F30909090EF747474FF8787
-      87EF2F2F2F3000000000000000000000000000000000499AC0FF58BBD9FF59BD
-      DCFFAFAFAFFF767677FF98A9CBFFD9B08CFFD9B08CFFD9B08CFFD9B08CFFB6B6
-      B6FFB4B4B4FFBFBFBFFFADADADFF000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000ADADADFFD9B08CFF8E96
-      AAFFAFAFAFFFFEFEFEFF98A9CBFFFEFEFEFFFEFEFEFFFCFCFCFFBBBBBBFFBDBD
-      BDFFB3B3B3CF0F0F0F1000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000000000004F4F4F50767676FF6F6F
-      6FFF919191EF4F4F4F500000000000000000000000004A9DC1FF5BBFDDFF5CC1
-      DEFFAFAFAFFFFCFCFCFF98A9CBFFFAFAFAFFFBFBFBFFFAFAFAFFFAFAFAFFBCBC
-      BCFFE9E9E9FFBABABAFF9898989F000000000000000000000000AF9E78FFAC9A
-      74FFAA9770FFA6936CFFA49067FFA08E63FF9E8A5FFF9C875CFF988357FF9680
-      53FF0000000000000000000000000000000000000000ADADADFFFBFBFBFF8E96
-      AAFFAFAFAFFFAFAFAFFFAFAFAFFFAFAFAFFFAFAFAFFFAFAFAFFFAFAFAFFFB3B3
-      B3CF0F0F0F100000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000007E7E7E807070
-      70FF878787EF5C5C5CFF5F5F5F6000000000000000004B9EC2FF5DC2E0FF898C
-      8EFF727677FF6B6E6FFF636667FF636667FF5C5F60FF5C5F60FF5C5F60FFE2E2
-      E2FFBBBBBBFF9898989F00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000AFAFAFFF767677FF8E96
-      AAFFB5AAA0FFB5AAA0FFB5AAA0FFB5AAA0FFA5A5A5FFB8B8B8FFB3B3B3CF0000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000009797
-      979F9B9B9BDF4F4F4F50858585EF5F5F5F60000000004C9FC2FF5FC6E2FF60A7
-      BAFF636565FF6B6D6EFF878C8EFF8F9899FF6F7272FF636465FF959595FFAFAF
-      AFFF739EAFFF0000000000000000000000000000000000000000AF9E78FFAC9A
-      74FFAA9770FFA6936CFFA49067FFA08E63FF9E8A5FFF9C875CFF988357FF9680
-      53FF0000000000000000000000000000000000000000AFAFAFFFFEFEFEFF98A9
-      CBFFFEFEFEFFFEFEFEFFFCFCFCFFFBFBFBFFBDBDBDFFB3B3B3CF0F0F0F100000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000F0F
-      0F10A5A5A5CF5F5F5F600F0F0F105F5F5F60000000004DA0C4FF61CAE6FF63CC
-      E7FF686969FFADB2B4FFA3A9AAFFB8C2C4FFB0B5B6FF616262FF6EE1F7FF70E3
-      F8FF308BB5FF0000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000AFAFAFFFAFAFAFFFAFAF
-      AFFFAFAFAFFFAFAFAFFFAFAFAFFFAFAFAFFFB3B3B3CF0F0F0F10000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000F0F0F10A1A1A1AF0000000000000000000000004EA3C5FF4EA3C5FF4FA4
-      C6FF4B6F87FF51778EFF637280FF657683FF4A6F86FF4C7288FF51A9CBFF44A0
-      C5FF3A96BCFF0000000000000000000000000000000000000000000000000000
-      000000000000000000000000002202020239040200550401005E0302005D0302
-      015D0502015D0504025701010111000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000060B0555043101DD38372DB4F5EFE7FFEFE8DFFFEEE5DBFFEDE4
-      D8FFF3ECE1FF827A6EE80101010D000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000013007F108E1EFF004F01F1302B26A2FFFFFFFFFFFAF1FFFCF0E4FFF9E8
-      D6FFFFFFEFFF7F7772DD0000000E0000000093846BFF93846BFF93846BFF9384
-      6BFF93846BFF93846BFF00000000000000000000000000000000000000000000
-      000000000000000000000000000000000000938469FF938469FF938469FF9384
-      69FF938469FF938469FF00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000003F3F
-      3F40909BA2BF004689FF000000000000000000000000AF9E78FFAB9972FFA695
-      6DFFA38F66FF9F8A61FF9A865AFF978155FF0000000000000000000000000000
-      0000244C20B260E36DFF086B10E7302723A4FFFFFFFFFFFBF5FFFAF2E8FFF7E9
-      DCFFFFFFF2FF7D776FDD0000000E0000000093846BFFFAF2E9FFF7EDE0FFF6E7
-      D7FFF3E2CFFF93846BFF00000000000000000000000000000000000000000000
-      000000000000000000000000000000000000938469FFFAF2E9FFF7EDE0FFF6E7
-      D7FFF3E2CFFF938469FF00000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000008687888F0056
-      9DFF2A82D7FB035CB1FF004689FF004689FF0000000000000000000000000000
-      0000000000000000000000000000000000000000000A000000190000001C0000
-      0019000000100E2A0EAE0C5C14F3353227B2FFFFFFFFFFFFFCFFFFFAF4FFFEF6
-      EEFFFFFFFBFF867E72F00000000B0000000093846BFFFBF7F0FFFAF2E9FFF7ED
-      E0FFF4E7D7FF93846BFF00000000000000000000000000000000000000000000
-      000000000000000000000000000000000000938469FFFBF7F0FFFAF2E9FFF7ED
-      E0FFF6E7D7FF938469FF00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000004F90FF5EB2
-      E6FA78BBE7F54A9AE3F53E80DFF5004689FF00000000AF9E78FFAB9972FFA695
-      6DFFA38F66FF9F8A61FF9A865AFF978155FF857C6EE89C958DED9D968DEE9D96
-      8DEE9E958FE8988D88E62D3622C712130F585F59549558544D9558544F955854
-      50955B5651953836327A000000000000000093846BFFFEFCFAFFFBF7F0FFFAF0
-      E7FFF7EDE0FF93846BFF000000002F2F2F30496D43EF00000000000000000000
-      000000000000000000000000000000000000938469FFFEFBFAFFFBF7F0FFFAF2
-      E9FFF7EDE0FF938469FF00000000000000000000000000000000000000006E6F
-      6E700F0F0F1000000000000000000000000000000000000000006D6E6E700D5E
-      97FF82BCE0FA0D68B2FF004689FF004689FF0000000000000000000000000000
-      000000000000000000000000000000000000D5CFC6FFFFFFFFFFFFFFF6FFFFFC
-      EFFFFFF7E5FFFFFFFFFF322C2BA2000000000000000000000000000000000000
-      00000000000000000000000000000000000093846BFF93846BFF93846BFF9384
-      6BFF93846BFF93846BFF5D5E5D60496D43EF1A5011FF0000000093846BFF9384
-      6BFF93846BFF93846BFF93846BFF93846BFF938469FF938469FF938469FF9384
-      69FF938469FF938469FF938469FF938469FF938469FF938469FF00000000184E
-      0FFF98A297CF1F1F1F2000000000000000000000000000000000000000003F3F
-      3F406B8CA2DF004689FF000000000000000000000000AF9E78FFAB9972FFA695
-      6DFFA38F66FF9F8A61FF9A865AFF978155FFC9C2B9FFFBF7F2FFF8F0E6FFF6EB
-      DFFFF6E5D3FFFFFAECFF322E2AA8000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000008183818F1C6315FF109612FF1A5011FF0000000093846BFFFAF2
-      E9FFF7EDE0FFF6E7D7FFF3E2CFFF93846BFF0000000000000000000000000000
-      0000938469FFFAF2E9FFF7EDE0FFF6E7D7FFF3E2CFFF938469FF00000000184E
-      0FFF3B7E38F75C7C56EF4F4F4F50000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000D4CDC3FFFFFFFFFFFFFFFFFFFFFF
-      FFFFFFFFF6FFFFFFFFFF35312DAC000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00005D5E5D601A5011FF4DCF56FF2FCE35FF1A5011FF0000000093846BFFFBF7
-      F0FFFAF2E9FFF7EDE0FFF4E7D7FF93846BFF0000000000000000000000000000
-      0000938469FFFBF7F0FFFAF2E9FFF7EDE0FFF6E7D7FF938469FF00000000184E
-      0FFF63BA65ED397B35F8184E0FFF000000000000000000000000AF9E79FFAC9A
-      75FFAA9771FFA6936DFFA49068FFA08E64FF9E8A60FF9C875DFF988358FF9680
-      54FF00000000000000000000000000000000766E63D58B867FDA8B867FDA8B85
-      7FDA8B867FDA908B83DB201D198F000000020000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000006B6C6B7026611EFF33BC38FF1A5011FF0000000093846BFFFEFC
-      FAFFFBF7F0FFFAF0E7FFF7EDE0FF93846BFF0000000000000000000000000000
-      0000938469FFFEFBFAFFFBF7F0FFFAF2E9FFF7EDE0FF938469FF00000000184E
-      0FFF4B9849F65C7C56EF5F5F5F60000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000373028A03A352FAC3B362FAD3B36
-      2FAD3B3832AD403A32AE120F0C7B010101040000000000000000000000000000
-      00000000000000000000000000000000000093846BFF93846BFF93846BFF9384
-      6BFF93846BFF93846BFF4F4F4F50496D43EF1A5011FF0000000093846BFF9384
-      6BFF93846BFF93846BFF93846BFF93846BFF938469FF938469FF938469FF9384
-      69FF938469FF938469FF938469FF938469FF938469FF938469FF00000000184E
-      0FFF98A297CF2F2F2F3000000000000000000000000000000000AF9E79FFAC9A
-      75FFAA9771FFA6936DFFA49068FFA08E64FF9E8A60FF9C875DFF988358FF9680
-      54FF00000000000000000000000000000000D4CDC1FFFFFFFCFFFFFEF4FFFFFB
-      F0FFFFF7E9FFFFFFFBFF37332EB0000000000000000000000000000000000000
-      00000000000000000000000000000000000093846BFFFAF2E9FFF7EDE0FFF6E7
-      D7FFF3E2CFFF93846BFF000000002F2F2F307C8C7ACF00000000000000000000
-      000000000000000000000000000000000000938469FFFAF2E9FFF7EDE0FFF6E7
-      D7FFF3E2CFFF938469FF00000000000000000000000000000000000000007E7E
-      7E800F0F0F100000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000CAC3BBFFFCF7F1FFF9EFE3FFF7EB
-      DCFFF6E4D1FFFFFAECFF322E2AA8000000000000000000000000000000000000
-      00000000000000000000000000000000000093846BFFFBF7F0FFFAF2E9FFF7ED
-      E0FFF4E7D7FF93846BFF00000000000000000000000000000000000000000000
-      000000000000000000000000000000000000938469FFFBF7F0FFFAF2E9FFF7ED
-      E0FFF6E7D7FF938469FF00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000AF9E79FFAC9A
-      75FFAA9771FFA6936DFFA49068FFA08E64FF9E8A60FF9C875DFF988358FF9680
-      54FF00000000000000000000000000000000CCC5BCFFFFFFFFFFFFFCF6FFFFF6
-      EDFFFEF2E4FFFFFFF9FF322E29A9000000000000000000000000000000000000
-      00000000000000000000000000000000000093846BFFFEFCFAFFFBF7F0FFFAF0
-      E7FFF7EDE0FF93846BFF00000000000000000000000000000000000000000000
-      000000000000000000000000000000000000938469FFFEFBFAFFFBF7F0FFFAF2
-      E9FFF7EDE0FF938469FF00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000BBB3A6FFE6E2DEFFE5E1DBFFE5DF
-      D9FFE5DED6FFE9E6DEFF2D29249F000000000000000000000000000000000000
-      00000000000000000000000000000000000093846BFF93846BFF93846BFF9384
-      6BFF93846BFF93846BFF00000000000000000000000000000000000000000000
-      000000000000000000000000000000000000938469FF938469FF938469FF9384
-      69FF938469FF938469FF00000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000AF9E79FFAC9A
-      75FFAA9771FFA6936DFFA49068FFA08E64FF9E8A60FF9C875DFF988358FF9680
-      54FF00000000000000000000000000000000403B357E3B37317E3C37317E3C38
-      327E3C38337E413A347E19181645000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000000000000000424D3E000000000000003E000000
-      2800000040000000300000000100010000000000800100000000000000000000
-      000000000000000000000000FFFFFF0000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000FC01000000000000F801000000000000
-      F001000000000000F00100000000000000010000000000000003000000000000
-      01FF00000000000001FF00000000000001FF00000000000000FF000000000000
-      00FF00000000000001FF00000000000001FF00000000000001FF000000000000
-      01FF00000000000001FF00000000000000000000000000000000000000000000
-      000000000000}
-  end
   object ilCalc: TImageList
     ColorDepth = cd32Bit
-    Left = 952
-    Top = 224
+    Left = 888
+    Top = 432
     Bitmap = {
       494C01010A004800040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
@@ -5052,8 +4407,8 @@ object frmMain: TfrmMain
   object ilIcons: TImageList
     Height = 32
     Width = 32
-    Left = 1039
-    Top = 359
+    Left = 591
+    Top = 807
     Bitmap = {
       494C010101000800040020002000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000800000002000000001002000000000000040
@@ -5591,10 +4946,1052 @@ object frmMain: TfrmMain
       000000000000}
   end
   object pmRecentList: TPopupMenu
-    Left = 155
-    Top = 235
+    Left = 278
+    Top = 774
     object pmRecentList1: TMenuItem
       Caption = 'pmRecentList'
     end
+  end
+  object ImageCollection: TImageCollection
+    Images = <
+      item
+        Name = 'Project\01_New'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000002C5494441545885ED98CF4FD3
+              6018C7BF63ACACC860838D81FC103661D108599068A2980C13305E3C633CA98B
+              C48BDED43FC118FD0344CD0C5E48F46044123390E101500222443607194C8491
+              01DD6085305A967A2AD184626969E7619FD3FBE6799EF6D3F74DDEF7ED0B6490
+              874628F0E4C5EB85E35565ACDC1744A978512C4E530FDADBAAE53EEB2FDE7D1C
+              0A738740EFE018F76B69997BF8B46B4E8A47D6A17E9500E525165CBB72B14A8A
+              A42A82807449D504016992AA0A020797545D103898645A0401F192691304C449
+              662B2D61AB2845DFD0D77D730A8D7966A1982A82B68AD27D73BAFB8729A1585A
+              A7580C1941B96404E59211944B46502E6913A4A91046BBEF80A642D06AB5821E
+              AA09D254083BCCC66E3B32D589C6A633884C75C2406C9800C0E77119BD1D2DCE
+              3FEB14DF8B7922531E90B924D89D14002D1C75350000475D0DD8C981DC80EFEE
+              1C4110BACDF5C43600BBAA825B7414642E894AFBB13DE3A7EA6BB3005401C06C
+              6072D1E771199BAF0FAC012A4D311D0BC190AF17956B325BCB9814E1E2FB8A8E
+              E0161DC5FCC44B180C1C8A2BCB45D5982C569C749E7DF6E58DE5766C856A5774
+              0483838F60AF35E3A848399E725BADB9E142736B4151C10745058BAB9BC132D2
+              6E4F588605529AE70A0BBA303FBB24A97666722C70EE6AD7E3FF7A27F1795C46
+              450523C11E54DAF6FF1F11A2A6FEF4891C7D895B51C1D8E20874844E52AD8ED0
+              015ADC5454D071FE1E42D3AB88CC2F1CA82EFCE37B7CF453DFFB756AEDB2A2EB
+              2069B0C2D1741FCB3F87105F1986C962FD674D7C258A69FFF88D4B6EEF5B40A5
+              9DC45068079D488ACA5D5B8D46082D33C0F705477026BC98DDDDFF392CDB0E40
+              91D9623C124FE427FDC1149364580EDBB1BA86C6DDD53B303E12D468347A2287
+              CCDE5C4F6CF3FBB0AA783B5A9C3E8FCBC8B7277ADC7E2EF68A9BE871FBF923D6
+              5EC72DC14B74A5F176B438F5645E57726BA3ADF556EF37A1BCDF100143F83B35
+              E7710000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\02_OpenProject'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000021B494441545885EDD83F6FD3
+              401CC6F1C7FFE21A1BA7B8342902A448202121C1D0A92FA16C881121046CBC8A
+              281B23AF804AA83313121D10AA588009D68AA145AD5AA069EA9404D7BEB3CD50
+              9FC85D86368953DFE0EF6629E77C1CC73FC701CACA8A4D0180D7AD7BDB5ED5A2
+              A7BD38418A7637F8F4ACB9F670FAB4937400F0AA16BDD5986B9C65C1513F9C5F
+              692DAF3E6DAE3D9AAA2C4B1D75816B9BF6DD9BB5FB2BADE5D56980C4F4711631
+              E4DB970F36F30675BA81FEB8F9EE3ADB1E0B089C205DDBB4F361FD6F63EB606B
+              707BE4537CDE95C0491BFB3BC82271821FBF7BB83063E5E181653BD73EBC7AB2
+              0900BB7B079301DB7E8028D5B0B4781B1563E26365E9001A00F031249F87F6FA
+              ED7B1BB5CBD533EDE9EA421D57EA5E5EB0A108A5871CF0F0E8188B776E60A176
+              696A6F3A4A84902E7791C4698A4AC528CA335410529F03F6020A6FD629CAC3F5
+              6BDF0789E81B0EA8A8F24C9D244D7AC7414438912A117067AFD37BFEE2FD3A0F
+              54E401121AFB807027513579805404FEF91B61CE738B1309915800529AC232CD
+              E24442248A78A0DF0F519F9F2D4E2414849407CA7405B319080C00659C8100F7
+              096AC58984D80C04243DC56C06021990D044772FE6F383338FA8084C9244779D
+              DC1FD0C68ECD4020032A9A6A3AF64C7122213603810C9842351C5B9E53CC6620
+              90010D439E9BF0E00C0432A0AE69D2CC181AD394CD40207BECECF87DEDCBD78D
+              53FF7E3B8F7EEE77153603CBCA64E81FE1B7C9FCDA3E62100000000049454E44
+              AE426082}
+          end>
+      end
+      item
+        Name = 'Project\03_Reopen'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000028D494441545885ED983F4C13
+              511CC7BF955763AF2DD7965E95415A5B930E464D4C5C5C1D5C19D4D145071707
+              8D26353A991821121D5C8CC1011312A22484388009285323312191C6D0D6F6E8
+              1FA44888D8DE95BE7285BAB41582B570F75A4AE033DDFDDECBF73EF7FEE4FE00
+              4D8E0E007C4F7B8BBB2DF22FBAEEDDD01DDA6D895A908D27ED0E3BBCEE0E1C26
+              7A04C251A41697FE5B7F72F77A5DA4EEF7BCAE1C6F1AC1D35E0F2CAD6670DC11
+              78DD1D35EB8DA0EA14EB74BA1DD5EBC526C140288AB424632547118CC66BD61B
+              C1A635985A5CAAACAFEDD437AE957AD1F4BB1800303CEE9F2D3619C3E3FE5960
+              0F8CE081A0560E04B5B2FF0487FC090CF913CCF248ED2EDBE7C39724A6E2AB00
+              004E9FC4A5F3C73567321BC160328D49310FDE2A80B70A9814F30826D39A7399
+              088AA90CFAC662E078A152E378017D637188A98CA66CCD82595A40FFC41CDADA
+              5D5BDADADA9DE89FF8812C2DA8CED72498A505740F04A0371FABDA476F3E8AEE
+              81806A494D82BDA3117076270869A9DA8790167076277A4723AAAEA17A173F7F
+              F715DF17286CFCDADF30831926330F0090A5340A39A9D29648CB7836388D3B97
+              CF3446F0F695B35B6A0FDE7C034A824A4EC2E36BA7D4C657D87F4F12D61C086A
+              A5E90509004463F3E4FDC7CF31B52126A3D1021441E97A2B4A374DA9B2FE6972
+              3A03007276E5F74E33A3B1790294FE6EB1E2E68BA998E7A4DB0900D188187F79
+              EB9C4B6B66D34F3133C14EDF88CB60349858E5956122D8E91B717116EE954370
+              B4956B4A415960914D00E0EAA3F1399BCDA6A80D317006934310ECE597064AF3
+              90B2F22033419BD55AF0784EB85804024038149A79FBF0620F8B2CA6DF2494E6
+              110E856624BA7681552601805FCBCB04A218D312A4AC2A3FA5AC3CC86AE4F60C
+              7F00736972B89074186C0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\04_Save'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000001B24944415458856360180594
+              014618637AF3DAC7E252E27FB029E2E51714606084283DFFE23A8F8888001339
+              96FDFBFFEF1F030303C3EB576FFEF0BE635D97D310124D480F0B8C212E25FE47
+              CF424F019BA2574FBFC0D962FF84181C1D8CC9711F0303030313030303C3A123
+              E759340D147CA632AF59995D1B124E50C340000161413E7307339FA9CD6B56E2
+              534753074E5FB00A8EB1010121012E428E1CB0108401428E1C70073230E077E4
+              A070200303C29133DBD6AF45161F340E64608038D2C8C6C817D99183CA810C0C
+              0C0C82C282ACA2E2A246303E0B3EC59482CC84308ACD187421880E880A411616
+              26863F7FFE3130303030BC7BFB9161FFC1B36459C6CC0CA92E3F7CF84CB41EA2
+              1C2824CE0567FB493B91E82CCAC0A08FE25107520A06BD037166929DE70E3228
+              C94AD2C511F71E3F677037B2C72A87D3814AB2920C1EF664374C49023BF0145B
+              833E8A471D482920BAB1F0F00B03AC63471520C74D9C3AA21D28CF43AE532803
+              833E8A07BD0347D320A560D047F1A077E0681AA4140CFA281E7520A5009E065F
+              3D7BC972E9E4A50730FEA37F2F657FFFFCF59F1E8EB8FFE405E3F77B3F1E23BB
+              851EF68E0C00002ACD6E888D7852380000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\05_Print'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000025C494441545885ED98C16BD3
+              501CC7BF495F98865965CE0DAD932E25CA50981571B20922D33FC1B33DC84E3D
+              E6D27F60BD0C76F2D643EF9EC6AE56115C190A9B828233A42D4A15E745DBD9AC
+              F4A5F1D28C62932669FBBA0CFA39FEF2E3F7FBF0F27BC94B8080C3B925AC659E
+              7F936723944573B55826CAD3C7337D15D9C8E58B26233672F9A25B7FBE2FFB21
+              3012EC979160BF74155C49AD9BBA5E8FB26AAEEBF5E84A6ADDEC9613F8153C7A
+              502BAB99ECE4E4C49C41CD292B46298D166B1710B938CDA479F9C74FCC8ABF40
+              082959B110E1F6FF542AEFD24A227924A8AC66B20B0BB79F08847414C97DD471
+              459299087E2DA858BE71BA23DEA0143BBBEF9FA59544920780B3E1F0BC9D1C00
+              1087F82070AA2D1002F194B804B466900F85CE31B3E811CB29309BE49EA46249
+              523BE2811104EC8F56EC06CC276F0AF61B31502B6887AB20CF35D935F750DB55
+              705C3040A93110A176AA077F312EB8D7759DC1B82462B7A0A16E0AA80FE8E03F
+              468031AE81B824BAE67ADA245E0AF947F09475F237C971137841C71954D50254
+              4D1B8A841C8B419625DB6BCE822DB9F9EB57F1E0FE5D2662AF5E6FE3C3A72F50
+              35CD51D0F116CBB1181329BFBD1C57509625C8B204CE38C0DCE5092662EAA5F3
+              88CC3CEA9A4300A06918BFFD147E91DF01E7FE5BA783E5C5B8E75CCB890040ED
+              B0B6D5A0F4A6D3A9FA7F1E2EDEF22DE7874AB58ADA616D0B6809A6954432B596
+              45F84CF88ED96C4EB5275F93A62360742CA38D06DDDBFB5C6E8F713CBF5FA956
+              DE5A1F4DAE1CF7DFAD9E5666183368D19320EB196C27F0AFBA9160BFB8CEA05A
+              2C93CD97DB2516CDB5D2F7C07C55F6CC3F11EF5EE0E8CD9B080000000049454E
+              44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\06_AddModel'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C08648800000298494441545885ED964F68D3
+              501CC7BF4DD264CBBA99958D75ACA51A47513B15271E1CE8A1B09363475198A0
+              2078187A133C49D1CBC0A3EC30F12038500F1EC6BA93AE8A9322559C766DC5B2
+              AEDD749D23766B5D2BFB93A69E5A6BEDDA9836AE8C7E4EEFBDFC1EF9F0CB2FBF
+              F7801ABB1C4D6670E3CEFDF44E8AE43374FDB20600889D1629454DB05C6A8215
+              636CD2154A57096393AE50C6ABEA3358132C979A60B954BD202527C835BB0E93
+              9E82494F65E739F70CC5F4743225636409F674D6159DAB49D57FE2AA17ACD560
+              B9C812AC14DEC500DE7FF56133B5898DD406008021194829093DFC7174755800
+              005A2D45FF57C1F96804135E27388E45BB812B18E3F9EEC5ABA01B67BBCF80A1
+              19F69F0495D4A04493D0680021FE0573C2140EF3C6A2F1AD1C87568EC393E971
+              B4A48C59AFEC5BC6265DA17EDBC9BD7284E5321F8DC0E17B0E8BB9B85C3E1F03
+              73926F31B8FFC1A5A1B0AA6D66C2EBDC56AED76C43AFD956F0D9510B4FB471DC
+              6340C53EE85D0C80E3D8D281DB70C8BCCF3A386AEFAB780DA629122081B7B333
+              B0F2CD8A05DBF52D3A8A22AEA8D6073F2D88CACC72D8A36B6C55ADCD64FA5C86
+              EDEA2D7FFDD9BC333B6628AD61779CC54A60C83FCFD9DCCC00BF3397BF9ECB86
+              B8F54DB50CD2245D3AA804F1C49AA09A60B7C90A6135A678FF5254488AA234A2
+              9A60578705B1F84FC5FBFD0B61EFF080DD91ADC16038428D3BDF842B21478020
+              D886FA2623C1139E805F77C4C2FF958862B5F7CE1F482FC762E7804ADC3A4B70
+              F5D1AD538666FDC313070E9AE5C4BF9EF930B79A485EBC7BFEE6140090EAEA01
+              EEA72F160CA7AD2FA33F568FD5D3747323DB50F0EF598A0A49F767FF746465A5
+              FFDE85DB9ECCBAEA19CC6570D4DEC7D0DA6B3A966DAAD3D26D00B0BEB5B91C4F
+              AC09A2288D0C0FD81DF97B7E0130C85DF40D82C2C30000000049454E44AE4260
+              82}
+          end>
+      end
+      item
+        Name = 'Project\07_Export'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000019A4944415458856360180594
+              01465C120D8BCF3C161513FC430F47BC7EF59EA521D644169B1C0B2E4DA26282
+              7F74F5951468E62A2470F9E2BD07B8E498E8E1004AC0A8032905A30EA4148C3A
+              905230281C28252322844B6EC01C78FBEE4B385B58988F0F97BA0173E0C6AD67
+              19AE5C7F4250DD8046F18EDD9718B6EFBE8457CD80A7C1ABD79F306CD8729621
+              A061BF0036F9017720030303C39D7B2F19FEFDFAB61F9B23078503A1C0E0DFAF
+              AFF7BDAAB61A200BE26C6E110B7A266DA3D40824C028C0C2F07FBF6FE5B6C4CD
+              ED5E1B18180657084201A30023E3FFF5BE555B13181806A5035101C5514C75F0
+              9FE1E37F06C604581453ECC0923C2FB2F4614DBBFF193EFE616470D8D6E67501
+              26346842F0FFFFFF1799D9B91DB635387E40161F14695059499C81999DDB6103
+              9AE318180641086A6B4A3378BAEA33D8493062388E8161801DE8E1AAC7A0A329
+              8357CD8039D0DFDB984155599CA0BA014B83C88EFBF0FECB175CEA06452679FC
+              E8D51B5C7283C281F8C0A8032905A30EA4148C3A905280B32679FDEA3DCB958B
+              F71FD0C311AF5F7D1CF036C1F00500F61D668A281B9C610000000049454E44AE
+              426082}
+          end>
+      end
+      item
+        Name = 'Project\08_Copy'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000001E6494441545885ED98BD4BC3
+              4018C69F2B85524A912A22A8AD7170F38B0EA282A550EC1F20755097169B0E6E
+              45C4E8E0A85D34BB22E8203AB8B95584A2434570D0C5CD8488223888D8A194D2
+              B8B4D2968BB6C95924E4B7BD4FEEDE7B2EEF1DC91D012378418C128003001590
+              F752C90356B90D1317C4202F88D14ACC0B62945F174759E42634F1667FFECCED
+              720C6A7512EF86B95AA5F4B4BBB5ECAB56126BDB0A60F3566BC9917B592BE767
+              2E7F3B163F8ED4EB765A63B7CB31E8EBEEE468CF000077B5A1AA92765E1017F6
+              52C923005814769600E2ADEFF6534EE5E58DAA530D360B21C4A5AAD84CAC8A11
+              0050013F8BBC0023830040087C20F0011AEB4627363D9D9CF652D37D3CCEA29E
+              A1F4198CF9DF9B1AD0E32C626EE843CF50FA4A3CD051C04690BEA859A3EB0DB6
+              12CBA0512C8346F9F7060D7D490E1F47D0D7DBF51D4F0542B8BABCA869D3B036
+              13E24ED3BC548925E5D9BE129FF552BF4A0F2731E9C79F853299421853815003
+              53699E74262B47C293FDFFBEC4E636F857E50580707082030C1AAC5FE82C4967
+              B23260F612B702731BB43609CC5EE256606E83D62681D94BDC0ACC6DD0DA24D0
+              38347DE6F2B74FAF6FBFDEA215DBD41EAD1CACA026A75DC5D2289FC2389686EA
+              31347B4979B69F67AEE54A3C1D1CE7AA63239AA4BCFC696598F10553A299BE4A
+              4F0C4B0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\09_Paste'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000001F9494441545885ED98BF4B1B
+              6118C73F6F10522F3D49235D8A86E0D2455AE9D049A19BB874CAA41402E61475
+              3114EA35932E9A0EEDA9A0D04A41107171134AA72E3A1532D83FA088BF504328
+              98344D3B782E2A462EB9E4DED306729FEDF9BECFFB3C5FDEF7BD17EE15B884A6
+              1B31011100137696528965B76A4B13D78D179A6EC42E634D37625AD2E872A3B6
+              B012BF7FEEDF5003FECE72938CED279152E56CEFD3CCEBF07565E8EDFB5DF0B5
+              5FD7124F7FEC94AB99CB17D3CFE36BD19B7A9355B21AF077861F3D8C588D01B0
+              5D1A9AA60869BA31B0944AAC020CEA1F4641B4DF9C56A9E6EE61C652B734582B
+              42888069323D346144014C78E6465D70C9208010841184A1CCB971485506959E
+              772571F3B745FEFCFD5753A3505045E9192FD10A9B13B6F37C3575B960E4D54B
+              4241B5EAFC50502516ED75D2CAD9163FEE6863E6CDA0A386B5E26805EF12CFA0
+              2C9E4159A42EEAF52F5B9C9966C51C9F4F10EDEB76DC43CAE0CF8363EE2BCA55
+              1C505B00F89D3BBDD2F285824C0B3983FB0747A4F438CA3D3F000BAB5F01181B
+              E80320FBEB94A9B995FF67707E72ACE278EB8316DB1C3BEAFE23F10CCAE21994
+              C533284BE3181C4ECE7292C97292C9329C9C75ABAC7B7F751FA7C7ED931CD038
+              5B7C5B780665F10CCA52D53553CD1BCA6D51F72B58F7062DB738972FA6F78E32
+              6E3EF3D992CB17D377D9AF713807CE1171CD96AAB87D0000000049454E44AE42
+              6082}
+          end>
+      end
+      item
+        Name = 'Project\10_Edit'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C08648800000283494441545885ED96DF6B52
+              6118C7BF47C5E5347346B526B651EA763123DD4D88370B938AA28B8DD64D41B0
+              BAE93A88A82E5BD09FB0D885B0B0086275D38F5982615B108BAD706E9ACEC6D1
+              79CED1992673A8A78B52B6C6F2D7F41CC2CFD5799FF73D2F1FDEE739E7798126
+              FF3944E1E1E683872C97227F73FFC630010002AE454AD114AC95A6E08E31E170
+              07589E30E170070A5EBC3FC1A660AD34056B85F782A27216B97D6B502B45502B
+              45C5F1867B46D598342D25D7942568D2ECFAE7B89EF03EC5BC17E4650DCAA452
+              4545825CD66059828D221389801C1D858A89C96707065EE51866883735C878E6
+              31FEF42520DB83CEAE4E81D66CB6124AE5135ED4608C5EC634958679F002A626
+              27719C0AE22091874CA1D0715E83D1B017AE9945E88D2700007D164B51329D4C
+              2E719AE224E347C46387442AD914EFB358F00CB2B51C459DE74C30C9F8417EB5
+              E1A8E108FA7B48F8BC1F8A73AEF7EE7C865AB11A9CCED586D6202B12004202F9
+              1F7EC822E330187500008998407F0F89771E3768268536B93C3D3C72CB0570F0
+              1F4C327E908147E8FE2357402226A0699D43AF7610BEE578B6106F688A0B69ED
+              D66BB7CC8502511C3E76158754EA4DF186099692EBE8BD069158B665AE2182D5
+              CA010D6875A17927E8453B8C6673C572409D4F70253407F2CB58D572409D0517
+              3E3D47BB722FE2D1705572C08614FB83A4E8C5DBA9E04E88FDBECFB1C8A598DD
+              FBBBF60913148D589E85B2BD03B3D31FD988F054D23FF32DBFDDFBB92C5B6C2D
+              B577FC6DB87CD13A64D2AB6C974E6BC400108D5320693AB3E00D9FBC72D7E12A
+              779FBA7D24ACA06564EC0D2DCEE6F2EBBA03390F93487D8FADFEBC73FD9EE373
+              25FBD4ED04CF9C3B9B686B455448ACDFB6D95F3FAE769F5F4EF08E48EB883E31
+              0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\11_AddExtension'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C08648800000251494441545885ED96CD6B13
+              4118877FB69BDD1AB7BA2D8926A4F64368A8561015FC3A880404A1A537A54204
+              0F050F859EFC03025EBDE650E9B120221EB411028535948292625B634CA2124D
+              A24D1AB69BA6ED6E69924DF0D2481AB6A9364E73709EDBCEBCF3EEC3BCF33203
+              5028140A8542A1D4E010003C9E78FEA3B7C7A6355AA692AFDF97988723B74F32
+              00D0DB63D3861C57BB1BECB48357E2DB1800343556636FA860BD50C17AA182F5
+              C21CE4CF824B5F30FFF313F2C53C72C51C00806BE6502A9670EDD4459CB5D91B
+              23189793781D14210846582D826E4C60258899A81F772E0CC0C4B71D9C60544A
+              C01BF1C1DEDD5133CE2C08300B029E2D4CE156DF8DDFE344CF605C4EC21BF6C1
+              DE595BAE127B6707BC111F9482C200DB3B188D259929F15DEC5F0B7E50E6AD97
+              CFF5717A7337BB1C0080E9B8A82B393317380E6CBF6648303AE91ABC74E6F453
+              6BBB89FF5B4100486556147F287C9758897963CBC86E727F82B5DDC4334CD303
+              62821CCB59EACD718C6F3513EB628E31EC102C97B49AEAF1CA92738CC1F2FFDE
+              2439ADB00CA0ABFC5DDD0C7B35493907B11DCCE573CBF5E6585336246282CAE6
+              D6444A96D4FDAE4FC992AA69A57162826EA7CB134AC482FB5D1F4AC4826EA7CB
+              43B449D2D9ECF05C241CD79B9B8E8BBB9EBFD98F8BDFD2D9EC30003413F4C3E2
+              CBD96CFFC095F7EBAAEAB099CCFACF181DB95545BDFFE4DEA300714100F0BF78
+              93B05CEFF7C9EBABE70FB36C5BABF108AB17979225D5FF39B490CC6486CA7200
+              C1BB588FD149D720C71AC678A3F1688B813D01005B857C7A4DD99034AD34EE76
+              BA3CD56B7E01AD51D210C3957B2E0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Project\12_DeleteExtension'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000002F1494441545885ED98CF4BDB
+              6018C7BF69FBFA6E4D1B411BB3E2B40E7B183841582F0A83EE52102C5E2278DC
+              61B083B0DB607FC26007AF1376295318DA4BA8739BE05618746314F4E0188C56
+              CB0EA3357AD0FEC050DBECD0A6F617B6B38D96D10F049287E7259FBCEFF3BC09
+              01BAFCE730DAC9F397AFD5EB14A9E6C5B3C70C0018AE5BA4115DC156E90AB60D
+              692BB4AF7608D256685FF3EAF819EC0AB64A57B0553A5ED0D44C5228728AA13E
+              1386FA4CA5EBB2EF8C4B33E5A40D739A129C72DEB8F05A4F3A7E893B5EB05B83
+              ADD29460BB380987711C0C42CD64A0A6D300008665916318F44F4F8373B90000
+              84987AAE5430138920EEF38123043CC701DA51466A63037B9284C18505D01E6A
+              FE27C1CBD460BEC70886018C919FE87BB78CE1DBF60BF32D1C070B80F8E222C8
+              FDA99297AE35988944207F5886D040AE1CC16EC7692868FEEA768F4C0683315D
+              B799B8CF07C15E2547EB746E55CC31E2305805E12DA0E33E78120E8323A42246
+              3C1E5051AC14A2145414413C9E8ADC01A7736CC7EB9D697B0DAA26236004D8F7
+              9F71B7BC11288581E7C1F03CA82842F1FB0B615104C3F38599A21450140080D5
+              66B3C0687CA25B0DFECE6700F49E0714058ADF5F12A273730000C666832ACB05
+              E1A25CE999AC565EB725563399DA6051523D3A0263B315E40E0FEBCA010021E4
+              D6F5BC8BD5E67F03E926C898CDB5C162436833A7CD644DE314C966B371FD0459
+              B6BE1CCF176A6E6D0DCAEA2A54592E354E354A3229EB26D8EB7623757C5C7637
+              057959AE6C08AD26651967DBDB15E393B29C462EB7A4DBBB9873B9B02749B094
+              C5B29B9B155B8926AEACACD48C3F884677270281F5926034F6C714F8F42DD60E
+              39030C06337B93C3E443C3D9C78065F88EE37CA5EA746B35915F11359548CC03
+              EDF8EA6CC08FD9D907B4BFFFCDE0F8B8A399FC5838BC974FA51E8D49D217E00A
+              0401E0BBDB3D6116845703A3A3F7AC3CCFD6CB49CA72FA201ADD4D2612F393C1
+              604C8B5F89A0C68ED73B03429E5296E50821020064B3D984924CCAC8E5962602
+              81F5EA317F01B3C0993DD10522510000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\add_layer'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000EC400000EC401952B0E1B000002AA4944415438CB
+              8D926B48135014C78F339BDB5452441085C020DD942418D594D4345D293397A9
+              2BB2122A1142C820E7843D63EAC6748FD68C26E59258A012D697B02F25154511
+              514AE50B739B131F9B33B77CE0E96E56D6879A17FE1C0EDCFB3BE77FCE85DA06
+              B9F8C26591F8625DA3B8FA4AA3B886E89250212E3F7D2EFF9440004AA512A452
+              E93F05F71EF6E3D857070E4FD8F1F3B81D87C6EC38E698C68CBCC2DB69A92CD0
+              6834FF073C79FE06FDC7BB8638E745B479D67199E4395CDE7D16332538A07FE0
+              352EF8D670D2B58C23333E7C6FF3E2EC0AE2A1233CEB96004FDF7E44521CBFAD
+              23BA5711A77D8824606E11FF012B25393820B7B8E24E7E89A09BCB17F4F875F4
+              F8C99EA2F2B3BD0949C98DFBD8EC6D4101F5D73483D73BEE7E09C8BC11DB2DD6
+              E1347646DBDEF43D94A0800162E1CFE3FD19730B4BBA995BB1F0F8D92BF4F856
+              D1E1FE8EE3335EFC60DF1822D9823595C50C0E78F16EF077651799A6DDB7D1C1
+              612EDFC24CDE0DCD4D4A103508FF925C2605B55A0D62B11840D4AC77B6775AE7
+              4C9DD679BF3ABA7A9D26B3D5915A90F9329DB35FA0BD69312AB5378CCD5A93B1
+              456732AA0CB78C357542514E7636A8542A006A388D1E42098D274ADC1E468D07
+              801DB107E37AE3AA2217395C5E9FBF9BC09A89AD79EF7A60C52265AB9BDC6318
+              0C0600994C1650934209E7EBAA21BD96DD573B598531F5B4A90359855D7EC012
+              79E5F4ACE008F9241E924B5BB4A3341A3D4AAFD703C8E5F2805AD51A282EE503
+              A48064676B34524E842C6415F02C7EC002A96E73AFE19073195D2457A8F59B80
+              5FD354281420BC2A84BCCC3C88D9155B46E1848DE61CE33F9A722DE1B8D385C3
+              F679FC649BC389D94562A1CDC9603022753ADD26402291042066B3194A79A500
+              1448A245447028E15165B09D7E26844AAFA4501995A1E1919554465445626242
+              B4BF831F6632047AA0FBDB450000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\add_period'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000C44944415478DA6364A01030C218F5F3D6FFFFF3E72FC39FBFFF18FE
+              FCF9C3F01B44FFFB0364FF63F80B64FF068A81E496356431623560D405C3C205
+              20D0E4CDE0C0C1C634FFFFEF7F0AE55B10727540D7FDFA0D74D59FDF0C3F7FFD
+              65F80D64FF04B27FFFFE8B5004D45C202A29DC1F1C9DF5FBC4FA69ACD7EFBD05
+              8B231B84D705134299FF272484FDE6E612FAFDE7F22186DF0FDE334CBFF5840B
+              6400B12EE89716642D705416FF73F9F15B961BAFBE93E60258188022849D91C1
+              81E430A04A2C9003002CEAE4674579C5850000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\add_row_32_h'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000B1300000B1301009A9C18000002C24944415438CB
+              85926B48936114808FF7A111140BC992C04B5ED236256544ED336FE5BC0C5321
+              CA1F5244AC8598D319DB5C5B5373176D5E42B42422523125A4FE9811E45A22CE
+              D26A06815D202DB5B999BA8B324FEF661804EA81E785F3E33CE73D8703C2F232
+              E0F3F9FF710594376B40ADD180542A05994CB62950D3D4AEBFF3B0477FB7A3D7
+              4D3BE1FEA327FAB4ECBCF21314052A956A6BC1C0EB5174859360238F65C59DE2
+              D1E48CBEF0B050A8ABABDB5AD03F388C8BF6559CB638F0CB9C158DD356341149
+              D2C9ECAE43D151DB0B748671777733299AB1227EB620DA499E7C2AA79B111503
+              CD4D8D502916815422DEA0522202855C061AB223B8FDA0179F933106F4067CF6
+              CA80FD3A03EA0C4664B1335A02C303C3F9A58214694D3D4F74A3962756D4F224
+              0A25AFB25AC32B2E17E571381C002F5F5A187913C0C38B051E9E2C6F6F5A0280
+              67E87EEA40D3CE7CDA142B2DEBE9A26D05CD4B769CB558716A7E09CD36075628
+              34D3E00A41E9D50DAE098470F6D239883ECF6C2EFE7401E965FE7354EAE94ED7
+              521D6B88A665277E250B2293A25CDD60740BAAABAB3668A8D742667E36F8B17D
+              EF1DEE0946CF029849E31474B8042652F56D7E05DF4FD9F017599A42DDB82EA8
+              1049E8250221BDA44C48178AC4F4A2A28BF47D41213BFC22FC551EC77CE63867
+              0A074873FCBD4A2436C41F4B888B24AFD6B6AE8FD0DAD9E7D48DBC730E8E8C3B
+              5F0E8F3987C63E3A478D932B2919051A080066C0AEDD85118CC4AAF09838E5C1
+              D83865446CBC3292714419181C2224E5347831F4C67D386B7F0FC9645F3FA4F4
+              9CFCEEA03D7B2197CB8524F67148A2D8FF20795A6A0A70B95C2FF7212D585771
+              CA6CC7C9592B8E7F5FC6390722959ED9C5888D81B6B63650ABD59B02FAB713EE
+              8EAEC60BE4073F1DEB3F48CDCA7D1C1519B1FD255EAE908F5E576A3FC8945AA3
+              4CA535CA0955B75A26229989DA7826C3635BC116E1435194D776823F20CCF855
+              AC4B6A210000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\clipboard_cut_32_h'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000B1300000B1301009A9C18000002934944415438CB
+              63686868602006D7D6D632747676CA383838443200C1942953185A5B5B1988D2
+              5C5F5F0FC66D6D6D138484848C2D2C2C0CCDCCCC245352521888D25C5555C530
+              71E2C49ACCCCCC6D404DBDB9B9B91D4047082525253110D45C5D5DCDD0D4D4E4
+              B860C182FFAB56ADFA9D9797B700A8995F535393A1ABAB8B81A11EA418A8B0A9
+              BE16821B1B181A9B9A800680345731F4F7F7CB00357EDAB469D3FFB8B8B8F940
+              CD7C1A1A1A60CDCDCDCD0C0C8DF5750CCDB5550C8D2D2D0C8D6D1D6CB555E50C
+              4DE5F90CCDF5950C13FA7BA5766CDF7169EDDAB5FFDDDCDC7A809A796136B700
+              D5835CC8D05D99CF103779BDB6D2C45BBB65EB4FBD914C9939C5242A5FC5BE68
+              75614A71DB850D2B17FEF7F0F0E8056A6683D90CD30CF22643CAECCD26F2936F
+              5F6750F46E64E0143711AA39F757A0E6E17F06D3D62B1CEAB18B7D620B0F0335
+              0BA8A9A96168061B607BE2FF19DEE4E90740712B12D3A827DEF2F03FB366F216
+              06262143FE882D8F18444D52D414E518BABBBB3134830D90CF995824D67FEE8E
+              60FEDA15E24DB75F30C878B4810C63776C99265173F73F83B09CB99BBD25C384
+              09133134830DD0515366609032B26590F5E904BAD49519A859C5A7D442A8E5F1
+              7FD1B2036F8473D79DE4E2E1E5AE282D06873A8601BD3DDD0C9181DE0C7E6EB6
+              0C815ECE0CB1F1A90C6AEDD74EF1B824B403CD12162E3D72974152D3C5C5C682
+              A1A7A707D30010014CE3603F4EEF6D6588A85D2AC35A7DE61650330B83828BB2
+              54CBD9078C8C8C9A01BEDEE040C46A000C7777B43078FA85B373D41D38275ABF
+              6DBFC2BCF72F85DC128091CDC0084A584DE00486C700502817E66432702AE9AA
+              2AE64E9A2868649F0CD4CCE5606FCFD0DEDE8E35B963A4FDF68E0E86CCC45806
+              18484F4B03C6C004B83CBA0100BFAB6AA0B2B6CC6F0000000049454E44AE4260
+              82}
+          end>
+      end
+      item
+        Name = 'Model\clipboard_paste_lined_32'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000B1300000B1301009A9C18000003584944415438CB
+              8D925D4C536718C79FAB65D9152C667AB139759B149DD9D6B964975CEC6A178C
+              38B3163492B1E0385541930AB494B650DAD3B2C9644EE78CC9D06034C32C652C
+              B8288EB5B49CD1D3EF2FDA42914FA52D5F428C711FF9EF3D2D63B77B935F4EDE
+              73F2FFE579FE39D466D493C168A286331AAAAF57935ADD4815151F5167272FB4
+              E8B40962A7BCBC9C1A9BF474AABE85BE38D74D3C6F21BD5E4F46A391486BB451
+              8756B5EDE7CBB5A6E15B1AFE3CAFEE55AB4F8FF4DB6F3FBB7F6FF0EF13AA3AC1
+              D0CCDDBC7BFD043F78A9C27AB064DBAE23C73E23ABD54A068381A8A9D546BCE6
+              F87B1BC9AF904B7F8BEF2E7F831B377AE1740C211418455FDF4D5CEBB98A58D4
+              85F5AC8077642FD595941EA0EEEEEEC204CD7A49C0C9338176048675F8FEEAD7
+              B0DBEDF8B1EF16FA7FB2E7B976BD07C1701C4F9F01C16068A65456222B2B2BA3
+              AEAEAE82C0AAE5E433421BD692AD98F05FC1C070146E871B427219C2780663A9
+              257826D770DFEDC362260BD1EB9F2F2E2EDE535353B32968E1E40FDC4664231A
+              A47C57E0F4CF2028FA1198D9807F6AA5407A19CEF03C86D8B7D4A32738F0E67E
+              EEF0E18F375768A9933F70E9F130D088E8E84588E35944FC2178D3ABF04E2CE5
+              115339F82697996C0DC98575ECDF57AA52283E6182D6C20A69672BE645358223
+              17B604E2E4EA5658C293CCC2C3EEF1B935EC2B95710A85429AC09A5F21F5AB16
+              B3C219445C1731E88862CC25C037F5185E16F4E605D98280F5119F5D052B9253
+              E60586420789210DA646EA210E9D83D3378D00EB409A400A8A5230998127C160
+              B2D8F40A4AF6EEE594CA4D814DC7C9C7EF3621FDDB49B8EF5821841710F20531
+              36B15C0832C612128B7941782A87375E7F8DAB542AD98FC456B0E954F2D82F67
+              91BCC7C1D16FC268680E6149C0C69542FFF2FBF8A3BC2030B1883DBB77719595
+              95D2049DACC4BA77C30327917634C03960C60F77448C3A05B8134B18893EFC8F
+              C8025CF12C84D81C76BEF2325755552509BE249BF6F85B9E9E43F0F61EC2ED4B
+              9F6392B5BC343B8DDC1320BBFE1732EB7F1678FC07569E020BB90DECD8B1FDD4
+              1149D075FE02D57E7AF4B9575FA40FB6BF401FBE2DDB69E42DE648BB4E13E7CD
+              A698A5A32D6631B56D3DAD16E95D7BBCA8A8E86875753591D9DC41671B9BA9EA
+              582DD5720D243FF83EFDCFF3BC4AA5A27F00D5A775B3932971EB000000004945
+              4E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\decrease_indent_32'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000EC400000EC401952B0E1B0000001974455874536F
+              6674776172650041646F626520496D616765526561647971C9653C0000036849
+              44415438CB8593CB6F1B5518C5BFA24212358D13627BDEE3387112AA92C44E6A
+              4B91524868CD23AED486788442A075E2D671C64EE2D8E3F1631E9EB9761C7B12
+              53C7A50F14104281050B58B260CBAA0B58C0BA7F0142424880BA40C3D8150516
+              88C54FE7DE2B7DE79EC5F940D37450A522948A79284905D0DAC845D0DB284540
+              1DA48EEE230D5AAD16944AA50E9AA601A8B20CC6D1DD85C37BC7DCC1FB1F70C6
+              9D075CADF580DB6FDDE7AACD7BDC9E45F9F65DAED2BCCF152AF5C51BD7AF7706
+              FF021A8787E0BD1098245CC3219C190A61164EBA8D2BE4A05C213BC5860649D6
+              5257A8CF8EBD6AB3D97A2A950AE8BAFEC400E91AA4C4E24B09A1108EA7F34B9B
+              99FCB5CD742E1CDB11C2B7B68570743B135EDF4A5B9A0DAFACC71783C1E02984
+              F47F2638005F60F6023172FECA20E90AE22ECF55D2ED59C6D8E1658C712F62B4
+              6BBE0DCEBAE7071CF86CFFD95EA8ED55A0627D7C601800E54A15F82D11A22BAF
+              C389487F78791C8C9EC151107225C816244F4AD2235B393992C84A918428AFA5
+              944AB258BB9D908C56E2EAD2320185920146E695A9879FAD7E67FEFC8579273E
+              F868F512B5FB497D75DBE79BC2318A992068D68F538CDF3AFB9D24EDEFB73B03
+              FD0E2C70FAD9E7083092336F3F3AF19BE64F5F9B8F7F68FE6E7E1534CD9369F3
+              610C4C62887A6747D9DFD891743E9957795E54F87856E66382C46F882A7FF1E5
+              0512DEB8E43D577BABFBCBC79FCE99E6E7AFFDF17D9EFDED9BB8FDD78FAFC12F
+              5D3DA7E7099A1922287A0227E9098CA43A3889B6D2137D7D3627BCBB9E843336
+              3B5C1E86DD1FA5E7CDECC2A96F01803A63EB653DE75E0C8A65239352CA42B2A0
+              097CBE24C445558865156123A709B3731719A8D76B60180D08CC0561CC017E77
+              1FACBC70DE07C7C71F01C77140B32E3749D1A3560A0F493363B4CBED1BB03BA7
+              071CD8745757370E7A498542B91695EA47E5D92BABE24CF04D6929B2B19F46F5
+              BDCDBCA6DFCCC84A34232937B3AAC245F9ED99691FE89A556555ED94091A8D06
+              4C79BD67498A62473CA3ECE8D8183DE476B3184EB0ED378A669E62DD99F1F1F1
+              AE6AB50AE57219104256132DB75D495F4B4A08F13915C54505C5B232BA25C828
+              9A96D0DA6E11DD48E5D15A5A464B91B8E0F37A9F690FFEDD442BC1E4E4542F86
+              E30C863DC1F91F389C18ED1919E96EEFC253034551E03DCBA47574F4FF58ABDC
+              6C36FFB5CE7F02862E4C5D5425A2480000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\delete_row_32_h'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000B1300000B1301009A9C18000002E64944415438CB
+              85526B489351187E6DDED6BC45EB871852685ECA52242B0D9D97598AA9581698
+              2549517919E6361545DC167E5BBB88A29465498999824A597F8A4C509B5DA6D2
+              442D02D11F9A3A4D2DE7E69CF3EDEC13FA11A42F3CE79CF7C7F39CF7F2406181
+              10727272FE412EC8655250AA545056560662B1F8BF00694DBDFA61539BFA5153
+              BBBAFED9261A5A5FA96313CF15447138A05028B61678DB3780D6D82030581017
+              4C88E4C2B0E8F88E03DE5E505151B1B5C0EB9E8F68309951F7DB8413F3461C9E
+              5AC1F935C4C8B8C4964307FDB717E8D568E90AF4E45B9D11F1FBDC3AEA497E22
+              22E6F13E4F0F502AE42011958142A900E96D0A54322548A5529A2C128900EE36
+              B6E33BD246A7BA1F3BFB06B1EB9316BB3543989A99DD9F9072218B525567094A
+              C499A96753E1AAF07A54DCF9782FDE8DDCBFB30186BDA3373943C086E1B7D7E7
+              48E9F88F399C9A9DC32583197F92A1E8968D58DBD886003B6CC373235B5D2EEF
+              5EB0DDE37034329403B5F76A0104FC7C1AFC3C1EF004C5C98B84608DF9150B4E
+              2CACE122996E43EBCB65A60D8B19C38FADF1EDF144B702B6C5C6DD2E23F47828
+              004595D3289788A1444225CD2EE9E96D4C2EADE1D71923CE983605580C67C793
+              391135ACFB4C64E7B9A3C37EA762B046514929FB96A0909D972F60DFE4175FFB
+              F26D1CC7267538BD6444DD0AE22F22F6F4C51B64D9BB302378D12DCCA45D0660
+              31D208D58E437C020F9A3B2CBD9A214B8F466BE9FEACDD20C0F7034398912D1C
+              0C0C0913F90404DFF1F0F2A75C9D5DDD82A282B98418E7CA7285F4F474A8AEAE
+              06E8FA3048F76C358F7E1D717A19D14CDEE1DCF8274E3B1D21EE742C70A3A320
+              ED621A23F3D215484E4802A150089595959B6BB41A49BF6A2625AFE298CE80DA
+              C9159C237D734E2534071E0E80BABA3A502A952097CB412693D16F8AA268322D
+              A01E1CA52B20E643F239EA4C748ADC3329CFFDFD7CB777627691644024AF1A16
+              CBAB46C48AAA1109417965EDA85FD0B1AAE0A0409B6D05B608EB9419DB09FC01
+              95BBFA845468FE380000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\increase_indent_32_h'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000B1300000B1301009A9C18000003654944415438CB
+              75934B6F1A6714868FEDA476D202E13630371CDB80E3A6B836B613354D9C4496
+              B16AD23A05C64E7DC180822FC3180F30E01A188699015C88713051FF40B38914
+              A9AABAAABA6E975DF53754EA2EA9AA5695AA6AFA412B2B51D5C5A3F73B8B73CE
+              FB49EF01A95C06B95404452C808A54958A5041542511AA65116A1DE452571B55
+              15DAED364892D4A58C7A411251C371EB6EE5F1E78CD27CC2C8C76D467A74CA94
+              1AA78C586F31C5CF1E33F9A313A680345554173737C320A3C6F2BFC049F318DE
+              999C1AB7100EBF19A7FD269CF21BED1D48FF251BE93760845F8F3060A4FFC225
+              B3CF60305CA8542A20CBF23F0354450636959B8DED6542512E733FB6970E4412
+              A950782719DAD84E86D6B6F742AB5B5C681569603DB6E89B9FEF5114E575071E
+              EFCCB4951E0A1AF1C1A58BD6C1398BC3B584394682269C5E34E3D49D2E047D47
+              67B2BE6732E8A17154839A2AC3A3460339A8D581E30F20CE66A0B864FCFA9E13
+              C4818B06D8DA66217390776F65F29187FBB9482C2944A2C96C342E14B9FDD251
+              625FAA273EBCFF310EA57474AAC607F8121B487D53BFF9F2C5F35B5AC107DF5E
+              1DB63846C7AEBE69C5492F46503348BB986DF88CCE68BEA63359AE9D3B7F1E87
+              74F04AEBA7E72B9AF64356FBEBFBE41FDAB38597DA01A6356FC0CF168A5A8867
+              CBBBF14C9E8DF1076C249965C39CC0AEB169769DCBB2EFCFDE2620F5E07AFA69
+              C2FEE2AB43F72F3F56AFFCA69586FFFC8E19D0EEB9E08B9E737D4E1B41B9309C
+              F46038E1B1DA3BE01E8B0D81DE3ABD1E8385051FF4F6F6E10030F8641E7EFDF2
+              A3BEDF0923ECA2BAF7B2FBED69F65016E299A210E53F153693396183CB0AAB89
+              8CB0C6E584EB376ED2208A12C84A056A4775981DD32DF7F7C06D803E48A77808
+              87C340D28E213B41BA104E9CA4DC043D38A93759BC7A93D5FB467FBF1D2A2807
+              7C4189B105B5323E1710C66E7D509A0B6D286CA1525DDFCB290F7633E2F24E5A
+              5CD915C4C54F62C9E9292F2832CA8054EA86099ACD26BC3B31A1B3E3846378C4
+              493B5D6EEAF2D0B0C366C71D38413A08923A03D5F4E8E8687FAD56035555A113
+              2850D1B41D211F8DF0874A186D5CE70405FD116D4E2B2BDB2985D9E295E0C37D
+              2588D4B7BC294C4E4EF4AAAF26B1E3C0333EFE1666B3D398CDF61FACD82B5831
+              CAE91C19E8DCC2D9005114E1E4A409EDD35374AAFF47FB4C5BADD66BE7FC3768
+              B03E5D54B0AB820000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Model\clipboard_copy_lined_32'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              61000000097048597300000B1300000B1301009A9C180000032A4944415438CB
+              8D93CB4F1B6714C53FA428444E782869528905EA1F5225BB41557749C49AAE91
+              8A848002556DC00F8C6DF018D354A6915A552DDD55AD5AA9519B104842FC98A7
+              6DC6EF610C180F31368F484979849C7EF3D1906D473A9AD5F9CD3973EF250303
+              0324C8F35CA958405615B15E3650360C18C61AAA5B5B1045B16AB3D93EEAEEEE
+              26737373C46EB71387C341C6C6C6988805989D9DE5D6CB6518C904DE027873FA
+              96E9E8F8048DDD5D2C2C2C481D1D1D37FAFAFA88C7E3618077103248017C30C8
+              A94513294945BCB083A7E94DAC68553C124BF8ED8F07A8D7EBF0FBFD2B4D4D4D
+              C4E97492C9C9C973084BC0F36780A494C4523C85D5A48C5559804E6BC99288A4
+              AAA0B2B9814824F2A0B3B3F383DEDE5EE2F3F9581D9620189CE1D27A0D693985
+              C71450CA67B1A12938A575AC4AD6FBF0E804A7A76FB0F0D38FD91BD7AF7FD8DF
+              DF4F5C2E17050C0E92D950885B1673883E798E475115A2566669E2A57D248A0D
+              08A53D3C4B57F0CBAFBFA356DF83CBED7ED8DEDE4E42A110214314303333C345
+              536B106302166349489AC1FE87B47600496F402C35B05ADEC5B25444ACD0C0FD
+              1F7EAEB45CB15D66802F868688DFEFE3E45C857E55C5C315194A769DD64942D4
+              F72151B354AA4328D621AFED21BB7D8C7BDF7EAFB7B55E696580E1E16132E5F5
+              7289D5325451C122ADF0D71311F1952824E38099C5E20E9350A841AB1EE2EBC8
+              77EF01232323C4ED7671CF141D8AA0E0CFE504A2720E7242A2DD779949C8D790
+              C8BF403CB78D0C0584BFB94F012D6780D1D151E2723A3F51341D1BF93C84540E
+              31B5C0D2C40B75664CE4CECCB18CC900FCDCBCDED6F25F828989096B121F077C
+              5E33E4F398F3F39197D6145441463457433C6B22662953C5736D0B19F31001FE
+              9EDE4A013CCF13368A9E9E1ED2DCDCDC7AE1E2C5E69BB76E7D9EA23B21C6442C
+              A54C2CA72A584A6E322D2AEB50375EC335157C9FC05AC7F1F171B6A20E879D04
+              A6A73FCBE40D6C1672D87905D45E9EE0C5C109B60F8E61EE1FE11FBA54D37CD8
+              BC6CB3B59C03ACA37807A1ABFDE984E3ABB4D3FE65666AD2ADF92C793DE79AF6
+              7BB5BB776EFF7DF5DAB5367A84E4FC2C2D050201D2D5D545FEC7D3446FE25238
+              1C26FF02047F85E0D24A975A0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Calc\40_Play'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000015F494441545885ED974F4E83
+              4014877F25936EA49B4242203171296147F0329EC143F4109EC1CB48BAAB14BB
+              6962025D50BA806EEC445CD5E0BF62786FC028DFEE85E1F1C130BF0160E08F33
+              AA173777B3277B6ACABE640020CD33717B3D3B3FD6A27ED09E9AF2EAD2BDE8DC
+              AAC6FD325AD76BAD278F1F3308521904A990053DD3E5F0F816D13CE434CE990D
+              5440BC5B41BEF04728CB143BBA8DC0F22134F2FD7E82ED1D9C8C7504968FC958
+              E76A09807991A890645FC54213082C1F8E6EB3F45312334213F00C974552690E
+              7A860BCFA0C510FFB2FBC0F129B68DA14E76124A0C75B7D58D9A877C85F22906
+              80649F22CEDB4DB172C1649F629145ADCF572AB8D84648CA94D44389A0AC24E2
+              7C4596031408CA4A22DCCC513C972CFD58058B438945F6C02607300A168712E1
+              66CEFE4DC82248899126C882D4186982BC93A89403FEC35F9D6A06412ABF5EF0
+              5DCCA4BBAD081F97EB9E5CDE1CFABCFE40E7BC02E89D6DA49B75514300000000
+              49454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Calc\41_Forward'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000018B494441545885ED975B4EC2
+              4014867F9A910753D40095940423FA6243BC84E0665C838B6011AEC1CD4878E2
+              16138448424928828297C8047C41526C0C6DE70C35A6DFDB494F67BE9CB90321
+              FF9C883DB8BE2D76F4789207250300E693C56EAE8A99EF98D93FEAF124BF3C31
+              0E376E65E3AE516FDB6325200FD78482A28482A2B0F529AB1CEC6430FC1862FC
+              39599B7BBC97C5D16E76193F3CB7D01CB53CF5E7B9825B0A432195472CAA7AFD
+              D517BE86982D24B5ED24B58F03DF7390290C17DA19D2AA4EE9E3407891E41286
+              544992559C4B18C8250C8AA61C906D336955972249BA0FA6551DE7DA2998E279
+              F7FA15F28D7A7F5B4321952793947292C4A22A99A4BCA32EB23EC50D5204C7D3
+              094ABD32F84CFC724E379B17F4DF2D54AC1A891C402CD87D3551B5EA944DD20D
+              B10C3980A882D5411DDD8949D19403E10ACA9403042AC8E71C15AB86FE9B45E9
+              E3C097209F73947A6557B76A513C0FF174B63939C047051F5F3AAE739B23EF6F
+              909FFCF9575D28284A2828CACA2A36870356BA6FB40372593A04D97FC8C6F902
+              91C4700864F731CC0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Calc\42_AutoFit'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000049B494441545885D5986D4C5B
+              5518C79F5361B4DCDEAE506A6130DB39650EB78C4C973974089BB849225E9860
+              C1E860891F7C9909FA691FD42F6A34D1C4C4C46598A819421632A08B712F2C5B
+              8722DAD0D51585515E2B053610DAD2176E2FD47BFD00CCBBBB8E9E7B6FF7C17F
+              D2A4E779FEF7F497F3F439E7B40864A8EB74D5E124482A12F34C9489789E7AB9
+              ED7D7E8CA1288A5528762858D69962B158F8B92439808492ACCF2F28DA81EBA7
+              C341D6DE75E92B619C5528BE0000238B901B006E03544885EB6828C9D767E53C
+              24E69941A7E37A6175EB517E6C91A2F201C0080000089956C6F201353A7DBD21
+              672381EBF7CDDC580C04BC2784F12842B500001CC79DE18F6503121AEDB6A4E4
+              146CBF676CC45658D3F6A5308E9681E6551C570B0080005E900D78E99B033BF5
+              991B7271FDD3937F0503BE998F857186A22800580F1C6741168B9FE3B8338090
+              89A6A82259806AADFE1D43B6518DEB1F1BE8EBDF5BD37E5E186711A20000141C
+              67010040082D3708AFCC92BA9850AFDF86EB9D181D9C0D070335319308990100
+              5885A29DAEA8B815E6786516BD82D693A58F676466619537BAC4C0E4D8B0ED99
+              233F8E0A732BE5BDF34BCC712E849076252F1E90D0E8DE35E4185538DEF161D7
+              846FD6F756ACDCADF2B26CB9AAAD0DADBE00A14FF879D1252648BCF2D2E110CC
+              4D4FB63EF7FA7977AC3C42E81A07E0169E1C4A96B544140A1342C80F0080C4C0
+              5D6E7CBE2A2F7F77A321DBB82E9EF70FDBCFC37337077715D75DF18BF90CA144
+              953835457D18078E0E87FE09F90327E4C20188052449ACE6E873FC3654507DEA
+              336948B70B1BD0DA546636E5E699E2F9BC3337227438F4912C2A9EB00149755A
+              1599A68BDB549EB1A15F0B6B5ABF9787F59FB0BB38554D3E1ACF438743A05412
+              B9D72FBFED8EE70D057C44D0EFEFDC57FBC38B6BF9B0BAD8DA54667EEC897D8D
+              382B88A3E81203D7BA3BAFEC2A6F2C8EE7C52AB146A3AB4E141C00C040AFC311
+              F27BCA71BC58802A227E7971E572DA3D339E91D770B7A0B8AB72F1BBD243CCC2
+              42AACB6977C7F36A33F43A43B691BC5B7E6274F06FEFECCD37F61FB9E0C08103
+              107992ACA58E8692FCAD3BF774E63CF8B026563EE0F386FA1DB60FF754367F2A
+              665EC9376AA1343A7D7DE6C60762C2D1E120FB67CF2F17C4C201241050ADD16E
+              8FF51320BAC480D3D675F54973CB9ADBC9DD9410C0E53BE286ADB172FD76DB40
+              2438F5ACD4B91302A854693E30641B95C2B8CB69F778E7265F9173694808602A
+              A1D9228C4D8C0C79A7A7C78F15BF7AD62E676ED980D6A632F3A62D799BF8B180
+              6F6EC133E26A78DADCDE24777ED9A70349A6BFC43F65E87090EDEBE9EE2830B7
+              1C933B374002563055ADD9BEFA3EBAC440AFADCB51606EC13AC670240BF0A7E6
+              8AA339A6CDA6D571BFDD364007A74A6453F1240B50A5220E91DAF4FB000046FB
+              7BC7E5766C2C4906B47E5BA44DD71B4C00CB1D3B3531F69EDC8E8D25C980C9CA
+              FBEBB28C9B8D01DFDCC2947BF8F3BDE6D3271309B62AC9802A95AA32795D32D7
+              D7D3DDB1BBB2F98E3F8612254980E78E1F349169BA47AE76597F67E899BA4443
+              F12509302D43FB6670DE374F0726F727BA298492B451339148698459ACBAD770
+              9274EEF841D3C5AF4BEF6959FF57FA172926AC105A6C5EF40000000049454E44
+              AE426082}
+          end>
+      end
+      item
+        Name = 'Calc\43_DataLoad'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C08648800000226494441545885ED983F6813
+              511C80BF984B633CCE246792460C5824B6A05285DA0CD24111A16E0E52FF5005
+              0BAE59ECD4A564707471121C0A52717173E9D24110FC43D34421D43A1462A129
+              36E662630DC68B71B0067A069ADCBDA419EE9BEEEEDDEFF7BE7B77EF7EEF0E6C
+              6CF61607C093C4E555D5EBD1773BF93735F2DFCAAF27A6E76EB65FED2F1280EA
+              F5E8037D87FA9A09D8DCFA199C498CCEDE999E1B6FABD936FB5A0D3828BBE5C1
+              68E8CA4C6274B61D42462433419EFD2E39A02AD7E71FDFBE265AE81FB90DCD31
+              3EF5426A59305F2C53A93919899D72F6B84C5D5F53BC492EEBB03D82A5B21E59
+              D37E35157824DCCBE15EB56D6246248050C0C7D9D3C73BD6692BB43C493A4DD7
+              0B0A7BCA6F3C3FB363FFD9D5B490BCC204450919B147D02AC204EFCD0FA1FA14
+              000AC5120F2E2685E41526E8F729F8232701A8911195B6FB5F33B6A0556C41AB
+              989EC50FDF1D23FB238CAAF400E05642F536B712E27EF23C0085EF158E7AD689
+              C7563A2B188FADF0E8FD012A811124C9B9A34DF60691BD4174BD8ABCFE8AF890
+              3939B0788B6F9D5842CB2E346CD3F52A5A7681BB834B56BAB02628BBAA4C0EA7
+              287CFEBF6A6CAEA5991C4E21BBAA56BAB03E49645795B168062DF7A97E6C63F5
+              2363D18C65391054EAFAFD252E6C2DF2F28B1B804BE134FDFE9288D4E26AF1B9
+              C8570A950FF56D51981234AEFD8C3C5D6CFCD5676649664AB05D6BBF46747D25
+              E97A410920972F3ADEA69677FDFDD64972F9A263AF1D6C6C00FE00D38E90B001
+              C1794C0000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Calc\44_DataPaste'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000002B9494441545885ED98CF4BDB
+              6018C7BF6F5348ABA98D25C3A0B6C4C1D845E6D8613761B7DD76F2B43128D50A
+              DB415606B32B789D0EDC021E765818ECE0DC1FB0FB50761B78E8CE1E8ADA264E
+              6AD08AFD11D2ECB03A8CB6B3CDFB5A04FD9EF23EEFF33ECF87E74DDE27BC048C
+              944CAB71022800E000396D21F599556C6A4DA5D507C9B41A3F1E27D36A3C9951
+              EFB2884D9A197F7E7AFC2DD4CB8FB65AA466EF286E4B7DEBE3FCCBD849CBF4EB
+              779B802F7AD2961AFB956B15B3745859BF3FF575E2B4DDDFCC39D4CB8FC6066F
+              28CDE6000059F7D071482499569F680BA92F0030997EFF1C20D1D3CBFE1773B3
+              B0DBD4DE14B05311427A1D076FA667D5090070807B2CE2028C00018010C44010
+              035ABC371ED51660CFF85BD738F8FD03CAD55A47892262083DE32F5CB6A31FB3
+              E7AEF37594A5A1674F1F212286DAF68F8821C4271E7A49E56D8B6FDF1CC6FCAB
+              494F093B95A70A7653D780B4BA5A8055C340D5305886640BF87B7919054D6319
+              921D60D530E0374DF88A45A655640658D034F48922A4A121A655A4EEC507D92C
+              EC46E538450100F8F27998ABABE0FAFBD13736D67DC0DCD212EADBDBE008014F
+              08F86010030D380018501494D7D670542EC35C5981ED38F00D0F439999E93897
+              A72D8E2612A8FBFD902409A22C23180E9FF10986C31065199224A1EEF7239A48
+              7849E50D9013048C6432D04D13B665B5F4B32D0BBA69622493012708DD037441
+              168B2D7DF462910A0EA0FC8A3941002F492DE77949A28203181C33D6FEFEBF67
+              DBB25C5BEE54ABB4E1E901B95A0DB6656147D7B11708602F10C08EAEC3B62C38
+              0707D48054E7E0D1C6064AF93CEA8280C1540ABC2C03F8DB550A9A864AA3AB1C
+              DBBB0EC809026E2D2E9E01E065192373734C5A1E15E07995A1A9DCB1AED6FFE0
+              45E81A9056D780B46AEB9869E70EE5A274E92B78E9019B6E71E9B0B2BE65ECB2
+              BCE63B57A5C3CA7A37F35D1DFD01F221D1AB68EBE3C10000000049454E44AE42
+              6082}
+          end>
+      end
+      item
+        Name = 'Calc\45_ResultSave'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C08648800000354494441545885CD98BF6F13
+              6718C73F3E9FED73CEC4F1E0AB902AD54E17B003422289157508848DB6A80B12
+              5309227F400754890D8905454C0C0C28031B481E18988992A5C5240B34F658BB
+              53EB4BD43471CE3E3B17A70371719CF87EBD6EC2777D9FF7793EF73EEFF33EF7
+              BEF0992B0030FF2CFF5D329978180AC92322CE42A188B2BBDB3445A136FEFEA7
+              F0D38F3FDC029001342DF1F0EA379397441DEB9BDB6889615137D476EAA9F985
+              FCEACF73371F4B00A22B37689D890D2149813138584151599532C6D21BDA924C
+              2D1A415263A8D7BF1F846B71C0C6F2226DC3203E3B4773739B338961F6D67536
+              9F3E61E4F65D02AA2AE45F12996C55CA0047562B98D418B97D97EDFC0B11F780
+              206063E52DD1E99963C702AA4A74728A56A92812C23F6063799148F6A2AD4D38
+              93C5587AE33704200068E955C299ACA39D7AE51AE66AC16F187F8056A58CAC7D
+              E1CA369CC9D25CFBCD4F18C027A0DDDE3B4EE1F4287BEBBA9F506245E256CA78
+              0E73C55F9A3D03B64A45C7E2E8554055691B3B5E43013E009BC50FAE8AE34820
+              35E62BCD27926200652247ABB4E6799E27C0BD759D507AD47310F8D85D2CBDEA
+              799E274073A540E4FC98E7201DB50DC3F31CCF291669FED1C929CF87B60C108A
+              44147D73CBD1B8DD30316CEC8C46139DFDFE0ECE7E49FBF52BA4AFCF7903DC6D
+              364D2D11B73534570BC897C7916DEC749CFFA8B7DA16718758DD729DE23D5D47
+              4EA55D3BEE27AF5DC535A0DF83B657E1CC98A7AEE20AD0AA947D1F2FBD0A2635
+              5A073FBA6EE40AB0B1F216653CE71BAA57E1549A7D9747CE8975926E291339D7
+              C78D23E020D3DB5130A96116DDB53D47C041A7B7A3702AEDAA9A6D01F70D0349
+              8D0D0CAA5B43D333D45DDC576C01CDD502CAC4E0570F3EB54CA762E90BB86F18
+              587A9560521B2C599786AE5CA3BEBC686BD317B0BEBC48ECFA8D814375ABF3F1
+              767BF158C056A988A4AAC2CF166E34343DC376FE65DFF1238056A54CE3DDAF9E
+              6E6D220AA82AC3376FB1F57CE1D8F1FF1E8F5AA535760F5A507C76EE44E03A0A
+              263562DFDE60EBF9024AF6C2A19F121920FAC7EF0AD9F32813B9FFB5289C20E3
+              B3735895F2A1BB8B04D0F86AD40C67B2A706D72D39953EB4BD24803FFFDA58AB
+              EDD44F0DAA57BFBC7B5FDDA8D61EC0C1233AC0FC42FE5EE7D9F5B4B551AD3D78
+              74FF4EE5B4395CE95FE1170E607899C2A00000000049454E44AE426082}
+          end>
+      end
+      item
+        Name = 'Calc\46_CopyResult'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C0864880000023A494441545885EDD7CD4BDB
+              601C07F06FACA834650A4E9DB6657D8917050F3DC80E82C3813D88F7B9DEBDE9
+              45D47F6146DB3FA0EE2AA8BB791052BB5D7C191B584F1E3382F1050DEAC02A28
+              2DD941AA559FA47DFAA469857E8F4F9EE4F7C9EF791E42802A0F5768C2C2B7EF
+              6AB7DF9D6129727A7ED97AF9EFEA6276FCB38FE539C4ACFDD85174C66C6CEFEA
+              EA89A6CFC59715DAFA7596BF91413CEFDEE2CBE8A7F7B4C87AD2E0D7F8AAEA75
+              B7670040D7E1B6C007E01189F8B252EC72133BE8E96ACF0EF4877C03FD215F63
+              6303F1255891C576D2B625CE0F0DB22240E011292EAE1C98CDAB1810B8478E8D
+              0E79CD9015050280A7C31C69E901304AC0DB89E44ECA744E4BB3AB85346E1B30
+              E0ED349DB3F6F3D73969BCE24B5C284420C741B71B6294D7D9C16A8A2D874493
+              24C8F3F34FC63E249345DD6B4B07DBC261F82726009D7E6B5B02D42409B2281A
+              5ECFA6D3385D5F07388E1AC90CCC2D9F96481091D9741AFB5353B89165380301
+              F82727A99ECFB407F3F79683E7A125120080E0CC0C11D71B8BC1E172A1AEA9A9
+              E81A2577301F179C9E466F34FA809445D11007DCEFC9B2029FE3DAC2613805E1
+              093215891071B4A1069270B9E423B3D7D7CCB892807C300807CFBFC03D47BEE9
+              EB63C601251C12A72020B4B4645AD82908E889C59860B994B40759BB4293AAFF
+              16D780ACA901595303B2A6EA8105BF247F0F4E206DEE96A5F8EDDD5D86E3B843
+              00909563A2A520706478D06AD743B6FEA40E23231FFD66735EE712AB4767F55B
+              BFF7947217578FCF6CF9AB2C6BFE03316011C48F749D890000000049454E44AE
+              426082}
+          end>
+      end
+      item
+        Name = 'Calc\47_CopyImage'
+        SourceImages = <
+          item
+            Image.Data = {
+              89504E470D0A1A0A0000000D49484452000000280000002808060000008CFEB8
+              6D0000000473424954080808087C086488000001BE494441545885EDD8CF4A02
+              411C07F06F220B4A91B1994A6EA260070F1EA227A85BE0BD7A815EA157287A82
+              EA018AF062C7CC5BD6C5820E5D24DAD20A8B4DA825C1C4EDB0A429CDE6CCECAC
+              41FBBD28FB9BDDFDECFC5B1170C3971152616BF7A0928C4FB7786F50D3EAF24B
+              FD4D5B5F5B8EF35EAB27B9E3A26AD890A3939251797C3236B6F7541687C7D6A7
+              22241A0E6235B31863413A02048068789209E9181060433A0A04E8918E03013A
+              E450804017B9B9B37F67D56E6840C044AE6416142BA497543000C30E44428920
+              5F3CB76C13181F0D906A44A05D492811249488659B5CE15423D5863AC483E4CF
+              03850F71ED1D28D7818F36909281909FEE7CE13D78A501AF4DA0D132A1B47174
+              8859B605E1C0940C8C4980CF0BCC4ED09F2F7C0E86FCF4F3EE7BB87BB0AA0397
+              CFBC572187AB07FB71E960F7FBF96D1300301793786EC10EECC75575F3331D34
+              71D952A353E341320149C35AD5014D6F237FD1C57D415991D473F0B739D78007
+              C9195FCFB16CA9D11972DA500307591053B2641B52D83E4842D246E846FD1392
+              36C2DF24BC48EA55BCC4F207465C02E61D5AC54EC705F2C605F2C605F286B80F
+              966FEEBD878533D509C4B5FA20FC97FDFFCD275A07D22FED3A03570000000049
+              454E44AE426082}
+          end>
+      end>
+    Left = 651
+    Top = 1091
+  end
+  object vliProject: TVirtualImageList
+    Images = <
+      item
+        CollectionIndex = 0
+        CollectionName = 'Project\01_New'
+        Name = '01_New'
+      end
+      item
+        CollectionIndex = 1
+        CollectionName = 'Project\02_OpenProject'
+        Name = '02_OpenProject'
+      end
+      item
+        CollectionIndex = 2
+        CollectionName = 'Project\03_Reopen'
+        Name = '03_Reopen'
+      end
+      item
+        CollectionIndex = 3
+        CollectionName = 'Project\04_Save'
+        Name = '04_Save'
+      end
+      item
+        CollectionIndex = 4
+        CollectionName = 'Project\05_Print'
+        Name = '05_Print'
+      end
+      item
+        CollectionIndex = 5
+        CollectionName = 'Project\06_AddModel'
+        Name = '06_AddModel'
+      end
+      item
+        CollectionIndex = 6
+        CollectionName = 'Project\07_Export'
+        Name = '07_Export'
+      end
+      item
+        CollectionIndex = 7
+        CollectionName = 'Project\08_Copy'
+        Name = '08_Copy'
+      end
+      item
+        CollectionIndex = 8
+        CollectionName = 'Project\09_Paste'
+        Name = '09_Paste'
+      end
+      item
+        CollectionIndex = 9
+        CollectionName = 'Project\10_Edit'
+        Name = '10_Edit'
+      end
+      item
+        CollectionIndex = 10
+        CollectionName = 'Project\11_AddExtension'
+        Name = '11_AddExtension'
+      end
+      item
+        CollectionIndex = 11
+        CollectionName = 'Project\12_DeleteExtension'
+        Name = '12_DeleteExtension'
+      end>
+    ImageCollection = ImageCollection
+    Width = 32
+    Height = 32
+    Left = 54
+    Top = 166
+  end
+  object vilModel: TVirtualImageList
+    Images = <
+      item
+        CollectionIndex = 12
+        CollectionName = 'Model\add_layer'
+        Name = 'add_layer'
+      end
+      item
+        CollectionIndex = 13
+        CollectionName = 'Model\add_period'
+        Name = 'add_period'
+      end
+      item
+        CollectionIndex = 14
+        CollectionName = 'Model\add_row_32_h'
+        Name = 'add_row_32_h'
+      end
+      item
+        CollectionIndex = 15
+        CollectionName = 'Model\clipboard_cut_32_h'
+        Name = 'clipboard_cut_32_h'
+      end
+      item
+        CollectionIndex = 16
+        CollectionName = 'Model\clipboard_paste_lined_32'
+        Name = 'clipboard_paste_lined_32'
+      end
+      item
+        CollectionIndex = 17
+        CollectionName = 'Model\decrease_indent_32'
+        Name = 'decrease_indent_32'
+      end
+      item
+        CollectionIndex = 18
+        CollectionName = 'Model\delete_row_32_h'
+        Name = 'delete_row_32_h'
+      end
+      item
+        CollectionIndex = 19
+        CollectionName = 'Model\increase_indent_32_h'
+        Name = 'increase_indent_32_h'
+      end
+      item
+        CollectionIndex = 20
+        CollectionName = 'Model\clipboard_copy_lined_32'
+        Name = 'clipboard_copy_lined_32'
+      end>
+    ImageCollection = ImageCollection
+    Width = 32
+    Height = 32
+    Left = 530
+    Top = 166
+  end
+  object vilCalc: TVirtualImageList
+    Images = <
+      item
+        CollectionIndex = 21
+        CollectionName = 'Calc\40_Play'
+        Name = '40_Play'
+      end
+      item
+        CollectionIndex = 22
+        CollectionName = 'Calc\41_Forward'
+        Name = '41_Forward'
+      end
+      item
+        CollectionIndex = 23
+        CollectionName = 'Calc\42_AutoFit'
+        Name = '42_AutoFit'
+      end
+      item
+        CollectionIndex = 24
+        CollectionName = 'Calc\43_DataLoad'
+        Name = '43_DataLoad'
+      end
+      item
+        CollectionIndex = 25
+        CollectionName = 'Calc\44_DataPaste'
+        Name = '44_DataPaste'
+      end
+      item
+        CollectionIndex = 26
+        CollectionName = 'Calc\45_ResultSave'
+        Name = '45_ResultSave'
+      end
+      item
+        CollectionIndex = 27
+        CollectionName = 'Calc\46_CopyResult'
+        Name = '46_CopyResult'
+      end
+      item
+        CollectionIndex = 28
+        CollectionName = 'Calc\47_CopyImage'
+        Name = '47_CopyImage'
+      end
+      item
+        CollectionIndex = 4
+        CollectionName = 'Project\05_Print'
+        Name = '05_Print'
+      end>
+    ImageCollection = ImageCollection
+    Width = 32
+    Height = 32
+    Left = 1422
+    Top = 378
   end
 end

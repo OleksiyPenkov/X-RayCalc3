@@ -25,3 +25,5 @@ Debug
 __history
 CMDBin
 *.dsk
+Win32
+Win64
