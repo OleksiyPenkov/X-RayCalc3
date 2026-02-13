@@ -159,9 +159,6 @@ object frmMain: TfrmMain
         ShowHint = True
         StyleName = 'Windows'
         TabOrder = 0
-        ExplicitLeft = 4
-        ExplicitTop = 4
-        ExplicitWidth = 448
         ToolbarControls = (
           BtnNew
           BtnOpen
@@ -266,7 +263,6 @@ object frmMain: TfrmMain
         FlatColor = clSkyBlue
         TabOrder = 1
         Color = 15987699
-        ExplicitWidth = 436
         object mmDescription: TRzMemo
           AlignWithMargins = True
           Left = 10
@@ -289,7 +285,6 @@ object frmMain: TfrmMain
           FrameHotStyle = fsNone
           FrameVisible = True
           ReadOnlyColor = clBtnFace
-          ExplicitWidth = 416
         end
       end
       object tlbrProject: TRzToolbar
@@ -317,7 +312,6 @@ object frmMain: TfrmMain
         ShowHint = True
         StyleName = 'Windows'
         TabOrder = 2
-        ExplicitWidth = 444
         ToolbarControls = (
           btnAddModel
           BtnExport
@@ -463,7 +457,6 @@ object frmMain: TfrmMain
         TabOverlap = -2
         TabIndex = 4
         TabOrder = 0
-        ExplicitWidth = 2136
         FixedDimension = 42
         object tsThickness: TRzTabSheet
           Margins.Left = 6
@@ -472,7 +465,10 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Thickness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 2132
+          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 6
@@ -523,7 +519,10 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Roughness'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 2132
+          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 6
@@ -569,7 +568,10 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Density'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 2132
+          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 6
@@ -615,7 +617,10 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Profile'
+          ExplicitLeft = 0
+          ExplicitTop = 0
           ExplicitWidth = 2132
+          ExplicitHeight = 0
           object chProfile: TChart
             AlignWithMargins = True
             Left = 6
@@ -691,7 +696,6 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Convergence'
-          ExplicitWidth = 2132
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 6
@@ -748,7 +752,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
-            ExplicitWidth = 2120
             DesignSize = (
               2080
               268)
@@ -767,7 +770,6 @@ object frmMain: TfrmMain
               Caption = 'Copy'
               TabOrder = 0
               OnClick = btnCopyConvergenceClick
-              ExplicitLeft = 1980
             end
             object lsrConvergence: TLineSeries
               SeriesColor = 16744448
@@ -919,8 +921,6 @@ object frmMain: TfrmMain
         OnMouseMove = ChartMouseMove
         OnMouseUp = ChartMouseUp
         OnResize = ChartResize
-        ExplicitLeft = 6
-        ExplicitWidth = 2128
         DefaultCanvas = 'TGDIPlusCanvas'
         PrintMargins = (
           5
@@ -1060,7 +1060,6 @@ object frmMain: TfrmMain
         FlatColor = clSkyBlue
         TabOrder = 2
         Color = 15987699
-        ExplicitWidth = 2136
         DesignSize = (
           2096
           100)
@@ -1349,7 +1348,6 @@ object frmMain: TfrmMain
           OnClick = btnChartScaleClick
           Margin = 4
           Spacing = 8
-          ExplicitLeft = 1824
         end
         object cbMinLimit: TRzComboBox
           Left = 1946
@@ -1377,7 +1375,6 @@ object frmMain: TfrmMain
             '10E-7'
             '10E-8'
             '10E-9')
-          ExplicitLeft = 1986
         end
       end
       object pnlSettings: TPanel
@@ -1393,7 +1390,6 @@ object frmMain: TfrmMain
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitWidth = 2136
         object RzPanel6: TRzPanel
           AlignWithMargins = True
           Left = 786
@@ -1412,9 +1408,6 @@ object frmMain: TfrmMain
           Caption = 'Fitting'
           TabOrder = 0
           Color = 15987699
-          ExplicitLeft = 774
-          ExplicitWidth = 1368
-          ExplicitHeight = 210
           object Label7: TLabel
             Left = 16
             Top = 58
@@ -1625,13 +1618,13 @@ object frmMain: TfrmMain
           object cbPWChiSqr: TRzCheckBox
             Left = 282
             Top = 162
-            Width = 114
-            Height = 38
+            Width = 93
+            Height = 36
             Margins.Left = 6
             Margins.Top = 6
             Margins.Right = 6
             Margins.Bottom = 6
-            AutoSizeWidth = 114
+            AutoSizeWidth = 93
             Caption = 'PW '#967'2'
             Checked = True
             State = cbChecked
@@ -1655,13 +1648,13 @@ object frmMain: TfrmMain
           object cbSmooth: TRzCheckBox
             Left = 282
             Top = 96
-            Width = 130
-            Height = 38
+            Width = 109
+            Height = 36
             Margins.Left = 6
             Margins.Top = 6
             Margins.Right = 6
             Margins.Bottom = 6
-            AutoSizeWidth = 130
+            AutoSizeWidth = 109
             Caption = 'Smooth'
             State = cbUnchecked
             TabOrder = 9
@@ -1682,9 +1675,6 @@ object frmMain: TfrmMain
           BorderOuter = fsNone
           TabOrder = 1
           Color = 15987699
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitHeight = 228
           object rgPolarisation: TRzRadioGroup
             Left = 340
             Top = 0
@@ -2144,9 +2134,6 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 4
-        ExplicitLeft = 4
-        ExplicitTop = 4
-        ExplicitWidth = 2148
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -2339,9 +2326,6 @@ object frmMain: TfrmMain
         BorderWidth = 0
         StyleName = 'Windows'
         TabOrder = 0
-        ExplicitLeft = 4
-        ExplicitTop = 4
-        ExplicitWidth = 692
         ToolbarControls = (
           btnPeriodAdd
           btnPeriodInsert
@@ -2503,9 +2487,6 @@ object frmMain: TfrmMain
         BorderOuter = fsNone
         TabOrder = 1
         Color = 15987699
-        ExplicitLeft = 4
-        ExplicitTop = 58
-        ExplicitWidth = 692
         object Label6: TLabel
           Left = 12
           Top = 20
