@@ -503,7 +503,6 @@ type
     procedure ReleaseTmpLock;
     function SaveProjectINI(const IniFileName: string):boolean;
     procedure LoadAutoSave;
-    procedure ClearAutoSave;
     procedure ExtractProject(const FileName: string);
     procedure GenerateAutosaveName;
     procedure ScaleInterface;
@@ -2010,12 +2009,6 @@ begin
   end;
 end;
 
-procedure TfrmMain.ClearAutoSave;
-begin
-  if FileExists(TConfig.SystemFileName[sfAutoSave]) then
-    DeleteFile(TConfig.SystemFileName[sfAutoSave]);
-end;
-
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
@@ -2490,7 +2483,6 @@ function TfrmMain.SaveProjectINI(const IniFileName: string):boolean;
 var
   INF: TMemIniFile;
 begin
-  Result := false;
   if FileExists(IniFileName) then
     DeleteFile(IniFileName);
 

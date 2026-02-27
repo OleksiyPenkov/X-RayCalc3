@@ -68,6 +68,7 @@ uses
   ShellApi,
   ShlObj,
   System.Character,
+  System.UITypes,
   Vcl.Forms,
   VCLTee.TeEngine,
   unit_Config;

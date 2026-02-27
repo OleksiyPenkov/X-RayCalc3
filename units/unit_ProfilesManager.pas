@@ -246,6 +246,7 @@ var
   s, rho, scale, EndDepth: single;
   i: integer;
 begin
+  Depth := 0;
   FillLayers;
   for I := 0 to High(FLayers) do
   begin
