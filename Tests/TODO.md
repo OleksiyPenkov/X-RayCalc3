@@ -13,7 +13,7 @@
 | 9 | Add tests for `unit_calc` — TCalc constructor, ExpValues. RefCalc/CalcTet private + needs Henke DB | 🟠 L | ✅ Done |
 | 10 | Add tests for `unit_calc` — CalcLambda, CalcTet (private, needs Henke DB) | 🟠 L | ⏸️ Deferred |
 | 11 | Add tests for `unit_materials` — TLayeredModel Init, AddLayers, AddSubstrate, full assembly | 🟠 L | ✅ Done |
-| 12 | Add tests for `unit_Config` — RTTI-based option loading/saving | 🟡 M | 🔴 Open |
-| 13 | Add tests for `unit_LFPSO_Base` — particle swarm optimizer core logic | 🔴 XL | 🔴 Open |
-| 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — structure-specific PSO | 🔴 XL | 🔴 Open |
+| 12 | Add tests for `unit_Config` — RTTI defaults + write/read roundtrip (int/bool/string) | 🟡 M | ✅ Done |
+| 13 | Add tests for `unit_LFPSO_Base` — particle swarm optimizer core logic | 🔴 XL | ⏸️ Deferred |
+| 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — structure-specific PSO | 🔴 XL | ⏸️ Deferred |
 | 15 | Add tests for `unit_SavitzkyGolay` — 4 tests, found off-by-one bug in loop bounds | 🟢 S | ✅ Done |
