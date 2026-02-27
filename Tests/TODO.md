@@ -7,9 +7,9 @@
 | 3 | Add tests for `math_globals` — `ReadHenke`, `ReadHenkeTable`, `WriteHenkeTable` | 🟡 M | ⏸️ Deferred |
 | 4 | Add tests for `unit_helpers` — Normalize, NormalizeAuto, ManualMerge (AutoMerge needs GetDevider — private) | 🟡 M | ✅ Done |
 | 5 | Add tests for `unit_helpers` — SeriesToData, DataToSeries + roundtrip | 🟢 S | ✅ Done |
-| 6 | Add tests for `unit_helpers` — `SeriesToClipboard`, `SeriesFromClipboard`, `SeriesToFile`, `SeriesFromFile` | 🟡 M | 🔴 Open |
+| 6 | Add tests for `unit_helpers` — `SeriesToClipboard`, `SeriesFromClipboard`, `SeriesToFile`, `SeriesFromFile` | 🟡 M | ⏸️ Deferred |
 | 7 | Add tests for `unit_Types` — `TProjectData`, `TCalcLayer`, `TMaterial` | 🟡 M | 🔴 Open |
-| 8 | Add tests for `unit_Types` — `TFuncProfileRec` methods | 🟢 S | 🔴 Open |
+| 8 | Add tests for `unit_Types` — `TFuncProfileRec` (X, Ord, PIndex) | 🟢 S | ✅ Done |
 | 9 | Add tests for `unit_calc` — `RefCalc` with simple single-layer model | 🟠 L | 🔴 Open |
 | 10 | Add tests for `unit_calc` — `CalcLambda`, `CalcTet` sweep functions | 🟠 L | 🔴 Open |
 | 11 | Add tests for `unit_materials` — `TLayeredModel` init, layer composition, material assignment | 🟠 L | 🔴 Open |
