@@ -17,10 +17,12 @@ uses
   unit_helpers in '..\units\unit_helpers.pas',
   unit_Config in '..\units\unit_Config.pas',
   unit_consts in '..\units\unit_consts.pas',
+  unit_SavitzkyGolay in '..\math\unit_SavitzkyGolay.pas',
   TestMathComplex in 'TestMathComplex.pas',
   TestMathGlobals in 'TestMathGlobals.pas',
   TestUnitTypes in 'TestUnitTypes.pas',
-  TestUnitHelpers in 'TestUnitHelpers.pas';
+  TestUnitHelpers in 'TestUnitHelpers.pas',
+  TestSavitzkyGolay in 'TestSavitzkyGolay.pas';
 
 {$R *.res}
 
