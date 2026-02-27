@@ -42,6 +42,22 @@ type
     [Test] procedure Test_PIndex;
   end;
 
+  [TestFixture]
+  TTestProjectData = class
+  public
+    [Test] procedure Test_IsModel_True;
+    [Test] procedure Test_IsModel_False_WrongGroup;
+    [Test] procedure Test_IsModel_False_WrongRowType;
+    [Test] procedure Test_PolyD_SetPoly_Roundtrip;
+    [Test] procedure Test_SetPoly_StoresOrder;
+  end;
+
+  [TestFixture]
+  TTestFitStructureCopy = class
+  public
+    [Test] procedure Test_CopyContent;
+  end;
+
 implementation
 
 uses
@@ -231,6 +247,95 @@ begin
   Assert.AreEqual(Word(2), FP.PIndex);
   FP.Subj := ptRho;
   Assert.AreEqual(Word(3), FP.PIndex);
+end;
+
+{ TTestProjectData }
+
+procedure TTestProjectData.Test_IsModel_True;
+var PD: TProjectData;
+begin
+  PD.Group := gtModel;
+  PD.RowType := prItem;
+  Assert.IsTrue(PD.IsModel);
+end;
+
+procedure TTestProjectData.Test_IsModel_False_WrongGroup;
+var PD: TProjectData;
+begin
+  PD.Group := gtData;
+  PD.RowType := prItem;
+  Assert.IsFalse(PD.IsModel);
+end;
+
+procedure TTestProjectData.Test_IsModel_False_WrongRowType;
+var PD: TProjectData;
+begin
+  PD.Group := gtModel;
+  PD.RowType := prGroup;
+  Assert.IsFalse(PD.IsModel);
+end;
+
+procedure TTestProjectData.Test_PolyD_SetPoly_Roundtrip;
+var
+  PD: TProjectData;
+  Src, Dst: TPolyArray;
+begin
+  // SetPoly stores coefficients into PD.Poly[0..10], PolyD reads them back
+  SetLength(Src, 3);
+  Src[0] := 1.5;
+  Src[1] := 2.5;
+  Src[2] := 3.5;
+
+  PD.RowType := prExtension;
+  PD.SetPoly(Src);
+  Dst := PD.PolyD;
+
+  Assert.AreEqual(3, Length(Dst));
+  Assert.AreEqual(Single(1.5), Dst[0], 1E-5);
+  Assert.AreEqual(Single(2.5), Dst[1], 1E-5);
+  Assert.AreEqual(Single(3.5), Dst[2], 1E-5);
+end;
+
+procedure TTestProjectData.Test_SetPoly_StoresOrder;
+var
+  PD: TProjectData;
+  Src: TPolyArray;
+begin
+  // SetPoly stores High(PolyD) at Poly[10] as the order
+  SetLength(Src, 4);
+  Src[0] := 10; Src[1] := 20; Src[2] := 30; Src[3] := 40;
+
+  PD.RowType := prExtension;
+  PD.SetPoly(Src);
+
+  // Poly[10] should be High(Src) = 3
+  Assert.AreEqual(Single(3), PD.Poly[10], 1E-5);
+end;
+
+{ TTestFitStructureCopy }
+
+procedure TTestFitStructureCopy.Test_CopyContent;
+var
+  Src, Dst: TFitStructure;
+begin
+  SetLength(Src.Stacks, 1);
+  Src.Stacks[0].N := 3;
+  SetLength(Src.Stacks[0].Layers, 2);
+  Src.Stacks[0].Layers[0].Material := 'Si';
+  Src.Stacks[0].Layers[0].P[1].New(10);
+  Src.Stacks[0].Layers[1].Material := 'Au';
+  Src.Stacks[0].Layers[1].P[1].New(20);
+  Src.Subs.Material := 'Glass';
+
+  Src.CopyContent(Dst);
+
+  Assert.AreEqual(1, Length(Dst.Stacks));
+  Assert.AreEqual(Word(3), Dst.Stacks[0].N);
+  Assert.AreEqual(2, Length(Dst.Stacks[0].Layers));
+  Assert.AreEqual('Si', Dst.Stacks[0].Layers[0].Material);
+  Assert.AreEqual(Single(10), Dst.Stacks[0].Layers[0].P[1].V, 1E-5);
+  Assert.AreEqual('Au', Dst.Stacks[0].Layers[1].Material);
+  Assert.AreEqual('Glass', Dst.Subs.Material);
 end;
 
 end.
