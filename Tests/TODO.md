@@ -11,7 +11,7 @@
 | 7 | Add tests for `unit_Types` — TProjectData (IsModel, PolyD/SetPoly), TFitStructure.CopyContent | 🟡 M | ✅ Done |
 | 8 | Add tests for `unit_Types` — `TFuncProfileRec` (X, Ord, PIndex) | 🟢 S | ✅ Done |
 | 9 | Add tests for `unit_calc` — TCalc constructor, ExpValues. RefCalc/CalcTet private + needs Henke DB | 🟠 L | ✅ Done |
-| 10 | Add tests for `unit_calc` — CalcLambda, CalcTet (private, needs Henke DB) | 🟠 L | ⏸️ Deferred |
+| 10 | Add tests for `unit_calc` — RefCalc, CalcTet, CalcLambda — 7 tests (physics validation, grid, UseData, wavelength scan) | 🟠 L | ✅ Done |
 | 11 | Add tests for `unit_materials` — TLayeredModel Init, AddLayers, AddSubstrate, full assembly | 🟠 L | ✅ Done |
 | 12 | Add tests for `unit_Config` — RTTI defaults + write/read roundtrip (int/bool/string) | 🟡 M | ✅ Done |
 | 13 | Add tests for `unit_LFPSO_Base` — particle swarm optimizer core logic | 🔴 XL | ⏸️ Deferred |
