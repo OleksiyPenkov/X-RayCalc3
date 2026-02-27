@@ -26,7 +26,8 @@ uses
   TestUnitHelpers in 'TestUnitHelpers.pas',
   TestSavitzkyGolay in 'TestSavitzkyGolay.pas',
   TestCalcEngine in 'TestCalcEngine.pas',
-  TestConfig in 'TestConfig.pas';
+  TestConfig in 'TestConfig.pas',
+  TestHenke in 'TestHenke.pas';
 
 {$R *.res}
 
