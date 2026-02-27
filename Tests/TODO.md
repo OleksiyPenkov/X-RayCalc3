@@ -10,9 +10,9 @@
 | 6 | Add tests for `unit_helpers` — `SeriesToClipboard`, `SeriesFromClipboard`, `SeriesToFile`, `SeriesFromFile` | 🟡 M | ⏸️ Deferred |
 | 7 | Add tests for `unit_Types` — TProjectData (IsModel, PolyD/SetPoly), TFitStructure.CopyContent | 🟡 M | ✅ Done |
 | 8 | Add tests for `unit_Types` — `TFuncProfileRec` (X, Ord, PIndex) | 🟢 S | ✅ Done |
-| 9 | Add tests for `unit_calc` — `RefCalc` with simple single-layer model | 🟠 L | 🔴 Open |
-| 10 | Add tests for `unit_calc` — `CalcLambda`, `CalcTet` sweep functions | 🟠 L | 🔴 Open |
-| 11 | Add tests for `unit_materials` — `TLayeredModel` init, layer composition, material assignment | 🟠 L | 🔴 Open |
+| 9 | Add tests for `unit_calc` — TCalc constructor, ExpValues. RefCalc/CalcTet private + needs Henke DB | 🟠 L | ✅ Done |
+| 10 | Add tests for `unit_calc` — CalcLambda, CalcTet (private, needs Henke DB) | 🟠 L | ⏸️ Deferred |
+| 11 | Add tests for `unit_materials` — TLayeredModel Init, AddLayers, AddSubstrate, full assembly | 🟠 L | ✅ Done |
 | 12 | Add tests for `unit_Config` — RTTI-based option loading/saving | 🟡 M | 🔴 Open |
 | 13 | Add tests for `unit_LFPSO_Base` — particle swarm optimizer core logic | 🔴 XL | 🔴 Open |
 | 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — structure-specific PSO | 🔴 XL | 🔴 Open |
