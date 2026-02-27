@@ -33,6 +33,15 @@ type
     [Test] procedure Test_ProfileFromString_Roundtrip;
   end;
 
+  [TestFixture]
+  TTestFuncProfileRec = class
+  public
+    [Test] procedure Test_X_Counter;
+    [Test] procedure Test_X_ResetOnFirst;
+    [Test] procedure Test_Ord;
+    [Test] procedure Test_PIndex;
+  end;
+
 implementation
 
 uses
@@ -173,6 +182,55 @@ begin
   Assert.AreEqual(LD1.PP[1][0], LD2.PP[1][0], 1E-3);
   Assert.AreEqual(LD1.PP[1][1], LD2.PP[1][1], 1E-3);
   Assert.AreEqual(LD1.PP[1][2], LD2.PP[1][2], 1E-3);
+end;
+
+{ TTestFuncProfileRec }
+
+procedure TTestFuncProfileRec.Test_X_Counter;
+var FP: TFuncProfileRec;
+begin
+  // X(1) resets counter to 0, then increments -> returns 1
+  // X(2) increments -> returns 2
+  // X(3) increments -> returns 3
+  Assert.AreEqual(Word(1), FP.X(1));
+  Assert.AreEqual(Word(2), FP.X(2));
+  Assert.AreEqual(Word(3), FP.X(3));
+end;
+
+procedure TTestFuncProfileRec.Test_X_ResetOnFirst;
+var FP: TFuncProfileRec;
+begin
+  // Calling X(1) again should reset the counter
+  FP.X(1);
+  FP.X(2);
+  FP.X(3);
+  // Reset
+  Assert.AreEqual(Word(1), FP.X(1));
+  Assert.AreEqual(Word(2), FP.X(2));
+end;
+
+procedure TTestFuncProfileRec.Test_Ord;
+var FP: TFuncProfileRec;
+begin
+  // Ord returns Trunc(C[10]) — the polynomial order stored at index 10
+  SetLength(FP.C, 11);
+  FP.C[10] := 3.7;
+  Assert.AreEqual(Word(3), FP.Ord);
+end;
+
+procedure TTestFuncProfileRec.Test_PIndex;
+var FP: TFuncProfileRec;
+begin
+  // PIndex = System.Ord(Subj) + 1
+  // ptH = 0 -> PIndex = 1
+  // ptS = 1 -> PIndex = 2
+  // ptRho = 2 -> PIndex = 3
+  FP.Subj := ptH;
+  Assert.AreEqual(Word(1), FP.PIndex);
+  FP.Subj := ptS;
+  Assert.AreEqual(Word(2), FP.PIndex);
+  FP.Subj := ptRho;
+  Assert.AreEqual(Word(3), FP.PIndex);
 end;
 
 end.
