@@ -28,7 +28,8 @@ uses
   TestCalcEngine in 'TestCalcEngine.pas',
   TestConfig in 'TestConfig.pas',
   TestHenke in 'TestHenke.pas',
-  TestCalcPhysics in 'TestCalcPhysics.pas';
+  TestCalcPhysics in 'TestCalcPhysics.pas',
+  TestSeriesIO in 'TestSeriesIO.pas';
 
 {$R *.res}
 
