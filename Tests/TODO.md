@@ -2,7 +2,7 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 1 | Add tests for remaining `math_complex` functions (LnZ, Log10Z, TanZ, ArcTanZ, CoshZ, SinhZ, ArcSinhZ, TanhZ, ArcTanhZ, ArcCosZ, PolarZ, RectangularZ, PowZR1, PowZR2, PowRZ, ModZ, ArgZ) | 🟡 M | 🔴 Open |
+| 1 | Add tests for remaining `math_complex` functions — 29 tests added, 3 bugs found (PowZR2 recursion, TanhZ denominator, ArcSinZ domain) | 🟡 M | ✅ Done |
 | 2 | Add tests for `math_globals` — `Interp`, `Sort`, `CopyData`, `FuncProfile` | 🟢 S | 🔴 Open |
 | 3 | Add tests for `math_globals` — `ReadHenke`, `ReadHenkeTable`, `WriteHenkeTable` | 🟡 M | 🔴 Open |
 | 4 | Add tests for `unit_helpers` — `Normalize`, `NormalizeAuto`, `AutoMerge`, `ManualMerge` | 🟡 M | 🔴 Open |
