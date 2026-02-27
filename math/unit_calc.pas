@@ -37,7 +37,7 @@ type
                 end;
 
   TCalc = class(TObject)
-    private
+    protected
       CalcParams: array of TCalcParams;
 
       FData: TDataArray;

@@ -27,7 +27,8 @@ uses
   TestSavitzkyGolay in 'TestSavitzkyGolay.pas',
   TestCalcEngine in 'TestCalcEngine.pas',
   TestConfig in 'TestConfig.pas',
-  TestHenke in 'TestHenke.pas';
+  TestHenke in 'TestHenke.pas',
+  TestCalcPhysics in 'TestCalcPhysics.pas';
 
 {$R *.res}
 
