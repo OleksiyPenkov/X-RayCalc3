@@ -3,7 +3,7 @@
 | # | Task | Size | Status |
 |---|------|------|--------|
 | 1 | Add tests for remaining `math_complex` functions — 29 tests added, 3 bugs found (PowZR2 recursion, TanhZ denominator, ArcSinZ domain) | 🟡 M | ✅ Done |
-| 2 | Add tests for `math_globals` — `Interp`, `Sort`, `CopyData`, `FuncProfile` | 🟢 S | 🔴 Open |
+| 2 | Add tests for `math_globals` — CopyData, FuncProfile, Poly(FuncProfileRec) (Sort skipped — needs TLineSeries, Interp is private) | 🟢 S | ✅ Done |
 | 3 | Add tests for `math_globals` — `ReadHenke`, `ReadHenkeTable`, `WriteHenkeTable` | 🟡 M | 🔴 Open |
 | 4 | Add tests for `unit_helpers` — `Normalize`, `NormalizeAuto`, `AutoMerge`, `ManualMerge` | 🟡 M | 🔴 Open |
 | 5 | Add tests for `unit_helpers` — `SeriesToData`, `DataToSeries` conversion functions | 🟢 S | 🔴 Open |
