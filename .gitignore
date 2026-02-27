@@ -27,3 +27,4 @@ CMDBin
 *.dsk
 Win32
 Win64
+/.claude/settings.local.json
