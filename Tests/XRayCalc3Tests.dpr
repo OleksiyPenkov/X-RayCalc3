@@ -18,11 +18,14 @@ uses
   unit_Config in '..\units\unit_Config.pas',
   unit_consts in '..\units\unit_consts.pas',
   unit_SavitzkyGolay in '..\math\unit_SavitzkyGolay.pas',
+  unit_materials in '..\math\unit_materials.pas',
+  unit_calc in '..\math\unit_calc.pas',
   TestMathComplex in 'TestMathComplex.pas',
   TestMathGlobals in 'TestMathGlobals.pas',
   TestUnitTypes in 'TestUnitTypes.pas',
   TestUnitHelpers in 'TestUnitHelpers.pas',
-  TestSavitzkyGolay in 'TestSavitzkyGolay.pas';
+  TestSavitzkyGolay in 'TestSavitzkyGolay.pas',
+  TestCalcEngine in 'TestCalcEngine.pas';
 
 {$R *.res}
 
