@@ -67,7 +67,6 @@ begin
   Application.CreateForm(TfrmJsonEditor, frmJsonEditor);
   Application.CreateForm(TfrmBenchmark, frmBenchmark);
   Application.CreateForm(TfrmSettings, frmSettings);
-  Application.CreateForm(TfrmSettings, frmSettings);
   Application.CreateForm(TedtrProfileTable, edtrProfileTable);
   Application.CreateForm(TfrmFitSettings, frmFitSettings);
   Application.Run;

@@ -69,7 +69,8 @@ uses
   ShlObj,
   System.Character,
   Vcl.Forms,
-  VCLTee.TeEngine;
+  VCLTee.TeEngine,
+  unit_Config;
 
 const
   TabSeparator = #9;
@@ -88,9 +89,9 @@ end;
 
 function c_GetTempPath: String;
 var
-  Buffer: array[0..65536] of Char;
+  Buffer: array[0..MAX_PATH] of Char;
 begin
-  SetString(Result, Buffer, GetTempPath(Sizeof(Buffer)-1,Buffer));
+  SetString(Result, Buffer, GetTempPath(Length(Buffer), Buffer));
 end;
 
 function GetSpecialPath(CSIDL: word): string;
@@ -177,14 +178,14 @@ begin
 end;
 
 procedure OpenHelpFile(const FileName: string);
-//var
-//  FullPath: string;
+var
+  FullPath: string;
 begin
-//  FullPath := Settings.AppPath + 'docs\' + FileName;
-//  if FileExists(FullPath) then
-//     SimpleShellExecute(frmMain.Handle, FullPath)
-//  else
-//    MessageDlg('Can''t find help files! Check "docs/" folder!', mtError, [mbOk], 0);
+  FullPath := TConfig.AppPath + 'docs\' + FileName;
+  if FileExists(FullPath) then
+     SimpleShellExecute(0, FullPath)
+  else
+    MessageDlg('Can''t find help files! Check "docs/" folder!', mtError, [mbOk], 0);
 end;
 
 
@@ -518,8 +519,9 @@ begin
       for i := 1 to 21 do
         MyStringList.Delete(0);
     end;
-    while S[1] = '*' do
+    while (MyStringList.Count > 0) and (MyStringList[0] <> '') and (MyStringList[0][1] = '*') do
     begin
+      S := MyStringList[0];
       Descr := Descr + S + #13#10;
       MyStringList.Delete(0);
     end;

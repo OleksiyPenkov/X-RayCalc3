@@ -348,7 +348,7 @@ var
     end;
   end;
 
-  procedure LayerAmplitudeRefractionS;    { Коэффициент отражения Rs}
+  procedure LayerAmplitudeRefractionS;    { Reflection coefficient Rs }
   var
     i: integer;
     b1, b2: TComplex;
@@ -366,7 +366,7 @@ var
     end;
   end;
 
-  procedure LayerAmplitudeRefractionP;      { Коэффициент отражения Rp }
+  procedure LayerAmplitudeRefractionP;      { Reflection coefficient Rp }
   var
     i: integer;
     a1, a2, b1, b2: TComplex;
@@ -386,7 +386,7 @@ var
     end;
   end;
 
-  procedure FresnelCoefficients;   { Френелевские коэффициенты (p-p) }
+  procedure FresnelCoefficients;   { Fresnel coefficients }
   var
     i: Integer;
     a1: TComplex;
@@ -399,8 +399,8 @@ var
   end;
 
 begin
-  c1 := 4 * Pi / Lambda; { волновое число }
-  c2 := 2 * Pi / Lambda; {другое волновое число }
+  c1 := 4 * Pi / Lambda; { wave number }
+  c2 := 2 * Pi / Lambda; { another wave number }
   t := Pi / 2 - Pi * ATheta / 180;
 
   FastSinCos(t, sin_t, cos_t);

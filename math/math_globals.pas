@@ -115,66 +115,6 @@ begin
 end;
 
 
-procedure Convolute_new(Width: single; var Series: TLineSeries);
-var
-  Sum, delta, t1, A: single;
-  i, N, m, p, Size: integer;
-
-  Temp: TDataArray;
-
-  function Gauss(x: single): single;
-  var
-    c: single;
-  begin
-    c := A/(Width * sqrt(Pi / 2));
-    Result := c * exp(- sqr(x) / (2 * sqr(Width)));
-  end;
-
-
-  function Box(width, x: single): single;
-  begin
-    if (x < -width / 2) or (x > width /2 ) then Result := 0
-      else  Result := 30;
-  end;
-
-
-begin
-  if Width = 0 then Exit;
-  Size := Series.Count;
-  Width := Width * 0.849;
-  delta := Series.XValues[11] - Series.XValues[10];
-  N := Round(0.1 / delta);
-  if frac(N / 2) = 0 then
-    N := N - 1;
-  SetLength(Temp, Size - 2*N);
-  p := 0;
-  for i := N to Size - N - 1 do
-  begin
-    A := 0;
-    for m := i - N to i + N do
-    begin
-      if Series.YValues[m] > A then A := Series.YValues[m]
-    end;
-
-
-    t1 := -0.1;
-    Sum := 0;
-    for m := i - N to i + N do
-    begin
-      Sum := Sum + Series.YValues[m] * Gauss(t1) * delta;
-      //Sum := Sum + Series.YValues[k] * Box(width, t1) * delta;
-      t1 := t1 + delta;
-    end;
-    Temp[p].t := Series.XValues[i + 1];
-    Temp[p].R := Sum;
-    inc(p);
-  end;
-  Series.Clear;
-  for i := 0 to High(Temp) - 1 do
-    Series.AddXY(Temp[i].t, Temp[i].r)
-end;
-
-
 function Interp(e1, e2, f1, f2, x: single): single;
 var
     a, b: single;
@@ -404,7 +344,7 @@ begin
   except
     on e: EInOutError do
     begin
-      Writeln(Format('Error writing file!', [N]));
+      Writeln(Format('Error writing file %s!', [N]));
     end;
   end;
 end;

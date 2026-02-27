@@ -695,7 +695,7 @@ begin
           JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
-          Profile := Data.ProfileToSrting(TParameterType(p - 1));
+          Profile := Data.ProfileToString(TParameterType(p - 1));
           JLayer.AddPair('Profile' + UpperCase(PAlias[p]), Profile);
         end;
 
@@ -818,7 +818,7 @@ begin
           if PS <> '' then
           begin
             Data.ClearProfiles(p);
-            Data.ProfileFromSrting(p, PS);
+            Data.ProfileFromString(p, PS);
           end;
 
         end;

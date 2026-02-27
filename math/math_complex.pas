@@ -215,8 +215,30 @@ end;
 }
 
 function StringToComplex(const S: string): TComplex;
+var
+  p: Integer;
+  s1, s2: string;
 begin
-  Result.Im := StrToFloat(S);
+  s1 := Trim(S);
+  // Strip surrounding parentheses if present
+  if (Length(s1) > 0) and (s1[1] = '(') then
+    s1 := Copy(s1, 2, Length(s1) - 2);
+
+  p := Pos(',', s1);
+  if p > 0 then
+  begin
+    s2 := Trim(Copy(s1, p + 1, MaxInt));
+    s1 := Trim(Copy(s1, 1, p - 1));
+    // Remove trailing 'i' from imaginary part
+    if (Length(s2) > 0) and (s2[Length(s2)] = 'i') then
+      s2 := Trim(Copy(s2, 1, Length(s2) - 1));
+    Result.Re := StrToFloat(s1);
+    Result.Im := StrToFloat(s2);
+  end
+  else begin
+    Result.Re := StrToFloat(s1);
+    Result.Im := 0;
+  end;
 end;
 
 { return real part of Z }

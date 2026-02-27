@@ -161,7 +161,7 @@ begin
     if FLayers[i].ro <> 0 then
       l_ro := FLayers[i].ro
     else
-      l_ro := FMaterials[CurrentMaterial].ro;   // use default falue for density
+      l_ro := FMaterials[CurrentMaterial].ro;   // use default value for density
 
     with FLayers[i] do
     begin

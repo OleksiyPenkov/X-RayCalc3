@@ -141,6 +141,7 @@ uses
   System.SysUtils,
   Neslib.FastMath,
   unit_helpers,
+  unit_Config,
   Dialogs;
 
 { Supplementary}
@@ -170,7 +171,7 @@ procedure LineToFile(const Name, S: string; val: single);
 var
   F: Text;
 begin
-  Assign(F, 'D:\temp\' + Name + '.txt');
+  Assign(F, TConfig.TempPath + Name + '.txt');
   Rewrite(F);
   Writeln(F, Name, val);
   Writeln(F, S);
@@ -367,9 +368,6 @@ begin
 
   if X[i][j][k][0] < Xmin[0][j][k][0] then
              X[i][j][k][0] := Xmin[0][j][k][0];
-
-  if X[i][j][k][0] < 0 then ShowMessage(Format('%d %d %d',[i,j,k]));
-
 end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;

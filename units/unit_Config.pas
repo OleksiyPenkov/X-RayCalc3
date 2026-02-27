@@ -152,7 +152,7 @@ type
     end;
 
     /// <summary>
-    ///      ласс дл¤ работы с настройками
+    ///   Application configuration manager
     /// </summary>
     TConfig = class(TObject)
     strict private
@@ -195,7 +195,7 @@ type
     class property SystemDir[DirType: TXRCSystemDir]: string read GetSystemDir write SetSystemDir;
     class property SystemDirS[DirType: TXRCSystemDir]: string read GetSystemDirS write SetSystemDirS;
 
-    class procedure WiteStringList(const Section: string;
+    class procedure WriteStringList(const Section: string;
       var List: array of string); static;
     class procedure ReadStringList(const Section: string;
       var List: array of string); static;
@@ -361,7 +361,7 @@ begin
           sdOutDir: TConfig.Section<TPathOptions>.OutputDir := Value;
      sdBenchOutDir: TConfig.Section<TPathOptions>.BenchOutputDir := Value;
          sdJobsDir: TConfig.Section<TPathOptions>.JobsDir := Value;
-      sdStorageDir: TConfig.Section<TPathOptions>.JobsDir := Value;
+      sdStorageDir: TConfig.Section<TPathOptions>.StorageDir := Value;
   else
     Assert(False);
   end;
@@ -390,7 +390,7 @@ begin
   end;
 end;
 
-class procedure TConfig.WiteStringList(const Section: string; var List: array of string);
+class procedure TConfig.WriteStringList(const Section: string; var List: array of string);
 var
   i: Integer;
 begin
@@ -433,7 +433,7 @@ begin
 end;
 
 /// <summary>
-/// извлечение атрибута DefaultValue дл¤ свойства
+/// Extract DefaultValue attribute for a property
 /// </summary>
 function TBaseOptions.getDefaultAttribute(prop: TRttiProperty): DefaultValueAttribute;
 var attr : TCustomAttribute;
@@ -449,9 +449,9 @@ end;
 
 {$REGION '--------------------- get-Methods ---------------------------}
 /// <summary>
-///     Generic метод получен¤и значени¤ свойства.
-///  если свойство в INI отсутствует, то возвращаетс¤ значение атрибута DefaultValue
-///  если атрибут не указан, то Default(T)
+///     Generic method to get a property value.
+///  If the property is absent from INI, returns the DefaultValue attribute.
+///  If no attribute is specified, returns Default(T).
 /// </summary>
 function TBaseOptions.getGenericValue<T>(index: integer): T;
 var prop : TRttiProperty;
@@ -512,7 +512,7 @@ end;
 {$REGION '--------------------- set Methods ---------------------------'}
 
 /// <summary>
-///     Generic-метод записи свойства в INI файл.
+///     Generic method to write a property to INI file.
 /// </summary>
 procedure TBaseOptions.SetGenericValue<T>(index: integer; value: T);
 var prop : TRttiProperty;
@@ -557,7 +557,7 @@ end;
 {$ENDREGION}
 
 /// <summary>
-///     —войство класса по его индексу
+///     Get property by its index
 /// </summary>
 function TBaseOptions.getProperty(index: integer): TRttiProperty;
 var t : TRttiType;

@@ -116,7 +116,7 @@ type
     e: TComplex; { Epsilon }
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
-    RF, r: TComplex; { Френелевский коэф. }
+    RF, r: TComplex; { Fresnel coefficient }
     LayerID, StackID: Word;
   end;
 
@@ -164,8 +164,8 @@ type
   public
     procedure ClearProfiles(const p: Word);
     procedure AddProfilePoint(const Val: Single; Index: Word);
-    function ProfileFromSrting(const p: Word; Profile: string): string;
-    function ProfileToSrting(const Subj: TParameterType): string;
+    function ProfileFromString(const p: Word; Profile: string): string;
+    function ProfileToString(const Subj: TParameterType): string;
   end;
 
   TLayersData = array of TLayerData;
@@ -308,7 +308,7 @@ begin
   Insert(Val, PP[Index], MaxInt);
 end;
 
-function TLayerData.ProfileFromSrting(const p: Word; Profile: string): string;
+function TLayerData.ProfileFromString(const p: Word; Profile: string): string;
 var
   i, k: Integer;
   val: single;
@@ -323,7 +323,7 @@ begin
   end;
 end;
 
-function TLayerData.ProfileToSrting(const Subj: TParameterType): string;
+function TLayerData.ProfileToString(const Subj: TParameterType): string;
 var
   i, p: Integer;
   Val : single;

@@ -2452,7 +2452,7 @@ begin
     if FRecentProjects.Count > MAX_RECENT_CAPACITY then
           FRecentProjects.Delete(FRecentProjects.Count - 1);
 
-    TConfig.WiteStringList('Recent', FRecentProjects.List);
+    TConfig.WriteStringList('Recent', FRecentProjects.List);
     FillRecentMenu;
 end;
 
