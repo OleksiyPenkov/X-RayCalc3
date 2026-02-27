@@ -4,7 +4,7 @@
 |---|------|------|--------|
 | 1 | Add tests for remaining `math_complex` functions — 29 tests added, 3 bugs found (PowZR2 recursion, TanhZ denominator, ArcSinZ domain) | 🟡 M | ✅ Done |
 | 2 | Add tests for `math_globals` — CopyData, FuncProfile, Poly(FuncProfileRec) (Sort skipped — needs TLineSeries, Interp is private) | 🟢 S | ✅ Done |
-| 3 | Add tests for `math_globals` — `ReadHenke`, `ReadHenkeTable`, `WriteHenkeTable` | 🟡 M | ⏸️ Deferred |
+| 3 | Add tests for `math_globals` — ReadHenke, ReadHenkeTable, WriteHenkeTable — 8 tests (real DB + roundtrip + interpolation + error handling) | 🟡 M | ✅ Done |
 | 4 | Add tests for `unit_helpers` — Normalize, NormalizeAuto, ManualMerge (AutoMerge needs GetDevider — private) | 🟡 M | ✅ Done |
 | 5 | Add tests for `unit_helpers` — SeriesToData, DataToSeries + roundtrip | 🟢 S | ✅ Done |
 | 6 | Add tests for `unit_helpers` — `SeriesToClipboard`, `SeriesFromClipboard`, `SeriesToFile`, `SeriesFromFile` | 🟡 M | ⏸️ Deferred |
