@@ -102,16 +102,38 @@ end;
 
 
 procedure Sort;
-var
-  i,j: Integer;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J: Integer;
+    Pivot: Double;
+  begin
+    repeat
+      I := L;
+      J := R;
+      Pivot := Series.XValues[(L + R) shr 1];
+      repeat
+        while Series.XValues[I] < Pivot do Inc(I);
+        while Series.XValues[J] > Pivot do Dec(J);
+        if I <= J then
+        begin
+          if I <> J then
+          begin
+            Series.XValues.Exchange(I, J);
+            Series.YValues.Exchange(I, J);
+          end;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+
 begin
-  for i := 0 to Series.Count - 2 do
-    for j := i + 1 to Series.Count - 1 do
-      if Series.XValues[i] > Series.XValues[j] then
-      begin
-        Series.XValues.Exchange(i, j);
-        Series.YValues.Exchange(i, j);
-      end;
+  if Series.Count > 1 then
+    QuickSort(0, Series.Count - 1);
 end;
 
 

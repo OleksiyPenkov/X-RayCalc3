@@ -104,6 +104,7 @@ function TCalc.CalcChiSquare(const ThetaWieght: integer): single;
 var
   i: Integer;
   Chi: single;
+  LogResult: single;
 
   UseWeight: boolean;
   Ratio: single;
@@ -116,7 +117,8 @@ begin
   begin
     if FResult[i].r = 0 then Continue;
 
-    Chi := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
+    LogResult := Log10(FResult[i].r);
+    Chi := Sqr((Log10(FData[i].r) - LogResult) / LogResult);
     if UseWeight  then
     begin
       Ratio := FData[i].r / FMovAvg[i].r;
@@ -376,8 +378,8 @@ var
     begin
       a1 := DivZZ(ALayers[i].K, ALayers[i].e);
       a2 := DivZZ(ALayers[i + 1].K, ALayers[i + 1].e);
-      b1 := SubZZ(MulRZ(1, a1), MulRZ(1, a2));
-      b2 := AddZZ(MulRZ(1, a1), MulRZ(1, a2));
+      b1 := SubZZ(a1, a2);
+      b2 := AddZZ(a1, a2);
       ALayers[i].RF := DivZZ(b1, b2);
       s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
       s := c1 * sqrt(cos_t * sqrt(s1));
@@ -400,7 +402,7 @@ var
 
 begin
   c1 := 4 * Pi / Lambda; { wave number }
-  c2 := 2 * Pi / Lambda; { another wave number }
+  c2 := c1 * 0.5;        { half wave number }
   t := Pi / 2 - Pi * ATheta / 180;
 
   FastSinCos(t, sin_t, cos_t);

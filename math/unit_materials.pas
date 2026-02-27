@@ -146,7 +146,6 @@ end;
 
 function TLayeredModel.GetLayers: TCalcLayers;
 begin
-  SetLength(Result, Length(FLayers));
   Result := Copy(FLayers, 0, Length(FLayers));
 end;
 
