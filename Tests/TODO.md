@@ -8,7 +8,7 @@
 | 4 | Add tests for `unit_helpers` — Normalize, NormalizeAuto, ManualMerge (AutoMerge needs GetDevider — private) | 🟡 M | ✅ Done |
 | 5 | Add tests for `unit_helpers` — SeriesToData, DataToSeries + roundtrip | 🟢 S | ✅ Done |
 | 6 | Add tests for `unit_helpers` — `SeriesToClipboard`, `SeriesFromClipboard`, `SeriesToFile`, `SeriesFromFile` | 🟡 M | ⏸️ Deferred |
-| 7 | Add tests for `unit_Types` — `TProjectData`, `TCalcLayer`, `TMaterial` | 🟡 M | 🔴 Open |
+| 7 | Add tests for `unit_Types` — TProjectData (IsModel, PolyD/SetPoly), TFitStructure.CopyContent | 🟡 M | ✅ Done |
 | 8 | Add tests for `unit_Types` — `TFuncProfileRec` (X, Ord, PIndex) | 🟢 S | ✅ Done |
 | 9 | Add tests for `unit_calc` — `RefCalc` with simple single-layer model | 🟠 L | 🔴 Open |
 | 10 | Add tests for `unit_calc` — `CalcLambda`, `CalcTet` sweep functions | 🟠 L | 🔴 Open |
@@ -16,4 +16,4 @@
 | 12 | Add tests for `unit_Config` — RTTI-based option loading/saving | 🟡 M | 🔴 Open |
 | 13 | Add tests for `unit_LFPSO_Base` — particle swarm optimizer core logic | 🔴 XL | 🔴 Open |
 | 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — structure-specific PSO | 🔴 XL | 🔴 Open |
-| 15 | Add tests for `unit_SavitzkyGolay` — smoothing filter correctness | 🟢 S | 🔴 Open |
+| 15 | Add tests for `unit_SavitzkyGolay` — 4 tests, found off-by-one bug in loop bounds | 🟢 S | ✅ Done |
