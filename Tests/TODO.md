@@ -7,7 +7,7 @@
 | 3 | Add tests for `math_globals` — ReadHenke, ReadHenkeTable, WriteHenkeTable — 8 tests (real DB + roundtrip + interpolation + error handling) | 🟡 M | ✅ Done |
 | 4 | Add tests for `unit_helpers` — Normalize, NormalizeAuto, ManualMerge (AutoMerge needs GetDevider — private) | 🟡 M | ✅ Done |
 | 5 | Add tests for `unit_helpers` — SeriesToData, DataToSeries + roundtrip | 🟢 S | ✅ Done |
-| 6 | Add tests for `unit_helpers` — `SeriesToClipboard`, `SeriesFromClipboard`, `SeriesToFile`, `SeriesFromFile` | 🟡 M | ⏸️ Deferred |
+| 6 | Add tests for `unit_helpers` — SeriesToFile, SeriesFromFile, Clipboard, SeriesToString, DataToFile — 8 tests (file I/O roundtrip, comment/header parsing, clipboard with graceful skip) | 🟡 M | ✅ Done |
 | 7 | Add tests for `unit_Types` — TProjectData (IsModel, PolyD/SetPoly), TFitStructure.CopyContent | 🟡 M | ✅ Done |
 | 8 | Add tests for `unit_Types` — `TFuncProfileRec` (X, Ord, PIndex) | 🟢 S | ✅ Done |
 | 9 | Add tests for `unit_calc` — TCalc constructor, ExpValues. RefCalc/CalcTet private + needs Henke DB | 🟠 L | ✅ Done |
