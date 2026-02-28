@@ -4,10 +4,10 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 1 | Fix `DivRZ` wrong formula — returns `(R/Z.Re, R/Z.Im)` when both nonzero, correct is `R*(x-yi)/(x²+y²)`. Same bug in `cmd_math_complex.pas` (`math_complex.pas:313-322`) | 🟢 S | 🔴 Open |
-| 2 | Fix `SqrtZ(0,0)` returns `(1,0)` instead of `(0,0)` (`math_complex.pas:534-535`) | 🟢 S | 🔴 Open |
-| 3 | Fix `PowZR2` infinite recursion — `PowZR2` → `PowZZ` → `PowZR2` when Z2.Im=0 (`math_complex.pas:580-583`) | 🟡 M | 🔴 Open |
-| 4 | Fix `TanhZ` swapped denominator — uses `cos(x)+cosh(y)` but correct is `cosh(x)+cos(y)` (`math_complex.pas:461-469`) | 🟢 S | 🔴 Open |
+| 1 | Fix `DivRZ` wrong formula — returns `(R/Z.Re, R/Z.Im)` when both nonzero, correct is `R*(x-yi)/(x²+y²)`. Same bug in `cmd_math_complex.pas` (`math_complex.pas:313-322`) | 🟢 S | ✅ Done |
+| 2 | Fix `SqrtZ(0,0)` returns `(1,0)` instead of `(0,0)` (`math_complex.pas:534-535`) | 🟢 S | ✅ Done |
+| 3 | Fix `PowZR2` infinite recursion — `PowZR2` → `PowZZ` → `PowZR2` when Z2.Im=0. Now computes directly via exp/ln (`math_complex.pas:580-583`) | 🟡 M | ✅ Done |
+| 4 | Fix `TanhZ` swapped denominator — uses `cos(x)+cosh(y)` but correct is `cosh(x)+cos(y)` (`math_complex.pas:461-469`) | 🟢 S | ✅ Done |
 | 5 | Fix `Smooth` — `.t` values never set in output array, all zero (`unit_helpers.pas:109-140`) | 🟢 S | 🔴 Open |
 | 6 | Fix `FillElementsList` — missing `FindClose(F)` after `FindFirst/FindNext`, file handle leak (`unit_helpers.pas:245-249`) | 🟢 S | 🔴 Open |
 | 7 | Fix `cmd_math_complex.StringToComplex` — completely broken, only parses Im part (`cmd_math_complex.pas:215-218`) | 🟢 S | 🔴 Open |
@@ -27,14 +27,14 @@
 | 16 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker in `TProjectData`. Use struct with explicit `Count` field (`unit_Types.pas:65-66`) | 🟡 M | 🔴 Open |
 | 17 | Fix implicit global `Structure` in `TProfileManager` — bare variable referenced without being a field or parameter (`unit_ProfilesManager.pas:105+`) | 🟡 M | 🔴 Open |
 | 18 | Replace old-style I/O in `DataToFile` — uses deprecated `Assign/Rewrite/Writeln/Close` without try/finally (`unit_helpers.pas:479-493`) | 🟢 S | 🔴 Open |
-| 19 | Remove redundant `Randomize` calls — called multiple times per run instead of once at startup (`unit_LFPSO_Base.pas:522,540`, `unit_LFPSO_Irregular.pas:177`) | 🟢 S | 🔴 Open |
-| 20 | Extract `DivZZ` denominator to local variable — `Z2.Re² + Z2.Im²` computed twice (`math_complex.pas:326-329`) | 🟢 S | 🔴 Open |
+| 19 | Remove redundant `Randomize` calls — called multiple times per run instead of once at startup (`unit_LFPSO_Base.pas:522,540`, `unit_LFPSO_Irregular.pas:177`) | 🟢 S | ✅ Done |
+| 20 | Extract `DivZZ` denominator to local variable — `Z2.Re² + Z2.Im²` computed twice (`math_complex.pas:326-329`) | 🟢 S | ✅ Done |
 
 ## Optimizations
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 21 | Precompute `LevyWalk` constants — `Gamma(2.5)`, `Gamma(1.25)`, `sigma_u` are all constants (beta=1.5). Called thousands of times per iteration (`unit_LFPSO_Base.pas:373-392`) | 🟡 M | 🔴 Open |
+| 21 | Precompute `LevyWalk` constants — `Gamma(2.5)`, `Gamma(1.25)`, `sigma_u` are all constants (beta=1.5). Called thousands of times per iteration (`unit_LFPSO_Base.pas:373-392`) | 🟡 M | ✅ Done |
 | 22 | Pool/reuse `TCalc` in `CalcSolution` — currently creates/destroys per particle in tight loop (`unit_LFPSO_Base.pas:396-427`) | 🟡 M | 🔴 Open |
 | 23 | Avoid full array copy in `GetLayers` — `Copy(FLayers, 0, Length)` runs inside parallel CalcTet loop. Return reference instead (`unit_materials.pas:147-150`) | 🟢 S | 🔴 Open |
 | 24 | Use dictionary for material lookup in `AddMaterial` — currently O(n) linear scan (`unit_materials.pas:96-102`) | 🟡 M | 🔴 Open |

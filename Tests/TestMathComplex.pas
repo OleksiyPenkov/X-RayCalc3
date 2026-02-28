@@ -80,11 +80,11 @@ type
     [Test] procedure Test_PolarZ_RectangularZ_Roundtrip;
 
     { --- New: Power functions --- }
-    // NOTE: PowZR1, PowZR2, PowRZ have infinite recursion bug:
-    //   PowZZ -> PowZR2 -> PowZZ (when exponent Im=0)
-    //   These tests use PowZZ with complex exponent to avoid the crash.
     [Test] procedure Test_PowZZ_ComplexExponent;
     [Test] procedure Test_PowZZ_Square_ViaComplex;
+    [Test] procedure Test_PowZR2_Square;
+    [Test] procedure Test_PowZR1_Cube;
+    [Test] procedure Test_PowRZ_Real;
 
     { --- New: Hyperbolic --- }
     [Test] procedure Test_CoshZ_Zero;
@@ -211,8 +211,10 @@ end;
 
 procedure TTestMathComplex.Test_DivRZ;
 begin
-  // 1/(0+2i) should give (0, 0.5) per the implementation (pure imaginary divisor)
-  CheckComplex(ToComplex(0, 0.5), DivRZ(1, ToComplex(0, 2)));
+  // 1/(0+2i) = 1*(0-2i)/(0+4) = (0, -0.5)
+  CheckComplex(ToComplex(0, -0.5), DivRZ(1, ToComplex(0, 2)));
+  // 10/(3+4i) = 10*(3-4i)/25 = (1.2, -1.6)
+  CheckComplex(ToComplex(1.2, -1.6), DivRZ(10, ToComplex(3, 4)));
 end;
 
 procedure TTestMathComplex.Test_DivZZ;
@@ -272,9 +274,9 @@ end;
 procedure TTestMathComplex.Test_SqrtZ_Zero;
 var R: TComplex;
 begin
-  // Implementation returns (1,0) for sqrt(0+0i)
+  // sqrt(0+0i) = (0,0)
   R := SqrtZ(ToComplex(0, 0));
-  CheckComplex(ToComplex(1, 0), R);
+  CheckComplex(ToComplex(0, 0), R);
 end;
 
 procedure TTestMathComplex.Test_PowZZ_ZeroExponent;
@@ -480,7 +482,6 @@ procedure TTestMathComplex.Test_PowZZ_ComplexExponent;
 var R: TComplex;
 begin
   // (2+0i)^(1+0.001i) should be close to (2, ~small)
-  // Uses the complex path in PowZZ (avoids PowZR2 recursion)
   R := PowZZ(ToComplex(2, 0), ToComplex(1, 0.001));
   Assert.AreEqual(Single(2.0), R.Re, 5E-2);
 end;
@@ -489,10 +490,33 @@ procedure TTestMathComplex.Test_PowZZ_Square_ViaComplex;
 var R: TComplex;
 begin
   // (2+i)^(2+0.001i) ~ (3+4i) approximately
-  // Uses the complex path in PowZZ (avoids PowZR2 recursion)
   R := PowZZ(ToComplex(2, 1), ToComplex(2, 0.001));
   Assert.AreEqual(Single(3.0), R.Re, 1E-1);
   Assert.AreEqual(Single(4.0), R.Im, 1E-1);
+end;
+
+procedure TTestMathComplex.Test_PowZR2_Square;
+var R: TComplex;
+begin
+  // (2+i)^2 = 4+4i-1 = 3+4i  (PowZR2 no longer has infinite recursion)
+  R := PowZR2(ToComplex(2, 1), 2);
+  CheckComplex(ToComplex(3, 4), R, 1E-2);
+end;
+
+procedure TTestMathComplex.Test_PowZR1_Cube;
+var R: TComplex;
+begin
+  // (1+i)^3 = (1+i)*(1+i)*(1+i) = (1+i)*(2i) = -2+2i
+  R := PowZR1(ToComplex(1, 1), 3);
+  CheckComplex(ToComplex(-2, 2), R, 1E-2);
+end;
+
+procedure TTestMathComplex.Test_PowRZ_Real;
+var R: TComplex;
+begin
+  // 2^(3+0i) = 8
+  R := PowRZ(2, ToComplex(3, 0));
+  CheckComplex(ToComplex(8, 0), R, 1E-1);
 end;
 
 { --- Hyperbolic --- }
@@ -523,12 +547,10 @@ end;
 
 procedure TTestMathComplex.Test_TanhZ_Real;
 begin
-  // BUG: TanhZ denominator has cos/cosh swapped.
-  //   Implementation: t = 1/(cos(2*Re) + cosh(2*Im))
-  //   Correct:        t = 1/(cosh(2*Re) + cos(2*Im))
-  //   For z=0 both give 1/(1+1)=0.5 so zero case works:
+  // tanh(0) = 0
   CheckComplex(ToComplex(0, 0), TanhZ(ToComplex(0, 0)), 1E-3);
-  // Non-zero real input gives wrong result (6.21 instead of 0.7616)
+  // tanh(1+0i) = (tanh(1), 0) ~ (0.7616, 0)
+  CheckComplex(ToComplex(0.7616, 0), TanhZ(ToComplex(1, 0)), 1E-2);
 end;
 
 { --- More trig --- }

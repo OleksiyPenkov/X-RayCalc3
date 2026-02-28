@@ -310,23 +310,22 @@ begin
   Result.Im := Z.Im / R;
 end;
 
-{ divide R with Z ( R/Z) - let compiler handle divbyzero: r/(x + yi) := r/x + r/yi }
+{ divide R with Z ( R/Z): r/(x + yi) = r*(x - yi)/(x² + y²) }
 function DivRZ(const R: single;const Z: TComplex): TComplex;
+var
+  d: single;
 begin
-  if (Z.Re = 0) and (Z.Im <> 0) then
-    Result := ToComplex(0, R / Z.Im)
-  else if (Z.Im = 0) and (Z.Re <> 0) then
-    Result := ToComplex(R / Z.Re, 0)
-  else
-    Result := ToComplex(R / Z.Re, R / Z.Im);
+  d := Z.Re * Z.Re + Z.Im * Z.Im;
+  Result := ToComplex(R * Z.Re / d, -R * Z.Im / d);
 end;
 
 function DivZZ(const Z1, Z2: TComplex): TComplex;
+var
+  d: single;
 begin
-  Result.Re := (Z1.Re * Z2.Re + Z1.Im * Z2.Im) /
-    (Z2.Re * Z2.Re + Z2.Im * Z2.Im);
-  Result.Im := (Z1.Im * Z2.Re - Z1.Re * Z2.Im) /
-    (Z2.Re * Z2.Re + Z2.Im * Z2.Im);
+  d := Z2.Re * Z2.Re + Z2.Im * Z2.Im;
+  Result.Re := (Z1.Re * Z2.Re + Z1.Im * Z2.Im) / d;
+  Result.Im := (Z1.Im * Z2.Re - Z1.Re * Z2.Im) / d;
 end;
 
 {============================== Misc. complex specific =======================}
@@ -457,14 +456,14 @@ begin
   Result := ToComplex(t * Neslib.FastMath.ArcSin(x), t * Neslib.FastMath.ArcSinh(y));
 end;
 
-{ retun the hyperbolic tan of Z }
+{ retun the hyperbolic tan of Z: tanh(z) = sinh(2x)/(cosh(2x)+cos(2y)) + i*sin(2y)/(cosh(2x)+cos(2y)) }
 function TanhZ(Z: TComplex): TComplex;
 var
   x, y, t: single;
 begin
   x := 2 * Z.Re;
   y := 2 * Z.Im;
-  t := 1.0 / (FastCos(x) + Neslib.FastMath.Cosh(y));
+  t := 1.0 / (Neslib.FastMath.Cosh(x) + FastCos(y));
   Result := ToComplex(t * Neslib.FastMath.Sinh(x), t * FastSin(y));
 end;
 
@@ -532,7 +531,7 @@ var
   LValue: Single;
 begin
   if (Z.Re = 0) and (Z.Im = 0) then
-    Result := ToComplex(1, 0)
+    Result := ToComplex(0, 0)
   else begin
     LValue := AbsZ(Z);
     if Z.Re > 0 then
@@ -576,10 +575,19 @@ begin
   Result := PowZZ(Z, ToComplex(Trunc(R), 0));
 end;
 
-{ return Z^R (R is real): (x +yi)^r }
+{ return Z^R (R is real): (x +yi)^r = |z|^r * (cos(r*arg) + i*sin(r*arg)) }
 function PowZR2(Z: TComplex; R: single): TComplex;
+var
+  lnAbs, arg, mag: single;
 begin
-  Result := PowZZ(Z, ToComplex(R, 0));
+  if R = 0 then
+    Result := ToComplex(1, 0)
+  else begin
+    lnAbs := FastLn(AbsZ(Z));
+    arg := FastArcTan2(Z.Im, Z.Re) * R;
+    mag := FastExp(lnAbs * R);
+    Result := ToComplex(mag * FastCos(arg), mag * FastSin(arg));
+  end;
 end;
 
 { return R^Z: r^(x + yi) }

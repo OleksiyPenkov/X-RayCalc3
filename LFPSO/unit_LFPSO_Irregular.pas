@@ -173,8 +173,6 @@ procedure TLFPSO_Irregular.RangeSeed;
 var
   i, j, k: Word;
 begin
-  Randomize;
-
   for I := 1 to High(X) do // for every member of the population
   begin
     for j := 0 to High(X[I]) do // for every layer

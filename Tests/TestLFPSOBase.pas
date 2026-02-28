@@ -19,6 +19,7 @@ type
     property Pub_FTMax: integer read FTMax write FTMax;
     property Pub_FTerminated: Boolean read FTerminated write FTerminated;
     property Pub_CFactor: single read CFactor write CFactor;
+    property Pub_FLevySigmaU: single read FLevySigmaU write FLevySigmaU;
     property Pub_FGlobalBestChiSqr: single read FGlobalBestChiSqr write FGlobalBestChiSqr;
     property Pub_FAbsoluteBestChiSqr: single read FAbsoluteBestChiSqr write FAbsoluteBestChiSqr;
 
@@ -683,7 +684,15 @@ procedure TTestLFPSOBase.Test_LevyWalk_ReturnsFinite;
 var
   i: integer;
   v: single;
+  num, den: double;
+const
+  beta = 1.5;
 begin
+  // Precompute FLevySigmaU (normally done in Run)
+  num := Gamma(1 + beta) * Sin(Pi * beta / 2);
+  den := Gamma((1 + beta) / 2) * beta * Power(2, (beta - 1) / 2);
+  FPSO.Pub_FLevySigmaU := Power(num / den, 1 / beta);
+
   RandSeed := 42;
   for i := 1 to 100 do
   begin

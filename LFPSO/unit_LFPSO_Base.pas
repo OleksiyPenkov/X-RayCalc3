@@ -73,6 +73,7 @@ type
       FTerminated: Boolean;
       FMovAvg: TDataArray;
       CFactor: single;
+      FLevySigmaU: single;  // precomputed Levy walk constant
 
       function FindTheBest: Boolean;
 //      function GetResult: TLayeredModel; virtual;
@@ -372,19 +373,14 @@ end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;
 const
-  beta = 1.5;
+  inv_beta = 1 / 1.5;  // 1/beta
 var
   dX, S: double;
-  num, den, sigma_u: double;
   u, v, z: double;
 begin
-  num := gamma(1 + beta) * FastSin(pi * beta / 2); // used for Numerator
-  den := gamma(( 1 + beta)/2) * beta * FastPower(2, (beta-1)/2); // used for Denominator
-  sigma_u := FastPower(num / den, 1 / beta); // Standard deviation
-
-  u := Random * sigma_u;
+  u := Random * FLevySigmaU;
   v := Random;
-  z := u/ abs(FastPower(v, 1/ beta));
+  z := u / abs(FastPower(v, inv_beta));
 
   S := 0.01 * z * (X - gBest);
   dX := X * S;
@@ -512,14 +508,22 @@ begin
 end;
 
 procedure TLFPSO_BASE.Run;
+const
+  levy_beta = 1.5;
 var
   t: integer;
   switch: double;
   ReInitCount: integer;
   Vmax0, Ksxr0: single;
   SuccessCount: integer;
+  num, den: double;
 begin
   Randomize;
+
+  // Precompute Levy walk sigma_u (constant for beta=1.5)
+  num := gamma(1 + levy_beta) * FastSin(pi * levy_beta / 2);
+  den := gamma((1 + levy_beta) / 2) * levy_beta * FastPower(2, (levy_beta - 1) / 2);
+  FLevySigmaU := FastPower(num / den, 1 / levy_beta);
 
   FReInit := False;
   FTerminated := False;
@@ -537,7 +541,6 @@ begin
   for t := 1 to FTMax do
   begin
     if FTerminated then Break;
-    Randomize;
 
     switch := Random;
     if switch < 0.5 then
