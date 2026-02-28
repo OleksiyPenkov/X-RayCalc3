@@ -661,6 +661,7 @@ begin
       if NeedsSaving then
            AutoSave;
     end;
+    msg_prm.LayeredModel.Free;
   end;
   Dispose(msg_prm);
   DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
@@ -2012,6 +2013,7 @@ end;
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 var
   Hour, Min, Sec, MSec: Word;
+  FitResult: TLayeredModel;
 begin
   if not GetFitParams then Exit;
 
@@ -2027,7 +2029,12 @@ begin
 
     FABestChiSquare := 1e32;
     LFPSO.Run(FCalcThreadParams);
-//    UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, LFPSO.Result, FFirstUpdate);
+    FitResult := LFPSO.Result;
+    try
+      UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, FitResult, FFirstUpdate);
+    finally
+      FitResult.Free;
+    end;
 
     Project.ActiveModel.Data  := Structure.ToString;
     DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);

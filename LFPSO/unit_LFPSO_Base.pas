@@ -76,7 +76,7 @@ type
       FLevySigmaU: single;  // precomputed Levy walk constant
 
       function FindTheBest: Boolean;
-//      function GetResult: TLayeredModel; virtual;
+      function GetResult: TLayeredModel; virtual;
 
       function LevyWalk(const X, gBest: single): single;
       procedure SendUpdateMessage(const Step: integer);
@@ -110,7 +110,7 @@ type
 
       property Materials: TMaterials read FMaterials write FMaterials;
       property Structure: TFitStructure read FStructure write SetStructure;
-//      property Result : TLayeredModel read GetResult;
+      property Result : TLayeredModel read GetResult;
       property ExpValues: TDataArray read FData write FData;
       property Limit: single write FLimit;
       property Params: TFitParams write SetParams;
@@ -330,11 +330,10 @@ begin
 
 end;
 
-//function TLFPSO_BASE.GetResult: TLayeredModel;
-//begin
-//  Result := FitModelToLayer(gbest);
-//  LineToFile('result_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
-//end;
+function TLFPSO_BASE.GetResult: TLayeredModel;
+begin
+  Result := FitModelToLayer(abest);
+end;
 
 procedure TLFPSO_BASE.InitVelocity;
 begin
