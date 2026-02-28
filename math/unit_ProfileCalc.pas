@@ -22,6 +22,9 @@ type
 
 function Erf(const sigma, xmax: Single): Single;
 
+function GetLayerVal(const Stacks: TStacksData;
+  StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer): Single;
+
 implementation
 
 uses
@@ -42,6 +45,15 @@ begin
     x := x + dx;
   end;
   Result := 1 / Sqrt(Pi) * i;
+end;
+
+function GetLayerVal(const Stacks: TStacksData;
+  StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer): Single;
+begin
+  if Length(Stacks[StackIdx].Layers[LayerIdx].PP[ValIdx]) > 1 then
+    Result := Stacks[StackIdx].Layers[LayerIdx].PP[ValIdx][PeriodIdx - 1]
+  else
+    Result := Stacks[StackIdx].Layers[LayerIdx].P[ValIdx].V;
 end;
 
 end.
