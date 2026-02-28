@@ -14,6 +14,7 @@ type
 
   TProfileManager = class
     private
+      FStructure: TXRCStructure;
       FSeriesArray: array [1..4] of TSeriesList;
       FLayers: array of TPLayer;
 
@@ -31,7 +32,7 @@ type
       procedure PlotSimpleProfile;
       procedure PlotDensityProfile;
       procedure ClearProfiles;
-      procedure Prepare(Structure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
+      procedure Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
 
       property Profiles: TProfileFunctions write FProfiles;
       property DensityProfile: TLineSeries write FDensityProfile;
@@ -60,7 +61,7 @@ begin
   Result := 1/sqrt(pi) * i;
 end;
 
-procedure TProfileManager.Prepare(Structure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
+procedure TProfileManager.Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
 var
   Materials: TMaterialsList;
 
@@ -89,7 +90,8 @@ var
   end;
 
 begin
-  Materials := Structure.Materials;
+  FStructure := AStructure;
+  Materials := FStructure.Materials;
 
   CreateSeries(chThickness, FSeriesArray[1]);
   CreateSeries(chRoughness, FSeriesArray[2]);
@@ -102,26 +104,26 @@ var
 begin
   ClearProfiles;
   shift := 1;
-  for i := 0 to High(Structure.Stacks) do
+  for i := 0 to High(FStructure.Stacks) do
   begin
-    if Structure.Stacks[i].N = 1 then Continue;
-    for j := 0 to High(Structure.Stacks[i].Layers) do
+    if FStructure.Stacks[i].N = 1 then Continue;
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
       for p := 1 to 3 do
       begin
         FSeriesArray[p][j].Clear;
-        if not Structure.Stacks[i].Layers[j].Data.P[p].Paired then
+        if not FStructure.Stacks[i].Layers[j].Data.P[p].Paired then
         begin
-          for n := 0 to High(Structure.Stacks[i].Layers[j].Data.PP[p]) do
-               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.PP[p][n]);
+          for n := 0 to High(FStructure.Stacks[i].Layers[j].Data.PP[p]) do
+               FSeriesArray[p][j].AddXY(n + shift, FStructure.Stacks[i].Layers[j].Data.PP[p][n]);
         end
         else begin
-          for n := 0 to Structure.Stacks[i].N - 1 do
-               FSeriesArray[p][j].AddXY(n + shift, Structure.Stacks[i].Layers[j].Data.P[p].V);
+          for n := 0 to FStructure.Stacks[i].N - 1 do
+               FSeriesArray[p][j].AddXY(n + shift, FStructure.Stacks[i].Layers[j].Data.P[p].V);
         end;
       end;
     end;
-    Inc(shift, Structure.Stacks[i].N);
+    Inc(shift, FStructure.Stacks[i].N);
   end;
   if PlotD then
       PlotDensityProfile;
@@ -134,20 +136,20 @@ var
 
   function IsProfile: boolean;
   begin
-     Result := (Structure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
-               (Structure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) and
+     Result := (FStructure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
+               (FStructure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) and
                (FProfiles[GradientIndex].PIndex = p);
   end;
 
 begin
   shift := 0; d := 0;
-  for StackIndex := 0 to High(Structure.Stacks) do
+  for StackIndex := 0 to High(FStructure.Stacks) do
   begin
-    if Structure.Stacks[StackIndex].N = 1 then Continue;
+    if FStructure.Stacks[StackIndex].N = 1 then Continue;
 
-    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
+    for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
     begin
-      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
+      for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
       begin
         for p := 1 to 3 do
         begin
@@ -163,12 +165,12 @@ begin
           end;
           if not Profiled then
               FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                     Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+                                                     FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
          end;
         end;
     end;
-    Inc(shift, Structure.Stacks[StackIndex].N);
-    Inc(d, Length(Structure.Stacks[StackIndex].Layers));
+    Inc(shift, FStructure.Stacks[StackIndex].N);
+    Inc(d, Length(FStructure.Stacks[StackIndex].Layers));
   end;
 end;
 
@@ -179,23 +181,23 @@ var
   Val: single;
 begin
   shift := 0; d := 0;
-  for StackIndex := 0 to High(Structure.Stacks) do
+  for StackIndex := 0 to High(FStructure.Stacks) do
   begin
-    if Structure.Stacks[StackIndex].N = 1 then Continue;
+    if FStructure.Stacks[StackIndex].N = 1 then Continue;
 
-    for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
+    for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
     begin
-      for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
+      for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
       begin
         for p := 1 to 3 do
         begin
-          Val := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V;
+          Val := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V;
           FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Val);
         end;
       end;
     end;
-    Inc(shift, Structure.Stacks[StackIndex].N);
-    Inc(d, Length(Structure.Stacks[StackIndex].Layers));
+    Inc(shift, FStructure.Stacks[StackIndex].N);
+    Inc(d, Length(FStructure.Stacks[StackIndex].Layers));
   end;
 end;
 
@@ -216,11 +218,11 @@ var
   Layer: TPLayer;
 begin
   SetLength(FLayers, 0);
-  for StackIndex := 0 to High(Structure.Stacks) do
+  for StackIndex := 0 to High(FStructure.Stacks) do
   begin
-    for PeriodIndex := 1 to Structure.Stacks[StackIndex].N do
+    for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
     begin
-      for LayerIndex := 0 to High(Structure.Stacks[StackIndex].Layers) do
+      for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
       begin
         Layer.h := GetVal(StackIndex, LayerIndex, PeriodIndex, 1);
         Layer.s := GetVal(StackIndex, LayerIndex, PeriodIndex, 2);
@@ -234,10 +236,10 @@ end;
 
 function TProfileManager.GetVal(const StackIndex, LayerIndex, PeriodIndex, Val: integer): single;
 begin
-  if Length(Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val]) > 1 then
-     Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val][PeriodIndex - 1]
+  if Length(FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val]) > 1 then
+     Result := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val][PeriodIndex - 1]
   else
-    Result := Structure.Stacks[StackIndex].Layers[LayerIndex].Data.P[Val].V;
+    Result := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[Val].V;
 end;
 
 procedure TProfileManager.PlotDensityProfile;
