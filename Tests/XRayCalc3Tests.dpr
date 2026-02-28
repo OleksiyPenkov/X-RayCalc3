@@ -32,7 +32,11 @@ uses
   TestSeriesIO in 'TestSeriesIO.pas',
   unit_SMessages in '..\components\unit_SMessages.pas',
   unit_LFPSO_Base in '..\LFPSO\unit_LFPSO_Base.pas',
-  TestLFPSOBase in 'TestLFPSOBase.pas';
+  TestLFPSOBase in 'TestLFPSOBase.pas',
+  unit_LFPSO_Periodic in '..\LFPSO\unit_LFPSO_Periodic.pas',
+  unit_LFPSO_Irregular in '..\LFPSO\unit_LFPSO_Irregular.pas',
+  TestLFPSOPeriodic in 'TestLFPSOPeriodic.pas',
+  TestLFPSOIrregular in 'TestLFPSOIrregular.pas';
 
 {$R *.res}
 
