@@ -58,6 +58,8 @@ type
       NThreads : integer;
 
       FTail: Integer;
+      FConvWeights: array of Single;
+      FConvN: Integer;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -265,6 +267,7 @@ begin
 
   Finalize(Tasks);
   Finalize(CalcParams);
+  Finalize(FConvWeights);
   inherited;
 end;
 
@@ -469,38 +472,46 @@ var
   Sum, delta, t1, c: single;
   i, N, k, Size, WinSize: integer;
   sqr_Width: Single;
-  Weights: array of Single;
 begin
   FTail := 0;
   if Width = 0 then Exit;
 
   Size := Length(FResult);
-  Width := Width * FWHMToGaussianWidth;
-  sqr_Width := sqr(Width);
-  c := 1 / (Width * sqrt(Pi/2));
 
-  delta := (FResult[Size - 1].t - FResult[0].t)/Size;
-  N := Round(0.1/ delta);
-  if frac(N / 2) = 0 then
-    N := N - 1;
-
-  // Pre-compute Gaussian weights — eliminates FastExp from inner loop
-  WinSize := 2 * N + 1;
-  SetLength(Weights, WinSize);
-  t1 := -0.1;
-  for k := 0 to WinSize - 1 do
+  // Compute Gaussian weights once — reuse across all subsequent calls
+  if Length(FConvWeights) = 0 then
   begin
-    Weights[k] := Gauss(c, t1, sqr_Width) * delta;
-    t1 := t1 + delta;
+    Width := Width * FWHMToGaussianWidth;
+    sqr_Width := sqr(Width);
+    c := 1 / (Width * sqrt(Pi/2));
+
+    delta := (FResult[Size - 1].t - FResult[0].t)/Size;
+    N := Round(0.1/ delta);
+    if frac(N / 2) = 0 then
+      N := N - 1;
+
+    WinSize := 2 * N + 1;
+    SetLength(FConvWeights, WinSize);
+    t1 := -0.1;
+    for k := 0 to WinSize - 1 do
+    begin
+      FConvWeights[k] := Gauss(c, t1, sqr_Width) * delta;
+      t1 := t1 + delta;
+    end;
+    FConvN := N;
   end;
 
-  SetLength(FTemp, Size);
+  N := FConvN;
+  WinSize := Length(FConvWeights);
+
+  if Length(FTemp) <> Size then
+    SetLength(FTemp, Size);
 
   for i := N to Size - N - 1 do
   begin
     Sum := 0;
     for k := 0 to WinSize - 1 do
-      Sum := Sum + FResult[i - N + k].r * Weights[k];
+      Sum := Sum + FResult[i - N + k].r * FConvWeights[k];
     FTemp[i].t := FResult[i].t;
     FTemp[i].R := Sum;
   end;
@@ -508,7 +519,7 @@ begin
   Restore(0, N - 1);
   MVA(Size - N, Size - 1);
 
-  FResult := FTemp;
+  Move(FTemp[0], FResult[0], Size * SizeOf(TDataPoint));
   FTail := N;
 end;
 
