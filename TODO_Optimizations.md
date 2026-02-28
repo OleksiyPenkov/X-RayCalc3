@@ -31,8 +31,8 @@ LFPSO.Run (main loop, T iterations)
 | 1 | Cache `Layers` in `CalcTet` — stop copying array per data point | 🟢 S | ✅ Done |
 | 2 | Reuse `TCalc` across iterations — stop create/destroy per FindTheBest | 🟡 M | ✅ Done |
 | 3 | Reuse `TLayeredModel` — add Reset + pre-allocate FLayers | 🟡 M | ✅ Done |
-| 4 | Throttle `Application.ProcessMessages` — once per iteration, not per particle | 🟢 S | 🔴 Open |
-| 5 | Cache thread partitioning in `PrepareWorkers` — partition once, reuse | 🟡 M | 🔴 Open |
+| 4 | Throttle `Application.ProcessMessages` — once per iteration, not per particle | 🟢 S | ⏸️ Deferred — no measurable gain |
+| 5 | Cache thread partitioning in `PrepareWorkers` — partition once, reuse | 🟡 M | ⏸️ Deferred — FResult/FTemp swap breaks caching |
 | 6 | Pre-allocate `FLayers` in `FitModelToLayer` to total known size | 🟢 S | 🔴 Open |
 | 7 | Pre-compute Gaussian weights for convolution | 🟢 S | 🔴 Open |
 
