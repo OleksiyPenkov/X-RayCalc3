@@ -4,13 +4,13 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 1 | Fix `DivRZ` wrong formula — returns `(R/Z.Re, R/Z.Im)` when both nonzero, correct is `R*(x-yi)/(x²+y²)`. Same bug in `cmd_math_complex.pas` (`math_complex.pas:313-322`) | 🟢 S | ✅ Done |
+| 1 | Fix `DivRZ` wrong formula — returns `(R/Z.Re, R/Z.Im)` when both nonzero, correct is `R*(x-yi)/(x²+y²)`. CMD now shares fix via `math_complex.pas` (`math_complex.pas:313-322`) | 🟢 S | ✅ Done |
 | 2 | Fix `SqrtZ(0,0)` returns `(1,0)` instead of `(0,0)` (`math_complex.pas:534-535`) | 🟢 S | ✅ Done |
 | 3 | Fix `PowZR2` infinite recursion — `PowZR2` → `PowZZ` → `PowZR2` when Z2.Im=0. Now computes directly via exp/ln (`math_complex.pas:580-583`) | 🟡 M | ✅ Done |
 | 4 | Fix `TanhZ` swapped denominator — uses `cos(x)+cosh(y)` but correct is `cosh(x)+cos(y)` (`math_complex.pas:461-469`) | 🟢 S | ✅ Done |
 | 5 | Fix `Smooth` — `.t` values never set in output array, all zero (`unit_helpers.pas:109-140`) | 🟢 S | ✅ Done |
 | 6 | Fix `FillElementsList` — missing `FindClose(F)` after `FindFirst/FindNext`, file handle leak (`unit_helpers.pas:245-249`) | 🟢 S | ✅ Done |
-| 7 | Fix `cmd_math_complex.StringToComplex` — completely broken, only parses Im part (`cmd_math_complex.pas:215-218`) | 🟢 S | ✅ Done |
+| 7 | Fix `StringToComplex` — completely broken, only parsed Im part. Now moot: CMD shares `math_complex.pas` | 🟢 S | ✅ Done |
 | 8 | Fix `cmd_unit_calc.TCalc` destructor — named `Free` instead of `Destroy override`, breaks destruction chain (`cmd_unit_calc.pas:206-208`) | 🟢 S | ✅ Done |
 | 9 | Fix `TFitStructure.CopyContent` shallow copy — inner `Layers` arrays share references after copy (`unit_Types.pas:271-275`) | 🟡 M | ✅ Done |
 | 10 | Fix `ClearDir` — removed unused `Full` parameter (`unit_helpers.pas:537`) | 🟢 S | ✅ Done |
@@ -19,7 +19,7 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 11 | Eliminate XRC_CMD code duplication — `cmd_math_complex`, `cmd_math_globals`, `cmd_unit_calc`, `cmd_unit_types`, `cmd_unit_materials` are copy-pasted from main app (~2000+ lines). Share core units via `{$IFDEF}` or search path | 🔴 XL | 🔴 Open |
+| 11 | Eliminate XRC_CMD code duplication — shared `math_complex.pas` via search path, deleted `cmd_math_complex.pas` (579 lines). Remaining CMD units (`cmd_math_globals`, `cmd_unit_calc`, `cmd_unit_types`, `cmd_unit_materials`) have diverged types and can't be shared without rewrite | 🔴 XL | ✅ Done |
 | 12 | Delete `unit_settings_old.pas` — dead code, fully superseded by `unit_Config.pas`. Also re-declares helpers already in `unit_helpers.pas` | 🟢 S | ✅ Done |
 | 13 | Delete or implement `FindPCores` — empty stub, all case branches are no-ops (`unit_sys_helpers.pas:55-87`) | 🟢 S | ✅ Done |
 | 14 | Remove `with` statements in `unit_materials.pas` — 4 uses on `FLayers[i]`/`FMaterials[size]` (lines 106, 118, 165, 185). Replace with explicit variable refs | 🟡 M | ✅ Done |
