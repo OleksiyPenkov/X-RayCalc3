@@ -8,7 +8,6 @@ uses
   function SingleProcessorMask(const ProcessorIndex: Integer): DWORD_PTR;
   function CombinedProcessorMask(const Processors: array of Integer): DWORD_PTR;
   function GetNThreads: Integer;
-  procedure FindPCores;
 
 implementation
 
@@ -51,39 +50,5 @@ begin
 
 end;
 
-
-procedure FindPCores;
-var
-  i           : Integer;
-  ReturnLength: DWORD;
-  Buffer      : array of TSystemLogicalProcessorInformation;
-begin
-  SetLength(Buffer,256);
-
-  ReturnLength := SizeOf(TSystemLogicalProcessorInformation) * 256;
-
-  if not GetLogicalProcessorInformation(@Buffer[0], ReturnLength) then
-  begin
-    if GetLastError = ERROR_INSUFFICIENT_BUFFER then
-    begin
-      SetLength(Buffer,ReturnLength div SizeOf(TSystemLogicalProcessorInformation) + 1);
-      if not GetLogicalProcessorInformation(@Buffer[0], ReturnLength) then
-        RaiseLastOSError;
-    end
-    else
-      RaiseLastOSError;
-  end;
-
-   SetLength(Buffer, ReturnLength div SizeOf(TSystemLogicalProcessorInformation));
-
-  for i := 0 to High(Buffer) do begin
-    case Buffer[i].Relationship of
-             RelationNumaNode: ;
-        RelationProcessorCore:;
-                RelationCache: if (Buffer[i].Cache.Level = 1) then ;
-    end;
-  end;
-
-end;
 
 end.

@@ -21,7 +21,7 @@
 |---|------|------|--------|
 | 11 | Eliminate XRC_CMD code duplication — `cmd_math_complex`, `cmd_math_globals`, `cmd_unit_calc`, `cmd_unit_types`, `cmd_unit_materials` are copy-pasted from main app (~2000+ lines). Share core units via `{$IFDEF}` or search path | 🔴 XL | 🔴 Open |
 | 12 | Delete `unit_settings_old.pas` — dead code, fully superseded by `unit_Config.pas`. Also re-declares helpers already in `unit_helpers.pas` | 🟢 S | ✅ Done |
-| 13 | Delete or implement `FindPCores` — empty stub, all case branches are no-ops (`unit_sys_helpers.pas:55-87`) | 🟢 S | 🔴 Open |
+| 13 | Delete or implement `FindPCores` — empty stub, all case branches are no-ops (`unit_sys_helpers.pas:55-87`) | 🟢 S | ✅ Done |
 | 14 | Remove `with` statements in `unit_materials.pas` — 4 uses on `FLayers[i]`/`FMaterials[size]` (lines 106, 118, 165, 185). Replace with explicit variable refs | 🟡 M | 🔴 Open |
 | 15 | Name magic numbers — `kk = 0.54014E-5` (unit_materials:62), `0.2171472409516259` log10 factor (unit_calc:99, math_complex:508), `0.849` convolution width (unit_calc:471), `DV = (9.3, 73)` dividers (unit_helpers:258) | 🟡 M | 🔴 Open |
 | 16 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker in `TProjectData`. Use struct with explicit `Count` field (`unit_Types.pas:65-66`) | 🟡 M | 🔴 Open |
