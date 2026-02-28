@@ -34,6 +34,18 @@ type
   TLayerIndexes = array [1..3] of SmallInt;
   TIndexes  = array of TLayerIndexes;
 
+  TCalcWorker = record
+    Calc: TCalc;
+    Model: TLayeredModel;
+  end;
+
+  TWorkerBest = record
+    Chi: Single;
+    WorstChi: Single;
+    ParticleIdx: Integer;
+    Curve: TDataArray;
+  end;
+
   TLFPSO_BASE = class
     protected
       FCalc: TCalc;
@@ -75,6 +87,9 @@ type
       FMovAvg: TDataArray;
       CFactor: single;
       FLevySigmaU: single;  // precomputed Levy walk constant
+
+      FWorkers: array of TCalcWorker;
+      FNWorkers: Integer;
 
       function FindTheBest: Boolean;
       function GetResult: TLayeredModel; virtual;
@@ -143,8 +158,10 @@ uses
   Forms,
   System.SysUtils,
   Neslib.FastMath,
+  OtlParallel,
   unit_helpers,
   unit_Config,
+  unit_sys_helpers,
   Dialogs;
 
 { Supplementary}
@@ -411,7 +428,7 @@ begin
   if FCalc.ChiSQR < FLastBestChiSqr then
   begin
     FLastBestChiSqr  := FCalc.ChiSQR;
-    FResultingCurve  := FCalc.Results;
+    FResultingCurve  := Copy(FCalc.Results);
     pbest := Copy(X, 0, MaxInt);
   end;
 
@@ -421,18 +438,77 @@ end;
 
 function TLFPSO_BASE.FindTheBest: boolean;
 var
-  i : integer;
+  i, bestIdx: integer;
+  WorkerBests: array of TWorkerBest;
 begin
   Result := False;
+
+  // Initialize per-worker tracking
+  SetLength(WorkerBests, FNWorkers);
+  for i := 0 to FNWorkers - 1 do
+  begin
+    WorkerBests[i].Chi := 1e12;
+    WorkerBests[i].WorstChi := 0;
+    WorkerBests[i].ParticleIdx := -1;
+  end;
+
+  // Parallel particle evaluation
+  Parallel.&For(0, High(X))
+    .NumTasks(FNWorkers)
+    .Execute(procedure(taskIndex, particleIndex: integer)
+    var
+      W: TCalcWorker;
+      Chi: Single;
+    begin
+      W := FWorkers[taskIndex];
+      W.Model.Reset;
+      FillModel(W.Model, X[particleIndex]);
+      W.Calc.Model := W.Model;
+
+      if Length(FMaterials) <> 0 then
+        W.Calc.Model.Materials := FMaterials;
+
+      W.Calc.Run;
+
+      Chi := W.Calc.CalcChiSquare(FFitParams.ThetaWeight);
+
+      // Track per-worker best (no synchronization needed)
+      if Chi < WorkerBests[taskIndex].Chi then
+      begin
+        WorkerBests[taskIndex].Chi := Chi;
+        WorkerBests[taskIndex].ParticleIdx := particleIndex;
+        WorkerBests[taskIndex].Curve := Copy(W.Calc.Results);
+      end;
+      if Chi > WorkerBests[taskIndex].WorstChi then
+        WorkerBests[taskIndex].WorstChi := Chi;
+    end);
+
+  // Sequential reduction — merge per-worker results
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
+  bestIdx := -1;
 
-  for i := 0 to High(X) do
+  for i := 0 to FNWorkers - 1 do
   begin
-    CalcSolution(X[i]);
-    Application.ProcessMessages;
-    if FTerminated then Break;
+    if WorkerBests[i].Chi < FLastBestChiSqr then
+    begin
+      FLastBestChiSqr := WorkerBests[i].Chi;
+      FResultingCurve := WorkerBests[i].Curve;
+      bestIdx := WorkerBests[i].ParticleIdx;
+    end;
+    if WorkerBests[i].WorstChi > FLastWorseChiSQR then
+      FLastWorseChiSQR := WorkerBests[i].WorstChi;
   end;
+
+  if bestIdx >= 0 then
+    pbest := Copy(X[bestIdx], 0, MaxInt);
+
+  // Handle first-iteration materials
+  if Length(FMaterials) = 0 then
+    FMaterials := Copy(FWorkers[0].Model.Materials);
+
+  Application.ProcessMessages;
+  if FTerminated then Exit;
 
 //  CFactor := eps + (FGlobalBestChiSqr- FLastBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
   CFactor := 1;  // left for future
@@ -507,7 +583,7 @@ procedure TLFPSO_BASE.Run;
 const
   levy_beta = 1.5;
 var
-  t: integer;
+  i, t: integer;
   switch: double;
   ReInitCount: integer;
   Vmax0, Ksxr0: single;
@@ -541,6 +617,20 @@ begin
     FCalc.MovAvg    := FMovAvg;
     FCalc.Limit     := FLimit;
 
+    FNWorkers := GetNThreads;
+    SetLength(FWorkers, FNWorkers);
+    for i := 0 to FNWorkers - 1 do
+    begin
+      FWorkers[i].Model := TLayeredModel.Create;
+      FWorkers[i].Model.Init;
+      FWorkers[i].Calc := TCalc.Create;
+      FWorkers[i].Calc.MaxThreads := 1;
+      FWorkers[i].Calc.Params    := FCalcParams;
+      FWorkers[i].Calc.ExpValues := FData;
+      FWorkers[i].Calc.MovAvg    := FMovAvg;
+      FWorkers[i].Calc.Limit     := FLimit;
+    end;
+
     Init(0);
 
     for t := 1 to FTMax do
@@ -573,6 +663,12 @@ begin
   //  LineToFile('final_gbest', SolutionToString(gbest), FGlobalBestChiSqr);
     SendUpdateMessage(t);
   finally
+    for i := 0 to High(FWorkers) do
+    begin
+      FWorkers[i].Calc.Model := nil;
+      FreeAndNil(FWorkers[i].Calc);
+      FreeAndNil(FWorkers[i].Model);
+    end;
     FCalc.Model := nil;         // prevent TCalc from freeing our reusable model
     FreeAndNil(FCalc);
     FreeAndNil(FCalcModel);

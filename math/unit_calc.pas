@@ -61,6 +61,7 @@ type
       FConvWeights: array of Single;
       FConvN: Integer;
       FWorkersReady: Boolean;
+      FMaxThreads: Integer;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -83,6 +84,7 @@ type
       property TotalD: single read FTotalD;
       property ChiSQR: single read FChiSQR;
       property Model: TLayeredModel read FLayeredModel write FLayeredModel;
+      property MaxThreads: Integer read FMaxThreads write FMaxThreads;
   end;
 
 implementation
@@ -155,7 +157,10 @@ var
 begin
   if FWorkersReady then Exit;
 
-  NThreads := GetNThreads;
+  if FMaxThreads > 0 then
+    NThreads := FMaxThreads
+  else
+    NThreads := GetNThreads;
 
   SetLength(Tasks, NThreads);
   SetLength(CalcParams,  NThreads);
@@ -284,16 +289,20 @@ begin
 
   PrepareWorkers;
 
-  Config := Parallel.TaskConfig;
-  Config.SetPriority(tpHighest);
+  if NThreads = 1 then
+    CalcTet(CalcParams[0])
+  else begin
+    Config := Parallel.TaskConfig;
+    Config.SetPriority(tpHighest);
 
-  Parallel.ForEach(0, NThreads - 1, 1)
-      .TaskConfig(Config)
-      .Execute(
-          procedure(const elem:System.Integer)
-          begin
-            CalcTet(CalcParams[elem]);
-          end);
+    Parallel.ForEach(0, NThreads - 1, 1)
+        .TaskConfig(Config)
+        .Execute(
+            procedure(const elem:System.Integer)
+            begin
+              CalcTet(CalcParams[elem]);
+            end);
+  end;
 end;
 
 procedure TCalc.Run;
