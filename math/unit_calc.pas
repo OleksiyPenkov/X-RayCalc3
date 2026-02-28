@@ -229,7 +229,9 @@ procedure TCalc.CalcTet;
 var
   i: integer;
   R: single;
+  Layers: TCalcLayers;
 begin
+  Layers := FLayeredModel.Layers;  // cache once per thread — not per point
   for i := 0 to Params.N - 1 do
   begin
     if Params.UseData then
@@ -237,7 +239,7 @@ begin
     else
       FResult[Params.N0 + i].t := Params.StartTeta + i * Params.Step;
 
-    R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, FParams.Lambda, FLayeredModel.Layers);
+    R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, FParams.Lambda, Layers);
     if R > FLimit then
       FResult[Params.N0 + i].R := R
     else
