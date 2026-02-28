@@ -23,6 +23,12 @@ type
     [Test] procedure Test_BuildLayers_MultiPeriod;
     [Test] procedure Test_BuildLayers_MultiStack;
     [Test] procedure Test_BuildLayers_PPValues;
+    [Test] procedure Test_CalcDensity_EmptyInput;
+    [Test] procedure Test_CalcDensity_SingleLayer_MonotonicDepth;
+    [Test] procedure Test_CalcDensity_ZeroRoughness_StepFunction;
+    [Test] procedure Test_CalcDensity_WithRoughness_SmoothTransition;
+    [Test] procedure Test_CalcDensity_RoughnessClamped;
+    [Test] procedure Test_CalcDensity_SurfaceStartsNegative;
   end;
 
 implementation
@@ -152,6 +158,98 @@ begin
   Assert.AreEqual(Single(11.0), L[0].h, 'Period 1 from PP');
   Assert.AreEqual(Single(12.0), L[1].h, 'Period 2 from PP');
   Assert.AreEqual(Single(2.0),  L[0].s, 'S from P (no PP)');
+end;
+
+procedure TTestProfileCalc.Test_CalcDensity_EmptyInput;
+var
+  L: TArray<TPLayer>;
+  D: TArray<TDensityPoint>;
+begin
+  L := nil;
+  D := CalcDensityProfile(L);
+  Assert.AreEqual(0, Length(D));
+end;
+
+procedure TTestProfileCalc.Test_CalcDensity_SingleLayer_MonotonicDepth;
+var
+  L: TArray<TPLayer>;
+  D: TArray<TDensityPoint>;
+  i: Integer;
+begin
+  SetLength(L, 1);
+  L[0].h := 10; L[0].s := 1; L[0].r := 5;
+  D := CalcDensityProfile(L);
+  Assert.IsTrue(Length(D) > 0, 'Should produce points');
+  for i := 1 to High(D) do
+    Assert.IsTrue(D[i].Depth > D[i-1].Depth, 'Depth must be monotonically increasing');
+end;
+
+procedure TTestProfileCalc.Test_CalcDensity_ZeroRoughness_StepFunction;
+var
+  L: TArray<TPLayer>;
+  D: TArray<TDensityPoint>;
+  i: Integer;
+  AllEqual: Boolean;
+begin
+  SetLength(L, 2);
+  L[0].h := 10; L[0].s := 0; L[0].r := 3;
+  L[1].h := 10; L[1].s := 0; L[1].r := 7;
+  D := CalcDensityProfile(L);
+  Assert.IsTrue(Length(D) > 10, 'Should produce many points');
+
+  AllEqual := True;
+  for i := 1 to High(D) do
+    if Abs(D[i].Value - D[i-1].Value) > 0.01 then
+    begin
+      AllEqual := False;
+      Break;
+    end;
+  Assert.IsFalse(AllEqual, 'Should have step between layers');
+end;
+
+procedure TTestProfileCalc.Test_CalcDensity_WithRoughness_SmoothTransition;
+var
+  L: TArray<TPLayer>;
+  D: TArray<TDensityPoint>;
+  HasIntermediate: Boolean;
+  i: Integer;
+begin
+  SetLength(L, 2);
+  L[0].h := 20; L[0].s := 3; L[0].r := 0;
+  L[1].h := 20; L[1].s := 3; L[1].r := 10;
+  D := CalcDensityProfile(L);
+
+  HasIntermediate := False;
+  for i := 0 to High(D) do
+    if (D[i].Value > 1) and (D[i].Value < 9) then
+    begin
+      HasIntermediate := True;
+      Break;
+    end;
+  Assert.IsTrue(HasIntermediate, 'Roughness should produce intermediate values');
+end;
+
+procedure TTestProfileCalc.Test_CalcDensity_RoughnessClamped;
+var
+  L: TArray<TPLayer>;
+  D: TArray<TDensityPoint>;
+begin
+  SetLength(L, 2);
+  L[0].h := 20; L[0].s := 1; L[0].r := 5;
+  L[1].h := 4;  L[1].s := 10; L[1].r := 8;
+  D := CalcDensityProfile(L);
+  Assert.IsTrue(Length(D) > 0, 'Should not crash with clamped roughness');
+end;
+
+procedure TTestProfileCalc.Test_CalcDensity_SurfaceStartsNegative;
+var
+  L: TArray<TPLayer>;
+  D: TArray<TDensityPoint>;
+begin
+  SetLength(L, 1);
+  L[0].h := 10; L[0].s := 3; L[0].r := 5;
+  D := CalcDensityProfile(L);
+  Assert.IsTrue(D[0].Depth < 0, 'Surface layer starts at negative depth');
 end;
 
 end.
