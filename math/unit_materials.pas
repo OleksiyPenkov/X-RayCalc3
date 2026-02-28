@@ -102,40 +102,24 @@ begin
     end;
 
   SetLength(FMaterials, size + 1);
-
-  with FMaterials[size] do
-  begin
-    Name := AName;
-    ReadHenke(Name, 0, Lambda, f, am, ro);
-  end;
+  FMaterials[size].Name := AName;
+  ReadHenke(AName, 0, Lambda, FMaterials[size].f, FMaterials[size].am, FMaterials[size].ro);
   CurrentMaterial := size;
-
 end;
 
 procedure TLayeredModel.AddSubstrate(const Data: TLayersData);
+var
+  idx: Integer;
 begin
   SetLength(FLayers, Length(FLayers) + 1);
-  with FLayers[Length(FLayers) - 1] do
-  begin
-    Name := Data[0].Material;
-    L    := 1E8;
-    s    := Data[0].P[2].V;
-    ro   := Data[0].P[3].V;
-    StackID := 65535;
-    LayerID := 65535;
-  end;
+  idx := High(FLayers);
+  FLayers[idx].Name    := Data[0].Material;
+  FLayers[idx].L       := 1E8;
+  FLayers[idx].s       := Data[0].P[2].V;
+  FLayers[idx].ro      := Data[0].P[3].V;
+  FLayers[idx].StackID := 65535;
+  FLayers[idx].LayerID := 65535;
 end;
-
-//function TLayeredModel.FindMaterial(const Name: string): TMaterial;
-//var
-//  i: integer;
-//begin
-//  for i := 0 to length(FMaterials) - 1 do
-//    if FMaterials[i].Name = Name then
-//      Break;
-//  Result := FMaterials[i];
-//end;
-
 
 procedure TLayeredModel.Generate(const Lambda: Single);
 begin
@@ -162,32 +146,26 @@ begin
     else
       l_ro := FMaterials[CurrentMaterial].ro;   // use default value for density
 
-    with FLayers[i] do
+    for g := 0 to High(FProfiles) do
     begin
-      for g := 0 to High(FProfiles) do
+      if (FLayers[i].StackID = FProfiles[g].StackID) and (FLayers[i].LayerID = FProfiles[g].LayerID) then
       begin
-        if (StackID = FProfiles[g].StackID) and (LayerID = FProfiles[g].LayerID) then
-        begin
-          case FProfiles[g].Subj of
-            ptH : L     := Poly(FProfiles[g].X(i), FProfiles[g]);
-            ptS : s     := Poly(FProfiles[g].X(i), FProfiles[g]);
-            ptRho: l_ro := Poly(FProfiles[g].X(i), FProfiles[g]);
-          end;
-        end
-      end;
-      c := kk * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
-      e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
-      e.im := FMaterials[CurrentMaterial].f.im * c;
+        case FProfiles[g].Subj of
+          ptH  : FLayers[i].L := Poly(FProfiles[g].X(i), FProfiles[g]);
+          ptS  : FLayers[i].s := Poly(FProfiles[g].X(i), FProfiles[g]);
+          ptRho: l_ro         := Poly(FProfiles[g].X(i), FProfiles[g]);
+        end;
+      end
     end;
+    c := kk * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+    FLayers[i].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
+    FLayers[i].e.im := FMaterials[CurrentMaterial].f.im * c;
   end;
 
   AddMaterial(FLayers[High(FLayers)].Name, FLambda);
-  with FLayers[High(FLayers)] do
-  begin
-    c := kk * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
-    e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
-    e.im := FMaterials[CurrentMaterial].f.im * c;
-  end;
+  c := kk * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+  FLayers[High(FLayers)].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
+  FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
 end;
 
 
