@@ -24,7 +24,7 @@ LFPSO.Run (main loop, T iterations)
 | # | Task | Size | Status |
 |---|------|------|--------|
 | 1 | Cache `PrepareWorkers` + fix `Convolute` array swap | 🟡 M | 🔴 Open |
-| 2 | Pre-allocate `FTemp` and `Weights` in `Convolute` | 🟢 S | 🔴 Open |
+| 2 | Pre-allocate `FTemp` and `Weights` in `Convolute` | 🟢 S | ✅ Done |
 | 3 | Parallel particle evaluation in `FindTheBest` | 🔴 XL | 🔴 Open |
 | 4 | Avoid redundant `CalcSolution(gbest)` in `FindTheBest` | 🟢 S | 🔴 Open |
 
