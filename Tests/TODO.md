@@ -15,5 +15,5 @@
 | 11 | Add tests for `unit_materials` — TLayeredModel Init, AddLayers, AddSubstrate, full assembly | 🟠 L | ✅ Done |
 | 12 | Add tests for `unit_Config` — RTTI defaults + write/read roundtrip (int/bool/string) | 🟡 M | ✅ Done |
 | 13 | Add tests for `unit_LFPSO_Base` — 27 tests (Gamma, MultiplyVector, RS, SolutionToString, Omega, SetParams, SetDomain, Init_Domains, Set_Init_X, CheckLimits, ApplyCFactor, Rand, LevyWalk, UpdateStructure, FitModelToLayer, Terminate) | 🔴 XL | ✅ Done |
-| 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — structure-specific PSO | 🔴 XL | ⏸️ Deferred |
+| 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — 24 tests (SetStructure, NormalizeD, InitVelocity, XSeed, RangeSeed, linking, smoothies) | 🔴 XL | ✅ Done |
 | 15 | Add tests for `unit_SavitzkyGolay` — 4 tests, found off-by-one bug in loop bounds | 🟢 S | ✅ Done |
