@@ -60,6 +60,7 @@ type
       FTail: Integer;
       FConvWeights: array of Single;
       FConvN: Integer;
+      FWorkersReady: Boolean;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -152,11 +153,12 @@ var
   Count, j, n: Integer;
   dt, step: single;
 begin
+  if FWorkersReady then Exit;
+
   NThreads := GetNThreads;
 
   SetLength(Tasks, NThreads);
   SetLength(CalcParams,  NThreads);
-  SetLength(FResult, 0);
 
   if Length(FData) < 1 then
   begin
@@ -201,6 +203,8 @@ begin
 
     SetLength(FResult, Length(FData));
   end;
+
+  FWorkersReady := True;
 end;
 
 procedure TCalc.CalcLambda;
