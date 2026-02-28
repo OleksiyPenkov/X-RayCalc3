@@ -59,7 +59,7 @@ uses
   System.Classes;
 
 const
-  kk = 0.54014E-5;
+  ClassicalElectronRadius = 0.54014E-5;  // r_e * N_A / (2*pi) in CGS units
 
 { TLayeredModel }
 
@@ -157,13 +157,13 @@ begin
         end;
       end
     end;
-    c := kk * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+    c := ClassicalElectronRadius * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
     FLayers[i].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
     FLayers[i].e.im := FMaterials[CurrentMaterial].f.im * c;
   end;
 
   AddMaterial(FLayers[High(FLayers)].Name, FLambda);
-  c := kk * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+  c := ClassicalElectronRadius * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
   FLayers[High(FLayers)].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
   FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
 end;

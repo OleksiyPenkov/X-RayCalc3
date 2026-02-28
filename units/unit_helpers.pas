@@ -261,7 +261,7 @@ end;
 
 function GetDevider(D: single): single;
 const
-  DV : array [0..1] of single = (9.3, 73);
+  DV : array [0..1] of single = (9.3, 73);  // known intensity jump dividers for auto-merge
 var
   i : integer;
 begin

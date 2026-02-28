@@ -132,6 +132,9 @@ function PowRZ(R: single; Z: TComplex): TComplex;
 
 implementation
 
+const
+  InvTwoLn10 = 0.2171472409516259;  // 1/(2*ln(10)), for ln-to-log10 conversion
+
 {========================= Conversion ========================================}
 
 { Convert R and I to complex }
@@ -504,7 +507,7 @@ end;
 { retuns the base 10 log of Z:  log(x+yi) }
 function Log10Z(Z: TComplex): TComplex;
 begin
-  Result := ToComplex(0.2171472409516259 * FastLn(NormZ(Z)), ArgZ(Z));
+  Result := ToComplex(InvTwoLn10 * FastLn(NormZ(Z)), ArgZ(Z));
 end;
 
 { returns the complex number given by the rectangular coordinates Range and Angle:

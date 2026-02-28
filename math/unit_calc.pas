@@ -87,6 +87,10 @@ implementation
 uses
   math_globals, unit_helpers, unit_Config, unit_sys_helpers;
 
+const
+  InvTwoLn10 = 0.2171472409516259;       // 1/(2*ln(10)), for ln-to-log10 conversion
+  FWHMToGaussianWidth = 0.849;            // 1/sqrt(2*ln(2)), FWHM to Gaussian width
+
   { TCalc }
 
 procedure ClearArray(var A: TDataArray); inline;
@@ -96,7 +100,7 @@ end;
 
 function Log10(const Val: single): single; inline;
 begin
-  Result := 0.2171472409516259 * FastLn(Val);
+  Result := InvTwoLn10 * FastLn(Val);
 end;
 
 
@@ -468,7 +472,7 @@ begin
   if Width = 0 then Exit;
 
   Size := Length(FResult);
-  Width := Width * 0.849;
+  Width := Width * FWHMToGaussianWidth;
   sqr_Width := sqr(Width);
   c := 1 / (Width * sqrt(Pi/2));
 
