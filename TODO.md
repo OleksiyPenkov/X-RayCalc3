@@ -24,7 +24,7 @@
 | 13 | Delete or implement `FindPCores` — empty stub, all case branches are no-ops (`unit_sys_helpers.pas:55-87`) | 🟢 S | ✅ Done |
 | 14 | Remove `with` statements in `unit_materials.pas` — 4 uses on `FLayers[i]`/`FMaterials[size]` (lines 106, 118, 165, 185). Replace with explicit variable refs | 🟡 M | ✅ Done |
 | 15 | Name magic numbers — `kk` → `ClassicalElectronRadius`, `0.2171472409516259` → `InvTwoLn10`, `0.849` → `FWHMToGaussianWidth`, `DV` → commented | 🟡 M | ✅ Done |
-| 16 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker in `TProjectData`. Use struct with explicit `Count` field (`unit_Types.pas:65-66`) | 🟡 M | 🔴 Open |
+| 16 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker in `TProjectData`. Use struct with explicit `Count` field (`unit_Types.pas:65-66`) | 🟡 M | ⏸️ Deferred |
 | 17 | Fix implicit global `Structure` in `TProfileManager` — bare variable referenced without being a field or parameter (`unit_ProfilesManager.pas:105+`) | 🟡 M | 🔴 Open |
 | 18 | Replace old-style I/O in `DataToFile` — uses deprecated `Assign/Rewrite/Writeln/Close` without try/finally (`unit_helpers.pas:479-493`) | 🟢 S | ✅ Done |
 | 19 | Remove redundant `Randomize` calls — called multiple times per run instead of once at startup (`unit_LFPSO_Base.pas:522,540`, `unit_LFPSO_Irregular.pas:177`) | 🟢 S | ✅ Done |
