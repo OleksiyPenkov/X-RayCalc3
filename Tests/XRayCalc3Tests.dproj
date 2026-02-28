@@ -96,6 +96,8 @@
         <DCCReference Include="TestHenke.pas"/>
         <DCCReference Include="TestCalcPhysics.pas"/>
         <DCCReference Include="TestSeriesIO.pas"/>
+        <DCCReference Include="..\math\unit_ProfileCalc.pas"/>
+        <DCCReference Include="TestProfileCalc.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

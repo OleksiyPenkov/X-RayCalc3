@@ -36,7 +36,9 @@ uses
   unit_LFPSO_Periodic in '..\LFPSO\unit_LFPSO_Periodic.pas',
   unit_LFPSO_Irregular in '..\LFPSO\unit_LFPSO_Irregular.pas',
   TestLFPSOPeriodic in 'TestLFPSOPeriodic.pas',
-  TestLFPSOIrregular in 'TestLFPSOIrregular.pas';
+  TestLFPSOIrregular in 'TestLFPSOIrregular.pas',
+  unit_ProfileCalc in '..\math\unit_ProfileCalc.pas',
+  TestProfileCalc in 'TestProfileCalc.pas';
 
 {$R *.res}
 
