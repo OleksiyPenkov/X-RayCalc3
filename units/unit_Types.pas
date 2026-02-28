@@ -269,9 +269,27 @@ begin
 end;
 
 procedure TFitStructure.CopyContent(var Dest: TFitStructure);
+var
+  i, j, p: Integer;
 begin
-  Dest.Stacks := Copy(Stacks, 0, MaxInt);
+  SetLength(Dest.Stacks, Length(Stacks));
+  for i := 0 to High(Stacks) do
+  begin
+    Dest.Stacks[i].ID := Stacks[i].ID;
+    Dest.Stacks[i].N := Stacks[i].N;
+    Dest.Stacks[i].D := Stacks[i].D;
+    Dest.Stacks[i].Header := Stacks[i].Header;
+    SetLength(Dest.Stacks[i].Layers, Length(Stacks[i].Layers));
+    for j := 0 to High(Stacks[i].Layers) do
+    begin
+      Dest.Stacks[i].Layers[j] := Stacks[i].Layers[j];
+      for p := 1 to 3 do
+        Dest.Stacks[i].Layers[j].PP[p] := Copy(Stacks[i].Layers[j].PP[p]);
+    end;
+  end;
   Dest.Subs := Subs;
+  for p := 1 to 3 do
+    Dest.Subs.PP[p] := Copy(Subs.PP[p]);
 end;
 
 { TFitPeriodicStructure }

@@ -1483,7 +1483,7 @@ begin
   begin
     // удаляем папку старого проекта
     if DirectoryExists(FProjectDir, False) then
-      ClearDir(FProjectDir, True);
+      ClearDir(FProjectDir);
     //
     CreateDir(FProjectDir);
   end;
@@ -2786,7 +2786,7 @@ begin
   begin
     CloseFile(FLockFile);
     DeleteFile(Config.SystemFileName[sfLock]);
-    ClearDir(Config.TempDir, True);
+    ClearDir(Config.TempDir);
   end;
 end;
 

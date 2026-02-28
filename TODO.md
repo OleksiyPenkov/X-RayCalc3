@@ -8,12 +8,12 @@
 | 2 | Fix `SqrtZ(0,0)` returns `(1,0)` instead of `(0,0)` (`math_complex.pas:534-535`) | 🟢 S | ✅ Done |
 | 3 | Fix `PowZR2` infinite recursion — `PowZR2` → `PowZZ` → `PowZR2` when Z2.Im=0. Now computes directly via exp/ln (`math_complex.pas:580-583`) | 🟡 M | ✅ Done |
 | 4 | Fix `TanhZ` swapped denominator — uses `cos(x)+cosh(y)` but correct is `cosh(x)+cos(y)` (`math_complex.pas:461-469`) | 🟢 S | ✅ Done |
-| 5 | Fix `Smooth` — `.t` values never set in output array, all zero (`unit_helpers.pas:109-140`) | 🟢 S | 🔴 Open |
-| 6 | Fix `FillElementsList` — missing `FindClose(F)` after `FindFirst/FindNext`, file handle leak (`unit_helpers.pas:245-249`) | 🟢 S | 🔴 Open |
-| 7 | Fix `cmd_math_complex.StringToComplex` — completely broken, only parses Im part (`cmd_math_complex.pas:215-218`) | 🟢 S | 🔴 Open |
-| 8 | Fix `cmd_unit_calc.TCalc` destructor — named `Free` instead of `Destroy override`, breaks destruction chain (`cmd_unit_calc.pas:206-208`) | 🟢 S | 🔴 Open |
-| 9 | Fix `TFitStructure.CopyContent` shallow copy — inner `Layers` arrays share references after copy (`unit_Types.pas:271-275`) | 🟡 M | 🔴 Open |
-| 10 | Fix `ClearDir` — `Full` parameter accepted but never used (`unit_helpers.pas:537`) | 🟢 S | 🔴 Open |
+| 5 | Fix `Smooth` — `.t` values never set in output array, all zero (`unit_helpers.pas:109-140`) | 🟢 S | ✅ Done |
+| 6 | Fix `FillElementsList` — missing `FindClose(F)` after `FindFirst/FindNext`, file handle leak (`unit_helpers.pas:245-249`) | 🟢 S | ✅ Done |
+| 7 | Fix `cmd_math_complex.StringToComplex` — completely broken, only parses Im part (`cmd_math_complex.pas:215-218`) | 🟢 S | ✅ Done |
+| 8 | Fix `cmd_unit_calc.TCalc` destructor — named `Free` instead of `Destroy override`, breaks destruction chain (`cmd_unit_calc.pas:206-208`) | 🟢 S | ✅ Done |
+| 9 | Fix `TFitStructure.CopyContent` shallow copy — inner `Layers` arrays share references after copy (`unit_Types.pas:271-275`) | 🟡 M | ✅ Done |
+| 10 | Fix `ClearDir` — removed unused `Full` parameter (`unit_helpers.pas:537`) | 🟢 S | ✅ Done |
 
 ## Refactoring
 

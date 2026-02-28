@@ -19,7 +19,7 @@ uses
   Messages,
   Dialogs;
 
-function ClearDir(const DirectoryName: string; Full: boolean = False): boolean;
+function ClearDir(const DirectoryName: string): boolean;
 
 procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte); overload;
 procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries); overload;
@@ -125,6 +125,7 @@ begin
     S := 0;
     for j := i to i + W do
       S := S + Inp[j].r;
+    Result[i].t := Inp[i].t;
     Result[i].r := S/(W + 1);
   end;
 
@@ -133,6 +134,7 @@ begin
     S := 0;
     for j := i - W to i - 1 do
       S := S + Inp[j].r;
+    Result[i].t := Inp[i].t;
     Result[i].r := S/W;
   end;
 
@@ -243,9 +245,13 @@ begin
   List.Items.Clear;
 
   if FindFirst(Path + Mask, faAnyFile, F) = 0 then
-  repeat
-    List.Items.Add(ShortName(F.Name));
-  until FindNext(F) <> 0;
+  try
+    repeat
+      List.Items.Add(ShortName(F.Name));
+    until FindNext(F) <> 0;
+  finally
+    SysUtils.FindClose(F);
+  end;
 end;
 
 function Cmpr(V1, V2: single; Threshold: single = 0.00001): boolean;
@@ -534,7 +540,7 @@ end;
 
 {$WARNINGS OFF}
 
-function ClearDir(const DirectoryName: string; Full: boolean): boolean;
+function ClearDir(const DirectoryName: string): boolean;
 var
   ACurrentDir: string;
 begin

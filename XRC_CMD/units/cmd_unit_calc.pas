@@ -60,7 +60,7 @@ type
 
     public
       constructor Create;
-      destructor Free;
+      destructor Destroy; override;
       procedure Run;
       function CalcChiSquare: Single;
 
@@ -203,9 +203,9 @@ begin
   FLimit   := 1E-7;
 end;
 
-destructor TCalc.Free;
+destructor TCalc.Destroy;
 begin
-  inherited Free;
+  inherited;
 end;
 
 procedure TCalc.RunThetaThreads;
