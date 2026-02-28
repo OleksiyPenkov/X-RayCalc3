@@ -14,6 +14,6 @@
 | 10 | Add tests for `unit_calc` — RefCalc, CalcTet, CalcLambda — 7 tests (physics validation, grid, UseData, wavelength scan) | 🟠 L | ✅ Done |
 | 11 | Add tests for `unit_materials` — TLayeredModel Init, AddLayers, AddSubstrate, full assembly | 🟠 L | ✅ Done |
 | 12 | Add tests for `unit_Config` — RTTI defaults + write/read roundtrip (int/bool/string) | 🟡 M | ✅ Done |
-| 13 | Add tests for `unit_LFPSO_Base` — particle swarm optimizer core logic | 🔴 XL | ⏸️ Deferred |
+| 13 | Add tests for `unit_LFPSO_Base` — 27 tests (Gamma, MultiplyVector, RS, SolutionToString, Omega, SetParams, SetDomain, Init_Domains, Set_Init_X, CheckLimits, ApplyCFactor, Rand, LevyWalk, UpdateStructure, FitModelToLayer, Terminate) | 🔴 XL | ✅ Done |
 | 14 | Add tests for `unit_LFPSO_Periodic` / `unit_LFPSO_Irregular` — structure-specific PSO | 🔴 XL | ⏸️ Deferred |
 | 15 | Add tests for `unit_SavitzkyGolay` — 4 tests, found off-by-one bug in loop bounds | 🟢 S | ✅ Done |
