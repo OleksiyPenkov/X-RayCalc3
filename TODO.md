@@ -36,6 +36,6 @@
 |---|------|------|--------|
 | 21 | Precompute `LevyWalk` constants — `Gamma(2.5)`, `Gamma(1.25)`, `sigma_u` are all constants (beta=1.5). Called thousands of times per iteration (`unit_LFPSO_Base.pas:373-392`) | 🟡 M | ✅ Done |
 | 22 | Pool/reuse `TCalc` in `CalcSolution` — currently creates/destroys per particle in tight loop (`unit_LFPSO_Base.pas:396-427`) | 🟡 M | 🔴 Open |
-| 23 | Avoid full array copy in `GetLayers` — `Copy(FLayers, 0, Length)` runs inside parallel CalcTet loop. Return reference instead (`unit_materials.pas:147-150`) | 🟢 S | 🔴 Open |
+| 23 | ~~Avoid full array copy in `GetLayers`~~ — Copy is required: `RefCalc` mutates the passed array, copy prevents corruption of the model | 🟢 S | ⏸️ Deferred |
 | 24 | Use dictionary for material lookup in `AddMaterial` — currently O(n) linear scan (`unit_materials.pas:96-102`) | 🟡 M | 🔴 Open |
 | 25 | Remove `Application.ProcessMessages` from `FindTheBest` loop — anti-pattern causing re-entrancy risk and perf drag. Use periodic callback instead (`unit_LFPSO_Base.pas:441`) | 🟡 M | 🔴 Open |
