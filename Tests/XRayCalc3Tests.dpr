@@ -29,7 +29,10 @@ uses
   TestConfig in 'TestConfig.pas',
   TestHenke in 'TestHenke.pas',
   TestCalcPhysics in 'TestCalcPhysics.pas',
-  TestSeriesIO in 'TestSeriesIO.pas';
+  TestSeriesIO in 'TestSeriesIO.pas',
+  unit_SMessages in '..\components\unit_SMessages.pas',
+  unit_LFPSO_Base in '..\LFPSO\unit_LFPSO_Base.pas',
+  TestLFPSOBase in 'TestLFPSOBase.pas';
 
 {$R *.res}
 
