@@ -484,18 +484,17 @@ end;
 
 procedure DataToFile(const FileName: string; Data: TDataArray);
 var
-  OutFile: Text;
+  SL: TStringList;
   i: integer;
 begin
-  Assign(OutFile, FileName);
-  Rewrite(OutFile);
-  for I := 0 to High(Data) do
-  begin
-    writeln(OutFile, Data[i].t, #9 ,Data[i].r);
+  SL := TStringList.Create;
+  try
+    for I := 0 to High(Data) do
+      SL.Add(Format('%g'#9'%g', [Data[i].t, Data[i].r]));
+    SL.SaveToFile(FileName);
+  finally
+    SL.Free;
   end;
-
-
-  Close(OutFile);
 end;
 
 procedure SeriesFromClipboard(Series: TLineSeries);
