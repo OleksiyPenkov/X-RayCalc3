@@ -13,6 +13,7 @@ interface
 
 uses
   SysUtils,
+  System.Generics.Collections,
   unit_types,
   math_globals;
 
@@ -23,6 +24,7 @@ type
   TLayeredModel = class
   private
     FMaterials: TMaterials;
+    FMaterialIndex: TDictionary<string, Integer>;
 
     CurrentLayer, CurrentMaterial: integer;
 
@@ -91,19 +93,19 @@ end;
 
 procedure TLayeredModel.AddMaterial(const AName: string; Lambda: single);
 var
-  i, size: integer;
+  idx, size: integer;
 begin
-  size := length(FMaterials);
-  for i := 0 to size - 1 do
-    if FMaterials[i].Name = AName then
-    begin
-      CurrentMaterial := i;
-      Exit;
-    end;
+  if FMaterialIndex.TryGetValue(AName, idx) then
+  begin
+    CurrentMaterial := idx;
+    Exit;
+  end;
 
+  size := Length(FMaterials);
   SetLength(FMaterials, size + 1);
   FMaterials[size].Name := AName;
   ReadHenke(AName, 0, Lambda, FMaterials[size].f, FMaterials[size].am, FMaterials[size].ro);
+  FMaterialIndex.Add(AName, size);
   CurrentMaterial := size;
 end;
 
@@ -172,6 +174,7 @@ end;
 constructor TLayeredModel.Create;
 begin
   inherited ;
+  FMaterialIndex := TDictionary<string, Integer>.Create;
   SetLength(FMaterials, 0);
   SetLength(FLayers, 0);
   SetLength(FProfiles, 0);
@@ -179,6 +182,7 @@ end;
 
 destructor TLayeredModel.Destroy;
 begin
+  FMaterialIndex.Free;
   Finalize(FMaterials);
   Finalize(FLayers);
   Finalize(FProfiles);
