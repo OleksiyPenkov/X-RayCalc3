@@ -447,7 +447,6 @@ begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
       abest := Copy(gbest, 0, MaxInt);
       abest_val := FGlobalBestChiSqr;
-      CalcSolution(gbest);
       UpdateStructure(gbest);
       Result := True;
 //      LineToFile('current_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
