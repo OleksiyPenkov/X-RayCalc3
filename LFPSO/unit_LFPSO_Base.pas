@@ -37,6 +37,7 @@ type
   TLFPSO_BASE = class
     protected
       FCalc: TCalc;
+      FCalcModel: TLayeredModel;
 
       FReInit : Boolean;
       FFitParams: TFitParams;
@@ -93,6 +94,7 @@ type
       procedure XSeed;virtual;
       procedure SetStructure(const Inp: TFitStructure); virtual;
       procedure UpdateStructure(var Solution:TSolution); virtual;
+      procedure FillModel(Model: TLayeredModel; const Solution: TSolution); virtual;
       function FitModelToLayer(const Solution: TSolution): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_Domains(const Order: Integer);
@@ -289,14 +291,11 @@ begin
   inherited;
 end;
 
-function TLFPSO_BASE.FitModelToLayer(const Solution: TSolution): TLayeredModel;
+procedure TLFPSO_BASE.FillModel(Model: TLayeredModel; const Solution: TSolution);
 var
   i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;
 begin
-  Result := TLayeredModel.Create;
-  Result.Init;
-
   LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
@@ -314,15 +313,21 @@ begin
     end;
 
     for j := 1  to FStructure.Stacks[i].N do
-      Result.AddLayers(-1, Data);
+      Model.AddLayers(-1, Data);
   end;
 
   SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
   Data[0].P :=FStructure.Subs.P;
 
+  Model.AddSubstrate(Data);
+end;
 
-  Result.AddSubstrate(Data);
+function TLFPSO_BASE.FitModelToLayer(const Solution: TSolution): TLayeredModel;
+begin
+  Result := TLayeredModel.Create;
+  Result.Init;
+  FillModel(Result, Solution);
 end;
 
 function TLFPSO_BASE.GetPolynomes: TProfileFunctions;
@@ -389,8 +394,10 @@ end;
 
 procedure TLFPSO_BASE.CalcSolution;
 begin
-  FCalc.Model.Free;
-  FCalc.Model := FitModelToLayer(X);
+  FCalcModel.Reset;
+  FillModel(FCalcModel, X);
+  FCalc.Model := FCalcModel;
+
   if Length(FMaterials) <> 0 then
     FCalc.Model.Materials := FMaterials;    // loading from cache
 
@@ -420,45 +427,35 @@ begin
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
 
-  FCalc := TCalc.Create;
-  try
-    FCalc.Params    := FCalcParams;
-    FCalc.ExpValues := FData;
-    FCalc.MovAvg    := FMovAvg;
-    FCalc.Limit     := FLimit;
-
-    for i := 0 to High(X) do
-    begin
-      CalcSolution(X[i]);
-      Application.ProcessMessages;
-      if FTerminated then Break;
-    end;
+  for i := 0 to High(X) do
+  begin
+    CalcSolution(X[i]);
+    Application.ProcessMessages;
+    if FTerminated then Break;
+  end;
 
 //  CFactor := eps + (FGlobalBestChiSqr- FLastBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
-    CFactor := 1;  // left for future
+  CFactor := 1;  // left for future
 
-    if FLastBestChiSqr <  FGlobalBestChiSqr then
+  if FLastBestChiSqr <  FGlobalBestChiSqr then
+  begin
+    FGlobalBestChiSqr := FLastBestChiSqr;
+    gbest := Copy(pbest, 0, MaxInt);
+    gbest_val := FLastBestChiSqr;
+    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
-      FGlobalBestChiSqr := FLastBestChiSqr;
-      gbest := Copy(pbest, 0, MaxInt);
-      gbest_val := FLastBestChiSqr;
-      if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
-      begin
-        FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-        abest := Copy(gbest, 0, MaxInt);
-        abest_val := FGlobalBestChiSqr;
-        CalcSolution(gbest);
-        UpdateStructure(gbest);
-        Result := True;
+      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+      abest := Copy(gbest, 0, MaxInt);
+      abest_val := FGlobalBestChiSqr;
+      CalcSolution(gbest);
+      UpdateStructure(gbest);
+      Result := True;
 //      LineToFile('current_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
-      end ;
-    end
-    else begin
-      SetLength(FResultingCurve, 0);
-      Inc(FJammingCount);
-    end;
-  finally
-    FreeAndNil(FCalc);
+    end ;
+  end
+  else begin
+    SetLength(FResultingCurve, 0);
+    Inc(FJammingCount);
   end;
 end;
 
@@ -536,37 +533,51 @@ begin
   FCalcParams := CalcConditions;
   SetLength(FMaterials, 0);
 
-  Init(0);
+  FCalc := TCalc.Create;
+  FCalcModel := TLayeredModel.Create;
+  FCalcModel.Init;
+  try
+    FCalc.Params    := FCalcParams;
+    FCalc.ExpValues := FData;
+    FCalc.MovAvg    := FMovAvg;
+    FCalc.Limit     := FLimit;
 
-  for t := 1 to FTMax do
-  begin
-    if FTerminated then Break;
+    Init(0);
 
-    switch := Random;
-    if switch < 0.5 then
-      UpdatePSO(SuccessCount)
-    else
-      UpdateLFPSO(SuccessCount);
+    for t := 1 to FTMax do
+    begin
+      if FTerminated then Break;
 
-    if FindTheBest then
-       SendUpdateMessage(t)
-    else
-      SendUpdateStep(t);
+      switch := Random;
+      if switch < 0.5 then
+        UpdatePSO(SuccessCount)
+      else
+        UpdateLFPSO(SuccessCount);
 
-    if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
+      if FindTheBest then
+         SendUpdateMessage(t)
+      else
+        SendUpdateStep(t);
 
-    if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-      Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0)
-    else begin
-      FFitParams.Vmax := Vmax0;
-      FFitParams.Ksxr := Ksxr0;
-      inc(SuccessCount);
+      if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
+
+      if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
+        Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0)
+      else begin
+        FFitParams.Vmax := Vmax0;
+        FFitParams.Ksxr := Ksxr0;
+        inc(SuccessCount);
+      end;
     end;
+  //  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
+  //   UpdateStructure(gbest);  // don't delete!
+  //  LineToFile('final_gbest', SolutionToString(gbest), FGlobalBestChiSqr);
+    SendUpdateMessage(t);
+  finally
+    FCalc.Model := nil;         // prevent TCalc from freeing our reusable model
+    FreeAndNil(FCalc);
+    FreeAndNil(FCalcModel);
   end;
-//  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
-//   UpdateStructure(gbest);  // don't delete!
-//  LineToFile('final_gbest', SolutionToString(gbest), FGlobalBestChiSqr);
-  SendUpdateMessage(t);
 end;
 
 procedure TLFPSO_BASE.RangeSeed;

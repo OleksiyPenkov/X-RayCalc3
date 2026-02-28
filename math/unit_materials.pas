@@ -41,6 +41,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Init;
+    procedure Reset;
 
     procedure AddLayers(const StackID: integer;  Data: TLayersData);
     procedure AddSubstrate(const Data: TLayersData);
@@ -218,6 +219,18 @@ begin
   FLayers[0].e.im := 0;
 
   CurrentLayer := 1;
+end;
+
+procedure TLayeredModel.Reset;
+begin
+  SetLength(FLayers, 1);
+
+  FLayers[0].L := 1E10;
+  FLayers[0].e.re := 1;
+  FLayers[0].e.im := 0;
+
+  CurrentLayer := 1;
+  // FMaterials and FMaterialIndex preserved for caching
 end;
 
 procedure TLayeredModel.LoadFromFile(const FileName: string);

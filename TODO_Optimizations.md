@@ -29,8 +29,8 @@ LFPSO.Run (main loop, T iterations)
 | # | Task | Size | Status |
 |---|------|------|--------|
 | 1 | Cache `Layers` in `CalcTet` — stop copying array per data point | 🟢 S | ✅ Done |
-| 2 | Reuse `TCalc` across iterations — stop create/destroy per FindTheBest | 🟡 M | 🔴 Open |
-| 3 | Reuse `TLayeredModel` — add Reset + pre-allocate FLayers | 🟡 M | 🔴 Open |
+| 2 | Reuse `TCalc` across iterations — stop create/destroy per FindTheBest | 🟡 M | ✅ Done |
+| 3 | Reuse `TLayeredModel` — add Reset + pre-allocate FLayers | 🟡 M | ✅ Done |
 | 4 | Throttle `Application.ProcessMessages` — once per iteration, not per particle | 🟢 S | 🔴 Open |
 | 5 | Cache thread partitioning in `PrepareWorkers` — partition once, reuse | 🟡 M | 🔴 Open |
 | 6 | Pre-allocate `FLayers` in `FitModelToLayer` to total known size | 🟢 S | 🔴 Open |

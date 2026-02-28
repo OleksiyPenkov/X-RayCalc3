@@ -34,6 +34,7 @@ type
       procedure InitVelocity; override;
       procedure Set_Init_XPoly(const N, Index, ValueType: Integer;
       const Paired: Boolean; Val: TFitValue);
+      procedure FillModel(Model: TLayeredModel; const Solution: TSolution); override;
       function FitModelToLayer(const Solution: TSolution): TLayeredModel; override;
       function GetPolynomes: TProfileFunctions; override;
     public
@@ -229,14 +230,11 @@ begin
   inherited;
 end;
 
-function TLFPSO_Poly.FitModelToLayer(const Solution: TSolution): TLayeredModel;
+procedure TLFPSO_Poly.FillModel(Model: TLayeredModel; const Solution: TSolution);
 var
   i, k, j, p, LayerIndex: Integer;
   Data: TLayersData;
 begin
-  Result := TLayeredModel.Create;
-  Result.Init;
-
   LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
@@ -263,7 +261,7 @@ begin
             Data[k].P[p].V := Poly(j, Solution[Data[k].Index][p]);
         end;
 
-      Result.AddLayers(-1, Data);
+      Model.AddLayers(-1, Data);
     end;
   end;
 
@@ -271,8 +269,14 @@ begin
   Data[0].Material := FStructure.Subs.Material;
   Data[0].P :=FStructure.Subs.P;
 
+  Model.AddSubstrate(Data);
+end;
 
-  Result.AddSubstrate(Data);
+function TLFPSO_Poly.FitModelToLayer(const Solution: TSolution): TLayeredModel;
+begin
+  Result := TLayeredModel.Create;
+  Result.Init;
+  FillModel(Result, Solution);
 end;
 
 function TLFPSO_Poly.GetPolynomes: TProfileFunctions;
