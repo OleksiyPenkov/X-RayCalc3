@@ -3,7 +3,7 @@ unit cmd_unit_fit_types;
 interface
 uses
   SysUtils,
-  cmd_math_complex;
+  math_complex;
 
 type
 

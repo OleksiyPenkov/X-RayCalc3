@@ -12,7 +12,7 @@ unit cmd_math_globals;
 interface
 
 uses
-  cmd_math_complex,
+  math_complex,
   cmd_unit_types,
   Classes;
 

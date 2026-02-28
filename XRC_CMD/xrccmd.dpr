@@ -8,7 +8,6 @@ uses
   FastMM5,
   System.SysUtils,
   Forms,
-  cmd_math_complex in 'units\cmd_math_complex.pas',
   cmd_math_globals in 'units\cmd_math_globals.pas',
   cmd_unit_calc in 'units\cmd_unit_calc.pas',
   cmd_unit_fit_types in 'units\cmd_unit_fit_types.pas',

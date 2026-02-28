@@ -13,7 +13,7 @@ interface
 
 uses
   SysUtils,
-  cmd_math_complex;
+  math_complex;
 
 type
 

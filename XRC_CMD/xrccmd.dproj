@@ -59,6 +59,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_UnitSearchPath>..\math;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\Out\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>.\Out\CMDBin</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
@@ -128,7 +129,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="units\cmd_math_complex.pas"/>
         <DCCReference Include="units\cmd_math_globals.pas"/>
         <DCCReference Include="units\cmd_unit_calc.pas"/>
         <DCCReference Include="units\cmd_unit_fit_types.pas"/>
