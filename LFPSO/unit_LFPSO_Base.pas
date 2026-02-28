@@ -390,36 +390,27 @@ end;
 
 procedure TLFPSO_BASE.CalcSolution;
 begin
-  try
-    FCalc := TCalc.Create;
-    FCalc.Params    := FCalcParams;
-    FCalc.ExpValues := FData;
-    FCalc.MovAvg    := FMovAvg;
-    FCalc.Limit     := FLimit;
+  FCalc.Model.Free;
+  FCalc.Model := FitModelToLayer(X);
+  if Length(FMaterials) <> 0 then
+    FCalc.Model.Materials := FMaterials;    // loading from cache
 
-    FCalc.Model := FitModelToLayer(X);
-    if Length(FMaterials) <> 0 then
-      FCalc.Model.Materials := FMaterials;    // loading from cache
+  FCalc.Run;
 
-    FCalc.Run;
+  if Length(FMaterials) = 0 then
+    FMaterials := FCalc.Model.Materials;    // saving to cache
 
-    if Length(FMaterials) = 0 then
-      FMaterials := FCalc.Model.Materials;    // saving to cache
+  FCalc.CalcChiSquare(FFitParams.ThetaWeight);
 
-    FCalc.CalcChiSquare(FFitParams.ThetaWeight);
-
-    if FCalc.ChiSQR < FLastBestChiSqr then
-    begin
-      FLastBestChiSqr  := FCalc.ChiSQR;
-      FResultingCurve  := FCalc.Results;
-      pbest := Copy(X, 0, MaxInt);
-    end;
-
-    if FCalc.ChiSQR > FLastWorseChiSQR then
-      FLastWorseChiSQR :=  FCalc.ChiSQR;
-  finally
-    FreeAndNil(FCalc);
+  if FCalc.ChiSQR < FLastBestChiSqr then
+  begin
+    FLastBestChiSqr  := FCalc.ChiSQR;
+    FResultingCurve  := FCalc.Results;
+    pbest := Copy(X, 0, MaxInt);
   end;
+
+  if FCalc.ChiSQR > FLastWorseChiSQR then
+    FLastWorseChiSQR :=  FCalc.ChiSQR;
 end;
 
 function TLFPSO_BASE.FindTheBest: boolean;
@@ -430,35 +421,45 @@ begin
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
 
-  for i := 0 to High(X) do
-  begin
-    CalcSolution(X[i]);
-    Application.ProcessMessages;
-    if FTerminated then Break;
-  end;
+  FCalc := TCalc.Create;
+  try
+    FCalc.Params    := FCalcParams;
+    FCalc.ExpValues := FData;
+    FCalc.MovAvg    := FMovAvg;
+    FCalc.Limit     := FLimit;
+
+    for i := 0 to High(X) do
+    begin
+      CalcSolution(X[i]);
+      Application.ProcessMessages;
+      if FTerminated then Break;
+    end;
 
 //  CFactor := eps + (FGlobalBestChiSqr- FLastBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
-  CFactor := 1;  // left for future
+    CFactor := 1;  // left for future
 
-  if FLastBestChiSqr <  FGlobalBestChiSqr then
-  begin
-    FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := Copy(pbest, 0, MaxInt);
-    gbest_val := FLastBestChiSqr;
-    if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
+    if FLastBestChiSqr <  FGlobalBestChiSqr then
     begin
-      FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-      abest := Copy(gbest, 0, MaxInt);
-      abest_val := FGlobalBestChiSqr;
-      CalcSolution(gbest);
-      UpdateStructure(gbest);
-      Result := True;
+      FGlobalBestChiSqr := FLastBestChiSqr;
+      gbest := Copy(pbest, 0, MaxInt);
+      gbest_val := FLastBestChiSqr;
+      if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
+      begin
+        FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+        abest := Copy(gbest, 0, MaxInt);
+        abest_val := FGlobalBestChiSqr;
+        CalcSolution(gbest);
+        UpdateStructure(gbest);
+        Result := True;
 //      LineToFile('current_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
-    end ;
-  end
-  else begin
-    SetLength(FResultingCurve, 0);
-    Inc(FJammingCount);
+      end ;
+    end
+    else begin
+      SetLength(FResultingCurve, 0);
+      Inc(FJammingCount);
+    end;
+  finally
+    FreeAndNil(FCalc);
   end;
 end;
 
