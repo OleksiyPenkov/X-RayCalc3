@@ -38,4 +38,4 @@
 | 22 | Pool/reuse `TCalc` in `CalcSolution` — currently creates/destroys per particle in tight loop (`unit_LFPSO_Base.pas:396-427`) | 🟡 M | ✅ Done |
 | 23 | ~~Avoid full array copy in `GetLayers`~~ — Copy is required: `RefCalc` mutates the passed array, copy prevents corruption of the model | 🟢 S | ⏸️ Deferred |
 | 24 | Use dictionary for material lookup in `AddMaterial` — currently O(n) linear scan (`unit_materials.pas:96-102`) | 🟡 M | ✅ Done |
-| 25 | Remove `Application.ProcessMessages` from `FindTheBest` loop — anti-pattern causing re-entrancy risk and perf drag. Use periodic callback instead (`unit_LFPSO_Base.pas:441`) | 🟡 M | ✅ Done |
+| 25 | Remove `Application.ProcessMessages` from `FindTheBest` loop — anti-pattern causing re-entrancy risk and perf drag. Use periodic callback instead (`unit_LFPSO_Base.pas:441`) | 🟡 M | 🔴 Open |
