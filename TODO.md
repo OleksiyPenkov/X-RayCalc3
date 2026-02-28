@@ -1,0 +1,41 @@
+# Refactoring & Optimization TODO
+
+## Bugs
+
+| # | Task | Size | Status |
+|---|------|------|--------|
+| 1 | Fix `DivRZ` wrong formula — returns `(R/Z.Re, R/Z.Im)` when both nonzero, correct is `R*(x-yi)/(x²+y²)`. Same bug in `cmd_math_complex.pas` (`math_complex.pas:313-322`) | 🟢 S | 🔴 Open |
+| 2 | Fix `SqrtZ(0,0)` returns `(1,0)` instead of `(0,0)` (`math_complex.pas:534-535`) | 🟢 S | 🔴 Open |
+| 3 | Fix `PowZR2` infinite recursion — `PowZR2` → `PowZZ` → `PowZR2` when Z2.Im=0 (`math_complex.pas:580-583`) | 🟡 M | 🔴 Open |
+| 4 | Fix `TanhZ` swapped denominator — uses `cos(x)+cosh(y)` but correct is `cosh(x)+cos(y)` (`math_complex.pas:461-469`) | 🟢 S | 🔴 Open |
+| 5 | Fix `Smooth` — `.t` values never set in output array, all zero (`unit_helpers.pas:109-140`) | 🟢 S | 🔴 Open |
+| 6 | Fix `FillElementsList` — missing `FindClose(F)` after `FindFirst/FindNext`, file handle leak (`unit_helpers.pas:245-249`) | 🟢 S | 🔴 Open |
+| 7 | Fix `cmd_math_complex.StringToComplex` — completely broken, only parses Im part (`cmd_math_complex.pas:215-218`) | 🟢 S | 🔴 Open |
+| 8 | Fix `cmd_unit_calc.TCalc` destructor — named `Free` instead of `Destroy override`, breaks destruction chain (`cmd_unit_calc.pas:206-208`) | 🟢 S | 🔴 Open |
+| 9 | Fix `TFitStructure.CopyContent` shallow copy — inner `Layers` arrays share references after copy (`unit_Types.pas:271-275`) | 🟡 M | 🔴 Open |
+| 10 | Fix `ClearDir` — `Full` parameter accepted but never used (`unit_helpers.pas:537`) | 🟢 S | 🔴 Open |
+
+## Refactoring
+
+| # | Task | Size | Status |
+|---|------|------|--------|
+| 11 | Eliminate XRC_CMD code duplication — `cmd_math_complex`, `cmd_math_globals`, `cmd_unit_calc`, `cmd_unit_types`, `cmd_unit_materials` are copy-pasted from main app (~2000+ lines). Share core units via `{$IFDEF}` or search path | 🔴 XL | 🔴 Open |
+| 12 | Delete `unit_settings_old.pas` — dead code, fully superseded by `unit_Config.pas`. Also re-declares helpers already in `unit_helpers.pas` | 🟢 S | 🔴 Open |
+| 13 | Delete or implement `FindPCores` — empty stub, all case branches are no-ops (`unit_sys_helpers.pas:55-87`) | 🟢 S | 🔴 Open |
+| 14 | Remove `with` statements in `unit_materials.pas` — 4 uses on `FLayers[i]`/`FMaterials[size]` (lines 106, 118, 165, 185). Replace with explicit variable refs | 🟡 M | 🔴 Open |
+| 15 | Name magic numbers — `kk = 0.54014E-5` (unit_materials:62), `0.2171472409516259` log10 factor (unit_calc:99, math_complex:508), `0.849` convolution width (unit_calc:471), `DV = (9.3, 73)` dividers (unit_helpers:258) | 🟡 M | 🔴 Open |
+| 16 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker in `TProjectData`. Use struct with explicit `Count` field (`unit_Types.pas:65-66`) | 🟡 M | 🔴 Open |
+| 17 | Fix implicit global `Structure` in `TProfileManager` — bare variable referenced without being a field or parameter (`unit_ProfilesManager.pas:105+`) | 🟡 M | 🔴 Open |
+| 18 | Replace old-style I/O in `DataToFile` — uses deprecated `Assign/Rewrite/Writeln/Close` without try/finally (`unit_helpers.pas:479-493`) | 🟢 S | 🔴 Open |
+| 19 | Remove redundant `Randomize` calls — called multiple times per run instead of once at startup (`unit_LFPSO_Base.pas:522,540`, `unit_LFPSO_Irregular.pas:177`) | 🟢 S | 🔴 Open |
+| 20 | Extract `DivZZ` denominator to local variable — `Z2.Re² + Z2.Im²` computed twice (`math_complex.pas:326-329`) | 🟢 S | 🔴 Open |
+
+## Optimizations
+
+| # | Task | Size | Status |
+|---|------|------|--------|
+| 21 | Precompute `LevyWalk` constants — `Gamma(2.5)`, `Gamma(1.25)`, `sigma_u` are all constants (beta=1.5). Called thousands of times per iteration (`unit_LFPSO_Base.pas:373-392`) | 🟡 M | 🔴 Open |
+| 22 | Pool/reuse `TCalc` in `CalcSolution` — currently creates/destroys per particle in tight loop (`unit_LFPSO_Base.pas:396-427`) | 🟡 M | 🔴 Open |
+| 23 | Avoid full array copy in `GetLayers` — `Copy(FLayers, 0, Length)` runs inside parallel CalcTet loop. Return reference instead (`unit_materials.pas:147-150`) | 🟢 S | 🔴 Open |
+| 24 | Use dictionary for material lookup in `AddMaterial` — currently O(n) linear scan (`unit_materials.pas:96-102`) | 🟡 M | 🔴 Open |
+| 25 | Remove `Application.ProcessMessages` from `FindTheBest` loop — anti-pattern causing re-entrancy risk and perf drag. Use periodic callback instead (`unit_LFPSO_Base.pas:441`) | 🟡 M | 🔴 Open |
