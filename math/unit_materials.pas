@@ -68,9 +68,11 @@ const
 
 procedure TLayeredModel.AddLayers;
 var
-  i: Integer;
+  i, NewLen: Integer;
 begin
-  SetLength(FLayers, Length(FLayers) + Length(Data));
+  NewLen := CurrentLayer + Length(Data);
+  if Length(FLayers) < NewLen then
+    SetLength(FLayers, NewLen);
 
   for I := 0 to High(Data) do
   begin
@@ -114,8 +116,9 @@ procedure TLayeredModel.AddSubstrate(const Data: TLayersData);
 var
   idx: Integer;
 begin
-  SetLength(FLayers, Length(FLayers) + 1);
-  idx := High(FLayers);
+  if Length(FLayers) < CurrentLayer + 1 then
+    SetLength(FLayers, CurrentLayer + 1);
+  idx := CurrentLayer;
   FLayers[idx].Name    := Data[0].Material;
   FLayers[idx].L       := 1E8;
   FLayers[idx].s       := Data[0].P[2].V;
@@ -223,7 +226,9 @@ end;
 
 procedure TLayeredModel.Reset;
 begin
-  SetLength(FLayers, 1);
+  // Keep FLayers allocation — reuse on next FillModel
+  if Length(FLayers) < 1 then
+    SetLength(FLayers, 1);
 
   FLayers[0].L := 1E10;
   FLayers[0].e.re := 1;

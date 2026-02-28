@@ -467,8 +467,9 @@ end;
 procedure TCalc.Convolute(Width: single);
 var
   Sum, delta, t1, c: single;
-  i, N, k, Size: integer;
+  i, N, k, Size, WinSize: integer;
   sqr_Width: Single;
+  Weights: array of Single;
 begin
   FTail := 0;
   if Width = 0 then Exit;
@@ -483,17 +484,23 @@ begin
   if frac(N / 2) = 0 then
     N := N - 1;
 
+  // Pre-compute Gaussian weights — eliminates FastExp from inner loop
+  WinSize := 2 * N + 1;
+  SetLength(Weights, WinSize);
+  t1 := -0.1;
+  for k := 0 to WinSize - 1 do
+  begin
+    Weights[k] := Gauss(c, t1, sqr_Width) * delta;
+    t1 := t1 + delta;
+  end;
+
   SetLength(FTemp, Size);
 
   for i := N to Size - N - 1 do
   begin
-    t1 := -0.1;
     Sum := 0;
-    for k := i - N to i + N do
-    begin
-      Sum := Sum + FResult[k].r * Gauss(c, t1, sqr_Width) * delta;
-      t1 := t1 + delta;
-    end;
+    for k := 0 to WinSize - 1 do
+      Sum := Sum + FResult[i - N + k].r * Weights[k];
     FTemp[i].t := FResult[i].t;
     FTemp[i].R := Sum;
   end;
