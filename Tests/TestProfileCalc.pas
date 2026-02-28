@@ -3,7 +3,7 @@ unit TestProfileCalc;
 interface
 
 uses
-  DUnitX.TestFramework;
+  DUnitX.TestFramework, unit_ProfileCalc;
 
 type
   [TestFixture]
@@ -34,7 +34,7 @@ type
 implementation
 
 uses
-  unit_ProfileCalc, unit_Types, System.Math;
+  unit_Types, System.Math;
 
 procedure TTestProfileCalc.Test_Erf_ZeroSigma_ReturnsZero;
 begin

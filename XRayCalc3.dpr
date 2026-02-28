@@ -33,6 +33,7 @@ uses
   editor_JSON in 'editors\editor_JSON.pas' {frmJsonEditor},
   unit_LFPSO_Poly in 'LFPSO\unit_LFPSO_Poly.pas',
   unit_SavitzkyGolay in 'math\unit_SavitzkyGolay.pas',
+  unit_ProfileCalc in 'math\unit_ProfileCalc.pas',
   frm_Benchmark in 'forms\frm_Benchmark.pas' {frmBenchmark},
   unit_files_list in 'components\unit_files_list.pas',
   unit_Config in 'units\unit_Config.pas',

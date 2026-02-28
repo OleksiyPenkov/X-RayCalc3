@@ -223,6 +223,7 @@
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Poly.pas"/>
         <DCCReference Include="math\unit_SavitzkyGolay.pas"/>
+        <DCCReference Include="math\unit_ProfileCalc.pas"/>
         <DCCReference Include="forms\frm_Benchmark.pas">
             <Form>frmBenchmark</Form>
             <FormType>dfm</FormType>
