@@ -3,25 +3,19 @@
 interface
 
 uses
-  VCLTee.Series, unit_XRCStructure, VCLTee.Chart, unit_types;
+  VCLTee.Series, unit_XRCStructure, VCLTee.Chart, unit_types, unit_ProfileCalc;
 
 type
   TSeriesList = array of TLineSeries;
-
-  TPLayer = record
-    h, s, r: single;
-  end;
 
   TProfileManager = class
     private
       FStructure: TXRCStructure;
       FSeriesArray: array [1..4] of TSeriesList;
-      FLayers: array of TPLayer;
 
       FDensityProfile: TLineSeries;
       FProfiles: TProfileFunctions;
-      function GetVal(const StackIndex, LayerIndex, PeriodIndex, Val: integer): single;
-      procedure FillLayers;
+      function StructureToStacks: TStacksData;
     public
       constructor Create;
       destructor Destroy; override;
@@ -41,25 +35,8 @@ type
 implementation
 
 uses
-  unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs, math_globals,
-  NesLib.FastMath;
+  unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs, math_globals;
 
-
-function Erf(const sigma, xmax: single): single; inline;
-const
-  dx = 0.05;
-var
-  x, i, pow: single;
-begin
-  x := -sigma; i:= 0;
-  while x < xmax/(sigma/1.77) do
-  begin
-    Pow := -1 * sqr(x);
-    i := i + dx * FastExp(Pow);
-    x := x + dx;
-  end;
-  Result := 1/sqrt(pi) * i;
-end;
 
 procedure TProfileManager.Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
 var
@@ -212,81 +189,30 @@ begin
   inherited;
 end;
 
-procedure TProfileManager.FillLayers;
+function TProfileManager.StructureToStacks: TStacksData;
 var
-  StackIndex, LayerIndex, PeriodIndex: integer;
-  Layer: TPLayer;
+  i: Integer;
 begin
-  SetLength(FLayers, 0);
-  for StackIndex := 0 to High(FStructure.Stacks) do
+  SetLength(Result, Length(FStructure.Stacks));
+  for i := 0 to High(FStructure.Stacks) do
   begin
-    for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
-    begin
-      for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
-      begin
-        Layer.h := GetVal(StackIndex, LayerIndex, PeriodIndex, 1);
-        Layer.s := GetVal(StackIndex, LayerIndex, PeriodIndex, 2);
-        Layer.r := GetVal(StackIndex, LayerIndex, PeriodIndex, 3);
-
-        FLayers := FLayers +[Layer];
-      end;
-    end;
+    Result[i].N := FStructure.Stacks[i].N;
+    Result[i].Layers := FStructure.Stacks[i].LayerData;
   end;
-end;
-
-function TProfileManager.GetVal(const StackIndex, LayerIndex, PeriodIndex, Val: integer): single;
-begin
-  if Length(FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val]) > 1 then
-     Result := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.PP[Val][PeriodIndex - 1]
-  else
-    Result := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[Val].V;
 end;
 
 procedure TProfileManager.PlotDensityProfile;
 var
-  InLayerDepth, Depth, Val: single;
-  s, rho, scale, EndDepth: single;
-  i: integer;
+  Stacks: TStacksData;
+  Layers: TArray<TPLayer>;
+  Points: TArray<TDensityPoint>;
+  i: Integer;
 begin
-  Depth := 0;
-  FillLayers;
-  for I := 0 to High(FLayers) do
-  begin
-    s := FLayers[i].s;
-    if (i = 0)  then // surface layer
-    begin
-      Depth := -s;
-      rho := 0;
-      scale := - FLayers[i].r;
-      if Length(FLayers) > 1 then
-        EndDepth := FLayers[0].h - FLayers[1].s
-      else
-        EndDepth := FLayers[0].h;
-    end
-    else begin
-      if FLayers[i].s > FLayers[i].h / 2 then
-          s :=FLayers[i].h / 2;
-      rho := FLayers[i - 1].r;
-      scale := rho - FLayers[i].r;
-      if i < High(FLayers) then
-      begin
-        EndDepth := FLayers[i].h - FLayers[i + 1].s;
-      end
-      else
-        EndDepth := FLayers[i].h;
-    end;
-    InLayerDepth := -s;
-    while InLayerDepth < EndDepth do
-    begin
-      InLayerDepth := InLayerDepth + 0.1;
-      Depth := Depth + 0.1;
-      if s > 0 then
-        Val := rho - scale * Erf(s, InlayerDepth)
-      else
-        Val := rho;
-      FDensityProfile.AddXY(Depth, Val);
-    end;
-  end;
+  Stacks := StructureToStacks;
+  Layers := BuildLayers(Stacks);
+  Points := CalcDensityProfile(Layers);
+  for i := 0 to High(Points) do
+    FDensityProfile.AddXY(Points[i].Depth, Points[i].Value);
 end;
 
 procedure TProfileManager.ClearProfiles;
