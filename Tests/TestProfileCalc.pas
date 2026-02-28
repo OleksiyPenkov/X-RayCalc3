@@ -19,6 +19,10 @@ type
     [Test] procedure Test_GetLayerVal_ReturnsP_WhenPPEmpty;
     [Test] procedure Test_GetLayerVal_ReturnsPP_WhenPPHasData;
     [Test] procedure Test_GetLayerVal_ReturnsP_WhenPPSingleElement;
+    [Test] procedure Test_BuildLayers_SingleStackSingleLayer;
+    [Test] procedure Test_BuildLayers_MultiPeriod;
+    [Test] procedure Test_BuildLayers_MultiStack;
+    [Test] procedure Test_BuildLayers_PPValues;
   end;
 
 implementation
@@ -94,6 +98,60 @@ begin
   S := MakeStacks(3, 10.0, 2.0, 5.0);
   S[0].Layers[0].PP[1] := TFloatArray.Create(99.0);
   Assert.AreEqual(Single(10.0), GetLayerVal(S, 0, 0, 1, 1), 'Single PP falls back to P');
+end;
+
+procedure TTestProfileCalc.Test_BuildLayers_SingleStackSingleLayer;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  S := MakeStacks(1, 10.0, 2.0, 5.0);
+  L := BuildLayers(S);
+  Assert.AreEqual(1, Length(L));
+  Assert.AreEqual(Single(10.0), L[0].h, 'h');
+  Assert.AreEqual(Single(2.0),  L[0].s, 's');
+  Assert.AreEqual(Single(5.0),  L[0].r, 'r');
+end;
+
+procedure TTestProfileCalc.Test_BuildLayers_MultiPeriod;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  S := MakeStacks(3, 10.0, 2.0, 5.0);
+  L := BuildLayers(S);
+  Assert.AreEqual(3, Length(L), 'N=3 -> 3 layers');
+end;
+
+procedure TTestProfileCalc.Test_BuildLayers_MultiStack;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  SetLength(S, 2);
+  S[0].N := 2;
+  SetLength(S[0].Layers, 1);
+  S[0].Layers[0].P[1].V := 10; S[0].Layers[0].P[2].V := 1; S[0].Layers[0].P[3].V := 3;
+  S[1].N := 1;
+  SetLength(S[1].Layers, 2);
+  S[1].Layers[0].P[1].V := 20; S[1].Layers[0].P[2].V := 2; S[1].Layers[0].P[3].V := 4;
+  S[1].Layers[1].P[1].V := 30; S[1].Layers[1].P[2].V := 3; S[1].Layers[1].P[3].V := 5;
+  L := BuildLayers(S);
+  Assert.AreEqual(4, Length(L));
+end;
+
+procedure TTestProfileCalc.Test_BuildLayers_PPValues;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  S := MakeStacks(2, 10.0, 2.0, 5.0);
+  S[0].Layers[0].PP[1] := TFloatArray.Create(11.0, 12.0);
+  L := BuildLayers(S);
+  Assert.AreEqual(2, Length(L));
+  Assert.AreEqual(Single(11.0), L[0].h, 'Period 1 from PP');
+  Assert.AreEqual(Single(12.0), L[1].h, 'Period 2 from PP');
+  Assert.AreEqual(Single(2.0),  L[0].s, 'S from P (no PP)');
 end;
 
 end.

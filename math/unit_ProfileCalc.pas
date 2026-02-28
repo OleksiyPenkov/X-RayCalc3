@@ -25,6 +25,8 @@ function Erf(const sigma, xmax: Single): Single;
 function GetLayerVal(const Stacks: TStacksData;
   StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer): Single;
 
+function BuildLayers(const Stacks: TStacksData): TArray<TPLayer>;
+
 implementation
 
 uses
@@ -54,6 +56,23 @@ begin
     Result := Stacks[StackIdx].Layers[LayerIdx].PP[ValIdx][PeriodIdx - 1]
   else
     Result := Stacks[StackIdx].Layers[LayerIdx].P[ValIdx].V;
+end;
+
+function BuildLayers(const Stacks: TStacksData): TArray<TPLayer>;
+var
+  StackIdx, LayerIdx, PeriodIdx: Integer;
+  Layer: TPLayer;
+begin
+  Result := nil;
+  for StackIdx := 0 to High(Stacks) do
+    for PeriodIdx := 1 to Stacks[StackIdx].N do
+      for LayerIdx := 0 to High(Stacks[StackIdx].Layers) do
+      begin
+        Layer.h := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, 1);
+        Layer.s := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, 2);
+        Layer.r := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, 3);
+        Result := Result + [Layer];
+      end;
 end;
 
 end.
