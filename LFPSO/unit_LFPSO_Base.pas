@@ -310,15 +310,21 @@ end;
 
 procedure TLFPSO_BASE.FillModel(Model: TLayeredModel; const Solution: TSolution);
 var
-  i, k, j, p, LayerIndex: Integer;
+  i, k, j, p, LayerIndex, StackLen, MaxStackLen: Integer;
   Data: TLayersData;
 begin
+  // Find max stack layer count — allocate Data once to max size
+  MaxStackLen := 1;  // at least 1 for substrate
+  for I := 0 to High(FStructure.Stacks) do
+    if Length(FStructure.Stacks[i].Layers) > MaxStackLen then
+      MaxStackLen := Length(FStructure.Stacks[i].Layers);
+  SetLength(Data, MaxStackLen);
+
   LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
-    SetLength(Data, 0);
-    SetLength(Data, Length(FStructure.Stacks[i].Layers));
-    for k := 0 to High(FStructure.Stacks[i].Layers) do
+    StackLen := Length(FStructure.Stacks[i].Layers);
+    for k := 0 to StackLen - 1 do
     begin
       Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
       for p := 1 to 3 do
@@ -330,14 +336,13 @@ begin
     end;
 
     for j := 1  to FStructure.Stacks[i].N do
-      Model.AddLayers(-1, Data);
+      Model.AddLayers(-1, Data, StackLen);
   end;
 
-  SetLength(Data, 1);
   Data[0].Material := FStructure.Subs.Material;
   Data[0].P :=FStructure.Subs.P;
 
-  Model.AddSubstrate(Data);
+  Model.AddSubstrate(Copy(Data, 0, 1));
 end;
 
 function TLFPSO_BASE.FitModelToLayer(const Solution: TSolution): TLayeredModel;

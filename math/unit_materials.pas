@@ -43,7 +43,8 @@ type
     procedure Init;
     procedure Reset;
 
-    procedure AddLayers(const StackID: integer;  Data: TLayersData);
+    procedure AddLayers(const StackID: integer;  Data: TLayersData); overload;
+    procedure AddLayers(const StackID: integer; const Data: TLayersData; Count: integer); overload;
     procedure AddSubstrate(const Data: TLayersData);
 
     procedure ExportToFile(const FileName: string);
@@ -51,6 +52,7 @@ type
     procedure Generate(const Lambda: Single);
 
     property Layers: TCalcLayers read GetLayers;
+    property LayersDirect: TCalcLayers read FLayers;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
     property Profiles: TProfileFunctions read FProfiles write FProfiles;
@@ -66,15 +68,20 @@ const
 
 { TLayeredModel }
 
-procedure TLayeredModel.AddLayers;
+procedure TLayeredModel.AddLayers(const StackID: integer; Data: TLayersData);
+begin
+  AddLayers(StackID, Data, Length(Data));
+end;
+
+procedure TLayeredModel.AddLayers(const StackID: integer; const Data: TLayersData; Count: integer);
 var
   i, NewLen: Integer;
 begin
-  NewLen := CurrentLayer + Length(Data);
+  NewLen := CurrentLayer + Count;
   if Length(FLayers) < NewLen then
     SetLength(FLayers, NewLen);
 
-  for I := 0 to High(Data) do
+  for I := 0 to Count - 1 do
   begin
     if StackID > 0 then
     begin
@@ -91,7 +98,7 @@ begin
     FLayers[CurrentLayer + i].s    := Data[i].P[2].V;
     FLayers[CurrentLayer + i].ro   := Data[i].P[3].V;
   end;
-  inc(CurrentLayer, Length(Data));
+  inc(CurrentLayer, Count);
 end;
 
 procedure TLayeredModel.AddMaterial(const AName: string; Lambda: single);

@@ -117,6 +117,7 @@ type
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
     RF, r: TComplex; { Fresnel coefficient }
+    eRatio: single; { |e_i / e_{i+1}|, precomputed per model }
     LayerID, StackID: Word;
   end;
 

@@ -62,6 +62,8 @@ type
       FConvN: Integer;
       FWorkersReady: Boolean;
       FMaxThreads: Integer;
+      FLogData: array of Single;
+      FLogDataReady: Boolean;
 
       function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
@@ -119,6 +121,15 @@ var
   Ratio: single;
 
 begin
+  // Pre-compute Log10 of experimental data once — FData never changes during fitting
+  if not FLogDataReady then
+  begin
+    SetLength(FLogData, Length(FData));
+    for i := 0 to High(FData) do
+      FLogData[i] := Log10(FData[i].r);
+    FLogDataReady := True;
+  end;
+
   UseWeight := Length(FMovAvg) > 1;
 
   Result := 0;
@@ -127,7 +138,7 @@ begin
     if FResult[i].r = 0 then Continue;
 
     LogResult := Log10(FResult[i].r);
-    Chi := Sqr((Log10(FData[i].r) - LogResult) / LogResult);
+    Chi := Sqr((FLogData[i] - LogResult) / LogResult);
     if UseWeight  then
     begin
       Ratio := FData[i].r / FMovAvg[i].r;
@@ -214,7 +225,7 @@ end;
 
 procedure TCalc.CalcLambda;
 var
-  i: integer;
+  i, j: integer;
   Step: single;
   R: single;
   L: single;
@@ -227,6 +238,9 @@ var
     L := StartL + i * Step;
     FLayeredModel.Generate(L);
     Layers := FLayeredModel.Layers;
+    // Precompute epsilon ratios for this lambda
+    for j := 0 to Length(Layers) - 2 do
+      Layers[j].eRatio := AbsZ(DivZZ(Layers[j].e, Layers[j + 1].e));
     FResult[i].t := L;
     R := RefCalc(Theta, L, Layers);
     if R > FLimit then
@@ -242,7 +256,15 @@ var
   R: single;
   Layers: TCalcLayers;
 begin
-  Layers := FLayeredModel.Layers;  // cache once per thread — not per point
+  if NThreads <= 1 then
+    Layers := FLayeredModel.LayersDirect  // single thread — no copy needed
+  else
+    Layers := FLayeredModel.Layers;  // multi-thread — each thread needs its own copy
+
+  // Precompute |e_i / e_{i+1}| — depends only on model, not on theta
+  for i := 0 to Length(Layers) - 2 do
+    Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
+
   for i := 0 to Params.N - 1 do
   begin
     if Params.UseData then
@@ -277,6 +299,7 @@ begin
   Finalize(Tasks);
   Finalize(CalcParams);
   Finalize(FConvWeights);
+  Finalize(FLogData);
   inherited;
 end;
 
@@ -329,23 +352,19 @@ var
     Im: TComplex;
     a1, a2, b1, b2: TComplex;
   begin
-    try
-      Im := ToComplex(0, 1);
-      for i := High(ALayers) - 1 downto 0 do
-      begin
-        a1 := MulRZ(ALayers[i + 1].L * 2, ALayers[i + 1].K);
-        a1 := MulZZ(Im, a1);
-        a1 := ExpZ(a1);
-        a1 := MulZZ(ALayers[i + 1].R, a1);
-        b1 := AddZZ(ALayers[i].RF, a1);
-        a2 := MulZZ(ALayers[i].RF, a1);
-        b2 := AddZR(a2, 1);
-        ALayers[i].R := DivZZ(b1, b2);
-      end;
-      Result := sqr(AbsZ(ALayers[0].R));
-    except
-      on Exception do Result := 0;
+    Im := ToComplex(0, 1);
+    for i := High(ALayers) - 1 downto 0 do
+    begin
+      a1 := MulRZ(ALayers[i + 1].L * 2, ALayers[i + 1].K);
+      a1 := MulZZ(Im, a1);
+      a1 := ExpZ(a1);
+      a1 := MulZZ(ALayers[i + 1].R, a1);
+      b1 := AddZZ(ALayers[i].RF, a1);
+      a2 := MulZZ(ALayers[i].RF, a1);
+      b2 := AddZR(a2, 1);
+      ALayers[i].R := DivZZ(b1, b2);
     end;
+    Result := sqr(AbsZ(ALayers[0].R));
   end;
 
   function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single; inline;
@@ -383,7 +402,7 @@ var
       b1 := SubZZ(ALayers[i].K, ALayers[i + 1].K);
       b2 := AddZZ(ALayers[i].K, ALayers[i + 1].K);
       ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
+      s1 := Abs(1 - (ALayers[i].eRatio * sqr_sin_t));
       s := c1 * sqrt(cos_t * sqrt(s1));
 
       ALayers[i].RF := MulRZ(Roughness(FParams.RF, ALayers[i + 1].s, s), ALayers[i].RF);
@@ -403,7 +422,7 @@ var
       b1 := SubZZ(a1, a2);
       b2 := AddZZ(a1, a2);
       ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
+      s1 := Abs(1 - (ALayers[i].eRatio * sqr_sin_t));
       s := c1 * sqrt(cos_t * sqrt(s1));
 
       ALayers[i].RF := MulRZ(Roughness(FParams.RF, ALayers[i + 1].s, s), ALayers[i].RF);

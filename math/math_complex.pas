@@ -334,22 +334,8 @@ end;
 {============================== Misc. complex specific =======================}
 { return absolute value of Z. ( sqrt(x*x + y*y)) }
 function AbsZ(const Z: TComplex): single;
-var
-  x, y: single;
 begin
-  x := Abs(Z.Re);
-  y := Abs(Z.Im);
-  if x = 0 then
-    Result := y
-  else if y = 0 then
-    Result := x
-  else
-  begin
-    if x > y then
-      Result := x * Sqrt(1 + FastPower(y / x, 2))
-    else
-      Result := y * Sqrt(1 + FastPower(x / y, 2));
-  end;
+  Result := Sqrt(Z.Re * Z.Re + Z.Im * Z.Im);
 end;
 
 { same as AbsZ }
