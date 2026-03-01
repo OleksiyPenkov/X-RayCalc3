@@ -6,6 +6,8 @@ uses
   unit_CrashReport in 'units\unit_CrashReport.pas',
   frm_CrashReport in 'forms\frm_CrashReport.pas' {frmCrashReport},
   frm_Main in 'forms\frm_Main.pas' {frmMain},
+  frame_CalcSettings in 'Views\frame_CalcSettings.pas' {frmCalcSettings: TFrame},
+  frame_ChartInfo in 'Views\frame_ChartInfo.pas' {frmChartInfo: TFrame},
   unit_Types in 'units\unit_Types.pas',
   math_complex in 'math\math_complex.pas',
   unit_helpers in 'units\unit_helpers.pas',

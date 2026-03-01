@@ -465,10 +465,6 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Thickness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 2132
-          ExplicitHeight = 0
           object chThickness: TChart
             AlignWithMargins = True
             Left = 6
@@ -507,7 +503,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 15925239
             TabOrder = 0
-            ExplicitWidth = 2120
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -519,10 +514,6 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Roughness'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 2132
-          ExplicitHeight = 0
           object chRoughness: TChart
             AlignWithMargins = True
             Left = 6
@@ -556,7 +547,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 2120
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -568,10 +558,6 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Density'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 2132
-          ExplicitHeight = 0
           object chDensity: TChart
             AlignWithMargins = True
             Left = 6
@@ -605,7 +591,6 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 2120
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
           end
@@ -617,10 +602,6 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Profile'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 2132
-          ExplicitHeight = 0
           object chProfile: TChart
             AlignWithMargins = True
             Left = 6
@@ -655,14 +636,13 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16773087
             TabOrder = 0
-            ExplicitWidth = 2120
             DesignSize = (
               2080
               268)
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object btnProfileCopy: TRzButton
-              Left = 1956
+              Left = 1948
               Top = 0
               Width = 118
               Height = 50
@@ -674,7 +654,6 @@ object frmMain: TfrmMain
               Caption = 'Copy'
               TabOrder = 0
               OnClick = btnProfileCopyClick
-              ExplicitLeft = 1996
             end
             object DensityProfile: TLineSeries
               Title = 'DensityProfile'
@@ -696,6 +675,8 @@ object frmMain: TfrmMain
           Margins.Bottom = 6
           Color = 15987699
           Caption = 'Convergence'
+          ExplicitTop = 22
+          ExplicitHeight = 301
           object chFittingProgress: TChart
             AlignWithMargins = True
             Left = 6
@@ -752,6 +733,7 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             Color = 16771538
             TabOrder = 0
+            ExplicitHeight = 289
             DesignSize = (
               2080
               268)
@@ -791,9 +773,9 @@ object frmMain: TfrmMain
       object Chart: TChart
         AlignWithMargins = True
         Left = 10
-        Top = 323
+        Top = 324
         Width = 2096
-        Height = 769
+        Height = 768
         Cursor = crCross
         Margins.Left = 6
         Margins.Top = 6
@@ -1060,321 +1042,24 @@ object frmMain: TfrmMain
         FlatColor = clSkyBlue
         TabOrder = 2
         Color = 15987699
-        DesignSize = (
-          2096
-          100)
-        object RzStatusPane1: TRzStatusPane
-          Left = 10
-          Top = 8
-          Width = 50
-          Height = 40
+        inline FChartInfo: TfrmChartInfo
+          Left = 0
+          Top = 0
+          Width = 2096
+          Height = 100
           Margins.Left = 6
           Margins.Top = 6
           Margins.Right = 6
           Margins.Bottom = 6
+          Align = alClient
+          Color = 15987699
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -26
+          Font.Height = -22
           Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = 'X'
-        end
-        object RzStatusPane2: TRzStatusPane
-          Left = 10
-          Top = 56
-          Width = 50
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = 'Y'
-        end
-        object StatusY: TRzStatusPane
-          Left = 66
-          Top = 56
-          Width = 128
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Caption = '0.00'
-        end
-        object StatusX: TRzStatusPane
-          Left = 66
-          Top = 8
-          Width = 128
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Caption = '0.00'
-        end
-        object RzStatusPane3: TRzStatusPane
-          Left = 206
-          Top = 10
-          Width = 92
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = 'Rmax'
-        end
-        object RzStatusPane4: TRzStatusPane
-          Left = 208
-          Top = 56
-          Width = 88
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = 'Xmax'
-        end
-        object StatusMaxX: TRzStatusPane
-          Left = 306
-          Top = 56
-          Width = 128
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Caption = '0.00'
-        end
-        object StatusRMax: TRzStatusPane
-          Left = 306
-          Top = 8
-          Width = 128
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Caption = '0.00'
-        end
-        object RzStatusPane5: TRzStatusPane
-          Left = 442
-          Top = 8
-          Width = 50
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = 'Ri'
-        end
-        object StatusD: TRzStatusPane
-          Left = 504
-          Top = 56
-          Width = 178
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Caption = '0.00'
-        end
-        object RzStatusPane6: TRzStatusPane
-          Left = 442
-          Top = 56
-          Width = 50
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = 'D'
-        end
-        object StatusRi: TRzStatusPane
-          Left = 504
-          Top = 8
-          Width = 178
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Caption = '0.00'
-        end
-        object spChiSqr: TRzStatusPane
-          Left = 784
-          Top = 10
-          Width = 178
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taCenter
-          Caption = '0.00'
-        end
-        object RzStatusPane7: TRzStatusPane
-          Left = 728
-          Top = 10
-          Width = 50
-          Height = 82
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taRightJustify
-          Caption = #967'2'
-        end
-        object spChiBest: TRzStatusPane
-          Left = 784
-          Top = 54
-          Width = 178
-          Height = 40
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'MS Sans Serif'
-          Font.Style = [fsBold]
-          ParentFont = False
-          Alignment = taCenter
-          Caption = '0.00'
-        end
-        object btnChartScale: TRzBitBtn
-          Left = 1784
-          Top = 14
-          Width = 150
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Anchors = [akTop, akRight]
-          Caption = 'Linear'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
+          Font.Style = []
           ParentFont = False
           TabOrder = 0
-          OnClick = btnChartScaleClick
-          Margin = 4
-          Spacing = 8
-        end
-        object cbMinLimit: TRzComboBox
-          Left = 1946
-          Top = 16
-          Width = 132
-          Height = 39
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Anchors = [akRight, akBottom]
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -26
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          ParentFont = False
-          TabOrder = 1
-          Text = '5E-7'
-          OnChange = cbMinLimitChange
-          Items.Strings = (
-            '10E-4'
-            '10E-5'
-            '10E-6'
-            '10E-7'
-            '10E-8'
-            '10E-9')
         end
       end
       object pnlSettings: TPanel
@@ -1382,7 +1067,7 @@ object frmMain: TfrmMain
         Left = 10
         Top = 76
         Width = 2096
-        Height = 235
+        Height = 236
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
@@ -1390,724 +1075,159 @@ object frmMain: TfrmMain
         Align = alTop
         BevelOuter = bvNone
         TabOrder = 3
-        object RzPanel6: TRzPanel
-          AlignWithMargins = True
-          Left = 786
-          Top = 12
-          Width = 1304
-          Height = 217
-          Margins.Left = 6
-          Margins.Top = 12
-          Margins.Right = 6
-          Margins.Bottom = 6
+        inline FCalcSettings: TfrmCalcSettings
+          Left = 0
+          Top = 0
+          Width = 2096
+          Height = 236
+          Margins.Left = 24
+          Margins.Top = 24
+          Margins.Right = 24
+          Margins.Bottom = 24
           Align = alClient
-          Alignment = taLeftJustify
-          AlignmentVertical = avTop
-          BevelWidth = 2
-          BorderOuter = fsFlatRounded
-          Caption = 'Fitting'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clBlack
+          Font.Height = -22
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
           TabOrder = 0
-          Color = 15987699
-          object Label7: TLabel
-            Left = 16
-            Top = 58
-            Width = 93
-            Height = 27
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Caption = 'Iterations'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -22
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label8: TLabel
-            Left = 12
-            Top = 114
-            Width = 101
-            Height = 27
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Caption = 'Population'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -22
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblPolyOrder: TLabel
-            Left = 582
-            Top = 102
-            Width = 56
-            Height = 27
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Caption = 'Order'
-            Enabled = False
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -22
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object Label21: TLabel
-            Left = 512
-            Top = 166
-            Width = 69
-            Height = 32
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Caption = ' TW'#967'2'
-          end
-          object rgFittingMode: TRzRadioGroup
-            AlignWithMargins = True
-            Left = 264
-            Top = 6
-            Width = 474
-            Height = 78
-            Margins.Left = 6
-            Margins.Top = 30
-            Margins.Right = 6
-            Margins.Bottom = 6
-            BevelWidth = 2
-            Caption = 'Mode'
-            Color = 15987699
-            Columns = 3
-            HorizontalSpacing = 16
-            ItemIndex = 0
-            Items.Strings = (
-              'Irregualr'
-              'Periodic'
-              'Polynomial')
-            SpaceEvenly = True
-            StartXPos = 16
-            StartYPos = 4
-            TabOrder = 0
-            VerticalSpacing = 6
-            OnClick = rgFittingModeClick
-          end
-          object edFIter: TEdit
-            Left = 120
-            Top = 50
-            Width = 100
-            Height = 37
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -24
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            NumbersOnly = True
-            ParentFont = False
-            TabOrder = 1
-            Text = '100'
-          end
-          object edFPopulation: TEdit
-            Left = 120
-            Top = 106
-            Width = 100
-            Height = 37
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Alignment = taRightJustify
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -24
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            NumbersOnly = True
-            ParentFont = False
-            TabOrder = 2
-            Text = '100'
-          end
-          object cbLFPSOShake: TRzCheckBox
-            Left = 14
-            Top = 162
-            Width = 110
-            Height = 38
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            AlignmentVertical = avCenter
-            AutoSizeWidth = 110
-            Caption = 'Shake'
-            Checked = True
-            State = cbChecked
-            TabOrder = 3
-          end
-          object cbSeedRange: TRzCheckBox
-            Left = 142
-            Top = 162
-            Width = 113
-            Height = 38
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            AlignmentVertical = avCenter
-            AutoSizeWidth = 113
-            Caption = 'SeedR'
-            Checked = True
-            State = cbChecked
-            TabOrder = 4
-          end
-          object edPolyOrder: TEdit
-            Left = 670
-            Top = 96
-            Width = 68
-            Height = 37
-            Hint = 'Polynomial order'
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Alignment = taRightJustify
-            Enabled = False
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -24
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            MaxLength = 1
-            NumbersOnly = True
-            ParentFont = False
-            ParentShowHint = False
-            ShowHint = True
-            TabOrder = 5
-            Text = '1'
-          end
-          object cbTWChi: TComboBox
-            Left = 594
-            Top = 156
-            Width = 144
-            Height = 40
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            ItemIndex = 0
-            TabOrder = 6
-            Text = 'None'
-            Items.Strings = (
-              'None'
-              'sqr'
-              'line'
-              'sqrt'
-              '1/sqr'
-              '1/sqrt')
-          end
-          object cbPWChiSqr: TRzCheckBox
-            Left = 282
-            Top = 162
-            Width = 93
-            Height = 36
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            AutoSizeWidth = 93
-            Caption = 'PW '#967'2'
-            Checked = True
-            State = cbChecked
-            TabOrder = 7
-          end
-          object btnAdvFitSettings: TRzBitBtn
-            Left = 750
-            Top = 18
-            Width = 150
-            Height = 184
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            Caption = 'Advanced'#13'Settings'
-            TabOrder = 8
-            OnClick = btnAdvFitSettingsClick
-            Margin = 4
-            Spacing = 8
-          end
-          object cbSmooth: TRzCheckBox
-            Left = 282
-            Top = 96
-            Width = 109
-            Height = 36
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            AutoSizeWidth = 109
-            Caption = 'Smooth'
-            State = cbUnchecked
-            TabOrder = 9
-          end
-        end
-        object RzPanel7: TRzPanel
-          AlignWithMargins = True
-          Left = 6
-          Top = 6
-          Width = 768
-          Height = 223
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Align = alLeft
-          BevelWidth = 2
-          BorderOuter = fsNone
-          TabOrder = 1
-          Color = 15987699
-          object rgPolarisation: TRzRadioGroup
-            Left = 340
-            Top = 0
-            Width = 286
-            Height = 84
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            BevelWidth = 2
-            BorderOuter = fsFlatRounded
-            Caption = 'Polarization'
-            Color = 15987699
-            Columns = 2
-            HorizontalSpacing = 16
-            ItemIndex = 0
-            Items.Strings = (
-              's-type'
-              'sp-type')
-            SpaceEvenly = True
-            StartXPos = 16
-            StartYPos = 4
-            TabOrder = 0
-            VerticalSpacing = 6
-          end
-          object pnlWaveParams: TRzPanel
-            Left = 448
-            Top = 94
-            Width = 314
-            Height = 128
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            BevelWidth = 2
-            BorderOuter = fsFlatRounded
-            Enabled = False
-            TabOrder = 1
-            Transparent = True
-            Color = 15987699
-            object Label9: TLabel
-              Left = 16
-              Top = 72
-              Width = 32
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'l2'
-              Enabled = False
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
+          ExplicitHeight = 236
+          inherited RzPanel6: TRzPanel
+            Height = 218
+            StyleElements = [seFont, seClient, seBorder]
+            inherited Label7: TLabel
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object Label10: TLabel
-              Left = 14
-              Top = 26
-              Width = 32
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'l1'
-              Enabled = False
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
+            inherited Label8: TLabel
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object Label11: TLabel
-              Left = 178
-              Top = 20
-              Width = 16
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'q'
-              Enabled = False
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
+            inherited lblPolyOrder: TLabel
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object Label12: TLabel
-              Left = 172
-              Top = 74
-              Width = 35
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'Dl'
-              Enabled = False
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
+            inherited Label21: TLabel
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object edStartL: TEdit
-              Left = 56
-              Top = 18
-              Width = 94
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Enabled = False
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 0
-              Text = '1'
+            inherited rgFittingMode: TRzRadioGroup
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object edEndL: TEdit
-              Left = 56
-              Top = 70
-              Width = 94
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Enabled = False
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 1
-              Text = '10'
+            inherited edFIter: TEdit
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object edTheta: TEdit
-              Left = 218
-              Top = 18
-              Width = 80
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Enabled = False
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 2
-              Text = '85'
+            inherited edFPopulation: TEdit
+              StyleElements = [seFont, seClient, seBorder]
             end
-            object edDL: TEdit
-              Left = 218
-              Top = 72
-              Width = 80
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Enabled = False
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
+            inherited cbLFPSOShake: TRzCheckBox
+              Width = 105
+              Height = 38
+              AutoSizeWidth = 105
+              ExplicitWidth = 105
+              ExplicitHeight = 38
+            end
+            inherited cbSeedRange: TRzCheckBox
+              Width = 108
+              Height = 38
+              AutoSizeWidth = 108
+              ExplicitWidth = 108
+              ExplicitHeight = 38
+            end
+            inherited edPolyOrder: TEdit
+              StyleElements = [seFont, seClient, seBorder]
+            end
+            inherited cbTWChi: TComboBox
+              StyleElements = [seFont, seClient, seBorder]
+            end
+            inherited cbPWChiSqr: TRzCheckBox
+              Width = 108
+              Height = 38
+              AutoSizeWidth = 108
+              ExplicitWidth = 108
+              ExplicitHeight = 38
+            end
+            inherited cbSmooth: TRzCheckBox
+              Width = 119
+              Height = 38
+              ExplicitWidth = 119
+              ExplicitHeight = 38
+            end
+          end
+          inherited RzPanel7: TRzPanel
+            Height = 224
+            StyleElements = [seFont, seClient, seBorder]
+            inherited rgPolarisation: TRzRadioGroup
+              StyleElements = [seFont, seClient, seBorder]
               TabOrder = 3
-              Text = '0'
             end
-          end
-          object pnlAngleParams: TRzPanel
-            Left = 6
-            Top = 94
-            Width = 430
-            Height = 128
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            BevelWidth = 2
-            BorderOuter = fsFlatRounded
-            TabOrder = 2
-            Transparent = True
-            Color = 15987699
-            object Label1: TLabel
-              Left = 12
-              Top = 72
-              Width = 31
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'q2'
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
+            inherited pnlWaveParams: TRzPanel
+              StyleElements = [seFont, seClient, seBorder]
+              inherited Label9: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited Label10: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited Label11: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited Label12: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edStartL: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edEndL: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edTheta: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edDL: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
             end
-            object Label2: TLabel
-              Left = 12
-              Top = 20
-              Width = 31
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'q1'
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
+            inherited pnlAngleParams: TRzPanel
+              StyleElements = [seFont, seClient, seBorder]
+              inherited Label1: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited Label2: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited Label3: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited Label4: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edStartTeta: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edEndTeta: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edWidth: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edLambda: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited cb2Theta: TRzCheckBox
+                Width = 77
+                Height = 41
+                AutoSizeWidth = 77
+                ExplicitWidth = 77
+                ExplicitHeight = 41
+              end
             end
-            object Label3: TLabel
-              Left = 184
-              Top = 20
-              Width = 59
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'l(A)'
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
-            end
-            object Label4: TLabel
-              Left = 188
-              Top = 72
-              Width = 34
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Caption = 'Dq'
-              Font.Charset = GREEK_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
-            end
-            object edStartTeta: TEdit
-              Left = 52
-              Top = 18
-              Width = 100
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
+            inherited rgCalcMode: TRzRadioGroup
+              StyleElements = [seFont, seClient, seBorder]
               TabOrder = 0
-              Text = '0.01'
             end
-            object edEndTeta: TEdit
-              Left = 52
-              Top = 72
-              Width = 100
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 1
-              Text = '10'
-            end
-            object edWidth: TEdit
-              Left = 230
-              Top = 70
-              Width = 96
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 2
-              Text = '0.015'
-            end
-            object edLambda: TEdit
-              Left = 252
-              Top = 18
-              Width = 150
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              ParentFont = False
-              TabOrder = 3
-              Text = '1.54043'
-            end
-            object cb2Theta: TRzCheckBox
-              Left = 338
-              Top = 72
-              Width = 77
-              Height = 41
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              AutoSizeWidth = 77
-              Caption = '2q'
-              Checked = True
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -30
-              Font.Name = 'Symbol'
-              Font.Style = []
-              ParentFont = False
-              State = cbChecked
-              TabOrder = 4
-              Transparent = True
-            end
-          end
-          object rgCalcMode: TRzRadioGroup
-            AlignWithMargins = True
-            Left = 6
-            Top = -2
-            Width = 322
-            Height = 84
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            BevelWidth = 2
-            BorderOuter = fsFlatRounded
-            Caption = 'Mode'
-            Color = 15987699
-            Columns = 2
-            HorizontalSpacing = 16
-            ItemIndex = 0
-            Items.Strings = (
-              'by angle'
-              'by wave')
-            SpaceEvenly = True
-            StartXPos = 16
-            StartYPos = 4
-            TabOrder = 3
-            VerticalSpacing = 6
-            OnChanging = rgCalcModeChanging
-          end
-          object RzGroupBox2: TRzGroupBox
-            Left = 638
-            Top = 0
-            Width = 124
-            Height = 82
-            Margins.Left = 6
-            Margins.Top = 6
-            Margins.Right = 6
-            Margins.Bottom = 6
-            BevelWidth = 2
-            Caption = 'N'
-            Color = 15987699
-            TabOrder = 4
-            object edN: TEdit
-              Left = 8
-              Top = 30
-              Width = 106
-              Height = 37
-              Margins.Left = 6
-              Margins.Top = 6
-              Margins.Right = 6
-              Margins.Bottom = 6
-              Alignment = taRightJustify
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -24
-              Font.Name = 'Tahoma'
-              Font.Style = []
-              NumbersOnly = True
-              ParentFont = False
-              TabOrder = 0
-              Text = '2000'
+            inherited RzGroupBox2: TRzGroupBox
+              StyleElements = [seFont, seClient, seBorder]
+              inherited edN: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
             end
           end
         end
@@ -2922,7 +2042,6 @@ object frmMain: TfrmMain
             Caption = '&Edit1'
             CommandStyle = csControl
             CommandProperties.Width = 250
-            CommandProperties.ContainedControl = edEndL
           end>
       end
       item

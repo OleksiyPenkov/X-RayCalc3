@@ -119,6 +119,9 @@
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.0.1.200;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.0.0.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>Assets\XRayCalc3_Icon.ico</Icon_MainIcon>
         <VerInfo_Release>1</VerInfo_Release>
+        <MapFile>3</MapFile>
+        <DCC_MapFile>3</DCC_MapFile>
+        <ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -168,6 +171,10 @@
         </DCCReference>
         <DCCReference Include="forms\frm_Main.pas">
             <Form>frmMain</Form>
+        </DCCReference>
+        <DCCReference Include="forms\frame_CalcSettings.pas">
+            <Form>frmCalcSettings</Form>
+            <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="units\unit_Types.pas"/>
         <DCCReference Include="math\math_complex.pas"/>

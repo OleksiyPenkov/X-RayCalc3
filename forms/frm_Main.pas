@@ -17,7 +17,7 @@ uses
   unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials,
   VCLTee.TeeFunci, VCLTee.TeCanvas,
   unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark,
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo,
   Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, Vcl.VirtualImageList,
   Vcl.BaseImageCollection, Vcl.ImageCollection;
 
@@ -110,21 +110,7 @@ type
     tsDensity: TRzTabSheet;
     Chart: TChart;
     RzPanel3: TRzPanel;
-    RzStatusPane1: TRzStatusPane;
-    RzStatusPane2: TRzStatusPane;
-    StatusY: TRzStatusPane;
-    StatusX: TRzStatusPane;
-    RzStatusPane3: TRzStatusPane;
-    RzStatusPane4: TRzStatusPane;
-    StatusMaxX: TRzStatusPane;
-    StatusRMax: TRzStatusPane;
-    RzStatusPane5: TRzStatusPane;
-    StatusD: TRzStatusPane;
-    RzStatusPane6: TRzStatusPane;
-    StatusRi: TRzStatusPane;
-    spChiSqr: TRzStatusPane;
-    btnChartScale: TRzBitBtn;
-    cbMinLimit: TRzComboBox;
+    FChartInfo: TfrmChartInfo;
     StructurePanel: TRzPanel;
     tlbStructure: TRzToolbar;
     btnPeriodAdd: TRzToolButton;
@@ -156,7 +142,6 @@ type
     chRoughness: TChart;
     chDensity: TChart;
     chThickness: TChart;
-    RzStatusPane7: TRzStatusPane;
     tsFittingProgress: TRzTabSheet;
     chFittingProgress: TChart;
     lsrConvergence: TLineSeries;
@@ -165,29 +150,6 @@ type
     RzPanel2: TRzPanel;
     Label6: TLabel;
     cbIncrement: TRzComboBox;
-    RzPanel6: TRzPanel;
-    RzPanel7: TRzPanel;
-    rgPolarisation: TRzRadioGroup;
-    pnlWaveParams: TRzPanel;
-    Label9: TLabel;
-    Label10: TLabel;
-    Label11: TLabel;
-    Label12: TLabel;
-    edStartL: TEdit;
-    edEndL: TEdit;
-    edTheta: TEdit;
-    edDL: TEdit;
-    pnlAngleParams: TRzPanel;
-    Label1: TLabel;
-    Label2: TLabel;
-    Label3: TLabel;
-    Label4: TLabel;
-    edStartTeta: TEdit;
-    edEndTeta: TEdit;
-    edWidth: TEdit;
-    edLambda: TEdit;
-    cb2Theta: TRzCheckBox;
-    rgCalcMode: TRzRadioGroup;
     ChartToolBar: TRzToolbar;
     btnDataLoad: TRzToolButton;
     btnDataPaste: TRzToolButton;
@@ -199,7 +161,6 @@ type
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
     btnSetFitLimits: TBitBtn;
-    spChiBest: TRzStatusPane;
     dlgPrint: TPrintDialog;
     RzSpacer3: TRzSpacer;
     BtnFastForward: TRzToolButton;
@@ -251,8 +212,6 @@ type
     N4: TMenuItem;
     Delete2: TMenuItem;
     RzVersionInfoStatus1: TRzVersionInfoStatus;
-    RzGroupBox2: TRzGroupBox;
-    edN: TEdit;
     Data1: TMenuItem;
     Loadfromfile1: TMenuItem;
     Pastefromclipboard1: TMenuItem;
@@ -298,20 +257,6 @@ type
     Calcbatchjobs1: TMenuItem;
     pmRecentList: TPopupMenu;
     pmRecentList1: TMenuItem;
-    rgFittingMode: TRzRadioGroup;
-    edFIter: TEdit;
-    Label7: TLabel;
-    Label8: TLabel;
-    edFPopulation: TEdit;
-    cbLFPSOShake: TRzCheckBox;
-    cbSeedRange: TRzCheckBox;
-    edPolyOrder: TEdit;
-    lblPolyOrder: TLabel;
-    Label21: TLabel;
-    cbTWChi: TComboBox;
-    cbPWChiSqr: TRzCheckBox;
-    btnAdvFitSettings: TRzBitBtn;
-    cbSmooth: TRzCheckBox;
     pnlX64: TRzStatusPane;
     tsProfile: TRzTabSheet;
     chProfile: TChart;
@@ -321,7 +266,7 @@ type
     vliProject: TVirtualImageList;
     vilModel: TVirtualImageList;
     vilCalc: TVirtualImageList;
-    procedure btnChartScaleClick(Sender: TObject);
+    FCalcSettings: TfrmCalcSettings;
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -384,10 +329,7 @@ type
     procedure ChartZoom(Sender: TObject);
     procedure btnCopyConvergenceClick(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
-    procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
-      var AllowChange: Boolean);
     procedure actProjecEditModelTextExecute(Sender: TObject);
-    procedure cbMinLimitChange(Sender: TObject);
     procedure actDataSmoothExecute(Sender: TObject);
     procedure acStructureUndoExecute(Sender: TObject);
     procedure actProjectReopenExecute(Sender: TObject);
@@ -399,8 +341,6 @@ type
     procedure ChartResize(Sender: TObject);
     procedure actDataTrimExecute(Sender: TObject);
     procedure actCalcFitJobsExecute(Sender: TObject);
-    procedure rgFittingModeClick(Sender: TObject);
-    procedure btnAdvFitSettingsClick(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
@@ -460,7 +400,6 @@ type
     procedure FinalizeCalc(Calc: TCalc);
     procedure GetThreadParams;
     procedure PlotResults(const Data: TDataArray);
-    procedure PrintMax;
     procedure SaveProject(const FileName: string);
     procedure SaveData;
     procedure AddCurve(Data: PProjectData);
@@ -494,7 +433,9 @@ type
     procedure RecentListOnClick(Sender: TObject);
     procedure FillRecentMenu;
     procedure LoadRecentProjectsList;
-    function FittingMode: TFittingMode; inline;
+    procedure OnCalcModeChange(Sender: TObject);
+    procedure OnFittingModeChange(Sender: TObject);
+    procedure OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
     procedure RunCalc(const Recover: boolean);
     procedure UpdateInterface(const FitStructure: TFitStructure;
                               const Poly: TProfileFunctions;
@@ -515,6 +456,8 @@ type
     function IsNonPeriodicProfile: Boolean; inline;
     procedure SaveActiveData;
     function GradientTitle(const P: TFuncProfileRec): string;
+    procedure OnChartScaleToggle(Sender: TObject);
+    procedure OnChartMinLimitChange(Sender: TObject);
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
@@ -585,7 +528,7 @@ end;
 
 function TfrmMain.IsNonPeriodicProfile: Boolean;
 begin
-  Result := IsProfileEnbled and (FittingMode <> fmPeriodic);
+  Result := IsProfileEnbled and (FCalcSettings.FittingMode <> fmPeriodic);
 end;
 
 procedure TfrmMain.SaveActiveData;
@@ -600,17 +543,17 @@ begin
                Structure.Stacks[P.StackID].Layers[P.LayerID].Data.Material]);
 end;
 
-procedure TfrmMain.btnAdvFitSettingsClick(Sender: TObject);
+procedure TfrmMain.OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
 begin
   frmFitSettings.ShowSettings(FFitParams);
 end;
 
-procedure TfrmMain.btnChartScaleClick(Sender: TObject);
+procedure TfrmMain.OnChartScaleToggle(Sender: TObject);
 begin
   if Chart.LeftAxis.Logarithmic then
   begin
     Chart.LeftAxis.Logarithmic := False;
-    btnChartScale.Caption := 'Log';
+    FChartInfo.SetScaleCaption('Log');
     if Chart.LeftAxis.Maximum > 0.01 then
       Chart.LeftAxis.AxisValuesFormat := '0.000'
     else
@@ -618,10 +561,15 @@ begin
   end
   else
   begin
-    btnChartScale.Caption := 'Linear';
+    FChartInfo.SetScaleCaption('Linear');
     Chart.LeftAxis.Logarithmic := True;
     Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end;
+end;
+
+procedure TfrmMain.OnChartMinLimitChange(Sender: TObject);
+begin
+  Chart.LeftAxis.Minimum := FChartInfo.MinLimit;
 end;
 
 procedure TfrmMain.CreateNewModel(Node: PVirtualNode);
@@ -666,8 +614,7 @@ begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
 
-  spChiSqr.Caption := FloatToStrF(msg_prm.LastChi, ffFixed, 8, 4);
-  spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
+  FChartInfo.SetChiSquare(msg_prm.LastChi, msg_prm.BestChi);
 
   FLastChiSquare :=  msg_prm.BestChi;
   if FABestChiSquare > FLastChiSquare then
@@ -877,7 +824,7 @@ begin
     ClipBoard.AsText := Structure.ToString;
   end;
   if (Data.Group = gtData) and (Data.RowType = prItem) then
-    SeriesToClipboard(FSeriesList[Data.CurveID], rgCalcMode.ItemIndex);
+    SeriesToClipboard(FSeriesList[Data.CurveID], FCalcSettings.CalcMode);
 end;
 
 procedure TfrmMain.DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -1167,7 +1114,7 @@ end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
-  SeriesToClipboard(ActiveDataSeries, rgCalcMode.ItemIndex);
+  SeriesToClipboard(ActiveDataSeries, FCalcSettings.CalcMode);
 end;
 
 procedure TfrmMain.DataExportExecute(Sender: TObject);
@@ -1270,8 +1217,7 @@ var
   end;
 
 begin
-  t1 := StrToFloat(edStartTeta.Text);
-  t2 := StrToFloat(edEndTeta.Text);
+  FCalcSettings.GetAxisRange(t1, t2);
 
   index := FindIndex(t1);
   if index > 1 then
@@ -1525,67 +1471,18 @@ end;
 procedure TfrmMain.LoadProjectParams(var LinkedID, ActiveID: System.Integer);
 var
   INF: TMemIniFile;
-  Periodic, Poly: boolean;
-  FitMode: Integer;
 begin
   INF := TMemIniFile.Create(FProjectDir + PARAMETERS_FILE_NAME);
   try
-    edN.Text := INF.ReadString('PARAMS', 'N', '1000');
-    rgCalcMode.ItemIndex := INF.ReadInteger('PARAMS', 'Mode', 0);
-    rgPolarisation.ItemIndex := INF.ReadInteger('PARAMS', 'Polarisation', 0);
-    cbMinLimit.Text := INF.ReadString('PARAMS', 'MinLimit', '1E-7');
-
-    edStartTeta.Text := INF.ReadString('ANGLE', 'Start', '0.01');
-    edEndTeta.Text := INF.ReadString('ANGLE', 'End', '5');
-    edLambda.Text := INF.ReadString('ANGLE', 'lambbda', '1.54043');
-    edWidth.Text := INF.ReadString('ANGLE', 'width', '0.015');
-    cb2Theta.Checked := INF.ReadBool('ANGLE', '2teta', True);
-
-    edStartL.Text := INF.ReadString('WAVE', 'Start', '1');
-    edEndL.Text := INF.ReadString('WAVE', 'End', '10');
-    edTheta.Text := INF.ReadString('WAVE', 'Teta', '85');
-    edDL.Text := INF.ReadString('WAVE', 'width', '0');
+    FCalcSettings.LoadFromINI(INF);
+    FChartInfo.LoadFromINI(INF);
 
     LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
     Chart.LeftAxis.Logarithmic := INF.ReadBool('STATE', 'LogScale', True);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
-    edFIter.Text            := INF.ReadString('FIT', 'Namx', '100');
-    edFPopulation.Text      := INF.ReadString('FIT', 'Pop', '100');
-
-    FitMode := INF.ReadInteger('FIT', 'Mode', -1);
-    if FitMode = -1 then
-    begin
-      Periodic := INF.ReadBool('FIT', 'Periodic', False);
-      Poly     := INF.ReadBool('FIT', 'Poly', False);
-
-      if Periodic then rgFittingMode.ItemIndex := Ord(fmPeriodic);
-      if Poly then rgFittingMode.ItemIndex := Ord(fmPoly);
-    end
-    else
-      rgFittingMode.ItemIndex := FitMode;
-
-    edPolyOrder.Text        := INF.ReadString('FIT', 'PolyOrder', '1');
-    cbPWChiSqr.Checked  := INF.ReadBool('FIT', 'PWChi', True);
-    cbTWChi.ItemIndex   := INF.ReadInteger('FIT', 'TWChi', 0);
-    cbSeedRange.Checked  := INF.ReadBool('LFPSO', 'SeedRange', False);
-    cbLFPSOShake.Checked    := INF.ReadBool('LFPSO', 'Shake', True);
-    cbSmooth.Checked        := INF.ReadBool('LFPSO', 'Smooth', False);
-
-    FFitParams.Tolerance := StrToFloat(INF.ReadString('FIT', 'Tol', '0.005'));
-    FFitParams.MovAvgWindow := StrToFloat(INF.ReadString('FIT', 'Window', '0.05'));
-    FFitParams.Vmax         := StrToFloat(INF.ReadString('LFPSO', 'Vmax', '0.1'));
-    FFitParams.JammingMax   := StrToInt(INF.ReadString('LFPSO', 'Jmax', '1'));
-    FFitParams.ReInitMax    := StrToInt(INF.ReadString('LFPSO', 'RIMax', '3'));
-    FFitParams.KChiSqr      := StrToFloat(INF.ReadString('LFPSO', 'kChi', '1.41'));
-    FFitParams.KVmax        := StrToFloat(INF.ReadString('LFPSO', 'kVmax', '1.41'));
-    FFitParams.w1           := StrToFloat(INF.ReadString('LFPSO', 'w1', '0.3'));
-    FFitParams.w2           := StrToFloat(INF.ReadString('LFPSO', 'w2', '0.3'));
-    FFitParams.AdaptVel     := INF.ReadBool('LFPSO', 'AdaptV', False);
-    FFitParams.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
-    FFitParams.Ksxr         := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
-    FFitParams.PolyFactor   := INF.ReadInteger('LFPSO', 'PolyFactor', 10);
+    FCalcSettings.LoadAdvancedParams(INF, FFitParams);
   finally
     INF.Free;
   end;
@@ -1606,14 +1503,7 @@ begin
   else
     FFitStructure := Structure.ToFitStructure;
 
-  FFitParams.NMax := StrToInt(edFIter.Text);
-  FFitParams.Pop  := StrToInt(edFPopulation.Text);
-  FFitParams.Shake       := cbLFPSOShake.Checked;
-  FFitParams.ThetaWeight := cbTWChi.ItemIndex;
-
-  FFitParams.RangeSeed   := cbSeedRange.Checked;
-  FFitParams.MaxPOrder   := StrToInt(edPolyOrder.Text);
-  FFitParams.Smooth       := cbSmooth.Checked;
+  FCalcSettings.ReadFitParams(FFitParams);
 
   Result := True;
 end;
@@ -1646,91 +1536,17 @@ begin
 end;
 
 procedure TfrmMain.GetThreadParams;
-var
-  StartT, EndT: single;
 begin
   StartTime := Now;
 
-
   ActiveModelSeries.BeginUpdate;
 
-  StartT := StrToFloat(edStartTeta.Text);
-  EndT := StrToFloat(edEndTeta.Text);
-
-  if cb2Theta.Checked then
-    FCalcThreadParams.k := 2
-  else
-    FCalcThreadParams.k := 1;
-
-  if rgPolarisation.ItemIndex = 0 then
-    FCalcThreadParams.P := cmS
-  else
-    FCalcThreadParams.P := cmSP;
-
-  case rgCalcMode.ItemIndex of
-    0:begin
-        FCalcThreadParams.Mode := cmTheta;
-        FCalcThreadParams.Lambda := StrToFloat(edLambda.Text);
-        FCalcThreadParams.StartT := StartT;
-        FCalcThreadParams.EndT   := EndT;
-        FCalcThreadParams.DT     := StrToFloat(edWidth.Text);
-      end;
-
-    1:
-      begin
-        FCalcThreadParams.Mode := cmLambda;
-        FCalcThreadParams.Theta := StrToFloat(edTheta.Text);
-        FCalcThreadParams.StartL := StrToFloat(edStartL.Text);
-        FCalcThreadParams.EndL := StrToFloat(edEndL.Text);
-        FCalcThreadParams.DW := StrToFloat(edDL.Text);
-      end;
-  end;
-
-  FCalcThreadParams.RF := rfError;
-  FCalcThreadParams.N := StrToInt(edN.Text);
- end;
+  FCalcSettings.FillCalcThreadParams(FCalcThreadParams);
+end;
 
 procedure TfrmMain.HelpAboutExecute(Sender: TObject);
 begin
   frmAbout.ShowModal;
-end;
-
-procedure TfrmMain.PrintMax;
-var
-  X, Y, mx, x1, x2, my, RI, OldX: single;
-  i: Integer;
-begin
-  if ActiveModelSeries.Count = 0 then
-    Exit;
-
-  my := 0;  mx := 0;
-  x1 := Chart.BottomAxis.Minimum;
-  x2 := Chart.BottomAxis.Maximum;
-  RI := 0;
-  OldX := ActiveModelSeries.XValue[1];
-  for i := 2 to ActiveModelSeries.Count - 2 do
-  begin
-    X := ActiveModelSeries.XValue[i];
-    Y := ActiveModelSeries.YValue[i];
-    if (X > x1) and (X < x2) then
-    begin
-      RI := RI + Y * abs(OldX - X);
-      if Y > my then
-      begin
-        my := Y;
-        mx := X;
-      end;
-    end;
-    OldX := X;
-  end;
-
-  if my < 0.01 then
-    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2)
-  else
-    StatusRMax.Caption := FloatToStrF(my, ffFixed, 4, 3);
-
-  StatusMaxX.Caption := FloatToStrF(mx, ffFixed, 5, 4);
-  StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
 end;
 
 procedure TfrmMain.PlotResults(const Data: TDataArray);
@@ -1807,14 +1623,9 @@ begin
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
   ActiveModelSeries.EndUpdate;
   ActiveModelSeries.Repaint;
-  StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
+  FChartInfo.SetPeriod(Structure.Period);
   Screen.Cursor := crDefault;
-  PrintMax;
-end;
-
-function  TfrmMain.FittingMode: TFittingMode;
-begin
-  Result := TFittingMode(rgFittingMode.ItemIndex);
+  FChartInfo.SetPeakInfo(ActiveModelSeries, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
@@ -1869,11 +1680,11 @@ begin
       FCalc.Run;
       if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
       begin
-        FCalc.CalcChiSquare(cbTWChi.ItemIndex);
-        spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 4);
+        FCalc.CalcChiSquare(FCalcSettings.ThetaWeightIndex);
+        FChartInfo.SetChiSquare(FCalc.ChiSQR, FCalc.ChiSQR);
       end
       else begin
-        spChiSqr.Caption := '';
+        FChartInfo.ClearChiSquare;
         FLastChiSquare := 0;
       end;
 
@@ -1925,7 +1736,7 @@ begin
   btnStop.Visible := not Enable;
   Structure.Enabled := Enable;
   Project.Enabled := Enable;
-  pnlSettings.Enabled := Enable;
+  FCalcSettings.Enabled := Enable;
 end;
 
 function TfrmMain.PrepareCalc: Boolean;
@@ -1934,11 +1745,11 @@ begin
   if (Project.ActiveModel = nil) then Exit;
 
   FCalc := TCalc.Create;
-  FCalc.Limit := StrToFloat(cbMinLimit.Text);
+  FCalc.Limit := FChartInfo.MinLimit;
   if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
   begin
     FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
-    if cbPWChiSqr.Checked then
+    if FCalcSettings.IsPWChiSqr then
       FCalc.MovAvg := MovAvg(FCalc.ExpValues, FFitParams.MovAvgWindow);
   end;
 
@@ -1954,7 +1765,7 @@ end;
 function TfrmMain.PrepareLFPSO: Boolean;
 begin
   Result := False;
-  case FittingMode of
+  case FCalcSettings.FittingMode of
     fmIrregular : LFPSO := TLFPSO_Irregular.Create;
     fmPeriodic  : LFPSO := TLFPSO_Periodic.Create;
     fmPoly      : LFPSO := TLFPSO_Poly.Create;
@@ -1963,12 +1774,12 @@ begin
   GetThreadParams;
 
   LFPSO.Params := FFitParams;
-  LFPSO.Limit := StrToFloat(cbMinLimit.Text);
+  LFPSO.Limit := FChartInfo.MinLimit;
 
   if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
   begin
     LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
-    if cbPWChiSqr.Checked then
+    if FCalcSettings.IsPWChiSqr then
       LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, FFitParams.MovAvgWindow);
   end else
   begin
@@ -2000,10 +1811,10 @@ procedure TfrmMain.UpdateInterface;
 begin
   if Structure.IsPeriodic then
   begin
-    if FittingMode = fmPeriodic then
+    if FCalcSettings.FittingMode = fmPeriodic then
        Structure.UpdateInterfaceP(FitStructure)
     else begin
-      if FittingMode = fmPoly then
+      if FCalcSettings.FittingMode = fmPoly then
       begin
         Structure.UpdateInterfaceP(FitStructure);
         if CreateExtension then
@@ -2245,12 +2056,12 @@ begin
   end;
 
   Structure.FromString(Project.ActiveModel.Data);
-  Structure.PeriodicMode := FittingMode = fmPeriodic;
+  Structure.PeriodicMode := FCalcSettings.FittingMode = fmPeriodic;
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
 begin
-  SeriesToClipboard(ActiveModelSeries, rgCalcMode.ItemIndex);
+  SeriesToClipboard(ActiveModelSeries, FCalcSettings.CalcMode);
 end;
 
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
@@ -2291,20 +2102,14 @@ begin
 end;
 
 procedure TfrmMain.RescaleChart;
+var
+  AMin, AMax: Single;
 begin
   Chart.BottomAxis.Minimum := 0;
-
-  case rgCalcMode.ItemIndex of
-    0:begin
-        Chart.BottomAxis.Maximum := StrToFloat(edEndTeta.Text);
-        Chart.BottomAxis.Minimum := StrToFloat(edStartTeta.Text);
-      end;
-    1:begin
-        Chart.BottomAxis.Maximum := StrToFloat(edEndL.Text);
-        Chart.BottomAxis.Minimum := StrToFloat(edStartL.Text);
-      end;
-  end;
-  Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+  FCalcSettings.GetAxisRange(AMin, AMax);
+  Chart.BottomAxis.Minimum := AMin;
+  Chart.BottomAxis.Maximum := AMax;
+  Chart.LeftAxis.Minimum := FChartInfo.MinLimit;
 end;
 
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
@@ -2514,21 +2319,8 @@ begin
   INF := TMemIniFile.Create(IniFileName);
 
   try
-    INF.WriteString('PARAMS', 'N', edN.Text);
-    INF.WriteInteger('PARAMS', 'Mode', rgCalcMode.ItemIndex);
-    INF.WriteInteger('PARAMS', 'Polarisation', rgPolarisation.ItemIndex);
-    INF.WriteString('PARAMS', 'MinLimit', cbMinLimit.Text);
-
-    INF.WriteString('ANGLE', 'Start', edStartTeta.Text);
-    INF.WriteString('ANGLE', 'End', edEndTeta.Text);
-    INF.WriteString('ANGLE', 'lambbda', edLambda.Text);
-    INF.WriteString('ANGLE', 'width', edWidth.Text);
-    INF.WriteBool('ANGLE', '2teta', cb2Theta.Checked);
-
-    INF.WriteString('WAVE', 'Start', edStartL.Text);
-    INF.WriteString('WAVE', 'End', edEndL.Text);
-    INF.WriteString('WAVE', 'Teta', edTheta.Text);
-    INF.WriteString('WAVE', 'width', edDL.Text);
+    FCalcSettings.SaveToINI(INF);
+    FChartInfo.SaveToINI(INF);
 
     INF.WriteInteger('INFO', 'Version', CURRENT_PROJECT_VERSION);
 
@@ -2542,31 +2334,7 @@ begin
 
     INF.WriteBool('STATE', 'LogScale', Chart.LeftAxis.Logarithmic);
 
-    INF.WriteString('FIT', 'Namx', edFIter.Text);
-    INF.WriteString('FIT', 'Pop', edFPopulation.Text);
-    INF.WriteInteger('FIT', 'Mode', rgFittingMode.ItemIndex);
-    INF.WriteString('FIT', 'PolyOrder', edPolyOrder.Text);
-
-    INF.WriteBool('FIT', 'PWChi', cbPWChiSqr.Checked);
-    INF.WriteFloat('FIT', 'Window', FFitParams.MovAvgWindow);
-    INF.WriteInteger('FIT', 'TWChi', cbTWChi.ItemIndex);
-
-    INF.WriteString('FIT', 'Tol', FFitParams.Tolerance.ToString);
-    INF.WriteString('LFPSO', 'Vmax', FFitParams.Vmax.ToString);
-    INF.WriteString('LFPSO', 'Jmax', FFitParams.JammingMax.ToString);
-    INF.WriteString('LFPSO', 'RIMax', FFitParams.ReInitMax.ToString);
-    INF.WriteString('LFPSO', 'kChi', FFitParams.KChiSqr.ToString);
-    INF.WriteString('LFPSO', 'kVmax', FFitParams.KVmax.ToString);
-    INF.WriteString('LFPSO', 'w1', FFitParams.w1.ToString);
-    INF.WriteString('LFPSO', 'w2', FFitParams.w2.ToString);
-    INF.WriteBool('LFPSO', 'AdaptV', FFitParams.AdaptVel);
-
-    INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
-    INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
-    INF.WriteBool('LFPSO', 'Smooth', cbSmooth.Checked);
-    INF.WriteInteger('LFPSO', 'SmoothWindow', FFitParams.SmoothWindow);
-    INF.WriteString('LFPSO', 'Ksxr', FFitParams.Ksxr.ToString);
-    INF.WriteInteger('LFPSO', 'PolyFactor', FFitParams.PolyFactor );
+    FCalcSettings.SaveAdvancedParams(INF, FFitParams);
     INF.UpdateFile;
     Result := True;
   finally
@@ -2658,11 +2426,7 @@ begin
 
   xv := ActiveModelSeries.XScreenToValue(X);
   yv := ActiveModelSeries.YScreenToValue(Y);
-  StatusX.Caption := FloatToStrF(xv, ffFixed, 4, 3);
-  if yv < 0.01 then
-    StatusY.Caption := FloatToStrF(yv, ffExponent, 3, 2)
-  else
-    StatusY.Caption := FloatToStrF(yv, ffFixed, 4, 3);
+  FChartInfo.SetCursorPos(xv, yv);
 
   R := Chart.Legend.RectLegend;
 
@@ -2686,7 +2450,7 @@ end;
 
 procedure TfrmMain.ChartZoom(Sender: TObject);
 begin
-  PrintMax;
+  FChartInfo.SetPeakInfo(ActiveModelSeries, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
 end;
 
 procedure TfrmMain.CreateDefaultProject;
@@ -2885,6 +2649,13 @@ begin
   Config := TConfig.Create;
   CreateProjectTree;
 
+  FCalcSettings.OnCalcModeChange := OnCalcModeChange;
+  FCalcSettings.OnFittingModeChange := OnFittingModeChange;
+  FCalcSettings.OnAdvancedSettings := OnAdvancedSettings;
+
+  FChartInfo.OnScaleToggle := OnChartScaleToggle;
+  FChartInfo.OnMinLimitChange := OnChartMinLimitChange;
+
   PM := TProfileManager.Create;
   PM.DensityProfile := DensityProfile;
 
@@ -2914,36 +2685,17 @@ begin
 end;
 
 
-procedure TfrmMain.rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
-  var AllowChange: Boolean);
+procedure TfrmMain.OnCalcModeChange(Sender: TObject);
 begin
-  case NewIndex of
-    0:
-      begin
-        pnlAngleParams.Enabled := True;
-        pnlWaveParams.Enabled := False;
-        Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
-      end;
-    1:
-      begin
-        pnlAngleParams.Enabled := False;
-        pnlWaveParams.Enabled := True;
-        Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
-      end;
+  case FCalcSettings.CalcMode of
+    0: Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
+    1: Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
   end;
-  AllowChange := True;
 end;
 
-
-procedure TfrmMain.rgFittingModeClick(Sender: TObject);
-var
-  Mode: TFittingMode;
+procedure TfrmMain.OnFittingModeChange(Sender: TObject);
 begin
-  Mode := FittingMode;
-  Structure.PeriodicMode := FittingMode = fmPeriodic;
-  cbSmooth.Enabled := FittingMode = fmIrregular;
-  edPolyOrder.Enabled := Mode = fmPoly;
-  lblPolyOrder.Enabled := edPolyOrder.Enabled;
+  Structure.PeriodicMode := FCalcSettings.FittingMode = fmPeriodic;
 end;
 
 procedure TfrmMain.btnCopyConvergenceClick(Sender: TObject);
@@ -2962,11 +2714,6 @@ end;
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
 begin
   Structure.Increment := StrToFloat(cbIncrement.Value);
-end;
-
-procedure TfrmMain.cbMinLimitChange(Sender: TObject);
-begin
-  Chart.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);
