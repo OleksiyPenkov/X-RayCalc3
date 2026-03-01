@@ -1,27 +1,28 @@
 # X-Ray Calc 3 — User Manual
 
-**Version 7 | Copyright 2001–2025 Oleksiy Penkov**
+**Version 8 | Copyright 2001–2026 Oleksiy Penkov**
 
 ---
 
 ## Table of Contents
 
 1. [Introduction](#1-introduction)
-2. [Installation and First Launch](#2-installation-and-first-launch)
-3. [Application Overview](#3-application-overview)
-4. [Projects](#4-projects)
-5. [Defining a Model](#5-defining-a-model)
-6. [Experimental Data](#6-experimental-data)
-7. [Calculation](#7-calculation)
-8. [Fitting (Optimization)](#8-fitting-optimization)
-9. [Results and Export](#9-results-and-export)
-10. [Charts and Visualization](#10-charts-and-visualization)
-11. [Profile Extensions](#11-profile-extensions)
-12. [Tools](#12-tools)
-13. [Application Settings](#13-application-settings)
-14. [Keyboard Shortcuts and Quick Reference](#14-keyboard-shortcuts-and-quick-reference)
-15. [File Formats](#15-file-formats)
-16. [Troubleshooting](#16-troubleshooting)
+2. [Quick Start](#2-quick-start)
+3. [Installation and First Launch](#3-installation-and-first-launch)
+4. [Application Overview](#4-application-overview)
+5. [Projects](#5-projects)
+6. [Defining a Model](#6-defining-a-model)
+7. [Experimental Data](#7-experimental-data)
+8. [Calculation](#8-calculation)
+9. [Fitting (Optimization)](#9-fitting-optimization)
+10. [Results and Export](#10-results-and-export)
+11. [Charts and Visualization](#11-charts-and-visualization)
+12. [Profile Extensions](#12-profile-extensions)
+13. [Tools](#13-tools)
+14. [Application Settings](#14-application-settings)
+15. [Keyboard Shortcuts and Quick Reference](#15-keyboard-shortcuts-and-quick-reference)
+16. [File Formats](#16-file-formats)
+17. [Troubleshooting](#17-troubleshooting)
 
 ---
 
@@ -45,7 +46,49 @@ The application allows you to:
 
 ---
 
-## 2. Installation and First Launch
+## 2. Quick Start
+
+This section provides a hands-on introduction to X-Ray Calc 3. The distribution includes several demonstration projects in the **Examples** folder — open one to explore the interface before building your own models.
+
+### Exploring the Demo Projects
+
+1. Click **Open** and navigate to the **Examples** folder.
+2. Select a project file (`.xrcx`).
+3. Go to the **Computation** tab and click **Run** (or press **F5**). You can also use **Calc All** (**F12**) to calculate all models at once.
+
+### Navigating the Interface
+
+- **Double-click a model name** in the Project Items list to open its Properties dialog (name, color, description). The same dialog is available from the right-click context menu.
+- **Double-click a layer** to open the Layer Properties dialog, where you can change material, thickness, roughness, and density.
+- **Double-click a stack header** to open the Stack Properties dialog, where you can rename the stack and change the number of periods.
+- Use the **Stack** and **Layer** toolbar panels to add, insert, or delete structural elements.
+
+### Creating a Model from Scratch
+
+1. Create a new project (**File > New Project**).
+2. Select **Model 1** in the project tree.
+3. Add a stack: **Structure > Add Stack** (or use the toolbar). In the dialog, set the stack name (e.g., "Main") and the number of periods (default: 1 for non-periodic structures).
+4. Select the stack by clicking its title in the structure panel.
+5. Add layers: click **Add Layer** (or **Structure > Add Layer**). Fill in the material (click "..." to select from the Materials Database), thickness, roughness, and density. Repeat for each layer.
+6. Calculate the reflectivity: press **F5** (or **Calc > Calculate**).
+
+### Calculation Settings
+
+- **Mode**: Reflectivity can be calculated as a function of grazing angle or wavelength.
+- **Polarization**: Use **s-polarization** for hard X-rays at low grazing angles (below 20 deg) — this is significantly faster. Use **sp-polarization** for larger angles or softer radiation.
+- **Number of points (N)**: Controls calculation precision. Calculation time scales linearly with N.
+- **Angle range**: Set with Theta-1 and Theta-2. Check **2-Theta** for Theta-2Theta geometry. **d-Theta** sets the instrumental beam divergence.
+- **Scale**: Toggle between **Linear** and **Log** scale using the toolbar button. Set a **background level** if needed.
+- **Legend**: Click items in the chart legend to toggle curve visibility.
+
+### Exporting Results
+
+- The **Export** button on the Result panel saves the calculated curve to an ASCII file or copies it to the clipboard.
+- The **Save** button on the Plot panel saves the chart as a bitmap image.
+
+---
+
+## 3. Installation and First Launch
 
 ### System Requirements
 
@@ -78,7 +121,7 @@ To associate `.xrcx` project files with X-Ray Calc 3, go to **File > Settings > 
 
 ---
 
-## 3. Application Overview
+## 4. Application Overview
 
 ### Main Window Layout
 
@@ -128,7 +171,7 @@ Displays calculation time, fitting time, application version, and platform (x64)
 
 ---
 
-## 4. Projects
+## 5. Projects
 
 ### Project Files
 
@@ -176,7 +219,7 @@ Right-click the project tree for context menu operations.
 
 ---
 
-## 5. Defining a Model
+## 6. Defining a Model
 
 ### Creating a Model
 
@@ -260,7 +303,7 @@ For advanced users, **Structure > Edit Model Text** opens a JSON editor showing 
 
 ---
 
-## 6. Experimental Data
+## 7. Experimental Data
 
 ### Loading Data from File
 
@@ -277,15 +320,18 @@ For advanced users, **Structure > Edit Model Text** opens a JSON editor showing 
 
 ### Data Format
 
-The expected data format is a simple two-column text file:
-```
-<angle_or_wavelength>   <reflectivity>
-```
+The expected data format is a two-column ASCII text file:
 
-Values can be separated by tabs or spaces. Lines starting with `#` or other non-numeric characters are treated as comments and ignored.
+- **2 columns** with TAB as the column separator
+- **3-row header** (non-numeric lines are skipped automatically)
+- Column 1: Angle (degrees) or wavelength (Angstroms)
+- Column 2: Reflectivity (typically 0 to 1)
 
 Example:
 ```
+Sample: Mo/Si multilayer
+Date: 2024-01-15
+Theta    Reflectivity
 0.100   1.000000
 0.200   0.999850
 0.300   0.998200
@@ -294,6 +340,10 @@ Example:
 2.000   0.012450
 5.000   0.000023
 ```
+
+Lines starting with `#` or other non-numeric characters are treated as comments and ignored.
+
+> **Tip:** You can also copy and paste table data directly from **OriginLab Origin**. The recommended workflow is to import your raw data into Origin first, then copy-paste the two-column table into X-Ray Calc.
 
 ### Data Processing
 
@@ -313,6 +363,22 @@ After loading data, several processing operations are available:
 
 **Data > Trim** removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.
 
+### Data Conditioning Walkthrough
+
+Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:
+
+**Step 1 — Normalize.** Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via **Data > Normalize**. For example, if the experimental intensity at 0.4 degrees is 0.099, divide by 0.099 to bring the curve to unit reflectivity.
+
+**Step 2 — Smooth.** Apply smoothing to reduce noise: **Data > Smooth**. This uses a Savitzky-Golay filter that preserves peak shapes while reducing point-to-point scatter.
+
+**Step 3 — Trim.** Remove data points outside the useful range:
+1. Set the calculation angle range to cover only the reliable portion of the data (e.g., 0.4 to 4.5 degrees).
+2. Click **Calc** and note the chi-square value.
+3. Select **Data > Trim** to discard points outside the calculation range.
+4. Click **Calc** again — the chi-square should decrease significantly, confirming that noisy tail data has been removed.
+
+After these steps, the experimental curve is ready for fitting.
+
 ### Exporting Data
 
 - **Data > Copy to Clipboard** — copy data in tab-separated format for pasting into other applications
@@ -320,7 +386,7 @@ After loading data, several processing operations are available:
 
 ---
 
-## 7. Calculation
+## 8. Calculation
 
 ### Calculation Modes
 
@@ -354,6 +420,8 @@ Two polarization modes are available:
 - **s-type**: S-polarization (TE mode, electric field perpendicular to the plane of incidence)
 - **sp-type**: Mixed sigma/pi polarization
 
+> **Guidance:** Use **s-polarization** when calculating at hard X-rays and low grazing angles (below 20 deg) — in this regime the difference from sp is negligible and calculation speed is significantly faster. Use **sp-polarization** for larger angles and softer radiation where both polarization components contribute.
+
 ### Number of Points (N)
 
 The **N** parameter controls the number of calculation points (default: 2000). More points give smoother curves but take longer to compute.
@@ -380,7 +448,7 @@ Calculations use multi-threaded parallelism for performance. Configure the numbe
 
 ---
 
-## 8. Fitting (Optimization)
+## 9. Fitting (Optimization)
 
 Fitting adjusts model parameters to minimize the difference between calculated and experimental reflectivity curves. X-Ray Calc 3 uses the **LFPSO (Levy Flight Particle Swarm Optimization)** algorithm — a population-based global optimization method.
 
@@ -514,7 +582,7 @@ The chi-square (chi2) value measures the goodness of fit:
 
 ---
 
-## 9. Results and Export
+## 10. Results and Export
 
 ### Saving Results
 
@@ -540,7 +608,7 @@ When enabled in Settings (**Automatically save results to output folder after fi
 
 ---
 
-## 10. Charts and Visualization
+## 11. Charts and Visualization
 
 ### Main Reflectivity Chart
 
@@ -600,7 +668,7 @@ The Chart Info bar includes peak detection and analysis:
 
 ---
 
-## 11. Profile Extensions
+## 12. Profile Extensions
 
 Profile extensions allow you to define how layer parameters (H, sigma, rho) vary across a periodic structure. They model parameter gradients — for example, when layer thickness gradually increases or density changes with depth.
 
@@ -637,7 +705,7 @@ Each extension can be individually enabled or disabled without deleting it. This
 
 ---
 
-## 12. Tools
+## 13. Tools
 
 ### Create New Material
 
@@ -663,7 +731,7 @@ Configure the number of benchmark runs in **File > Settings > Calc & Fit**.
 
 ---
 
-## 13. Application Settings
+## 14. Application Settings
 
 Access settings via **File > Settings**. The Settings dialog has five sections, navigated via the tree on the left.
 
@@ -711,7 +779,7 @@ Interface customization settings (reserved for future options).
 
 ---
 
-## 14. Keyboard Shortcuts and Quick Reference
+## 15. Keyboard Shortcuts and Quick Reference
 
 ### Toolbar Quick Reference
 
@@ -750,7 +818,7 @@ Interface customization settings (reserved for future options).
 
 ---
 
-## 15. File Formats
+## 16. File Formats
 
 ### Project File (.xrcx)
 
@@ -790,7 +858,24 @@ Standard Windows INI file format. Sections include:
 
 ---
 
-## 16. Troubleshooting
+## 17. Troubleshooting
+
+### Application crashes without error message
+
+This is typically caused by running out of memory when solving very large fitting problems (many layers or a very large population size).
+
+**Solution:** Use the **x64 version** (`XRayCalc3.x64.exe`). It is somewhat slower than the x32 version for small models, but can address much larger amounts of RAM. The x32 version is limited to approximately 2 GB of memory.
+
+### Choosing between x32 and x64
+
+Both versions are included in the distribution:
+
+| Version | Advantage | Limitation |
+|---|---|---|
+| **x32** (`XRayCalc3.exe`) | ~2x faster calculation | Limited to ~2 GB RAM |
+| **x64** (`XRayCalc3.x64.exe`) | Handles large models and populations | Slower for small models |
+
+Use **x32** for routine calculations with small-to-medium models. Switch to **x64** when working with large multilayer structures, high population sizes, or when you encounter crashes.
 
 ### The application shows a "project locked" message
 
@@ -809,7 +894,8 @@ Another instance of X-Ray Calc 3 may have the project open, or a previous sessio
 
 - Ensure multi-threading is enabled (**Settings > Calc & Fit > Auto (Use all)**).
 - Reduce the number of calculation points (N) for preliminary calculations.
-- Use the 64-bit version for better performance with large models.
+- Use the **x32 version** for small-to-medium models — it is approximately 2x faster than x64.
+- Use the **x64 version** only when the model is too large for x32 (memory limit).
 
 ### Material not found
 
