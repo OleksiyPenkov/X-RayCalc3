@@ -18,7 +18,7 @@ uses
   VCLTee.TeeFunci, VCLTee.TeCanvas,
   unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
   unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel,
-  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, Vcl.VirtualImageList,
+  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, unit_RecentProjects, Vcl.VirtualImageList,
   Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
@@ -341,7 +341,7 @@ type
     FAutoSaveFileName: string;
 
     FOperationsStack: TStack<String>;
-    FRecentProjects : TList<String>;
+    FRecentProjects : TRecentProjectsManager;
 
     FTerminated: Boolean;
     FBenchmarkMode: Boolean;
@@ -395,10 +395,8 @@ type
     procedure EnableControls(const Enable: boolean);
     procedure AutoSave;
     procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
-    procedure AddRecentItem(const FileName: string);
-    procedure RecentListOnClick(Sender: TObject);
-    procedure FillRecentMenu;
     procedure LoadRecentProjectsList;
+    procedure OnRecentProjectClick(Sender: TObject; const FileName: string);
     procedure OnCalcModeChange(Sender: TObject);
     procedure OnFittingModeChange(Sender: TObject);
     procedure OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
@@ -2192,57 +2190,18 @@ begin
     if TConfig.Section<TOtherOptions>.AutoCalc then
       CalcRunExecute(frmMain);
 
-    AddRecentItem(FProjectFileName);
+    FRecentProjects.Add(FProjectFileName);
   end;
 end;
 
 
-procedure TfrmMain.RecentListOnClick(Sender: TObject);
-var
-  Index : Integer;
+procedure TfrmMain.OnRecentProjectClick(Sender: TObject; const FileName: string);
 begin
-  Index := (Sender as TMenuItem).Tag - 100;
-  FProjectFileName := FRecentProjects.List[Index];
-  FRecentProjects.Move(Index, 0);
-  FillRecentMenu;
-
+  FProjectFileName := FileName;
   PrepareProjectFolder(FProjectFileName, True);
   LoadProject(FProjectFileName);
   if TConfig.Section<TOtherOptions>.AutoCalc then
-        CalcRunExecute(frmMain);
-end;
-
-procedure TfrmMain.FillRecentMenu;
-var
-  i: Integer;
-  Item, PopupItem: TMenuItem;
-begin
-  miRecent.Clear;
-  pmRecentList.Items.Clear;
-  for I := 0 to FRecentProjects.Count - 1 do
-  begin
-    Item := TMenuItem.Create(miRecent);
-    miRecent.Add(Item);
-    Item.Caption := ExtractFileName(FRecentProjects.List[i]);
-    Item.Tag := 100 + i;
-    Item.OnClick := RecentListOnClick;
-
-    PopupItem := TMenuItem.Create(pmRecentList);
-    pmRecentList.Items.Add(PopupItem);
-    PopupItem.Caption := Item.Caption;
-    PopupItem.Tag := Item.Tag;
-    PopupItem.OnClick := RecentListOnClick;
-  end;
-end;
-
-procedure TfrmMain.AddRecentItem(const FileName: string);
-begin
-    FRecentProjects.Insert(0, FileName);
-    if FRecentProjects.Count > MAX_RECENT_CAPACITY then
-          FRecentProjects.Delete(FRecentProjects.Count - 1);
-
-    TConfig.WriteStringList('Recent', FRecentProjects.List);
-    FillRecentMenu;
+    CalcRunExecute(frmMain);
 end;
 
 procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
@@ -2503,20 +2462,10 @@ begin
 end;
 
 procedure TfrmMain.LoadRecentProjectsList;
-var
-  RecentList: array of String;
-  i: Integer;
 begin
-  FRecentProjects := TList<String>.Create;
-
-  SetLength(RecentList, MAX_RECENT_CAPACITY);
-  TConfig.ReadStringList('Recent', RecentList);
-
-  for i := 0 to High(RecentList) do
-    if RecentList[i] <> '' then
-      FRecentProjects.Add(RecentList[i]);
-
-  FillRecentMenu;
+  FRecentProjects := TRecentProjectsManager.Create(MAX_RECENT_CAPACITY, miRecent, pmRecentList);
+  FRecentProjects.OnClick := OnRecentProjectClick;
+  FRecentProjects.Load;
 end;
 
 procedure TfrmMain.CreateTmpLock;
@@ -2648,6 +2597,7 @@ begin
   FreeAndNil(Project);
   FreeAndNil(Structure);
   FreeAndNil(FOperationsStack);
+  FreeAndNil(FRecentProjects);
   FreeAndNil(Config);
 end;
 
