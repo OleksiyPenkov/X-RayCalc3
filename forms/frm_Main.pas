@@ -17,7 +17,7 @@ uses
   unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials,
   VCLTee.TeeFunci, VCLTee.TeCanvas,
   unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo,
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages,
   Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, Vcl.VirtualImageList,
   Vcl.BaseImageCollection, Vcl.ImageCollection;
 
@@ -104,10 +104,7 @@ type
     Zip: TAbZipper;
     UnZip: TAbUnZipper;
     pnlMain: TRzPanel;
-    Pages: TRzPageControl;
-    tsThickness: TRzTabSheet;
-    tsRoughness: TRzTabSheet;
-    tsDensity: TRzTabSheet;
+    FChartPages: TfrmChartPages;
     Chart: TChart;
     RzPanel3: TRzPanel;
     FChartInfo: TfrmChartInfo;
@@ -139,12 +136,6 @@ type
     N5: TMenuItem;
     pmCopytoclipboard: TMenuItem;
     pmExporttofile: TMenuItem;
-    chRoughness: TChart;
-    chDensity: TChart;
-    chThickness: TChart;
-    tsFittingProgress: TRzTabSheet;
-    chFittingProgress: TChart;
-    lsrConvergence: TLineSeries;
     spnFitTime: TRzStatusPane;
     pnlSettings: TPanel;
     RzPanel2: TRzPanel;
@@ -246,7 +237,6 @@ type
     Benchmark1: TMenuItem;
     actSystemSettings: TAction;
     actSystemExit: TAction;
-    btnCopyConvergence: TRzButton;
     actCopyStructureBitmap: TAction;
     Copyasimage1: TMenuItem;
     btnStop: TRzBitBtn;
@@ -258,10 +248,6 @@ type
     pmRecentList: TPopupMenu;
     pmRecentList1: TMenuItem;
     pnlX64: TRzStatusPane;
-    tsProfile: TRzTabSheet;
-    chProfile: TChart;
-    DensityProfile: TLineSeries;
-    btnProfileCopy: TRzButton;
     ImageCollection: TImageCollection;
     vliProject: TVirtualImageList;
     vilModel: TVirtualImageList;
@@ -327,7 +313,6 @@ type
     procedure ChartMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ChartZoom(Sender: TObject);
-    procedure btnCopyConvergenceClick(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
     procedure actProjecEditModelTextExecute(Sender: TObject);
     procedure actDataSmoothExecute(Sender: TObject);
@@ -345,7 +330,6 @@ type
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
     procedure DataNormAutoExecute(Sender: TObject);
-    procedure btnProfileCopyClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
     Project : TXRCProjectTree;
@@ -612,7 +596,7 @@ var
   NeedsSaving: boolean;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
-  lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
+  FChartPages.AddConvergencePoint(msg_prm.Step, msg_prm.BestChi);
 
   FChartInfo.SetChiSquare(msg_prm.LastChi, msg_prm.BestChi);
 
@@ -682,7 +666,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
+  PM.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
   CalcRunExecute(Self);
 end;
 
@@ -747,8 +731,8 @@ begin
        Structure.FromString(LastData.Data);
        FOperationsStack.Clear;
        FOperationsStack.Push(LastData.Data);
-       PM.Prepare(Structure, chThickness, chRoughness, chDensity);
-       PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
+       PM.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
+       PM.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
      end;
   end;
 end;
@@ -1399,8 +1383,8 @@ end;
 
 procedure TfrmMain.MatchToStructure;
 begin
-  PM.Prepare(Structure, chThickness, chRoughness, chDensity);
-  PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
+  PM.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
+  PM.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
   Project.ActiveModel.Data := Structure.ToString;
 end;
 
@@ -1688,11 +1672,11 @@ begin
         FLastChiSquare := 0;
       end;
 
-      PM.Prepare(Structure, chThickness, chRoughness, chDensity);
+      PM.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
       if IsNonPeriodicProfile then
-         PM.PlotProfileNP(Pages.ActivePage = tsProfile)
+         PM.PlotProfileNP(FChartPages.IsProfileActive)
       else
-        PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
+        PM.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
     except
       on E: exception do
       begin
@@ -1731,7 +1715,7 @@ begin
   tlbStructure.Enabled := Enable;
   tlbrProject.Enabled := Enable;
   ChartToolBar.Enabled := Enable;
-  btnCopyConvergence.Enabled := Enable;
+  FChartPages.SetCopyEnabled(Enable);
 
   btnStop.Visible := not Enable;
   Structure.Enabled := Enable;
@@ -1790,10 +1774,7 @@ begin
 
   LFPSO.Structure := FFitStructure;
 
-  lsrConvergence.Clear;
-  Pages.ActivePage := tsFittingProgress;
-  chFittingProgress.BottomAxis.Minimum := 0;
-  chFittingProgress.BottomAxis.Maximum := FFitParams.NMax;
+  FChartPages.PrepareConvergence(FFitParams.NMax);
 
   Result := True;
 end;
@@ -2586,11 +2567,7 @@ begin
     Size := 6;
 
   ScaleChartFonts(Chart, Size, FDPI);
-  ScaleChartFonts(chThickness, Size - 2, FDPI);
-  ScaleChartFonts(chRoughness, Size - 2, FDPI);
-  ScaleChartFonts(chDensity, Size - 2, FDPI);
-  ScaleChartFonts(chFittingProgress, Size - 2, FDPI);
-  ScaleChartFonts(chProfile, Size - 2, FDPI);
+  FChartPages.ScaleSubChartFonts(Size - 2, FDPI);
 end;
 
 procedure TfrmMain.ScaleChartFonts(AChart: TCustomChart; ABaseSize: Integer; ATargetDPI: Integer);
@@ -2657,7 +2634,7 @@ begin
   FChartInfo.OnMinLimitChange := OnChartMinLimitChange;
 
   PM := TProfileManager.Create;
-  PM.DensityProfile := DensityProfile;
+  PM.DensityProfile := FChartPages.ProfileSeries;
 
   Structure := TXRCStructure.Create(StructurePanel, FDPI);
   Structure.Parent := StructurePanel;
@@ -2671,7 +2648,7 @@ begin
 
   CreateDir(Config.TempDir);
   CreateTmpLock;
-  Pages.ActivePageindex := 0;
+  FChartPages.ResetToFirstPage;
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -2696,19 +2673,6 @@ end;
 procedure TfrmMain.OnFittingModeChange(Sender: TObject);
 begin
   Structure.PeriodicMode := FCalcSettings.FittingMode = fmPeriodic;
-end;
-
-procedure TfrmMain.btnCopyConvergenceClick(Sender: TObject);
-begin
-  case Pages.ActivePageIndex of
-    0..2: ;
-    3: SeriesToClipboard('N','ChiSqr','','', lsrConvergence);
-  end;
-end;
-
-procedure TfrmMain.btnProfileCopyClick(Sender: TObject);
-begin
-  SeriesToClipboard('A','g/cm3','','', DensityProfile);
 end;
 
 procedure TfrmMain.cbIncrementChange(Sender: TObject);
