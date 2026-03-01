@@ -36,7 +36,6 @@ uses
   Forms,
   System.SysUtils,
   Neslib.FastMath,
-  unit_helpers,
   Dialogs;
 
 { TLFPSO Periodic}

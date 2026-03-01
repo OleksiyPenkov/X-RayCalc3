@@ -92,7 +92,7 @@ type
 implementation
 
 uses
-  math_globals, unit_helpers, unit_Config, unit_sys_helpers;
+  math_globals, unit_SeriesIO, unit_Config, unit_sys_helpers;
 
 const
   InvTwoLn10 = 0.2171472409516259;       // 1/(2*ln(10)), for ln-to-log10 conversion

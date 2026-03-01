@@ -40,7 +40,7 @@ type
 implementation
 
 uses
-  unit_helpers, System.SysUtils, System.Math, VclTee.Series;
+  unit_SeriesIO, unit_DataProcessing, System.SysUtils, System.Math, VclTee.Series;
 
 { TTestHelpers }
 

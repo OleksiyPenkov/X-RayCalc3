@@ -77,7 +77,7 @@ implementation
 
 {$R *.dfm}
 
-uses frm_main, math_globals, unit_helpers;
+uses frm_main, math_globals, unit_SeriesIO;
 
 procedure TedtrProfileFunction.btnCopyClick(Sender: TObject);
 begin

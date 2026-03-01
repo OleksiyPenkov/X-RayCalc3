@@ -48,7 +48,6 @@ uses
   Forms,
   System.SysUtils,
   Neslib.FastMath,
-  unit_helpers,
   Dialogs, math_globals;
 
 { TLFPSO Periodic}

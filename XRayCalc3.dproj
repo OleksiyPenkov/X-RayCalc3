@@ -178,6 +178,9 @@
         </DCCReference>
         <DCCReference Include="units\unit_Types.pas"/>
         <DCCReference Include="math\math_complex.pas"/>
+        <DCCReference Include="units\unit_SeriesIO.pas"/>
+        <DCCReference Include="units\unit_DataProcessing.pas"/>
+        <DCCReference Include="units\unit_FileUtils.pas"/>
         <DCCReference Include="units\unit_helpers.pas"/>
         <DCCReference Include="units\unit_consts.pas"/>
         <DCCReference Include="components\unit_XRCStructure.pas"/>

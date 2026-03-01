@@ -156,7 +156,6 @@ uses
   System.SysUtils,
   Neslib.FastMath,
   OtlParallel,
-  unit_helpers,
   unit_Config,
   unit_sys_helpers,
   Dialogs;

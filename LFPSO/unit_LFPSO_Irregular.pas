@@ -46,7 +46,7 @@ uses
   Forms,
   System.SysUtils,
   Neslib.FastMath,
-  unit_helpers,
+  unit_DataProcessing,
   Dialogs;
 
 { TLFPSO Periodic}
@@ -65,7 +65,7 @@ begin
       Data[n].r := X[i][FSmoothies[s].Layers[n]][FSmoothies[s].ParamID][0];
     end;
 
-    Data := unit_helpers.Smooth(Data, FFitParams.SmoothWindow);
+    Data := unit_DataProcessing.Smooth(Data, FFitParams.SmoothWindow);
 
     for n := 0 to High(Data) do
       X[i][FSmoothies[s].Layers[n]][FSmoothies[s].ParamID][0] := Data[n].r;

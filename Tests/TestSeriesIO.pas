@@ -35,7 +35,7 @@ type
 implementation
 
 uses
-  unit_helpers, unit_types, VclTee.Series, Clipbrd,
+  unit_SeriesIO, unit_types, VclTee.Series, Clipbrd,
   System.SysUtils, System.IOUtils, System.Classes;
 
 { TTestSeriesIO }
