@@ -56,24 +56,24 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 33 | Remove dead `FFirstEntity` field from `TfrmMain` — declared but never read or written (`frm_Main.pas`) | 🟢 S | 🔴 Open |
-| 34 | Fix `TXRCStructure.GetCurrentLayerData` — empty stub returns uninitialized result. Implement or remove the property (`unit_XRCStructure.pas`) | 🟢 S | 🔴 Open |
-| 35 | Fix `UpdateProfileExtension` empty stub — called during fitting result display but does nothing (`frm_Main.pas`) | 🟢 S | 🔴 Open |
-| 36 | Remove dead `LineToFile` function — declared in interface, all usage commented out (`unit_LFPSO_Base.pas`) | 🟢 S | 🔴 Open |
-| 37 | Remove 5 commented-out chi-square formulas — development artifacts (`cmd_unit_calc.pas`) | 🟢 S | 🔴 Open |
-| 38 | Remove duplicate `forms/editor_Normalisation.pas` — identical copy exists in `editors/`, one is orphaned | 🟢 S | 🔴 Open |
+| 33 | Rename misleading `FFirstEntity` → `FLockOwner` in `TfrmMain` — tracks lock file ownership, not "first entity" (`frm_Main.pas`) | 🟢 S | ✅ Done |
+| 34 | Remove dead `GetCurrentLayerData` getter — empty stub, only setter used. Changed `LayerData` to write-only property (`unit_XRCStructure.pas`) | 🟢 S | ✅ Done |
+| 35 | Remove `UpdateProfileExtension` empty stub — inherently no-op since `Structure.UpdateProfiles` handles the update separately (`frm_Main.pas`) | 🟢 S | ✅ Done |
+| 36 | Remove dead `LineToFile` + `SolutionToString` — declared in interface, all usage commented out (`unit_LFPSO_Base.pas`) | 🟢 S | ✅ Done |
+| 37 | Remove 5 commented-out chi-square formulas — development artifacts (`cmd_unit_calc.pas`) | 🟢 S | ✅ Done |
+| 38 | Remove duplicate `forms/editor_Normalisation.pas` — identical copy exists in `editors/`, both orphaned | 🟢 S | ✅ Done |
 
 ## Code Cleanup
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 39 | Fix `TChartManager.RescaleAxis` — dead `Minimum := 0` immediately overwritten by next line (`unit_ChartManager.pas`) | 🟢 S | 🔴 Open |
-| 40 | Fix `ToFitStructure` duplicate `D` assignment — second write overwrites first redundantly (`unit_XRCStructure.pas`) | 🟢 S | 🔴 Open |
-| 41 | Extract duplicate `DefaultDPI = 96` constant in `TXRCProjectTree` — hardcoded in 2 methods (`unit_XRCProjectTree.pas`) | 🟢 S | 🔴 Open |
-| 42 | Fix `ActionManagerChange` — fires `Structure.ToString` on every action, not just structural changes (`frm_Main.pas`) | 🟢 S | 🔴 Open |
-| 43 | Fix `TConfig` misleading instance — `TConfig.Create` is a no-op, all state is `class var`. Remove fake instance (`frm_Main.pas`, `unit_Config.pas`) | 🟢 S | 🔴 Open |
-| 44 | Unify `PeriodAddExecute` / `PeriodInsertExecute` — nearly identical blocks, extract shared helper (`frm_Main.pas`) | 🟢 S | 🔴 Open |
-| 45 | Unify `DataLoadExecute` / `DataPasteExecute` — copy-pasted node-creation logic, extract `AddDataNode` helper (`frm_Main.pas`) | 🟢 S | 🔴 Open |
+| 39 | Remove dead `Minimum := 0` in `TChartManager.RescaleAxis` — immediately overwritten by next line (`unit_ChartManager.pas`) | 🟢 S | ✅ Done |
+| 40 | Remove redundant `D` assignment in `ToFitStructure` — first write always overwritten by unconditional second (`unit_XRCStructure.pas`) | 🟢 S | ✅ Done |
+| 41 | Extract duplicate `DefaultDPI = 96` → single implementation constant in `TXRCProjectTree` (`unit_XRCProjectTree.pas`) | 🟢 S | ✅ Done |
+| 42 | Remove dead `ActionManagerChange` — declared but never assigned to any event (`frm_Main.pas`) | 🟢 S | ✅ Done |
+| 43 | Fix `TConfig` misleading instance — `TConfig.Create` is a no-op, all state is `class var`. Remove fake instance (`frm_Main.pas`, `unit_Config.pas`) | 🟢 S | ⏸️ Deferred |
+| 44 | Unify `PeriodAddExecute` / `PeriodInsertExecute` — only 4-line difference, not worth extracting | 🟢 S | ⏸️ Deferred |
+| 45 | Unify `DataLoadExecute` / `DataPasteExecute` — different node placement logic, not a clean extraction | 🟢 S | ⏸️ Deferred |
 
 ## Structural Refactoring
 
