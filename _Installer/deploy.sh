@@ -42,6 +42,7 @@ check_file "$PROJECT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll"
 check_file "$PROJECT_DIR/OUT/BIN/Help/UserManual.html"
 check_dir  "$PROJECT_DIR/OUT/BIN/Help/images"
 check_file "$PROJECT_DIR/Assets/XRayCalc3_Icon.ico"
+check_file "$PROJECT_DIR/Assets/XRayCalc3_x64_Icon.ico"
 check_dir  "$STORAGE_DIR/Henke"
 check_dir  "$STORAGE_DIR/Jobs"
 
@@ -75,8 +76,9 @@ echo "Copying preview handler DLLs..."
 cp "$PROJECT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win32/"
 cp "$PROJECT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win64/"
 
-echo "Copying icon..."
+echo "Copying icons..."
 cp "$PROJECT_DIR/Assets/XRayCalc3_Icon.ico" "$DEPLOY_DIR/"
+cp "$PROJECT_DIR/Assets/XRayCalc3_x64_Icon.ico" "$DEPLOY_DIR/"
 
 echo "Copying Henke data..."
 cp "$STORAGE_DIR/Henke/"*.bin "$DEPLOY_DIR/Henke/"
@@ -107,6 +109,7 @@ echo "  Henke/              ($henke_count files)"
 echo "  Examples/           ($example_count files)"
 echo "  Help/UserManual.html + images/"
 echo "  XRayCalc3_Icon.ico"
+echo "  XRayCalc3_x64_Icon.ico"
 echo ""
 
 total_size=$(du -sh "$DEPLOY_DIR" | cut -f1)

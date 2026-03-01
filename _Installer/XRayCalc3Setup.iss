@@ -24,7 +24,7 @@ UninstallDisplayIcon={app}\XRayCalc3_Icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-ArchitecturesAllowed=x86compatible x64compatible
+ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 ChangesAssociations=yes
@@ -35,13 +35,10 @@ MinVersion=10.0
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; --- Win64 files (on 64-bit OS) ---
-Source: "deploy\Win64\XRayCalc3.x64.exe";          DestDir: "{app}"; DestName: "XRayCalc3.exe"; Check: Is64BitInstallMode; Flags: ignoreversion
-Source: "deploy\Win64\XRCPreviewHandlerLib.dll";    DestDir: "{app}"; Check: Is64BitInstallMode; Flags: ignoreversion regserver 64bit
-
-; --- Win32 files (on 32-bit OS) ---
-Source: "deploy\Win32\XRayCalc3.exe";               DestDir: "{app}"; Check: not Is64BitInstallMode; Flags: ignoreversion
-Source: "deploy\Win32\XRCPreviewHandlerLib.dll";     DestDir: "{app}"; Check: not Is64BitInstallMode; Flags: ignoreversion regserver 32bit
+; --- Both executables (x32 is faster, x64 handles large models) ---
+Source: "deploy\Win64\XRayCalc3.x64.exe";          DestDir: "{app}"; Flags: ignoreversion
+Source: "deploy\Win32\XRayCalc3.exe";               DestDir: "{app}"; Flags: ignoreversion
+Source: "deploy\Win64\XRCPreviewHandlerLib.dll";    DestDir: "{app}"; Flags: ignoreversion regserver 64bit
 
 ; --- Shared data files ---
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
@@ -49,12 +46,15 @@ Source: "deploy\Examples\*";                         DestDir: "{app}\Examples"; 
 Source: "deploy\Help\UserManual.html";               DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\images\*";                      DestDir: "{app}\Help\images";       Flags: ignoreversion
 Source: "deploy\XRayCalc3_Icon.ico";                 DestDir: "{app}";                   Flags: ignoreversion
+Source: "deploy\XRayCalc3_x64_Icon.ico";             DestDir: "{app}";                   Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}";            Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"
+Name: "{group}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"
+Name: "{group}\{#MyAppName} x32 (Fast)"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"
 Name: "{group}\User Manual";             Filename: "{app}\Help\UserManual.html"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}";    Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName} x32 (Fast)"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -64,10 +64,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Root: HKLM; Subkey: "Software\Classes\{#MyAppAssocExt}";                          ValueType: string; ValueData: "XRayCalc3.Project";    Flags: uninsdeletevalue
 Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project";                         ValueType: string; ValueData: "{#MyAppAssocName}";     Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project\DefaultIcon";             ValueType: string; ValueData: "{app}\XRayCalc3_Icon.ico,0"
-Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project\shell\open\command";      ValueType: string; ValueData: """{app}\XRayCalc3.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project\shell\open\command";      ValueType: string; ValueData: """{app}\XRayCalc3.x64.exe"" ""%1"""
 
 [Run]
-Filename: "{app}\XRayCalc3.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\XRayCalc3.x64.exe"; Description: "Launch {#MyAppName} x64"; Flags: nowait postinstall skipifsilent unchecked
+Filename: "{app}\XRayCalc3.exe"; Description: "Launch {#MyAppName} x32 (Fast)"; Flags: nowait postinstall skipifsilent unchecked
 
 [Code]
 // Notify Windows of file association change
