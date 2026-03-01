@@ -118,6 +118,8 @@ type
     K: TComplex; { kappa }
     RF, r: TComplex; { Fresnel coefficient }
     eRatio: single; { epsilon ratio, precomputed per model }
+    s2: single; { sqr(sigma/1.41), precomputed per model for rfError roughness }
+    RoughFactor: single; { cached roughness damping factor for cmSP reuse }
     LayerID, StackID: Word;
   end;
 

@@ -4,6 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework,
+  Neslib.FastMath,
   unit_Types,
   unit_calc;
 
@@ -45,13 +46,17 @@ const
 implementation
 
 uses
-  unit_Config, unit_materials, System.SysUtils;
+  unit_Config, unit_materials, math_complex, System.SysUtils;
 
 { TTestableCalc }
 
 function TTestableCalc.TestRefCalc(const ATheta, Lambda: single; ALayers: TCalcLayers): single;
+var
+  c1, c2: single;
 begin
-  Result := RefCalc(ATheta, Lambda, ALayers);
+  c1 := 4 * Pi / Lambda;
+  c2 := c1 * 0.5;
+  Result := RefCalc(ATheta, c1, c2, ALayers);
 end;
 
 procedure TTestableCalc.TestCalcTet(const AParams: TCalcParams);
@@ -70,6 +75,17 @@ begin
 end;
 
 { Helpers }
+
+procedure PrecomputeLayerConstants(var Layers: TCalcLayers);
+var
+  i: integer;
+begin
+  for i := 0 to Length(Layers) - 2 do
+  begin
+    Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
+    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.50299;
+  end;
+end;
 
 function BuildSubstrateModel(const Material: string; Sigma, Rho: single): TLayeredModel;
 var
@@ -125,6 +141,7 @@ begin
     Calc.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
     Model.Generate(CU_KA);
     Layers := Model.Layers;
+    PrecomputeLayerConstants(Layers);
 
     R := Calc.TestRefCalc(0.1, CU_KA, Layers);
 
@@ -149,6 +166,7 @@ begin
     Calc.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
     Model.Generate(CU_KA);
     Layers := Model.Layers;
+    PrecomputeLayerConstants(Layers);
 
     R := Calc.TestRefCalc(1.0, CU_KA, Layers);
 
@@ -174,6 +192,7 @@ begin
     Calc.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
     Model.Generate(CU_KA);
     Layers := Model.Layers;
+    PrecomputeLayerConstants(Layers);
 
     R := Calc.TestRefCalc(10.0, CU_KA, Layers);
 
@@ -201,6 +220,7 @@ begin
     Calc.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
     Model.Generate(CU_KA);
     Layers := Model.Layers;
+    PrecomputeLayerConstants(Layers);
 
     Angles[0] := 0.3;
     Angles[1] := 0.5;

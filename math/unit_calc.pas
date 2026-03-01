@@ -65,7 +65,7 @@ type
       FLogData: array of Single;
       FLogDataReady: Boolean;
 
-      function  RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
+      function  RefCalc(const ATheta, c1, c2:single; ALayers: TCalcLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
       procedure CalcTet(const Params: TCalcParams);
       procedure RunThetaThreads;
@@ -227,7 +227,7 @@ procedure TCalc.CalcLambda;
 var
   i, j: integer;
   Step: single;
-  R: single;
+  R, c1, c2: single;
   L: single;
   Layers: TCalcLayers;
  begin
@@ -238,11 +238,17 @@ var
     L := StartL + i * Step;
     FLayeredModel.Generate(L);
     Layers := FLayeredModel.Layers;
-    // Precompute epsilon ratios for this lambda
+    // Precompute per-layer constants for this lambda
     for j := 0 to Length(Layers) - 2 do
+    begin
       Layers[j].eRatio := AbsZ(DivZZ(Layers[j].e, Layers[j + 1].e));
+      Layers[j + 1].s2 := Sqr(Layers[j + 1].s) * 0.50299;
+    end;
+    // Compute wave constants per lambda
+    c1 := 4 * Pi / L;
+    c2 := c1 * 0.5;
     FResult[i].t := L;
-    R := RefCalc(Theta, L, Layers);
+    R := RefCalc(Theta, c1, c2, Layers);
     if R > FLimit then
       FResult[i].R := R
     else
@@ -253,7 +259,7 @@ end;
 procedure TCalc.CalcTet;
 var
   i: integer;
-  R: single;
+  R, c1, c2: single;
   Layers: TCalcLayers;
 begin
   if NThreads <= 1 then
@@ -261,9 +267,16 @@ begin
   else
     Layers := FLayeredModel.Layers;  // multi-thread — each thread needs its own copy
 
-  // Precompute |e_i / e_{i+1}| — depends only on model, not on theta
+  // Precompute per-layer constants — depend only on model, not on theta
   for i := 0 to Length(Layers) - 2 do
+  begin
     Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
+    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.50299; { sqr(sigma/1.41) for rfError }
+  end;
+
+  // Precompute wave constants — constant across all angles
+  c1 := 4 * Pi / FParams.Lambda;
+  c2 := c1 * 0.5;
 
   for i := 0 to Params.N - 1 do
   begin
@@ -272,7 +285,7 @@ begin
     else
       FResult[Params.N0 + i].t := Params.StartTeta + i * Params.Step;
 
-    R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, FParams.Lambda, Layers);
+    R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, c1, c2, Layers);
     if R > FLimit then
       FResult[Params.N0 + i].R := R
     else
@@ -342,40 +355,39 @@ begin
   end;
 end;
 
-function TCalc.RefCalc(const ATheta, Lambda:single; ALayers: TCalcLayers): single;
+function TCalc.RefCalc(const ATheta, c1, c2:single; ALayers: TCalcLayers): single;
 var
-  c1, c2, Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t, t: single;
+  Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t, t: single;
 
   function TotalRecursiveRefraction: single;
   var
     i: integer;
-    Im: TComplex;
-    a1, a2, b1, b2: TComplex;
+    L2, expVal, sinP, cosP: single;
+    Rn, a1, a2, b1, b2: TComplex;
   begin
-    Im := ToComplex(0, 1);
     for i := High(ALayers) - 1 downto 0 do
     begin
-      a1 := MulRZ(ALayers[i + 1].L * 2, ALayers[i + 1].K);
-      a1 := MulZZ(Im, a1);
-      a1 := ExpZ(a1);
-      a1 := MulZZ(ALayers[i + 1].R, a1);
+      { Fused: MulRZ(2L, K) * i -> ExpZ -> MulZZ(R, .) }
+      L2 := ALayers[i + 1].L * 2;
+      expVal := FastExp(-L2 * ALayers[i + 1].K.Im);
+      FastSinCos(L2 * ALayers[i + 1].K.Re, sinP, cosP);
+      Rn := ALayers[i + 1].R;
+      a1.Re := expVal * (Rn.Re * cosP - Rn.Im * sinP);
+      a1.Im := expVal * (Rn.Re * sinP + Rn.Im * cosP);
+
       b1 := AddZZ(ALayers[i].RF, a1);
       a2 := MulZZ(ALayers[i].RF, a1);
       b2 := AddZR(a2, 1);
       ALayers[i].R := DivZZ(b1, b2);
     end;
-    Result := sqr(AbsZ(ALayers[0].R));
+    Result := NormZ(ALayers[0].R);
   end;
 
-  function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single; inline;
-  var
-    Pow: single;
+  function Roughness(const RF: TRoughnessFunction; const sigma, s2, s: single):Single; inline;
   begin
     case RF of
-      rfError: begin
-                 Pow := -1 * sqr(sigma / 1.41) * sqr(s);
-                 Result := FastExp(Pow);
-               end;
+      rfError:
+        Result := FastExp(-s2 * sqr(s));
       rfExp:
         Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
       rfLinear:
@@ -395,7 +407,7 @@ var
   var
     i: integer;
     b1, b2: TComplex;
-    s: Single;
+    s, rf: Single;
   begin
     for i := 0 to Length(ALayers) - 2 do
     begin
@@ -405,7 +417,9 @@ var
       s1 := Abs(1 - (ALayers[i].eRatio * sqr_sin_t));
       s := c1 * sqrt(cos_t * sqrt(s1));
 
-      ALayers[i].RF := MulRZ(Roughness(FParams.RF, ALayers[i + 1].s, s), ALayers[i].RF);
+      rf := Roughness(FParams.RF, ALayers[i + 1].s, ALayers[i + 1].s2, s);
+      ALayers[i].RoughFactor := rf; { cache for P-polarization reuse }
+      ALayers[i].RF := MulRZ(rf, ALayers[i].RF);
     end;
   end;
 
@@ -413,7 +427,6 @@ var
   var
     i: integer;
     a1, a2, b1, b2: TComplex;
-    s: Single;
   begin
     for i := 0 to Length(ALayers) - 2 do
     begin
@@ -422,10 +435,8 @@ var
       b1 := SubZZ(a1, a2);
       b2 := AddZZ(a1, a2);
       ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (ALayers[i].eRatio * sqr_sin_t));
-      s := c1 * sqrt(cos_t * sqrt(s1));
 
-      ALayers[i].RF := MulRZ(Roughness(FParams.RF, ALayers[i + 1].s, s), ALayers[i].RF);
+      ALayers[i].RF := MulRZ(ALayers[i].RoughFactor, ALayers[i].RF); { reuse cached factor }
     end;
   end;
 
@@ -442,8 +453,6 @@ var
   end;
 
 begin
-  c1 := 4 * Pi / Lambda; { wave number }
-  c2 := c1 * 0.5;        { half wave number }
   t := Pi / 2 - Pi * ATheta / 180;
 
   FastSinCos(t, sin_t, cos_t);

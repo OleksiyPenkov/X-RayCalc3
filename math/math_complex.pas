@@ -469,7 +469,7 @@ end;
 { returns e raised to Z:  e^(x + yi) }
 function ExpZ(const Z: TComplex): TComplex;
 var
-  x: single;
+  x, s, c: single;
 begin
   {$IFDEF  WIN32}
     x := FastExp(Z.Re);
@@ -480,8 +480,9 @@ begin
        x := Exp(Z.Re);
   {$ENDIF}
 
-  Result.Re := x * FastCos(Z.Im);
-  Result.Im := x * FastSin(Z.Im);
+  FastSinCos(Z.Im, s, c);
+  Result.Re := x * c;
+  Result.Im := x * s;
 end;
 
 { returns the natural log of Z:  Ln(x + iy) }
