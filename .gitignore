@@ -28,5 +28,5 @@ CMDBin
 Win32
 Win64
 /.claude/settings.local.json
-/deploy
-/SetupOutput
+/_Installer/deploy
+/_Installer/SetupOutput

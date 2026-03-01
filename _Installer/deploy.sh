@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEPLOY_DIR="$SCRIPT_DIR/deploy"
 STORAGE_DIR="/d/SoftwareStorage/X-RayCalc3"
 
@@ -34,13 +35,13 @@ echo ""
 # --- Validate sources ---
 echo "Checking source files..."
 
-check_file "$SCRIPT_DIR/OUT/BIN/XRayCalc3.exe"
-check_file "$SCRIPT_DIR/OUT/BIN/XRayCalc3.x64.exe"
-check_file "$SCRIPT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll"
-check_file "$SCRIPT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll"
-check_file "$SCRIPT_DIR/OUT/BIN/Help/UserManual.html"
-check_dir  "$SCRIPT_DIR/OUT/BIN/Help/images"
-check_file "$SCRIPT_DIR/Assets/XRayCalc3_Icon.ico"
+check_file "$PROJECT_DIR/OUT/BIN/XRayCalc3.exe"
+check_file "$PROJECT_DIR/OUT/BIN/XRayCalc3.x64.exe"
+check_file "$PROJECT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll"
+check_file "$PROJECT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll"
+check_file "$PROJECT_DIR/OUT/BIN/Help/UserManual.html"
+check_dir  "$PROJECT_DIR/OUT/BIN/Help/images"
+check_file "$PROJECT_DIR/Assets/XRayCalc3_Icon.ico"
 check_dir  "$STORAGE_DIR/Henke"
 check_dir  "$STORAGE_DIR/Jobs"
 
@@ -67,15 +68,15 @@ mkdir -p "$DEPLOY_DIR/Help/images"
 
 # --- Copy files ---
 echo "Copying executables..."
-cp "$SCRIPT_DIR/OUT/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
-cp "$SCRIPT_DIR/OUT/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
+cp "$PROJECT_DIR/OUT/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
+cp "$PROJECT_DIR/OUT/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
 
 echo "Copying preview handler DLLs..."
-cp "$SCRIPT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win32/"
-cp "$SCRIPT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win64/"
+cp "$PROJECT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win32/"
+cp "$PROJECT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win64/"
 
 echo "Copying icon..."
-cp "$SCRIPT_DIR/Assets/XRayCalc3_Icon.ico" "$DEPLOY_DIR/"
+cp "$PROJECT_DIR/Assets/XRayCalc3_Icon.ico" "$DEPLOY_DIR/"
 
 echo "Copying Henke data..."
 cp "$STORAGE_DIR/Henke/"*.bin "$DEPLOY_DIR/Henke/"
@@ -88,8 +89,8 @@ example_count=$(ls -1 "$DEPLOY_DIR/Examples/"*.xrcx 2>/dev/null | wc -l)
 echo "  $example_count .xrcx files"
 
 echo "Copying help files..."
-cp "$SCRIPT_DIR/OUT/BIN/Help/UserManual.html" "$DEPLOY_DIR/Help/"
-cp "$SCRIPT_DIR/OUT/BIN/Help/images/"*        "$DEPLOY_DIR/Help/images/"
+cp "$PROJECT_DIR/OUT/BIN/Help/UserManual.html" "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/OUT/BIN/Help/images/"*        "$DEPLOY_DIR/Help/images/"
 
 # --- Summary ---
 echo ""
