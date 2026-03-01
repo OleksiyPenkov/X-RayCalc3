@@ -142,9 +142,6 @@ type
   function Gamma( x : single) : single;
   procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
   function RS: integer;
-  function SolutionToString(var Solution: TSolution): string;
-  procedure LineToFile(const Name, S: string; val: single);
-
 const
   w_max = 0.9;
   w_min = 0.4;
@@ -165,38 +162,6 @@ uses
   Dialogs;
 
 { Supplementary}
-
-function SolutionToString(var Solution: TSolution): string;
-const
-  clrl = #13#10;
-var
-  i,j: integer;
-  layer: TLayer;
-  S: string;
-begin
-  Result := '';
-  for layer in Solution do
-  begin
-    S := '';
-    for i := 1 to 3 do
-    begin
-      for j := 0 to High(layer[i]) do
-        S := S + FloatToStrF(layer[i][j], ffFixed, 4, 2) + ' ';
-    end;
-    Result := Result + S + clrl;
-  end;
-end;
-
-procedure LineToFile(const Name, S: string; val: single);
-var
-  F: Text;
-begin
-  Assign(F, TConfig.TempPath + Name + '.txt');
-  Rewrite(F);
-  Writeln(F, Name, val);
-  Writeln(F, S);
-  CloseFile(F);
-end;
 
 function Gamma( x : single) : single;
 const COF : array [0..14] of single =
@@ -530,7 +495,6 @@ begin
       abest_val := FGlobalBestChiSqr;
       UpdateStructure(gbest);
       Result := True;
-//      LineToFile('current_best', SolutionToString(gbest), FAbsoluteBestChiSqr);
     end ;
   end
   else begin
@@ -663,9 +627,7 @@ begin
         inc(SuccessCount);
       end;
     end;
-  //  ShowMessage(Format('%f %f %f',[abest[0][1][0], abest[0][1][1], FAbsoluteBestChiSqr]));
   //   UpdateStructure(gbest);  // don't delete!
-  //  LineToFile('final_gbest', SolutionToString(gbest), FGlobalBestChiSqr);
     SendUpdateMessage(t);
   finally
     for i := 0 to High(FWorkers) do
