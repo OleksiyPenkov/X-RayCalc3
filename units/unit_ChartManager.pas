@@ -3,7 +3,7 @@ unit unit_ChartManager;
 interface
 
 uses
-  VCLTee.Chart, VCLTee.Series, VCLTee.TeEngine,
+  VCLTee.Chart, VCLTee.Series, VCLTee.TeEngine, VCLTee.TeCanvas,
   unit_Types;
 
 type
@@ -34,7 +34,7 @@ type
 implementation
 
 uses
-  System.SysUtils;
+  Winapi.Windows, System.SysUtils;
 
 { TChartManager }
 
