@@ -38,3 +38,16 @@
 | 22 | Pool/reuse `TCalc` in `CalcSolution` — currently creates/destroys per particle in tight loop (`unit_LFPSO_Base.pas:396-427`) | 🟡 M | ✅ Done |
 | 23 | ~~Avoid full array copy in `GetLayers`~~ — Copy is required: `RefCalc` mutates the passed array, copy prevents corruption of the model | 🟢 S | ⏸️ Deferred |
 | 24 | Use dictionary for material lookup in `AddMaterial` — currently O(n) linear scan (`unit_materials.pas:96-102`) | 🟡 M | ✅ Done |
+
+## Main Form Decoupling
+
+| # | Task | Size | Status |
+|---|------|------|--------|
+| 25 | Extract Recent Projects → `TRecentProjectsManager` class | 🟢 S | 🔴 Open |
+| 26 | Extract Benchmark/Batch Jobs → `TBatchRunner` class | 🟢 S | 🔴 Open |
+| 27 | Extract Project File I/O → `TProjectFileManager` class | 🟡 M | 🔴 Open |
+| 28 | Extract Chart/Series management → `frame_MainChart` frame | 🟡 M | 🔴 Open |
+| 29 | Extract Data Curve Operations into a helper/manager | 🟢 S | 🔴 Open |
+| 30 | Extract Profile Extensions CRUD into a manager | 🟢 S | 🔴 Open |
+| 31 | Encapsulate project tree selection state (eliminate loose booleans) | 🟡 M | 🔴 Open |
+| 32 | Extract Fitting/LFPSO orchestration into a controller | 🟡 M | 🔴 Open |
