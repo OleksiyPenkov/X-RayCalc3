@@ -1875,9 +1875,10 @@ begin
         FLastChiSquare := 0;
       end;
 
+      PM.Prepare(Structure, chThickness, chRoughness, chDensity);
       if IsNonPeriodicProfile then
          PM.PlotProfileNP(Pages.ActivePage = tsProfile)
-     else
+      else
         PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
     except
       on E: exception do
