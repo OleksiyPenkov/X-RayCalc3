@@ -344,7 +344,6 @@ type
     FBenchmarkMode: Boolean;
     FBenchmarkPath: string;
     FBenchmarkRuns: Integer;
-    FLastModelName: String;
     FFirstUpdate: Boolean;
     FChartMgr: TChartManager;
     PM: TProfileManager;
@@ -666,10 +665,7 @@ begin
 
   LastData := Project.GetNodeData(LastNode);
   if (LastData <> nil) and LastData.IsModel then
-  begin
     LastData.Data := Structure.ToString;
-    FLastModelName := LastData.Title;
-  end;
 
   LastNode := Project.GetFirstSelected;
   LastData := Project.GetNodeData(LastNode);

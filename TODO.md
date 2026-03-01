@@ -43,11 +43,11 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 25 | Extract Recent Projects → `TRecentProjectsManager` class | 🟢 S | 🔴 Open |
-| 26 | Extract Benchmark/Batch Jobs → `TBatchRunner` class | 🟢 S | 🔴 Open |
-| 27 | Extract Project File I/O → `TProjectFileManager` class | 🟡 M | 🔴 Open |
-| 28 | Extract Chart/Series management → `frame_MainChart` frame | 🟡 M | 🔴 Open |
-| 29 | Extract Data Curve Operations into a helper/manager | 🟢 S | 🔴 Open |
-| 30 | Extract Profile Extensions CRUD into a manager | 🟢 S | 🔴 Open |
-| 31 | Encapsulate project tree selection state (eliminate loose booleans) | 🟡 M | 🔴 Open |
-| 32 | Extract Fitting/LFPSO orchestration into a controller | 🟡 M | 🔴 Open |
+| 25 | Extract Recent Projects → `TRecentProjectsManager` class | 🟢 S | ✅ Done |
+| 26 | Extract Benchmark/Batch Jobs → `TBatchRunner` class — tightly coupled to form actions | 🟢 S | ⏸️ Deferred |
+| 27 | Extract Project File I/O → `TProjectFileManager` class — tightly coupled to form state | 🟡 M | ⏸️ Deferred |
+| 28 | Extract Chart/Series management → `TChartManager` class (series list, plot, rescale, fonts) | 🟡 M | ✅ Done |
+| 29 | Extract Data Curve Operations — action handlers must stay on form | 🟢 S | ⏸️ Deferred |
+| 30 | Extract Profile Extensions CRUD — coupled to Project tree + Structure | 🟢 S | ⏸️ Deferred |
+| 31 | Remove dead selection-state booleans + dead `FLastModelName` field | 🟡 M | ✅ Done |
+| 32 | Extract Fitting/LFPSO orchestration — tightly coupled to form state | 🟡 M | ⏸️ Deferred |
