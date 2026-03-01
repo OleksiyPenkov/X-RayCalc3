@@ -3,6 +3,8 @@ program XRayCalc3;
 uses
   FastMM5,
   Vcl.Forms,
+  unit_CrashReport in 'units\unit_CrashReport.pas',
+  frm_CrashReport in 'forms\frm_CrashReport.pas' {frmCrashReport},
   frm_Main in 'forms\frm_Main.pas' {frmMain},
   unit_Types in 'units\unit_Types.pas',
   math_complex in 'math\math_complex.pas',
@@ -54,6 +56,7 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
+  Application.OnException := TExceptionHelper.HandleException;
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TedtrStack, edtrStack);
   Application.CreateForm(TedtrLayer, edtrLayer);
