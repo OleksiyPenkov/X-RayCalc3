@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experimental Data — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">7</span> Experimental Data</h2>
+<h3>Loading Data from File</h3>
+<ol>
+  <li>Select a model or data item in the project tree.</li>
+  <li>Choose <strong>Data &gt; Load from File</strong> or click the <strong>Load Data</strong> toolbar button.</li>
+  <li>Browse for a text file containing two-column data (angle/wavelength and reflectivity).</li>
+  <li>The data appears as a series on the main chart.</li>
+</ol>
+
+<h3>Pasting Data from Clipboard</h3>
+<ol>
+  <li>Copy two-column data from another application (e.g., a spreadsheet).</li>
+  <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <strong>Paste Data</strong> toolbar button.</li>
+  <li>The data is imported into the current model.</li>
+</ol>
+
+<h3>Data Format</h3>
+<p>The expected data format is a two-column ASCII text file:</p>
+<ul>
+  <li><strong>2 columns</strong> with TAB as the column separator</li>
+  <li><strong>3-row header</strong> (non-numeric lines are skipped automatically)</li>
+  <li>Column 1: Angle (degrees) or wavelength (Angstroms)</li>
+  <li>Column 2: Reflectivity (typically 0 to 1)</li>
+</ul>
+<p>Example:</p>
+<pre><code>Sample: Mo/Si multilayer
+Date: 2024-01-15
+Theta    Reflectivity
+0.100   1.000000
+0.200   0.999850
+0.300   0.998200
+0.500   0.956300
+1.000   0.523100
+2.000   0.012450
+5.000   0.000023</code></pre>
+
+<p>Lines starting with <code>#</code> or other non-numeric characters are treated as comments and ignored.</p>
+
+<div class="tip"><strong>Tip:</strong> You can also copy and paste table data directly from <strong>OriginLab Origin</strong>. The recommended workflow is to import your raw data into Origin first, then copy-paste the two-column table into X-Ray Calc.</div>
+
+<h3>Data Processing</h3>
+
+<h4>Normalize</h4>
+<p><strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. This scales the reflectivity values so the maximum equals 1.0 (or another chosen value).</p>
+<p><strong>Data &gt; Normalize (Auto)</strong> automatically normalizes the data by dividing all reflectivity values by the maximum value.</p>
+
+<h4>Smooth</h4>
+<p><strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise in the experimental data while preserving peak shapes.</p>
+
+<h4>Trim</h4>
+<p><strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.</p>
+
+<h3>Data Conditioning Walkthrough</h3>
+<p>Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:</p>
+
+<p><strong>Step 1 &mdash; Normalize.</strong> Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via <strong>Data &gt; Normalize</strong>. For example, if the experimental intensity at 0.4&deg; is 0.099, divide by 0.099 to bring the curve to unit reflectivity.</p>
+
+<p><strong>Step 2 &mdash; Smooth.</strong> Apply smoothing to reduce noise: <strong>Data &gt; Smooth</strong>. This uses a Savitzky-Golay filter that preserves peak shapes while reducing point-to-point scatter.</p>
+
+<p><strong>Step 3 &mdash; Trim.</strong> Remove data points outside the useful range:</p>
+<ol>
+  <li>Set the calculation angle range to cover only the reliable portion of the data (e.g., 0.4&deg; to 4.5&deg;).</li>
+  <li>Click <strong>Calc</strong> and note the &chi;&sup2; value.</li>
+  <li>Select <strong>Data &gt; Trim</strong> to discard points outside the calculation range.</li>
+  <li>Click <strong>Calc</strong> again &mdash; the &chi;&sup2; should decrease significantly, confirming that noisy tail data has been removed.</li>
+</ol>
+
+<p>After these steps, the experimental curve is ready for fitting.</p>
+
+<h3>Exporting Data</h3>
+<ul>
+  <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copy data in tab-separated format for pasting into other applications</li>
+  <li><strong>Data &gt; Export to File</strong> &mdash; save processed data to a text file</li>
+</ul>
+
+<div class="page-nav">
+  <a href="06-models.html">&larr; Defining a Model</a>
+  <a href="UserManual.html">Home</a>
+  <a href="08-calculation.html">Calculation &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

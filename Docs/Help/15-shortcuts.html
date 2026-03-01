@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Reference — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">15</span> Quick Reference</h2>
+<h3>Toolbar Quick Reference</h3>
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td>New</td><td>Create a new project</td></tr>
+  <tr><td>Open</td><td>Open an existing project</td></tr>
+  <tr><td>Save</td><td>Save the current project</td></tr>
+  <tr><td>Print</td><td>Print the current chart</td></tr>
+  <tr><td>Add Model</td><td>Add a new model to the project</td></tr>
+  <tr><td>Load Data</td><td>Load experimental data from file</td></tr>
+  <tr><td>Paste Data</td><td>Paste experimental data from clipboard</td></tr>
+  <tr><td>Calc Run</td><td>Calculate the selected model</td></tr>
+  <tr><td>Stop</td><td>Abort the current calculation or fitting</td></tr>
+  <tr><td>Fast Forward</td><td>Start auto-fitting</td></tr>
+  <tr><td>Result Save</td><td>Save calculation results to file</td></tr>
+  <tr><td>Copy Result</td><td>Copy results to clipboard</td></tr>
+  <tr><td>Scale</td><td>Toggle linear/logarithmic chart scale</td></tr>
+  <tr><td>Delete</td><td>Remove the selected item</td></tr>
+</table>
+
+<h3>Structure Toolbar</h3>
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td>Period +</td><td>Add a new stack</td></tr>
+  <tr><td>Period Insert</td><td>Insert a stack at the current position</td></tr>
+  <tr><td>Period &minus;</td><td>Delete the selected stack</td></tr>
+  <tr><td>Layer +</td><td>Add a new layer</td></tr>
+  <tr><td>Layer Insert</td><td>Insert a layer at the current position</td></tr>
+  <tr><td>Layer Copy</td><td>Copy the selected layer</td></tr>
+  <tr><td>Layer Cut</td><td>Cut the selected layer</td></tr>
+  <tr><td>Layer Paste</td><td>Paste the copied layer</td></tr>
+  <tr><td>Layer &minus;</td><td>Delete the selected layer</td></tr>
+  <tr><td>Set Fit Limits</td><td>Open the parameter bounds editor</td></tr>
+  <tr><td>Increment</td><td>Set the step size for parameter adjustments</td></tr>
+</table>
+
+<h3>Keyboard Shortcuts</h3>
+<table>
+  <tr><th>Key</th><th>Action</th></tr>
+  <tr><td><strong>F1</strong></td><td>Open User Manual</td></tr>
+</table>
+
+<div class="page-nav">
+  <a href="14-settings.html">&larr; Application Settings</a>
+  <a href="UserManual.html">Home</a>
+  <a href="16-formats.html">File Formats &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

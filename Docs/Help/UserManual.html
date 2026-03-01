@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — User Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual &middot; v8</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterCards(this.value)">
+  </div>
+</nav>
+
+<main class="content" style="margin-left: 0; max-width: 1100px; margin-left: auto; margin-right: auto;">
+
+<h1>X-Ray Calc 3 &mdash; User Manual</h1>
+<p class="subtitle">Version 8 &nbsp;|&nbsp; Copyright &copy; 2001&ndash;2026 Oleksiy Penkov</p>
+
+<p><strong>X-Ray Calc 3</strong> (XRC3) is an open-source software package for simulating X-ray reflectivity (XRR) and solving the inverse problem of reconstructing film structures from measured XRR curves.</p>
+
+<div class="cards" id="cardGrid">
+
+  <a class="card" href="01-introduction.html">
+    <div class="card-num">1</div>
+    <div class="card-title">Introduction</div>
+    <div class="card-desc">Overview of XRC3 capabilities, algorithm, and references.</div>
+  </a>
+
+  <a class="card" href="02-quick-start.html">
+    <div class="card-num">2</div>
+    <div class="card-title">Quick Start</div>
+    <div class="card-desc">Hands-on tutorial: demo projects, creating models, calculation settings.</div>
+  </a>
+
+  <a class="card" href="03-installation.html">
+    <div class="card-num">3</div>
+    <div class="card-title">Installation &amp; First Launch</div>
+    <div class="card-desc">System requirements, data storage, portable mode, file association.</div>
+  </a>
+
+  <a class="card" href="04-overview.html">
+    <div class="card-num">4</div>
+    <div class="card-title">Application Overview</div>
+    <div class="card-desc">Main window layout, panels, menus, and toolbars.</div>
+  </a>
+
+  <a class="card" href="05-projects.html">
+    <div class="card-num">5</div>
+    <div class="card-title">Projects</div>
+    <div class="card-desc">Creating, opening, saving projects. Auto-save and project tree.</div>
+  </a>
+
+  <a class="card" href="06-models.html">
+    <div class="card-num">6</div>
+    <div class="card-title">Defining a Model</div>
+    <div class="card-desc">Structure editor, stacks, layers, materials, and quick editing.</div>
+  </a>
+
+  <a class="card" href="07-data.html">
+    <div class="card-num">7</div>
+    <div class="card-title">Experimental Data</div>
+    <div class="card-desc">Loading data, data format, normalize, smooth, trim, conditioning walkthrough.</div>
+  </a>
+
+  <a class="card" href="08-calculation.html">
+    <div class="card-num">8</div>
+    <div class="card-title">Calculation</div>
+    <div class="card-desc">Theta/lambda modes, polarization guidance, multi-threading.</div>
+  </a>
+
+  <a class="card" href="09-fitting.html">
+    <div class="card-num">9</div>
+    <div class="card-title">Fitting (Optimization)</div>
+    <div class="card-desc">Shake LFPSO algorithm, fit limits, modes, parameters, cost function.</div>
+  </a>
+
+  <a class="card" href="10-results.html">
+    <div class="card-num">10</div>
+    <div class="card-title">Results &amp; Export</div>
+    <div class="card-desc">Saving results, clipboard, plot export, auto-save.</div>
+  </a>
+
+  <a class="card" href="11-charts.html">
+    <div class="card-num">11</div>
+    <div class="card-title">Charts &amp; Visualization</div>
+    <div class="card-desc">Reflectivity chart, zoom/pan, chart pages, peak analysis.</div>
+  </a>
+
+  <a class="card" href="12-profiles.html">
+    <div class="card-num">12</div>
+    <div class="card-title">Profile Extensions</div>
+    <div class="card-desc">Function profiles, table profiles, parameter gradients.</div>
+  </a>
+
+  <a class="card" href="13-tools.html">
+    <div class="card-num">13</div>
+    <div class="card-title">Tools</div>
+    <div class="card-desc">Create materials, edit Henke tables, benchmark.</div>
+  </a>
+
+  <a class="card" href="14-settings.html">
+    <div class="card-num">14</div>
+    <div class="card-title">Application Settings</div>
+    <div class="card-desc">Paths, behavior, interface, calc &amp; fit, graphics.</div>
+  </a>
+
+  <a class="card" href="15-shortcuts.html">
+    <div class="card-num">15</div>
+    <div class="card-title">Quick Reference</div>
+    <div class="card-desc">Toolbar buttons, structure toolbar, keyboard shortcuts.</div>
+  </a>
+
+  <a class="card" href="16-formats.html">
+    <div class="card-num">16</div>
+    <div class="card-title">File Formats</div>
+    <div class="card-desc">Project files (.xrcx), data files, Henke tables, INI settings.</div>
+  </a>
+
+  <a class="card" href="17-examples.html">
+    <div class="card-num">17</div>
+    <div class="card-title">Illustrative Examples</div>
+    <div class="card-desc">Single-layer, periodic mirrors, polynomial fitting, supermirror.</div>
+  </a>
+
+  <a class="card" href="18-troubleshooting.html">
+    <div class="card-num">18</div>
+    <div class="card-title">Troubleshooting</div>
+    <div class="card-desc">Crashes, x32 vs x64, convergence, slow calculation, data import.</div>
+  </a>
+
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+  <p style="margin-top:8px; font-size:12px;">Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>J. Appl. Cryst.</em> <strong>57</strong>, 555&ndash;566.
+  <a href="https://doi.org/10.1107/S1600576724001031">doi:10.1107/S1600576724001031</a></p>
+</div>
+
+</main>
+
+<script>
+function filterCards(query) {
+  var cards = document.querySelectorAll('.card');
+  var q = query.toLowerCase();
+  if (!q) {
+    cards.forEach(function(c) { c.style.display = ''; });
+    return;
+  }
+  cards.forEach(function(c) {
+    var text = c.textContent.toLowerCase();
+    c.style.display = text.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>

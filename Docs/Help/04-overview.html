@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Overview — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">4</span> Application Overview</h2>
+<h3 id="layout">Main Window Layout</h3>
+
+<figure>
+  <img src="images/fig5.jpg" alt="Screenshot of the X-Ray Calc 3 graphical user interface">
+  <figcaption><strong>Figure 1.</strong> Screenshot of the XRC3 GUI. (1) Project tree. (2) Structure panel. (3) XRR calculation parameters. (4) Fitting parameters. (5) XRR curves. (6) Distributions / Convergence panel. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+</figure>
+
+<p>The primary window comprises four key panels (see Figure 1). The first panel, <strong>Project Items</strong> (1), showcases the contents of the current project. A project can organize an unlimited number of theoretical models and experimental curves into well-structured folders. The <strong>Structure panel</strong> (2) functions as a visual depiction of the layered model and provides easy access to all parameters linked with the structural model. The right side contains <strong>XRR calculation parameters</strong> (3) and <strong>Fitting parameters</strong> (4) at the top, the main <strong>XRR curve plot</strong> (5) in the center, and <strong>Distributions / Convergence charts</strong> (6) at the bottom.</p>
+
+<h4>Left Column &mdash; Project Panel</h4>
+<ul>
+  <li><strong>File Toolbar:</strong> New, Open, Reopen, Save, Print</li>
+  <li><strong>Project Toolbar:</strong> Add Model, Export, Copy, Paste, Edit Properties, Add Extension, Copy Image, Print, Delete</li>
+  <li><strong>Project Tree:</strong> Hierarchical view of all models, data sets, and folders in the current project</li>
+  <li><strong>Description:</strong> Read-only text memo showing the description of the selected item</li>
+</ul>
+
+<h4 id="structure-panel">Middle Column &mdash; Structure Panel</h4>
+<ul>
+  <li><strong>Structure Toolbar:</strong> Stack operations (Add, Insert, Delete) and Layer operations (Add, Insert, Copy, Cut, Paste, Delete)</li>
+  <li><strong>Increment Selector:</strong> Step size for quick parameter adjustment (10, 5, 1, 0.25, 0.1, 0.01)</li>
+  <li><strong>Set Fit Limits Button:</strong> Opens the parameter bounds editor for fitting</li>
+  <li><strong>Visual Structure Editor:</strong> Interactive graphical representation of the layer structure &mdash; shows Ambient, Stacks (with N repetitions), individual Layers (with H, &sigma;, &rho; values), and Substrate. Double-click elements to edit properties; click parameter values for in-place editing.</li>
+</ul>
+
+<h4>Right Column &mdash; Working Area</h4>
+<ul>
+  <li><strong>Calculation Toolbar:</strong> Load Data, Paste Data, Calculate, Save Result, Copy Result, Batch Execute, Auto Fit, Stop</li>
+  <li><strong>Settings Panel:</strong> Calculation mode and parameters (left half) alongside Fitting mode and parameters (right half)</li>
+  <li><strong>Main Chart:</strong> Interactive reflectivity plot (&theta; or &lambda; vs. reflectivity)</li>
+  <li><strong>Chart Info Bar:</strong> Cursor position, peak detection, area integration, &chi;&sup2; values</li>
+  <li><strong>Chart Pages:</strong> Tabbed sub-charts for parameter distributions (Thickness, Roughness, Density, Profile, Fitting Progress)</li>
+</ul>
+
+<h4>Status Bar</h4>
+<p>Displays calculation time, fitting time, application version, and platform (x64).</p>
+
+<h3 id="menus">Menu Bar</h3>
+<table>
+  <tr><th>Menu</th><th>Purpose</th></tr>
+  <tr><td><strong>File</strong></td><td>Project management (New, Open, Save, Settings, Exit)</td></tr>
+  <tr><td><strong>Project</strong></td><td>Model operations (New Model, Duplicate, Copy, Paste, Add Folder)</td></tr>
+  <tr><td><strong>Structure</strong></td><td>Stack and layer editing (Add, Insert, Delete, Copy, Paste, Cut)</td></tr>
+  <tr><td><strong>Data</strong></td><td>Experimental data operations (Load, Paste, Normalize, Smooth, Trim, Export)</td></tr>
+  <tr><td><strong>Calc</strong></td><td>Calculation and fitting (Calculate, Calculate All, Auto Fitting, Batch Jobs, Benchmark)</td></tr>
+  <tr><td><strong>Result</strong></td><td>Export results (Save, Copy to Clipboard, Copy as BMP/WMF)</td></tr>
+  <tr><td><strong>Tools</strong></td><td>Material management (Create Material, Edit Henke Table)</td></tr>
+  <tr><td><strong>Help</strong></td><td>User Manual, About dialog</td></tr>
+</table>
+
+<div class="page-nav">
+  <a href="03-installation.html">&larr; Installation &amp; First Launch</a>
+  <a href="UserManual.html">Home</a>
+  <a href="05-projects.html">Projects &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

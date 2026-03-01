@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">1</span> Introduction</h2>
+<p><strong>X-Ray Calc 3</strong> (XRC3) is an open-source software package for simulating X-ray reflectivity (XRR) and solving the inverse problem of reconstructing film structures from measured XRR curves. It is designed for researchers working with X-ray optics, synchrotron radiation, and thin-film coatings.</p>
+
+<p>The software employs Parratt&rsquo;s exact recursive method based on the Fresnel equations to calculate XRR and incorporates specialized tools for modeling periodic multilayer structures (PMMs). Refractive indices of materials are computed using the Henke tables of atomic scattering factors (Henke <em>et al.</em>, 1993). The computational algorithm has been validated against the <em>IMD</em> software (Windt, 1998), with accumulated variances consistently below 0.5%.</p>
+
+<p>The application allows you to:</p>
+<ul>
+  <li>Build multilayer structural models composed of stacks and individual layers</li>
+  <li>Calculate theoretical X-ray reflectivity curves as a function of incidence angle (&theta;) or wavelength (&lambda;)</li>
+  <li>Load experimental reflectivity data and compare it with theoretical predictions</li>
+  <li>Automatically fit model parameters to experimental data using the Shake LFPSO (L&eacute;vy Flight Particle Swarm Optimization) algorithm</li>
+  <li>Visualize results through interactive charts with logarithmic/linear scaling</li>
+  <li>Define parameter profiles (polynomial, exponential, tabulated) across periodic structures</li>
+  <li>Manage materials via the built-in Henke atomic form factor database</li>
+</ul>
+
+<div class="note">
+  <strong>Reference:</strong> Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity.</em> J. Appl. Cryst. <strong>57</strong>, 555&ndash;566. <a href="https://doi.org/10.1107/S1600576724001031">https://doi.org/10.1107/S1600576724001031</a>
+</div>
+
+<div class="page-nav">
+  <span class="spacer"></span>
+  <a href="UserManual.html">Home</a>
+  <a href="02-quick-start.html">Quick Start &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

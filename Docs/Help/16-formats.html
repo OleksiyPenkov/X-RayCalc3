@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Formats — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">16</span> File Formats</h2>
+<h3>Project File (.xrcx)</h3>
+<p>A ZIP archive containing:</p>
+<ul>
+  <li><code>project.dsc</code> &mdash; project metadata (title, descriptions)</li>
+  <li><code>params.dsc</code> &mdash; complete model definitions in text format (layers, stacks, parameters, calculation settings)</li>
+  <li>Embedded experimental data files</li>
+</ul>
+
+<h3>Experimental Data Files</h3>
+<p>Plain text, two columns separated by tabs or spaces:</p>
+<pre><code># Optional comment lines starting with #
+0.100   1.000000
+0.200   0.999850
+...</code></pre>
+<p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
+Column 2: Reflectivity (typically 0 to 1)</p>
+
+<h3>Henke Tables</h3>
+<p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>
+
+<h3>Settings File (xrc3.ini)</h3>
+<p>Standard Windows INI file format. Sections include:</p>
+<ul>
+  <li><code>[Path]</code> &mdash; directory paths</li>
+  <li><code>[Window]</code> &mdash; window position and size</li>
+  <li><code>[Options]</code> &mdash; behavior flags</li>
+  <li><code>[Graphics]</code> &mdash; chart display settings</li>
+  <li><code>[Calc]</code> &mdash; calculation settings</li>
+</ul>
+
+<div class="page-nav">
+  <a href="15-shortcuts.html">&larr; Quick Reference</a>
+  <a href="UserManual.html">Home</a>
+  <a href="17-examples.html">Illustrative Examples &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

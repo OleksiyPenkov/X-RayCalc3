@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile Extensions — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">12</span> Profile Extensions</h2>
+<p>Profile extensions allow you to define how layer parameters (H, &sigma;, &rho;) vary across a periodic structure. They model parameter gradients &mdash; for example, when layer thickness gradually increases or density changes with depth.</p>
+
+<h3>Adding a Profile Extension</h3>
+<ol>
+  <li>Select a model in the project tree.</li>
+  <li>Click the <strong>Add Extension</strong> toolbar button or choose the extension option from the project toolbar.</li>
+  <li>The Extension Type Selector dialog opens with available profile types.</li>
+</ol>
+
+<h3>Profile Types</h3>
+
+<h4>Function Profile</h4>
+<p>Defines parameter variation using an analytical function:</p>
+<table>
+  <tr><th>Function</th><th>Formula</th><th>Use Case</th></tr>
+  <tr><td><strong>Polynomial</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x&sup2; + &hellip;</td><td>General-purpose gradient</td></tr>
+  <tr><td><strong>Exponential</strong></td><td>a<sub>0</sub> &middot; e<sup>a<sub>1</sub>x</sup></td><td>Exponential growth/decay</td></tr>
+  <tr><td><strong>Parabolic</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x&sup2;</td><td>Symmetric variation</td></tr>
+  <tr><td><strong>SQRT</strong></td><td>a<sub>0</sub> + a<sub>1</sub>&radic;x</td><td>Gradual initial change</td></tr>
+</table>
+<p>The Profile Function editor lets you set the coefficients and preview the resulting profile.</p>
+
+<h4>Table Profile</h4>
+<p>Defines parameter variation as a set of (position, value) data points. The application interpolates between points. This allows arbitrary profile shapes that cannot be described by simple functions.</p>
+<p>The Profile Table editor provides a grid where you enter depth positions and corresponding parameter values.</p>
+
+<h3>Enabling / Disabling Extensions</h3>
+<p>Each extension can be individually enabled or disabled without deleting it. This lets you quickly compare results with and without a particular profile applied.</p>
+
+<div class="page-nav">
+  <a href="11-charts.html">&larr; Charts &amp; Visualization</a>
+  <a href="UserManual.html">Home</a>
+  <a href="13-tools.html">Tools &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

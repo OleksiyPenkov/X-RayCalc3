@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defining a Model — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">6</span> Defining a Model</h2>
+<h3>Creating a Model</h3>
+<ol>
+  <li>Choose <strong>Project &gt; New Model</strong> or click the <strong>Add Model</strong> toolbar button.</li>
+  <li>A new model appears in the project tree with a default empty structure.</li>
+</ol>
+
+<h3>Duplicating a Model</h3>
+<p>Select a model in the project tree and choose <strong>Project &gt; Duplicate Model</strong> to create an exact copy, including all layers, stacks, and parameters.</p>
+
+<h3>The Structure Editor</h3>
+
+<figure>
+  <img src="images/fig1.jpg" alt="Examples of different types of fitting structures">
+  <figcaption><strong>Figure 2.</strong> Examples of different structure types. (a) Regular structure. (b) Periodic structure. (c) Periodic structure with distributions. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+</figure>
+
+<p>The structure editor is a visual panel in the middle column that displays the current model&rsquo;s layer structure. It shows:</p>
+<ul>
+  <li><strong>Ambient</strong> (top) &mdash; the medium above the structure (typically vacuum or air)</li>
+  <li><strong>Stacks</strong> &mdash; repeating periodic units containing one or more layers</li>
+  <li><strong>Individual Layers</strong> &mdash; single layers outside of stacks</li>
+  <li><strong>Substrate</strong> (bottom) &mdash; the base material</li>
+</ul>
+<p>Each element in the structure is displayed as a colored block with its parameters.</p>
+
+<h3>Terminology</h3>
+<p>The following terminology is used throughout XRC3 (as defined in Penkov <em>et al.</em>, 2024):</p>
+<ul>
+  <li><strong>Material</strong> &mdash; the chemical composition of a layer (e.g. Mo, SiO<sub>2</sub>, B<sub>4</sub>C). Used to look up atomic scattering factors, atomic weights and table densities in the embedded database. Cannot be changed during fitting.</li>
+  <li><strong>Layer</strong> &mdash; the basic geometrical entity. A layer consists of a material and has three parameters: thickness (H), roughness (&sigma;) and density (&rho;). All three are adjustable during fitting.</li>
+  <li><strong>Stack</strong> &mdash; a set of layers. It can be single (non-repeating) or periodic (repeated N times).</li>
+  <li><strong>Structure</strong> &mdash; a set of stacks, including a substrate. The substrate is a special stack consisting of a single layer with infinite thickness.</li>
+</ul>
+
+<h3 id="stacks">Stacks (Periods)</h3>
+<p>A stack represents a periodic multilayer structure &mdash; a group of layers repeated N times.</p>
+
+<h4>Adding a stack</h4>
+<ol>
+  <li>Select the model in the project tree.</li>
+  <li>Choose <strong>Structure &gt; Add Stack</strong> or use the structure toolbar.</li>
+  <li>The Stack Properties dialog opens with:
+    <ul>
+      <li><strong>Stack name:</strong> A label for the stack</li>
+      <li><strong>N:</strong> Number of repetitions (periods)</li>
+    </ul>
+  </li>
+</ol>
+
+<h4>Editing a stack</h4>
+<p>Double-click the stack header in the structure editor to open the Stack Properties dialog.</p>
+
+<h3 id="layers">Layers</h3>
+<p>Each layer has three primary parameters:</p>
+<table>
+  <tr><th>Parameter</th><th>Symbol</th><th>Unit</th><th>Description</th></tr>
+  <tr><td>Thickness</td><td>H</td><td>&#8491; (Angstrom)</td><td>Physical thickness of the layer</td></tr>
+  <tr><td>Roughness</td><td>&sigma;</td><td>&#8491; (Angstrom)</td><td>Interface roughness (RMS)</td></tr>
+  <tr><td>Density</td><td>&rho;</td><td>g/cm&sup3;</td><td>Material density</td></tr>
+</table>
+
+<p>Additionally, each layer has a <strong>material</strong> assignment that links it to an entry in the Henke atomic form factor database.</p>
+
+<h4>Adding a layer</h4>
+<ol>
+  <li>Select a stack or model in the structure editor.</li>
+  <li>Choose <strong>Structure &gt; Add Layer</strong> or use the toolbar.</li>
+  <li>The Layer Properties dialog opens with fields for:
+    <ul>
+      <li><strong>Layer material:</strong> Select or type a chemical formula (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;)</li>
+      <li><strong>H (&#8491;):</strong> Thickness in Angstroms</li>
+      <li><strong>&sigma; (&#8491;):</strong> Roughness in Angstroms</li>
+      <li><strong>&rho; (g/cm&sup3;):</strong> Density in g/cm&sup3;</li>
+    </ul>
+  </li>
+</ol>
+
+<h4>Navigating layers</h4>
+<p>The Layer Properties dialog includes <strong>&lt;&lt;</strong> and <strong>&gt;&gt;</strong> buttons to move to the previous or next layer without closing the dialog.</p>
+
+<h4>Layer operations (via Structure menu or toolbar)</h4>
+<ul>
+  <li><strong>Insert Layer</strong> &mdash; insert before the selected position</li>
+  <li><strong>Copy Layer</strong> &mdash; copy to internal clipboard</li>
+  <li><strong>Paste Layer</strong> &mdash; paste from internal clipboard</li>
+  <li><strong>Cut Layer</strong> &mdash; copy and delete</li>
+  <li><strong>Delete Layer</strong> &mdash; remove the layer</li>
+</ul>
+
+<h3>Quick Parameter Editing</h3>
+<p>In the structure editor, you can adjust layer parameters directly:</p>
+<ul>
+  <li>Click a parameter value to edit it in-place</li>
+  <li>Use the <strong>Increment</strong> selector (in the structure toolbar) to set the step size for fine-tuning</li>
+  <li>Changes are applied immediately; if Auto-Calc is enabled, the reflectivity recalculates in real time</li>
+</ul>
+
+<h3>Undo</h3>
+<p>Choose <strong>Structure &gt; Undo Structure Changes</strong> to revert the last structural modification.</p>
+
+<h3>Model Text (JSON)</h3>
+<p>For advanced users, <strong>Structure &gt; Edit Model Text</strong> opens a JSON editor showing the raw model definition. This allows direct text editing of the complete structure.</p>
+
+<div class="page-nav">
+  <a href="05-projects.html">&larr; Projects</a>
+  <a href="UserManual.html">Home</a>
+  <a href="07-data.html">Experimental Data &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

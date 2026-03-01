@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charts & Visualization — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">11</span> Charts &amp; Visualization</h2>
+<h3>Main Reflectivity Chart</h3>
+<p>The large chart in the working area displays:</p>
+<ul>
+  <li><strong>Calculated reflectivity curves</strong> (one per model, color-coded)</li>
+  <li><strong>Experimental data</strong> (if loaded)</li>
+  <li><strong>Best-fit curve</strong> (during and after fitting)</li>
+</ul>
+
+<h4>Interaction</h4>
+<ul>
+  <li><strong>Zoom:</strong> Click and drag to select a zoom region</li>
+  <li><strong>Pan:</strong> Right-click and drag to pan</li>
+  <li><strong>Reset zoom:</strong> Double-click to reset to full view</li>
+  <li><strong>Scale toggle:</strong> Click the <strong>Scale</strong> button to switch between linear and logarithmic Y-axis</li>
+  <li><strong>Min limit:</strong> Set a cutoff threshold &mdash; reflectivity values below this limit are clipped</li>
+</ul>
+
+<h4>Cursor Tracking</h4>
+<p>The Chart Info bar shows the current cursor position (X, Y coordinates) as you move the mouse over the chart.</p>
+
+<h3>Chart Pages</h3>
+<p>Below the main chart are tabbed sub-charts:</p>
+
+<h4>Thickness (H)</h4>
+<p>Bar chart showing the thickness of each layer in the structure. After fitting, this shows how layer thicknesses vary across the structure.</p>
+
+<h4>Roughness (&sigma;)</h4>
+<p>Bar chart showing the interface roughness of each layer. Useful for identifying roughness trends in periodic structures.</p>
+
+<h4>Density (&rho;)</h4>
+<p>Bar chart showing the density of each layer, with the applied density profile overlaid.</p>
+
+<h4>Profile</h4>
+<p>Electron density (or refractive index) profile as a function of depth into the structure. This gives a physical picture of the complete multilayer structure.</p>
+
+<h4>Fitting Progress</h4>
+<p>During fitting, this chart shows the &chi;&sup2; value vs. iteration number. Use this to monitor convergence:</p>
+<ul>
+  <li>A steadily decreasing curve indicates good convergence</li>
+  <li>Plateaus may indicate local minima (shake/re-initialization helps escape these)</li>
+  <li>Sudden jumps up indicate a shake event</li>
+</ul>
+
+<h3>Peak Analysis</h3>
+<p>The Chart Info bar includes peak detection and analysis:</p>
+<ul>
+  <li><strong>Peak Max:</strong> Maximum reflectivity value and its position</li>
+  <li><strong>Area:</strong> Integrated area under the peak (useful for quantitative analysis)</li>
+  <li><strong>Period:</strong> Estimated multilayer period from peak spacing</li>
+</ul>
+
+<div class="page-nav">
+  <a href="10-results.html">&larr; Results &amp; Export</a>
+  <a href="UserManual.html">Home</a>
+  <a href="12-profiles.html">Profile Extensions &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

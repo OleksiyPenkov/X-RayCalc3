@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculation — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">8</span> Calculation</h2>
+<h3>Algorithm</h3>
+<p>XRC3 uses the Parratt exact recursive method for simulating specular X-ray reflectivity. A Gaussian distribution is assumed for interface roughness. The refractive indices of materials are calculated using the Henke tables of X-ray scattering factors (Henke <em>et al.</em>, 1993). Reflectivity calculations can be performed as functions of either incidence angle or wavelength.</p>
+
+<h3 id="calc-modes">Calculation Modes</h3>
+<p>X-Ray Calc 3 supports two calculation modes:</p>
+
+<h4>Theta Mode (by angle)</h4>
+<p>Calculates reflectivity as a function of incidence angle at a fixed wavelength.</p>
+<table>
+  <tr><th>Parameter</th><th>Description</th></tr>
+  <tr><td><strong>&theta;<sub>1</sub></strong></td><td>Start angle (degrees)</td></tr>
+  <tr><td><strong>&theta;<sub>2</sub></strong></td><td>End angle (degrees)</td></tr>
+  <tr><td><strong>&lambda; (&#8491;)</strong></td><td>Fixed wavelength in Angstroms (default: 1.54043 &#8491;, Cu K&alpha;)</td></tr>
+  <tr><td><strong>&Delta;&theta;</strong></td><td>Angular resolution / step size (degrees)</td></tr>
+  <tr><td><strong>2&theta;</strong></td><td>When checked, angles are in 2&theta; (double angle) convention</td></tr>
+</table>
+
+<h4>Lambda Mode (by wavelength)</h4>
+<p>Calculates reflectivity as a function of wavelength at a fixed incidence angle.</p>
+<table>
+  <tr><th>Parameter</th><th>Description</th></tr>
+  <tr><td><strong>&lambda;<sub>1</sub></strong></td><td>Start wavelength (Angstroms)</td></tr>
+  <tr><td><strong>&lambda;<sub>2</sub></strong></td><td>End wavelength (Angstroms)</td></tr>
+  <tr><td><strong>&theta;</strong></td><td>Fixed incidence angle (degrees)</td></tr>
+  <tr><td><strong>&Delta;&lambda;</strong></td><td>Wavelength step size (Angstroms)</td></tr>
+</table>
+
+<h3>Polarization</h3>
+<ul>
+  <li><strong>s-type:</strong> S-polarization (TE mode, electric field perpendicular to the plane of incidence)</li>
+  <li><strong>sp-type:</strong> Mixed &sigma;/&pi; polarization</li>
+</ul>
+
+<div class="tip"><strong>Guidance:</strong> Use <strong>s-polarization</strong> when calculating at hard X-rays and low grazing angles (below 20&deg;) &mdash; in this regime the difference from sp is negligible and calculation speed is significantly faster. Use <strong>sp-polarization</strong> for larger angles and softer radiation where both polarization components contribute.</div>
+
+<h3>Number of Points (N)</h3>
+<p>The <strong>N</strong> parameter controls the number of calculation points (default: 2000). More points give smoother curves but take longer to compute.</p>
+
+<h3>Running a Calculation</h3>
+<ol>
+  <li>Select a model in the project tree.</li>
+  <li>Set the calculation parameters (mode, angle/wavelength range, polarization, N).</li>
+  <li>Choose <strong>Calc &gt; Calculate</strong> or click the <strong>Calc Run</strong> toolbar button.</li>
+  <li>The calculated reflectivity curve appears on the main chart.</li>
+</ol>
+<p><strong>Calculate All</strong> (<strong>Calc &gt; Calculate All</strong>) calculates reflectivity for every model in the project.</p>
+
+<h3>Auto-Calculation</h3>
+<div class="note"><strong>Auto-Calc:</strong> When enabled in Settings, the reflectivity is recalculated automatically whenever you modify the structure. This provides real-time feedback as you adjust layer parameters.</div>
+
+<h3 id="multi-thread">Multi-Threading</h3>
+<p>The complete angular data range is divided into segments matching the number of available CPU cores, and each segment is computed in parallel. Configure the number of cores in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>:</p>
+<ul>
+  <li><strong>Auto (Use all)</strong> &mdash; use all available CPU cores (default)</li>
+  <li><strong>2, 4, 8, 12, 16, 32, 64</strong> &mdash; limit to a specific number of threads</li>
+</ul>
+<div class="tip"><strong>Performance:</strong> With a 16-core CPU, the typical simulation time for XRR ranges from 0.05 to 0.25 s for a periodic multilayer model consisting of 300 stacks of 4 layers each (3000-point curve). This speed enables real-time manual curve fitting.</div>
+
+<div class="page-nav">
+  <a href="07-data.html">&larr; Experimental Data</a>
+  <a href="UserManual.html">Home</a>
+  <a href="09-fitting.html">Fitting (Optimization) &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

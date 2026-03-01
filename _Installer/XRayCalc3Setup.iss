@@ -44,6 +44,9 @@ Source: "deploy\Win64\XRCPreviewHandlerLib.dll";    DestDir: "{app}"; Flags: ign
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
 Source: "deploy\Examples\*";                         DestDir: "{app}\Examples";          Flags: ignoreversion
 Source: "deploy\Help\UserManual.html";               DestDir: "{app}\Help";              Flags: ignoreversion
+Source: "deploy\Help\style.css";                     DestDir: "{app}\Help";              Flags: ignoreversion
+Source: "deploy\Help\script.js";                     DestDir: "{app}\Help";              Flags: ignoreversion
+Source: "deploy\Help\*.html";                        DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\images\*";                      DestDir: "{app}\Help\images";       Flags: ignoreversion
 Source: "deploy\XRayCalc3_Icon.ico";                 DestDir: "{app}";                   Flags: ignoreversion
 Source: "deploy\XRayCalc3_x64_Icon.ico";             DestDir: "{app}";                   Flags: ignoreversion
