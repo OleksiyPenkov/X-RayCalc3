@@ -85,14 +85,7 @@ var
 begin
   Result := 0;
   for I := 0 to High(FResult) do
-//    Result := Result + Sqr(Log10(FData[i].r) - Log10(FResult[i].r) * Log10(FResult[i].r)) * Exp(FData[i].t);
-//    Result := Result + Sqr(FData[i].r - FResult[i].r) * FResult[i].r;// * Exp(FData[i].t);  #2
-//    Result := Result + Sqr(FData[i].r - FResult[i].r) * FResult[i].r * Exp(FData[i].t); //    #1.5
-
-//     Result := Result + Sqr(Log10(FData[i].r) - Log10(FResult[i].r)) * Exp(FData[i].t); //  <-- The Best
-//   Result := Sqrt(Result)/ High(FResult) ; //  <-- The Best
-  Result := Result + Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
-//  Result := Sqrt(Result)/ High(FResult)
+    Result := Result + Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
 
   FChiSquare := Result;
 end;

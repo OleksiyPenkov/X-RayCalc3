@@ -54,7 +54,6 @@ type
       function FindStrValue(const Value: string): string;
       function GetSelectedLayer: Integer;
       procedure SetPeriodicMode(const Value: boolean);
-      function GetCurrentLayerData: TLayerData;
       procedure SetCurrentLayerData(const Value: TLayerData);
       function GetSubstrateData: TLayerData;
       procedure SetSubstrateData(const Value: TLayerData);
@@ -108,7 +107,7 @@ type
 //      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
       property RealHeight: Integer read FRealHeight;
-      property LayerData: TLayerData read GetCurrentLayerData write SetCurrentLayerData;
+      property LayerData: TLayerData write SetCurrentLayerData;
       property SubstrateData: TLayerData read GetSubstrateData write SetSubstrateData;
     published
       property Increment: single read FIncrement write SetIncrement;
@@ -647,7 +646,6 @@ begin
         Result.Stacks[i].Layers[j].LayerID := j;
         D := D + FStacks[i].LayerData[j].P[1].V;
       end;
-      Result.Stacks[i].D := D;
     end;
 
     for j := 0 to High(FStacks[i].LayerData) do
@@ -831,11 +829,6 @@ begin
   end;
 
   Visible := True;
-end;
-
-function TXRCStructure.GetCurrentLayerData: TLayerData;
-begin
-
 end;
 
 procedure TXRCStructure.GetLayersList(const ID: integer; List: TStrings);
