@@ -4,7 +4,7 @@
         <ProjectVersion>20.3</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -162,6 +162,10 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="units\unit_CrashReport.pas"/>
+        <DCCReference Include="forms\frm_CrashReport.pas">
+            <Form>frmCrashReport</Form>
+        </DCCReference>
         <DCCReference Include="forms\frm_Main.pas">
             <Form>frmMain</Form>
         </DCCReference>

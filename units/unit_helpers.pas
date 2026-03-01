@@ -12,7 +12,7 @@ unit unit_helpers;
 interface
 
 uses
-  VCLTee.Series,
+  VCLTee.TeEngine,
   unit_types,
   StdCtrls,
   Windows,
@@ -21,23 +21,23 @@ uses
 
 function ClearDir(const DirectoryName: string): boolean;
 
-procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte); overload;
-procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries); overload;
+procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte); overload;
+procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TChartSeries); overload;
 
-procedure SeriesToFile(Series: TLineSeries; const FileName: string);
-function SeriesToString(Series: TLineSeries): string;
+procedure SeriesToFile(Series: TChartSeries; const FileName: string);
+function SeriesToString(Series: TChartSeries): string;
 
-procedure SeriesFromClipboard(Series: TLineSeries);
-procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr: string); forward;
+procedure SeriesFromClipboard(Series: TChartSeries);
+procedure SeriesFromFile(Series: TChartSeries; const FileName: string; out Descr: string); forward;
 procedure DataToFile(const FileName: string; Data: TDataArray);
 //procedure DataToClipboard(const Data: TDataArray);
 
-function SeriesToData(Series: TLineSeries): TDataArray;
-procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
-procedure AutoMerge( var Series: TLineSeries);
-procedure ManualMerge( X, K: single; var Series: TLineSeries);
-procedure Normalize(K: single;  var Series: TLineSeries);
-procedure NormalizeAuto(const Calc: TLineSeries; var Exp: TLineSeries);
+function SeriesToData(Series: TChartSeries): TDataArray;
+procedure DataToSeries(const Data: TDataArray; Series: TChartSeries);
+procedure AutoMerge(Series: TChartSeries);
+procedure ManualMerge( X, K: single; Series: TChartSeries);
+procedure Normalize(K: single; Series: TChartSeries);
+procedure NormalizeAuto(Calc, Exp: TChartSeries);
 
 function MovAvg(const Inp: TDataArray; W: single): TDataArray;
 function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
@@ -70,7 +70,6 @@ uses
   System.Character,
   System.UITypes,
   Vcl.Forms,
-  VCLTee.TeEngine,
   unit_Config;
 
 const
@@ -274,7 +273,7 @@ begin
     end;
 end;
 
-procedure Normalize(K: single;  var Series: TLineSeries);
+procedure Normalize(K: single; Series: TChartSeries);
 var
   i: integer;
 begin
@@ -282,7 +281,7 @@ begin
       Series.YValue[i] := Series.YValue[i] / K;
 end;
 
-procedure NormalizeAuto(const Calc: TLineSeries; var Exp: TLineSeries);
+procedure NormalizeAuto(Calc, Exp: TChartSeries);
 var
   i: integer;
   Max, MaxX, Min: single;
@@ -301,7 +300,7 @@ begin
     Exp.YValue[i] := Exp.YValue[i] / Max;
 end;
 
-procedure AutoMerge( var Series: TLineSeries);
+procedure AutoMerge(Series: TChartSeries);
 var
   i, Pos: integer;
   Max: single;
@@ -324,7 +323,7 @@ begin
     Series.YValue[i] := Series.YValue[i] / Max;
 end;
 
-procedure ManualMerge( X, K: single; var Series: TLineSeries);
+procedure ManualMerge( X, K: single; Series: TChartSeries);
 var
   i, pos: integer;
 begin
@@ -334,7 +333,7 @@ begin
     Series.YValue[i] := Series.YValue[i] / K;
 end;
 
-procedure DataToSeries(const Data: TDataArray; var Series: TLineSeries);
+procedure DataToSeries(const Data: TDataArray; Series: TChartSeries);
 var
   i: integer;
 begin
@@ -344,7 +343,7 @@ begin
 end;
 
 
-function SeriesToData( Series: TLineSeries): TDataArray;
+function SeriesToData( Series: TChartSeries): TDataArray;
 var
   i: integer;
 begin
@@ -357,7 +356,7 @@ begin
   end;
 end;
 
-procedure SeriesToText(const cX, cY, uX, uY: string; var MyStringList: TStringList; var Series:TLineSeries); overload;
+procedure SeriesToText(const cX, cY, uX, uY: string; var MyStringList: TStringList; Series: TChartSeries); overload;
 var
   i, N: integer;
   s: string;
@@ -377,14 +376,14 @@ begin
   end;
 end;
 
-procedure SeriesToText(var MyStringList: TStringList; var Series:TLineSeries); overload;
+procedure SeriesToText(var MyStringList: TStringList; Series: TChartSeries); overload;
 begin
   SeriesToText('2Theta', 'Reflectivity', 'deg', '', MyStringList, Series);
 end;
 
 
 
-procedure SeriesFromText(var MyStringList: TStringList; var Series:TLineSeries);
+procedure SeriesFromText(var MyStringList: TStringList; Series: TChartSeries);
 var
   i, p: integer;
   s1, s2: string;
@@ -435,7 +434,7 @@ begin
     end;
 end;
 
-procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TLineSeries);
+procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TChartSeries);
 var
   MyStringList: TStringList;
 begin
@@ -448,7 +447,7 @@ begin
   end;
 end;
 
-procedure SeriesToClipboard(Series: TLineSeries; const Mode: byte);
+procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte);
 begin
   case Mode of
     0: SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
@@ -456,7 +455,7 @@ begin
   end;
 end;
 
-function SeriesToString(Series: TLineSeries): string;
+function SeriesToString(Series: TChartSeries): string;
 var
   MyStringList: TStringList;
 begin
@@ -469,7 +468,7 @@ begin
   end;
 end;
 
-procedure SeriesToFile(Series: TLineSeries; const FileName: string);
+procedure SeriesToFile(Series: TChartSeries; const FileName: string);
 var
   MyStringList: TStringList;
 begin
@@ -497,7 +496,7 @@ begin
   end;
 end;
 
-procedure SeriesFromClipboard(Series: TLineSeries);
+procedure SeriesFromClipboard(Series: TChartSeries);
 var
   MyStringList: TStringList;
 begin
@@ -510,7 +509,7 @@ begin
   end;
 end;
 
-procedure SeriesFromFile(Series: TLineSeries; const FileName: string; out Descr: string);
+procedure SeriesFromFile(Series: TChartSeries; const FileName: string; out Descr: string);
 var
   MyStringList: TStringList;
   S: string;

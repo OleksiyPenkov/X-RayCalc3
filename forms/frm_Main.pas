@@ -22,6 +22,8 @@ uses
   Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
+  TFastSeriesList = array of TFastLineSeries;
+
   TfrmMain = class(TForm)
     mmMain: TMainMenu;
     File1: TMenuItem;
@@ -441,7 +443,7 @@ type
     FBenchmarkRuns: Integer;
     FLastModelName: String;
     FFirstUpdate: Boolean;
-    FSeriesList: TSeriesList ;
+    FSeriesList: TFastSeriesList;
     PM: TProfileManager;
     FDPI: Integer;
     FFirstEntity: Boolean;
@@ -508,8 +510,8 @@ type
     procedure ScaleInterface;
     procedure ScaleChartFonts(AChart: TCustomChart; ABaseSize,
       ATargetDPI: Integer);
-    function ActiveModelSeries: TLineSeries; inline;
-    function ActiveDataSeries: TLineSeries; inline;
+    function ActiveModelSeries: TFastLineSeries; inline;
+    function ActiveDataSeries: TFastLineSeries; inline;
     function IsNonPeriodicProfile: Boolean; inline;
     procedure SaveActiveData;
     function GradientTitle(const P: TFuncProfileRec): string;
@@ -571,12 +573,12 @@ uses
 const
   GradientLabels: array [0..2] of string = ('H', 'S', 'rho');
 
-function TfrmMain.ActiveModelSeries: TLineSeries;
+function TfrmMain.ActiveModelSeries: TFastLineSeries;
 begin
   Result := FSeriesList[Project.ActiveModel.CurveID];
 end;
 
-function TfrmMain.ActiveDataSeries: TLineSeries;
+function TfrmMain.ActiveDataSeries: TFastLineSeries;
 begin
   Result := FSeriesList[Project.ActiveData.CurveID];
 end;
@@ -1215,7 +1217,7 @@ end;
 
 procedure TfrmMain.DataNormAutoExecute(Sender: TObject);
 var
-  ModelSeries, DataSeries: TLineSeries;
+  ModelSeries, DataSeries: TFastLineSeries;
 begin
   ModelSeries := ActiveModelSeries;
   DataSeries := ActiveDataSeries;
@@ -1226,7 +1228,7 @@ end;
 procedure TfrmMain.DataNormExecute(Sender: TObject);
 var
   s: string;
-  DataSeries: TLineSeries;
+  DataSeries: TFastLineSeries;
 begin
   s := InputBox('Data normalization', 'Coefficient', '');
   if s <> '' then
@@ -1240,7 +1242,7 @@ end;
 procedure TfrmMain.actDataSmoothExecute(Sender: TObject);
 var
   Data: TDataArray;
-  DataSeries: TLineSeries;
+  DataSeries: TFastLineSeries;
 begin
   DataSeries := ActiveDataSeries;
   Data := SeriesToData(DataSeries);
@@ -1374,7 +1376,7 @@ var
 begin
   Count := Length(FSeriesList);
   SetLength(FSeriesList, Count + 1);
-  FSeriesList[Count] := TLineSeries.Create(Chart);
+  FSeriesList[Count] := TFastLineSeries.Create(Chart);
   FSeriesList[Count].ParentChart := Chart;
 
   FSeriesList[Count].Title := Data.Title;

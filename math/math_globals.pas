@@ -13,6 +13,7 @@ interface
 
 uses
   math_complex,
+  VCLTee.TeEngine,
   VclTee.Series,
   unit_types,
   Classes,
@@ -31,7 +32,7 @@ type
   procedure ReadHenke(const N: string; E, L: single; var f: TComplex;
   var Na, Nro: single);
 
-  procedure Sort(var Series: TLineSeries);
+  procedure Sort(Series: TChartSeries);
   procedure CopyData(const Input: TDataArray; var Output: TDataArray);
 
   procedure ReadHenkeTable(const N: string; var Na, Nro: single; var Table: THenkeTable);
@@ -46,8 +47,7 @@ implementation
 uses
   unit_Config,
   unit_helpers,
-  SysUtils,
-  VCLTee.TeEngine;
+  SysUtils;
 
 function Poly(const x: Integer; const C: TPolyArray): Single; overload;
 var
