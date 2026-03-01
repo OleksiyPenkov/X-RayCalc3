@@ -25,14 +25,14 @@ LFPSO.Run (main loop, T iterations)
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 1 | Simplify `AbsZ` — replace overflow-safe branching with `Sqrt(Re²+Im²)` | 🟢 S | 🔴 Open |
-| 2 | Remove `try/except` from `TotalRecursiveRefraction` | 🟢 S | 🔴 Open |
-| 3 | Pre-compute `Log10(FData[i].r)` once for `CalcChiSquare` | 🟢 S | 🔴 Open |
-| 4 | Eliminate `GetLayers` copy when `NThreads=1` | 🟢 S | 🔴 Open |
-| 5 | Pre-allocate `TLayersData` in `FillModel` — avoid per-particle heap allocs | 🟡 M | 🔴 Open |
-| 6 | Resolve roughness function once per fit — eliminate per-point `case` branch | 🟡 M | 🔴 Open |
-| 7 | Precompute epsilon ratios in `LayerAmplitudeRefraction` | 🟡 M | 🔴 Open |
-| 8 | Avoid redundant curve copies in `WorkerBests` | 🟢 S | 🔴 Open |
+| 1 | Simplify `AbsZ` — replace overflow-safe branching with `Sqrt(Re²+Im²)` | 🟢 S | ✅ Done |
+| 2 | Remove `try/except` from `TotalRecursiveRefraction` | 🟢 S | ✅ Done |
+| 3 | Pre-compute `Log10(FData[i].r)` once for `CalcChiSquare` | 🟢 S | ✅ Done |
+| 4 | Eliminate `GetLayers` copy when `NThreads=1` | 🟢 S | ✅ Done |
+| 5 | Pre-allocate `TLayersData` in `FillModel` — single alloc to max size + count-based `AddLayers` | 🟡 M | ✅ Done |
+| 6 | Resolve roughness function once per fit — eliminate per-point `case` branch | 🟡 M | ⏸️ Deferred — branch predictor handles constant RF perfectly; function pointer would prevent inlining |
+| 7 | Precompute epsilon ratios in `LayerAmplitudeRefraction` | 🟡 M | ✅ Done |
+| 8 | Avoid redundant curve copies in `WorkerBests` | 🟢 S | ⏸️ Deferred — requires shared-state read from parallel threads for marginal gain |
 
 ---
 
