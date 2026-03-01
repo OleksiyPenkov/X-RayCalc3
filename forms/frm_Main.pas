@@ -330,7 +330,6 @@ type
     LastData: PProjectData;
 
     FLastID: integer;
-    IsFolder, IsItem, IsData, IsModel, IsExtension: Boolean;
     StartTime, FitStartTime: TDateTime;
     FFitParams: TFitParams;
     FCalc: TCalc;
@@ -672,40 +671,22 @@ begin
   if Node = LastNode then Exit;
 
   LastData := Project.GetNodeData(LastNode);
-  if LastData <> nil then
+  if (LastData <> nil) and LastData.IsModel then
   begin
-    IsModel := (LastData.Group = gtModel) and IsItem;
-    if IsModel then
-    begin
-      LastData.Data := Structure.ToString;
-      FLastModelName := LastData.Title;
-    end;
+    LastData.Data := Structure.ToString;
+    FLastModelName := LastData.Title;
   end;
 
   LastNode := Project.GetFirstSelected;
   LastData := Project.GetNodeData(LastNode);
 
   if LastData = nil then
-  begin
-    IsItem := False;
-    IsData := False;
-    IsModel := False;
-    IsFolder := False;
-    IsExtension := False;
     Exit;
-  end;
 
-  IsItem := LastData.RowType = prItem;
-  IsExtension := LastData.RowType = prExtension;
-  IsFolder := LastData.RowType = prFolder;
-  IsData := LastData.Group = gtData;
-  IsModel := (LastData.Group = gtModel) and IsItem;
-
-
-  if IsItem and IsData then
+  if (LastData.RowType = prItem) and (LastData.Group = gtData) then
     Project.ActiveData := LastData;
 
-  if IsModel then
+  if LastData.IsModel then
   begin
      FLastModel := LastNode;
      if LastData.Data <> '' then
