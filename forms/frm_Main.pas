@@ -94,6 +94,8 @@ type
     Project2: TMenuItem;
     Calc1: TMenuItem;
     Calc2: TMenuItem;
+    UserManual1: TMenuItem;
+    N15: TMenuItem;
     About1: TMenuItem;
     Calc3: TMenuItem;
     Calcall1: TMenuItem;
@@ -284,6 +286,7 @@ type
     procedure FilePlotCopyWMFExecute(Sender: TObject);
     procedure FilePlotToFileExecute(Sender: TObject);
     procedure HelpAboutExecute(Sender: TObject);
+    procedure HelpContentExecute(Sender: TObject);
     procedure CalcAllExecute(Sender: TObject);
     procedure CalcStopExecute(Sender: TObject);
     procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -469,7 +472,8 @@ uses
   unit_XRCStackControl,
   editor_ProfileTable,
   unit_sys_helpers,
-  frm_FitSettings;
+  frm_FitSettings,
+  Winapi.ShellAPI;
 
 {$R *.dfm}
 
@@ -1455,6 +1459,14 @@ end;
 procedure TfrmMain.HelpAboutExecute(Sender: TObject);
 begin
   frmAbout.ShowModal;
+end;
+
+procedure TfrmMain.HelpContentExecute(Sender: TObject);
+var
+  ManualPath: string;
+begin
+  ManualPath := TConfig.AppPath + 'Help\UserManual.html';
+  ShellExecute(Handle, 'open', PChar(ManualPath), nil, nil, SW_SHOWNORMAL);
 end;
 
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);

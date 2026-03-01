@@ -1325,6 +1325,12 @@ object frmMain: TfrmMain
     end
     object Calc2: TMenuItem
       Caption = 'Help'
+      object UserManual1: TMenuItem
+        Action = HelpContent
+      end
+      object N15: TMenuItem
+        Caption = '-'
+      end
       object About1: TMenuItem
         Action = HelpAbout
       end
@@ -2301,9 +2307,10 @@ object frmMain: TfrmMain
     end
     object HelpContent: TAction
       Category = 'Help'
-      Caption = 'Help content'
+      Caption = 'User Manual'
       ImageIndex = 19
       ShortCut = 112
+      OnExecute = HelpContentExecute
     end
     object actHomePage: TAction
       Category = 'Help'
