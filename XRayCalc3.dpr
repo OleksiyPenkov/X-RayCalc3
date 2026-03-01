@@ -54,6 +54,7 @@ uses
   unit_StaticTip in 'components\unit_StaticTip.pas',
   unit_ProfilesManager in 'units\unit_ProfilesManager.pas',
   unit_RecentProjects in 'units\unit_RecentProjects.pas',
+  unit_ChartManager in 'units\unit_ChartManager.pas',
   unit_XRCPanel in 'components\unit_XRCPanel.pas';
 
 {$R *.res}

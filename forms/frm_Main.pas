@@ -18,12 +18,10 @@ uses
   VCLTee.TeeFunci, VCLTee.TeCanvas,
   unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
   unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel,
-  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, unit_RecentProjects, Vcl.VirtualImageList,
-  Vcl.BaseImageCollection, Vcl.ImageCollection;
+  Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, unit_RecentProjects, unit_ChartManager,
+  Vcl.VirtualImageList, Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
-  TFastSeriesList = array of TFastLineSeries;
-
   TfrmMain = class(TForm)
     mmMain: TMainMenu;
     File1: TMenuItem;
@@ -348,7 +346,7 @@ type
     FBenchmarkRuns: Integer;
     FLastModelName: String;
     FFirstUpdate: Boolean;
-    FSeriesList: TFastSeriesList;
+    FChartMgr: TChartManager;
     PM: TProfileManager;
     FDPI: Integer;
     FFirstEntity: Boolean;
@@ -364,10 +362,8 @@ type
     procedure RecoverDataCurves(const LinkedID: integer);
     procedure FinalizeCalc(Calc: TCalc);
     procedure GetThreadParams;
-    procedure PlotResults(const Data: TDataArray);
     procedure SaveProject(const FileName: string);
     procedure SaveData;
-    procedure AddCurve(Data: PProjectData);
     function GetFitParams: boolean;
     procedure EditProjectItem;
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -412,8 +408,6 @@ type
     procedure ExtractProject(const FileName: string);
     procedure GenerateAutosaveName;
     procedure ScaleInterface;
-    procedure ScaleChartFonts(AChart: TCustomChart; ABaseSize,
-      ATargetDPI: Integer);
     function ActiveModelSeries: TFastLineSeries; inline;
     function ActiveDataSeries: TFastLineSeries; inline;
     function IsNonPeriodicProfile: Boolean; inline;
@@ -483,12 +477,12 @@ const
 
 function TfrmMain.ActiveModelSeries: TFastLineSeries;
 begin
-  Result := FSeriesList[Project.ActiveModel.CurveID];
+  Result := FChartMgr.Series[Project.ActiveModel.CurveID];
 end;
 
 function TfrmMain.ActiveDataSeries: TFastLineSeries;
 begin
-  Result := FSeriesList[Project.ActiveData.CurveID];
+  Result := FChartMgr.Series[Project.ActiveData.CurveID];
 end;
 
 function TfrmMain.IsNonPeriodicProfile: Boolean;
@@ -549,7 +543,7 @@ begin
   Project.ActiveModel.Group := gtModel;
   Project.ActiveModel.RowType := prItem;
 
-  AddCurve(Project.ActiveModel);
+  FChartMgr.AddSeries(Project.ActiveModel);
   Project.Expanded[Node] := True;
   inc(FLastID);
 end;
@@ -592,7 +586,7 @@ begin
 
   if msg_prm.Full then
   begin
-    PlotResults(msg_prm.Curve);
+    FChartMgr.PlotResults(Project.ActiveModel.CurveID, msg_prm.Curve);
     if TConfig.Section<TOtherOptions>.LiveUpdate then
     begin
       UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.LayeredModel, FFirstUpdate);
@@ -771,12 +765,12 @@ begin
     ClipBoard.AsText := Structure.ToString;
   end;
   if (Data.Group = gtData) and (Data.RowType = prItem) then
-    SeriesToClipboard(FSeriesList[Data.CurveID], FCalcSettings.CalcMode);
+    SeriesToClipboard(FChartMgr.Series[Data.CurveID], FCalcSettings.CalcMode);
 end;
 
 procedure TfrmMain.DeleteModel(Node: PVirtualNode; Data: PProjectData);
 begin
-  FSeriesList[Data.CurveID].Free;
+  FChartMgr.DeleteSeries(Data.CurveID);
   Project.DeleteNode(Node);
   Project.Repaint;
   Project.ActiveModel := nil;
@@ -785,7 +779,7 @@ end;
 procedure TfrmMain.DeleteData(Node: PVirtualNode; Data: PProjectData);
 begin
   DeleteFile(DataName(Data));
-  FSeriesList[Data.CurveID].Free;
+  FChartMgr.DeleteSeries(Data.CurveID);
   Project.DeleteNode(Node);
   Project.Refresh;
 end;
@@ -1022,8 +1016,8 @@ begin
         edtrProjectItem.Data := Data;
         if edtrProjectItem.ShowModal = mrOk then
         begin
-          FSeriesList[Data.CurveID].Color := Data.Color;
-          FSeriesList[Data.CurveID].Title := Data.Title;
+          FChartMgr.Series[Data.CurveID].Color := Data.Color;
+          FChartMgr.Series[Data.CurveID].Title := Data.Title;
           mmDescription.Lines.Text := Data.Description;
         end;
       end;
@@ -1095,10 +1089,10 @@ begin
   Data.Group := gtData;
   Data.RowType := prItem;
 
-  AddCurve(Data);
+  FChartMgr.AddSeries(Data);
 
-  SeriesFromFile(FSeriesList[Data.CurveID], dlgLoadData.FileName, Data.Description);
-  SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
+  SeriesFromFile(FChartMgr.Series[Data.CurveID], dlgLoadData.FileName, Data.Description);
+  SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
 
   Project.ActiveData := Data;
   Project.Expanded[FDataRoot] := True;
@@ -1263,26 +1257,6 @@ begin
   frmNewMaterial.ShowModal;
 end;
 
-procedure TfrmMain.AddCurve(Data: PProjectData);
-var
-  Count: integer;
-begin
-  Count := Length(FSeriesList);
-  SetLength(FSeriesList, Count + 1);
-  FSeriesList[Count] := TFastLineSeries.Create(Chart);
-  FSeriesList[Count].ParentChart := Chart;
-
-  FSeriesList[Count].Title := Data.Title;
-  if Data.Color <> 0 then
-    FSeriesList[Count].Color := Data.Color
-  else
-    Data.Color := FSeriesList[Count].Color;
-
-  FSeriesList[Count].LinePen.Width := Config.Section<TGraphOptions>.LineWidth;
-  Data.Visible := True;
-  FSeriesList[Count].Visible := Data.Visible;
-  Data.CurveID := Count;
-end;
 
 procedure TfrmMain.GenerateAutosaveName;
 var
@@ -1332,11 +1306,11 @@ begin
   Data.Group := gtData;
   Data.RowType := prItem;
 
-  AddCurve(Data);
+  FChartMgr.AddSeries(Data);
   Project.Expanded[FDataRoot] := True;
 
-  SeriesFromClipboard(FSeriesList[Data.CurveID]);
-  SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
+  SeriesFromClipboard(FChartMgr.Series[Data.CurveID]);
+  SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
 end;
 
 procedure TfrmMain.SaveHistory;
@@ -1496,17 +1470,6 @@ begin
   frmAbout.ShowModal;
 end;
 
-procedure TfrmMain.PlotResults(const Data: TDataArray);
-var
-  j: Integer;
-begin
-  ActiveModelSeries.BeginUpdate;
-  ActiveModelSeries.Clear;
-  for j := 0 to High(Data) do
-      ActiveModelSeries.AddXY(Data[j].t, Data[j].R);
-  ActiveModelSeries.EndUpdate;
-end;
-
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);
 begin
   LastData.Enabled := not LastData.Enabled;
@@ -1525,7 +1488,7 @@ end;
 
 procedure TfrmMain.pmiVisibleClick(Sender: TObject);
 begin
-  FSeriesList[LastData.CurveID].Visible := pmiVisible.Checked;
+  FChartMgr.Series[LastData.CurveID].Visible := pmiVisible.Checked;
   LastData.Visible := pmiVisible.Checked;
   Project.Repaint;
 end;
@@ -1565,7 +1528,7 @@ var
   Hour, Min, Sec, MSec: Word;
 begin
   RescaleChart;
-  PlotResults(Calc.Results);
+  FChartMgr.PlotResults(Project.ActiveModel.CurveID, Calc.Results);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
   ActiveModelSeries.EndUpdate;
@@ -1695,7 +1658,7 @@ begin
   FCalc.Limit := FChartInfo.MinLimit;
   if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
   begin
-    FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
+    FCalc.ExpValues := SeriesToData(FChartMgr.Series[Project.LinkedData.CurveID]);
     if FCalcSettings.IsPWChiSqr then
       FCalc.MovAvg := MovAvg(FCalc.ExpValues, FFitParams.MovAvgWindow);
   end;
@@ -1725,7 +1688,7 @@ begin
 
   if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
   begin
-    LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
+    LFPSO.ExpValues := SeriesToData(FChartMgr.Series[Project.LinkedData.CurveID]);
     if FCalcSettings.IsPWChiSqr then
       LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, FFitParams.MovAvgWindow);
   end else
@@ -1951,7 +1914,7 @@ begin
   FDataRoot := Project.GetNextSibling(FModelsRoot);
 
   // для каждой модели нужно создать series
-  Chart.SeriesList.Clear;
+  FChartMgr.ClearAll;
   Project.ActiveModel := nil;
   First := nil;
   FLastModel := nil;
@@ -1972,7 +1935,7 @@ begin
         FLastModel := Node;
         LastData := Data;
       end;
-      AddCurve(Data);
+      FChartMgr.AddSeries(Data);
 
       if Data.ID > FLastID then
         FLastID := Data.ID;
@@ -2034,10 +1997,9 @@ begin
       if Data.ID = LinkedID then
         Project.LinkedData := Data;
 
-      AddCurve(Data);
-      SeriesFromFile(FSeriesList[Data.CurveID], DataName(Data), s);
-      Chart.AddSeries(FSeriesList[Data.CurveID]);
-      FSeriesList[Data.CurveID].Visible := Data.Visible;
+      FChartMgr.AddSeries(Data);
+      SeriesFromFile(FChartMgr.Series[Data.CurveID], DataName(Data), s);
+      FChartMgr.Series[Data.CurveID].Visible := Data.Visible;
     end
     else
       Project.DeleteNode(Node);
@@ -2049,11 +2011,8 @@ procedure TfrmMain.RescaleChart;
 var
   AMin, AMax: Single;
 begin
-  Chart.BottomAxis.Minimum := 0;
   FCalcSettings.GetAxisRange(AMin, AMax);
-  Chart.BottomAxis.Minimum := AMin;
-  Chart.BottomAxis.Maximum := AMax;
-  Chart.LeftAxis.Minimum := FChartInfo.MinLimit;
+  FChartMgr.RescaleAxis(AMin, AMax, FChartInfo.MinLimit);
 end;
 
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
@@ -2281,7 +2240,7 @@ begin
     Data := Project.GetNodeData(Node);
     if (Data.RowType = prItem) and (Data.Group =  gtData) then
     begin
-      SeriesToFile(FSeriesList[Data.CurveID], DataName(Data));
+      SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
     end;
     Node := Project.GetNext(Node);
   end;
@@ -2363,7 +2322,7 @@ var
   PD: PProjectData;
   PG: PVirtualNode;
 begin
-  Chart.SeriesList.Clear;
+  FChartMgr.ClearAll;
   Project.Clear;
   Structure.AddSubstrate('Si', 5, 2.2);
 
@@ -2480,50 +2439,8 @@ begin
   else
     Size := 6;
 
-  ScaleChartFonts(Chart, Size, FDPI);
+  FChartMgr.ScaleFonts(Size, FDPI);
   FChartPages.ScaleSubChartFonts(Size - 2, FDPI);
-end;
-
-procedure TfrmMain.ScaleChartFonts(AChart: TCustomChart; ABaseSize: Integer; ATargetDPI: Integer);
-var
-  I: Integer;
-  ScaledBaseSize: Integer;
-  ScaledLargeSize: Integer;
-begin
-  if not Assigned(AChart) then Exit;
-
-  // Calculate the base DPI-scaled size
-  ScaledBaseSize := MulDiv(ABaseSize, ATargetDPI, 96);
-
-  // Calculate the 20% larger size for titles and legends
-  ScaledLargeSize := Round(ScaledBaseSize * 1.2);
-
-  AChart.DefaultFont.Size := ScaledBaseSize;
-  // Apply larger size to Main Chart Titles and Footers
-  AChart.Title.Font.Size := ScaledLargeSize;
-  AChart.SubTitle.Font.Size := ScaledLargeSize;
-  AChart.Foot.Font.Size := ScaledLargeSize;
-  AChart.SubFoot.Font.Size := ScaledLargeSize;
-
-  // Apply larger size to the Legend and Legend Title
-  AChart.Legend.Font.Size := ScaledLargeSize;
-  AChart.Legend.Title.Font.Size := ScaledLargeSize;
-
-  // Iterate through all Axes
-  for I := 0 to AChart.Axes.Count - 1 do
-  begin
-    // Axis Labels get the base size
-    AChart.Axes[I].LabelsFont.Size := ScaledBaseSize;
-    // Axis Titles get the 20% larger size
-    AChart.Axes[I].Title.Font.Size := ScaledLargeSize;
-  end;
-
-  // Iterate through all Series
-  for I := 0 to AChart.SeriesCount - 1 do
-  begin
-    // Series Marks (data labels) get the base size
-    AChart.Series[I].Marks.Font.Size := ScaledBaseSize;
-  end;
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -2536,8 +2453,10 @@ begin
 
 
   FormatSettings.DecimalSeparator := '.';
+  FChartMgr := TChartManager.Create(Chart, 2);
   ScaleInterface;
   Config := TConfig.Create;
+  FChartMgr.LineWidth := Config.Section<TGraphOptions>.LineWidth;
   CreateProjectTree;
 
   FCalcSettings.OnCalcModeChange := OnCalcModeChange;
@@ -2579,6 +2498,7 @@ begin
   FreeAndNil(Structure);
   FreeAndNil(FOperationsStack);
   FreeAndNil(FRecentProjects);
+  FreeAndNil(FChartMgr);
   FreeAndNil(Config);
 end;
 

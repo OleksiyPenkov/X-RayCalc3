@@ -261,6 +261,7 @@
         <DCCReference Include="components\unit_StaticTip.pas"/>
         <DCCReference Include="units\unit_ProfilesManager.pas"/>
         <DCCReference Include="units\unit_RecentProjects.pas"/>
+        <DCCReference Include="units\unit_ChartManager.pas"/>
         <DCCReference Include="components\unit_XRCPanel.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
