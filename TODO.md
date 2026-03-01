@@ -79,4 +79,4 @@
 
 | # | Task | Size | Status |
 |---|------|------|--------|
-| 46 | Split `unit_helpers.pas` into `unit_SeriesIO`, `unit_DataProcessing`, `unit_FileUtils` — 565 lines mixing 4 unrelated concerns | 🟡 M | 🔴 Open |
+| 46 | Split `unit_helpers.pas` into `unit_SeriesIO`, `unit_DataProcessing`, `unit_FileUtils`. Old unit kept as facade for backward compat. Dead `OpenHelpFile` removed. Consumers updated to import specific units | 🟡 M | ✅ Done |
