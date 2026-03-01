@@ -69,10 +69,9 @@ implementation
 
 { TXRCProjectTree }
 
+function TXRCProjectTree.ScaleForDPI(Value: Integer): integer;
 const
   DefaultDPI = 96;
-
-function TXRCProjectTree.ScaleForDPI(Value: Integer): integer;
 begin
   if FTargetDPI = DefaultDPI then
     Result := Value
@@ -81,6 +80,8 @@ begin
 end;
 
 function TXRCProjectTree.ScaleRect(const X1, Y1, X2, Y2: integer): TRect;
+const
+  DefaultDPI = 96;
 begin
   if FTargetDPI = DefaultDPI then
     Result := Rect(X1, Y1, X2, Y2)

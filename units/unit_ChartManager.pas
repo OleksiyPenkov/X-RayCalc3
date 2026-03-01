@@ -93,6 +93,7 @@ end;
 
 procedure TChartManager.RescaleAxis(AMin, AMax, AMinLimit: Single);
 begin
+  FChart.BottomAxis.Minimum := 0;
   FChart.BottomAxis.Minimum := AMin;
   FChart.BottomAxis.Maximum := AMax;
   FChart.LeftAxis.Minimum := AMinLimit;

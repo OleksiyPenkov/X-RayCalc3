@@ -256,7 +256,7 @@ type
     procedure FileSaveExecute(Sender: TObject);
     procedure FileSaveAsExecute(Sender: TObject);
     procedure LayerAddExecute(Sender: TObject);
-
+    procedure ActionManagerChange(Sender: TObject);
     procedure LayerInsertExecute(Sender: TObject);
     procedure LayerDeleteExecute(Sender: TObject);
     procedure LayerCutExecute(Sender: TObject);
@@ -348,7 +348,7 @@ type
     FChartMgr: TChartManager;
     PM: TProfileManager;
     FDPI: Integer;
-    FLockOwner: Boolean;
+    FFirstEntity: Boolean;
     FLockFile: File;
 
     procedure CreateProjectTree;
@@ -399,7 +399,7 @@ type
                               const Poly: TProfileFunctions;
                               const Res: TLayeredModel;
                               const CreateExtension: boolean = True);
-
+    procedure UpdateProfileExtension;
     procedure CreateTmpLock;
     procedure ReleaseTmpLock;
     function SaveProjectINI(const IniFileName: string):boolean;
@@ -878,6 +878,12 @@ begin
   end;
 end;
 
+procedure TfrmMain.UpdateProfileExtension;
+begin
+  { TODO: implement profile extension update }
+end;
+
+
 procedure TfrmMain.CreateProfileExtension;
 var
   Data: PProjectData;
@@ -1171,6 +1177,11 @@ end;
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
 begin
   edtrHenkeTable.ShowModal;
+end;
+
+procedure TfrmMain.ActionManagerChange(Sender: TObject);
+begin
+  Project.ActiveModel.Data := Structure.ToString;
 end;
 
 procedure TfrmMain.actLayerCopyExecute(Sender: TObject);
@@ -1718,7 +1729,9 @@ begin
       begin
         Structure.UpdateInterfaceNP(FitStructure);
         if CreateExtension then
-           CreateProfileExtension;
+           CreateProfileExtension
+        else
+          UpdateProfileExtension;
         Structure.UpdateProfiles(Res);
       end;
     end;
@@ -2394,17 +2407,17 @@ end;
 procedure TfrmMain.CreateTmpLock;
 begin
   if FileExists(Config.SystemFileName[sfLock]) then
-    FLockOwner := False
+    FFirstEntity := False
   else begin
     AssignFile(FLockFile, Config.SystemFileName[sfLock]);
     Rewrite(FLockFile);
-    FLockOwner := True;
+    FFirstEntity := True;
   end;
 end;
 
 procedure TfrmMain.ReleaseTmpLock;
 begin
-  if FLockOwner then
+  if FFirstEntity then
   begin
     CloseFile(FLockFile);
     DeleteFile(Config.SystemFileName[sfLock]);
@@ -2438,7 +2451,8 @@ begin
   FormatSettings.DecimalSeparator := '.';
   FChartMgr := TChartManager.Create(Chart, 2);
   ScaleInterface;
-  FChartMgr.LineWidth := TConfig.Section<TGraphOptions>.LineWidth;
+  Config := TConfig.Create;
+  FChartMgr.LineWidth := Config.Section<TGraphOptions>.LineWidth;
   CreateProjectTree;
 
   FCalcSettings.OnCalcModeChange := OnCalcModeChange;
@@ -2481,6 +2495,7 @@ begin
   FreeAndNil(FOperationsStack);
   FreeAndNil(FRecentProjects);
   FreeAndNil(FChartMgr);
+  FreeAndNil(Config);
 end;
 
 
