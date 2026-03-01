@@ -50,17 +50,27 @@ implementation
 procedure TfrmStructurePanel.ConnectActions(AImages: TCustomImageList;
   APeriodAdd, APeriodInsert, APeriodDelete,
   ALayerAdd, ALayerInsert, ALayerCopy, ALayerCut, ALayerPaste, ALayerDelete: TBasicAction);
+
+  procedure AssignAction(AButton: TRzToolButton; AAction: TBasicAction);
+  var
+    SavedIndex: Integer;
+  begin
+    SavedIndex := AButton.ImageIndex;
+    AButton.Action := AAction;
+    AButton.ImageIndex := SavedIndex;
+  end;
+
 begin
   tlbStructure.Images := AImages;
-  btnPeriodAdd.Action := APeriodAdd;
-  btnPeriodInsert.Action := APeriodInsert;
-  btnPeriodDelete.Action := APeriodDelete;
-  btnLayerAdd.Action := ALayerAdd;
-  btnLayerInsert.Action := ALayerInsert;
-  btnCopyLayer.Action := ALayerCopy;
-  btnLayerCut.Action := ALayerCut;
-  btnLayerPaste.Action := ALayerPaste;
-  btnLayerDelete.Action := ALayerDelete;
+  AssignAction(btnPeriodAdd, APeriodAdd);
+  AssignAction(btnPeriodInsert, APeriodInsert);
+  AssignAction(btnPeriodDelete, APeriodDelete);
+  AssignAction(btnLayerAdd, ALayerAdd);
+  AssignAction(btnLayerInsert, ALayerInsert);
+  AssignAction(btnCopyLayer, ALayerCopy);
+  AssignAction(btnLayerCut, ALayerCut);
+  AssignAction(btnLayerPaste, ALayerPaste);
+  AssignAction(btnLayerDelete, ALayerDelete);
 end;
 
 procedure TfrmStructurePanel.cbIncrementChange(Sender: TObject);
