@@ -17,7 +17,7 @@ uses
   unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials,
   VCLTee.TeeFunci, VCLTee.TeCanvas,
   unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages,
+  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel,
   Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, Vcl.VirtualImageList,
   Vcl.BaseImageCollection, Vcl.ImageCollection;
 
@@ -108,17 +108,7 @@ type
     Chart: TChart;
     RzPanel3: TRzPanel;
     FChartInfo: TfrmChartInfo;
-    StructurePanel: TRzPanel;
-    tlbStructure: TRzToolbar;
-    btnPeriodAdd: TRzToolButton;
-    btnPeriodInsert: TRzToolButton;
-    btnPeriodDelete: TRzToolButton;
-    rzspcr1: TRzSpacer;
-    btnLayerAdd: TRzToolButton;
-    btnLayerInsert: TRzToolButton;
-    btnLayerPaste: TRzToolButton;
-    btnLayerDelete: TRzToolButton;
-    btnLayerCut: TRzToolButton;
+    FStructurePanel: TfrmStructurePanel;
     spnTime: TRzStatusPane;
     dlgSaveResult: TSaveDialog;
     dlgLoadData: TOpenDialog;
@@ -138,9 +128,6 @@ type
     pmExporttofile: TMenuItem;
     spnFitTime: TRzStatusPane;
     pnlSettings: TPanel;
-    RzPanel2: TRzPanel;
-    Label6: TLabel;
-    cbIncrement: TRzComboBox;
     ChartToolBar: TRzToolbar;
     btnDataLoad: TRzToolButton;
     btnDataPaste: TRzToolButton;
@@ -151,11 +138,8 @@ type
     btnBtnCopy: TRzToolButton;
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
-    btnSetFitLimits: TBitBtn;
     dlgPrint: TPrintDialog;
-    RzSpacer3: TRzSpacer;
     BtnFastForward: TRzToolButton;
-    btnCopyLayer: TRzToolButton;
     actLayerCopy: TAction;
     actProjectItemDuplicate: TAction;
     tlbrProject: TRzToolbar;
@@ -264,7 +248,6 @@ type
     procedure PeriodAddExecute(Sender: TObject);
     procedure PeriodInsertExecute(Sender: TObject);
     procedure CalcRunExecute(Sender: TObject);
-    procedure cbIncrementChange(Sender: TObject);
     procedure PeriodDeleteExecute(Sender: TObject);
     procedure DataPasteExecute(Sender: TObject);
     procedure DataCopyClpbrdExecute(Sender: TObject);
@@ -285,7 +268,6 @@ type
     procedure pmiVisibleClick(Sender: TObject);
     procedure pmiEnabledClick(Sender: TObject);
     procedure actAutoFittingExecute(Sender: TObject);
-    procedure btnSetFitLimitsClick(Sender: TObject);
     procedure ProjectAddFolderExecute(Sender: TObject);
     procedure ModelCreateExecute(Sender: TObject);
     procedure FileNewExecute(Sender: TObject);
@@ -442,6 +424,8 @@ type
     function GradientTitle(const P: TFuncProfileRec): string;
     procedure OnChartScaleToggle(Sender: TObject);
     procedure OnChartMinLimitChange(Sender: TObject);
+    procedure OnIncrementChange(Sender: TObject);
+    procedure OnSetFitLimits(Sender: TObject);
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
@@ -1346,9 +1330,9 @@ begin
   end;
 end;
 
-procedure TfrmMain.btnSetFitLimitsClick(Sender: TObject);
+procedure TfrmMain.OnSetFitLimits(Sender: TObject);
 var
-    FitStructure: TFitStructure;
+  FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
   frmLimits.ShowLimits('Save', FitStructure);
@@ -1712,7 +1696,7 @@ end;
 procedure TfrmMain.EnableControls(const Enable: boolean);
 begin
   tlbrFile.Enabled := Enable;
-  tlbStructure.Enabled := Enable;
+  FStructurePanel.SetToolbarEnabled(Enable);
   tlbrProject.Enabled := Enable;
   ChartToolBar.Enabled := Enable;
   FChartPages.SetCopyEnabled(Enable);
@@ -2636,8 +2620,14 @@ begin
   PM := TProfileManager.Create;
   PM.DensityProfile := FChartPages.ProfileSeries;
 
-  Structure := TXRCStructure.Create(StructurePanel, FDPI);
-  Structure.Parent := StructurePanel;
+  FStructurePanel.ConnectActions(vilModel,
+    PeriodAdd, PeriodInsert, PeriodDelete,
+    LayerAdd, LayerInsert, actLayerCopy, LayerCut, LayerPaste, LayerDelete);
+  FStructurePanel.OnIncrementChange := OnIncrementChange;
+  FStructurePanel.OnSetFitLimits := OnSetFitLimits;
+
+  Structure := TXRCStructure.Create(FStructurePanel, FDPI);
+  Structure.Parent := FStructurePanel;
 
   FOperationsStack := TStack<String>.Create;
   FOperationsStack.Capacity := 10;
@@ -2675,9 +2665,9 @@ begin
   Structure.PeriodicMode := FCalcSettings.FittingMode = fmPeriodic;
 end;
 
-procedure TfrmMain.cbIncrementChange(Sender: TObject);
+procedure TfrmMain.OnIncrementChange(Sender: TObject);
 begin
-  Structure.Increment := StrToFloat(cbIncrement.Value);
+  Structure.Increment := FStructurePanel.IncrementValue;
 end;
 
 procedure TfrmMain.FormShow(Sender: TObject);

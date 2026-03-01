@@ -9,6 +9,7 @@ uses
   frame_CalcSettings in 'Views\frame_CalcSettings.pas' {frmCalcSettings: TFrame},
   frame_ChartInfo in 'Views\frame_ChartInfo.pas' {frmChartInfo: TFrame},
   frame_ChartPages in 'Views\frame_ChartPages.pas' {frmChartPages: TFrame},
+  frame_StructurePanel in 'Views\frame_StructurePanel.pas' {frmStructurePanel: TFrame},
   unit_Types in 'units\unit_Types.pas',
   math_complex in 'math\math_complex.pas',
   unit_helpers in 'units\unit_helpers.pas',
