@@ -508,7 +508,11 @@ type
     procedure ScaleInterface;
     procedure ScaleChartFonts(AChart: TCustomChart; ABaseSize,
       ATargetDPI: Integer);
-    { Private declarations }
+    function ActiveModelSeries: TLineSeries; inline;
+    function ActiveDataSeries: TLineSeries; inline;
+    function IsNonPeriodicProfile: Boolean; inline;
+    procedure SaveActiveData;
+    function GradientTitle(const P: TFuncProfileRec): string;
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
@@ -517,7 +521,6 @@ type
     procedure WMLayerEditNext(var Msg: TMessage); message WM_STR_EDIT_NEXT;
     procedure WMLayerEditPrev(var Msg: TMessage); message WM_STR_EDIT_PREV;
     procedure WMLinkedClick(var Msg: TMessage); message WM_STR_Linked_CLICK;
-    //procedure WMStackDblClick(var Msg: TMessage); message WM_STR_STACKDBLCLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
     procedure OnLayerUPMsg(var Msg: TMessage); message WM_STR_LAYER_UP;
@@ -535,7 +538,6 @@ implementation
 uses
   ComObj,
   System.IniFiles,
-  System.DateUtils,
   System.UITypes,
   AbUtils,
   unit_helpers,
@@ -566,6 +568,36 @@ uses
 
 {$R *.dfm}
 
+const
+  GradientLabels: array [0..2] of string = ('H', 'S', 'rho');
+
+function TfrmMain.ActiveModelSeries: TLineSeries;
+begin
+  Result := FSeriesList[Project.ActiveModel.CurveID];
+end;
+
+function TfrmMain.ActiveDataSeries: TLineSeries;
+begin
+  Result := FSeriesList[Project.ActiveData.CurveID];
+end;
+
+function TfrmMain.IsNonPeriodicProfile: Boolean;
+begin
+  Result := IsProfileEnbled and (FittingMode <> fmPeriodic);
+end;
+
+procedure TfrmMain.SaveActiveData;
+begin
+  SeriesToFile(ActiveDataSeries, DataName(Project.ActiveData));
+end;
+
+function TfrmMain.GradientTitle(const P: TFuncProfileRec): string;
+begin
+  Result := Format('F(%s %s/%s)', [GradientLabels[Ord(P.Subj)],
+               Structure.Stacks[P.StackID].Title,
+               Structure.Stacks[P.StackID].Layers[P.LayerID].Data.Material]);
+end;
+
 procedure TfrmMain.btnAdvFitSettingsClick(Sender: TObject);
 begin
   frmFitSettings.ShowSettings(FFitParams);
@@ -573,9 +605,6 @@ end;
 
 procedure TfrmMain.btnChartScaleClick(Sender: TObject);
 begin
-//  if (FSeriesList[Project.ActiveModel.CurveID].Count = 0) and (Project.ActiveData = nil) then
-//    Exit;
-
   if Chart.LeftAxis.Logarithmic then
   begin
     Chart.LeftAxis.Logarithmic := False;
@@ -588,7 +617,6 @@ begin
   else
   begin
     btnChartScale.Caption := 'Linear';
-//    Chart.LeftAxis.Minimum := StrToFloat(Settings.MinLimit);
     Chart.LeftAxis.Logarithmic := True;
     Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end;
@@ -635,9 +663,6 @@ var
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
   lsrConvergence.AddXY(msg_prm.Step, msg_prm.BestChi);
-//  if chFittingProgress.LeftAxis.Maximum < msg_prm.BestChi then
-//    chFittingProgress.LeftAxis.Maximum := 1.1 * msg_prm.BestChi;
-
 
   spChiSqr.Caption := FloatToStrF(msg_prm.LastChi, ffFixed, 8, 4);
   spChiBest.Caption := FloatToStrF(msg_prm.BestChi, ffFixed, 8, 4);
@@ -708,7 +733,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
+  PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
   CalcRunExecute(Self);
 end;
 
@@ -774,7 +799,7 @@ begin
        FOperationsStack.Clear;
        FOperationsStack.Push(LastData.Data);
        PM.Prepare(Structure, chThickness, chRoughness, chDensity);
-       PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
+       PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
      end;
   end;
 end;
@@ -969,7 +994,7 @@ end;
 
 procedure TfrmMain.UpdateProfileExtension;
 begin
-  //
+  { TODO: implement profile extension update }
 end;
 
 
@@ -1002,8 +1027,6 @@ begin
 end;
 
 procedure TfrmMain.UpdateFitGradientExtensions(const P: TProfileFunctions);
-const
-  L : array [0..2] of string = ('H','S','rho');
 var
   Gradient: PVirtualNode;
   Data: PProjectData;
@@ -1013,9 +1036,7 @@ var
 begin
   for I := 0 to High(P) do
   begin
-    Title := Format('F(%s %s/%s)', [L[Ord(P[i].Subj)],
-                 Structure.Stacks[P[i].StackID].Title,
-                 Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
+    Title := GradientTitle(P[i]);
 
     Gradient := FLastModel.FirstChild;
     Found := False;
@@ -1038,14 +1059,10 @@ begin
 end;
 
 procedure TfrmMain.CreateFitGradientExtensions(const P: TProfileFunctions);
-const
-  L : array [0..2] of string = ('H','S','rho');
-
 var
   Gradient: PVirtualNode;
   Data: PProjectData;
   i: Integer;
-  S: string;
 begin
   for I := 0 to High(P) do
   begin
@@ -1055,11 +1072,7 @@ begin
     Data.Group := gtModel;
     Data.Enabled := True;
     Data.RowType := prExtension;
-    S := Format('F(%s %s/%s)', [L[Ord(P[i].Subj)],
-                 Structure.Stacks[P[i].StackID].Title,
-                 Structure.Stacks[P[i].StackID].Layers[P[i].LayerID].Data.Material]);
-
-    Data.Title := S;
+    Data.Title := GradientTitle(P[i]);
     Data.ExtType := etFunction;
     Data.Form := ffPoly;
     Data.Subj := P[i].Subj;
@@ -1152,13 +1165,13 @@ end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FSeriesList[Project.ActiveData.CurveID], rgCalcMode.ItemIndex);
+  SeriesToClipboard(ActiveDataSeries, rgCalcMode.ItemIndex);
 end;
 
 procedure TfrmMain.DataExportExecute(Sender: TObject);
 begin
   if dlgSaveResult.Execute then
-      SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], dlgSaveResult.FileName);
+      SeriesToFile(ActiveModelSeries, dlgSaveResult.FileName);
 end;
 
 procedure TfrmMain.DataLoadExecute(Sender: TObject);
@@ -1201,32 +1214,39 @@ begin
 end;
 
 procedure TfrmMain.DataNormAutoExecute(Sender: TObject);
+var
+  ModelSeries, DataSeries: TLineSeries;
 begin
-  NormalizeAuto(FSeriesList[Project.ActiveModel.CurveID], FSeriesList[Project.ActiveData.CurveID]);
-  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
+  ModelSeries := ActiveModelSeries;
+  DataSeries := ActiveDataSeries;
+  NormalizeAuto(ModelSeries, DataSeries);
+  SaveActiveData;
 end;
 
 procedure TfrmMain.DataNormExecute(Sender: TObject);
 var
   s: string;
+  DataSeries: TLineSeries;
 begin
   s := InputBox('Data normalization', 'Coefficient', '');
   if s <> '' then
   begin
-    Normalize(StrToFloat(s), FSeriesList[Project.ActiveData.CurveID]);
-    SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
+    DataSeries := ActiveDataSeries;
+    Normalize(StrToFloat(s), DataSeries);
+    SaveActiveData;
   end;
 end;
 
 procedure TfrmMain.actDataSmoothExecute(Sender: TObject);
 var
   Data: TDataArray;
+  DataSeries: TLineSeries;
 begin
-  Data := SeriesToData(FSeriesList[Project.ActiveData.CurveID]);
-  //TSavitzkyGolay.SmoothCurve(Data, 2, 8);
+  DataSeries := ActiveDataSeries;
+  Data := SeriesToData(DataSeries);
   Data := MovAvg(Data, 5);
-  DataToSeries(Data, FSeriesList[Project.ActiveData.CurveID]);
-  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
+  DataToSeries(Data, DataSeries);
+  SaveActiveData;
 end;
 
 procedure TfrmMain.actDataTrimExecute(Sender: TObject);
@@ -1239,8 +1259,8 @@ var
     i: integer;
   begin
     Result := -1;
-    for I := 0 to FSeriesList[Project.ActiveData.CurveID].XValues.Count do
-      if FSeriesList[Project.ActiveData.CurveID].XValues[i] >= val then
+    for I := 0 to ActiveDataSeries.XValues.Count - 1 do
+      if ActiveDataSeries.XValues[i] >= val then
       begin
         Result := i;
         Break;
@@ -1254,19 +1274,19 @@ begin
   index := FindIndex(t1);
   if index > 1 then
   begin
-    FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
-    FSeriesList[Project.ActiveData.CurveID].Delete(0, Index);
-    FSeriesList[Project.ActiveData.CurveID].EndUpdate;
+    ActiveDataSeries.BeginUpdate;
+    ActiveDataSeries.Delete(0, Index);
+    ActiveDataSeries.EndUpdate;
   end;
 
   index := FindIndex(t2);
   if index > 1 then
   begin
-    FSeriesList[Project.ActiveData.CurveID].BeginUpdate;
-    FSeriesList[Project.ActiveData.CurveID].Delete(index, FSeriesList[Project.ActiveData.CurveID].XValues.Count - Index - 1);
-    FSeriesList[Project.ActiveData.CurveID].EndUpdate;
+    ActiveDataSeries.BeginUpdate;
+    ActiveDataSeries.Delete(index, ActiveDataSeries.XValues.Count - Index - 1);
+    ActiveDataSeries.EndUpdate;
   end;
-  SeriesToFile(FSeriesList[Project.ActiveData.CurveID], DataName(Project.ActiveData));
+  SaveActiveData;
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
@@ -1411,7 +1431,8 @@ begin
   Node := Project.AddChild(FDataRoot);
   Data := Project.GetNodeData(Node);
 
-  Data.ID := DateTimeToUnix(Now);
+  Data.ID := FLastID;
+  inc(FLastID);
   Data.Title := 'Data ' + IntToStr(Node.Index + 1) + '.dat';
   Data.Group := gtData;
   Data.RowType := prItem;
@@ -1426,13 +1447,12 @@ end;
 procedure TfrmMain.SaveHistory;
 begin
   FOperationsStack.Push(Structure.ToString);
-  FOperationsStack.TrimExcess;
 end;
 
 procedure TfrmMain.MatchToStructure;
 begin
   PM.Prepare(Structure, chThickness, chRoughness, chDensity);
-  PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
+  PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
   Project.ActiveModel.Data := Structure.ToString;
 end;
 
@@ -1630,7 +1650,7 @@ begin
   StartTime := Now;
 
 
-  FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
+  ActiveModelSeries.BeginUpdate;
 
   StartT := StrToFloat(edStartTeta.Text);
   EndT := StrToFloat(edEndTeta.Text);
@@ -1678,23 +1698,26 @@ var
   X, Y, mx, x1, x2, my, RI, OldX: single;
   i: Integer;
 begin
-  if FSeriesList[Project.ActiveModel.CurveID].Count = 0 then
+  if ActiveModelSeries.Count = 0 then
     Exit;
 
   my := 0;  mx := 0;
   x1 := Chart.BottomAxis.Minimum;
   x2 := Chart.BottomAxis.Maximum;
   RI := 0;
-  OldX := FSeriesList[Project.ActiveModel.CurveID].XValue[1];
-  for i := 2 to FSeriesList[Project.ActiveModel.CurveID].Count - 2 do
+  OldX := ActiveModelSeries.XValue[1];
+  for i := 2 to ActiveModelSeries.Count - 2 do
   begin
-    X := FSeriesList[Project.ActiveModel.CurveID].XValue[i];
-    Y := FSeriesList[Project.ActiveModel.CurveID].YValue[i];
-    if (X > x1) and (X < x2) and (Y > my) then
+    X := ActiveModelSeries.XValue[i];
+    Y := ActiveModelSeries.YValue[i];
+    if (X > x1) and (X < x2) then
     begin
       RI := RI + Y * abs(OldX - X);
-      my := Y;
-      mx := X;
+      if Y > my then
+      begin
+        my := Y;
+        mx := X;
+      end;
     end;
     OldX := X;
   end;
@@ -1712,11 +1735,11 @@ procedure TfrmMain.PlotResults(const Data: TDataArray);
 var
   j: Integer;
 begin
-  FSeriesList[Project.ActiveModel.CurveID].BeginUpdate;
-  FSeriesList[Project.ActiveModel.CurveID].Clear;
+  ActiveModelSeries.BeginUpdate;
+  ActiveModelSeries.Clear;
   for j := 0 to High(Data) do
-      FSeriesList[Project.ActiveModel.CurveID].AddXY(Data[j].t, Data[j].R);
-  FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
+      ActiveModelSeries.AddXY(Data[j].t, Data[j].R);
+  ActiveModelSeries.EndUpdate;
 end;
 
 procedure TfrmMain.pmiEnabledClick(Sender: TObject);
@@ -1780,8 +1803,8 @@ begin
   PlotResults(Calc.Results);
   DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
   spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
-  FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
-  FSeriesList[Project.ActiveModel.CurveID].Repaint;
+  ActiveModelSeries.EndUpdate;
+  ActiveModelSeries.Repaint;
   StatusD.Caption := FloatToStrF(Structure.Period, ffFixed, 7, 2);
   Screen.Cursor := crDefault;
   PrintMax;
@@ -1842,7 +1865,7 @@ begin
     try
       EnableControls(False);
       FCalc.Run;
-      if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
+      if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
       begin
         FCalc.CalcChiSquare(cbTWChi.ItemIndex);
         spChiSqr.Caption := FloatToStrF(FCalc.ChiSQR, ffFixed, 8, 4);
@@ -1852,16 +1875,16 @@ begin
         FLastChiSquare := 0;
       end;
 
-      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
+      if IsNonPeriodicProfile then
          PM.PlotProfileNP(Pages.ActivePage = tsProfile)
      else
-        PM.PlotProfile(IsProfileEnbled and (FittingMode <> fmPeriodic), Pages.ActivePage = tsProfile);
+        PM.PlotProfile(IsNonPeriodicProfile, Pages.ActivePage = tsProfile);
     except
       on E: exception do
       begin
         ShowMessage(E.Message);
-        FSeriesList[Project.ActiveModel.CurveID].EndUpdate;
-        FSeriesList[Project.ActiveModel.CurveID].Repaint;
+        ActiveModelSeries.EndUpdate;
+        ActiveModelSeries.Repaint;
         Screen.Cursor := crDefault;
         CalcRun.Enabled := True;
       end;
@@ -1909,7 +1932,7 @@ begin
 
   FCalc := TCalc.Create;
   FCalc.Limit := StrToFloat(cbMinLimit.Text);
-  if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
+  if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
   begin
     FCalc.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
     if cbPWChiSqr.Checked then
@@ -1918,7 +1941,7 @@ begin
 
   GetThreadParams;
   FCalc.Params := FCalcThreadParams;
-  FCalc.Model := Structure.Model(IsProfileEnbled and (FittingMode <> fmPeriodic));
+  FCalc.Model := Structure.Model(IsNonPeriodicProfile);
   FCalc.Model.Profiles := GetProfileFunctions;
   Screen.Cursor := crHourGlass;
   Result := True;
@@ -1939,7 +1962,7 @@ begin
   LFPSO.Params := FFitParams;
   LFPSO.Limit := StrToFloat(cbMinLimit.Text);
 
-  if (Project.LinkedData <> nil) and FSeriesList[Project.ActiveModel.CurveID].Visible then
+  if (Project.LinkedData <> nil) and ActiveModelSeries.Visible then
   begin
     LFPSO.ExpValues := SeriesToData(FSeriesList[Project.LinkedData.CurveID]);
     if cbPWChiSqr.Checked then
@@ -1965,8 +1988,7 @@ procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
 begin
   if FOperationsStack.Count > 0 then
   begin
-    Structure.FromString(FOperationsStack.Peek);
-    FOperationsStack.Extract;
+    Structure.FromString(FOperationsStack.Extract);
   end;
 end;
 
@@ -2020,7 +2042,6 @@ begin
   try
     if not PrepareLFPSO then Exit;
     Screen.Cursor := crHourGlass;
-//    ClearAutoSave;
     GenerateAutosaveName;
     EnableControls(False);
     FitStartTime := Now;
@@ -2142,18 +2163,15 @@ begin
   try
     MyRect := Rect(0, 0, Structure.Width, Structure.Height);
 
-    with Bitmap do
-    begin
-      Width  := MyRect.Right;
-      Height := MyRect.Bottom;
-
-      Canvas.CopyRect(MyRect, Structure.Canvas, MyRect);
-    end;
+    Bitmap.Width  := MyRect.Right;
+    Bitmap.Height := MyRect.Bottom;
+    Bitmap.Canvas.CopyRect(MyRect, Structure.Canvas, MyRect);
 
     Image.Assign(Bitmap);
     Image.SaveToClipboardFormat(MyFormat, AData, APalette);
     ClipBoard.SetAsHandle(MyFormat,AData);
   finally
+    FreeAndNil(Bitmap);
     FreeAndNil(Image);
   end;
 end;
@@ -2224,20 +2242,18 @@ begin
   end;
 
   Structure.FromString(Project.ActiveModel.Data);
-//  if cbTreatPeriodic.Checked then
-//        Structure.EnablePairing;
   Structure.PeriodicMode := FittingMode = fmPeriodic;
 end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FSeriesList[Project.ActiveModel.CurveID], rgCalcMode.ItemIndex);
+  SeriesToClipboard(ActiveModelSeries, rgCalcMode.ItemIndex);
 end;
 
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
 begin
   if dlgSaveResult.Execute then
-    SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], dlgSaveResult.FileName);
+    SeriesToFile(ActiveModelSeries, dlgSaveResult.FileName);
 end;
 
 procedure TfrmMain.RecoverDataCurves(const LinkedID: integer);
@@ -2478,7 +2494,6 @@ procedure TfrmMain.FilePrintExecute(Sender: TObject);
 begin
   if dlgPrint.Execute then
   begin
-//    Chart.Title.Text.Text := Structure.ToString;
     Chart.Title.Visible := True;
     Chart.PrintLandscape;
     Chart.Title.Visible := False;
@@ -2563,7 +2578,7 @@ begin
   begin
     Project.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
 
-    SeriesToFile(FSeriesList[Project.ActiveModel.CurveID], FProjectDir + 'calc.dat' );
+    SeriesToFile(ActiveModelSeries, FProjectDir + 'calc.dat' );
 
     if FileExists(FileName) then
       DeleteFile(FileName);         // must be here!
@@ -2638,8 +2653,8 @@ begin
   if Project.ActiveModel = nil then
     Exit;
 
-  xv := FSeriesList[Project.ActiveModel.CurveID].XScreenToValue(X);
-  yv := FSeriesList[Project.ActiveModel.CurveID].YScreenToValue(Y);
+  xv := ActiveModelSeries.XScreenToValue(X);
+  yv := ActiveModelSeries.YScreenToValue(Y);
   StatusX.Caption := FloatToStrF(xv, ffFixed, 4, 3);
   if yv < 0.01 then
     StatusY.Caption := FloatToStrF(yv, ffExponent, 3, 2)
@@ -2676,10 +2691,6 @@ var
   PD: PProjectData;
   PG: PVirtualNode;
 begin
-//  if DirectoryExists(FProjectDir) then
-//    ClearDir(FProjectDir);
-//  RemoveDirectory(PChar(FProjectDir));
-
   Chart.SeriesList.Clear;
   Project.Clear;
   Structure.AddSubstrate('Si', 5, 2.2);
@@ -2884,7 +2895,6 @@ begin
 
   Project.NodeDataSize := SizeOf(TProjectData);
 
-//  CreateSettings;
   CreateDir(Config.TempDir);
   CreateTmpLock;
   Pages.ActivePageindex := 0;
@@ -3047,13 +3057,5 @@ begin
   ID := Msg.WParam;
   Structure.Select(ID);
 end;
-
-//procedure TfrmMain.WMStackDblClick(var Msg: TMessage);
-//var
-//  ID: Integer;
-//begin
-//  ID := Msg.WParam;
-//  Structure.  EditStack(ID);
-//end;
 
 end.
