@@ -194,6 +194,10 @@
             <Form>frmStructurePanel</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="Views\frame_ProjectPanel.pas">
+            <Form>frmProjectPanel</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <DCCReference Include="Units\unit_Types.pas"/>
         <DCCReference Include="Math\math_complex.pas"/>
         <DCCReference Include="Units\unit_SeriesIO.pas"/>

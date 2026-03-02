@@ -1,0 +1,1398 @@
+unit frame_ProjectPanel;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, System.Generics.Collections, System.IniFiles,
+  Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.Menus, Vcl.ImgList, Vcl.Dialogs,
+  Vcl.Clipbrd,
+  RzPanel, RzButton, RzEdit,
+  Vcl.VirtualImageList, Vcl.BaseImageCollection, Vcl.ImageCollection,
+  VirtualTrees, VirtualTrees.BaseTree, VirtualTrees.Types,
+  AbBase, AbBrowse, AbZBrows, AbZipper, AbUnzper,
+  VCLTee.Series,
+  unit_Types, unit_XRCProjectTree, unit_ChartManager,
+  frame_CalcSettings, frame_ChartInfo, frame_ChartPages,
+  unit_ProfilesManager, unit_RecentProjects, unit_Config,
+  unit_SeriesIO, unit_FileUtils, unit_consts, unit_materials,
+  unit_XRCStructure,
+  System.ImageList, Vcl.ExtCtrls;
+
+type
+  TStringProc = procedure(const S: string) of object;
+
+  TfrmProjectPanel = class(TFrame)
+    tlbrFile: TRzToolbar;
+    BtnNew: TRzToolButton;
+    BtnOpen: TRzToolButton;
+    btnReopenProject: TRzToolButton;
+    rzspcr2: TRzSpacer;
+    BtnSave: TRzToolButton;
+    RzSpacer1: TRzSpacer;
+    BtnPrint: TRzToolButton;
+    tlbrProject: TRzToolbar;
+    btnAddModel: TRzToolButton;
+    BtnExport: TRzToolButton;
+    BtnCopy: TRzToolButton;
+    BtnPaste: TRzToolButton;
+    BtnEdit: TRzToolButton;
+    RzSpacer4: TRzSpacer;
+    btnAddExtension: TRzToolButton;
+    RzSpacer5: TRzSpacer;
+    BtnRecycle: TRzToolButton;
+    RzPanel5: TRzPanel;
+    mmDescription: TRzMemo;
+    vliProject: TVirtualImageList;
+    pmProject: TPopupMenu;
+    pmiEnabled: TMenuItem;
+    pmiVisible: TMenuItem;
+    pmiLinked: TMenuItem;
+    pmiNorm: TMenuItem;
+    Auto1: TMenuItem;
+    Manual1: TMenuItem;
+    N1: TMenuItem;
+    Properties1: TMenuItem;
+    N5: TMenuItem;
+    pmCopytoclipboard: TMenuItem;
+    pmExporttofile: TMenuItem;
+    dlgOpenProject: TOpenDialog;
+    dlgSaveProject: TSaveDialog;
+    dlgLoadData: TOpenDialog;
+    Zip: TAbZipper;
+    UnZip: TAbUnZipper;
+    procedure pmiEnabledClick(Sender: TObject);
+    procedure pmiVisibleClick(Sender: TObject);
+    procedure pmiLinkedClick(Sender: TObject);
+    procedure pmProjectPopup(Sender: TObject);
+  private
+    FProject: TXRCProjectTree;
+
+    FProjectDir: string;
+    FProjectName: string;
+    FProjectFileName: string;
+    FIgnoreFocusChange: Boolean;
+    FProjectVersion: Byte;
+
+    FModelsRoot: PVirtualNode;
+    FDataRoot: PVirtualNode;
+
+    LastNode, FLastModel: PVirtualNode;
+    FLastData: PProjectData;
+
+    FLastID: integer;
+    FFitParams: TFitParams;
+    FAutoSaveFileName: string;
+
+    FOperationsStack: TStack<String>;
+    FRecentProjects: TRecentProjectsManager;
+
+    FChartMgr: TChartManager;
+    FCalcSettings: TfrmCalcSettings;
+    FChartInfo: TfrmChartInfo;
+    FChartPages: TfrmChartPages;
+    FProfileMgr: TProfileManager;
+    FStructure: TXRCStructure;
+
+    FOnCaptionChange: TStringProc;
+    FOnCalcRun: TNotifyEvent;
+
+    procedure CreateNewModel(Node: PVirtualNode);
+    procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
+    procedure DeleteData(Node: PVirtualNode; Data: PProjectData);
+    procedure DeleteExtension(Node: PVirtualNode);
+    procedure DeleteFolder(Node: PVirtualNode);
+    function  DataName(Data: PProjectData): string;
+    procedure PrepareProjectFolder(const FileName: string; Clear: Boolean);
+    procedure ExtractProject(const FileName: string);
+    procedure LoadProjectParams(var LinkedID, ActiveID: Integer);
+    procedure RecoverProjectTree(const ActiveID: Integer);
+    procedure RecoverDataCurves(const LinkedID: integer);
+    function  SaveProjectINI(const IniFileName: string): boolean;
+    procedure CreateFunctionProfileExtension(Node: PVirtualNode);
+    function  FindParentModel(out Node: PVirtualNode): PVirtualNode;
+    function  CreateChildNode(out Node: PVirtualNode): boolean;
+    procedure EditProjectItem;
+    procedure EditGradient(var Data: PProjectData);
+    procedure EditTable(var Data: PProjectData);
+    procedure LoadRecentProjectsList(ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
+    procedure OnRecentProjectClick(Sender: TObject; const FileName: string);
+    function  GetLastData: PProjectData;
+  public
+    destructor Destroy; override;
+
+    procedure Init(AImageCollection: TImageCollection; ADPI: Integer;
+      AChartMgr: TChartManager; ACalcSettings: TfrmCalcSettings;
+      AChartInfo: TfrmChartInfo; AChartPages: TfrmChartPages;
+      AProfileMgr: TProfileManager;
+      ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
+
+    procedure SetStructure(AStructure: TXRCStructure);
+
+    procedure ConnectFileActions(
+      ANew, AOpen, AReopen, ASave, APrint: TBasicAction;
+      AOpenDropDown: TPopupMenu);
+    procedure ConnectProjectActions(
+      AModelCreate, ADuplicate, AModelCopy, AModelPaste,
+      AProperties, AExtension, ADelete: TBasicAction);
+    procedure ConnectPopupActions(
+      ANormAuto, ANormManual, AProperties,
+      ACopyData, AExportData: TBasicAction);
+
+    procedure SetToolbarsEnabled(Value: Boolean);
+    procedure SetDescription(const Text: string);
+
+    { Project file operations }
+    procedure NewProject;
+    procedure OpenProject;
+    procedure SaveCurrentProject;
+    procedure SaveProjectAs;
+    procedure ReopenProject;
+
+    { Tree operations }
+    procedure CreateModel;
+    procedure DuplicateModel;
+    procedure CopyModel;
+    procedure PasteModel;
+    procedure CopySelectedItem;
+    procedure DeleteSelectedItems;
+    procedure EditSelectedItem;
+    procedure EditModelText;
+    procedure AddFolder;
+    procedure AddExtension;
+
+    { Data operations }
+    procedure LoadData;
+    procedure PasteData;
+    procedure SaveData;
+    procedure SaveActiveData;
+
+    { Project loading/saving }
+    procedure LoadProject(const FileName: string);
+    procedure SaveProject(const FileName: string);
+    procedure CreateDefaultProject;
+
+    { Tree event handlers }
+    procedure ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure ProjectDblClick(Sender: TObject);
+    procedure ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
+      NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
+      var Allowed: Boolean);
+
+    { Fit/profile support }
+    function  GetProfileFunctions: TProfileFunctions;
+    function  IsProfileEnabled: Boolean;
+    procedure CreateFitGradientExtensions(const P: TProfileFunctions);
+    procedure UpdateFitGradientExtensions(const P: TProfileFunctions);
+    procedure MatchToStructure;
+
+    { Utilities }
+    procedure CreateProfileExtension;
+    procedure RescaleChart;
+    procedure SaveHistory;
+    procedure AutoSave;
+    procedure LoadAutoSave;
+    procedure GenerateAutosaveName;
+    function  GradientTitle(const P: TFuncProfileRec): string;
+    function  ActiveModelSeries: TFastLineSeries; inline;
+    function  ActiveDataSeries: TFastLineSeries; inline;
+    function  IsNonPeriodicProfile: Boolean; inline;
+
+    { Properties }
+    property Project: TXRCProjectTree read FProject;
+    property ProjectDir: string read FProjectDir;
+    property ProjectName: string read FProjectName;
+    property ProjectFileName: string read FProjectFileName write FProjectFileName;
+    property FitParams: TFitParams read FFitParams write FFitParams;
+    property IgnoreFocusChange: Boolean read FIgnoreFocusChange write FIgnoreFocusChange;
+    property ModelsRoot: PVirtualNode read FModelsRoot;
+    property DataRoot: PVirtualNode read FDataRoot;
+    property LastModel: PVirtualNode read FLastModel write FLastModel;
+    property LastData: PProjectData read GetLastData;
+    property OperationsStack: TStack<String> read FOperationsStack;
+    property AutoSaveFileName: string read FAutoSaveFileName;
+    property RecentProjects: TRecentProjectsManager read FRecentProjects;
+    property Structure: TXRCStructure read FStructure;
+
+    property OnCaptionChange: TStringProc read FOnCaptionChange write FOnCaptionChange;
+    property OnCalcRun: TNotifyEvent read FOnCalcRun write FOnCalcRun;
+  end;
+
+implementation
+
+uses
+  System.Win.ComObj, AbUtils,
+  editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
+  editor_JSON, frm_ExtensionType;
+
+{$R *.dfm}
+
+const
+  GradientLabels: array [0..2] of string = ('H', 'S', 'rho');
+
+{ TfrmProjectPanel }
+
+destructor TfrmProjectPanel.Destroy;
+begin
+  FreeAndNil(FOperationsStack);
+  FreeAndNil(FRecentProjects);
+  inherited;
+end;
+
+function TfrmProjectPanel.GetLastData: PProjectData;
+begin
+  Result := FLastData;
+end;
+
+function TfrmProjectPanel.ActiveModelSeries: TFastLineSeries;
+begin
+  Result := FChartMgr.Series[FProject.ActiveModel.CurveID];
+end;
+
+function TfrmProjectPanel.ActiveDataSeries: TFastLineSeries;
+begin
+  Result := FChartMgr.Series[FProject.ActiveData.CurveID];
+end;
+
+function TfrmProjectPanel.IsNonPeriodicProfile: Boolean;
+begin
+  Result := IsProfileEnabled and (FCalcSettings.FittingMode <> fmPeriodic);
+end;
+
+procedure TfrmProjectPanel.Init(AImageCollection: TImageCollection; ADPI: Integer;
+  AChartMgr: TChartManager; ACalcSettings: TfrmCalcSettings;
+  AChartInfo: TfrmChartInfo; AChartPages: TfrmChartPages;
+  AProfileMgr: TProfileManager;
+  ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
+begin
+  vliProject.ImageCollection := AImageCollection;
+  FProject := TXRCProjectTree.Create(Self, ADPI);
+  FProject.Parent := Self;
+  FProject.PopupMenu := pmProject;
+  FProject.NodeDataSize := SizeOf(TProjectData);
+
+  FChartMgr := AChartMgr;
+  FCalcSettings := ACalcSettings;
+  FChartInfo := AChartInfo;
+  FChartPages := AChartPages;
+  FProfileMgr := AProfileMgr;
+
+  FOperationsStack := TStack<String>.Create;
+  FOperationsStack.Capacity := 10;
+
+  LoadRecentProjectsList(ARecentMenu, ARecentPopup);
+end;
+
+procedure TfrmProjectPanel.SetStructure(AStructure: TXRCStructure);
+begin
+  FStructure := AStructure;
+end;
+
+procedure TfrmProjectPanel.ConnectFileActions(
+  ANew, AOpen, AReopen, ASave, APrint: TBasicAction;
+  AOpenDropDown: TPopupMenu);
+
+  procedure AssignAction(AButton: TRzToolButton; AAction: TBasicAction);
+  var
+    SavedIndex: Integer;
+  begin
+    SavedIndex := AButton.ImageIndex;
+    AButton.Action := AAction;
+    AButton.ImageIndex := SavedIndex;
+  end;
+
+begin
+  AssignAction(BtnNew, ANew);
+  AssignAction(BtnOpen, AOpen);
+  AssignAction(btnReopenProject, AReopen);
+  AssignAction(BtnSave, ASave);
+  AssignAction(BtnPrint, APrint);
+  BtnOpen.DropDownMenu := AOpenDropDown;
+end;
+
+procedure TfrmProjectPanel.ConnectProjectActions(
+  AModelCreate, ADuplicate, AModelCopy, AModelPaste,
+  AProperties, AExtension, ADelete: TBasicAction);
+
+  procedure AssignAction(AButton: TRzToolButton; AAction: TBasicAction);
+  var
+    SavedIndex: Integer;
+  begin
+    SavedIndex := AButton.ImageIndex;
+    AButton.Action := AAction;
+    AButton.ImageIndex := SavedIndex;
+  end;
+
+begin
+  AssignAction(btnAddModel, AModelCreate);
+  AssignAction(BtnExport, ADuplicate);
+  AssignAction(BtnCopy, AModelCopy);
+  AssignAction(BtnPaste, AModelPaste);
+  AssignAction(BtnEdit, AProperties);
+  AssignAction(btnAddExtension, AExtension);
+  AssignAction(BtnRecycle, ADelete);
+end;
+
+procedure TfrmProjectPanel.ConnectPopupActions(
+  ANormAuto, ANormManual, AProperties,
+  ACopyData, AExportData: TBasicAction);
+begin
+  Auto1.Action := ANormAuto;
+  Manual1.Action := ANormManual;
+  Properties1.Action := AProperties;
+  pmCopytoclipboard.Action := ACopyData;
+  pmCopytoclipboard.Caption := 'Copy data';
+  pmExporttofile.Action := AExportData;
+  pmExporttofile.Caption := 'Export Data';
+end;
+
+procedure TfrmProjectPanel.SetToolbarsEnabled(Value: Boolean);
+begin
+  tlbrFile.Enabled := Value;
+  tlbrProject.Enabled := Value;
+end;
+
+procedure TfrmProjectPanel.SetDescription(const Text: string);
+begin
+  mmDescription.Lines.Text := Text;
+end;
+
+{ --- Popup menu handlers --- }
+
+procedure TfrmProjectPanel.pmiEnabledClick(Sender: TObject);
+begin
+  FLastData.Enabled := not FLastData.Enabled;
+  FProject.Repaint;
+end;
+
+procedure TfrmProjectPanel.pmiLinkedClick(Sender: TObject);
+begin
+  if not pmiLinked.Checked then
+    FProject.LinkedData := nil
+  else
+    FProject.LinkedData := FLastData;
+  FProject.Repaint;
+end;
+
+procedure TfrmProjectPanel.pmiVisibleClick(Sender: TObject);
+begin
+  FChartMgr.Series[FLastData.CurveID].Visible := pmiVisible.Checked;
+  FLastData.Visible := pmiVisible.Checked;
+  FProject.Repaint;
+end;
+
+procedure TfrmProjectPanel.pmProjectPopup(Sender: TObject);
+var
+  IsModel, IsProfile: boolean;
+begin
+  case FLastData.RowType of
+    prItem:
+      begin
+        IsModel := FLastData.IsModel;
+        pmiEnabled.Visible := False;
+        pmiVisible.Visible := True;
+        pmiVisible.Checked := FLastData.Visible;
+        pmiLinked.Visible  := not IsModel;
+        pmiLinked.Checked  := FLastData = FProject.LinkedData;
+        pmiNorm.Visible    := not IsModel;
+        pmCopytoclipboard.Visible := not IsModel;
+        pmExporttofile.Visible    := not IsModel;
+      end;
+    prExtension:
+      begin
+        pmiNorm.Visible := False;
+        pmiEnabled.Visible := True;
+        pmiEnabled.Checked := FLastData.Enabled;
+        pmiVisible.Visible := False;
+        pmiLinked.Visible  := False;
+        IsProfile := FLastData.ExtType = etTable;
+        pmCopytoclipboard.Visible := IsProfile;
+        pmExporttofile.Visible    := IsProfile;
+      end;
+  end;
+end;
+
+{ --- Internal helpers --- }
+
+procedure TfrmProjectPanel.CreateNewModel(Node: PVirtualNode);
+var
+  PL: PVirtualNode;
+begin
+  PL := FProject.AddChild(Node, Nil);
+  FProject.ActiveModel := FProject.GetNodeData(PL);
+  FProject.ActiveModel.ID := FLastID;
+  FProject.ActiveModel.Title := 'Model ' + IntToStr(FLastID);
+  FProject.ActiveModel.Group := gtModel;
+  FProject.ActiveModel.RowType := prItem;
+
+  FChartMgr.AddSeries(FProject.ActiveModel);
+  FProject.Expanded[Node] := True;
+  inc(FLastID);
+end;
+
+procedure TfrmProjectPanel.DeleteModel(Node: PVirtualNode; Data: PProjectData);
+begin
+  FChartMgr.DeleteSeries(Data.CurveID);
+  FProject.DeleteNode(Node);
+  FProject.Repaint;
+  FProject.ActiveModel := nil;
+end;
+
+procedure TfrmProjectPanel.DeleteData(Node: PVirtualNode; Data: PProjectData);
+begin
+  DeleteFile(DataName(Data));
+  FChartMgr.DeleteSeries(Data.CurveID);
+  FProject.DeleteNode(Node);
+  FProject.Refresh;
+end;
+
+procedure TfrmProjectPanel.DeleteExtension(Node: PVirtualNode);
+begin
+  FProject.DeleteNode(Node);
+  FProject.Refresh;
+end;
+
+procedure TfrmProjectPanel.DeleteFolder(Node: PVirtualNode);
+begin
+  if Node.ChildCount = 0 then
+    FProject.DeleteNode(Node)
+  else
+    ShowMessage('The folder is not empty! Can''t delete !');
+end;
+
+function TfrmProjectPanel.DataName(Data: PProjectData): string;
+begin
+  Result := Format('%sdata_%d.dat', [FProjectDir, Data.ID])
+end;
+
+procedure TfrmProjectPanel.PrepareProjectFolder(const FileName: string; Clear: Boolean);
+begin
+  FProjectFileName := FileName;
+  FProjectName := ExtractFileName(FileName);
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + CreateClassID);
+
+  if Clear then
+  begin
+    if DirectoryExists(FProjectDir, False) then
+      ClearDir(FProjectDir);
+    CreateDir(FProjectDir);
+  end;
+end;
+
+procedure TfrmProjectPanel.ExtractProject(const FileName: string);
+begin
+  UnZip.BaseDirectory := FProjectDir;
+  UnZip.FileName := FileName;
+  UnZip.OpenArchive(FileName);
+  UnZip.ExtractFiles('*.*');
+  UnZip.CloseArchive;
+end;
+
+procedure TfrmProjectPanel.LoadProjectParams(var LinkedID, ActiveID: Integer);
+var
+  INF: TMemIniFile;
+begin
+  INF := TMemIniFile.Create(FProjectDir + PARAMETERS_FILE_NAME);
+  try
+    FCalcSettings.LoadFromINI(INF);
+    FChartInfo.LoadFromINI(INF);
+
+    LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
+    ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
+    FChartInfo.Chart.LeftAxis.Logarithmic := INF.ReadBool('STATE', 'LogScale', True);
+    FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
+
+    FCalcSettings.LoadAdvancedParams(INF, FFitParams);
+  finally
+    INF.Free;
+  end;
+end;
+
+procedure TfrmProjectPanel.RecoverProjectTree(const ActiveID: Integer);
+var
+  Node, First: PVirtualNode;
+  Data: PProjectData;
+begin
+  FProject.LinkedData := nil;
+  FProject.Version := FProjectVersion;
+  FProject.LoadFromFile(FProjectDir + PROJECT_FILE_NAME);
+
+  FProject.Rescale;
+  FProject.Repaint;
+
+  FModelsRoot := FProject.GetFirst;
+  FDataRoot := FProject.GetNextSibling(FModelsRoot);
+
+  FChartMgr.ClearAll;
+  FProject.ActiveModel := nil;
+  First := nil;
+  FLastModel := nil;
+
+  Node := FProject.GetFirstChild(FProject.GetFirst);
+  while Node <> FDataRoot do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if Data.RowType = prItem then
+    begin
+      if First = nil then
+        First := Node;
+
+      if ActiveID = Data.ID then
+      begin
+        FProject.ActiveModel := Data;
+        LastNode := Node;
+        FLastModel := Node;
+        FLastData := Data;
+      end;
+      FChartMgr.AddSeries(Data);
+
+      if Data.ID > FLastID then
+        FLastID := Data.ID;
+    end;
+    Node := FProject.GetNext(Node);
+  end;
+
+  if FProject.ActiveModel = nil then
+  begin
+    LastNode := First;
+    FProject.ActiveModel := FProject.GetNodeData(First);
+  end;
+
+  inc(FLastID);
+
+  if FProject.ActiveModel = nil then
+  begin
+    FProject.FocusedNode := First;
+    FProject.Selected[First] := True;
+  end
+  else
+  begin
+    FProject.FocusedNode := LastNode;
+    FProject.Selected[LastNode] := True;
+  end;
+
+  Structure.FromString(FProject.ActiveModel.Data);
+  Structure.PeriodicMode := FCalcSettings.FittingMode = fmPeriodic;
+end;
+
+procedure TfrmProjectPanel.RecoverDataCurves(const LinkedID: integer);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  s: string;
+begin
+  FProject.ActiveData := nil;
+
+  Node := FProject.GetFirstChild(FDataRoot);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.RowType = prItem) and FileExists(DataName(Data)) then
+    begin
+      if FProject.ActiveData = nil then
+        FProject.ActiveData := Data;
+
+      if Data.ID = LinkedID then
+        FProject.LinkedData := Data;
+
+      FChartMgr.AddSeries(Data);
+      SeriesFromFile(FChartMgr.Series[Data.CurveID], DataName(Data), s);
+      FChartMgr.Series[Data.CurveID].Visible := Data.Visible;
+    end
+    else
+      FProject.DeleteNode(Node);
+    Node := FProject.GetNext(Node);
+  end;
+end;
+
+function TfrmProjectPanel.SaveProjectINI(const IniFileName: string): boolean;
+var
+  INF: TMemIniFile;
+begin
+  if FileExists(IniFileName) then
+    DeleteFile(IniFileName);
+
+  INF := TMemIniFile.Create(IniFileName);
+  try
+    FCalcSettings.SaveToINI(INF);
+    FChartInfo.SaveToINI(INF);
+
+    INF.WriteInteger('INFO', 'Version', CURRENT_PROJECT_VERSION);
+
+    if FProject.LinkedData <> nil then
+      INF.WriteInteger('STATE', 'LinkedData', FProject.LinkedData.ID);
+    if FProject.ActiveModel <> nil then
+    begin
+      INF.WriteInteger('STATE', 'ActiveModel', FProject.ActiveModel.ID);
+      FProject.ActiveModel.Data := Structure.ToString;
+    end;
+
+    INF.WriteBool('STATE', 'LogScale', FChartInfo.Chart.LeftAxis.Logarithmic);
+
+    FCalcSettings.SaveAdvancedParams(INF, FFitParams);
+    INF.UpdateFile;
+    Result := True;
+  finally
+    INF.Free;
+  end;
+end;
+
+procedure TfrmProjectPanel.CreateProfileExtension;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Node := FindParentModel(LastNode);
+  if Node = nil then Exit;
+
+  if not FProject.ProfileAttached(Node) then
+  begin
+    Node := FProject.AddChild(Node);
+    Data := FProject.GetNodeData(Node);
+
+    Data.Group := gtModel;
+    Data.Enabled := True;
+    Data.RowType := prExtension;
+    Data.Title := 'Table';
+    Data.ExtType := etTable;
+    Data.StackID := -1;
+    Data.LayerID := -1;
+    Data.Form := ffNone;
+
+    FProject.ClearSelection;
+    FProject.Selected[Node] := True;
+  end;
+end;
+
+procedure TfrmProjectPanel.CreateFunctionProfileExtension(Node: PVirtualNode);
+var
+  Data: PProjectData;
+begin
+  Data := FProject.GetNodeData(Node);
+
+  Data.Group := gtModel;
+  Data.Enabled := True;
+  Data.RowType := prExtension;
+  Data.Title := 'Gradient ' + IntToStr(Node.Parent.ChildCount);
+  Data.ExtType := etFunction;
+  Data.Poly[0] := 0;
+  Data.Poly[1] := 0.14;
+  Data.Poly[10] := 1;
+  Data.StackID := -1;
+  Data.LayerID := -1;
+  Data.Form := ffPoly;
+
+  FProject.ClearSelection;
+  FProject.Selected[Node] := True;
+end;
+
+function TfrmProjectPanel.FindParentModel(out Node: PVirtualNode): PVirtualNode;
+var
+  Data: PProjectData;
+begin
+  Result := nil;
+  if Node = Nil then Exit;
+
+  Data := FProject.GetNodeData(Node);
+  if Data.Group = gtModel then
+  begin
+    if Data.RowType = prExtension then
+      Result := Node.Parent
+    else
+      Result := Node;
+  end
+end;
+
+function TfrmProjectPanel.CreateChildNode(out Node: PVirtualNode): boolean;
+var
+  Data: PProjectData;
+begin
+  Result := False;
+  Node := FProject.GetFirstSelected;
+  if Node = Nil then Exit;
+
+  Data := FProject.GetNodeData(Node);
+  if Data.Group = gtModel then
+  begin
+    if Data.RowType = prItem then
+      Node := FProject.AddChild(Node);
+    if Data.RowType = prExtension then
+      Node := FProject.AddChild(Node.Parent);
+    Result := True;
+  end
+  else
+    ShowMessage('Parent model is not selected!');
+end;
+
+procedure TfrmProjectPanel.EditProjectItem;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+  Node := FProject.GetFirstSelected;
+  Data := FProject.GetNodeData(Node);
+  case Data.RowType of
+    prFolder:
+      begin
+        Data.Title := InputBox('Folder', 'Edit the folder''s title', Data.Title);
+      end;
+    prItem:
+      begin
+        edtrProjectItem.Data := Data;
+        if edtrProjectItem.ShowModal = mrOk then
+        begin
+          FChartMgr.Series[Data.CurveID].Color := Data.Color;
+          FChartMgr.Series[Data.CurveID].Title := Data.Title;
+          SetDescription(Data.Description);
+        end;
+      end;
+    prExtension:
+      begin
+        case Data.ExtType of
+          etFunction: EditGradient(Data);
+          etTable   : EditTable(Data);
+        end;
+      end;
+  end;
+end;
+
+procedure TfrmProjectPanel.EditGradient(var Data: PProjectData);
+begin
+  edtrProfileFunction.Data := Data;
+  edtrProfileFunction.Structure := Structure;
+  if edtrProfileFunction.ShowModal = mrOk then
+    SetDescription(Data.Description);
+end;
+
+procedure TfrmProjectPanel.EditTable(var Data: PProjectData);
+begin
+  edtrProfileTable.Data := Data;
+  edtrProfileTable.Structure := Structure;
+  if edtrProfileTable.ShowModal = mrOk then
+    SetDescription(Data.Description);
+end;
+
+procedure TfrmProjectPanel.RescaleChart;
+var
+  AMin, AMax: Single;
+begin
+  FCalcSettings.GetAxisRange(AMin, AMax);
+  FChartMgr.RescaleAxis(AMin, AMax, FChartInfo.MinLimit);
+end;
+
+procedure TfrmProjectPanel.LoadRecentProjectsList(ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
+begin
+  FRecentProjects := TRecentProjectsManager.Create(MAX_RECENT_CAPACITY, ARecentMenu, ARecentPopup);
+  FRecentProjects.OnClick := OnRecentProjectClick;
+  FRecentProjects.Load;
+end;
+
+procedure TfrmProjectPanel.OnRecentProjectClick(Sender: TObject; const FileName: string);
+begin
+  FProjectFileName := FileName;
+  PrepareProjectFolder(FProjectFileName, True);
+  LoadProject(FProjectFileName);
+  if TConfig.Section<TOtherOptions>.AutoCalc then
+    if Assigned(FOnCalcRun) then
+      FOnCalcRun(Self);
+end;
+
+{ --- Public project file operations --- }
+
+procedure TfrmProjectPanel.NewProject;
+begin
+  Structure.Clear;
+  FProfileMgr.ClearProfiles;
+  CreateDefaultProject;
+end;
+
+procedure TfrmProjectPanel.OpenProject;
+begin
+  if TConfig.SystemDir[sdProjDir] <> '' then
+    dlgOpenProject.InitialDir := TConfig.SystemDir[sdProjDir]
+  else
+    dlgOpenProject.InitialDir := '';
+
+  if dlgOpenProject.Execute then
+  begin
+    PrepareProjectFolder(dlgOpenProject.FileName, True);
+    LoadProject(dlgOpenProject.FileName);
+    if TConfig.Section<TOtherOptions>.AutoCalc then
+      if Assigned(FOnCalcRun) then
+        FOnCalcRun(Self);
+
+    FRecentProjects.Add(FProjectFileName);
+  end;
+end;
+
+procedure TfrmProjectPanel.SaveCurrentProject;
+begin
+  if FProjectName = DEFAULT_PROJECT_NAME then
+    SaveProjectAs
+  else
+    SaveProject(FProjectFileName);
+end;
+
+procedure TfrmProjectPanel.SaveProjectAs;
+begin
+  if TConfig.SystemDir[sdProjDir] <> '' then
+    dlgSaveProject.InitialDir := TConfig.SystemDir[sdProjDir]
+  else
+    dlgSaveProject.InitialDir := '';
+
+  dlgSaveProject.FileName := ExtractFileName(FProjectFileName);
+  if dlgSaveProject.Execute then
+  begin
+    FProjectName := ExtractFileName(dlgSaveProject.FileName);
+    SaveData;
+    SaveProject(dlgSaveProject.FileName);
+    FProjectFileName := dlgSaveProject.FileName;
+    if Assigned(FOnCaptionChange) then
+      FOnCaptionChange('X-Ray Calc 3: ' + FProjectName);
+  end;
+end;
+
+procedure TfrmProjectPanel.ReopenProject;
+begin
+  PrepareProjectFolder(FProjectFileName, True);
+  LoadProject(FProjectFileName);
+end;
+
+{ --- Tree operations --- }
+
+procedure TfrmProjectPanel.CreateModel;
+begin
+  FProject.ActiveModel.Data := Structure.ToString;
+  CreateNewModel(FModelsRoot);
+end;
+
+procedure TfrmProjectPanel.DuplicateModel;
+var
+  S: string;
+begin
+  FProject.ActiveModel.Data := Structure.ToString;
+  S := Structure.ToString;
+  CreateNewModel(FModelsRoot);
+  Structure.FromString(S);
+  FProject.ActiveModel.Data := S;
+end;
+
+procedure TfrmProjectPanel.CopyModel;
+begin
+  ClipBoard.AsText := Structure.ToString;
+end;
+
+procedure TfrmProjectPanel.PasteModel;
+begin
+  FProject.ActiveModel.Data := Structure.ToString;
+  CreateNewModel(FModelsRoot);
+  FProject.ActiveModel.Data := ClipBoard.AsText;
+  Structure.FromString(FProject.ActiveModel.Data);
+end;
+
+procedure TfrmProjectPanel.CopySelectedItem;
+var
+  Data: PProjectData;
+begin
+  Data := FProject.GetNodeData(FProject.GetFirstSelected);
+  if (Data.Group = gtModel) and (Data.RowType = prItem) then
+    ClipBoard.AsText := Structure.ToString;
+  if (Data.Group = gtData) and (Data.RowType = prItem) then
+    SeriesToClipboard(FChartMgr.Series[Data.CurveID], FCalcSettings.CalcMode);
+end;
+
+procedure TfrmProjectPanel.DeleteSelectedItems;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Node := FProject.GetFirstSelected;
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.Group = gtModel) and (Data.RowType = prItem) then
+      DeleteModel(Node, Data);
+
+    if (Data.Group = gtData) and (Data.RowType = prItem) then
+    begin
+      if Data = FProject.LinkedData then
+        FProject.LinkedData := nil;
+      DeleteData(Node, Data);
+    end;
+
+    if (Data.RowType = prFolder) then
+      DeleteFolder(Node);
+    if (Data.RowType = prExtension) then
+      DeleteExtension(Node);
+    Node := FProject.GetFirstSelected;
+  end;
+  LastNode := nil;
+  ProjectChange(FProject, Nil);
+end;
+
+procedure TfrmProjectPanel.EditSelectedItem;
+begin
+  EditProjectItem;
+end;
+
+procedure TfrmProjectPanel.EditModelText;
+var
+  Str: string;
+begin
+  Str := Structure.ToString;
+  if frmJsonEditor.Edit(Str) then
+  begin
+    Str := StringReplace(Str, #13#10, '', [rfReplaceAll]);
+    Structure.FromString(Str);
+  end;
+end;
+
+procedure TfrmProjectPanel.AddFolder;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  PD: PProjectData;
+  s: string;
+begin
+  s := 'Folder';
+  if not InputQuery('New folder', 'Input folder title', s) or (s = '') then
+    Exit;
+
+  Node := FProject.GetFirstSelected;
+  if Node = nil then
+    Node := FModelsRoot;
+
+  PD := FProject.GetNodeData(Node);
+  if PD.RowType <> prGroup then
+  begin
+    case PD.Group of
+      gtModel:
+        Node := FProject.AddChild(FModelsRoot);
+      gtData:
+        Node := FProject.AddChild(FDataRoot);
+    end;
+  end
+  else
+    Node := FProject.AddChild(Node);
+  Data := FProject.GetNodeData(Node);
+  Data.ID := 0;
+  Data.Title := s;
+  Data.Group := PD.Group;
+  Data.RowType := prFolder;
+  FProject.ClearSelection;
+  FProject.Selected[Node] := True;
+end;
+
+procedure TfrmProjectPanel.AddExtension;
+var
+  EType: TExtentionType;
+  Node: PVirtualNode;
+begin
+  EType := SelectExtensionTypeAction;
+  if EType = etNone then Exit;
+
+  case EType of
+    etFunction:
+      begin
+        if CreateChildNode(Node) then
+          CreateFunctionProfileExtension(Node);
+      end;
+    etTable:
+      CreateProfileExtension;
+  end;
+end;
+
+{ --- Data operations --- }
+
+procedure TfrmProjectPanel.LoadData;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  if not dlgLoadData.Execute then
+    Exit;
+
+  Node := FProject.GetFirstSelected;
+  if Node = nil then
+    Node := FDataRoot;
+
+  Data := FProject.GetNodeData(Node);
+  if (Data.RowType = prFolder) and (Data.Group = gtData) then
+    Node := FProject.AddChild(Node)
+  else
+    Node := FProject.AddChild(FDataRoot);
+
+  Data := FProject.GetNodeData(Node);
+  Data.ID := FLastID;
+  inc(FLastID);
+  Data.Title := ExtractFileName(dlgLoadData.FileName);
+  Data.Group := gtData;
+  Data.RowType := prItem;
+
+  FChartMgr.AddSeries(Data);
+
+  SeriesFromFile(FChartMgr.Series[Data.CurveID], dlgLoadData.FileName, Data.Description);
+  SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
+
+  FProject.ActiveData := Data;
+  FProject.Expanded[FDataRoot] := True;
+end;
+
+procedure TfrmProjectPanel.PasteData;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Node := FProject.AddChild(FDataRoot);
+  Data := FProject.GetNodeData(Node);
+
+  Data.ID := FLastID;
+  inc(FLastID);
+  Data.Title := 'Data ' + IntToStr(Node.Index + 1) + '.dat';
+  Data.Group := gtData;
+  Data.RowType := prItem;
+
+  FChartMgr.AddSeries(Data);
+  FProject.Expanded[FDataRoot] := True;
+
+  SeriesFromClipboard(FChartMgr.Series[Data.CurveID]);
+  SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
+end;
+
+procedure TfrmProjectPanel.SaveData;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Node := FProject.GetFirstChild(FProject.GetFirst);
+  while Node <> Nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.RowType = prItem) and (Data.Group = gtData) then
+      SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
+    Node := FProject.GetNext(Node);
+  end;
+end;
+
+procedure TfrmProjectPanel.SaveActiveData;
+begin
+  SeriesToFile(ActiveDataSeries, DataName(FProject.ActiveData));
+end;
+
+{ --- Project loading/saving --- }
+
+procedure TfrmProjectPanel.LoadProject(const FileName: string);
+var
+  LinkedID, ActiveID: Integer;
+begin
+  FIgnoreFocusChange := True;
+  FProfileMgr.ClearProfiles;
+  ExtractProject(FileName);
+  LoadProjectParams(LinkedID, ActiveID);
+  RecoverProjectTree(ActiveID);
+  RecoverDataCurves(LinkedID);
+  FIgnoreFocusChange := False;
+  if Assigned(FOnCaptionChange) then
+    FOnCaptionChange('X-Ray Calc 3: ' + ExtractFileName(FileName));
+  MatchToStructure;
+  RescaleChart;
+end;
+
+procedure TfrmProjectPanel.SaveProject(const FileName: string);
+begin
+  if SaveProjectINI(FProjectDir + PARAMETERS_FILE_NAME) then
+  begin
+    FProject.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
+
+    SeriesToFile(ActiveModelSeries, FProjectDir + 'calc.dat');
+
+    if FileExists(FileName) then
+      DeleteFile(FileName);
+
+    Zip.ArchiveType := atZip;
+    Zip.AutoSave := True;
+    Zip.ForceType := True;
+    Zip.OpenArchive(FileName);
+    Zip.BaseDirectory := FProjectDir;
+
+    Zip.AddFiles('*.*', faAnyFile and faDirectory);
+    Zip.CloseArchive;
+  end;
+end;
+
+procedure TfrmProjectPanel.CreateDefaultProject;
+var
+  PD: PProjectData;
+  PG: PVirtualNode;
+begin
+  FChartMgr.ClearAll;
+  FProject.Clear;
+  Structure.AddSubstrate('Si', 5, 2.2);
+
+  FLastID := 1;
+  FProjectName := DEFAULT_PROJECT_NAME;
+  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + CreateClassID);
+  FProjectFileName := FProjectName;
+  CreateDir(FProjectDir);
+
+  PG := FProject.AddChild(Nil, Nil);
+  PD := FProject.GetNodeData(PG);
+  PD.Title := 'Models';
+  PD.Group := gtModel;
+  PD.RowType := prGroup;
+  FModelsRoot := PG;
+
+  CreateNewModel(FModelsRoot);
+  FProject.Expanded[PG] := True;
+
+  PG := FProject.AddChild(Nil, Nil);
+  PD := FProject.GetNodeData(PG);
+  PD.Title := 'Data';
+  PD.Group := gtData;
+  PD.RowType := prGroup;
+  FProject.Expanded[PG] := True;
+  FDataRoot := PG;
+
+  if Assigned(FOnCaptionChange) then
+    FOnCaptionChange('X-Ray Calc 3: ' + FProjectName);
+  FProject.LinkedData := nil;
+
+  FFitParams.Tolerance    := 0.005;
+  FFitParams.MovAvgWindow := 0.05;
+  FFitParams.Vmax         := 0.3;
+  FFitParams.JammingMax   := 1;
+  FFitParams.ReInitMax    := 3;
+  FFitParams.KChiSqr      := 1.41;
+  FFitParams.KVmax        := 1.41;
+  FFitParams.w1           := 0.3;
+  FFitParams.w2           := 0.3;
+  FFitParams.AdaptVel     := False;
+  FFitParams.SmoothWindow := -1;
+  FFitParams.Ksxr         := 0.2;
+  FFitParams.PolyFactor   := 10;
+
+  FProject.Rescale;
+end;
+
+{ --- Tree event handlers --- }
+
+procedure TfrmProjectPanel.ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  if FIgnoreFocusChange then
+    Exit;
+
+  if Node = LastNode then Exit;
+
+  FLastData := FProject.GetNodeData(LastNode);
+  if (FLastData <> nil) and FLastData.IsModel then
+    FLastData.Data := Structure.ToString;
+
+  LastNode := FProject.GetFirstSelected;
+  FLastData := FProject.GetNodeData(LastNode);
+
+  if FLastData = nil then
+    Exit;
+
+  if (FLastData.RowType = prItem) and (FLastData.Group = gtData) then
+    FProject.ActiveData := FLastData;
+
+  if FLastData.IsModel then
+  begin
+    FLastModel := LastNode;
+    if FLastData.Data <> '' then
+    begin
+      Structure.FromString(FLastData.Data);
+      FOperationsStack.Clear;
+      FOperationsStack.Push(FLastData.Data);
+      FProfileMgr.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
+      FProfileMgr.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
+    end;
+  end;
+end;
+
+procedure TfrmProjectPanel.ProjectDblClick(Sender: TObject);
+begin
+  EditProjectItem;
+end;
+
+procedure TfrmProjectPanel.ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
+  NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
+  var Allowed: Boolean);
+var
+  Data: PProjectData;
+begin
+  Allowed := True;
+  Data := Sender.GetNodeData(NewNode);
+  if Data = nil then Exit;
+
+  SetDescription(Data.Description);
+
+  if not((Data.RowType = prItem) and (Data.Group = gtModel)) then
+    Exit;
+
+  FProject.ActiveModel := Data;
+  FProject.Repaint;
+end;
+
+{ --- Fit/profile support --- }
+
+function TfrmProjectPanel.GetProfileFunctions: TProfileFunctions;
+var
+  Item: PVirtualNode;
+  Data: PProjectData;
+  Count: integer;
+begin
+  SetLength(Result, 0);
+  Count := 0;
+  Item := FProject.GetFirstChild(FLastModel);
+  while Item <> Nil do
+  begin
+    Data := FProject.GetNodeData(Item);
+    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) then
+    begin
+      SetLength(Result, Count + 1);
+      Result[Count].C       := Data.PolyD;
+      Result[Count].C[0]    := Structure.Stacks[Data.StackID].Layers[Data.LayerID].Data.P[Ord(Data.Subj) + 1].V;
+      Result[Count].StackID := Data.StackID;
+      Result[Count].LayerID := Data.LayerID;
+      Result[Count].Func    := Data.Form;
+      Result[Count].Subj    := Data.Subj;
+      inc(count)
+    end;
+    Item := FProject.GetNextSibling(Item);
+  end;
+end;
+
+function TfrmProjectPanel.IsProfileEnabled: Boolean;
+var
+  Data: PProjectData;
+  Node: PVirtualNode;
+begin
+  Result := False;
+  Node := FProject.GetFirstChild(FLastModel);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if Data.ExtType = etTable then
+    begin
+      Result := Data.Enabled;
+      Break;
+    end;
+    Node := FProject.GetNextSibling(Node);
+  end;
+end;
+
+procedure TfrmProjectPanel.CreateFitGradientExtensions(const P: TProfileFunctions);
+var
+  Gradient: PVirtualNode;
+  Data: PProjectData;
+  i: Integer;
+begin
+  for I := 0 to High(P) do
+  begin
+    Gradient := FProject.AddChild(FLastModel);
+    Data := FProject.GetNodeData(Gradient);
+
+    Data.Group := gtModel;
+    Data.Enabled := True;
+    Data.RowType := prExtension;
+    Data.Title := GradientTitle(P[i]);
+    Data.ExtType := etFunction;
+    Data.Form := ffPoly;
+    Data.Subj := P[i].Subj;
+    Data.StackID := P[i].StackID;
+    Data.LayerID := P[i].LayerID;
+    Data.SetPoly(P[i].C);
+  end;
+
+  MatchToStructure;
+  FProject.Expanded[FLastModel] := True;
+  FProject.ClearSelection;
+  FProject.Selected[FLastModel] := True;
+end;
+
+procedure TfrmProjectPanel.UpdateFitGradientExtensions(const P: TProfileFunctions);
+var
+  Gradient: PVirtualNode;
+  Data: PProjectData;
+  i: Integer;
+  Title: string;
+  Found: Boolean;
+begin
+  for I := 0 to High(P) do
+  begin
+    Title := GradientTitle(P[i]);
+
+    Gradient := FLastModel.FirstChild;
+    Found := False;
+    repeat
+      Data := FProject.GetNodeData(Gradient);
+      if Data.Title = Title then
+      begin
+        Data.SetPoly(P[i].C);
+        Found := True;
+      end
+      else
+        Gradient := Gradient.NextSibling;
+    until Found or (Gradient <> FLastModel.LastChild);
+  end;
+
+  MatchToStructure;
+  FProject.Expanded[FLastModel] := True;
+  FProject.ClearSelection;
+  FProject.Selected[FLastModel] := True;
+end;
+
+procedure TfrmProjectPanel.MatchToStructure;
+begin
+  FProfileMgr.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
+  FProfileMgr.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
+  FProject.ActiveModel.Data := Structure.ToString;
+end;
+
+{ --- Utilities --- }
+
+procedure TfrmProjectPanel.SaveHistory;
+begin
+  FOperationsStack.Push(Structure.ToString);
+end;
+
+procedure TfrmProjectPanel.AutoSave;
+begin
+  if TConfig.Section<TOtherOptions>.AutoSave then
+    SaveProject(FAutoSaveFileName);
+end;
+
+procedure TfrmProjectPanel.LoadAutoSave;
+begin
+  if FileExists(FAutoSaveFileName) then
+  begin
+    LoadProject(FAutoSaveFileName);
+    if Assigned(FOnCalcRun) then
+      FOnCalcRun(Self);
+  end;
+end;
+
+procedure TfrmProjectPanel.GenerateAutosaveName;
+var
+  FileName, Path: string;
+  p: Integer;
+begin
+  FileName := FProjectName;
+  if TConfig.SystemDir[sdOutDir] <> '' then
+    Path := TConfig.SystemDir[sdOutDir]
+  else
+    Path := ExtractFilePath(FileName);
+
+  p := pos(PROJECT_EXT, FileName);
+  Delete(FileName, p, Length(PROJECT_EXT));
+  FAutoSaveFileName := Path + FileName + '-fitted' + PROJECT_EXT;
+end;
+
+function TfrmProjectPanel.GradientTitle(const P: TFuncProfileRec): string;
+begin
+  Result := Format('F(%s %s/%s)', [GradientLabels[Ord(P.Subj)],
+               Structure.Stacks[P.StackID].Title,
+               Structure.Stacks[P.StackID].Layers[P.LayerID].Data.Material]);
+end;
+
+end.

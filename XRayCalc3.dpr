@@ -10,6 +10,7 @@ uses
   frame_ChartInfo in 'Views\frame_ChartInfo.pas' {frmChartInfo: TFrame},
   frame_ChartPages in 'Views\frame_ChartPages.pas' {frmChartPages: TFrame},
   frame_StructurePanel in 'Views\frame_StructurePanel.pas' {frmStructurePanel: TFrame},
+  frame_ProjectPanel in 'Views\frame_ProjectPanel.pas' {frmProjectPanel: TFrame},
   unit_Types in 'Units\unit_Types.pas',
   math_complex in 'Math\math_complex.pas',
   unit_SeriesIO in 'Units\unit_SeriesIO.pas',

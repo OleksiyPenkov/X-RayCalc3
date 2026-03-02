@@ -85,212 +85,20 @@ object frmMain: TfrmMain
       253
       1091)
     UpperLeftControls = (
-      RzPanel1)
+      FProjectPanel)
     LowerRightControls = (
       pnlMain
       FStructurePanel)
-    object RzPanel1: TRzPanel
+    inline FProjectPanel: TfrmProjectPanel
       AlignWithMargins = True
       Left = 3
       Top = 3
       Width = 239
       Height = 1085
       Align = alClient
-      BorderOuter = fsFlatRounded
-      TabOrder = 0
       Color = 15987699
-      object tlbrFile: TRzToolbar
-        AlignWithMargins = True
-        Left = 5
-        Top = 5
-        Width = 229
-        Height = 29
-        Images = vliProject
-        TextOptions = ttoCustom
-        BorderInner = fsNone
-        BorderOuter = fsGroove
-        BorderSides = [sdTop]
-        BorderWidth = 0
-        ParentShowHint = False
-        ShowHint = True
-        StyleName = 'Windows'
-        TabOrder = 0
-        ToolbarControls = (
-          BtnNew
-          BtnOpen
-          btnReopenProject
-          rzspcr2
-          BtnSave
-          RzSpacer1
-          BtnPrint)
-        object BtnNew: TRzToolButton
-          Left = 7
-          Top = 2
-          DisabledIndex = 1
-          ImageIndex = 0
-          Action = FileNew
-        end
-        object BtnOpen: TRzToolButton
-          Left = 35
-          Top = 2
-          Width = 39
-          DisabledIndex = 3
-          DropDownMenu = pmRecentList
-          ImageIndex = 1
-          ToolStyle = tsDropDown
-          Action = FileOpen
-        end
-        object BtnSave: TRzToolButton
-          Left = 116
-          Top = 2
-          DisabledIndex = 5
-          ImageIndex = 3
-          Action = FileSave
-        end
-        object RzSpacer1: TRzSpacer
-          Left = 144
-          Top = 2
-        end
-        object BtnPrint: TRzToolButton
-          Left = 155
-          Top = 2
-          DisabledIndex = 7
-          ImageIndex = 4
-          Action = FilePrint
-        end
-        object btnReopenProject: TRzToolButton
-          Left = 77
-          Top = 2
-          DisabledIndex = 23
-          ImageIndex = 2
-          Action = actProjectReopen
-        end
-        object rzspcr2: TRzSpacer
-          Left = 105
-          Top = 2
-        end
-      end
-      object RzPanel5: TRzPanel
-        AlignWithMargins = True
-        Left = 5
-        Top = 998
-        Width = 229
-        Height = 82
-        Align = alBottom
-        BorderOuter = fsFlatRounded
-        FlatColor = clSkyBlue
-        TabOrder = 1
-        Color = 15987699
-        object mmDescription: TRzMemo
-          AlignWithMargins = True
-          Left = 5
-          Top = 5
-          Width = 219
-          Height = 72
-          Align = alClient
-          BevelInner = bvNone
-          BevelOuter = bvNone
-          BorderStyle = bsNone
-          Color = clBtnFace
-          ReadOnly = True
-          TabOrder = 0
-          StyleName = 'Windows'
-          FrameHotColor = cl3DDkShadow
-          FrameHotStyle = fsNone
-          FrameVisible = True
-          ReadOnlyColor = clBtnFace
-        end
-      end
-      object tlbrProject: TRzToolbar
-        AlignWithMargins = True
-        Left = 5
-        Top = 40
-        Width = 229
-        Height = 29
-        Hint = 'Delete item'
-        Images = vliProject
-        TextOptions = ttoCustom
-        BorderInner = fsNone
-        BorderOuter = fsGroove
-        BorderSides = [sdTop]
-        BorderWidth = 0
-        ParentShowHint = False
-        ShowHint = True
-        StyleName = 'Windows'
-        TabOrder = 2
-        ToolbarControls = (
-          btnAddModel
-          BtnExport
-          BtnCopy
-          BtnPaste
-          BtnEdit
-          RzSpacer4
-          btnAddExtension
-          RzSpacer5
-          BtnRecycle)
-        object btnAddModel: TRzToolButton
-          Left = 7
-          Top = 2
-          DisabledIndex = 9
-          ImageIndex = 5
-          Action = ModelCreate
-        end
-        object BtnExport: TRzToolButton
-          Left = 35
-          Top = 2
-          DisabledIndex = 11
-          ImageIndex = 6
-          Action = actProjectItemDuplicate
-        end
-        object BtnCopy: TRzToolButton
-          Left = 63
-          Top = 2
-          Hint = 'Copy model to clipboard'
-          DisabledIndex = 13
-          ImageIndex = 7
-          Action = actModelCopy
-        end
-        object BtnPaste: TRzToolButton
-          Left = 91
-          Top = 2
-          Hint = 'Paste model'
-          DisabledIndex = 15
-          ImageIndex = 8
-          Action = actModelPaste
-        end
-        object BtnEdit: TRzToolButton
-          Left = 119
-          Top = 2
-          Hint = 'Properites'
-          DisabledIndex = 17
-          ImageIndex = 9
-          Action = actItemProperites
-        end
-        object RzSpacer4: TRzSpacer
-          Left = 147
-          Top = 2
-        end
-        object btnAddExtension: TRzToolButton
-          Left = 158
-          Top = 2
-          Hint = 'Add extension'
-          DisabledIndex = 19
-          ImageIndex = 10
-          Action = ProjectItemExtension
-        end
-        object RzSpacer5: TRzSpacer
-          Left = 186
-          Top = 2
-        end
-        object BtnRecycle: TRzToolButton
-          Left = 197
-          Top = 2
-          Hint = 'Delete item'
-          DisabledIndex = 21
-          ImageIndex = 11
-          Action = ProjectItemDelete
-        end
-      end
+      ParentColor = False
+      TabOrder = 0
     end
     object pnlMain: TRzPanel
       AlignWithMargins = True
@@ -2097,23 +1905,6 @@ object frmMain: TfrmMain
       OnExecute = actCalcFitJobsExecute
     end
   end
-  object dlgOpenProject: TOpenDialog
-    DefaultExt = 'xrcx'
-    Filter = 'X-Ray Calc project|*.xrcx'
-    Title = 'Load project'
-    Left = 168
-    Top = 180
-  end
-  object Zip: TAbZipper
-    AutoSave = False
-    DOSMode = False
-    Left = 189
-    Top = 299
-  end
-  object UnZip: TAbUnZipper
-    Left = 169
-    Top = 299
-  end
   object dlgSaveResult: TSaveDialog
     DefaultExt = 'dat'
     Filter = 'ASCII data|*.dat'
@@ -2121,74 +1912,12 @@ object frmMain: TfrmMain
     Left = 208
     Top = 204
   end
-  object dlgLoadData: TOpenDialog
-    DefaultExt = 'dat'
-    Filter = 'ASCII data|*.txt;*.csv;*.tet|Counter files|*.dat|All files|*.*'
-    Title = 'Load curve from file'
-    Left = 208
-    Top = 176
-  end
-  object dlgSaveProject: TSaveDialog
-    DefaultExt = 'xrcx'
-    Filter = 'X-Ray Calc project|*.xrcx'
-    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
-    Title = 'Save project'
-    Left = 168
-    Top = 212
-  end
   object dlgExport: TSaveDialog
     Filter = 
       'Bitmaps (*.bmp)|*.bmp|Enhanced Metafiles (*.emf)|*.emf|Metafiles' +
       ' (*.wmf)|*.wmf'
     Left = 240
     Top = 204
-  end
-  object pmProject: TPopupMenu
-    OnPopup = pmProjectPopup
-    Left = 32
-    Top = 408
-    object pmiEnabled: TMenuItem
-      AutoCheck = True
-      Caption = 'Enabled'
-      ShortCut = 114
-      OnClick = pmiEnabledClick
-    end
-    object pmiVisible: TMenuItem
-      AutoCheck = True
-      Caption = 'Visible'
-      OnClick = pmiVisibleClick
-    end
-    object pmiLinked: TMenuItem
-      AutoCheck = True
-      Caption = 'Linked'
-      OnClick = pmiLinkedClick
-    end
-    object pmiNorm: TMenuItem
-      Caption = 'Normalize'
-      object Auto1: TMenuItem
-        Action = DataNormAuto
-      end
-      object Manual1: TMenuItem
-        Action = DataNorm
-      end
-    end
-    object N1: TMenuItem
-      Caption = '-'
-    end
-    object Properties1: TMenuItem
-      Action = actItemProperites
-    end
-    object N5: TMenuItem
-      Caption = '-'
-    end
-    object pmCopytoclipboard: TMenuItem
-      Action = DataCopyClpbrd
-      Caption = 'Copy data'
-    end
-    object pmExporttofile: TMenuItem
-      Action = DataExport
-      Caption = 'Export Data'
-    end
   end
   object dlgPrint: TPrintDialog
     Left = 276
@@ -4017,72 +3746,6 @@ object frmMain: TfrmMain
       end>
     Left = 326
     Top = 546
-  end
-  object vliProject: TVirtualImageList
-    Images = <
-      item
-        CollectionIndex = 0
-        CollectionName = 'Project\01_New'
-        Name = '01_New'
-      end
-      item
-        CollectionIndex = 1
-        CollectionName = 'Project\02_OpenProject'
-        Name = '02_OpenProject'
-      end
-      item
-        CollectionIndex = 2
-        CollectionName = 'Project\03_Reopen'
-        Name = '03_Reopen'
-      end
-      item
-        CollectionIndex = 3
-        CollectionName = 'Project\04_Save'
-        Name = '04_Save'
-      end
-      item
-        CollectionIndex = 4
-        CollectionName = 'Project\05_Print'
-        Name = '05_Print'
-      end
-      item
-        CollectionIndex = 5
-        CollectionName = 'Project\06_AddModel'
-        Name = '06_AddModel'
-      end
-      item
-        CollectionIndex = 6
-        CollectionName = 'Project\07_Export'
-        Name = '07_Export'
-      end
-      item
-        CollectionIndex = 7
-        CollectionName = 'Project\08_Copy'
-        Name = '08_Copy'
-      end
-      item
-        CollectionIndex = 8
-        CollectionName = 'Project\09_Paste'
-        Name = '09_Paste'
-      end
-      item
-        CollectionIndex = 9
-        CollectionName = 'Project\10_Edit'
-        Name = '10_Edit'
-      end
-      item
-        CollectionIndex = 10
-        CollectionName = 'Project\11_AddExtension'
-        Name = '11_AddExtension'
-      end
-      item
-        CollectionIndex = 11
-        CollectionName = 'Project\12_DeleteExtension'
-        Name = '12_DeleteExtension'
-      end>
-    ImageCollection = ImageCollection
-    Left = 27
-    Top = 83
   end
   object vilModel: TVirtualImageList
     Images = <
