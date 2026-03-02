@@ -8,7 +8,7 @@ uses
   RzStatus, RzButton, RzCmboBx, RzPanel,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.TeCanvas,
   VCLTee.Chart, VCLTee.Series,
-  frame_CalcSettings;
+  frame_CalcSettings, Vcl.ExtCtrls;
 
 type
   TGetFastSeriesEvent = function: TFastLineSeries of object;

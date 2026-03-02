@@ -99,6 +99,36 @@ object frmMain: TfrmMain
       Color = 15987699
       ParentColor = False
       TabOrder = 0
+      ExplicitLeft = 3
+      ExplicitTop = 3
+      inherited tlbrFile: TRzToolbar
+        ToolbarControls = (
+          BtnNew
+          BtnOpen
+          btnReopenProject
+          rzspcr2
+          BtnSave
+          RzSpacer1
+          BtnPrint)
+      end
+      inherited tlbrProject: TRzToolbar
+        ToolbarControls = (
+          btnAddModel
+          BtnExport
+          BtnCopy
+          BtnPaste
+          BtnEdit
+          RzSpacer4
+          btnAddExtension
+          RzSpacer5
+          BtnRecycle)
+      end
+      inherited RzPanel5: TRzPanel
+        StyleElements = [seFont, seClient, seBorder]
+        ExplicitLeft = 3
+        ExplicitTop = 1000
+        ExplicitWidth = 233
+      end
     end
     object pnlMain: TRzPanel
       AlignWithMargins = True
@@ -134,12 +164,12 @@ object frmMain: TfrmMain
           ExplicitLeft = 5
           ExplicitTop = 5
           ExplicitWidth = 1353
-          ExplicitHeight = 294
+          ExplicitHeight = 182
           inherited Pages: TRzPageControl
             Width = 1353
             Height = 182
             ExplicitWidth = 1353
-            ExplicitHeight = 294
+            ExplicitHeight = 182
             FixedDimension = 21
             inherited tsThickness: TRzTabSheet
               ExplicitLeft = 1
@@ -161,13 +191,19 @@ object frmMain: TfrmMain
             end
             inherited tsProfile: TRzTabSheet
               ExplicitWidth = 1349
-              ExplicitHeight = 269
+              ExplicitHeight = 157
               inherited chProfile: TChart
                 Width = 1343
                 Height = 151
                 ExplicitWidth = 1343
-                ExplicitHeight = 263
+                ExplicitHeight = 151
               end
+            end
+            inherited tsFittingProgress: TRzTabSheet
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
             end
           end
         end
@@ -495,25 +531,16 @@ object frmMain: TfrmMain
         ExplicitLeft = 5
         ExplicitTop = 164
         ExplicitWidth = 1363
-        ExplicitHeight = 606
+        ExplicitHeight = 718
         inherited Chart: TChart
           Width = 1357
           Height = 662
-          ExplicitLeft = 3
-          ExplicitTop = 3
-          ExplicitWidth = 1357
-          ExplicitHeight = 550
-          inherited btnStop: TRzBitBtn
-            Action = CalcStop
-            Images = ilIcons
-          end
         end
         inherited pnlInfo: TRzPanel
           Top = 668
           Width = 1363
           StyleElements = [seFont, seClient, seBorder]
-          ExplicitLeft = -2
-          ExplicitTop = 556
+          ExplicitTop = 668
           ExplicitWidth = 1363
           inherited btnChartScale: TRzBitBtn
             Left = 1155
@@ -523,7 +550,6 @@ object frmMain: TfrmMain
             Left = 1236
             StyleElements = [seFont, seClient, seBorder]
             ExplicitLeft = 1236
-            ExplicitHeight = 24
           end
         end
       end
