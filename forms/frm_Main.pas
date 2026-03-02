@@ -105,7 +105,6 @@ type
     UnZip: TAbUnZipper;
     pnlMain: TRzPanel;
     RzPanel3: TRzPanel;
-    FChartInfo: TfrmChartInfo;
     FStructurePanel: TfrmStructurePanel;
     spnTime: TRzStatusPane;
     dlgSaveResult: TSaveDialog;
@@ -235,8 +234,7 @@ type
     vilCalc: TVirtualImageList;
     FCalcSettings: TfrmCalcSettings;
     FChartPages: TfrmChartPages;
-    Chart: TChart;
-    btnStop: TRzBitBtn;
+    FChartInfo: TfrmChartInfo;
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -289,13 +287,6 @@ type
     procedure HelpContentExecute(Sender: TObject);
     procedure CalcAllExecute(Sender: TObject);
     procedure CalcStopExecute(Sender: TObject);
-    procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
-    procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure ChartMouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure ChartZoom(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
     procedure actProjecEditModelTextExecute(Sender: TObject);
     procedure actDataSmoothExecute(Sender: TObject);
@@ -306,7 +297,6 @@ type
     procedure actSystemExitExecute(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure actCopyStructureBitmapExecute(Sender: TObject);
-    procedure ChartResize(Sender: TObject);
     procedure actDataTrimExecute(Sender: TObject);
     procedure actCalcFitJobsExecute(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
@@ -417,6 +407,7 @@ type
     function GradientTitle(const P: TFuncProfileRec): string;
     procedure OnChartScaleToggle(Sender: TObject);
     procedure OnChartMinLimitChange(Sender: TObject);
+    function GetActiveSeries: TChartSeries;
     procedure OnIncrementChange(Sender: TObject);
     procedure OnSetFitLimits(Sender: TObject);
   public
@@ -490,6 +481,14 @@ begin
   Result := FChartMgr.Series[Project.ActiveData.CurveID];
 end;
 
+function TfrmMain.GetActiveSeries: TChartSeries;
+begin
+  if Project.ActiveModel <> nil then
+    Result := ActiveModelSeries
+  else
+    Result := nil;
+end;
+
 function TfrmMain.IsNonPeriodicProfile: Boolean;
 begin
   Result := IsProfileEnbled and (FCalcSettings.FittingMode <> fmPeriodic);
@@ -514,26 +513,26 @@ end;
 
 procedure TfrmMain.OnChartScaleToggle(Sender: TObject);
 begin
-  if Chart.LeftAxis.Logarithmic then
+  if FChartInfo.Chart.LeftAxis.Logarithmic then
   begin
-    Chart.LeftAxis.Logarithmic := False;
+    FChartInfo.Chart.LeftAxis.Logarithmic := False;
     FChartInfo.SetScaleCaption('Log');
-    if Chart.LeftAxis.Maximum > 0.01 then
-      Chart.LeftAxis.AxisValuesFormat := '0.000'
+    if FChartInfo.Chart.LeftAxis.Maximum > 0.01 then
+      FChartInfo.Chart.LeftAxis.AxisValuesFormat := '0.000'
     else
-      Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
+      FChartInfo.Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end
   else
   begin
     FChartInfo.SetScaleCaption('Linear');
-    Chart.LeftAxis.Logarithmic := True;
-    Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
+    FChartInfo.Chart.LeftAxis.Logarithmic := True;
+    FChartInfo.Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
   end;
 end;
 
 procedure TfrmMain.OnChartMinLimitChange(Sender: TObject);
 begin
-  Chart.LeftAxis.Minimum := FChartInfo.MinLimit;
+  FChartInfo.Chart.LeftAxis.Minimum := FChartInfo.MinLimit;
 end;
 
 procedure TfrmMain.CreateNewModel(Node: PVirtualNode);
@@ -1391,7 +1390,7 @@ begin
 
     LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
-    Chart.LeftAxis.Logarithmic := INF.ReadBool('STATE', 'LogScale', True);
+    FChartInfo.Chart.LeftAxis.Logarithmic := INF.ReadBool('STATE', 'LogScale', True);
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
     FCalcSettings.LoadAdvancedParams(INF, FFitParams);
@@ -1534,7 +1533,7 @@ begin
   ActiveModelSeries.Repaint;
   FChartInfo.SetPeriod(Structure.Period);
   Screen.Cursor := crDefault;
-  FChartInfo.SetPeakInfo(ActiveModelSeries, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
+  FChartInfo.SetPeakInfo(ActiveModelSeries, FChartInfo.Chart.BottomAxis.Minimum, FChartInfo.Chart.BottomAxis.Maximum);
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
@@ -1642,7 +1641,7 @@ begin
   ChartToolBar.Enabled := Enable;
   FChartPages.SetCopyEnabled(Enable);
 
-  btnStop.Visible := not Enable;
+  FChartInfo.btnStop.Visible := not Enable;
   Structure.Enabled := Enable;
   Project.Enabled := Enable;
   FCalcSettings.Enabled := Enable;
@@ -2103,7 +2102,7 @@ end;
 
 procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
 begin
-  Chart.CopyToClipboardBitmap;
+  FChartInfo.Chart.CopyToClipboardBitmap;
 end;
 
 procedure TfrmMain.FileNewExecute(Sender: TObject);
@@ -2143,7 +2142,7 @@ end;
 
 procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
 begin
-  Chart.CopyToClipboardMetafile(True);
+  FChartInfo.Chart.CopyToClipboardMetafile(True);
 end;
 
 procedure TfrmMain.FilePlotToFileExecute(Sender: TObject);
@@ -2151,11 +2150,11 @@ begin
   if dlgExport.Execute then
     Case dlgExport.FilterIndex of
       1:
-        Chart.SaveToBitmapFile(dlgExport.FileName + '.bmp');
+        FChartInfo.Chart.SaveToBitmapFile(dlgExport.FileName + '.bmp');
       2:
-        Chart.SaveToMetafileEnh(dlgExport.FileName + '.emf');
+        FChartInfo.Chart.SaveToMetafileEnh(dlgExport.FileName + '.emf');
       3:
-        Chart.SaveToMetafile(dlgExport.FileName + '.wmf');
+        FChartInfo.Chart.SaveToMetafile(dlgExport.FileName + '.wmf');
     end;
 end;
 
@@ -2163,9 +2162,9 @@ procedure TfrmMain.FilePrintExecute(Sender: TObject);
 begin
   if dlgPrint.Execute then
   begin
-    Chart.Title.Visible := True;
-    Chart.PrintLandscape;
-    Chart.Title.Visible := False;
+    FChartInfo.Chart.Title.Visible := True;
+    FChartInfo.Chart.PrintLandscape;
+    FChartInfo.Chart.Title.Visible := False;
   end;
 end;
 
@@ -2193,7 +2192,7 @@ begin
       Project.ActiveModel.Data := Structure.ToString;
     end;
 
-    INF.WriteBool('STATE', 'LogScale', Chart.LeftAxis.Logarithmic);
+    INF.WriteBool('STATE', 'LogScale', FChartInfo.Chart.LeftAxis.Logarithmic);
 
     FCalcSettings.SaveAdvancedParams(INF, FFitParams);
     INF.UpdateFile;
@@ -2267,51 +2266,6 @@ begin
     FileSaveAsExecute(Sender)
   else
     SaveProject(FProjectFileName);
-end;
-
-procedure TfrmMain.ChartMouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-begin
-  if Button = mbRight then
-    Screen.Cursor := crSizeAll;
-end;
-
-procedure TfrmMain.ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
-var
-  xv, yv: single;
-  R: TRect;
-begin
-  if Project.ActiveModel = nil then
-    Exit;
-
-  xv := ActiveModelSeries.XScreenToValue(X);
-  yv := ActiveModelSeries.YScreenToValue(Y);
-  FChartInfo.SetCursorPos(xv, yv);
-
-  R := Chart.Legend.RectLegend;
-
-  if (X > R.Left) and (X < R.Right) and (Y > R.Top) and (Y < R.Bottom) then
-    Chart.Cursor := crArrow
-  else
-    Chart.Cursor := crCross;
-end;
-
-procedure TfrmMain.ChartMouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-begin
-  if Button = mbRight then
-    Screen.Cursor := crDefault;
-end;
-
-procedure TfrmMain.ChartResize(Sender: TObject);
-begin
-  btnStop.Left := Chart.ClientWidth div 2 - 40;
-end;
-
-procedure TfrmMain.ChartZoom(Sender: TObject);
-begin
-  FChartInfo.SetPeakInfo(ActiveModelSeries, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
 end;
 
 procedure TfrmMain.CreateDefaultProject;
@@ -2450,7 +2404,7 @@ begin
 
 
   FormatSettings.DecimalSeparator := '.';
-  FChartMgr := TChartManager.Create(Chart, 2);
+  FChartMgr := TChartManager.Create(FChartInfo.Chart, 2);
   ScaleInterface;
   Config := TConfig.Create;
   FChartMgr.LineWidth := Config.Section<TGraphOptions>.LineWidth;
@@ -2462,6 +2416,7 @@ begin
 
   FChartInfo.OnScaleToggle := OnChartScaleToggle;
   FChartInfo.OnMinLimitChange := OnChartMinLimitChange;
+  FChartInfo.OnGetActiveSeries := GetActiveSeries;
 
   PM := TProfileManager.Create;
   PM.DensityProfile := FChartPages.ProfileSeries;
@@ -2503,8 +2458,8 @@ end;
 procedure TfrmMain.OnCalcModeChange(Sender: TObject);
 begin
   case FCalcSettings.CalcMode of
-    0: Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
-    1: Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
+    0: FChartInfo.Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
+    1: FChartInfo.Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
   end;
 end;
 

@@ -307,85 +307,58 @@ object frmMain: TfrmMain
       object RzPanel3: TRzPanel
         AlignWithMargins = True
         Left = 5
-        Top = 776
+        Top = 888
         Width = 1363
-        Height = 304
+        Height = 192
         Align = alBottom
         BorderOuter = fsFlatRounded
         FlatColor = clSkyBlue
         TabOrder = 0
         Color = 15987699
-        inline FChartInfo: TfrmChartInfo
-          Left = 2
-          Top = 2
-          Width = 1359
-          Height = 55
-          Align = alTop
-          Color = 15987699
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentColor = False
-          ParentFont = False
-          TabOrder = 0
-          ExplicitLeft = 2
-          ExplicitTop = 2
-          ExplicitWidth = 1359
-          ExplicitHeight = 55
-          inherited btnChartScale: TRzBitBtn
-            Left = 1155
-            ExplicitLeft = 1155
-          end
-          inherited cbMinLimit: TRzComboBox
-            Left = 1236
-            StyleElements = [seFont, seClient, seBorder]
-            ExplicitLeft = 1236
-          end
-        end
         inline FChartPages: TfrmChartPages
           AlignWithMargins = True
           Left = 5
-          Top = 60
+          Top = 5
           Width = 1353
-          Height = 239
+          Height = 182
           Align = alClient
-          TabOrder = 1
+          TabOrder = 0
           ExplicitLeft = 5
-          ExplicitTop = 60
+          ExplicitTop = 5
           ExplicitWidth = 1353
-          ExplicitHeight = 239
+          ExplicitHeight = 294
           inherited Pages: TRzPageControl
             Width = 1353
-            Height = 239
+            Height = 182
             ExplicitWidth = 1353
-            ExplicitHeight = 239
+            ExplicitHeight = 294
             FixedDimension = 21
             inherited tsThickness: TRzTabSheet
-              inherited chThickness: TChart
-                Width = 1343
-                Height = 208
-              end
+              ExplicitLeft = 1
+              ExplicitTop = 22
+              ExplicitWidth = 1044
+              ExplicitHeight = 138
+            end
+            inherited tsRoughness: TRzTabSheet
+              ExplicitLeft = 1
+              ExplicitTop = 22
+              ExplicitWidth = 1044
+              ExplicitHeight = 138
+            end
+            inherited tsDensity: TRzTabSheet
+              ExplicitLeft = 1
+              ExplicitTop = 22
+              ExplicitWidth = 1044
+              ExplicitHeight = 138
             end
             inherited tsProfile: TRzTabSheet
+              ExplicitWidth = 1349
+              ExplicitHeight = 269
               inherited chProfile: TChart
                 Width = 1343
-                Height = 208
-              end
-            end
-            inherited tsFittingProgress: TRzTabSheet
-              ExplicitWidth = 1349
-              ExplicitHeight = 214
-              inherited chFittingProgress: TChart
-                Width = 1343
-                Height = 208
+                Height = 151
                 ExplicitWidth = 1343
-                ExplicitHeight = 208
-                inherited btnCopyConvergence: TRzButton
-                  Left = 1273
-                  ExplicitLeft = 1273
-                end
+                ExplicitHeight = 263
               end
             end
           end
@@ -448,6 +421,20 @@ object frmMain: TfrmMain
               StyleElements = [seFont, seClient, seBorder]
               ExplicitHeight = 21
             end
+            inherited cbLFPSOShake: TRzCheckBox
+              Width = 52
+              Height = 19
+              AutoSizeWidth = 52
+              ExplicitWidth = 52
+              ExplicitHeight = 19
+            end
+            inherited cbSeedRange: TRzCheckBox
+              Width = 54
+              Height = 19
+              AutoSizeWidth = 54
+              ExplicitWidth = 54
+              ExplicitHeight = 19
+            end
             inherited edPolyOrder: TEdit
               Height = 21
               StyleElements = [seFont, seClient, seBorder]
@@ -456,6 +443,13 @@ object frmMain: TfrmMain
             inherited cbTWChi: TComboBox
               StyleElements = [seFont, seClient, seBorder]
               ExplicitHeight = 21
+            end
+            inherited cbPWChiSqr: TRzCheckBox
+              Width = 54
+              Height = 19
+              AutoSizeWidth = 54
+              ExplicitWidth = 54
+              ExplicitHeight = 19
             end
             inherited cbSmooth: TRzCheckBox
               Width = 59
@@ -539,6 +533,11 @@ object frmMain: TfrmMain
                 Height = 21
                 StyleElements = [seFont, seClient, seBorder]
                 ExplicitHeight = 21
+              end
+              inherited cb2Theta: TRzCheckBox
+                Width = 39
+                AutoSizeWidth = 39
+                ExplicitWidth = 39
               end
             end
             inherited rgCalcMode: TRzRadioGroup
@@ -669,72 +668,55 @@ object frmMain: TfrmMain
           ImageIndex = 8
         end
       end
-      object Chart: TChart
+      inline FChartInfo: TfrmChartInfo
         AlignWithMargins = True
         Left = 5
         Top = 164
         Width = 1363
-        Height = 606
-        Cursor = crCross
-        Legend.CheckBoxes = True
-        Legend.LegendStyle = lsSeries
-        Legend.ResizeChart = False
-        MarginBottom = 1
-        MarginLeft = 2
-        MarginRight = 1
-        MarginTop = 2
-        Title.Text.Strings = (
-          'TChart')
-        Title.Visible = False
-        OnZoom = ChartZoom
-        BottomAxis.Automatic = False
-        BottomAxis.AutomaticMaximum = False
-        BottomAxis.AutomaticMinimum = False
-        BottomAxis.Maximum = 10.000000000000000000
-        BottomAxis.Title.Caption = 'Angle'
-        BottomAxis.Title.Font.Height = -16
-        LeftAxis.Automatic = False
-        LeftAxis.AutomaticMaximum = False
-        LeftAxis.AutomaticMinimum = False
-        LeftAxis.Logarithmic = True
-        LeftAxis.Maximum = 1.000000000000000000
-        LeftAxis.Minimum = 0.000000100000000000
-        LeftAxis.Title.Caption = 'Reflectivity'
-        LeftAxis.Title.Font.Height = -16
-        View3D = False
+        Height = 718
         Align = alClient
-        BevelOuter = bvNone
-        Color = 16056319
+        Color = 15987699
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentColor = False
+        ParentFont = False
         TabOrder = 3
-        OnMouseMove = ChartMouseMove
-        OnMouseUp = ChartMouseUp
-        OnResize = ChartResize
-        ExplicitLeft = 269
-        ExplicitTop = 200
-        ExplicitWidth = 400
-        ExplicitHeight = 250
-        DefaultCanvas = 'TGDIPlusCanvas'
-        ColorPaletteIndex = 13
-        object btnStop: TRzBitBtn
-          Left = 584
-          Top = 41
-          Width = 128
-          Height = 40
-          FrameColor = clRed
-          ModalResult = 3
-          Action = CalcStop
-          Caption = 'Stop'
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clRed
-          Font.Height = -19
-          Font.Name = 'Segoe UI'
-          Font.Style = [fsBold]
-          ParentFont = False
-          StyleName = 'Windows'
-          TabOrder = 0
-          ImageIndex = 46
-          Images = ilIcons
-          Margin = 4
+        ExplicitLeft = 5
+        ExplicitTop = 164
+        ExplicitWidth = 1363
+        ExplicitHeight = 606
+        inherited Chart: TChart
+          Width = 1357
+          Height = 662
+          ExplicitLeft = 3
+          ExplicitTop = 3
+          ExplicitWidth = 1357
+          ExplicitHeight = 550
+          inherited btnStop: TRzBitBtn
+            Action = CalcStop
+            Images = ilIcons
+          end
+        end
+        inherited pnlInfo: TRzPanel
+          Top = 668
+          Width = 1363
+          StyleElements = [seFont, seClient, seBorder]
+          ExplicitLeft = -2
+          ExplicitTop = 556
+          ExplicitWidth = 1363
+          inherited btnChartScale: TRzBitBtn
+            Left = 1155
+            ExplicitLeft = 1155
+          end
+          inherited cbMinLimit: TRzComboBox
+            Left = 1236
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitLeft = 1236
+            ExplicitHeight = 24
+          end
         end
       end
     end

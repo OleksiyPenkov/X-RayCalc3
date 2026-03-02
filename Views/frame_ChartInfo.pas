@@ -3,13 +3,19 @@ unit frame_ChartInfo;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.IniFiles,
+  System.SysUtils, System.Classes, System.Types, System.IniFiles,
   Vcl.Controls, Vcl.Forms, Vcl.StdCtrls,
-  RzStatus, RzButton, RzCmboBx,
-  VCLTee.TeEngine, VCLTee.Series;
+  RzStatus, RzButton, RzCmboBx, RzPanel,
+  VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.TeCanvas,
+  VCLTee.Chart, VCLTee.Series;
 
 type
+  TGetSeriesEvent = function: TChartSeries of object;
+
   TfrmChartInfo = class(TFrame)
+    Chart: TChart;
+    btnStop: TRzBitBtn;
+    pnlInfo: TRzPanel;
     RzStatusPane1: TRzStatusPane;
     RzStatusPane2: TRzStatusPane;
     StatusY: TRzStatusPane;
@@ -29,9 +35,18 @@ type
     cbMinLimit: TRzComboBox;
     procedure btnChartScaleClick(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
+    procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
+      Y: Integer);
+    procedure ChartMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure ChartResize(Sender: TObject);
+    procedure ChartZoom(Sender: TObject);
   private
     FOnScaleToggle: TNotifyEvent;
     FOnMinLimitChange: TNotifyEvent;
+    FGetActiveSeries: TGetSeriesEvent;
     function GetMinLimit: Single;
     function GetMinLimitText: string;
     procedure SetMinLimitText(const Value: string);
@@ -51,6 +66,7 @@ type
 
     property OnScaleToggle: TNotifyEvent read FOnScaleToggle write FOnScaleToggle;
     property OnMinLimitChange: TNotifyEvent read FOnMinLimitChange write FOnMinLimitChange;
+    property OnGetActiveSeries: TGetSeriesEvent read FGetActiveSeries write FGetActiveSeries;
   end;
 
 implementation
@@ -161,6 +177,59 @@ end;
 procedure TfrmChartInfo.SaveToINI(INF: TMemIniFile);
 begin
   INF.WriteString('PARAMS', 'MinLimit', cbMinLimit.Text);
+end;
+
+procedure TfrmChartInfo.ChartMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  if Button = mbRight then
+    Screen.Cursor := crSizeAll;
+end;
+
+procedure TfrmChartInfo.ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+var
+  Series: TChartSeries;
+  xv, yv: Single;
+  R: TRect;
+begin
+  if not Assigned(FGetActiveSeries) then Exit;
+  Series := FGetActiveSeries;
+  if Series = nil then Exit;
+
+  xv := Series.XScreenToValue(X);
+  yv := Series.YScreenToValue(Y);
+  SetCursorPos(xv, yv);
+
+  R := Chart.Legend.RectLegend;
+
+  if (X > R.Left) and (X < R.Right) and (Y > R.Top) and (Y < R.Bottom) then
+    Chart.Cursor := crArrow
+  else
+    Chart.Cursor := crCross;
+end;
+
+procedure TfrmChartInfo.ChartMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  if Button = mbRight then
+    Screen.Cursor := crDefault;
+end;
+
+procedure TfrmChartInfo.ChartResize(Sender: TObject);
+begin
+  btnStop.Left := Chart.ClientWidth div 2 - 40;
+end;
+
+procedure TfrmChartInfo.ChartZoom(Sender: TObject);
+var
+  Series: TChartSeries;
+begin
+  if not Assigned(FGetActiveSeries) then Exit;
+  Series := FGetActiveSeries;
+  if Series = nil then Exit;
+
+  SetPeakInfo(Series, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
 end;
 
 end.
