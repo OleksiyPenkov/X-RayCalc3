@@ -4,6 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.Generics.Collections, System.IniFiles,
+  System.UITypes,
   Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.Menus, Vcl.ImgList, Vcl.Dialogs,
   Vcl.Clipbrd,
   RzPanel, RzButton, RzEdit,
@@ -788,6 +789,13 @@ end;
 
 procedure TfrmProjectPanel.OnRecentProjectClick(Sender: TObject; const FileName: string);
 begin
+  if not FileExists(FileName) then
+  begin
+    MessageDlg('Project file not found:' + sLineBreak + FileName,
+      mtError, [mbOK], 0);
+    Exit;
+  end;
+
   FProjectFileName := FileName;
   PrepareProjectFolder(FProjectFileName, True);
   LoadProject(FProjectFileName);
