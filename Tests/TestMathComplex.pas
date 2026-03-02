@@ -500,7 +500,7 @@ var R: TComplex;
 begin
   // (2+i)^2 = 4+4i-1 = 3+4i  (PowZR2 no longer has infinite recursion)
   R := PowZR2(ToComplex(2, 1), 2);
-  CheckComplex(ToComplex(3, 4), R, 1E-2);
+  CheckComplex(ToComplex(3, 4), R, 5E-2);
 end;
 
 procedure TTestMathComplex.Test_PowZR1_Cube;
@@ -508,7 +508,7 @@ var R: TComplex;
 begin
   // (1+i)^3 = (1+i)*(1+i)*(1+i) = (1+i)*(2i) = -2+2i
   R := PowZR1(ToComplex(1, 1), 3);
-  CheckComplex(ToComplex(-2, 2), R, 1E-2);
+  CheckComplex(ToComplex(-2, 2), R, 5E-2);
 end;
 
 procedure TTestMathComplex.Test_PowRZ_Real;

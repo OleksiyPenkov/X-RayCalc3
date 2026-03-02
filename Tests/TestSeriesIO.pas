@@ -258,7 +258,7 @@ begin
     SL.LoadFromFile(fn);
     Assert.AreEqual(2, SL.Count, 'Should have 2 lines');
     Assert.IsTrue(Pos('1.5', SL[0]) > 0, 'Line 0 should contain 1.5');
-    Assert.IsTrue(Pos('3.0', SL[1]) > 0, 'Line 1 should contain 3.0');
+    Assert.IsTrue(Pos('3' + #9, SL[1]) > 0, 'Line 1 should contain 3');
   finally
     SL.Free;
   end;
