@@ -13,11 +13,12 @@ uses
   Vcl.ImgList, System.Actions, Vcl.ActnList,
   Vcl.ActnMan, unit_Types,
   unit_SMessages,
-  unit_calc, unit_XRCProjectTree, RzRadGrp, unit_materials,
+  unit_XRCProjectTree, RzRadGrp,
   VCLTee.TeeFunci, VCLTee.TeCanvas,
-  unit_LFPSO_Base, unit_LFPSO_Periodic, Vcl.Buttons,
-  unit_LFPSO_Irregular, Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel, frame_ProjectPanel,
+  unit_LFPSO_Base, Vcl.Buttons,
+  Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel, frame_ProjectPanel,
   Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, unit_ChartManager,
+  unit_CalcOrchestrator,
   Vcl.VirtualImageList, Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
@@ -253,42 +254,19 @@ type
     procedure DataNormAutoExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
-    LFPSO: TLFPSO_Base;
-
-    StartTime, FitStartTime: TDateTime;
-    FCalc: TCalc;
-    FCalcThreadParams: TCalcThreadParams;
-    FFitStructure: TFitStructure;
-    FLastChiSquare: Single;
-    FABestChiSquare: Single;
-
-    FTerminated: Boolean;
-    FBenchmarkMode: Boolean;
-    FBenchmarkPath: string;
-    FBenchmarkRuns: Integer;
-    FFirstUpdate: Boolean;
+    FOrchestrator: TCalcOrchestrator;
     FChartMgr: TChartManager;
     PM: TProfileManager;
     FDPI: Integer;
     FLockOwner: Boolean;
     FLockFile: File;
 
-    procedure FinalizeCalc(Calc: TCalc);
-    procedure GetThreadParams;
-    function GetFitParams: boolean;
-    function PrepareCalc: boolean;
-    function PrepareLFPSO: boolean;
-    procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
-    procedure EnableControls(const Enable: boolean);
-    procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
+    procedure EnableControls(const Enable: Boolean);
+    procedure UpdateCalcTime(const S: string);
+    procedure UpdateFitTime(const S: string);
     procedure OnCalcModeChange(Sender: TObject);
     procedure OnFittingModeChange(Sender: TObject);
     procedure OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
-    procedure RunCalc(const Recover: boolean);
-    procedure UpdateInterface(const FitStructure: TFitStructure;
-                              const Poly: TProfileFunctions;
-                              const Res: TLayeredModel;
-                              const CreateExtension: boolean = True);
 
     procedure CreateTmpLock;
     procedure ReleaseTmpLock;
@@ -325,10 +303,7 @@ uses
   ComObj,
   System.IniFiles,
   System.UITypes,
-  unit_SeriesIO,
-  unit_DataProcessing,
   unit_FileUtils,
-  unit_consts,
   unit_XRCLayerControl,
   unit_XRCStructure,
   editor_Stack,
@@ -337,11 +312,7 @@ uses
   ClipBrd,
   frm_NewMaterial,
   frm_about,
-  math_globals,
   editor_HenkeTable,
-  unit_LFPSO_Poly,
-  unit_SavitzkyGolay,
-  unit_files_list,
   unit_config,
   frm_settings,
   unit_XRCStackControl,
@@ -395,44 +366,12 @@ end;
 
 procedure TfrmMain.OnCancelBenchmarkMsg(var Msg: TMessage);
 begin
-  CalcStopExecute(nil);
+  FOrchestrator.StopCalc;
 end;
 
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
-var
-  msg_prm: PUpdateFitProgressMsg;
-  Hour, Min, Sec, MSec: Word;
-  NeedsSaving: boolean;
 begin
-  msg_prm := PUpdateFitProgressMsg(Msg.WParam);
-  FChartPages.AddConvergencePoint(msg_prm.Step, msg_prm.BestChi);
-
-  FChartInfo.SetChiSquare(msg_prm.LastChi, msg_prm.BestChi);
-
-  FLastChiSquare :=  msg_prm.BestChi;
-  if FABestChiSquare > FLastChiSquare then
-  Begin
-    NeedsSaving := True;
-    FABestChiSquare := FLastChiSquare
-  End
-  else
-    NeedsSaving := False;
-
-  if msg_prm.Full then
-  begin
-    FChartMgr.PlotResults(FProjectPanel.Project.ActiveModel.CurveID, msg_prm.Curve);
-    if TConfig.Section<TOtherOptions>.LiveUpdate then
-    begin
-      UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.LayeredModel, FFirstUpdate);
-      FFirstUpdate := False;
-      if NeedsSaving then
-           FProjectPanel.AutoSave;
-    end;
-    msg_prm.LayeredModel.Free;
-  end;
-  Dispose(msg_prm);
-  DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-  spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
+  FOrchestrator.HandleFitUpdate(Msg);
 end;
 
 procedure TfrmMain.OnLayerDeleteMsg(var Msg: TMessage);
@@ -475,8 +414,7 @@ end;
 
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
-  PM.PlotProfile(FProjectPanel.IsNonPeriodicProfile, FChartPages.IsProfileActive);
-  CalcRunExecute(Self);
+  FOrchestrator.RecalcFromStructure;
 end;
 
 procedure TfrmMain.ProjectAddFolderExecute(Sender: TObject);
@@ -572,7 +510,7 @@ end;
 
 procedure TfrmMain.actRecoverModelExecute(Sender: TObject);
 begin
-  RunCalc(True);
+  FOrchestrator.RunCalc(True);
 end;
 
 procedure TfrmMain.actSystemExitExecute(Sender: TObject);
@@ -643,37 +581,14 @@ begin
 end;
 
 
-function TfrmMain.GetFitParams: boolean;
-var
-  FFitParams: TFitParams;
+procedure TfrmMain.UpdateCalcTime(const S: string);
 begin
-  FFitParams := FProjectPanel.FitParams;
-  if not FBenchmarkMode then
-  begin
-    Result := False;
-    FFitStructure := Structure.ToFitStructure;
-    if frmLimits.ShowLimits('Run', FFitStructure) then
-          Structure.UpdateInterfaceP(FFitStructure)
-    else begin
-      Exit;
-    end;
-  end
-  else
-    FFitStructure := Structure.ToFitStructure;
-
-  FCalcSettings.ReadFitParams(FFitParams);
-  FProjectPanel.FitParams := FFitParams;
-
-  Result := True;
+  spnTime.Caption := S;
 end;
 
-procedure TfrmMain.GetThreadParams;
+procedure TfrmMain.UpdateFitTime(const S: string);
 begin
-  StartTime := Now;
-
-  FProjectPanel.ActiveModelSeries.BeginUpdate;
-
-  FCalcSettings.FillCalcThreadParams(FCalcThreadParams);
+  spnFitTime.Caption := S;
 end;
 
 procedure TfrmMain.HelpAboutExecute(Sender: TObject);
@@ -687,21 +602,6 @@ var
 begin
   ManualPath := TConfig.AppPath + 'Help\UserManual.html';
   ShellExecute(Handle, 'open', PChar(ManualPath), nil, nil, SW_SHOWNORMAL);
-end;
-
-procedure TfrmMain.FinalizeCalc(Calc: TCalc);
-var
-  Hour, Min, Sec, MSec: Word;
-begin
-  FProjectPanel.RescaleChart;
-  FChartMgr.PlotResults(FProjectPanel.Project.ActiveModel.CurveID, Calc.Results);
-  DecodeTime(Now - StartTime, Hour, Min, Sec, MSec);
-  spnTime.Caption := Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]);
-  FProjectPanel.ActiveModelSeries.EndUpdate;
-  FProjectPanel.ActiveModelSeries.Repaint;
-  FChartInfo.SetPeriod(Structure.Period);
-  Screen.Cursor := crDefault;
-  FChartInfo.SetPeakInfo(FProjectPanel.ActiveModelSeries, FChartInfo.Chart.BottomAxis.Minimum, FChartInfo.Chart.BottomAxis.Maximum);
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
@@ -721,67 +621,23 @@ begin
     begin
       FProjectPanel.Project.ActiveModel := Data;
       Structure.FromString(Data.Data);
-      CalcRunExecute(Sender);
+      FOrchestrator.RunCalc(False);
     end;
     Node := FProjectPanel.Project.GetNextSibling(Node);
   end;
 end;
 
-procedure TfrmMain.RunCalc(const Recover: boolean);
-begin
-  try
-    if not PrepareCalc then Exit;
-    try
-      EnableControls(False);
-      FCalc.Run;
-      if (FProjectPanel.Project.LinkedData <> nil) and FProjectPanel.ActiveModelSeries.Visible then
-      begin
-        FCalc.CalcChiSquare(FCalcSettings.ThetaWeightIndex);
-        FChartInfo.SetChiSquare(FCalc.ChiSQR, FCalc.ChiSQR);
-      end
-      else begin
-        FChartInfo.ClearChiSquare;
-        FLastChiSquare := 0;
-      end;
-
-      PM.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
-      if FProjectPanel.IsNonPeriodicProfile then
-         PM.PlotProfileNP(FChartPages.IsProfileActive)
-      else
-        PM.PlotProfile(FProjectPanel.IsNonPeriodicProfile, FChartPages.IsProfileActive);
-    except
-      on E: exception do
-      begin
-        ShowMessage(E.Message);
-        FProjectPanel.ActiveModelSeries.EndUpdate;
-        FProjectPanel.ActiveModelSeries.Repaint;
-        Screen.Cursor := crDefault;
-        CalcRun.Enabled := True;
-      end;
-    end;
-    FinalizeCalc(FCalc);
-  finally
-    EnableControls(True);
-    FCalc.Free;
-  end;
-end;
-
 procedure TfrmMain.CalcRunExecute(Sender: TObject);
 begin
-  RunCalc(False);
+  FOrchestrator.RunCalc(False);
 end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
 begin
-  FTerminated := True;
-
-  if LFPSO <> nil then
-  begin
-       LFPSO.Terminate;
-  end;
+  FOrchestrator.StopCalc;
 end;
 
-procedure TfrmMain.EnableControls(const Enable: boolean);
+procedure TfrmMain.EnableControls(const Enable: Boolean);
 begin
   FProjectPanel.SetToolbarsEnabled(Enable);
   FStructurePanel.SetToolbarEnabled(Enable);
@@ -794,209 +650,25 @@ begin
   FCalcSettings.Enabled := Enable;
 end;
 
-function TfrmMain.PrepareCalc: Boolean;
-begin
-  Result := False;
-  if (FProjectPanel.Project.ActiveModel = nil) then Exit;
-
-  FCalc := TCalc.Create;
-  FCalc.Limit := FChartInfo.MinLimit;
-  if (FProjectPanel.Project.LinkedData <> nil) and FProjectPanel.ActiveModelSeries.Visible then
-  begin
-    FCalc.ExpValues := SeriesToData(FChartMgr.Series[FProjectPanel.Project.LinkedData.CurveID]);
-    if FCalcSettings.IsPWChiSqr then
-      FCalc.MovAvg := MovAvg(FCalc.ExpValues, FProjectPanel.FitParams.MovAvgWindow);
-  end;
-
-  GetThreadParams;
-  FCalc.Params := FCalcThreadParams;
-  FCalc.Model := Structure.Model(FProjectPanel.IsNonPeriodicProfile);
-  FCalc.Model.Profiles := FProjectPanel.GetProfileFunctions;
-  Screen.Cursor := crHourGlass;
-  Result := True;
-end;
-
-function TfrmMain.PrepareLFPSO: Boolean;
-begin
-  Result := False;
-  case FCalcSettings.FittingMode of
-    fmIrregular : LFPSO := TLFPSO_Irregular.Create;
-    fmPeriodic  : LFPSO := TLFPSO_Periodic.Create;
-    fmPoly      : LFPSO := TLFPSO_Poly.Create;
-  end;
-
-  GetThreadParams;
-
-  LFPSO.Params := FProjectPanel.FitParams;
-  LFPSO.Limit := FChartInfo.MinLimit;
-
-  if (FProjectPanel.Project.LinkedData <> nil) and FProjectPanel.ActiveModelSeries.Visible then
-  begin
-    LFPSO.ExpValues := SeriesToData(FChartMgr.Series[FProjectPanel.Project.LinkedData.CurveID]);
-    if FCalcSettings.IsPWChiSqr then
-      LFPSO.MovAvg := MovAvg(LFPSO.ExpValues, FProjectPanel.FitParams.MovAvgWindow);
-  end else
-  begin
-     FreeAndNil(LFPSO);
-     ShowMessage('Measured curve is not linked!');
-     Exit;
-  end;
-
-  LFPSO.Structure := FFitStructure;
-
-  FChartPages.PrepareConvergence(FProjectPanel.FitParams.NMax);
-
-  Result := True;
-end;
-
 procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
 begin
   if FProjectPanel.OperationsStack.Count > 0 then
     Structure.FromString(FProjectPanel.OperationsStack.Extract);
 end;
 
-procedure TfrmMain.UpdateInterface;
-begin
-  if Structure.IsPeriodic then
-  begin
-    if FCalcSettings.FittingMode = fmPeriodic then
-       Structure.UpdateInterfaceP(FitStructure)
-    else begin
-      if FCalcSettings.FittingMode = fmPoly then
-      begin
-        Structure.UpdateInterfaceP(FitStructure);
-        if CreateExtension then
-          FProjectPanel.CreateFitGradientExtensions(Poly)
-        else
-          FProjectPanel.UpdateFitGradientExtensions(Poly)
-      end
-      else
-      begin
-        Structure.UpdateInterfaceNP(FitStructure);
-        if CreateExtension then
-           FProjectPanel.CreateProfileExtension;
-        Structure.UpdateProfiles(Res);
-      end;
-    end;
-  end
-  else
-    Structure.UpdateInterfaceNP(FitStructure);
-end;
-
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
-var
-  Hour, Min, Sec, MSec: Word;
-  FitResult: TLayeredModel;
 begin
-  if not GetFitParams then Exit;
-
-  try
-    if not PrepareLFPSO then Exit;
-    Screen.Cursor := crHourGlass;
-    FProjectPanel.GenerateAutosaveName;
-    EnableControls(False);
-    FitStartTime := Now;
-
-    FFirstUpdate := True;
-
-    FABestChiSquare := 1e32;
-    LFPSO.Run(FCalcThreadParams);
-    FitResult := LFPSO.Result;
-    try
-      UpdateInterface(LFPSO.Structure, LFPSO.Polynomes, FitResult, FFirstUpdate);
-    finally
-      FitResult.Free;
-    end;
-
-    FProjectPanel.Project.ActiveModel.Data := Structure.ToString;
-    DecodeTime(Now - FitStartTime, Hour, Min, Sec, MSec);
-    spnFitTime.Caption := Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]);
-    CalcRunExecute(nil);
-  finally
-    Screen.Cursor := crDefault;
-    EnableControls(True);
-    FreeAndNil(LFPSO);
-  end;
-  FProjectPanel.LoadAutoSave;
-end;
-
-procedure TfrmMain.ProcessJobFile(Sender: TObject; const F: TSearchRec);
-begin
-  Application.ProcessMessages;
-  if FTerminated then Exit;
-
-  FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
-
-  actProjectReopenExecute(nil);
-  actAutoFittingExecute(nil);
-end;
-
-procedure TfrmMain.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
-var
-  i: Integer;
-begin
-  FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
-
-  frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
-  for i := 1 to FBenchmarkRuns do
-  begin
-    if FTerminated then Break;
-    actProjectReopenExecute(nil);
-    actAutoFittingExecute(nil);
-    Application.ProcessMessages;
-    frmBenchmark.AddValue(i, FloatToStrF(FLastChiSquare, ffFixed, 8, 4));
-    frmBenchmark.CalcStats(False);
-  end;
-  if not FTerminated then frmBenchmark.CalcStats(True);
+  FOrchestrator.RunFitting;
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
-var
-  Files: TFilesList;
 begin
-  FLastChiSquare := 0;
-  FBenchmarkRuns := TConfig.Section<TCalcOptions>.BenchmarkRuns;
-
-  try
-    FTerminated := False;
-    frmBenchmark.Clear(FBenchmarkRuns);
-    frmBenchmark.Init(TConfig.SystemDir[sdBenchOutDir]);
-    frmBenchmark.Show;
-    FBenchmarkMode := True;
-
-    Files := TFilesList.Create(nil);
-    FBenchmarkPath := TConfig.SystemDir[sdBenchDir];
-    Files.TargetPath := FBenchmarkPath;
-    Files.Mask := '*' + PROJECT_EXT;
-    Files.OnFile := ProcessBenchFile;
-    Files.Process;
-    FBenchmarkMode := False;
-  finally
-    FreeAndNil(Files);
-  end;
+  FOrchestrator.RunBenchmark;
 end;
 
 procedure TfrmMain.actCalcFitJobsExecute(Sender: TObject);
-var
-  Files: TFilesList;
 begin
-  try
-    FTerminated := False;
-    FBenchmarkMode := True;
-    Files := TFilesList.Create(nil);
-    FBenchmarkPath := TConfig.SystemDir[sdJobsDir];
-    Files.TargetPath := FBenchmarkPath;
-    Files.Mask := '*' + PROJECT_EXT;
-    Files.OnFile := ProcessJobFile;
-    Files.Process;
-    if not FTerminated then
-      ShowMessage('All jobs done')
-    else
-      ShowMessage('Batch was terminated!');
-  finally
-    FreeAndNil(Files);
-    FBenchmarkMode := False;
-  end;
+  FOrchestrator.RunBatchJobs;
 end;
 
 procedure TfrmMain.actCopyStructureBitmapExecute(Sender: TObject);
@@ -1229,6 +901,12 @@ begin
   PM := TProfileManager.Create;
   PM.DensityProfile := FChartPages.ProfileSeries;
 
+  FOrchestrator := TCalcOrchestrator.Create(
+    FCalcSettings, FProjectPanel, FChartInfo, FChartPages, FChartMgr, PM);
+  FOrchestrator.OnEnableControls := EnableControls;
+  FOrchestrator.OnCalcTimeUpdate := UpdateCalcTime;
+  FOrchestrator.OnFitTimeUpdate := UpdateFitTime;
+
   FProjectPanel.Init(ImageCollection, FDPI, FChartMgr, FCalcSettings,
     FChartInfo, FChartPages, PM, miRecent, pmRecentList);
   FProjectPanel.OnCaptionChange := OnProjectCaptionChange;
@@ -1274,6 +952,7 @@ procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   FProjectPanel.Project.Clear;
   ReleaseTmpLock;
+  FreeAndNil(FOrchestrator);
   FreeAndNil(Structure);
   FreeAndNil(FChartMgr);
   FreeAndNil(Config);
