@@ -47,24 +47,24 @@ end;
 
 function TChartManager.AddSeries(Data: PProjectData): Integer;
 var
-  Count: Integer;
+  Index: Integer;
 begin
-  Count := Length(FSeriesList);
-  SetLength(FSeriesList, Count + 1);
-  FSeriesList[Count] := TFastLineSeries.Create(FChart);
-  FSeriesList[Count].ParentChart := FChart;
+  Index := Length(FSeriesList);
+  SetLength(FSeriesList, Index + 1);
+  FSeriesList[Index] := TFastLineSeries.Create(FChart);
+  FSeriesList[Index].ParentChart := FChart;
 
-  FSeriesList[Count].Title := Data.Title;
+  FSeriesList[Index].Title := Data.Title;
   if Data.Color <> 0 then
-    FSeriesList[Count].Color := Data.Color
+    FSeriesList[Index].Color := Data.Color
   else
-    Data.Color := FSeriesList[Count].Color;
+    Data.Color := FSeriesList[Index].Color;
 
-  FSeriesList[Count].LinePen.Width := FLineWidth;
+  FSeriesList[Index].LinePen.Width := FLineWidth;
   Data.Visible := True;
-  FSeriesList[Count].Visible := Data.Visible;
-  Data.CurveID := Count;
-  Result := Count;
+  FSeriesList[Index].Visible := Data.Visible;
+  Data.CurveID := Index;
+  Result := Index;
 end;
 
 procedure TChartManager.DeleteSeries(CurveID: Integer);
@@ -74,7 +74,8 @@ end;
 
 procedure TChartManager.ClearAll;
 begin
-  FChart.SeriesList.Clear;
+  while FChart.SeriesCount > 0 do
+    FChart.Series[0].Free;
   SetLength(FSeriesList, 0);
 end;
 

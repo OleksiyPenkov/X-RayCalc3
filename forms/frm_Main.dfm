@@ -102,6 +102,9 @@ object frmMain: TfrmMain
       ExplicitLeft = 3
       ExplicitTop = 3
       inherited tlbrFile: TRzToolbar
+        ExplicitLeft = 3
+        ExplicitTop = 3
+        ExplicitWidth = 233
         ToolbarControls = (
           BtnNew
           BtnOpen
@@ -112,6 +115,9 @@ object frmMain: TfrmMain
           BtnPrint)
       end
       inherited tlbrProject: TRzToolbar
+        ExplicitLeft = 3
+        ExplicitTop = 38
+        ExplicitWidth = 233
         ToolbarControls = (
           btnAddModel
           BtnExport

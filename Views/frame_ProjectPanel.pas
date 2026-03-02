@@ -11,7 +11,7 @@ uses
   Vcl.VirtualImageList, Vcl.BaseImageCollection, Vcl.ImageCollection,
   VirtualTrees, VirtualTrees.BaseTree, VirtualTrees.Types,
   AbBase, AbBrowse, AbZBrows, AbZipper, AbUnzper,
-  VCLTee.Series,
+  VCLTee.TeEngine, VCLTee.Series,
   unit_Types, unit_XRCProjectTree, unit_ChartManager,
   frame_CalcSettings, frame_ChartInfo, frame_ChartPages,
   unit_ProfilesManager, unit_RecentProjects, unit_Config,
@@ -189,6 +189,7 @@ type
     { Utilities }
     procedure CreateProfileExtension;
     procedure RescaleChart;
+    procedure SyncSeriesVisibility(Series: TChartSeries);
     procedure SaveHistory;
     procedure AutoSave;
     procedure LoadAutoSave;
@@ -376,6 +377,7 @@ end;
 
 procedure TfrmProjectPanel.pmiVisibleClick(Sender: TObject);
 begin
+  FChartMgr.Series[FLastData.CurveID].Active := pmiVisible.Checked;
   FChartMgr.Series[FLastData.CurveID].Visible := pmiVisible.Checked;
   FLastData.Visible := pmiVisible.Checked;
   FProject.Repaint;
@@ -597,6 +599,7 @@ begin
 
       FChartMgr.AddSeries(Data);
       SeriesFromFile(FChartMgr.Series[Data.CurveID], DataName(Data), s);
+      FChartMgr.Series[Data.CurveID].Active := Data.Visible;
       FChartMgr.Series[Data.CurveID].Visible := Data.Visible;
     end
     else
@@ -770,6 +773,25 @@ begin
   edtrProfileTable.Structure := Structure;
   if edtrProfileTable.ShowModal = mrOk then
     SetDescription(Data.Description);
+end;
+
+procedure TfrmProjectPanel.SyncSeriesVisibility(Series: TChartSeries);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+  Node := FProject.GetFirstChild(FProject.GetFirst);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.RowType = prItem) and (FChartMgr.Series[Data.CurveID] = Series) then
+    begin
+      Data.Visible := Series.Active;
+      FProject.Repaint;
+      Exit;
+    end;
+    Node := FProject.GetNext(Node);
+  end;
 end;
 
 procedure TfrmProjectPanel.RescaleChart;
@@ -1103,6 +1125,7 @@ begin
     FOnCaptionChange('X-Ray Calc 3: ' + ExtractFileName(FileName));
   MatchToStructure;
   RescaleChart;
+  FChartInfo.Chart.Repaint;
 end;
 
 procedure TfrmProjectPanel.SaveProject(const FileName: string);

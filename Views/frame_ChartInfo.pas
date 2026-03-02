@@ -12,10 +12,9 @@ uses
 
 type
   TGetFastSeriesEvent = function: TFastLineSeries of object;
+  TLegendCheckEvent = procedure(Sender: TObject; Series: TChartSeries) of object;
 
   TfrmChartInfo = class(TFrame)
-    Chart: TChart;
-    btnStop: TRzBitBtn;
     pnlInfo: TRzPanel;
     RzStatusPane1: TRzStatusPane;
     RzStatusPane2: TRzStatusPane;
@@ -37,8 +36,12 @@ type
     dlgSaveResult: TSaveDialog;
     dlgExport: TSaveDialog;
     dlgPrint: TPrintDialog;
+    Chart: TChart;
+    btnStop: TRzBitBtn;
     procedure btnChartScaleClick(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
+    procedure ChartClickLegend(Sender: TCustomChart; Button: TMouseButton; Shift:
+        TShiftState; X, Y: Integer);
     procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -51,6 +54,7 @@ type
     FGetActiveModelSeries: TGetFastSeriesEvent;
     FGetActiveDataSeries: TGetFastSeriesEvent;
     FOnSaveActiveData: TNotifyEvent;
+    FOnLegendCheckBoxClick: TLegendCheckEvent;
     FCalcSettings: TfrmCalcSettings;
     function GetMinLimit: Single;
     function GetMinLimitText: string;
@@ -91,6 +95,7 @@ type
     property OnGetActiveModelSeries: TGetFastSeriesEvent read FGetActiveModelSeries write FGetActiveModelSeries;
     property OnGetActiveDataSeries: TGetFastSeriesEvent read FGetActiveDataSeries write FGetActiveDataSeries;
     property OnSaveActiveData: TNotifyEvent read FOnSaveActiveData write FOnSaveActiveData;
+    property OnLegendCheckBoxClick: TLegendCheckEvent read FOnLegendCheckBoxClick write FOnLegendCheckBoxClick;
   end;
 
 implementation
@@ -123,6 +128,12 @@ end;
 procedure TfrmChartInfo.cbMinLimitChange(Sender: TObject);
 begin
   Chart.LeftAxis.Minimum := MinLimit;
+end;
+
+procedure TfrmChartInfo.ChartClickLegend(Sender: TCustomChart; Button:
+    TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  //
 end;
 
 function TfrmChartInfo.GetMinLimit: Single;

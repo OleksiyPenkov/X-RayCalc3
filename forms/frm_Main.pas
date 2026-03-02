@@ -277,6 +277,7 @@ type
     procedure OnIncrementChange(Sender: TObject);
     procedure OnSetFitLimits(Sender: TObject);
     procedure OnProjectCaptionChange(const S: string);
+    procedure OnLegendCheckBoxClick(Sender: TObject; Series: TChartSeries);
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
@@ -338,6 +339,11 @@ end;
 procedure TfrmMain.OnSaveActiveData(Sender: TObject);
 begin
   FProjectPanel.SaveActiveData;
+end;
+
+procedure TfrmMain.OnLegendCheckBoxClick(Sender: TObject; Series: TChartSeries);
+begin
+  FProjectPanel.SyncSeriesVisibility(Series);
 end;
 
 procedure TfrmMain.OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
@@ -932,6 +938,7 @@ begin
   FChartInfo.OnGetActiveModelSeries := GetActiveModelSeries;
   FChartInfo.OnGetActiveDataSeries := GetActiveDataSeries;
   FChartInfo.OnSaveActiveData := OnSaveActiveData;
+  FChartInfo.OnLegendCheckBoxClick := OnLegendCheckBoxClick;
 
   FStructurePanel.ConnectActions(vilModel,
     PeriodAdd, PeriodInsert, PeriodDelete,
