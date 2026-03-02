@@ -8,15 +8,15 @@ uses
   FastMM5,
   System.SysUtils,
   Forms,
-  cmd_math_globals in 'units\cmd_math_globals.pas',
-  cmd_unit_calc in 'units\cmd_unit_calc.pas',
-  cmd_unit_fit_types in 'units\cmd_unit_fit_types.pas',
-  cmd_unit_fitting in 'units\cmd_unit_fitting.pas',
-  cmd_unit_helpers in 'units\cmd_unit_helpers.pas',
-  cmd_unit_main in 'units\cmd_unit_main.pas',
-  cmd_unit_materials in 'units\cmd_unit_materials.pas',
-  cmd_unit_types in 'units\cmd_unit_types.pas',
-  cmd_unit_load in 'units\cmd_unit_load.pas';
+  cmd_math_globals in 'Units\cmd_math_globals.pas',
+  cmd_unit_calc in 'Units\cmd_unit_calc.pas',
+  cmd_unit_fit_types in 'Units\cmd_unit_fit_types.pas',
+  cmd_unit_fitting in 'Units\cmd_unit_fitting.pas',
+  cmd_unit_helpers in 'Units\cmd_unit_helpers.pas',
+  cmd_unit_main in 'Units\cmd_unit_main.pas',
+  cmd_unit_materials in 'Units\cmd_unit_materials.pas',
+  cmd_unit_types in 'Units\cmd_unit_types.pas',
+  cmd_unit_load in 'Units\cmd_unit_load.pas';
 
 var
   Value: string;

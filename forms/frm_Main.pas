@@ -104,8 +104,6 @@ type
     Zip: TAbZipper;
     UnZip: TAbUnZipper;
     pnlMain: TRzPanel;
-    FChartPages: TfrmChartPages;
-    Chart: TChart;
     RzPanel3: TRzPanel;
     FChartInfo: TfrmChartInfo;
     FStructurePanel: TfrmStructurePanel;
@@ -223,7 +221,6 @@ type
     actSystemExit: TAction;
     actCopyStructureBitmap: TAction;
     Copyasimage1: TMenuItem;
-    btnStop: TRzBitBtn;
     ilIcons: TImageList;
     actDataTrim: TAction;
     rim1: TMenuItem;
@@ -237,6 +234,9 @@ type
     vilModel: TVirtualImageList;
     vilCalc: TVirtualImageList;
     FCalcSettings: TfrmCalcSettings;
+    FChartPages: TfrmChartPages;
+    Chart: TChart;
+    btnStop: TRzBitBtn;
     procedure FileOpenExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);

@@ -1,135 +1,135 @@
 object frmLimits: TfrmLimits
   Left = 0
   Top = 0
-  Margins.Left = 6
-  Margins.Top = 6
-  Margins.Right = 6
-  Margins.Bottom = 6
+  Margins.Left = 3
+  Margins.Top = 3
+  Margins.Right = 3
+  Margins.Bottom = 3
   Caption = 'Fitting Limits'
-  ClientHeight = 952
-  ClientWidth = 1138
+  ClientHeight = 476
+  ClientWidth = 569
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -24
+  Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poMainFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCreate = FormCreate
-  PixelsPerInch = 192
-  TextHeight = 32
+  PixelsPerInch = 96
+  TextHeight = 16
   object RzPanel1: TRzPanel
     AlignWithMargins = True
-    Left = 6
-    Top = 6
-    Width = 1126
-    Height = 846
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
+    Left = 3
+    Top = 3
+    Width = 563
+    Height = 423
+    Margins.Left = 3
+    Margins.Top = 3
+    Margins.Right = 3
+    Margins.Bottom = 3
     Align = alClient
-    BevelWidth = 2
+    BevelWidth = 1
     BorderOuter = fsFlatRounded
     TabOrder = 0
     Color = 15987699
     object Label13: TLabel
-      Left = 38
-      Top = 786
-      Width = 39
-      Height = 37
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 19
+      Top = 393
+      Width = 20
+      Height = 18
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Caption = 'DH'
       Font.Charset = GREEK_CHARSET
       Font.Color = clBlack
-      Font.Height = -30
+      Font.Height = -15
       Font.Name = 'Symbol'
       Font.Style = []
       ParentFont = False
     end
     object Label14: TLabel
-      Left = 166
-      Top = 786
-      Width = 36
-      Height = 37
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 83
+      Top = 393
+      Width = 18
+      Height = 18
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Caption = 'Ds'
       Font.Charset = GREEK_CHARSET
       Font.Color = clBlack
-      Font.Height = -30
+      Font.Height = -15
       Font.Name = 'Symbol'
       Font.Style = []
       ParentFont = False
     end
     object Label15: TLabel
-      Left = 294
-      Top = 786
-      Width = 37
-      Height = 37
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 147
+      Top = 393
+      Width = 18
+      Height = 18
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Caption = 'Dr'
       Font.Charset = GREEK_CHARSET
       Font.Color = clBlack
-      Font.Height = -30
+      Font.Height = -15
       Font.Name = 'Symbol'
       Font.Style = []
       ParentFont = False
     end
     object ListView: TRzListView
       AlignWithMargins = True
-      Left = 10
-      Top = 10
-      Width = 1106
-      Height = 732
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 100
+      Left = 5
+      Top = 5
+      Width = 553
+      Height = 366
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 50
       Align = alClient
       Columns = <
         item
           Caption = 'Layer'
-          Width = 200
+          Width = 100
         end
         item
           Alignment = taCenter
           Caption = 'Hmin'
-          Width = 140
+          Width = 70
         end
         item
           Alignment = taCenter
           Caption = 'Hmax'
-          Width = 140
+          Width = 70
         end
         item
           Alignment = taCenter
           Caption = 'Smin'
-          Width = 140
+          Width = 70
         end
         item
           Alignment = taCenter
           Caption = 'Smax'
-          Width = 140
+          Width = 70
         end
         item
           Alignment = taCenter
           Caption = 'RMin'
-          Width = 140
+          Width = 70
         end
         item
           Alignment = taCenter
           Caption = 'RMax'
-          Width = 168
+          Width = 84
         end>
       ColumnClick = False
       GridLines = True
@@ -142,18 +142,18 @@ object frmLimits: TfrmLimits
       OnClick = ListViewClick
     end
     object edFdH: TEdit
-      Left = 80
-      Top = 784
-      Width = 66
-      Height = 37
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 40
+      Top = 392
+      Width = 33
+      Height = 18
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Alignment = taRightJustify
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -24
+      Font.Height = -12
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
@@ -161,18 +161,18 @@ object frmLimits: TfrmLimits
       Text = '0.25'
     end
     object edFdS: TEdit
-      Left = 208
-      Top = 784
-      Width = 66
-      Height = 37
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 104
+      Top = 392
+      Width = 33
+      Height = 18
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Alignment = taRightJustify
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -24
+      Font.Height = -12
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
@@ -180,18 +180,18 @@ object frmLimits: TfrmLimits
       Text = '0.25'
     end
     object edFdRho: TEdit
-      Left = 336
-      Top = 784
-      Width = 66
-      Height = 37
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 168
+      Top = 392
+      Width = 33
+      Height = 18
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Alignment = taRightJustify
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -24
+      Font.Height = -12
       Font.Name = 'Tahoma'
       Font.Style = []
       ParentFont = False
@@ -199,14 +199,14 @@ object frmLimits: TfrmLimits
       Text = '0.25'
     end
     object btnInit: TBitBtn
-      Left = 432
-      Top = 782
-      Width = 150
-      Height = 50
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 216
+      Top = 391
+      Width = 75
+      Height = 25
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       Caption = 'Initialize'
       TabOrder = 4
       OnClick = btnInitClick
@@ -214,49 +214,49 @@ object frmLimits: TfrmLimits
   end
   object RzPanel2: TRzPanel
     AlignWithMargins = True
-    Left = 6
-    Top = 864
-    Width = 1126
-    Height = 82
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
+    Left = 3
+    Top = 432
+    Width = 563
+    Height = 41
+    Margins.Left = 3
+    Margins.Top = 3
+    Margins.Right = 3
+    Margins.Bottom = 3
     Align = alBottom
-    BevelWidth = 2
+    BevelWidth = 1
     BorderOuter = fsFlatRounded
     TabOrder = 1
     Color = 15987699
     object btnSet: TRzBitBtn
-      Left = 946
-      Top = 16
-      Width = 150
-      Height = 50
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 473
+      Top = 8
+      Width = 75
+      Height = 25
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       ModalResult = 1
       Caption = 'Set'
       TabOrder = 0
       Margin = 4
-      Spacing = 8
+      Spacing = 4
     end
     object RzBitBtn2: TRzBitBtn
-      Left = 10
-      Top = 16
-      Width = 150
-      Height = 50
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 5
+      Top = 8
+      Width = 75
+      Height = 25
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
       ModalResult = 2
       Caption = 'Cancel'
       TabOrder = 1
       OnClick = RzBitBtn2Click
       Margin = 4
-      Spacing = 8
+      Spacing = 4
     end
   end
 end

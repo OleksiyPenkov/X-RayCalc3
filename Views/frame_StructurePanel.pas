@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Classes,
   Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.Buttons, Vcl.ImgList,
-  RzPanel, RzButton, RzCmboBx;
+  RzPanel, RzButton, RzCmboBx, Vcl.ExtCtrls;
 
 type
   TfrmStructurePanel = class(TFrame)

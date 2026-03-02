@@ -44,10 +44,10 @@ var
 
   procedure InitSereis(Series: TLineSeries);
   begin
-    Series.LinePen.Width := 3;
+    Series.LinePen.Width := 2;
     Series.Stairs := True;
     Series.Pointer.Visible := True;
-    Series.Pointer.Size := 4;
+    Series.Pointer.Size := 2;
   end;
 
   procedure CreateSeries(Chart: TChart; var SeriesList: TSeriesList);

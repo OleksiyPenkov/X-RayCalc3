@@ -1,17 +1,13 @@
 object frmMain: TfrmMain
-  Left = 381
-  Top = 305
-  Margins.Left = 6
-  Margins.Top = 6
-  Margins.Right = 6
-  Margins.Bottom = 6
+  Left = 190
+  Top = 152
   Caption = 'X-Ray Calc 3'
-  ClientHeight = 1602
-  ClientWidth = 3344
+  ClientHeight = 1110
+  ClientWidth = 1982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -24
+  Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
   KeyPreview = True
@@ -23,18 +19,12 @@ object frmMain: TfrmMain
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 192
-  TextHeight = 32
+  TextHeight = 15
   object Status: TRzStatusBar
     Left = 0
-    Top = 1564
-    Width = 3344
-    Height = 38
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
-    BevelWidth = 2
+    Top = 1091
+    Width = 1982
+    Height = 19
     BorderInner = fsNone
     BorderOuter = fsNone
     BorderSides = [sdLeft, sdTop, sdRight, sdBottom]
@@ -44,77 +34,56 @@ object frmMain: TfrmMain
     object spnTime: TRzStatusPane
       Left = 0
       Top = 0
-      Width = 200
-      Height = 38
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Height = 19
       Align = alLeft
       Caption = ''
     end
     object spnFitTime: TRzStatusPane
-      Left = 200
+      Left = 100
       Top = 0
-      Width = 300
-      Height = 38
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Width = 150
+      Height = 19
       Align = alLeft
       Caption = ''
     end
     object RzVersionInfoStatus1: TRzVersionInfoStatus
-      Left = 3084
+      Left = 1852
       Top = 0
-      Width = 200
-      Height = 38
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Height = 19
       Align = alRight
       Field = vifFileVersion
       VersionInfo = frmAbout.RzVersionInfo
       FileVersionFormat = fvfFull
+      ExplicitLeft = 1542
     end
     object pnlX64: TRzStatusPane
-      Left = 3284
+      Left = 1952
       Top = 0
-      Width = 60
-      Height = 38
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Width = 30
+      Height = 19
       Align = alRight
       Caption = 'x64'
+      ExplicitLeft = 1642
     end
   end
   object LeftSplitter: TRzSplitter
     Left = 0
     Top = 0
-    Width = 3344
-    Height = 1564
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
-    Position = 508
-    Percent = 15
+    Width = 1982
+    Height = 1091
+    Position = 245
+    Percent = 12
     UpperLeft.Color = 15987699
     LowerRight.Color = 15987699
     SplitterWidth = 8
     Align = alClient
-    BevelWidth = 2
     Color = 15987699
     TabOrder = 1
     BarSize = (
-      508
+      245
       0
-      516
-      1564)
+      253
+      1091)
     UpperLeftControls = (
       RzPanel1)
     LowerRightControls = (
@@ -122,35 +91,22 @@ object frmMain: TfrmMain
       FStructurePanel)
     object RzPanel1: TRzPanel
       AlignWithMargins = True
-      Left = 6
-      Top = 6
-      Width = 496
-      Height = 1552
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 3
+      Top = 3
+      Width = 239
+      Height = 1085
       Align = alClient
-      BevelWidth = 2
       BorderOuter = fsFlatRounded
       TabOrder = 0
       Color = 15987699
       object tlbrFile: TRzToolbar
         AlignWithMargins = True
-        Left = 10
-        Top = 10
-        Width = 476
-        Height = 54
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 5
+        Top = 5
+        Width = 229
+        Height = 29
         Images = vliProject
-        RowHeight = 50
-        ButtonWidth = 50
-        ButtonHeight = 50
         TextOptions = ttoCustom
-        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
@@ -168,25 +124,16 @@ object frmMain: TfrmMain
           RzSpacer1
           BtnPrint)
         object BtnNew: TRzToolButton
-          Left = 10
+          Left = 7
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 1
           ImageIndex = 0
           Action = FileNew
         end
         object BtnOpen: TRzToolButton
-          Left = 66
+          Left = 35
           Top = 2
-          Width = 78
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
+          Width = 39
           DisabledIndex = 3
           DropDownMenu = pmRecentList
           ImageIndex = 1
@@ -194,85 +141,52 @@ object frmMain: TfrmMain
           Action = FileOpen
         end
         object BtnSave: TRzToolButton
-          Left = 228
+          Left = 116
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 5
           ImageIndex = 3
           Action = FileSave
         end
         object RzSpacer1: TRzSpacer
-          Left = 284
+          Left = 144
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
         object BtnPrint: TRzToolButton
-          Left = 306
+          Left = 155
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 7
           ImageIndex = 4
           Action = FilePrint
         end
         object btnReopenProject: TRzToolButton
-          Left = 150
+          Left = 77
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 23
           ImageIndex = 2
           Action = actProjectReopen
         end
         object rzspcr2: TRzSpacer
-          Left = 206
+          Left = 105
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
       end
       object RzPanel5: TRzPanel
         AlignWithMargins = True
-        Left = 10
-        Top = 1378
-        Width = 476
-        Height = 164
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 5
+        Top = 998
+        Width = 229
+        Height = 82
         Align = alBottom
-        BevelWidth = 2
         BorderOuter = fsFlatRounded
         FlatColor = clSkyBlue
         TabOrder = 1
         Color = 15987699
         object mmDescription: TRzMemo
           AlignWithMargins = True
-          Left = 10
-          Top = 10
-          Width = 456
-          Height = 144
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
+          Left = 5
+          Top = 5
+          Width = 219
+          Height = 72
           Align = alClient
           BevelInner = bvNone
           BevelOuter = bvNone
@@ -289,21 +203,13 @@ object frmMain: TfrmMain
       end
       object tlbrProject: TRzToolbar
         AlignWithMargins = True
-        Left = 10
-        Top = 76
-        Width = 476
-        Height = 54
+        Left = 5
+        Top = 40
+        Width = 229
+        Height = 29
         Hint = 'Delete item'
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
         Images = vliProject
-        RowHeight = 50
-        ButtonWidth = 50
-        ButtonHeight = 50
         TextOptions = ttoCustom
-        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
@@ -323,103 +229,63 @@ object frmMain: TfrmMain
           RzSpacer5
           BtnRecycle)
         object btnAddModel: TRzToolButton
-          Left = 10
+          Left = 7
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 9
           ImageIndex = 5
           Action = ModelCreate
         end
         object BtnExport: TRzToolButton
-          Left = 66
+          Left = 35
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 11
           ImageIndex = 6
           Action = actProjectItemDuplicate
         end
         object BtnCopy: TRzToolButton
-          Left = 122
+          Left = 63
           Top = 2
           Hint = 'Copy model to clipboard'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 13
           ImageIndex = 7
           Action = actModelCopy
         end
         object BtnPaste: TRzToolButton
-          Left = 178
+          Left = 91
           Top = 2
           Hint = 'Paste model'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 15
           ImageIndex = 8
           Action = actModelPaste
         end
         object BtnEdit: TRzToolButton
-          Left = 234
+          Left = 119
           Top = 2
           Hint = 'Properites'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 17
           ImageIndex = 9
           Action = actItemProperites
         end
         object RzSpacer4: TRzSpacer
-          Left = 290
+          Left = 147
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
         object btnAddExtension: TRzToolButton
-          Left = 312
+          Left = 158
           Top = 2
           Hint = 'Add extension'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 19
           ImageIndex = 10
           Action = ProjectItemExtension
         end
         object RzSpacer5: TRzSpacer
-          Left = 368
+          Left = 186
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
         object BtnRecycle: TRzToolButton
-          Left = 390
+          Left = 197
           Top = 2
           Hint = 'Delete item'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           DisabledIndex = 21
           ImageIndex = 11
           Action = ProjectItemDelete
@@ -428,358 +294,135 @@ object frmMain: TfrmMain
     end
     object pnlMain: TRzPanel
       AlignWithMargins = True
-      Left = 712
-      Top = 6
-      Width = 2116
-      Height = 1552
+      Left = 356
+      Top = 3
+      Width = 1373
+      Height = 1085
       Margins.Left = 0
-      Margins.Top = 6
       Margins.Right = 0
-      Margins.Bottom = 6
       Align = alClient
-      BevelWidth = 2
       BorderOuter = fsFlatRounded
       TabOrder = 0
       Color = 15987699
-      inline FChartPages: TfrmChartPages
-        AlignWithMargins = True
-        Left = 10
-        Top = 1216
-        Width = 2096
-        Height = 326
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
-        Align = alBottom
-        TabOrder = 0
-      end
-      object Chart: TChart
-        AlignWithMargins = True
-        Left = 10
-        Top = 324
-        Width = 2096
-        Height = 768
-        Cursor = crCross
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
-        Foot.Font.Height = -32
-        Foot.Visible = False
-        Legend.Brush.Color = clSilver
-        Legend.Brush.BackColor = clSilver
-        Legend.Brush.Gradient.Direction = gdTopBottom
-        Legend.Brush.Gradient.EndColor = 2152289
-        Legend.Brush.Gradient.MidColor = 7548915
-        Legend.Brush.Gradient.StartColor = 10109259
-        Legend.Color = 14210754
-        Legend.Font.Height = -32
-        Legend.Font.Style = [fsBold]
-        Legend.Frame.Width = 2
-        Legend.Frame.Visible = False
-        Legend.LegendStyle = lsSeries
-        Legend.ResizeChart = False
-        Legend.Shadow.Color = 9211020
-        Legend.ShapeStyle = fosRoundRectangle
-        Legend.TextStyle = ltsPlain
-        Legend.Title.Font.Height = -32
-        Legend.Title.Transparent = False
-        Legend.TopPos = 3
-        MarginBottom = 1
-        MarginLeft = 2
-        MarginRight = 1
-        MarginTop = 1
-        PrintProportional = False
-        SubFoot.Font.Height = -32
-        SubFoot.Visible = False
-        SubTitle.Font.Height = -32
-        SubTitle.Visible = False
-        Title.Alignment = taLeftJustify
-        Title.Font.Height = -32
-        Title.Text.Strings = (
-          'TChart')
-        Title.Visible = False
-        OnZoom = ChartZoom
-        BottomAxis.Automatic = False
-        BottomAxis.AutomaticMaximum = False
-        BottomAxis.AutomaticMinimum = False
-        BottomAxis.LabelsFormat.Font.Height = -32
-        BottomAxis.LabelsFormat.Font.DefaultFont = True
-        BottomAxis.Maximum = 10.000000000000000000
-        BottomAxis.MinorTicks.Visible = False
-        BottomAxis.TickInnerLength = 5
-        BottomAxis.TickLength = 0
-        BottomAxis.Ticks.Width = 2
-        BottomAxis.TicksInner.Width = 2
-        BottomAxis.Title.Caption = 'Incidence angle (deg)'
-        BottomAxis.Title.Font.Height = -32
-        BottomAxis.Title.Font.DefaultFont = True
-        BottomAxis.Title.Pen.Visible = False
-        DepthAxis.Automatic = False
-        DepthAxis.AutomaticMaximum = False
-        DepthAxis.AutomaticMinimum = False
-        DepthAxis.LabelsFormat.Font.Height = -32
-        DepthAxis.Maximum = 0.439999999999999900
-        DepthAxis.Minimum = -0.560000000000000300
-        DepthAxis.Title.Font.Height = -32
-        DepthTopAxis.Automatic = False
-        DepthTopAxis.AutomaticMaximum = False
-        DepthTopAxis.AutomaticMinimum = False
-        DepthTopAxis.LabelsFormat.Font.Height = -32
-        DepthTopAxis.Maximum = 0.439999999999999900
-        DepthTopAxis.Minimum = -0.560000000000000300
-        DepthTopAxis.Title.Font.Height = -32
-        LeftAxis.Automatic = False
-        LeftAxis.AutomaticMaximum = False
-        LeftAxis.AutomaticMinimum = False
-        LeftAxis.Axis.SmallSpace = 1
-        LeftAxis.AxisValuesFormat = '0x10E-0'
-        LeftAxis.LabelsExponent = True
-        LeftAxis.LabelsFormat.Font.Height = -32
-        LeftAxis.LabelsFormat.Font.DefaultFont = True
-        LeftAxis.LabelsFormat.Margins.Left = 0
-        LeftAxis.LabelsFormat.Margins.Top = 0
-        LeftAxis.LabelsFormat.Margins.Right = 0
-        LeftAxis.LabelsFormat.Margins.Bottom = 0
-        LeftAxis.LabelsFormat.Margins.Units = maPixels
-        LeftAxis.Logarithmic = True
-        LeftAxis.Maximum = 1.000000000000000000
-        LeftAxis.MaximumOffset = 5
-        LeftAxis.Minimum = 0.000000010000000000
-        LeftAxis.MinorTicks.Visible = False
-        LeftAxis.RoundFirstLabel = False
-        LeftAxis.TickInnerLength = 5
-        LeftAxis.TickLength = 0
-        LeftAxis.TicksInner.Width = 2
-        LeftAxis.Title.Caption = 'Reflectivity'
-        LeftAxis.Title.Font.Height = -32
-        LeftAxis.Title.Font.DefaultFont = True
-        LeftAxis.TitleSize = 15
-        Pages.AutoScale = True
-        RightAxis.Automatic = False
-        RightAxis.AutomaticMaximum = False
-        RightAxis.AutomaticMinimum = False
-        RightAxis.Labels = False
-        RightAxis.LabelsFormat.Font.Height = -32
-        RightAxis.LabelsFormat.Visible = False
-        RightAxis.LabelsOnAxis = False
-        RightAxis.Logarithmic = True
-        RightAxis.Maximum = 1.000000000000000000
-        RightAxis.Minimum = 0.000001000000000000
-        RightAxis.RoundFirstLabel = False
-        RightAxis.Title.Font.Height = -32
-        TopAxis.Labels = False
-        TopAxis.LabelsFormat.Font.Height = -32
-        TopAxis.LabelsFormat.Visible = False
-        TopAxis.Title.Font.Height = -32
-        View3D = False
-        View3DOptions.PenZoom = 200
-        View3DOptions.CheckBoxZoom = 200
-        View3DOptions.ZoomText = ztManual
-        Zoom.Pen.Color = clRed
-        Zoom.Pen.Mode = pmNotXor
-        Align = alClient
-        BevelOuter = bvLowered
-        Color = clCream
-        TabOrder = 1
-        OnMouseDown = ChartMouseDown
-        OnMouseMove = ChartMouseMove
-        OnMouseUp = ChartMouseUp
-        OnResize = ChartResize
-        DefaultCanvas = 'TGDIPlusCanvas'
-        PrintMargins = (
-          5
-          5
-          5
-          5)
-        ColorPaletteIndex = 13
-        object btnStop: TRzBitBtn
-          Left = 1000
-          Top = 38
-          Width = 218
-          Height = 80
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          FrameColor = clRed
-          ModalResult = 3
-          Action = CalcStop
-          Caption = 'Abort '
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clRed
-          Font.Height = -38
-          Font.Name = 'Segoe UI'
-          Font.Style = [fsBold]
-          ParentFont = False
-          StyleName = 'Windows'
-          TabOrder = 0
-          Visible = False
-          Glyph.Data = {
-            D20A0000424DD20A00000000000042000000280000001A0000001A0000000100
-            200003000000900A0000C40E0000C40E000000000000000000000000FF0000FF
-            0000FF000000FF00000000FF00000000FF00000000000D0E9FFF0D0EA0FF0D0E
-            9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E
-            9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0E
-            9EFF0D0E9EFF0D0E9EFF0D0E9EFF0D0EA0FF0D0E9FFF000000000D0EA0FF1315
-            F4FF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315
-            EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315
-            EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315EAFF1315F4FF0D0E
-            9FFF0D0EA1FF1315EAFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314
-            DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314
-            DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314DFFF1314
-            DEFF1315EAFF0D0EA0FF0D0E9EFF1315E8FF1314DDFF1314DDFF1314DDFF1314
-            DDFF1112DDFF0B0CDCFF1314DDFF1314DDFF1314DDFF1314DDFF1314DDFF1314
-            DDFF1314DDFF1314DDFF1314DDFF1314DDFF0B0CDBFF1112DCFF1314DCFF1314
-            DCFF1314DCFF1314DCFF1315E7FF0D0E9DFF0D0E9EFF1315E7FF1314DBFF1314
-            DBFF1314DBFF1112DBFF090AD9FF2021DDFF0607D9FF1314DBFF1314DBFF1314
-            DBFF1314DBFF1314DBFF1314DBFF1314DBFF1314DBFF0607D8FF2021DCFF090A
-            D9FF1112DAFF1314DBFF1314DAFF1314DAFF1315E5FF0D0E9CFF0D0E9DFF1214
-            E4FF1213DAFF1314D9FF1112D9FF0000D4FF7373E8FFE6E6FAFF3C3DDFFF0000
-            D5FF1314D9FF1213D9FF1213D9FF1213D9FF1213D9FF1314D9FF0000D4FF3C3D
-            DFFFE6E6FAFF7273E7FF0000D4FF1011D8FF1213D9FF1213D8FF1213E3FF0D0E
-            9CFF0D0E9CFF1213E2FF1213D8FF1011D7FF0809D6FF7172E8FFFFFFFFFFFFFF
-            FFFFF0F0FCFF3A3ADDFF0000D3FF1213D7FF1213D7FF1213D7FF1213D7FF0000
-            D2FF3A3BDDFFF0F0FCFFFFFFFFFFFFFFFFFF7171E8FF0809D5FF1011D6FF1112
-            D7FF1112E1FF0D0E9BFF0D0E9CFF1112E0FF1112D6FF090AD4FF1D1DD5FFF8F8
-            FBFFFFFFFFFFFFFFFFFFFFFFFFFFF1F1FCFF3838DBFF0000D1FF1314D5FF1314
-            D5FF0000D0FF3839DBFFF1F1FCFFFFFFFFFFFFFFFFFFFFFFFFFFF7F7FBFF1C1D
-            D4FF0A0BD3FF1213D5FF1213DFFF0D0E9BFF0D0E9BFF1213DEFF1213D4FF1213
-            D5FF0505CBFF3939B0FFF1F1F4FFFFFFFFFFFFFFFFFFFFFFFFFFF1F1FCFF3B3B
-            DAFF0000CFFF0000CEFF3B3CDAFFF1F1FCFFFFFFFFFFFFFFFFFFFFFFFFFFF0F0
-            F5FF3839B0FF0505CBFF1213D4FF1213D3FF1213DDFF0D0E9AFF0D0E9BFF1213
-            DCFF1213D2FF1213D2FF1213D5FF0000C0FF3738ADFFF2F2F5FFFFFFFFFFFFFF
-            FFFFFFFFFFFFF2F2FCFF2B2CD6FF2B2CD6FFF2F2FCFFFFFFFFFFFFFFFFFFFFFF
-            FFFFF2F2F5FF3737ACFF0000BFFF1213D4FF1213D1FF1213D1FF1213DBFF0D0E
-            9AFF0D0E9AFF1213DAFF1213D0FF1213D0FF1213D0FF1314D5FF0000BFFF3536
-            ACFFF1F1F5FFFFFFFFFFFFFFFFFFFFFFFFFFEEEFFBFFEFEFFBFFFFFFFFFFFFFF
-            FFFFFFFFFFFFF0F1F5FF3536ACFF0000BFFF1314D4FF1213CFFF1213CFFF1213
-            CFFF1213D9FF0D0E99FF0D0E99FF1213D8FF1112CEFF1112CEFF1112CEFF1213
-            CEFF1213D3FF0000BDFF3839ADFFF2F2F6FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-            FFFFFFFFFFFFFFFFFFFFF2F2F5FF3839ADFF0000BDFF1213D2FF1112CDFF1112
-            CDFF1112CDFF1112CDFF1112D7FF0C0D98FF0C0D99FF1112D6FF1112CCFF1112
-            CCFF1112CCFF1112CCFF1112CCFF1213D1FF0000BCFF2A2AAAFFE6E6F2FFFFFF
-            FFFFFFFFFFFFFFFFFFFFFFFFFFFFE6E6F2FF292AAAFF0000BCFF1213D0FF1112
-            CBFF1011CBFF1011CBFF1011CBFF1011CBFF1011D5FF0B0C98FF0B0C98FF1011
-            D4FF1011CAFF1011CAFF1011CAFF1011CAFF1112CAFF1213CAFF0000C8FF2B2C
-            C6FFE6E6F2FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE6E6F2FF2B2CC6FF0000
-            C8FF1213CAFF1112C9FF1112C9FF1112C9FF1112C9FF1112C9FF1112D2FF0C0D
-            97FF0C0D98FF1112D1FF1112C8FF1112C8FF1112C8FF1112C8FF1112C8FF0000
-            C2FF3A3BD1FFF2F3FEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-            FFFFF2F2FEFF3A3BD0FF0000C2FF1112C8FF1112C7FF1112C7FF1112C7FF1112
-            C7FF1112D0FF0C0D97FF0C0D97FF1112D0FF1112C7FF1112C6FF1112C6FF1112
-            C7FF0000C0FF3738CFFFF1F1FBFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEF6FFEEEE
-            F6FFFFFFFFFFFFFFFFFFFFFFFFFFF1F1FBFF3737CEFF0000BFFF1113C6FF1112
-            C6FF1112C5FF1112C6FF1112CEFF0C0D96FF0C0D97FF1112CEFF1112C5FF1112
-            C5FF1112C5FF0000BEFF393ACEFFF2F3FBFFFFFFFFFFFFFFFFFFFFFFFFFFF1F2
-            F6FF2829A8FF2929A8FFF2F2F6FFFFFFFFFFFFFFFFFFFFFFFFFFF2F2FBFF393A
-            CDFF0000BDFF1112C4FF1112C4FF1112C4FF1112CDFF0C0D95FF0C0D96FF1112
-            CCFF1112C3FF1112C3FF0405BFFF3A3BCDFFF1F1FBFFFFFFFFFFFFFFFFFFFFFF
-            FFFFF1F1F6FF3839ACFF0000B5FF0000B5FF3939ACFFF1F1F6FFFFFFFFFFFFFF
-            FFFFFFFFFFFFF1F1FBFF3A3ACCFF0405BEFF1011C2FF1011C2FF1011CBFF0C0D
-            95FF0C0D95FF1011CAFF1011C1FF0809BEFF1B1CC3FFF8F8FEFFFFFFFFFFFFFF
-            FFFFFFFFFFFFF1F1F6FF3536ABFF0000B1FF1112C4FF1112C4FF0000B1FF3636
-            ABFFF1F1F6FFFFFFFFFFFFFFFFFFFFFFFFFFF7F7FEFF1B1BC2FF0708BDFF0F10
-            C0FF0F10C9FF0C0D95FF0C0D95FF0F10C8FF0F10BFFF0E0FBFFF0707B7FF6F70
-            C2FFFFFFFFFFFFFFFFFFF0F0F6FF3738ACFF0000B0FF1011C2FF1011BEFF1011
-            BEFF1011C2FF0000B0FF3838ACFFF0F0F6FFFFFFFFFFFFFFFFFF6F6FC2FF0707
-            B6FF0E0FBEFF0F10BEFF0F10C7FF0C0D94FF0C0D94FF1011C5FF1011BDFF1011
-            BDFF0E0FBEFF0000A5FF7071C0FFE5E5F0FF3839ADFF0000AEFF1011C0FF1011
-            BCFF1011BCFF1011BCFF1011BCFF1011C0FF0000AEFF393AADFFE5E5F0FF7070
-            C0FF0000A4FF0E0FBDFF1011BCFF1011BCFF1011C4FF0C0D93FF0C0D94FF1011
-            C3FF1011BBFF1011BBFF1011BBFF0E0FBEFF0405AAFF1A1BA1FF0203B0FF1011
-            BEFF1011BBFF1011BBFF1011BBFF1011BBFF1011BAFF1011BAFF1011BEFF0203
-            B0FF1A1BA0FF0405AAFF0E0FBDFF1011BAFF1011BAFF1011BAFF1011C2FF0C0D
-            93FF0C0D93FF1011C1FF1011B9FF1011B9FF1011B9FF1011B9FF0E0FBAFF0809
-            B6FF1011BBFF1011B9FF1011B9FF1011B9FF1011B9FF1011B9FF1011B9FF1011
-            B9FF1011B8FF1011BAFF0809B5FF0E0FB9FF1011B8FF1011B8FF1011B8FF1011
-            B8FF1011C0FF0C0D92FF0C0D94FF1011C0FF1011B7FF1011B7FF1011B7FF1011
-            B7FF1011B7FF1011B8FF1011B7FF1011B7FF1011B7FF1011B7FF1011B7FF0F10
-            B7FF0F10B7FF0F10B7FF0F10B7FF0F10B7FF1011B7FF0F10B7FF0F10B7FF0F10
-            B6FF0F10B6FF0F10B6FF0F10BEFF0C0D93FF0C0D96FF1011C7FF1011BEFF1011
-            BEFF0F11BDFF0F11BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10
-            BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10
-            BDFF0F10BDFF0F10BDFF0F10BDFF0F10BDFF0F10C6FF0C0D95FF000000000C0D
-            95FF0C0D93FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D
-            92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D
-            92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF0C0D92FF}
-          ImageIndex = 0
-          Images = ilIcons
-          Margin = 4
-          Spacing = 8
-        end
-      end
       object RzPanel3: TRzPanel
         AlignWithMargins = True
-        Left = 10
-        Top = 1104
-        Width = 2096
-        Height = 100
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 5
+        Top = 776
+        Width = 1363
+        Height = 304
         Align = alBottom
-        BevelWidth = 2
         BorderOuter = fsFlatRounded
         FlatColor = clSkyBlue
-        TabOrder = 2
+        TabOrder = 0
         Color = 15987699
         inline FChartInfo: TfrmChartInfo
-          Left = 0
-          Top = 0
-          Width = 2096
-          Height = 100
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
-          Align = alClient
+          Left = 2
+          Top = 2
+          Width = 1359
+          Height = 55
+          Align = alTop
           Color = 15987699
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -22
+          Font.Height = -11
           Font.Name = 'Tahoma'
           Font.Style = []
+          ParentColor = False
           ParentFont = False
           TabOrder = 0
+          ExplicitLeft = 2
+          ExplicitTop = 2
+          ExplicitWidth = 1359
+          ExplicitHeight = 55
+          inherited btnChartScale: TRzBitBtn
+            Left = 1155
+            ExplicitLeft = 1155
+          end
+          inherited cbMinLimit: TRzComboBox
+            Left = 1236
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitLeft = 1236
+          end
+        end
+        inline FChartPages: TfrmChartPages
+          AlignWithMargins = True
+          Left = 5
+          Top = 60
+          Width = 1353
+          Height = 239
+          Align = alClient
+          TabOrder = 1
+          ExplicitLeft = 5
+          ExplicitTop = 60
+          ExplicitWidth = 1353
+          ExplicitHeight = 239
+          inherited Pages: TRzPageControl
+            Width = 1353
+            Height = 239
+            ExplicitWidth = 1353
+            ExplicitHeight = 239
+            FixedDimension = 21
+            inherited tsThickness: TRzTabSheet
+              inherited chThickness: TChart
+                Width = 1343
+                Height = 208
+              end
+            end
+            inherited tsProfile: TRzTabSheet
+              inherited chProfile: TChart
+                Width = 1343
+                Height = 208
+              end
+            end
+            inherited tsFittingProgress: TRzTabSheet
+              ExplicitWidth = 1349
+              ExplicitHeight = 214
+              inherited chFittingProgress: TChart
+                Width = 1343
+                Height = 208
+                ExplicitWidth = 1343
+                ExplicitHeight = 208
+                inherited btnCopyConvergence: TRzButton
+                  Left = 1273
+                  ExplicitLeft = 1273
+                end
+              end
+            end
+          end
         end
       end
       object pnlSettings: TPanel
         AlignWithMargins = True
-        Left = 10
-        Top = 76
-        Width = 2096
-        Height = 236
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 5
+        Top = 40
+        Width = 1363
+        Height = 118
         Align = alTop
         BevelOuter = bvNone
-        TabOrder = 3
+        TabOrder = 1
         inline FCalcSettings: TfrmCalcSettings
           Left = 0
           Top = 0
-          Width = 2096
-          Height = 236
-          Margins.Left = 24
-          Margins.Top = 24
-          Margins.Right = 24
-          Margins.Bottom = 24
+          Width = 1363
+          Height = 118
+          Margins.Left = 12
+          Margins.Top = 12
+          Margins.Right = 12
+          Margins.Bottom = 12
           Align = alClient
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -22
+          Font.Height = -11
           Font.Name = 'Tahoma'
           Font.Style = []
           ParentFont = False
           TabOrder = 0
-          ExplicitHeight = 236
+          ExplicitWidth = 1363
           inherited RzPanel6: TRzPanel
-            Height = 218
+            Width = 967
             StyleElements = [seFont, seClient, seBorder]
+            ExplicitWidth = 967
+            ExplicitHeight = 109
             inherited Label7: TLabel
               StyleElements = [seFont, seClient, seBorder]
             end
@@ -796,47 +439,33 @@ object frmMain: TfrmMain
               StyleElements = [seFont, seClient, seBorder]
             end
             inherited edFIter: TEdit
+              Height = 21
               StyleElements = [seFont, seClient, seBorder]
+              ExplicitHeight = 21
             end
             inherited edFPopulation: TEdit
+              Height = 21
               StyleElements = [seFont, seClient, seBorder]
-            end
-            inherited cbLFPSOShake: TRzCheckBox
-              Width = 105
-              Height = 38
-              AutoSizeWidth = 105
-              ExplicitWidth = 105
-              ExplicitHeight = 38
-            end
-            inherited cbSeedRange: TRzCheckBox
-              Width = 108
-              Height = 38
-              AutoSizeWidth = 108
-              ExplicitWidth = 108
-              ExplicitHeight = 38
+              ExplicitHeight = 21
             end
             inherited edPolyOrder: TEdit
+              Height = 21
               StyleElements = [seFont, seClient, seBorder]
+              ExplicitHeight = 21
             end
             inherited cbTWChi: TComboBox
               StyleElements = [seFont, seClient, seBorder]
-            end
-            inherited cbPWChiSqr: TRzCheckBox
-              Width = 108
-              Height = 38
-              AutoSizeWidth = 108
-              ExplicitWidth = 108
-              ExplicitHeight = 38
+              ExplicitHeight = 21
             end
             inherited cbSmooth: TRzCheckBox
-              Width = 119
-              Height = 38
-              ExplicitWidth = 119
-              ExplicitHeight = 38
+              Width = 59
+              Height = 19
+              AutoSizeWidth = 59
+              ExplicitWidth = 59
+              ExplicitHeight = 19
             end
           end
           inherited RzPanel7: TRzPanel
-            Height = 224
             StyleElements = [seFont, seClient, seBorder]
             inherited rgPolarisation: TRzRadioGroup
               StyleElements = [seFont, seClient, seBorder]
@@ -857,16 +486,24 @@ object frmMain: TfrmMain
                 StyleElements = [seFont, seClient, seBorder]
               end
               inherited edStartL: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
               inherited edEndL: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
               inherited edTheta: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
               inherited edDL: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
             end
             inherited pnlAngleParams: TRzPanel
@@ -884,23 +521,24 @@ object frmMain: TfrmMain
                 StyleElements = [seFont, seClient, seBorder]
               end
               inherited edStartTeta: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
               inherited edEndTeta: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
               inherited edWidth: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
               inherited edLambda: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
-              end
-              inherited cb2Theta: TRzCheckBox
-                Width = 77
-                Height = 41
-                AutoSizeWidth = 77
-                ExplicitWidth = 77
-                ExplicitHeight = 41
+                ExplicitHeight = 21
               end
             end
             inherited rgCalcMode: TRzRadioGroup
@@ -910,7 +548,9 @@ object frmMain: TfrmMain
             inherited RzGroupBox2: TRzGroupBox
               StyleElements = [seFont, seClient, seBorder]
               inherited edN: TEdit
+                Height = 21
                 StyleElements = [seFont, seClient, seBorder]
+                ExplicitHeight = 21
               end
             end
           end
@@ -918,26 +558,18 @@ object frmMain: TfrmMain
       end
       object ChartToolBar: TRzToolbar
         AlignWithMargins = True
-        Left = 10
-        Top = 10
-        Width = 2096
-        Height = 54
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 5
+        Top = 5
+        Width = 1363
+        Height = 29
         Images = vilCalc
-        RowHeight = 50
-        ButtonWidth = 50
-        ButtonHeight = 50
         TextOptions = ttoCustom
-        BevelWidth = 2
         BorderInner = fsNone
         BorderOuter = fsGroove
         BorderSides = [sdTop]
         BorderWidth = 0
         StyleName = 'Windows'
-        TabOrder = 4
+        TabOrder = 2
         ToolbarControls = (
           btnCalcRun
           BtnFastForward
@@ -952,163 +584,202 @@ object frmMain: TfrmMain
           btnDataLoad
           btnDataPaste)
         object btnDataLoad: TRzToolButton
-          Left = 468
+          Left = 236
           Top = 2
           Hint = 'Load curve'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 3
           Action = DataLoad
           ParentShowHint = False
           ShowHint = True
         end
         object btnDataPaste: TRzToolButton
-          Left = 524
+          Left = 264
           Top = 2
           Hint = 'Paste curve'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 4
           Action = DataPaste
           ParentShowHint = False
           ShowHint = True
         end
         object rzspcr3: TRzSpacer
-          Left = 446
+          Left = 225
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
         object btnCalcRun: TRzToolButton
-          Left = 10
+          Left = 7
           Top = 2
           Hint = 'Calculate'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 0
           Action = CalcRun
           ParentShowHint = False
           ShowHint = True
         end
         object rzspcr4: TRzSpacer
-          Left = 200
+          Left = 102
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
         object btnResultSave: TRzToolButton
-          Left = 222
+          Left = 113
           Top = 2
           Hint = 'Save resulting curve'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 5
           Action = ResultSave
           ParentShowHint = False
           ShowHint = True
         end
         object btnBtnCopy: TRzToolButton
-          Left = 278
+          Left = 141
           Top = 2
           Hint = 'Copy resulting curve'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 6
           Action = ResultCopy
           ParentShowHint = False
           ShowHint = True
         end
         object RzSpacer2: TRzSpacer
-          Left = 178
+          Left = 91
           Top = 2
-          Width = 16
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
         end
         object BtnExecute: TRzToolButton
-          Left = 122
+          Left = 63
           Top = 2
           Hint = 'Auto Fitting'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 2
           Action = actAutoFitting
         end
         object BtnFastForward: TRzToolButton
-          Left = 66
+          Left = 35
           Top = 2
           Hint = 'Calculate all'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 1
           Action = CalcAll
         end
         object btnCopyImage: TRzToolButton
-          Left = 334
+          Left = 169
           Top = 2
           Hint = 'Copy resulting curve as image'
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 7
           Action = FilePlotCopyWMF
           ParentShowHint = False
           ShowHint = True
         end
         object btnPrintGraphics: TRzToolButton
-          Left = 390
+          Left = 197
           Top = 2
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
           ImageIndex = 8
+        end
+      end
+      object Chart: TChart
+        AlignWithMargins = True
+        Left = 5
+        Top = 164
+        Width = 1363
+        Height = 606
+        Cursor = crCross
+        Legend.CheckBoxes = True
+        Legend.LegendStyle = lsSeries
+        Legend.ResizeChart = False
+        MarginBottom = 1
+        MarginLeft = 2
+        MarginRight = 1
+        MarginTop = 2
+        Title.Text.Strings = (
+          'TChart')
+        Title.Visible = False
+        OnZoom = ChartZoom
+        BottomAxis.Automatic = False
+        BottomAxis.AutomaticMaximum = False
+        BottomAxis.AutomaticMinimum = False
+        BottomAxis.Maximum = 10.000000000000000000
+        BottomAxis.Title.Caption = 'Angle'
+        BottomAxis.Title.Font.Height = -16
+        LeftAxis.Automatic = False
+        LeftAxis.AutomaticMaximum = False
+        LeftAxis.AutomaticMinimum = False
+        LeftAxis.Logarithmic = True
+        LeftAxis.Maximum = 1.000000000000000000
+        LeftAxis.Minimum = 0.000000100000000000
+        LeftAxis.Title.Caption = 'Reflectivity'
+        LeftAxis.Title.Font.Height = -16
+        View3D = False
+        Align = alClient
+        BevelOuter = bvNone
+        Color = 16056319
+        TabOrder = 3
+        OnMouseMove = ChartMouseMove
+        OnMouseUp = ChartMouseUp
+        OnResize = ChartResize
+        ExplicitLeft = 269
+        ExplicitTop = 200
+        ExplicitWidth = 400
+        ExplicitHeight = 250
+        DefaultCanvas = 'TGDIPlusCanvas'
+        ColorPaletteIndex = 13
+        object btnStop: TRzBitBtn
+          Left = 584
+          Top = 41
+          Width = 128
+          Height = 40
+          FrameColor = clRed
+          ModalResult = 3
+          Action = CalcStop
+          Caption = 'Stop'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clRed
+          Font.Height = -19
+          Font.Name = 'Segoe UI'
+          Font.Style = [fsBold]
+          ParentFont = False
+          StyleName = 'Windows'
+          TabOrder = 0
+          ImageIndex = 46
+          Images = ilIcons
+          Margin = 4
         end
       end
     end
     inline FStructurePanel: TfrmStructurePanel
       AlignWithMargins = True
-      Left = 6
-      Top = 6
-      Width = 700
-      Height = 1552
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 3
+      Top = 3
+      Width = 350
+      Height = 1085
       Align = alLeft
+      Color = 15987699
+      ParentColor = False
       TabOrder = 1
+      ExplicitLeft = 3
+      ExplicitTop = 3
+      ExplicitHeight = 1085
+      inherited tlbStructure: TRzToolbar
+        ToolbarControls = (
+          btnPeriodAdd
+          btnPeriodInsert
+          btnPeriodDelete
+          rzspcr1
+          btnLayerAdd
+          btnLayerInsert
+          btnCopyLayer
+          btnLayerCut
+          btnLayerPaste
+          RzSpacer3
+          btnLayerDelete)
+      end
+      inherited RzPanel2: TRzPanel
+        StyleElements = [seFont, seClient, seBorder]
+        ExplicitTop = 38
+        inherited Label6: TLabel
+          StyleElements = [seFont, seClient, seBorder]
+        end
+        inherited cbIncrement: TRzComboBox
+          StyleElements = [seFont, seClient, seBorder]
+        end
+      end
     end
   end
   object mmMain: TMainMenu
-    Left = 1024
-    Top = 736
+    Left = 512
+    Top = 368
     object File1: TMenuItem
       Caption = 'File'
       object File2: TMenuItem
@@ -1469,7 +1140,7 @@ object frmMain: TfrmMain
           item
             Caption = '&ActionClientItem0'
             CommandStyle = csControl
-            CommandProperties.Width = 250
+            CommandProperties.Width = 125
           end>
       end
       item
@@ -1477,7 +1148,7 @@ object frmMain: TfrmMain
           item
             Caption = '&CheckBox1'
             CommandStyle = csControl
-            CommandProperties.Width = 250
+            CommandProperties.Width = 125
           end>
       end
       item
@@ -1485,7 +1156,7 @@ object frmMain: TfrmMain
           item
             Caption = '&Edit1'
             CommandStyle = csControl
-            CommandProperties.Width = 250
+            CommandProperties.Width = 125
           end>
       end
       item
@@ -1521,7 +1192,7 @@ object frmMain: TfrmMain
           item
             Caption = '&Label6'
             CommandStyle = csComboBox
-            CommandProperties.Width = -1
+            CommandProperties.Width = 0
           end>
       end
       item
@@ -1546,7 +1217,7 @@ object frmMain: TfrmMain
           item
             Caption = '&ActionClientItem0'
             CommandStyle = csControl
-            CommandProperties.Width = 250
+            CommandProperties.Width = 125
           end>
       end
       item
@@ -1577,12 +1248,12 @@ object frmMain: TfrmMain
                     CommandStyle = csMenu
                     ImageIndex = 16
                     ShortCut = 16467
-                    CommandProperties.Width = -1
+                    CommandProperties.Width = 0
                     CommandProperties.Content.Strings = (
                       'Save project with the same file name')
                     CommandProperties.Font.Charset = DEFAULT_CHARSET
                     CommandProperties.Font.Color = clWindowText
-                    CommandProperties.Font.Height = -11
+                    CommandProperties.Font.Height = -6
                     CommandProperties.Font.Name = 'Tahoma'
                     CommandProperties.Font.Style = []
                     CommandProperties.Height = 0
@@ -1594,12 +1265,12 @@ object frmMain: TfrmMain
                     CommandStyle = csMenu
                     ImageIndex = 11
                     ShortCut = 113
-                    CommandProperties.Width = -1
+                    CommandProperties.Width = 0
                     CommandProperties.Content.Strings = (
                       'Select file name and location')
                     CommandProperties.Font.Charset = DEFAULT_CHARSET
                     CommandProperties.Font.Color = clWindowText
-                    CommandProperties.Font.Height = -11
+                    CommandProperties.Font.Height = -6
                     CommandProperties.Font.Name = 'Tahoma'
                     CommandProperties.Font.Style = []
                     CommandProperties.Height = 0
@@ -1620,10 +1291,10 @@ object frmMain: TfrmMain
                     Action = FilePlotToFile
                     CommandStyle = csMenu
                     ImageIndex = 14
-                    CommandProperties.Width = -1
+                    CommandProperties.Width = 0
                     CommandProperties.Font.Charset = DEFAULT_CHARSET
                     CommandProperties.Font.Color = clWindowText
-                    CommandProperties.Font.Height = -11
+                    CommandProperties.Font.Height = -6
                     CommandProperties.Font.Name = 'Tahoma'
                     CommandProperties.Font.Style = []
                     CommandProperties.Height = 0
@@ -1633,12 +1304,12 @@ object frmMain: TfrmMain
                     Caption = '&Copy as BMP'
                     CommandStyle = csMenu
                     ImageIndex = 13
-                    CommandProperties.Width = -1
+                    CommandProperties.Width = 0
                     CommandProperties.Content.Strings = (
                       'Copy plot to clipboard as bitmap')
                     CommandProperties.Font.Charset = DEFAULT_CHARSET
                     CommandProperties.Font.Color = clWindowText
-                    CommandProperties.Font.Height = -11
+                    CommandProperties.Font.Height = -6
                     CommandProperties.Font.Name = 'Tahoma'
                     CommandProperties.Font.Style = []
                     CommandProperties.Height = 0
@@ -1649,12 +1320,12 @@ object frmMain: TfrmMain
                     Caption = 'C&opy as WMF'
                     CommandStyle = csMenu
                     ImageIndex = 13
-                    CommandProperties.Width = -1
+                    CommandProperties.Width = 0
                     CommandProperties.Content.Strings = (
                       'Copy plot to clipboard as Windows metafile')
                     CommandProperties.Font.Charset = DEFAULT_CHARSET
                     CommandProperties.Font.Color = clWindowText
-                    CommandProperties.Font.Height = -11
+                    CommandProperties.Font.Height = -6
                     CommandProperties.Font.Name = 'Tahoma'
                     CommandProperties.Font.Style = []
                     CommandProperties.Height = 0
@@ -1826,7 +1497,7 @@ object frmMain: TfrmMain
           item
             Caption = '&ActionClientItem0'
             CommandStyle = csControl
-            CommandProperties.Width = 150
+            CommandProperties.Width = 75
           end>
       end
       item
@@ -2078,8 +1749,8 @@ object frmMain: TfrmMain
             CommandProperties.ButtonSize = bsLarge
           end>
       end>
-    Left = 752
-    Top = 632
+    Left = 376
+    Top = 316
     StyleName = 'Platform Default'
     object FileNew: TAction
       Category = 'Project'
@@ -2448,52 +2119,52 @@ object frmMain: TfrmMain
     DefaultExt = 'xrcx'
     Filter = 'X-Ray Calc project|*.xrcx'
     Title = 'Load project'
-    Left = 336
-    Top = 360
+    Left = 168
+    Top = 180
   end
   object Zip: TAbZipper
     AutoSave = False
     DOSMode = False
-    Left = 378
-    Top = 598
+    Left = 189
+    Top = 299
   end
   object UnZip: TAbUnZipper
-    Left = 338
-    Top = 598
+    Left = 169
+    Top = 299
   end
   object dlgSaveResult: TSaveDialog
     DefaultExt = 'dat'
     Filter = 'ASCII data|*.dat'
     Title = 'Save result to file'
-    Left = 416
-    Top = 408
+    Left = 208
+    Top = 204
   end
   object dlgLoadData: TOpenDialog
     DefaultExt = 'dat'
     Filter = 'ASCII data|*.txt;*.csv;*.tet|Counter files|*.dat|All files|*.*'
     Title = 'Load curve from file'
-    Left = 416
-    Top = 352
+    Left = 208
+    Top = 176
   end
   object dlgSaveProject: TSaveDialog
     DefaultExt = 'xrcx'
     Filter = 'X-Ray Calc project|*.xrcx'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Title = 'Save project'
-    Left = 336
-    Top = 424
+    Left = 168
+    Top = 212
   end
   object dlgExport: TSaveDialog
     Filter = 
       'Bitmaps (*.bmp)|*.bmp|Enhanced Metafiles (*.emf)|*.emf|Metafiles' +
       ' (*.wmf)|*.wmf'
-    Left = 480
-    Top = 408
+    Left = 240
+    Top = 204
   end
   object pmProject: TPopupMenu
     OnPopup = pmProjectPopup
-    Left = 64
-    Top = 816
+    Left = 32
+    Top = 408
     object pmiEnabled: TMenuItem
       AutoCheck = True
       Caption = 'Enabled'
@@ -2538,13 +2209,13 @@ object frmMain: TfrmMain
     end
   end
   object dlgPrint: TPrintDialog
-    Left = 552
-    Top = 465
+    Left = 276
+    Top = 232
   end
   object ilCalc: TImageList
     ColorDepth = cd32Bit
-    Left = 888
-    Top = 432
+    Left = 444
+    Top = 216
     Bitmap = {
       494C01010A004800040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
@@ -2952,8 +2623,8 @@ object frmMain: TfrmMain
   object ilIcons: TImageList
     Height = 32
     Width = 32
-    Left = 591
-    Top = 807
+    Left = 296
+    Top = 404
     Bitmap = {
       494C010101000800040020002000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000800000002000000001002000000000000040
@@ -3491,8 +3162,8 @@ object frmMain: TfrmMain
       000000000000}
   end
   object pmRecentList: TPopupMenu
-    Left = 278
-    Top = 774
+    Left = 139
+    Top = 387
     object pmRecentList1: TMenuItem
       Caption = 'pmRecentList'
     end
@@ -4362,8 +4033,8 @@ object frmMain: TfrmMain
               454E44AE426082}
           end>
       end>
-    Left = 651
-    Top = 1091
+    Left = 326
+    Top = 546
   end
   object vliProject: TVirtualImageList
     Images = <
@@ -4428,10 +4099,8 @@ object frmMain: TfrmMain
         Name = '12_DeleteExtension'
       end>
     ImageCollection = ImageCollection
-    Width = 32
-    Height = 32
-    Left = 54
-    Top = 166
+    Left = 27
+    Top = 83
   end
   object vilModel: TVirtualImageList
     Images = <
@@ -4481,10 +4150,8 @@ object frmMain: TfrmMain
         Name = 'clipboard_copy_lined_32'
       end>
     ImageCollection = ImageCollection
-    Width = 32
-    Height = 32
-    Left = 530
-    Top = 166
+    Left = 265
+    Top = 83
   end
   object vilCalc: TVirtualImageList
     Images = <
@@ -4534,9 +4201,7 @@ object frmMain: TfrmMain
         Name = '05_Print'
       end>
     ImageCollection = ImageCollection
-    Width = 32
-    Height = 32
-    Left = 1422
-    Top = 378
+    Left = 711
+    Top = 189
   end
 end

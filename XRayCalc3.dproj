@@ -5,7 +5,7 @@
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
         <MainSource>XRayCalc3.dpr</MainSource>
@@ -171,11 +171,11 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="units\unit_CrashReport.pas"/>
-        <DCCReference Include="forms\frm_CrashReport.pas">
+        <DCCReference Include="Units\unit_CrashReport.pas"/>
+        <DCCReference Include="Forms\frm_CrashReport.pas">
             <Form>frmCrashReport</Form>
         </DCCReference>
-        <DCCReference Include="forms\frm_Main.pas">
+        <DCCReference Include="Forms\frm_Main.pas">
             <Form>frmMain</Form>
         </DCCReference>
         <DCCReference Include="Views\frame_CalcSettings.pas">
@@ -194,96 +194,96 @@
             <Form>frmStructurePanel</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="units\unit_Types.pas"/>
-        <DCCReference Include="math\math_complex.pas"/>
-        <DCCReference Include="units\unit_SeriesIO.pas"/>
-        <DCCReference Include="units\unit_DataProcessing.pas"/>
-        <DCCReference Include="units\unit_FileUtils.pas"/>
-        <DCCReference Include="units\unit_helpers.pas"/>
-        <DCCReference Include="units\unit_consts.pas"/>
-        <DCCReference Include="components\unit_XRCStructure.pas"/>
-        <DCCReference Include="components\unit_XRCLayerControl.pas"/>
-        <DCCReference Include="components\unit_XRCStackControl.pas"/>
-        <DCCReference Include="components\unit_SMessages.pas"/>
-        <DCCReference Include="components\editor_Stack.pas">
+        <DCCReference Include="Units\unit_Types.pas"/>
+        <DCCReference Include="Math\math_complex.pas"/>
+        <DCCReference Include="Units\unit_SeriesIO.pas"/>
+        <DCCReference Include="Units\unit_DataProcessing.pas"/>
+        <DCCReference Include="Units\unit_FileUtils.pas"/>
+        <DCCReference Include="Units\unit_helpers.pas"/>
+        <DCCReference Include="Units\unit_consts.pas"/>
+        <DCCReference Include="Components\unit_XRCStructure.pas"/>
+        <DCCReference Include="Components\unit_XRCLayerControl.pas"/>
+        <DCCReference Include="Components\unit_XRCStackControl.pas"/>
+        <DCCReference Include="Components\unit_SMessages.pas"/>
+        <DCCReference Include="Components\editor_Stack.pas">
             <Form>edtrStack</Form>
         </DCCReference>
-        <DCCReference Include="math\unit_calc.pas"/>
-        <DCCReference Include="math\unit_materials.pas"/>
-        <DCCReference Include="math\math_globals.pas"/>
-        <DCCReference Include="components\unit_XRCProjectTree.pas"/>
-        <DCCReference Include="components\editor_Layer.pas">
+        <DCCReference Include="Math\unit_calc.pas"/>
+        <DCCReference Include="Math\unit_materials.pas"/>
+        <DCCReference Include="Math\math_globals.pas"/>
+        <DCCReference Include="Components\unit_XRCProjectTree.pas"/>
+        <DCCReference Include="Components\editor_Layer.pas">
             <Form>edtrLayer</Form>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Base.pas"/>
-        <DCCReference Include="forms\frm_Limits.pas">
+        <DCCReference Include="Forms\frm_Limits.pas">
             <Form>frmLimits</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="editors\editor_proj_item.pas">
+        <DCCReference Include="Editors\editor_proj_item.pas">
             <Form>edtrProjectItem</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="forms\frm_about.pas">
+        <DCCReference Include="Forms\frm_about.pas">
             <Form>frmAbout</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="forms\frm_NewMaterial.pas">
+        <DCCReference Include="Forms\frm_NewMaterial.pas">
             <Form>frmNewMaterial</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Periodic.pas"/>
-        <DCCReference Include="forms\frm_MaterialSelector.pas">
+        <DCCReference Include="Forms\frm_MaterialSelector.pas">
             <Form>frmMaterialSelector</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="editors\editor_ProfileFunction.pas">
+        <DCCReference Include="Editors\editor_ProfileFunction.pas">
             <Form>edtrProfileFunction</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="forms\frm_ExtensionType.pas">
+        <DCCReference Include="Forms\frm_ExtensionType.pas">
             <Form>frmExtensionSelector</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="editors\editor_HenkeTable.pas">
+        <DCCReference Include="Editors\editor_HenkeTable.pas">
             <Form>edtrHenkeTable</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="editors\editor_JSON.pas">
+        <DCCReference Include="Editors\editor_JSON.pas">
             <Form>frmJsonEditor</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Poly.pas"/>
-        <DCCReference Include="math\unit_SavitzkyGolay.pas"/>
-        <DCCReference Include="math\unit_ProfileCalc.pas"/>
-        <DCCReference Include="forms\frm_Benchmark.pas">
+        <DCCReference Include="Math\unit_SavitzkyGolay.pas"/>
+        <DCCReference Include="Math\unit_ProfileCalc.pas"/>
+        <DCCReference Include="Forms\frm_Benchmark.pas">
             <Form>frmBenchmark</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="components\unit_files_list.pas"/>
-        <DCCReference Include="units\unit_Config.pas"/>
-        <DCCReference Include="forms\frm_settings.pas">
+        <DCCReference Include="Components\unit_files_list.pas"/>
+        <DCCReference Include="Units\unit_Config.pas"/>
+        <DCCReference Include="Forms\frm_settings.pas">
             <Form>frmSettings</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="editors\editor_ProfileTable.pas">
+        <DCCReference Include="Editors\editor_ProfileTable.pas">
             <Form>edtrProfileTable</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="components\unit_XRCGrid.pas"/>
-        <DCCReference Include="units\unit_sys_helpers.pas"/>
+        <DCCReference Include="Components\unit_XRCGrid.pas"/>
+        <DCCReference Include="Units\unit_sys_helpers.pas"/>
         <DCCReference Include="LFPSO\unit_LFPSO_Irregular.pas"/>
-        <DCCReference Include="forms\frm_FitSettings.pas">
+        <DCCReference Include="Forms\frm_FitSettings.pas">
             <Form>frmFitSettings</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="components\unit_AutoCompleteEdit.pas"/>
-        <DCCReference Include="components\MHLButtonedEdit.pas"/>
-        <DCCReference Include="components\unit_StaticTip.pas"/>
-        <DCCReference Include="units\unit_ProfilesManager.pas"/>
-        <DCCReference Include="units\unit_RecentProjects.pas"/>
-        <DCCReference Include="units\unit_ChartManager.pas"/>
-        <DCCReference Include="components\unit_XRCPanel.pas"/>
+        <DCCReference Include="Components\unit_AutoCompleteEdit.pas"/>
+        <DCCReference Include="Components\MHLButtonedEdit.pas"/>
+        <DCCReference Include="Components\unit_StaticTip.pas"/>
+        <DCCReference Include="Units\unit_ProfilesManager.pas"/>
+        <DCCReference Include="Units\unit_RecentProjects.pas"/>
+        <DCCReference Include="Units\unit_ChartManager.pas"/>
+        <DCCReference Include="Components\unit_XRCPanel.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

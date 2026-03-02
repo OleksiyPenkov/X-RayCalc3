@@ -1,40 +1,33 @@
 object frmChartPages: TfrmChartPages
   Left = 0
   Top = 0
-  Width = 2096
-  Height = 326
+  Width = 1048
+  Height = 163
   Align = alClient
   TabOrder = 0
   object Pages: TRzPageControl
     Left = 0
     Top = 0
-    Width = 2096
-    Height = 326
+    Width = 1048
+    Height = 163
     Hint = ''
-    ActivePage = tsThickness
+    ActivePage = tsProfile
     Align = alClient
     TabOverlap = -2
-    TabIndex = 0
+    TabIndex = 3
     TabOrder = 0
-    FixedDimension = 42
+    FixedDimension = 21
     object tsThickness: TRzTabSheet
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
       Color = 15987699
       Caption = 'Thickness'
       object chThickness: TChart
         AlignWithMargins = True
-        Left = 6
-        Top = 6
-        Width = 2080
-        Height = 268
+        Left = 3
+        Top = 3
+        Width = 1038
+        Height = 132
         Cursor = crCross
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        LeftWall.Visible = False
         Legend.Font.DefaultFont = True
         Legend.HorizMargin = 5
         Legend.TopPos = 0
@@ -46,10 +39,16 @@ object frmChartPages: TfrmChartPages
         Title.Text.Strings = (
           'TChart')
         Title.Visible = False
+        BottomAxis.Axis.Width = 1
+        DepthAxis.Axis.Width = 1
+        DepthTopAxis.Axis.Width = 1
+        LeftAxis.Axis.Width = 1
         LeftAxis.MaximumOffset = 4
         LeftAxis.MinimumOffset = 4
+        RightAxis.Axis.Width = 1
         RightAxis.Labels = False
         RightAxis.LabelsFormat.Visible = False
+        TopAxis.Axis.Width = 1
         TopAxis.Labels = False
         TopAxis.LabelsFormat.Visible = False
         View3D = False
@@ -60,6 +59,7 @@ object frmChartPages: TfrmChartPages
         ZoomWheel = pmwNormal
         Align = alClient
         BevelOuter = bvNone
+        BevelWidth = 2
         Color = 15925239
         TabOrder = 0
         DefaultCanvas = 'TGDIPlusCanvas'
@@ -67,23 +67,15 @@ object frmChartPages: TfrmChartPages
       end
     end
     object tsRoughness: TRzTabSheet
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
       Color = 15987699
       Caption = 'Roughness'
       object chRoughness: TChart
         AlignWithMargins = True
-        Left = 6
-        Top = 6
-        Width = 2080
-        Height = 268
+        Left = 3
+        Top = 3
+        Width = 1038
+        Height = 132
         Cursor = crCross
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
         Legend.HorizMargin = 5
         Legend.TopPos = 0
         MarginRight = 0
@@ -91,10 +83,16 @@ object frmChartPages: TfrmChartPages
         Title.Text.Strings = (
           'TChart')
         Title.Visible = False
+        BottomAxis.Axis.Width = 1
+        DepthAxis.Axis.Width = 1
+        DepthTopAxis.Axis.Width = 1
+        LeftAxis.Axis.Width = 1
         LeftAxis.MaximumOffset = 4
         LeftAxis.MinimumOffset = 4
+        RightAxis.Axis.Width = 1
         RightAxis.Labels = False
         RightAxis.LabelsFormat.Visible = False
+        TopAxis.Axis.Width = 1
         TopAxis.Labels = False
         TopAxis.LabelsFormat.Visible = False
         View3D = False
@@ -111,23 +109,15 @@ object frmChartPages: TfrmChartPages
       end
     end
     object tsDensity: TRzTabSheet
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
       Color = 15987699
       Caption = 'Density'
       object chDensity: TChart
         AlignWithMargins = True
-        Left = 6
-        Top = 6
-        Width = 2080
-        Height = 268
+        Left = 3
+        Top = 3
+        Width = 1038
+        Height = 132
         Cursor = crCross
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
         Legend.HorizMargin = 5
         Legend.TopPos = 0
         MarginRight = 0
@@ -135,10 +125,16 @@ object frmChartPages: TfrmChartPages
         Title.Text.Strings = (
           'TChart')
         Title.Visible = False
+        BottomAxis.Axis.Width = 1
+        DepthAxis.Axis.Width = 1
+        DepthTopAxis.Axis.Width = 1
+        LeftAxis.Axis.Width = 1
         LeftAxis.MaximumOffset = 4
         LeftAxis.MinimumOffset = 4
+        RightAxis.Axis.Width = 1
         RightAxis.Labels = False
         RightAxis.LabelsFormat.Visible = False
+        TopAxis.Axis.Width = 1
         TopAxis.Labels = False
         TopAxis.LabelsFormat.Visible = False
         View3D = False
@@ -155,23 +151,18 @@ object frmChartPages: TfrmChartPages
       end
     end
     object tsProfile: TRzTabSheet
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
       Color = 15987699
       Caption = 'Profile'
       object chProfile: TChart
         AlignWithMargins = True
-        Left = 6
-        Top = 6
-        Width = 2080
-        Height = 268
+        Left = 3
+        Top = 3
+        Width = 1038
+        Height = 132
         Cursor = crCross
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Border.Width = 0
+        BottomWall.Pen.Width = 0
+        BottomWall.Pen.Visible = False
         Legend.HorizMargin = 5
         Legend.TopPos = 0
         Legend.Visible = False
@@ -180,10 +171,16 @@ object frmChartPages: TfrmChartPages
         Title.Text.Strings = (
           'TChart')
         Title.Visible = False
+        BottomAxis.Axis.Width = 1
+        DepthAxis.Axis.Width = 1
+        DepthTopAxis.Axis.Width = 0
+        LeftAxis.Axis.Width = 1
         LeftAxis.MaximumOffset = 4
         LeftAxis.MinimumOffset = 4
+        RightAxis.Axis.Width = 1
         RightAxis.Labels = False
         RightAxis.LabelsFormat.Visible = False
+        TopAxis.Axis.Width = 1
         TopAxis.Labels = False
         TopAxis.LabelsFormat.Visible = False
         View3D = False
@@ -196,28 +193,25 @@ object frmChartPages: TfrmChartPages
         Color = 16773087
         TabOrder = 0
         DesignSize = (
-          2080
-          268)
+          1038
+          132)
         DefaultCanvas = 'TGDIPlusCanvas'
         ColorPaletteIndex = 13
         object btnProfileCopy: TRzButton
-          Left = 1948
+          Left = 972
           Top = 0
-          Width = 118
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
+          Width = 59
           Anchors = [akTop, akRight]
           Caption = 'Copy'
           TabOrder = 0
           OnClick = btnProfileCopyClick
         end
         object DensityProfile: TLineSeries
+          SeriesColor = 16744448
           Title = 'DensityProfile'
           Brush.BackColor = clDefault
-          LinePen.Width = 3
+          LinePen.Color = 12615680
+          LinePen.Width = 2
           Pointer.InflateMargins = True
           Pointer.Style = psRectangle
           XValues.Name = 'X'
@@ -228,23 +222,15 @@ object frmChartPages: TfrmChartPages
       end
     end
     object tsFittingProgress: TRzTabSheet
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
       Color = 15987699
       Caption = 'Convergence'
       object chFittingProgress: TChart
         AlignWithMargins = True
-        Left = 6
-        Top = 6
-        Width = 2080
-        Height = 268
+        Left = 3
+        Top = 3
+        Width = 1038
+        Height = 132
         Cursor = crCross
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
         Border.Color = clDefault
         Border.Visible = True
         Legend.TopPos = 0
@@ -261,10 +247,14 @@ object frmChartPages: TfrmChartPages
         BottomAxis.Automatic = False
         BottomAxis.AutomaticMaximum = False
         BottomAxis.AutomaticMinimum = False
+        BottomAxis.Axis.Width = 1
         BottomAxis.Increment = 10.000000000000000000
         BottomAxis.Maximum = 100.000000000000000000
         BottomAxis.Minimum = -1.000000000000000000
         BottomAxis.Title.Caption = 'Iteration'
+        DepthAxis.Axis.Width = 1
+        DepthTopAxis.Axis.Width = 1
+        LeftAxis.Axis.Width = 1
         LeftAxis.AxisValuesFormat = '#.0 "x10" E+0'
         LeftAxis.ExactDateTime = False
         LeftAxis.Increment = 1.000000000000000000
@@ -281,6 +271,8 @@ object frmChartPages: TfrmChartPages
         LeftAxis.Title.Caption = #967'2'
         LeftAxis.Title.Font.Height = -13
         LeftAxis.Title.Shadow.Visible = False
+        RightAxis.Axis.Width = 1
+        TopAxis.Axis.Width = 1
         View3D = False
         View3DOptions.PenZoom = 200
         View3DOptions.CheckBoxZoom = 200
@@ -291,19 +283,14 @@ object frmChartPages: TfrmChartPages
         Color = 16771538
         TabOrder = 0
         DesignSize = (
-          2080
-          268)
+          1038
+          132)
         DefaultCanvas = 'TGDIPlusCanvas'
         ColorPaletteIndex = 13
         object btnCopyConvergence: TRzButton
-          Left = 1940
-          Top = 18
-          Width = 118
-          Height = 50
-          Margins.Left = 6
-          Margins.Top = 6
-          Margins.Right = 6
-          Margins.Bottom = 6
+          Left = 968
+          Top = 9
+          Width = 59
           Anchors = [akTop, akRight]
           Caption = 'Copy'
           TabOrder = 0
@@ -314,7 +301,7 @@ object frmChartPages: TfrmChartPages
           Title = 'srFitProgress'
           Brush.BackColor = clDefault
           LinePen.Color = clRed
-          LinePen.Width = 3
+          LinePen.Width = 2
           Pointer.InflateMargins = True
           Pointer.Style = psRectangle
           Stairs = True

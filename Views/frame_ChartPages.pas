@@ -7,7 +7,7 @@ uses
   Vcl.Controls, Vcl.Forms,
   RzTabs, RzButton,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs,
-  VCLTee.Chart, VCLTee.Series, VCLTee.TeCanvas;
+  VCLTee.Chart, VCLTee.Series, VCLTee.TeCanvas, Vcl.ExtCtrls;
 
 type
   TfrmChartPages = class(TFrame)
@@ -23,9 +23,9 @@ type
     chProfile: TChart;
     chFittingProgress: TChart;
     lsrConvergence: TLineSeries;
-    DensityProfile: TLineSeries;
     btnCopyConvergence: TRzButton;
     btnProfileCopy: TRzButton;
+    DensityProfile: TLineSeries;
     procedure btnCopyConvergenceClick(Sender: TObject);
     procedure btnProfileCopyClick(Sender: TObject);
   public
