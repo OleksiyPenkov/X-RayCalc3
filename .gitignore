@@ -27,6 +27,7 @@ CMDBin
 *.dsk
 Win32
 Win64
+_Out
 /.claude/settings.local.json
 /_Installer/deploy
 /_Installer/SetupOutput

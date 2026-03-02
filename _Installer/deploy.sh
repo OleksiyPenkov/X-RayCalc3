@@ -35,14 +35,14 @@ echo ""
 # --- Validate sources ---
 echo "Checking source files..."
 
-check_file "$PROJECT_DIR/OUT/BIN/XRayCalc3.exe"
-check_file "$PROJECT_DIR/OUT/BIN/XRayCalc3.x64.exe"
+check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"
+check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe"
 check_file "$PROJECT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll"
 check_file "$PROJECT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll"
-check_file "$PROJECT_DIR/OUT/BIN/Help/UserManual.html"
-check_file "$PROJECT_DIR/OUT/BIN/Help/style.css"
-check_file "$PROJECT_DIR/OUT/BIN/Help/script.js"
-check_dir  "$PROJECT_DIR/OUT/BIN/Help/images"
+check_file "$PROJECT_DIR/_Out/BIN/Help/UserManual.html"
+check_file "$PROJECT_DIR/_Out/BIN/Help/style.css"
+check_file "$PROJECT_DIR/_Out/BIN/Help/script.js"
+check_dir  "$PROJECT_DIR/_Out/BIN/Help/images"
 check_file "$PROJECT_DIR/Assets/XRayCalc3_Icon.ico"
 check_file "$PROJECT_DIR/Assets/XRayCalc3_x64_Icon.ico"
 check_dir  "$STORAGE_DIR/Henke"
@@ -71,8 +71,8 @@ mkdir -p "$DEPLOY_DIR/Help/images"
 
 # --- Copy files ---
 echo "Copying executables..."
-cp "$PROJECT_DIR/OUT/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
-cp "$PROJECT_DIR/OUT/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
+cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
+cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
 
 echo "Copying preview handler DLLs..."
 cp "$PROJECT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll" "$DEPLOY_DIR/Win32/"
@@ -93,11 +93,11 @@ example_count=$(ls -1 "$DEPLOY_DIR/Examples/"*.xrcx 2>/dev/null | wc -l)
 echo "  $example_count .xrcx files"
 
 echo "Copying help files..."
-cp "$PROJECT_DIR/OUT/BIN/Help/UserManual.html" "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/OUT/BIN/Help/style.css"       "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/OUT/BIN/Help/script.js"       "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/OUT/BIN/Help/"*.html          "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/OUT/BIN/Help/images/"*        "$DEPLOY_DIR/Help/images/"
+cp "$PROJECT_DIR/_Out/BIN/Help/UserManual.html" "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/_Out/BIN/Help/style.css"       "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/_Out/BIN/Help/script.js"       "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/_Out/BIN/Help/"*.html          "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/_Out/BIN/Help/images/"*        "$DEPLOY_DIR/Help/images/"
 help_count=$(ls -1 "$DEPLOY_DIR/Help/"*.html 2>/dev/null | wc -l)
 echo "  $help_count HTML files + style.css + script.js + images/"
 
