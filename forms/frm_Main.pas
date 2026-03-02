@@ -100,8 +100,6 @@ type
     RzPanel3: TRzPanel;
     FStructurePanel: TfrmStructurePanel;
     spnTime: TRzStatusPane;
-    dlgSaveResult: TSaveDialog;
-    dlgExport: TSaveDialog;
     spnFitTime: TRzStatusPane;
     pnlSettings: TPanel;
     ChartToolBar: TRzToolbar;
@@ -114,7 +112,6 @@ type
     btnBtnCopy: TRzToolButton;
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
-    dlgPrint: TPrintDialog;
     BtnFastForward: TRzToolButton;
     actLayerCopy: TAction;
     actProjectItemDuplicate: TAction;
@@ -296,9 +293,9 @@ type
     procedure CreateTmpLock;
     procedure ReleaseTmpLock;
     procedure ScaleInterface;
-    procedure OnChartScaleToggle(Sender: TObject);
-    procedure OnChartMinLimitChange(Sender: TObject);
-    function GetActiveSeries: TChartSeries;
+    function GetActiveModelSeries: TFastLineSeries;
+    function GetActiveDataSeries: TFastLineSeries;
+    procedure OnSaveActiveData(Sender: TObject);
     procedure OnIncrementChange(Sender: TObject);
     procedure OnSetFitLimits(Sender: TObject);
     procedure OnProjectCaptionChange(const S: string);
@@ -354,12 +351,22 @@ uses
 
 {$R *.dfm}
 
-function TfrmMain.GetActiveSeries: TChartSeries;
+function TfrmMain.GetActiveModelSeries: TFastLineSeries;
 begin
   if FProjectPanel.Project.ActiveModel <> nil then
     Result := FProjectPanel.ActiveModelSeries
   else
     Result := nil;
+end;
+
+function TfrmMain.GetActiveDataSeries: TFastLineSeries;
+begin
+  Result := FProjectPanel.ActiveDataSeries;
+end;
+
+procedure TfrmMain.OnSaveActiveData(Sender: TObject);
+begin
+  FProjectPanel.SaveActiveData;
 end;
 
 procedure TfrmMain.OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
@@ -374,30 +381,6 @@ end;
 procedure TfrmMain.OnProjectCaptionChange(const S: string);
 begin
   Caption := S;
-end;
-
-procedure TfrmMain.OnChartScaleToggle(Sender: TObject);
-begin
-  if FChartInfo.Chart.LeftAxis.Logarithmic then
-  begin
-    FChartInfo.Chart.LeftAxis.Logarithmic := False;
-    FChartInfo.SetScaleCaption('Log');
-    if FChartInfo.Chart.LeftAxis.Maximum > 0.01 then
-      FChartInfo.Chart.LeftAxis.AxisValuesFormat := '0.000'
-    else
-      FChartInfo.Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
-  end
-  else
-  begin
-    FChartInfo.SetScaleCaption('Linear');
-    FChartInfo.Chart.LeftAxis.Logarithmic := True;
-    FChartInfo.Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
-  end;
-end;
-
-procedure TfrmMain.OnChartMinLimitChange(Sender: TObject);
-begin
-  FChartInfo.Chart.LeftAxis.Minimum := FChartInfo.MinLimit;
 end;
 
 procedure TfrmMain.ModelCreateExecute(Sender: TObject);
@@ -518,13 +501,12 @@ end;
 
 procedure TfrmMain.DataCopyClpbrdExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FProjectPanel.ActiveDataSeries, FCalcSettings.CalcMode);
+  FChartInfo.CopyDataToClipboard;
 end;
 
 procedure TfrmMain.DataExportExecute(Sender: TObject);
 begin
-  if dlgSaveResult.Execute then
-    SeriesToFile(FProjectPanel.ActiveModelSeries, dlgSaveResult.FileName);
+  FChartInfo.ExportDataToFile;
 end;
 
 procedure TfrmMain.DataLoadExecute(Sender: TObject);
@@ -533,78 +515,23 @@ begin
 end;
 
 procedure TfrmMain.DataNormAutoExecute(Sender: TObject);
-var
-  ModelSeries, DataSeries: TFastLineSeries;
 begin
-  ModelSeries := FProjectPanel.ActiveModelSeries;
-  DataSeries := FProjectPanel.ActiveDataSeries;
-  NormalizeAuto(ModelSeries, DataSeries);
-  FProjectPanel.SaveActiveData;
+  FChartInfo.NormalizeDataAuto;
 end;
 
 procedure TfrmMain.DataNormExecute(Sender: TObject);
-var
-  s: string;
-  DataSeries: TFastLineSeries;
 begin
-  s := InputBox('Data normalization', 'Coefficient', '');
-  if s <> '' then
-  begin
-    DataSeries := FProjectPanel.ActiveDataSeries;
-    Normalize(StrToFloat(s), DataSeries);
-    FProjectPanel.SaveActiveData;
-  end;
+  FChartInfo.NormalizeData;
 end;
 
 procedure TfrmMain.actDataSmoothExecute(Sender: TObject);
-var
-  Data: TDataArray;
-  DataSeries: TFastLineSeries;
 begin
-  DataSeries := FProjectPanel.ActiveDataSeries;
-  Data := SeriesToData(DataSeries);
-  Data := MovAvg(Data, 5);
-  DataToSeries(Data, DataSeries);
-  FProjectPanel.SaveActiveData;
+  FChartInfo.SmoothData;
 end;
 
 procedure TfrmMain.actDataTrimExecute(Sender: TObject);
-var
-  t1, t2: single;
-  index: integer;
-
-  function FindIndex(const val: single): integer;
-  var
-    i: integer;
-  begin
-    Result := -1;
-    for I := 0 to FProjectPanel.ActiveDataSeries.XValues.Count - 1 do
-      if FProjectPanel.ActiveDataSeries.XValues[i] >= val then
-      begin
-        Result := i;
-        Break;
-      end;
-  end;
-
 begin
-  FCalcSettings.GetAxisRange(t1, t2);
-
-  index := FindIndex(t1);
-  if index > 1 then
-  begin
-    FProjectPanel.ActiveDataSeries.BeginUpdate;
-    FProjectPanel.ActiveDataSeries.Delete(0, Index);
-    FProjectPanel.ActiveDataSeries.EndUpdate;
-  end;
-
-  index := FindIndex(t2);
-  if index > 1 then
-  begin
-    FProjectPanel.ActiveDataSeries.BeginUpdate;
-    FProjectPanel.ActiveDataSeries.Delete(index, FProjectPanel.ActiveDataSeries.XValues.Count - Index - 1);
-    FProjectPanel.ActiveDataSeries.EndUpdate;
-  end;
-  FProjectPanel.SaveActiveData;
+  FChartInfo.TrimData;
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);
@@ -1101,13 +1028,12 @@ end;
 
 procedure TfrmMain.ResultCopyExecute(Sender: TObject);
 begin
-  SeriesToClipboard(FProjectPanel.ActiveModelSeries, FCalcSettings.CalcMode);
+  FChartInfo.CopyResultToClipboard;
 end;
 
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
 begin
-  if dlgSaveResult.Execute then
-    SeriesToFile(FProjectPanel.ActiveModelSeries, dlgSaveResult.FileName);
+  FChartInfo.SaveResultToFile;
 end;
 
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
@@ -1185,7 +1111,7 @@ end;
 
 procedure TfrmMain.FileCopyPlotBMPExecute(Sender: TObject);
 begin
-  FChartInfo.Chart.CopyToClipboardBitmap;
+  FChartInfo.CopyPlotBitmap;
 end;
 
 procedure TfrmMain.FileNewExecute(Sender: TObject);
@@ -1200,30 +1126,17 @@ end;
 
 procedure TfrmMain.FilePlotCopyWMFExecute(Sender: TObject);
 begin
-  FChartInfo.Chart.CopyToClipboardMetafile(True);
+  FChartInfo.CopyPlotMetafile;
 end;
 
 procedure TfrmMain.FilePlotToFileExecute(Sender: TObject);
 begin
-  if dlgExport.Execute then
-    Case dlgExport.FilterIndex of
-      1:
-        FChartInfo.Chart.SaveToBitmapFile(dlgExport.FileName + '.bmp');
-      2:
-        FChartInfo.Chart.SaveToMetafileEnh(dlgExport.FileName + '.emf');
-      3:
-        FChartInfo.Chart.SaveToMetafile(dlgExport.FileName + '.wmf');
-    end;
+  FChartInfo.ExportPlotToFile;
 end;
 
 procedure TfrmMain.FilePrintExecute(Sender: TObject);
 begin
-  if dlgPrint.Execute then
-  begin
-    FChartInfo.Chart.Title.Visible := True;
-    FChartInfo.Chart.PrintLandscape;
-    FChartInfo.Chart.Title.Visible := False;
-  end;
+  FChartInfo.PrintChart;
 end;
 
 
@@ -1337,9 +1250,10 @@ begin
   FCalcSettings.OnFittingModeChange := OnFittingModeChange;
   FCalcSettings.OnAdvancedSettings := OnAdvancedSettings;
 
-  FChartInfo.OnScaleToggle := OnChartScaleToggle;
-  FChartInfo.OnMinLimitChange := OnChartMinLimitChange;
-  FChartInfo.OnGetActiveSeries := GetActiveSeries;
+  FChartInfo.CalcSettings := FCalcSettings;
+  FChartInfo.OnGetActiveModelSeries := GetActiveModelSeries;
+  FChartInfo.OnGetActiveDataSeries := GetActiveDataSeries;
+  FChartInfo.OnSaveActiveData := OnSaveActiveData;
 
   FStructurePanel.ConnectActions(vilModel,
     PeriodAdd, PeriodInsert, PeriodDelete,

@@ -4,13 +4,14 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.Types, System.IniFiles,
-  Vcl.Controls, Vcl.Forms, Vcl.StdCtrls,
+  Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.Dialogs,
   RzStatus, RzButton, RzCmboBx, RzPanel,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.TeCanvas,
-  VCLTee.Chart, VCLTee.Series;
+  VCLTee.Chart, VCLTee.Series,
+  frame_CalcSettings;
 
 type
-  TGetSeriesEvent = function: TChartSeries of object;
+  TGetFastSeriesEvent = function: TFastLineSeries of object;
 
   TfrmChartInfo = class(TFrame)
     Chart: TChart;
@@ -33,6 +34,9 @@ type
     spChiBest: TRzStatusPane;
     btnChartScale: TRzBitBtn;
     cbMinLimit: TRzComboBox;
+    dlgSaveResult: TSaveDialog;
+    dlgExport: TSaveDialog;
+    dlgPrint: TPrintDialog;
     procedure btnChartScaleClick(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
     procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
@@ -44,9 +48,10 @@ type
     procedure ChartResize(Sender: TObject);
     procedure ChartZoom(Sender: TObject);
   private
-    FOnScaleToggle: TNotifyEvent;
-    FOnMinLimitChange: TNotifyEvent;
-    FGetActiveSeries: TGetSeriesEvent;
+    FGetActiveModelSeries: TGetFastSeriesEvent;
+    FGetActiveDataSeries: TGetFastSeriesEvent;
+    FOnSaveActiveData: TNotifyEvent;
+    FCalcSettings: TfrmCalcSettings;
     function GetMinLimit: Single;
     function GetMinLimitText: string;
     procedure SetMinLimitText(const Value: string);
@@ -64,12 +69,34 @@ type
     procedure LoadFromINI(INF: TMemIniFile);
     procedure SaveToINI(INF: TMemIniFile);
 
-    property OnScaleToggle: TNotifyEvent read FOnScaleToggle write FOnScaleToggle;
-    property OnMinLimitChange: TNotifyEvent read FOnMinLimitChange write FOnMinLimitChange;
-    property OnGetActiveSeries: TGetSeriesEvent read FGetActiveSeries write FGetActiveSeries;
+    { Plot clipboard/file operations }
+    procedure CopyPlotBitmap;
+    procedure CopyPlotMetafile;
+    procedure ExportPlotToFile;
+    procedure PrintChart;
+
+    { Result data operations }
+    procedure SaveResultToFile;
+    procedure CopyResultToClipboard;
+
+    { Experimental data operations }
+    procedure CopyDataToClipboard;
+    procedure ExportDataToFile;
+    procedure NormalizeData;
+    procedure NormalizeDataAuto;
+    procedure SmoothData;
+    procedure TrimData;
+
+    property CalcSettings: TfrmCalcSettings read FCalcSettings write FCalcSettings;
+    property OnGetActiveModelSeries: TGetFastSeriesEvent read FGetActiveModelSeries write FGetActiveModelSeries;
+    property OnGetActiveDataSeries: TGetFastSeriesEvent read FGetActiveDataSeries write FGetActiveDataSeries;
+    property OnSaveActiveData: TNotifyEvent read FOnSaveActiveData write FOnSaveActiveData;
   end;
 
 implementation
+
+uses
+  unit_Types, unit_SeriesIO, unit_DataProcessing;
 
 {$R *.dfm}
 
@@ -77,14 +104,25 @@ implementation
 
 procedure TfrmChartInfo.btnChartScaleClick(Sender: TObject);
 begin
-  if Assigned(FOnScaleToggle) then
-    FOnScaleToggle(Self);
+  if Chart.LeftAxis.Logarithmic then
+  begin
+    Chart.LeftAxis.Logarithmic := False;
+    SetScaleCaption('Log');
+    if Chart.LeftAxis.Maximum > 0.01 then
+      Chart.LeftAxis.AxisValuesFormat := '0.000'
+    else
+      Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
+  end
+  else begin
+    SetScaleCaption('Linear');
+    Chart.LeftAxis.Logarithmic := True;
+    Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
+  end;
 end;
 
 procedure TfrmChartInfo.cbMinLimitChange(Sender: TObject);
 begin
-  if Assigned(FOnMinLimitChange) then
-    FOnMinLimitChange(Self);
+  Chart.LeftAxis.Minimum := MinLimit;
 end;
 
 function TfrmChartInfo.GetMinLimit: Single;
@@ -189,12 +227,12 @@ end;
 procedure TfrmChartInfo.ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 var
-  Series: TChartSeries;
+  Series: TFastLineSeries;
   xv, yv: Single;
   R: TRect;
 begin
-  if not Assigned(FGetActiveSeries) then Exit;
-  Series := FGetActiveSeries;
+  if not Assigned(FGetActiveModelSeries) then Exit;
+  Series := FGetActiveModelSeries;
   if Series = nil then Exit;
 
   xv := Series.XScreenToValue(X);
@@ -223,13 +261,171 @@ end;
 
 procedure TfrmChartInfo.ChartZoom(Sender: TObject);
 var
-  Series: TChartSeries;
+  Series: TFastLineSeries;
 begin
-  if not Assigned(FGetActiveSeries) then Exit;
-  Series := FGetActiveSeries;
+  if not Assigned(FGetActiveModelSeries) then Exit;
+  Series := FGetActiveModelSeries;
   if Series = nil then Exit;
 
   SetPeakInfo(Series, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
+end;
+
+{ Plot clipboard/file operations }
+
+procedure TfrmChartInfo.CopyPlotBitmap;
+begin
+  Chart.CopyToClipboardBitmap;
+end;
+
+procedure TfrmChartInfo.CopyPlotMetafile;
+begin
+  Chart.CopyToClipboardMetafile(True);
+end;
+
+procedure TfrmChartInfo.ExportPlotToFile;
+begin
+  if dlgExport.Execute then
+    Case dlgExport.FilterIndex of
+      1:
+        Chart.SaveToBitmapFile(dlgExport.FileName + '.bmp');
+      2:
+        Chart.SaveToMetafileEnh(dlgExport.FileName + '.emf');
+      3:
+        Chart.SaveToMetafile(dlgExport.FileName + '.wmf');
+    end;
+end;
+
+procedure TfrmChartInfo.PrintChart;
+begin
+  if dlgPrint.Execute then
+  begin
+    Chart.Title.Visible := True;
+    Chart.PrintLandscape;
+    Chart.Title.Visible := False;
+  end;
+end;
+
+{ Result data operations }
+
+procedure TfrmChartInfo.SaveResultToFile;
+var
+  Series: TFastLineSeries;
+begin
+  Series := FGetActiveModelSeries;
+  if Series = nil then Exit;
+  if dlgSaveResult.Execute then
+    SeriesToFile(Series, dlgSaveResult.FileName);
+end;
+
+procedure TfrmChartInfo.CopyResultToClipboard;
+var
+  Series: TFastLineSeries;
+begin
+  Series := FGetActiveModelSeries;
+  if Series = nil then Exit;
+  SeriesToClipboard(Series, FCalcSettings.CalcMode);
+end;
+
+{ Experimental data operations }
+
+procedure TfrmChartInfo.CopyDataToClipboard;
+var
+  Series: TFastLineSeries;
+begin
+  Series := FGetActiveDataSeries;
+  if Series = nil then Exit;
+  SeriesToClipboard(Series, FCalcSettings.CalcMode);
+end;
+
+procedure TfrmChartInfo.ExportDataToFile;
+var
+  Series: TFastLineSeries;
+begin
+  Series := FGetActiveModelSeries;
+  if Series = nil then Exit;
+  if dlgSaveResult.Execute then
+    SeriesToFile(Series, dlgSaveResult.FileName);
+end;
+
+procedure TfrmChartInfo.NormalizeData;
+var
+  s: string;
+  DataSeries: TFastLineSeries;
+begin
+  s := InputBox('Data normalization', 'Coefficient', '');
+  if s <> '' then
+  begin
+    DataSeries := FGetActiveDataSeries;
+    Normalize(StrToFloat(s), DataSeries);
+    if Assigned(FOnSaveActiveData) then
+      FOnSaveActiveData(Self);
+  end;
+end;
+
+procedure TfrmChartInfo.NormalizeDataAuto;
+var
+  ModelSeries, DataSeries: TFastLineSeries;
+begin
+  ModelSeries := FGetActiveModelSeries;
+  DataSeries := FGetActiveDataSeries;
+  NormalizeAuto(ModelSeries, DataSeries);
+  if Assigned(FOnSaveActiveData) then
+    FOnSaveActiveData(Self);
+end;
+
+procedure TfrmChartInfo.SmoothData;
+var
+  Data: TDataArray;
+  DataSeries: TFastLineSeries;
+begin
+  DataSeries := FGetActiveDataSeries;
+  Data := SeriesToData(DataSeries);
+  Data := MovAvg(Data, 5);
+  DataToSeries(Data, DataSeries);
+  if Assigned(FOnSaveActiveData) then
+    FOnSaveActiveData(Self);
+end;
+
+procedure TfrmChartInfo.TrimData;
+var
+  t1, t2: single;
+  index: integer;
+  DataSeries: TFastLineSeries;
+
+  function FindIndex(const val: single): integer;
+  var
+    i: integer;
+  begin
+    Result := -1;
+    for I := 0 to DataSeries.XValues.Count - 1 do
+      if DataSeries.XValues[i] >= val then
+      begin
+        Result := i;
+        Break;
+      end;
+  end;
+
+begin
+  DataSeries := FGetActiveDataSeries;
+  FCalcSettings.GetAxisRange(t1, t2);
+
+  index := FindIndex(t1);
+  if index > 1 then
+  begin
+    DataSeries.BeginUpdate;
+    DataSeries.Delete(0, Index);
+    DataSeries.EndUpdate;
+  end;
+
+  index := FindIndex(t2);
+  if index > 1 then
+  begin
+    DataSeries.BeginUpdate;
+    DataSeries.Delete(index, DataSeries.XValues.Count - Index - 1);
+    DataSeries.EndUpdate;
+  end;
+  if Assigned(FOnSaveActiveData) then
+    FOnSaveActiveData(Self);
 end;
 
 end.

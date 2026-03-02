@@ -1905,24 +1905,6 @@ object frmMain: TfrmMain
       OnExecute = actCalcFitJobsExecute
     end
   end
-  object dlgSaveResult: TSaveDialog
-    DefaultExt = 'dat'
-    Filter = 'ASCII data|*.dat'
-    Title = 'Save result to file'
-    Left = 208
-    Top = 204
-  end
-  object dlgExport: TSaveDialog
-    Filter = 
-      'Bitmaps (*.bmp)|*.bmp|Enhanced Metafiles (*.emf)|*.emf|Metafiles' +
-      ' (*.wmf)|*.wmf'
-    Left = 240
-    Top = 204
-  end
-  object dlgPrint: TPrintDialog
-    Left = 276
-    Top = 232
-  end
   object ilCalc: TImageList
     ColorDepth = cd32Bit
     Left = 444
