@@ -29,6 +29,8 @@ check_dir() {
   fi
 }
 
+mkdir -p "$DEPLOY_DIR"
+
 echo "=== X-Ray Calc 3 Deploy ==="
 echo ""
 
@@ -39,10 +41,10 @@ check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"
 check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe"
 check_file "$PROJECT_DIR/XRCXPreview/Release/Win32/XRCPreviewHandlerLib.dll"
 check_file "$PROJECT_DIR/XRCXPreview/Release/Win64/XRCPreviewHandlerLib.dll"
-check_file "$PROJECT_DIR/_Out/BIN/Help/UserManual.html"
-check_file "$PROJECT_DIR/_Out/BIN/Help/style.css"
-check_file "$PROJECT_DIR/_Out/BIN/Help/script.js"
-check_dir  "$PROJECT_DIR/_Out/BIN/Help/images"
+check_file "$PROJECT_DIR/Assets/Docs/Help/UserManual.html"
+check_file "$PROJECT_DIR/Assets/Docs/Help/style.css"
+check_file "$PROJECT_DIR/Assets/Docs/Help/script.js"
+check_dir  "$PROJECT_DIR/Assets/Docs/Help/images"
 check_file "$PROJECT_DIR/Assets/XRayCalc3_Icon.ico"
 check_file "$PROJECT_DIR/Assets/XRayCalc3_x64_Icon.ico"
 check_dir  "$STORAGE_DIR/Henke"
@@ -93,11 +95,11 @@ example_count=$(ls -1 "$DEPLOY_DIR/Examples/"*.xrcx 2>/dev/null | wc -l)
 echo "  $example_count .xrcx files"
 
 echo "Copying help files..."
-cp "$PROJECT_DIR/_Out/BIN/Help/UserManual.html" "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/_Out/BIN/Help/style.css"       "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/_Out/BIN/Help/script.js"       "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/_Out/BIN/Help/"*.html          "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/_Out/BIN/Help/images/"*        "$DEPLOY_DIR/Help/images/"
+cp "$PROJECT_DIR/Assets/Docs/Help/UserManual.html" "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/Assets/Docs/Help/style.css"       "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/Assets/Docs/Help/script.js"       "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/Assets/Docs/Help/"*.html          "$DEPLOY_DIR/Help/"
+cp "$PROJECT_DIR/Assets/Docs/Help/images/"*        "$DEPLOY_DIR/Help/images/"
 help_count=$(ls -1 "$DEPLOY_DIR/Help/"*.html 2>/dev/null | wc -l)
 echo "  $help_count HTML files + style.css + script.js + images/"
 
