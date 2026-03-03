@@ -4,9 +4,9 @@
 
 | # | Task | Size | Notes |
 |---|------|------|-------|
-| 1 | Eliminate excessive `Copy()` in population management — `Copy(X, 0, MaxInt)` on pbest update. Use object pool or in-place swap | 🟡 M | `unit_LFPSO_Base.pas:411` |
+| ~~1~~ | ~~Eliminate excessive `Copy()` in population management~~ | ~~🟡 M~~ | Done — `04c8bb2` added `CopySolution()` deep-copy helper; dead `CalcSolution` removed |
 | 2 | Batch UI update messages during fitting — throttle `PostMessage` to 10-20/sec | 🟢 S | `unit_LFPSO_Base.pas:680` |
-| 3 | Implement adaptive velocity coefficient (`CFactor`) — currently hardcoded to 1. Linearly decrease 0.9→0.4 for 20-40% faster convergence | 🟡 M | `unit_LFPSO_Base.pas:494` |
+| ~~3~~ | ~~Implement adaptive velocity coefficient (`CFactor`)~~ | ~~🟡 M~~ | Done — `f866b42` linearly decreases CFactor from (w1+w2) to w1 |
 | 4 | Replace `Application.ProcessMessages` with async pattern (`TThread.Queue` or OTL Comm) — re-entrancy risk | 🟡 M | Lines 490, 680, 700 |
 
 ## Calculation Engine

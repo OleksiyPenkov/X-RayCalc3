@@ -119,8 +119,6 @@ type
     private
      procedure Shake(const t: integer; var  SuccessCount, ReInitCount: integer; Vmax0, Ksxr0: single);
      procedure SendUpdateStep(const Step: integer);
-     procedure CalcSolution(const X: TSolution);
-
     public
       constructor Create;
       destructor Destroy; override;
@@ -381,33 +379,6 @@ begin
 end;
 
 
-procedure TLFPSO_BASE.CalcSolution;
-begin
-  FCalcModel.Reset;
-  FillModel(FCalcModel, X);
-  FCalc.Model := FCalcModel;
-
-  if Length(FMaterials) <> 0 then
-    FCalc.Model.Materials := FMaterials;    // loading from cache
-
-  FCalc.Run;
-
-  if Length(FMaterials) = 0 then
-    FMaterials := FCalc.Model.Materials;    // saving to cache
-
-  FCalc.CalcChiSquare(FFitParams.ThetaWeight);
-
-  if FCalc.ChiSQR < FLastBestChiSqr then
-  begin
-    FLastBestChiSqr  := FCalc.ChiSQR;
-    FResultingCurve  := Copy(FCalc.Results);
-    pbest := Copy(X, 0, MaxInt);
-  end;
-
-  if FCalc.ChiSQR > FLastWorseChiSQR then
-    FLastWorseChiSQR :=  FCalc.ChiSQR;
-end;
-
 function TLFPSO_BASE.FindTheBest: boolean;
 var
   i, bestIdx: integer;
@@ -549,7 +520,7 @@ begin
   FJammingCount := 0;
 end;
 
-procedure TLFPSO_BASE.Run;
+procedure TLFPSO_BASE.Run(CalcConditions: TCalcThreadParams);
 const
   levy_beta = 1.5;
 var
