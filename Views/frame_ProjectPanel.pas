@@ -1202,6 +1202,7 @@ begin
   FFitParams.PolyFactor   := 10;
 
   FProject.Rescale;
+  FCalcSettings.ApplyModeSettings;
 end;
 
 { --- Tree event handlers --- }

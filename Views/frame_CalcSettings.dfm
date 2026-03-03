@@ -618,6 +618,7 @@ object frmCalcSettings: TfrmCalcSettings
         State = cbChecked
         TabOrder = 4
         Transparent = True
+        OnClick = cb2ThetaClick
       end
     end
     object rgCalcMode: TRzRadioGroup
@@ -646,6 +647,7 @@ object frmCalcSettings: TfrmCalcSettings
       TabOrder = 3
       VerticalSpacing = 6
       OnChanging = rgCalcModeChanging
+      OnClick = rgCalcModeClick
       StyleElements = [seFont, seClient, seBorder]
     end
     object RzGroupBox2: TRzGroupBox

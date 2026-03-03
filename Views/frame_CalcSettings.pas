@@ -53,6 +53,8 @@ type
     edN: TEdit;
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
       var AllowChange: Boolean);
+    procedure rgCalcModeClick(Sender: TObject);
+    procedure cb2ThetaClick(Sender: TObject);
     procedure rgFittingModeClick(Sender: TObject);
     procedure btnAdvFitSettingsClick(Sender: TObject);
   private
@@ -67,6 +69,7 @@ type
     function GetThetaWeightIndex: Integer;
   public
     procedure LoadFromINI(INF: TMemIniFile);
+    procedure ApplyModeSettings;
     procedure SaveToINI(INF: TMemIniFile);
     procedure ReadFitParams(var Params: TFitParams);
     procedure FillCalcThreadParams(var Params: TCalcThreadParams);
@@ -138,6 +141,16 @@ begin
       end;
   end;
   AllowChange := True;
+end;
+
+procedure TfrmCalcSettings.rgCalcModeClick(Sender: TObject);
+begin
+  if Assigned(FOnCalcModeChange) then
+    FOnCalcModeChange(Self);
+end;
+
+procedure TfrmCalcSettings.cb2ThetaClick(Sender: TObject);
+begin
   if Assigned(FOnCalcModeChange) then
     FOnCalcModeChange(Self);
 end;
@@ -200,6 +213,33 @@ begin
   cbSeedRange.Checked := INF.ReadBool('LFPSO', 'SeedRange', False);
   cbLFPSOShake.Checked := INF.ReadBool('LFPSO', 'Shake', True);
   cbSmooth.Checked := INF.ReadBool('LFPSO', 'Smooth', False);
+
+  ApplyModeSettings;
+end;
+
+procedure TfrmCalcSettings.ApplyModeSettings;
+begin
+  case rgCalcMode.ItemIndex of
+    0:
+      begin
+        pnlAngleParams.Enabled := True;
+        pnlWaveParams.Enabled := False;
+      end;
+    1:
+      begin
+        pnlAngleParams.Enabled := False;
+        pnlWaveParams.Enabled := True;
+      end;
+  end;
+
+  cbSmooth.Enabled := FittingMode = fmIrregular;
+  edPolyOrder.Enabled := FittingMode = fmPoly;
+  lblPolyOrder.Enabled := edPolyOrder.Enabled;
+
+  if Assigned(FOnCalcModeChange) then
+    FOnCalcModeChange(Self);
+  if Assigned(FOnFittingModeChange) then
+    FOnFittingModeChange(Self);
 end;
 
 procedure TfrmCalcSettings.SaveToINI(INF: TMemIniFile);

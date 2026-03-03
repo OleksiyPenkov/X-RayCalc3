@@ -969,7 +969,10 @@ end;
 procedure TfrmMain.OnCalcModeChange(Sender: TObject);
 begin
   case FCalcSettings.CalcMode of
-    0: FChartInfo.Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
+    0: if FCalcSettings.Is2Theta then
+         FChartInfo.Chart.BottomAxis.Title.Caption := '2θ (deg)'
+       else
+         FChartInfo.Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
     1: FChartInfo.Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
   end;
 end;
