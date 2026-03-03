@@ -193,7 +193,7 @@ begin
   edDL.Text := INF.ReadString('WAVE', 'width', '0');
 
   edFIter.Text := INF.ReadString('FIT', 'Namx', '100');
-  edFPopulation.Text := INF.ReadString('FIT', 'Pop', '100');
+  edFPopulation.Text := INF.ReadString('FIT', 'Pop', '1000');
 
   FitMode := INF.ReadInteger('FIT', 'Mode', -1);
   if FitMode = -1 then
