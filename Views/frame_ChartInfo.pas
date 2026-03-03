@@ -4,15 +4,27 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.Types, System.IniFiles,
-  Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.Dialogs,
+  System.UITypes,
+  Vcl.Controls, Vcl.Graphics, Vcl.Forms, Vcl.StdCtrls, Vcl.Dialogs,
+  Vcl.ExtCtrls,
   RzStatus, RzButton, RzCmboBx, RzPanel,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.TeCanvas,
   VCLTee.Chart, VCLTee.Series,
-  frame_CalcSettings, Vcl.ExtCtrls;
+  frame_CalcSettings, unit_Types;
 
 type
   TGetFastSeriesEvent = function: TFastLineSeries of object;
   TLegendCheckEvent = procedure(Sender: TObject; Series: TChartSeries) of object;
+
+  TLegendEntry = record
+    Title: string;
+    Color: TColor;
+    Visible: Boolean;
+    Linked: Boolean;
+    Group: TProjectGroupType;
+    CurveID: Integer;
+    Series: TChartSeries;
+  end;
 
   TfrmChartInfo = class(TFrame)
     pnlInfo: TRzPanel;
@@ -36,12 +48,12 @@ type
     dlgSaveResult: TSaveDialog;
     dlgExport: TSaveDialog;
     dlgPrint: TPrintDialog;
+    pnlLegend: TRzPanel;
+    sbLegend: TScrollBox;
     Chart: TChart;
     btnStop: TRzBitBtn;
     procedure btnChartScaleClick(Sender: TObject);
     procedure cbMinLimitChange(Sender: TObject);
-    procedure ChartClickLegend(Sender: TCustomChart; Button: TMouseButton; Shift:
-        TShiftState; X, Y: Integer);
     procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -56,6 +68,8 @@ type
     FOnSaveActiveData: TNotifyEvent;
     FOnLegendCheckBoxClick: TLegendCheckEvent;
     FCalcSettings: TfrmCalcSettings;
+    FLegendControls: TArray<TControl>;
+    procedure LegendCheckBoxClick(Sender: TObject);
     function GetMinLimit: Single;
     function GetMinLimitText: string;
     procedure SetMinLimitText(const Value: string);
@@ -91,6 +105,9 @@ type
     procedure SmoothData;
     procedure TrimData;
 
+    procedure RefreshLegend(const Items: TArray<TLegendEntry>);
+    procedure ClearLegend;
+
     property CalcSettings: TfrmCalcSettings read FCalcSettings write FCalcSettings;
     property OnGetActiveModelSeries: TGetFastSeriesEvent read FGetActiveModelSeries write FGetActiveModelSeries;
     property OnGetActiveDataSeries: TGetFastSeriesEvent read FGetActiveDataSeries write FGetActiveDataSeries;
@@ -101,7 +118,7 @@ type
 implementation
 
 uses
-  unit_Types, unit_SeriesIO, unit_DataProcessing;
+  unit_SeriesIO, unit_DataProcessing;
 
 {$R *.dfm}
 
@@ -128,12 +145,6 @@ end;
 procedure TfrmChartInfo.cbMinLimitChange(Sender: TObject);
 begin
   Chart.LeftAxis.Minimum := MinLimit;
-end;
-
-procedure TfrmChartInfo.ChartClickLegend(Sender: TCustomChart; Button:
-    TMouseButton; Shift: TShiftState; X, Y: Integer);
-begin
-  //
 end;
 
 function TfrmChartInfo.GetMinLimit: Single;
@@ -240,7 +251,6 @@ procedure TfrmChartInfo.ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
 var
   Series: TFastLineSeries;
   xv, yv: Single;
-  R: TRect;
 begin
   if not Assigned(FGetActiveModelSeries) then Exit;
   Series := FGetActiveModelSeries;
@@ -249,13 +259,6 @@ begin
   xv := Series.XScreenToValue(X);
   yv := Series.YScreenToValue(Y);
   SetCursorPos(xv, yv);
-
-  R := Chart.Legend.RectLegend;
-
-  if (X > R.Left) and (X < R.Right) and (Y > R.Top) and (Y < R.Bottom) then
-    Chart.Cursor := crArrow
-  else
-    Chart.Cursor := crCross;
 end;
 
 procedure TfrmChartInfo.ChartMouseUp(Sender: TObject; Button: TMouseButton;
@@ -268,6 +271,8 @@ end;
 procedure TfrmChartInfo.ChartResize(Sender: TObject);
 begin
   btnStop.Left := Chart.ClientWidth div 2 - 40;
+  pnlLegend.Left := Chart.ClientWidth - pnlLegend.Width - Chart.ClientWidth * 2 div 100;
+  pnlLegend.Top := Chart.ClientHeight * 4 div 100;
 end;
 
 procedure TfrmChartInfo.ChartZoom(Sender: TObject);
@@ -396,6 +401,132 @@ begin
   if Assigned(FOnSaveActiveData) then
     FOnSaveActiveData(Self);
 end;
+
+{ Legend panel }
+
+procedure TfrmChartInfo.ClearLegend;
+var
+  I: Integer;
+begin
+  for I := High(FLegendControls) downto 0 do
+    FLegendControls[I].Free;
+  SetLength(FLegendControls, 0);
+  pnlLegend.Visible := False;
+end;
+
+procedure TfrmChartInfo.RefreshLegend(const Items: TArray<TLegendEntry>);
+const
+  MAX_LEGEND_HEIGHT = 300;
+var
+  I, Y, Len, TotalH: Integer;
+  Lbl: TLabel;
+  Row: TPanel;
+  Shp: TShape;
+  CB: TCheckBox;
+  LastGroup: TProjectGroupType;
+
+  procedure AddControl(C: TControl);
+  begin
+    Len := Length(FLegendControls);
+    SetLength(FLegendControls, Len + 1);
+    FLegendControls[Len] := C;
+  end;
+
+begin
+  ClearLegend;
+  if Length(Items) = 0 then
+  begin
+    pnlLegend.Visible := False;
+    Exit;
+  end;
+
+  Y := 4;
+  LastGroup := gtData; // force first header
+
+  for I := 0 to High(Items) do
+  begin
+    // Group header
+    if (I = 0) or (Items[I].Group <> LastGroup) then
+    begin
+      Lbl := TLabel.Create(sbLegend);
+      Lbl.Parent := sbLegend;
+      Lbl.Left := 4;
+      Lbl.Top := Y;
+      Lbl.Font.Style := [fsBold];
+      Lbl.Font.Size := 8;
+      if Items[I].Group = gtModel then
+        Lbl.Caption := 'Models'
+      else
+        Lbl.Caption := 'Data';
+      AddControl(Lbl);
+      Inc(Y, 18);
+      LastGroup := Items[I].Group;
+    end;
+
+    // Row panel
+    Row := TPanel.Create(sbLegend);
+    Row.Parent := sbLegend;
+    Row.BevelOuter := bvNone;
+    Row.Left := 0;
+    Row.Top := Y;
+    Row.Width := sbLegend.ClientWidth;
+    Row.Height := 22;
+    Row.Anchors := [akLeft, akTop, akRight];
+    Row.Color := clWhite;
+    AddControl(Row);
+
+    // Color swatch
+    Shp := TShape.Create(Row);
+    Shp.Parent := Row;
+    Shp.Left := 4;
+    Shp.Top := 3;
+    Shp.Width := 16;
+    Shp.Height := 16;
+    Shp.Brush.Color := Items[I].Color;
+    Shp.Pen.Color := Items[I].Color;
+
+    // Checkbox
+    CB := TCheckBox.Create(Row);
+    CB.Parent := Row;
+    CB.Left := 24;
+    CB.Top := 2;
+    CB.Width := Row.Width - 28;
+    CB.Caption := Items[I].Title;
+    CB.Checked := Items[I].Visible;
+    if Items[I].Linked then
+      CB.Font.Style := [fsUnderline];
+    CB.Tag := NativeInt(Items[I].Series);
+    CB.OnClick := LegendCheckBoxClick;
+
+    Inc(Y, 22);
+  end;
+
+  // Auto-size panel height to content, capped at max
+  TotalH := Y + 6; // 4px top padding + 2px bottom
+  if TotalH > MAX_LEGEND_HEIGHT then
+    TotalH := MAX_LEGEND_HEIGHT;
+  pnlLegend.Height := TotalH;
+
+  // Position at 2% from top-right corner of chart
+  pnlLegend.Left := Chart.ClientWidth - pnlLegend.Width - Chart.ClientWidth * 2 div 100;
+  pnlLegend.Top := Chart.ClientHeight * 4 div 100;
+  pnlLegend.Visible := True;
+end;
+
+procedure TfrmChartInfo.LegendCheckBoxClick(Sender: TObject);
+var
+  CB: TCheckBox;
+  S: TChartSeries;
+begin
+  CB := Sender as TCheckBox;
+  S := TChartSeries(CB.Tag);
+  S.Active := CB.Checked;
+  S.Visible := CB.Checked;
+  if Assigned(FOnLegendCheckBoxClick) then
+    FOnLegendCheckBoxClick(Self, S);
+end;
+
+{ Data operations }
 
 procedure TfrmChartInfo.TrimData;
 var

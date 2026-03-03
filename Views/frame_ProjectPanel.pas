@@ -189,6 +189,7 @@ type
     { Utilities }
     procedure CreateProfileExtension;
     procedure RescaleChart;
+    procedure RefreshChartLegend;
     procedure SyncSeriesVisibility(Series: TChartSeries);
     procedure SaveHistory;
     procedure AutoSave;
@@ -373,6 +374,7 @@ begin
   else
     FProject.LinkedData := FLastData;
   FProject.Repaint;
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.pmiVisibleClick(Sender: TObject);
@@ -381,6 +383,7 @@ begin
   FChartMgr.Series[FLastData.CurveID].Visible := pmiVisible.Checked;
   FLastData.Visible := pmiVisible.Checked;
   FProject.Repaint;
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.pmProjectPopup(Sender: TObject);
@@ -430,6 +433,7 @@ begin
   FChartMgr.AddSeries(FProject.ActiveModel);
   FProject.Expanded[Node] := True;
   inc(FLastID);
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -438,6 +442,7 @@ begin
   FProject.DeleteNode(Node);
   FProject.Repaint;
   FProject.ActiveModel := nil;
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.DeleteData(Node: PVirtualNode; Data: PProjectData);
@@ -446,6 +451,7 @@ begin
   FChartMgr.DeleteSeries(Data.CurveID);
   FProject.DeleteNode(Node);
   FProject.Refresh;
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.DeleteExtension(Node: PVirtualNode);
@@ -747,6 +753,7 @@ begin
           FChartMgr.Series[Data.CurveID].Color := Data.Color;
           FChartMgr.Series[Data.CurveID].Title := Data.Title;
           SetDescription(Data.Description);
+          RefreshChartLegend;
         end;
       end;
     prExtension:
@@ -800,6 +807,46 @@ var
 begin
   FCalcSettings.GetAxisRange(AMin, AMax);
   FChartMgr.RescaleAxis(AMin, AMax, FChartInfo.MinLimit);
+end;
+
+procedure TfrmProjectPanel.RefreshChartLegend;
+var
+  Items: TArray<TLegendEntry>;
+  Node: PVirtualNode;
+  Data: PProjectData;
+  Entry: TLegendEntry;
+  Count: Integer;
+  S: TFastLineSeries;
+begin
+  Count := 0;
+  SetLength(Items, 0);
+
+  // Iterate all nodes collecting prItem entries
+  Node := FProject.GetFirstChild(FProject.GetFirst);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if Data.RowType = prItem then
+    begin
+      S := FChartMgr.Series[Data.CurveID];
+      if S <> nil then
+      begin
+        Entry.Title := Data.Title;
+        Entry.Color := Data.Color;
+        Entry.Visible := Data.Visible;
+        Entry.Linked := Data = FProject.LinkedData;
+        Entry.Group := Data.Group;
+        Entry.CurveID := Data.CurveID;
+        Entry.Series := S;
+        SetLength(Items, Count + 1);
+        Items[Count] := Entry;
+        Inc(Count);
+      end;
+    end;
+    Node := FProject.GetNext(Node);
+  end;
+
+  FChartInfo.RefreshLegend(Items);
 end;
 
 procedure TfrmProjectPanel.LoadRecentProjectsList(ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
@@ -1065,6 +1112,7 @@ begin
 
   FProject.ActiveData := Data;
   FProject.Expanded[FDataRoot] := True;
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.PasteData;
@@ -1086,6 +1134,7 @@ begin
 
   SeriesFromClipboard(FChartMgr.Series[Data.CurveID]);
   SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
+  RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.SaveData;
@@ -1125,6 +1174,7 @@ begin
     FOnCaptionChange('X-Ray Calc 3: ' + ExtractFileName(FileName));
   MatchToStructure;
   RescaleChart;
+  RefreshChartLegend;
   FChartInfo.Chart.Repaint;
 end;
 
@@ -1203,6 +1253,7 @@ begin
 
   FProject.Rescale;
   FCalcSettings.ApplyModeSettings;
+  RefreshChartLegend;
 end;
 
 { --- Tree event handlers --- }

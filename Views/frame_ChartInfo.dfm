@@ -261,6 +261,7 @@ object frmChartInfo: TfrmChartInfo
     Width = 1042
     Height = 544
     Cursor = crCross
+    Legend.Visible = False
     Legend.ResizeChart = False
     Legend.TopPos = 2
     MarginBottom = 1
@@ -270,7 +271,6 @@ object frmChartInfo: TfrmChartInfo
     Title.Text.Strings = (
       'TChart')
     Title.Visible = False
-    OnClickLegend = ChartClickLegend
     OnZoom = ChartZoom
     BottomAxis.Automatic = False
     BottomAxis.AutomaticMaximum = False
@@ -297,6 +297,28 @@ object frmChartInfo: TfrmChartInfo
     OnResize = ChartResize
     DefaultCanvas = 'TGDIPlusCanvas'
     ColorPaletteIndex = 13
+    object pnlLegend: TRzPanel
+      Left = 880
+      Top = 10
+      Width = 140
+      Height = 40
+      BorderOuter = fsFlatRounded
+      FlatColor = clGray
+      Color = clWhite
+      TabOrder = 1
+      Visible = False
+      object sbLegend: TScrollBox
+        Left = 2
+        Top = 2
+        Width = 136
+        Height = 36
+        Align = alClient
+        BorderStyle = bsNone
+        Color = clWhite
+        ParentColor = False
+        TabOrder = 0
+      end
+    end
     object btnStop: TRzBitBtn
       Left = 568
       Top = 17

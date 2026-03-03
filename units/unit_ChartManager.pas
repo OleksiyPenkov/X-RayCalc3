@@ -115,9 +115,6 @@ begin
   FChart.Foot.Font.Size := ScaledLargeSize;
   FChart.SubFoot.Font.Size := ScaledLargeSize;
 
-  FChart.Legend.Font.Size := ScaledLargeSize;
-  FChart.Legend.Title.Font.Size := ScaledLargeSize;
-
   for I := 0 to FChart.Axes.Count - 1 do
   begin
     FChart.Axes[I].LabelsFont.Size := ScaledBaseSize;
