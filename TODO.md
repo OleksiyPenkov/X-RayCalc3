@@ -1,82 +1,52 @@
-# Refactoring & Optimization TODO
+# X-RayCalc3 — TODO
 
-## Bugs
+## Fitting Engine (LFPSO)
 
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 1 | Fix `DivRZ` wrong formula — returns `(R/Z.Re, R/Z.Im)` when both nonzero, correct is `R*(x-yi)/(x²+y²)`. CMD now shares fix via `math_complex.pas` (`math_complex.pas:313-322`) | 🟢 S | ✅ Done |
-| 2 | Fix `SqrtZ(0,0)` returns `(1,0)` instead of `(0,0)` (`math_complex.pas:534-535`) | 🟢 S | ✅ Done |
-| 3 | Fix `PowZR2` infinite recursion — `PowZR2` → `PowZZ` → `PowZR2` when Z2.Im=0. Now computes directly via exp/ln (`math_complex.pas:580-583`) | 🟡 M | ✅ Done |
-| 4 | Fix `TanhZ` swapped denominator — uses `cos(x)+cosh(y)` but correct is `cosh(x)+cos(y)` (`math_complex.pas:461-469`) | 🟢 S | ✅ Done |
-| 5 | Fix `Smooth` — `.t` values never set in output array, all zero (`unit_helpers.pas:109-140`) | 🟢 S | ✅ Done |
-| 6 | Fix `FillElementsList` — missing `FindClose(F)` after `FindFirst/FindNext`, file handle leak (`unit_helpers.pas:245-249`) | 🟢 S | ✅ Done |
-| 7 | Fix `StringToComplex` — completely broken, only parsed Im part. Now moot: CMD shares `math_complex.pas` | 🟢 S | ✅ Done |
-| 8 | Fix `cmd_unit_calc.TCalc` destructor — named `Free` instead of `Destroy override`, breaks destruction chain (`cmd_unit_calc.pas:206-208`) | 🟢 S | ✅ Done |
-| 9 | Fix `TFitStructure.CopyContent` shallow copy — inner `Layers` arrays share references after copy (`unit_Types.pas:271-275`) | 🟡 M | ✅ Done |
-| 10 | Fix `ClearDir` — removed unused `Full` parameter (`unit_helpers.pas:537`) | 🟢 S | ✅ Done |
+| # | Task | Size | Notes |
+|---|------|------|-------|
+| 1 | Eliminate excessive `Copy()` in population management — `Copy(X, 0, MaxInt)` on pbest update. Use object pool or in-place swap | 🟡 M | `unit_LFPSO_Base.pas:411` |
+| 2 | Batch UI update messages during fitting — throttle `PostMessage` to 10-20/sec | 🟢 S | `unit_LFPSO_Base.pas:680` |
+| 3 | Implement adaptive velocity coefficient (`CFactor`) — currently hardcoded to 1. Linearly decrease 0.9→0.4 for 20-40% faster convergence | 🟡 M | `unit_LFPSO_Base.pas:494` |
+| 4 | Replace `Application.ProcessMessages` with async pattern (`TThread.Queue` or OTL Comm) — re-entrancy risk | 🟡 M | Lines 490, 680, 700 |
 
-## Refactoring
+## Calculation Engine
 
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 11 | Eliminate XRC_CMD code duplication — shared `math_complex.pas` via search path, deleted `cmd_math_complex.pas` (579 lines). Remaining CMD units (`cmd_math_globals`, `cmd_unit_calc`, `cmd_unit_types`, `cmd_unit_materials`) have diverged types and can't be shared without rewrite | 🔴 XL | ✅ Done |
-| 12 | Delete `unit_settings_old.pas` — dead code, fully superseded by `unit_Config.pas`. Also re-declares helpers already in `unit_helpers.pas` | 🟢 S | ✅ Done |
-| 13 | Delete or implement `FindPCores` — empty stub, all case branches are no-ops (`unit_sys_helpers.pas:55-87`) | 🟢 S | ✅ Done |
-| 14 | Remove `with` statements in `unit_materials.pas` — 4 uses on `FLayers[i]`/`FMaterials[size]` (lines 106, 118, 165, 185). Replace with explicit variable refs | 🟡 M | ✅ Done |
-| 15 | Name magic numbers — `kk` → `ClassicalElectronRadius`, `0.2171472409516259` → `InvTwoLn10`, `0.849` → `FWHMToGaussianWidth`, `DV` → commented | 🟡 M | ✅ Done |
-| 16 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker in `TProjectData`. Use struct with explicit `Count` field (`unit_Types.pas:65-66`) | 🟡 M | ⏸️ Deferred |
-| 17 | Fix implicit global `Structure` in `TProfileManager` — bare variable referenced without being a field or parameter (`unit_ProfilesManager.pas:105+`) | 🟡 M | ✅ Done |
-| 18 | Replace old-style I/O in `DataToFile` — uses deprecated `Assign/Rewrite/Writeln/Close` without try/finally (`unit_helpers.pas:479-493`) | 🟢 S | ✅ Done |
-| 19 | Remove redundant `Randomize` calls — called multiple times per run instead of once at startup (`unit_LFPSO_Base.pas:522,540`, `unit_LFPSO_Irregular.pas:177`) | 🟢 S | ✅ Done |
-| 20 | Extract `DivZZ` denominator to local variable — `Z2.Re² + Z2.Im²` computed twice (`math_complex.pas:326-329`) | 🟢 S | ✅ Done |
-
-## Optimizations
-
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 21 | Precompute `LevyWalk` constants — `Gamma(2.5)`, `Gamma(1.25)`, `sigma_u` are all constants (beta=1.5). Called thousands of times per iteration (`unit_LFPSO_Base.pas:373-392`) | 🟡 M | ✅ Done |
-| 22 | Pool/reuse `TCalc` in `CalcSolution` — currently creates/destroys per particle in tight loop (`unit_LFPSO_Base.pas:396-427`) | 🟡 M | ✅ Done |
-| 23 | ~~Avoid full array copy in `GetLayers`~~ — Copy is required: `RefCalc` mutates the passed array, copy prevents corruption of the model | 🟢 S | ⏸️ Deferred |
-| 24 | Use dictionary for material lookup in `AddMaterial` — currently O(n) linear scan (`unit_materials.pas:96-102`) | 🟡 M | ✅ Done |
+| # | Task | Size | Notes |
+|---|------|------|-------|
+| 5 | SoA layout for inner `RefCalc` loop — full Structure-of-Arrays for hot path (e, L, s, ro) for better x64 vectorization | 🟡 M | `unit_calc.pas` |
+| 6 | Hash-map profile function lookup — `TProfileFunctions` searched O(n) per layer by `(StackID, LayerID)`. Replace with `TDictionary` | 🟡 M | `unit_materials.pas` |
+| 7 | Parameterize convolution window size (currently hardcoded W=10) — allow users to trade smoothness vs. speed | 🟢 S | `unit_calc.pas` |
 
 ## Main Form Decoupling
 
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 25 | Extract Recent Projects → `TRecentProjectsManager` class | 🟢 S | ✅ Done |
-| 26 | Extract Benchmark/Batch Jobs → `TBatchRunner` class — tightly coupled to form actions | 🟢 S | ⏸️ Deferred |
-| 27 | Extract Project File I/O → `TProjectFileManager` class — tightly coupled to form state | 🟡 M | ⏸️ Deferred |
-| 28 | Extract Chart/Series management → `TChartManager` class (series list, plot, rescale, fonts) | 🟡 M | ✅ Done |
-| 29 | Extract Data Curve Operations — action handlers must stay on form | 🟢 S | ⏸️ Deferred |
-| 30 | Extract Profile Extensions CRUD — coupled to Project tree + Structure | 🟢 S | ⏸️ Deferred |
-| 31 | Remove dead selection-state booleans + dead `FLastModelName` field | 🟡 M | ✅ Done |
-| 32 | Extract Fitting/LFPSO orchestration — tightly coupled to form state | 🟡 M | ⏸️ Deferred |
-
-## Dead Code & Stubs
-
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 33 | Rename misleading `FFirstEntity` → `FLockOwner` in `TfrmMain` — tracks lock file ownership, not "first entity" (`frm_Main.pas`) | 🟢 S | ✅ Done |
-| 34 | Remove dead `GetCurrentLayerData` getter — empty stub, only setter used. Changed `LayerData` to write-only property (`unit_XRCStructure.pas`) | 🟢 S | ✅ Done |
-| 35 | Remove `UpdateProfileExtension` empty stub — inherently no-op since `Structure.UpdateProfiles` handles the update separately (`frm_Main.pas`) | 🟢 S | ✅ Done |
-| 36 | Remove dead `LineToFile` + `SolutionToString` — declared in interface, all usage commented out (`unit_LFPSO_Base.pas`) | 🟢 S | ✅ Done |
-| 37 | Remove 5 commented-out chi-square formulas — development artifacts (`cmd_unit_calc.pas`) | 🟢 S | ✅ Done |
-| 38 | Remove duplicate `forms/editor_Normalisation.pas` — identical copy exists in `editors/`, both orphaned | 🟢 S | ✅ Done |
+| # | Task | Size | Notes |
+|---|------|------|-------|
+| 8 | Extract Benchmark/Batch Jobs → `TBatchRunner` class | 🟢 S | Tightly coupled to form actions |
+| 9 | Extract Project File I/O → `TProjectFileManager` class | 🟡 M | Tightly coupled to form state |
+| 10 | Extract Data Curve Operations | 🟢 S | Action handlers must stay on form |
+| 11 | Extract Profile Extensions CRUD | 🟢 S | Coupled to Project tree + Structure |
+| 12 | Extract Fitting/LFPSO orchestration | 🟡 M | Tightly coupled to form state |
 
 ## Code Cleanup
 
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 39 | Remove dead `Minimum := 0` in `TChartManager.RescaleAxis` — immediately overwritten by next line (`unit_ChartManager.pas`) | 🟢 S | ✅ Done |
-| 40 | Remove redundant `D` assignment in `ToFitStructure` — first write always overwritten by unconditional second (`unit_XRCStructure.pas`) | 🟢 S | ✅ Done |
-| 41 | Extract duplicate `DefaultDPI = 96` → single implementation constant in `TXRCProjectTree` (`unit_XRCProjectTree.pas`) | 🟢 S | ✅ Done |
-| 42 | Remove dead `ActionManagerChange` — declared but never assigned to any event (`frm_Main.pas`) | 🟢 S | ✅ Done |
-| 43 | Fix `TConfig` misleading instance — `TConfig.Create` is a no-op, all state is `class var`. Remove fake instance (`frm_Main.pas`, `unit_Config.pas`) | 🟢 S | ⏸️ Deferred |
-| 44 | Unify `PeriodAddExecute` / `PeriodInsertExecute` — only 4-line difference, not worth extracting | 🟢 S | ⏸️ Deferred |
-| 45 | Unify `DataLoadExecute` / `DataPasteExecute` — different node placement logic, not a clean extraction | 🟢 S | ⏸️ Deferred |
+| # | Task | Size | Notes |
+|---|------|------|-------|
+| 13 | Replace fragile `Poly[0..10]` encoding — index 10 used as length marker. Use struct with explicit `Count` field | 🟡 M | `unit_Types.pas:65-66` |
+| 14 | Fix `TConfig` misleading instance — `Create` is no-op, all state is `class var`. Remove fake instance | 🟢 S | `frm_Main.pas`, `unit_Config.pas` |
+| 15 | Unify `PeriodAddExecute` / `PeriodInsertExecute` — only 4-line difference | 🟢 S | `frm_Main.pas` |
+| 16 | Unify `DataLoadExecute` / `DataPasteExecute` — different node placement logic | 🟢 S | `frm_Main.pas` |
 
-## Structural Refactoring
+## UI & I/O
 
-| # | Task | Size | Status |
-|---|------|------|--------|
-| 46 | Split `unit_helpers.pas` into `unit_SeriesIO`, `unit_DataProcessing`, `unit_FileUtils`. Old unit kept as facade for backward compat. Dead `OpenHelpFile` removed. Consumers updated to import specific units | 🟡 M | ✅ Done |
+| # | Task | Size | Notes |
+|---|------|------|-------|
+| 17 | Bulk chart data insertion with `AddArray` — replace per-point `AddXY` loop | 🟢 S | `unit_ChartManager.pas:91` |
+| 18 | Binary serialization for project internals — replace INI `StrToFloat` parsing | 🟡 M | `unit_Types.pas` |
+
+## New Features
+
+| # | Task | Size | Notes |
+|---|------|------|-------|
+| 19 | Fitting convergence history / diagnostics panel — Chi² vs. iteration, particle diversity, velocity stats | 🟡 M | |
+| 20 | Multi-start fitting with result comparison — N independent runs, top-K ranked by Chi² | 🟡 M | |
+| 21 | Export fitting results to JSON/CSV — full metadata for Python/MATLAB interop | 🟢 S | |
