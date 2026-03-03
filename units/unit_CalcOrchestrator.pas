@@ -320,13 +320,13 @@ begin
     if Assigned(FOnFitTimeUpdate) then
       FOnFitTimeUpdate(Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]));
     RunCalc(False);
+    FProjectPanel.AutoSave;
   finally
     Screen.Cursor := crDefault;
     if Assigned(FOnEnableControls) then
       FOnEnableControls(True);
     FreeAndNil(FLFPSO);
   end;
-  FProjectPanel.LoadAutoSave;
 end;
 
 procedure TCalcOrchestrator.RecalcFromStructure;

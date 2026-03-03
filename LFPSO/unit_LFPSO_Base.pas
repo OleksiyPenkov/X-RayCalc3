@@ -141,6 +141,7 @@ type
 
   function Gamma( x : single) : single;
   procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
+  function CopySolution(const Src: TSolution): TSolution;
   function RS: integer;
 const
   w_max = 0.9;
@@ -157,8 +158,7 @@ uses
   Neslib.FastMath,
   OtlParallel,
   unit_Config,
-  unit_sys_helpers,
-  Dialogs;
+  unit_sys_helpers;
 
 { Supplementary}
 
@@ -254,6 +254,16 @@ procedure ClearSolution(var A: TSolution); inline;
 begin
 //  SetLength(A, 0);
   Finalize(A);
+end;
+
+function CopySolution(const Src: TSolution): TSolution;
+var
+  i, p: Integer;
+begin
+  SetLength(Result, Length(Src));
+  for i := 0 to High(Src) do
+    for p := 1 to 3 do
+      Result[i][p] := Copy(Src[i][p]);
 end;
 
 destructor TLFPSO_BASE.Destroy;
@@ -434,9 +444,6 @@ begin
       FillModel(W.Model, X[particleIndex]);
       W.Calc.Model := W.Model;
 
-      if Length(FMaterials) <> 0 then
-        W.Calc.Model.Materials := FMaterials;
-
       W.Calc.Run;
 
       Chi := W.Calc.CalcChiSquare(FFitParams.ThetaWeight);
@@ -470,11 +477,15 @@ begin
   end;
 
   if bestIdx >= 0 then
-    pbest := Copy(X[bestIdx], 0, MaxInt);
+    pbest := CopySolution(X[bestIdx]);
 
   // Handle first-iteration materials
   if Length(FMaterials) = 0 then
+  begin
     FMaterials := Copy(FWorkers[0].Model.Materials);
+    for i := 0 to FNWorkers - 1 do
+      FWorkers[i].Model.Materials := Copy(FMaterials);
+  end;
 
   Application.ProcessMessages;
   if FTerminated then Exit;
@@ -485,12 +496,12 @@ begin
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
     FGlobalBestChiSqr := FLastBestChiSqr;
-    gbest := Copy(pbest, 0, MaxInt);
+    gbest := CopySolution(pbest);
     gbest_val := FLastBestChiSqr;
     if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
-      abest := Copy(gbest, 0, MaxInt);
+      abest := CopySolution(gbest);
       abest_val := FGlobalBestChiSqr;
       UpdateStructure(gbest);
       Result := True;
@@ -526,7 +537,7 @@ begin
   if ReInitCount > FFitParams.ReInitMax then
   begin
     ReInitCount := 0;
-    gbest := Copy(abest, 0, MaxInt);   // recover to absolute best solution
+    gbest := CopySolution(abest);   // recover to absolute best solution
     FGlobalBestChiSqr := FAbsoluteBestChiSqr;
     FFitParams.Vmax := Vmax0;
     FFitParams.Ksxr := Ksxr0;
@@ -626,7 +637,7 @@ begin
         inc(SuccessCount);
       end;
     end;
-  //   UpdateStructure(gbest);  // don't delete!
+    UpdateStructure(abest);
     SendUpdateMessage(t);
   finally
     for i := 0 to High(FWorkers) do
@@ -658,7 +669,7 @@ begin
   msg_prm.Curve        := FResultingCurve;
   msg_prm.Structure    := FStructure;
   msg_prm.Poly         := GetPolynomes;
-  msg_prm.LayeredModel := FitModelToLayer(gbest);
+  msg_prm.LayeredModel := FitModelToLayer(abest);
 
   PostMessage(
     Application.MainFormHandle,
