@@ -63,6 +63,12 @@ _Installer/     InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
 - MVC-inspired: Forms/Views for UI, Units/Math for logic
 - Ongoing refactoring: extracting logic from frm_Main into TCalcOrchestrator, frame_ChartInfo, frame_ProjectPanel
 
+## Delphi Gotchas
+
+- In class declarations, fields must come before methods/properties in each visibility section (`private`, `public`, etc.) — otherwise `E2169`
+- Setting VCL control properties (e.g. `ItemIndex`, `Checked`) in code does NOT fire event handlers (`OnClick`, `OnChanging`, etc.) — call update logic explicitly after programmatic changes
+- Raize `TRzRadioGroup.OnChanging` fires BEFORE `ItemIndex` updates; use `OnClick` when you need the new value
+
 ## DFM DPI Scaling
 
 When scaling .dfm from HiDPI (192) to standard (96), halve all pixel-based properties:

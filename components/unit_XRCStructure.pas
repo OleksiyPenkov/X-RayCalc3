@@ -605,8 +605,8 @@ begin
 
   for I := 1 to High(Inp.Layers) - 1 do
   begin
-    SID := Inp.Layers[i].StackID;
-    LID := Inp.Layers[i].LayerID;
+    SID := Inp.StackIDs[i];
+    LID := Inp.LayerIDs[i];
     for p := 1 to 3 do
       if not Structure.FStacks[SID].Layers[LID].Data.P[p].Paired then
         case p of
@@ -729,7 +729,7 @@ begin
   begin
     for j := 0 to High(FStacks[i].LayerData) do
     begin
-      Data.Material := Inp.Layers[Count].Name;
+      Data.Material := Inp.LayerNames[Count];
       Data.P[1].V := Inp.Layers[Count].L;
       Data.P[2].V := Inp.Layers[Count].s;
       Data.P[3].V := Inp.Layers[Count].ro;

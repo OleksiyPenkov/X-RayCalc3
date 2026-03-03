@@ -29,14 +29,17 @@ type
     CurrentLayer, CurrentMaterial: integer;
 
     FLayers: TCalcLayers;
+    FLayerNames: TArray<string>;
+    FLayerIDs: TArray<Word>;
+    FStackIDs: TArray<Word>;
     FLambda: Single;
     FTotalD: single;
     FProfiles: TProfileFunctions;
 
     procedure PrepareLayers;
-//    function FindMaterial(const Name: string): TMaterial;
     procedure AddMaterial(const AName: string; Lambda: single);
     function GetLayers: TCalcLayers;
+    procedure GrowParallel(NewLen: Integer);
   public
     constructor Create;
     destructor Destroy; override;
@@ -53,6 +56,9 @@ type
 
     property Layers: TCalcLayers read GetLayers;
     property LayersDirect: TCalcLayers read FLayers;
+    property LayerNames: TArray<string> read FLayerNames;
+    property LayerIDs: TArray<Word> read FLayerIDs;
+    property StackIDs: TArray<Word> read FStackIDs;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
     property Profiles: TProfileFunctions read FProfiles write FProfiles;
@@ -79,21 +85,24 @@ var
 begin
   NewLen := CurrentLayer + Count;
   if Length(FLayers) < NewLen then
+  begin
     SetLength(FLayers, NewLen);
+    GrowParallel(NewLen);
+  end;
 
   for I := 0 to Count - 1 do
   begin
     if StackID > 0 then
     begin
-      FLayers[CurrentLayer + i].StackID := StackID;
-      FLayers[CurrentLayer + i].LayerID  := Data[i].LayerID;
+      FStackIDs[CurrentLayer + i] := StackID;
+      FLayerIDs[CurrentLayer + i] := Data[i].LayerID;
     end
     else begin
-      FLayers[CurrentLayer + i].LayerID  := Data[i].LayerID;
-      FLayers[CurrentLayer + i].StackID  := Data[i].StackID;
+      FLayerIDs[CurrentLayer + i] := Data[i].LayerID;
+      FStackIDs[CurrentLayer + i] := Data[i].StackID;
     end;
 
-    FLayers[CurrentLayer + i].Name := Data[i].Material;
+    FLayerNames[CurrentLayer + i] := Data[i].Material;
     FLayers[CurrentLayer + i].L    := Data[i].P[1].V;
     FLayers[CurrentLayer + i].s    := Data[i].P[2].V;
     FLayers[CurrentLayer + i].ro   := Data[i].P[3].V;
@@ -121,17 +130,21 @@ end;
 
 procedure TLayeredModel.AddSubstrate(const Data: TLayersData);
 var
-  idx: Integer;
+  idx, NewLen: Integer;
 begin
-  if Length(FLayers) < CurrentLayer + 1 then
-    SetLength(FLayers, CurrentLayer + 1);
+  NewLen := CurrentLayer + 1;
+  if Length(FLayers) < NewLen then
+  begin
+    SetLength(FLayers, NewLen);
+    GrowParallel(NewLen);
+  end;
   idx := CurrentLayer;
-  FLayers[idx].Name    := Data[0].Material;
-  FLayers[idx].L       := 1E8;
-  FLayers[idx].s       := Data[0].P[2].V;
-  FLayers[idx].ro      := Data[0].P[3].V;
-  FLayers[idx].StackID := 65535;
-  FLayers[idx].LayerID := 65535;
+  FLayerNames[idx] := Data[0].Material;
+  FLayers[idx].L   := 1E8;
+  FLayers[idx].s   := Data[0].P[2].V;
+  FLayers[idx].ro  := Data[0].P[3].V;
+  FStackIDs[idx]   := 65535;
+  FLayerIDs[idx]   := 65535;
 end;
 
 procedure TLayeredModel.Generate(const Lambda: Single);
@@ -153,7 +166,7 @@ var
 begin
   for I := 1 to High(FLayers) - 1 do
   begin
-    AddMaterial(FLayers[i].Name, FLambda);
+    AddMaterial(FLayerNames[i], FLambda);
     if FLayers[i].ro <> 0 then
       l_ro := FLayers[i].ro
     else
@@ -161,7 +174,7 @@ begin
 
     for g := 0 to High(FProfiles) do
     begin
-      if (FLayers[i].StackID = FProfiles[g].StackID) and (FLayers[i].LayerID = FProfiles[g].LayerID) then
+      if (FStackIDs[i] = FProfiles[g].StackID) and (FLayerIDs[i] = FProfiles[g].LayerID) then
       begin
         case FProfiles[g].Subj of
           ptH  : FLayers[i].L := Poly(FProfiles[g].X(i), FProfiles[g]);
@@ -175,12 +188,22 @@ begin
     FLayers[i].e.im := FMaterials[CurrentMaterial].f.im * c;
   end;
 
-  AddMaterial(FLayers[High(FLayers)].Name, FLambda);
+  AddMaterial(FLayerNames[High(FLayers)], FLambda);
   c := ClassicalElectronRadius * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
   FLayers[High(FLayers)].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
   FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
 end;
 
+
+procedure TLayeredModel.GrowParallel(NewLen: Integer);
+begin
+  if Length(FLayerNames) < NewLen then
+    SetLength(FLayerNames, NewLen);
+  if Length(FLayerIDs) < NewLen then
+    SetLength(FLayerIDs, NewLen);
+  if Length(FStackIDs) < NewLen then
+    SetLength(FStackIDs, NewLen);
+end;
 
 constructor TLayeredModel.Create;
 begin
@@ -188,6 +211,9 @@ begin
   FMaterialIndex := TDictionary<string, Integer>.Create;
   SetLength(FMaterials, 0);
   SetLength(FLayers, 0);
+  SetLength(FLayerNames, 0);
+  SetLength(FLayerIDs, 0);
+  SetLength(FStackIDs, 0);
   SetLength(FProfiles, 0);
 end;
 
@@ -196,6 +222,9 @@ begin
   FMaterialIndex.Free;
   Finalize(FMaterials);
   Finalize(FLayers);
+  Finalize(FLayerNames);
+  Finalize(FLayerIDs);
+  Finalize(FStackIDs);
   Finalize(FProfiles);
   inherited;
 end;
@@ -210,7 +239,7 @@ begin
   try
     for I := 1 to High(FLayers) do
     begin
-      S := Format('%s;%f;%f;%f',[FLayers[i].Name, FLayers[i].L,FLayers[i].s,FLayers[i].ro]);
+      S := Format('%s;%f;%f;%f',[FLayerNames[i], FLayers[i].L,FLayers[i].s,FLayers[i].ro]);
       SL.Add(S);
     end;
     SL.SaveToFile(FileName);
@@ -223,6 +252,12 @@ procedure TLayeredModel.Init;
 begin
   SetLength(FLayers, 0);
   SetLength(FLayers, 1);
+  SetLength(FLayerNames, 0);
+  SetLength(FLayerNames, 1);
+  SetLength(FLayerIDs, 0);
+  SetLength(FLayerIDs, 1);
+  SetLength(FStackIDs, 0);
+  SetLength(FStackIDs, 1);
 
   FLayers[0].L := 1E10;
   FLayers[0].e.re := 1;
@@ -236,6 +271,12 @@ begin
   // Keep FLayers allocation — reuse on next FillModel
   if Length(FLayers) < 1 then
     SetLength(FLayers, 1);
+  if Length(FLayerNames) < 1 then
+    SetLength(FLayerNames, 1);
+  if Length(FLayerIDs) < 1 then
+    SetLength(FLayerIDs, 1);
+  if Length(FStackIDs) < 1 then
+    SetLength(FStackIDs, 1);
 
   FLayers[0].L := 1E10;
   FLayers[0].e.re := 1;
@@ -258,13 +299,16 @@ begin
     sdata.LoadFromFile(FileName, TEncoding.UTF8);
     SetLength(FLayers, 0);
     SetLength(FLayers, sdata.Count);
+    SetLength(FLayerNames, sdata.Count);
+    SetLength(FLayerIDs, sdata.Count);
+    SetLength(FStackIDs, sdata.Count);
     for I := 0 to High(FLayers) do
     begin
       srow.DelimitedText := sdata[i];
-      FLayers[i].Name := srow[0];
-      FLayers[i].L    := StrToFloat(srow[1]);
-      FLayers[i].s    :=  StrToFloat(srow[2]);
-      FLayers[i].ro   :=  StrToFloat(srow[3]);
+      FLayerNames[i] := srow[0];
+      FLayers[i].L   := StrToFloat(srow[1]);
+      FLayers[i].s   := StrToFloat(srow[2]);
+      FLayers[i].ro  := StrToFloat(srow[3]);
     end;
   finally
     srow.Free;

@@ -71,7 +71,7 @@ begin
     L := M.Layers;
 
     Assert.AreEqual(2, Length(L), 'Vacuum + 1 layer = 2');
-    Assert.AreEqual('Si', L[1].Name);
+    Assert.AreEqual('Si', M.LayerNames[1]);
     Assert.AreEqual(Single(100), L[1].L, 1E-5, 'Layer thickness');
     Assert.AreEqual(Single(3), L[1].s, 1E-5, 'Layer sigma');
     Assert.AreEqual(Single(2.33), L[1].ro, 1E-3, 'Layer density');
@@ -112,9 +112,9 @@ begin
 
     L := M.Layers;
     Assert.AreEqual(4, Length(L), 'Vacuum + 2 + 1 = 4');
-    Assert.AreEqual('Si', L[1].Name);
-    Assert.AreEqual('Mo', L[2].Name);
-    Assert.AreEqual('Au', L[3].Name);
+    Assert.AreEqual('Si', M.LayerNames[1]);
+    Assert.AreEqual('Mo', M.LayerNames[2]);
+    Assert.AreEqual('Au', M.LayerNames[3]);
   finally
     M.Free;
   end;
@@ -139,7 +139,7 @@ begin
     L := M.Layers;
 
     Assert.AreEqual(2, Length(L), 'Vacuum + substrate = 2');
-    Assert.AreEqual('Glass', L[1].Name);
+    Assert.AreEqual('Glass', M.LayerNames[1]);
     Assert.AreEqual(Single(1E8), L[1].L, 1E3, 'Substrate has very large thickness');
     Assert.AreEqual(Single(2.5), L[1].s, 1E-5);
     Assert.AreEqual(Single(2.2), L[1].ro, 1E-3);
@@ -175,8 +175,8 @@ begin
     L := M.Layers;
     Assert.AreEqual(3, Length(L), 'Vacuum + Si + Glass = 3');
     Assert.AreEqual(Single(1.0), L[0].e.Re, 1E-5, 'First layer is vacuum');
-    Assert.AreEqual('Si', L[1].Name);
-    Assert.AreEqual('Glass', L[2].Name);
+    Assert.AreEqual('Si', M.LayerNames[1]);
+    Assert.AreEqual('Glass', M.LayerNames[2]);
   finally
     M.Free;
   end;

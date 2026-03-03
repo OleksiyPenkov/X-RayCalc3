@@ -112,7 +112,6 @@ type
   // Calculation data types
 
   TCalcLayer = record
-    Name: string;
     e: TComplex; { Epsilon }
     L, s, ro: single; { Thickness, sigma}
     K: TComplex; { kappa }
@@ -120,7 +119,6 @@ type
     eRatio: single; { epsilon ratio, precomputed per model }
     s2: single; { sqr(sigma/1.41), precomputed per model for rfError roughness }
     RoughFactor: single; { cached roughness damping factor for cmSP reuse }
-    LayerID, StackID: Word;
   end;
 
   TCalcLayers = array of TCalcLayer;
