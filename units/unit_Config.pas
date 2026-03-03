@@ -394,8 +394,10 @@ class procedure TConfig.WriteStringList(const Section: string; var List: array o
 var
   i: Integer;
 begin
+  FIni.EraseSection(Section);
   for I := 0 to High(List) do
-    FIni.WriteString(Section, 'Recent' + IntToStr(i + 1), List[i]);
+    if List[i] <> '' then
+      FIni.WriteString(Section, 'Recent' + IntToStr(i + 1), List[i]);
 end;
 
 

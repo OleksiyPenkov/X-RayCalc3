@@ -17,7 +17,9 @@ type
     FPopupParent: TPopupMenu;
     FOnClick: TRecentProjectClickEvent;
 
+    function IndexOfFile(const FileName: string): Integer;
     procedure MenuItemClick(Sender: TObject);
+    procedure ClearMenuClick(Sender: TObject);
     procedure FillMenus;
   public
     constructor Create(AMaxCapacity: Integer; AMenuParent: TMenuItem;
@@ -27,6 +29,8 @@ type
     procedure Load;
     procedure Save;
     procedure Add(const FileName: string);
+    procedure Remove(const FileName: string);
+    procedure Clear;
 
     property OnClick: TRecentProjectClickEvent read FOnClick write FOnClick;
   end;
@@ -54,6 +58,16 @@ begin
   inherited;
 end;
 
+function TRecentProjectsManager.IndexOfFile(const FileName: string): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to FItems.Count - 1 do
+    if SameText(FItems[i], FileName) then
+      Exit(i);
+  Result := -1;
+end;
+
 procedure TRecentProjectsManager.Load;
 var
   RecentList: array of string;
@@ -71,15 +85,21 @@ begin
 end;
 
 procedure TRecentProjectsManager.Save;
+var
+  RecentList: array of string;
+  i: Integer;
 begin
-  TConfig.WriteStringList('Recent', FItems.List);
+  SetLength(RecentList, FItems.Count);
+  for i := 0 to FItems.Count - 1 do
+    RecentList[i] := FItems[i];
+  TConfig.WriteStringList('Recent', RecentList);
 end;
 
 procedure TRecentProjectsManager.Add(const FileName: string);
 var
   Idx: Integer;
 begin
-  Idx := FItems.IndexOf(FileName);
+  Idx := IndexOfFile(FileName);
   if Idx >= 0 then
     FItems.Move(Idx, 0)
   else
@@ -92,28 +112,71 @@ begin
   FillMenus;
 end;
 
-procedure TRecentProjectsManager.FillMenus;
+procedure TRecentProjectsManager.Remove(const FileName: string);
 var
-  i: Integer;
-  Item, PopupItem: TMenuItem;
+  Idx: Integer;
+begin
+  Idx := IndexOfFile(FileName);
+  if Idx >= 0 then
+  begin
+    FItems.Delete(Idx);
+    Save;
+    FillMenus;
+  end;
+end;
+
+procedure TRecentProjectsManager.Clear;
+begin
+  FItems.Clear;
+  Save;
+  FillMenus;
+end;
+
+procedure TRecentProjectsManager.FillMenus;
+
+  procedure AddItems(Parent: TComponent; AddProc: TProc<TMenuItem>);
+  var
+    i: Integer;
+    Item, Sep, ClearItem: TMenuItem;
+  begin
+    for i := 0 to FItems.Count - 1 do
+    begin
+      Item := TMenuItem.Create(Parent);
+      Item.Caption := ExtractFileName(FItems[i]);
+      Item.Hint := FItems[i];
+      Item.Tag := i;
+      Item.OnClick := MenuItemClick;
+      AddProc(Item);
+    end;
+
+    if FItems.Count > 0 then
+    begin
+      Sep := TMenuItem.Create(Parent);
+      Sep.Caption := '-';
+      AddProc(Sep);
+
+      ClearItem := TMenuItem.Create(Parent);
+      ClearItem.Caption := 'Clear recent list';
+      ClearItem.OnClick := ClearMenuClick;
+      AddProc(ClearItem);
+    end;
+  end;
+
 begin
   FMenuParent.Clear;
   FPopupParent.Items.Clear;
 
-  for i := 0 to FItems.Count - 1 do
-  begin
-    Item := TMenuItem.Create(FMenuParent);
-    FMenuParent.Add(Item);
-    Item.Caption := ExtractFileName(FItems.List[i]);
-    Item.Tag := i;
-    Item.OnClick := MenuItemClick;
+  AddItems(FMenuParent,
+    procedure(Item: TMenuItem)
+    begin
+      FMenuParent.Add(Item);
+    end);
 
-    PopupItem := TMenuItem.Create(FPopupParent);
-    FPopupParent.Items.Add(PopupItem);
-    PopupItem.Caption := Item.Caption;
-    PopupItem.Tag := i;
-    PopupItem.OnClick := MenuItemClick;
-  end;
+  AddItems(FPopupParent,
+    procedure(Item: TMenuItem)
+    begin
+      FPopupParent.Items.Add(Item);
+    end);
 end;
 
 procedure TRecentProjectsManager.MenuItemClick(Sender: TObject);
@@ -122,12 +185,18 @@ var
   FileName: string;
 begin
   Index := (Sender as TMenuItem).Tag;
-  FileName := FItems.List[Index];
+  FileName := FItems[Index];
   FItems.Move(Index, 0);
+  Save;
   FillMenus;
 
   if Assigned(FOnClick) then
     FOnClick(Sender, FileName);
+end;
+
+procedure TRecentProjectsManager.ClearMenuClick(Sender: TObject);
+begin
+  Clear;
 end;
 
 end.

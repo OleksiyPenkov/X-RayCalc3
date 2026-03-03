@@ -862,6 +862,7 @@ begin
   begin
     MessageDlg('Project file not found:' + sLineBreak + FileName,
       mtError, [mbOK], 0);
+    FRecentProjects.Remove(FileName);
     Exit;
   end;
 
@@ -923,6 +924,7 @@ begin
     SaveData;
     SaveProject(dlgSaveProject.FileName);
     FProjectFileName := dlgSaveProject.FileName;
+    FRecentProjects.Add(FProjectFileName);
     if Assigned(FOnCaptionChange) then
       FOnCaptionChange('X-Ray Calc 3: ' + FProjectName);
   end;
