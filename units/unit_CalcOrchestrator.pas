@@ -320,6 +320,7 @@ begin
     if Assigned(FOnFitTimeUpdate) then
       FOnFitTimeUpdate(Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]));
     RunCalc(False);
+    FChartInfo.SetChiSquare(FABestChiSquare, FABestChiSquare);
     FProjectPanel.AutoSave;
   finally
     Screen.Cursor := crDefault;

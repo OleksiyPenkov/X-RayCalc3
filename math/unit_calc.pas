@@ -158,6 +158,7 @@ begin
   end;
 
   FChiSQR := Result / High(FData) * 1000;
+  Result := FChiSQR;
 end;
 
 
