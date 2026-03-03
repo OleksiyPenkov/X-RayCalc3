@@ -143,13 +143,6 @@ type
   procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
   function CopySolution(const Src: TSolution): TSolution;
   function RS: integer;
-const
-  w_max = 0.9;
-  w_min = 0.4;
-  MaxC = 10;
-  a = 0.5;
-  eps = 1;
-
 implementation
 
 uses
@@ -490,8 +483,6 @@ begin
   Application.ProcessMessages;
   if FTerminated then Exit;
 
-//  CFactor := eps + (FGlobalBestChiSqr- FLastBestChiSqr)/ (FLastWorseChiSQR - FGlobalBestChiSqr);
-  CFactor := 1;  // left for future
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
@@ -615,6 +606,12 @@ begin
     for t := 1 to FTMax do
     begin
       if FTerminated then Break;
+
+      // Adaptive velocity: linearly decrease c1,c2 from (w1+w2) to w1
+      if FFitParams.AdaptVel then
+        CFactor := FFitParams.w1 + FFitParams.w2 * (1 - t / FTMax)
+      else
+        CFactor := 1;
 
       switch := Random;
       if switch < 0.5 then
