@@ -14,7 +14,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, RzPanel, RzEdit, Vcl.ComCtrls,
-  RzListVw, unit_Types, Vcl.StdCtrls, Vcl.Buttons, RzButton;
+  RzListVw, unit_Types, unit_SmartLimits, Vcl.StdCtrls, Vcl.Buttons, RzButton;
 
 Const
   USER_EDITLISTVIEW = WM_USER + 666;
@@ -39,17 +39,23 @@ type
     procedure RzBitBtn2Click(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
+    procedure btnSetClick(Sender: TObject);
+    procedure ListViewCustomDrawSubItem(Sender: TCustomListView;
+      Item: TListItem; SubItem: Integer; State: TCustomDrawState;
+      var DefaultDraw: Boolean);
   private
     ListViewEditor: TRzEdit;
     LItem: TListitem;
-    FStructure: TFitStructure ;
+    FStructure: TFitStructure;
     FDPI: integer;
+    FIssues: TArray<TLimitIssue>;
 
     procedure UserEditListView( Var Message: TMessage ); message USER_EDITLISTVIEW;
     procedure ListViewEditorExit(Sender: TObject);
     procedure EditorKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure StructureToView;
     procedure StructureFromView;
+    procedure RunValidation;
   public
     { Public declarations }
 
@@ -64,7 +70,7 @@ implementation
 {$R *.dfm}
 
 uses
-  CommCtrl;
+  System.UITypes, CommCtrl;
 
 var
   EDIT_COLUMN: integer;
@@ -102,6 +108,7 @@ begin
       Inc(Index);
     end;
   end;
+  RunValidation;
 end;
 
 procedure TfrmLimits.EditorKeyDown(Sender: TObject; var Key: Word;
@@ -164,6 +171,7 @@ begin
     LItem.SubItems[ EDIT_COLUMN-1 ] := ListViewEditor.Text;
     LItem := nil;
   End;
+  RunValidation;
 end;
 
 procedure TfrmLimits.RzBitBtn2Click(Sender: TObject);
@@ -198,6 +206,7 @@ begin
       end;
     end;
   end;
+  RunValidation;
 end;
 
 procedure TfrmLimits.StructureFromView;
@@ -256,6 +265,52 @@ begin
   ListViewEditor.BoundsRect := LRect;
   //Show the TEdit
   ListViewEditor.Visible:=True;
+end;
+
+procedure TfrmLimits.RunValidation;
+begin
+  StructureFromView;
+  FIssues := ValidateLimits(FStructure);
+  ListView.Invalidate;
+end;
+
+procedure TfrmLimits.btnSetClick(Sender: TObject);
+begin
+  RunValidation;
+
+  if HasErrors(FIssues) then
+  begin
+    ShowMessage(IssuesToText(FIssues));
+    Exit;
+  end;
+
+  if HasWarnings(FIssues) then
+  begin
+    if MessageDlg(IssuesToText(FIssues) + #13#10 + #13#10 + 'Proceed anyway?',
+      mtWarning, [mbYes, mbNo], 0) <> mrYes then
+      Exit;
+  end;
+
+  ModalResult := mrOk;
+end;
+
+procedure TfrmLimits.ListViewCustomDrawSubItem(Sender: TCustomListView;
+  Item: TListItem; SubItem: Integer; State: TCustomDrawState;
+  var DefaultDraw: Boolean);
+var
+  Kind: TLimitIssueKind;
+begin
+  if SubItem < 1 then
+    Exit;
+
+  Kind := CellState(FIssues, Item.Index, SubItem - 1);
+
+  case Kind of
+    likError:
+      Sender.Canvas.Brush.Color := $CCCCFF;  // light red
+    likWarning:
+      Sender.Canvas.Brush.Color := $CCFFFF;  // light yellow
+  end;
 end;
 
 end.

@@ -38,7 +38,9 @@ uses
   TestLFPSOPeriodic in 'TestLFPSOPeriodic.pas',
   TestLFPSOIrregular in 'TestLFPSOIrregular.pas',
   unit_ProfileCalc in '..\Math\unit_ProfileCalc.pas',
-  TestProfileCalc in 'TestProfileCalc.pas';
+  TestProfileCalc in 'TestProfileCalc.pas',
+  unit_SmartLimits in '..\Units\unit_SmartLimits.pas',
+  TestSmartLimits in 'TestSmartLimits.pas';
 
 {$R *.res}
 

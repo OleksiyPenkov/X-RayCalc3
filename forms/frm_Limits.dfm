@@ -140,6 +140,7 @@ object frmLimits: TfrmLimits
       ViewStyle = vsReport
       FillLastColumn = False
       OnClick = ListViewClick
+      OnCustomDrawSubItem = ListViewCustomDrawSubItem
     end
     object edFdH: TEdit
       Left = 40
@@ -236,9 +237,9 @@ object frmLimits: TfrmLimits
       Margins.Top = 3
       Margins.Right = 3
       Margins.Bottom = 3
-      ModalResult = 1
       Caption = 'Set'
       TabOrder = 0
+      OnClick = btnSetClick
       Margin = 4
       Spacing = 4
     end

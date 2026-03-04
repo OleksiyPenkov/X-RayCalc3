@@ -101,6 +101,8 @@
         <DCCReference Include="TestSeriesIO.pas"/>
         <DCCReference Include="..\math\unit_ProfileCalc.pas"/>
         <DCCReference Include="TestProfileCalc.pas"/>
+        <DCCReference Include="..\units\unit_SmartLimits.pas"/>
+        <DCCReference Include="TestSmartLimits.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
