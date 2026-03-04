@@ -53,10 +53,14 @@ uses
 function TTestableCalc.TestRefCalc(const ATheta, Lambda: single; ALayers: TCalcLayers): single;
 var
   c1, c2: single;
+  Model: TCalcModelSoA;
+  Scratch: TCalcScratchSoA;
 begin
   c1 := 4 * Pi / Lambda;
   c2 := c1 * 0.5;
-  Result := RefCalc(ATheta, c1, c2, ALayers);
+  Model.CopyFrom(ALayers);
+  Scratch.SetCount(Model.Count);
+  Result := RefCalc(ATheta, c1, c2, Model, Scratch);
 end;
 
 procedure TTestableCalc.TestCalcTet(const AParams: TCalcParams);
