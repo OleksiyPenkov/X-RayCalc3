@@ -62,7 +62,8 @@ type
             etFunction:
               (StackID: integer;
                LayerID: integer;
-               Poly: array [0..10] of single;
+               PolyCount: Integer;
+               Poly: array [0..9] of single;
                Form: TFunctionForm;
                Subj: TParameterType;
                );
@@ -237,7 +238,7 @@ function TProjectData.PolyD: TPolyArray;
 var
   i: Integer;
 begin
-  SetLength(Result, Trunc(Poly[10] + 1));
+  SetLength(Result, PolyCount + 1);
   for I := 0 to High(Result) do
     Result[i] := Poly[i];
 end;
@@ -246,12 +247,12 @@ procedure TProjectData.SetPoly(var PolyD: TPolyArray);
 var
   i: Integer;
 begin
-  for I := 0 to High(PolyD) do
-  begin
+  if High(PolyD) < 10 then
+    PolyCount := High(PolyD)
+  else
+    PolyCount := 9;
+  for I := 0 to PolyCount do
     Poly[i] := PolyD[i];
-    if i = 10 then Break;
-  end;
-  Poly[10] := High(PolyD);
 end;
 
 { TCalcModelSoA }
@@ -431,7 +432,7 @@ end;
 
 function TFuncProfileRec.Ord: Word;
 begin
-  Result := Trunc(C[10]);
+  Result := High(C);
 end;
 
 function TFuncProfileRec.PIndex: Word;

@@ -228,9 +228,8 @@ end;
 procedure TTestFuncProfileRec.Test_Ord;
 var FP: TFuncProfileRec;
 begin
-  // Ord returns Trunc(C[10]) — the polynomial order stored at index 10
-  SetLength(FP.C, 11);
-  FP.C[10] := 3.7;
+  // Ord returns High(C) — the polynomial order derived from array length
+  SetLength(FP.C, 4);
   Assert.AreEqual(Word(3), FP.Ord);
 end;
 
@@ -280,7 +279,7 @@ var
   PD: TProjectData;
   Src, Dst: TPolyArray;
 begin
-  // SetPoly stores coefficients into PD.Poly[0..10], PolyD reads them back
+  // SetPoly stores coefficients into PD.Poly[0..9] + PolyCount, PolyD reads them back
   SetLength(Src, 3);
   Src[0] := 1.5;
   Src[1] := 2.5;
@@ -301,15 +300,14 @@ var
   PD: TProjectData;
   Src: TPolyArray;
 begin
-  // SetPoly stores High(PolyD) at Poly[10] as the order
+  // SetPoly stores High(PolyD) in PolyCount
   SetLength(Src, 4);
   Src[0] := 10; Src[1] := 20; Src[2] := 30; Src[3] := 40;
 
   PD.RowType := prExtension;
   PD.SetPoly(Src);
 
-  // Poly[10] should be High(Src) = 3
-  Assert.AreEqual(Single(3), PD.Poly[10], 1E-5);
+  Assert.AreEqual(3, PD.PolyCount);
 end;
 
 { TTestFitStructureCopy }

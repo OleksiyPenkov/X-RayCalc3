@@ -343,6 +343,7 @@ begin
           Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
           Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
           Stream.Read(Data.Poly[1], SizeOf(Data.Poly[1]));
+          Data.PolyCount := 1;
           S := GetString;
           S := GetString;
           Stream.Read(Data.Form, SizeOf(Data.Form));
@@ -358,6 +359,7 @@ begin
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
           for I := 1 to 3 do
             Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+          Data.PolyCount := 3;
           Data.Data := GetString;
        end;
     4: begin
@@ -367,8 +369,10 @@ begin
           Stream.Read(Data.StackID, SizeOf(Integer));
           Stream.Read(Data.Form, SizeOf(Data.Form));
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
-          for I := 1 to 10 do
+          for I := 1 to 9 do
             Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+          Stream.Read(Order, SizeOf(Single)); // skip legacy Poly[10]
+          Data.PolyCount := 9;
           Data.Data := GetString;
        end;
 
@@ -381,8 +385,12 @@ begin
           Stream.Read(Data.Subj, SizeOf(Data.Subj));
 
           if (Data.Group = gtModel) and (Data.RowType = prExtension) then
-            for I := 1 to 10 do
+          begin
+            for I := 1 to 9 do
               Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+            Stream.Read(Order, SizeOf(Single)); // skip legacy Poly[10]
+            Data.PolyCount := 9;
+          end;
 
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
             Data.Data := GetString;
@@ -400,7 +408,7 @@ begin
             Stream.Read(Order, SizeOf(Order));
             for I := 1 to Order do
               Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
-            Data.Poly[10] := Order;
+            Data.PolyCount := Order;
           end;
 
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
@@ -472,7 +480,7 @@ begin
 
   if (Data.Group = gtModel) and (Data.RowType = prExtension) then
   begin
-    Order := Trunc(Data.Poly[10]);
+    Order := Data.PolyCount;
     Stream.Write(Order, SizeOf(Order));
     for I := 1 to Order do
               Stream.Write(Data.Poly[i], SizeOf(Data.Poly[i]));

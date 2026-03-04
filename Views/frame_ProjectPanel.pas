@@ -687,7 +687,7 @@ begin
   Data.ExtType := etFunction;
   Data.Poly[0] := 0;
   Data.Poly[1] := 0.14;
-  Data.Poly[10] := 1;
+  Data.PolyCount := 1;
   Data.StackID := -1;
   Data.LayerID := -1;
   Data.Form := ffPoly;

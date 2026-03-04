@@ -173,8 +173,8 @@ procedure TedtrProfileFunction.GetCoefficients;
 var
   i: Integer;
 begin
-  FData.Poly[10] := seOrder.IntValue;
-  for I := 1 to Trunc(FData.Poly[10]) do
+  FData.PolyCount := seOrder.IntValue;
+  for I := 1 to FData.PolyCount do
     FData.Poly[i] := StrToFloat( Grid.Cells[1, i]);
 end;
 
