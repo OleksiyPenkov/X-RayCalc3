@@ -39,6 +39,7 @@ procedure ApplyMaterialDensity(var Structure: TFitStructure;
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);
 procedure NarrowLimits(var Structure: TFitStructure; ShrinkFactor: Single);
 procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single);
+procedure AutoFixErrors(var Structure: TFitStructure);
 
 implementation
 
@@ -298,6 +299,22 @@ begin
             max := max + Range * ExpandFactor;
         end;
       end;
+end;
+
+procedure AutoFixErrors(var Structure: TFitStructure);
+var
+  i, j, p: Integer;
+  Tmp: Single;
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+        if Structure.Stacks[i].Layers[j].P[p].min > Structure.Stacks[i].Layers[j].P[p].max then
+        begin
+          Tmp := Structure.Stacks[i].Layers[j].P[p].min;
+          Structure.Stacks[i].Layers[j].P[p].min := Structure.Stacks[i].Layers[j].P[p].max;
+          Structure.Stacks[i].Layers[j].P[p].max := Tmp;
+        end;
 end;
 
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);

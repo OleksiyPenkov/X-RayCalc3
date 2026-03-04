@@ -33,6 +33,7 @@ type
     btnInit: TBitBtn;
     btnNarrow: TBitBtn;
     btnWiden: TBitBtn;
+    btnFix: TBitBtn;
     btnSet: TRzBitBtn;
     RzBitBtn2: TRzBitBtn;
     procedure ListViewClick(Sender: TObject);
@@ -40,6 +41,7 @@ type
     procedure btnInitClick(Sender: TObject);
     procedure btnNarrowClick(Sender: TObject);
     procedure btnWidenClick(Sender: TObject);
+    procedure btnFixClick(Sender: TObject);
     procedure RzBitBtn2Click(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
@@ -160,6 +162,15 @@ procedure TfrmLimits.btnWidenClick(Sender: TObject);
 begin
   StructureFromView;
   WidenAtLimit(FStructure, 0.5);
+  ClampToPhysics(FStructure);
+  ApplyGeometryCoupling(FStructure);
+  StructureToView;
+end;
+
+procedure TfrmLimits.btnFixClick(Sender: TObject);
+begin
+  StructureFromView;
+  AutoFixErrors(FStructure);
   ClampToPhysics(FStructure);
   ApplyGeometryCoupling(FStructure);
   StructureToView;

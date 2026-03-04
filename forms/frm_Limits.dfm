@@ -238,6 +238,19 @@ object frmLimits: TfrmLimits
       TabOrder = 6
       OnClick = btnWidenClick
     end
+    object btnFix: TBitBtn
+      Left = 456
+      Top = 391
+      Width = 75
+      Height = 25
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      Caption = 'Fix'
+      TabOrder = 7
+      OnClick = btnFixClick
+    end
   end
   object RzPanel2: TRzPanel
     AlignWithMargins = True

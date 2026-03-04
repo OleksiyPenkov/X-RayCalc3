@@ -48,6 +48,9 @@ type
     [Test] procedure Test_Widen_AtUpperLimit;
     [Test] procedure Test_Widen_SkipsNotAtLimit;
     [Test] procedure Test_Widen_SkipsLocked;
+    [Test] procedure Test_AutoFix_SwapsInvertedMinMax;
+    [Test] procedure Test_AutoFix_NoOpOnValid;
+    [Test] procedure Test_AutoFix_ClearsAllErrors;
   end;
 
 implementation
@@ -773,6 +776,57 @@ begin
 
   Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].min, 'locked min should be unchanged');
   Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].max, 'locked max should be unchanged');
+end;
+
+procedure TTestValidateLimits.Test_AutoFix_SwapsInvertedMinMax;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].min := 20.0;
+  FS.Stacks[0].Layers[0].P[1].max := 5.0;
+
+  AutoFixErrors(FS);
+
+  Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[1].min, 'min should be 5 after swap');
+  Assert.AreEqual(Single(20.0), FS.Stacks[0].Layers[0].P[1].max, 'max should be 20 after swap');
+end;
+
+procedure TTestValidateLimits.Test_AutoFix_NoOpOnValid;
+var
+  FS, Original: TFitStructure;
+  p: Integer;
+begin
+  FS := MakeStructure(1);
+  Original := MakeStructure(1);
+
+  AutoFixErrors(FS);
+
+  for p := 1 to 3 do
+  begin
+    Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].min, FS.Stacks[0].Layers[0].P[p].min,
+      Format('P[%d].min should be unchanged', [p]));
+    Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].max, FS.Stacks[0].Layers[0].P[p].max,
+      Format('P[%d].max should be unchanged', [p]));
+  end;
+end;
+
+procedure TTestValidateLimits.Test_AutoFix_ClearsAllErrors;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+begin
+  FS := MakeStructure(1);
+  // Inverted min/max (error) + negative min (error)
+  FS.Stacks[0].Layers[0].P[1].min := 20.0;
+  FS.Stacks[0].Layers[0].P[1].max := 5.0;
+  FS.Stacks[0].Layers[0].P[2].min := -3.0;
+
+  AutoFixErrors(FS);
+  ClampToPhysics(FS);
+
+  Issues := ValidateLimits(FS);
+  Assert.IsFalse(HasErrors(Issues), 'No errors should remain after AutoFix + ClampToPhysics');
 end;
 
 end.
