@@ -121,8 +121,17 @@ begin
       Count := 0;
       for p := 1 to 3 do
       begin
-        ListView.Items[Index].SubItems[Count] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, -dP[p]);
-        ListView.Items[Index].SubItems[Count + 1] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, dP[p]);
+        if (p = 3) and (Index <= High(NroValues)) and (NroValues[Index] > 0) then
+        begin
+          // Use Henke density as center for Rho limits
+          ListView.Items[Index].SubItems[Count] := Convert(NroValues[Index], -dP[p]);
+          ListView.Items[Index].SubItems[Count + 1] := Convert(NroValues[Index], dP[p]);
+        end
+        else
+        begin
+          ListView.Items[Index].SubItems[Count] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, -dP[p]);
+          ListView.Items[Index].SubItems[Count + 1] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, dP[p]);
+        end;
         Inc(Count, 2);
       end;
       Inc(Index);
@@ -130,6 +139,7 @@ begin
   end;
   StructureFromView;
   ClampToPhysics(FStructure);
+  ApplyGeometryCoupling(FStructure);
   StructureToView;
 end;
 

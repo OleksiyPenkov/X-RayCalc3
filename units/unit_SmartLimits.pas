@@ -36,6 +36,7 @@ function CellState(const Issues: TArray<TLimitIssue>;
   ItemIndex, SubItemIndex: Integer): TLimitIssueKind;
 procedure ApplyMaterialDensity(var Structure: TFitStructure;
   const NroValues: array of Single);
+procedure ApplyGeometryCoupling(var Structure: TFitStructure);
 
 implementation
 
@@ -238,6 +239,35 @@ begin
          (Structure.Stacks[i].Layers[j].P[3].V = 0) then
         Structure.Stacks[i].Layers[j].P[3].V := NroValues[Index];
       Inc(Index);
+    end;
+end;
+
+procedure ApplyGeometryCoupling(var Structure: TFitStructure);
+var
+  i, j: Integer;
+  H_self, H_below, Bound: Single;
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      H_self := Structure.Stacks[i].Layers[j].P[1].V;
+
+      if j > 0 then
+        // Same stack, not first layer
+        H_below := Structure.Stacks[i].Layers[j - 1].P[1].V
+      else if Structure.Stacks[i].N > 1 then
+        // Periodic stack, first layer — wraps to last layer
+        H_below := Structure.Stacks[i].Layers[High(Structure.Stacks[i].Layers)].P[1].V
+      else if i > 0 then
+        // Non-periodic, cross-stack boundary
+        H_below := Structure.Stacks[i - 1].Layers[High(Structure.Stacks[i - 1].Layers)].P[1].V
+      else
+        // First layer of first stack, non-periodic — substrate is semi-infinite
+        H_below := MaxSingle;
+
+      Bound := Min(H_self, H_below);
+      if Structure.Stacks[i].Layers[j].P[2].max > Bound then
+        Structure.Stacks[i].Layers[j].P[2].max := Bound;
     end;
 end;
 

@@ -32,6 +32,11 @@ type
     [Test] procedure Test_ApplyDensity_NoOverrideNonZeroV;
     [Test] procedure Test_ApplyDensity_SkipsZeroNro;
     [Test] procedure Test_ApplyDensity_LeavesHAndSUntouched;
+    [Test] procedure Test_Geometry_SMaxCappedByOwnH;
+    [Test] procedure Test_Geometry_SMaxCappedByLowerNeighbor;
+    [Test] procedure Test_Geometry_NoOpWhenWithinBounds;
+    [Test] procedure Test_Geometry_PeriodicWrap;
+    [Test] procedure Test_Geometry_HAndRhoUntouched;
   end;
 
 implementation
@@ -471,6 +476,106 @@ begin
     'H should not be changed');
   Assert.AreEqual(Single(3.0), FS.Stacks[0].Layers[0].P[2].V,
     'S should not be changed');
+end;
+
+procedure TTestValidateLimits.Test_Geometry_SMaxCappedByOwnH;
+var
+  FS: TFitStructure;
+begin
+  // Single layer, non-periodic: S.max should be capped by own H
+  FS := MakeStructure(1);
+  FS.Stacks[0].N := 1;
+  FS.Stacks[0].Layers[0].P[1].V := 10.0;   // H = 10
+  FS.Stacks[0].Layers[0].P[2].max := 20.0;  // S.max = 20
+
+  ApplyGeometryCoupling(FS);
+
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[2].max,
+    'S.max should be capped to own H (10)');
+end;
+
+procedure TTestValidateLimits.Test_Geometry_SMaxCappedByLowerNeighbor;
+var
+  FS: TFitStructure;
+begin
+  // Two layers: Layer[1].S.max capped by Layer[0].H
+  FS := MakeStructure(2);
+  FS.Stacks[0].N := 1;
+  FS.Stacks[0].Layers[0].P[1].V := 8.0;    // Layer[0].H = 8
+  FS.Stacks[0].Layers[1].P[1].V := 20.0;   // Layer[1].H = 20
+  FS.Stacks[0].Layers[1].P[2].max := 15.0;  // Layer[1].S.max = 15
+
+  ApplyGeometryCoupling(FS);
+
+  Assert.AreEqual(Single(8.0), FS.Stacks[0].Layers[1].P[2].max,
+    'S.max should be capped to lower neighbor H (8)');
+end;
+
+procedure TTestValidateLimits.Test_Geometry_NoOpWhenWithinBounds;
+var
+  FS: TFitStructure;
+begin
+  // S.max already within bounds — should not be modified
+  FS := MakeStructure(2);
+  FS.Stacks[0].N := 1;
+  FS.Stacks[0].Layers[0].P[1].V := 12.0;   // Layer[0].H = 12
+  FS.Stacks[0].Layers[1].P[1].V := 10.0;   // Layer[1].H = 10
+  FS.Stacks[0].Layers[1].P[2].max := 5.0;   // S.max = 5, already < min(10, 12)
+
+  ApplyGeometryCoupling(FS);
+
+  Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[1].P[2].max,
+    'S.max should remain 5 (already within bounds)');
+end;
+
+procedure TTestValidateLimits.Test_Geometry_PeriodicWrap;
+var
+  FS: TFitStructure;
+begin
+  // Periodic stack (N > 1): first layer wraps to last layer's H
+  FS := MakeStructure(2);
+  FS.Stacks[0].N := 5;  // periodic
+  FS.Stacks[0].Layers[0].P[1].V := 30.0;   // Layer[0].H = 30
+  FS.Stacks[0].Layers[0].P[2].max := 25.0;  // Layer[0].S.max = 25
+  FS.Stacks[0].Layers[1].P[1].V := 7.0;    // Layer[1].H = 7 (last layer, wraps)
+
+  ApplyGeometryCoupling(FS);
+
+  // Layer[0]: H_self=30, H_below=Layer[1].H=7 (wrap), Bound=7
+  Assert.AreEqual(Single(7.0), FS.Stacks[0].Layers[0].P[2].max,
+    'S.max should be capped to last layer H via periodic wrap (7)');
+end;
+
+procedure TTestValidateLimits.Test_Geometry_HAndRhoUntouched;
+var
+  FS: TFitStructure;
+begin
+  // Verify that ApplyGeometryCoupling only modifies P[2].max
+  FS := MakeStructure(1);
+  FS.Stacks[0].N := 1;
+  FS.Stacks[0].Layers[0].P[1].V := 10.0;
+  FS.Stacks[0].Layers[0].P[1].min := 5.0;
+  FS.Stacks[0].Layers[0].P[1].max := 20.0;
+  FS.Stacks[0].Layers[0].P[2].V := 8.0;
+  FS.Stacks[0].Layers[0].P[2].min := 3.0;
+  FS.Stacks[0].Layers[0].P[2].max := 25.0;
+  FS.Stacks[0].Layers[0].P[3].V := 5.0;
+  FS.Stacks[0].Layers[0].P[3].min := 2.0;
+  FS.Stacks[0].Layers[0].P[3].max := 15.0;
+
+  ApplyGeometryCoupling(FS);
+
+  // H limits untouched
+  Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[1].min, 'H.min should be unchanged');
+  Assert.AreEqual(Single(20.0), FS.Stacks[0].Layers[0].P[1].max, 'H.max should be unchanged');
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].V, 'H.V should be unchanged');
+  // Rho limits untouched
+  Assert.AreEqual(Single(2.0), FS.Stacks[0].Layers[0].P[3].min, 'Rho.min should be unchanged');
+  Assert.AreEqual(Single(15.0), FS.Stacks[0].Layers[0].P[3].max, 'Rho.max should be unchanged');
+  Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[3].V, 'Rho.V should be unchanged');
+  // S.min and S.V untouched (only S.max modified)
+  Assert.AreEqual(Single(3.0), FS.Stacks[0].Layers[0].P[2].min, 'S.min should be unchanged');
+  Assert.AreEqual(Single(8.0), FS.Stacks[0].Layers[0].P[2].V, 'S.V should be unchanged');
 end;
 
 end.
