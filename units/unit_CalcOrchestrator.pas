@@ -31,9 +31,7 @@ type
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare, FABestChiSquare: Single;
-    FTerminated, FBenchmarkMode, FFirstUpdate: Boolean;
-    FBenchmarkPath: string;
-    FBenchmarkRuns: Integer;
+    FBenchmarkMode, FFirstUpdate: Boolean;
 
     { Dependencies - not owned }
     FCalcSettings: TfrmCalcSettings;
@@ -58,8 +56,6 @@ type
       const Poly: TProfileFunctions; const Res: TLayeredModel;
       const CreateExtension: Boolean = True);
     procedure FinalizeFitting;
-    procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
-    procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
   public
     constructor Create(ACalcSettings: TfrmCalcSettings;
       AProjectPanel: TfrmProjectPanel; AChartInfo: TfrmChartInfo;
@@ -71,14 +67,11 @@ type
     procedure RunFitting;
     procedure StopCalc;
     procedure RecalcFromStructure;
-    procedure RunBenchmark;
-    procedure RunBatchJobs;
     procedure HandleFitUpdate(var Msg: TMessage);
     procedure HandleFitComplete;
 
-    property LastChiSquare: Single read FLastChiSquare;
-    property BenchmarkMode: Boolean read FBenchmarkMode;
-    property Terminated: Boolean read FTerminated;
+    property LastChiSquare: Single read FLastChiSquare write FLastChiSquare;
+    property BenchmarkMode: Boolean read FBenchmarkMode write FBenchmarkMode;
     property OnEnableControls: TEnableControlsEvent write FOnEnableControls;
     property OnCalcTimeUpdate: TStatusUpdateEvent write FOnCalcTimeUpdate;
     property OnFitTimeUpdate: TStatusUpdateEvent write FOnFitTimeUpdate;
@@ -91,8 +84,8 @@ uses
   Vcl.Controls,
   unit_DataProcessing, unit_SeriesIO,
   unit_LFPSO_Periodic, unit_LFPSO_Irregular, unit_LFPSO_Poly,
-  unit_consts, unit_config, unit_files_list,
-  frm_Limits, frm_Benchmark;
+  unit_config,
+  frm_Limits;
 
 type
   TFittingThread = class(TThread)
@@ -290,12 +283,8 @@ end;
 
 procedure TCalcOrchestrator.StopCalc;
 begin
-  FTerminated := True;
-
   if FLFPSO <> nil then
-  begin
-       FLFPSO.Terminate;
-  end;
+    FLFPSO.Terminate;
 end;
 
 procedure TCalcOrchestrator.UpdateInterface(const FitStructure: TFitStructure;
@@ -447,85 +436,6 @@ begin
   DecodeTime(Now - FFitStartTime, Hour, Min, Sec, MSec);
   if Assigned(FOnFitTimeUpdate) then
     FOnFitTimeUpdate(Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]));
-end;
-
-procedure TCalcOrchestrator.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
-var
-  i: Integer;
-begin
-  FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
-
-  frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
-  for i := 1 to FBenchmarkRuns do
-  begin
-    if FTerminated then Break;
-    FProjectPanel.ReopenProject;
-    RunFitting;
-    Application.ProcessMessages;
-    frmBenchmark.AddValue(i, FloatToStrF(FLastChiSquare, ffFixed, 8, 4));
-    frmBenchmark.CalcStats(False);
-  end;
-  if not FTerminated then frmBenchmark.CalcStats(True);
-end;
-
-procedure TCalcOrchestrator.ProcessJobFile(Sender: TObject; const F: TSearchRec);
-begin
-  Application.ProcessMessages;
-  if FTerminated then Exit;
-
-  FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
-
-  FProjectPanel.ReopenProject;
-  RunFitting;
-end;
-
-procedure TCalcOrchestrator.RunBenchmark;
-var
-  Files: TFilesList;
-begin
-  FLastChiSquare := 0;
-  FBenchmarkRuns := TConfig.Section<TCalcOptions>.BenchmarkRuns;
-
-  try
-    FTerminated := False;
-    frmBenchmark.Clear(FBenchmarkRuns);
-    frmBenchmark.Init(TConfig.SystemDir[sdBenchOutDir]);
-    frmBenchmark.Show;
-    FBenchmarkMode := True;
-
-    Files := TFilesList.Create(nil);
-    FBenchmarkPath := TConfig.SystemDir[sdBenchDir];
-    Files.TargetPath := FBenchmarkPath;
-    Files.Mask := '*' + PROJECT_EXT;
-    Files.OnFile := ProcessBenchFile;
-    Files.Process;
-    FBenchmarkMode := False;
-  finally
-    FreeAndNil(Files);
-  end;
-end;
-
-procedure TCalcOrchestrator.RunBatchJobs;
-var
-  Files: TFilesList;
-begin
-  try
-    FTerminated := False;
-    FBenchmarkMode := True;
-    Files := TFilesList.Create(nil);
-    FBenchmarkPath := TConfig.SystemDir[sdJobsDir];
-    Files.TargetPath := FBenchmarkPath;
-    Files.Mask := '*' + PROJECT_EXT;
-    Files.OnFile := ProcessJobFile;
-    Files.Process;
-    if not FTerminated then
-      ShowMessage('All jobs done')
-    else
-      ShowMessage('Batch was terminated!');
-  finally
-    FreeAndNil(Files);
-    FBenchmarkMode := False;
-  end;
 end;
 
 end.

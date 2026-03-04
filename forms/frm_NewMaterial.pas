@@ -182,7 +182,7 @@ begin
     StreamIn := TMemoryStream.Create;
     StreamOut := TMemoryStream.Create;
 
-    StreamIn.LoadFromFile(Config.SystemDir[sdHenke] + Grid.Cells[0,1] + '.bin');
+    StreamIn.LoadFromFile(TConfig.SystemDir[sdHenke] + Grid.Cells[0,1] + '.bin');
 
     s := GetString(StreamIn);
     WriteString(Edit1.Text);
@@ -216,7 +216,7 @@ begin
       StreamOut.Write(f1.Re, Size);
       StreamOut.Write(f1.Im, Size);
     end;
-    StreamOut.SaveToFile(Config.SystemDir[sdHenke] + Edit1.Text + '.bin');
+    StreamOut.SaveToFile(TConfig.SystemDir[sdHenke] + Edit1.Text + '.bin');
     Result := True;
   finally
     FreeAndNil(StreamIn);

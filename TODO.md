@@ -5,16 +5,16 @@
 | # | Task | Size | Notes |
 |---|------|------|-------|
 | ~~1~~ | ~~Eliminate excessive `Copy()` in population management~~ | ~~🟡 M~~ | Done — `04c8bb2` added `CopySolution()` deep-copy helper; dead `CalcSolution` removed |
-| 2 | Batch UI update messages during fitting — throttle `PostMessage` to 10-20/sec | 🟢 S | `unit_LFPSO_Base.pas:680` |
+| 2 | Batch UI update messages during fitting — throttle `PostMessage` to 10-20/sec | 🟢 S | Deferred |
 | ~~3~~ | ~~Implement adaptive velocity coefficient (`CFactor`)~~ | ~~🟡 M~~ | Done — `f866b42` linearly decreases CFactor from (w1+w2) to w1 |
-| 4 | Replace `Application.ProcessMessages` with async pattern (`TThread.Queue` or OTL Comm) — re-entrancy risk | 🟡 M | Lines 490, 680, 700 |
+| ~~4~~ | ~~Replace `Application.ProcessMessages` with async pattern (`TThread.Queue` or OTL Comm) — re-entrancy risk~~ | ~~🟡 M~~ | Done — `a02281b` moved fitting to background thread with OTL message pump |
 
 ## Calculation Engine
 
 | # | Task | Size | Notes |
 |---|------|------|-------|
-| 5 | SoA layout for inner `RefCalc` loop — full Structure-of-Arrays for hot path (e, L, s, ro) for better x64 vectorization | 🟡 M | `unit_calc.pas` |
-| 6 | Hash-map profile function lookup — `TProfileFunctions` searched O(n) per layer by `(StackID, LayerID)`. Replace with `TDictionary` | 🟡 M | `unit_materials.pas` |
+| ~~5~~ | ~~SoA layout for inner `RefCalc` loop — full Structure-of-Arrays for hot path (e, L, s, ro) for better x64 vectorization~~ | ~~🟡 M~~ | Done — `de34747` added `TCalcModelSoA`/`TCalcScratchSoA`, rewrote `RefCalc` |
+| ~~6~~ | ~~Hash-map profile function lookup — `TProfileFunctions` searched O(n) per layer by `(StackID, LayerID)`. Replace with `TDictionary`~~ | ~~🟡 M~~ | Done — `7ce344c` added `FProfileIndex` dictionary to `TLayeredModel` and `TProfileManager` |
 | 7 | Parameterize convolution window size (currently hardcoded W=10) — allow users to trade smoothness vs. speed | 🟢 S | `unit_calc.pas` |
 
 ## Main Form Decoupling

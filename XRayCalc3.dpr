@@ -60,6 +60,7 @@ uses
   unit_RecentProjects in 'Units\unit_RecentProjects.pas',
   unit_ChartManager in 'Units\unit_ChartManager.pas',
   unit_CalcOrchestrator in 'Units\unit_CalcOrchestrator.pas',
+  unit_BatchRunner in 'Units\unit_BatchRunner.pas',
   unit_XRCPanel in 'Components\unit_XRCPanel.pas';
 
 {$R *.res}

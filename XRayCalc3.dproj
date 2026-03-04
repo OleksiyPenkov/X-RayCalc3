@@ -291,6 +291,7 @@
         <DCCReference Include="Units\unit_RecentProjects.pas"/>
         <DCCReference Include="Units\unit_ChartManager.pas"/>
         <DCCReference Include="Units\unit_CalcOrchestrator.pas"/>
+        <DCCReference Include="Units\unit_BatchRunner.pas"/>
         <DCCReference Include="Components\unit_XRCPanel.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

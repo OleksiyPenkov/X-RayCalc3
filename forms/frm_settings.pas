@@ -145,13 +145,13 @@ begin
     chkLiveUpdate.Checked      := LiveUpdate;
   end;
 
-  edHenkeDir.Text        := Config.SystemDirS[sdHenke];
-  edProjectDir.Text      := Config.SystemDirS[sdProjDir];
-  edStorageDir.Text      := Config.SystemDirS[sdStorageDir];
-  edBenchmarkDir.Text    := Config.SystemDirS[sdBenchDir];
-  edOutputDir.Text       := Config.SystemDirS[sdOutDir];
-  edBenchOutputDir.Text  := Config.SystemDirS[sdBenchOutDir];
-  edJobsDir.Text         := Config.SystemDirS[sdJobsDir];
+  edHenkeDir.Text        := TConfig.SystemDirS[sdHenke];
+  edProjectDir.Text      := TConfig.SystemDirS[sdProjDir];
+  edStorageDir.Text      := TConfig.SystemDirS[sdStorageDir];
+  edBenchmarkDir.Text    := TConfig.SystemDirS[sdBenchDir];
+  edOutputDir.Text       := TConfig.SystemDirS[sdOutDir];
+  edBenchOutputDir.Text  := TConfig.SystemDirS[sdBenchOutDir];
+  edJobsDir.Text         := TConfig.SystemDirS[sdJobsDir];
 
 end;
 
@@ -178,13 +178,13 @@ begin
     LiveUpdate := chkLiveUpdate.Checked;
   end;
 
-  Config.SystemDir[sdHenke]       := edHenkeDir.Text;
-  Config.SystemDir[sdProjDir]     := edProjectDir.Text;
-  Config.SystemDir[sdStorageDir]  := edStorageDir.Text;
-  Config.SystemDir[sdBenchDir]    := edBenchmarkDir.Text;
-  Config.SystemDir[sdOutDir]      := edOutputDir.Text;
-  Config.SystemDir[sdBenchOutDir] := edBenchOutputDir.Text;
-  Config.SystemDirS[sdJobsDir]    := edJobsDir.Text;
+  TConfig.SystemDir[sdHenke]       := edHenkeDir.Text;
+  TConfig.SystemDir[sdProjDir]     := edProjectDir.Text;
+  TConfig.SystemDir[sdStorageDir]  := edStorageDir.Text;
+  TConfig.SystemDir[sdBenchDir]    := edBenchmarkDir.Text;
+  TConfig.SystemDir[sdOutDir]      := edOutputDir.Text;
+  TConfig.SystemDir[sdBenchOutDir] := edBenchOutputDir.Text;
+  TConfig.SystemDirS[sdJobsDir]    := edJobsDir.Text;
 end;
 
 

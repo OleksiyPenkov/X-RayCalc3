@@ -18,7 +18,7 @@ uses
   unit_LFPSO_Base, Vcl.Buttons,
   Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel, frame_ProjectPanel,
   Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, unit_ChartManager,
-  unit_CalcOrchestrator,
+  unit_CalcOrchestrator, unit_BatchRunner,
   Vcl.VirtualImageList, Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
@@ -255,12 +255,14 @@ type
     procedure FormShow(Sender: TObject);
   private
     FOrchestrator: TCalcOrchestrator;
+    FBatchRunner: TBatchRunner;
     FChartMgr: TChartManager;
     PM: TProfileManager;
     FDPI: Integer;
     FLockOwner: Boolean;
     FLockFile: File;
 
+    procedure DoAddStack(const Insert: Boolean);
     procedure EnableControls(const Enable: Boolean);
     procedure UpdateCalcTime(const S: string);
     procedure UpdateFitTime(const S: string);
@@ -373,7 +375,7 @@ end;
 
 procedure TfrmMain.OnCancelBenchmarkMsg(var Msg: TMessage);
 begin
-  FOrchestrator.StopCalc;
+  FBatchRunner.Stop;
 end;
 
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
@@ -555,7 +557,7 @@ begin
   FProjectPanel.PasteData;
 end;
 
-procedure TfrmMain.PeriodAddExecute(Sender: TObject);
+procedure TfrmMain.DoAddStack(const Insert: Boolean);
 var
   Name: string;
   N   : Integer;
@@ -565,9 +567,17 @@ begin
   if Name <> '' then
   begin
     FProjectPanel.SaveHistory;
-    Structure.AddStack(N, Name);
+    if Insert then
+      Structure.InsertStack(N, Name)
+    else
+      Structure.AddStack(N, Name);
     FProjectPanel.MatchToStructure;
   end;
+end;
+
+procedure TfrmMain.PeriodAddExecute(Sender: TObject);
+begin
+  DoAddStack(False);
 end;
 
 procedure TfrmMain.PeriodDeleteExecute(Sender: TObject);
@@ -578,18 +588,8 @@ begin
 end;
 
 procedure TfrmMain.PeriodInsertExecute(Sender: TObject);
-var
-  Name: string;
-  N   : Integer;
 begin
-  N := 1;
-  edtrStack.Edit(Name, N);
-  if Name <> '' then
-  begin
-    FProjectPanel.SaveHistory;
-    Structure.InsertStack(N, Name);
-    FProjectPanel.MatchToStructure;
-  end;
+  DoAddStack(True);
 end;
 
 
@@ -675,12 +675,12 @@ end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);
 begin
-  FOrchestrator.RunBenchmark;
+  FBatchRunner.RunBenchmark;
 end;
 
 procedure TfrmMain.actCalcFitJobsExecute(Sender: TObject);
 begin
-  FOrchestrator.RunBatchJobs;
+  FBatchRunner.RunBatchJobs;
 end;
 
 procedure TfrmMain.actCopyStructureBitmapExecute(Sender: TObject);
@@ -862,10 +862,10 @@ end;
 
 procedure TfrmMain.CreateTmpLock;
 begin
-  if FileExists(Config.SystemFileName[sfLock]) then
+  if FileExists(TConfig.SystemFileName[sfLock]) then
     FLockOwner := False
   else begin
-    AssignFile(FLockFile, Config.SystemFileName[sfLock]);
+    AssignFile(FLockFile, TConfig.SystemFileName[sfLock]);
     Rewrite(FLockFile);
     FLockOwner := True;
   end;
@@ -876,8 +876,8 @@ begin
   if FLockOwner then
   begin
     CloseFile(FLockFile);
-    DeleteFile(Config.SystemFileName[sfLock]);
-    ClearDir(Config.TempDir);
+    DeleteFile(TConfig.SystemFileName[sfLock]);
+    ClearDir(TConfig.TempDir);
   end;
 end;
 
@@ -907,8 +907,7 @@ begin
   FormatSettings.DecimalSeparator := '.';
   FChartMgr := TChartManager.Create(FChartInfo.Chart, 2);
   ScaleInterface;
-  Config := TConfig.Create;
-  FChartMgr.LineWidth := Config.Section<TGraphOptions>.LineWidth;
+  FChartMgr.LineWidth := TConfig.Section<TGraphOptions>.LineWidth;
 
   PM := TProfileManager.Create;
   PM.DensityProfile := FChartPages.ProfileSeries;
@@ -918,6 +917,8 @@ begin
   FOrchestrator.OnEnableControls := EnableControls;
   FOrchestrator.OnCalcTimeUpdate := UpdateCalcTime;
   FOrchestrator.OnFitTimeUpdate := UpdateFitTime;
+
+  FBatchRunner := TBatchRunner.Create(FOrchestrator, FProjectPanel);
 
   FProjectPanel.Init(ImageCollection, FDPI, FChartMgr, FCalcSettings,
     FChartInfo, FChartPages, PM, miRecent, pmRecentList);
@@ -956,7 +957,7 @@ begin
   Structure.Parent := FStructurePanel;
   FProjectPanel.SetStructure(Structure);
 
-  CreateDir(Config.TempDir);
+  CreateDir(TConfig.TempDir);
   CreateTmpLock;
   FChartPages.ResetToFirstPage;
 end;
@@ -965,10 +966,11 @@ procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   FProjectPanel.Project.Clear;
   ReleaseTmpLock;
+  FreeAndNil(FBatchRunner);
   FreeAndNil(FOrchestrator);
   FreeAndNil(Structure);
   FreeAndNil(FChartMgr);
-  FreeAndNil(Config);
+  // TConfig uses class constructor/destructor; no instance to free
 end;
 
 

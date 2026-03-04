@@ -37,10 +37,10 @@ end;
 
 function GetNThreads: Integer;
 begin
-  if Config.Section<TCalcOptions>.NumberOfThreads = 0 then
+  if TConfig.Section<TCalcOptions>.NumberOfThreads = 0 then
      Result := Environment.Process.Affinity.Count
   else
-    Result := Config.Section<TCalcOptions>.NumberOfThreads;
+    Result := TConfig.Section<TCalcOptions>.NumberOfThreads;
 
 //  Result := Length(CPUS);
 //  Environment.Process.Affinity.Mask := CombinedProcessorMask(CPUS);

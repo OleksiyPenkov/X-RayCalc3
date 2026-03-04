@@ -81,14 +81,24 @@ end;
 
 procedure TChartManager.PlotResults(CurveID: Integer; const Data: TDataArray);
 var
-  j: Integer;
+  j, Count: Integer;
   S: TFastLineSeries;
 begin
+  Count := Length(Data);
   S := FSeriesList[CurveID];
   S.BeginUpdate;
   S.Clear;
-  for j := 0 to High(Data) do
-    S.AddXY(Data[j].t, Data[j].R);
+
+  SetLength(S.XValues.Value, Count);
+  SetLength(S.YValues.Value, Count);
+  for j := 0 to Count - 1 do
+  begin
+    S.XValues.Value[j] := Data[j].t;
+    S.YValues.Value[j] := Data[j].R;
+  end;
+  S.XValues.Count := Count;
+  S.YValues.Count := Count;
+
   S.EndUpdate;
 end;
 

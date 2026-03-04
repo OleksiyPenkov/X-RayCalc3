@@ -203,9 +203,6 @@ type
 
     EConfigException = Exception;
 
-var
-  Config: TConfig;
-
 implementation
 uses
   typinfo,

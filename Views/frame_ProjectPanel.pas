@@ -118,6 +118,7 @@ type
     procedure LoadRecentProjectsList(ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
     procedure OnRecentProjectClick(Sender: TObject; const FileName: string);
     function  GetLastData: PProjectData;
+    function  CreateDataNode(ParentNode: PVirtualNode; const Title: string): PProjectData;
   public
     destructor Destroy; override;
 
@@ -477,7 +478,7 @@ procedure TfrmProjectPanel.PrepareProjectFolder(const FileName: string; Clear: B
 begin
   FProjectFileName := FileName;
   FProjectName := ExtractFileName(FileName);
-  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + CreateClassID);
+  FProjectDir := IncludeTrailingPathDelimiter(TConfig.TempPath + CreateClassID);
 
   if Clear then
   begin
@@ -1082,10 +1083,27 @@ end;
 
 { --- Data operations --- }
 
+function TfrmProjectPanel.CreateDataNode(ParentNode: PVirtualNode;
+  const Title: string): PProjectData;
+var
+  Node: PVirtualNode;
+begin
+  Node := FProject.AddChild(ParentNode);
+  Result := FProject.GetNodeData(Node);
+  Result.ID := FLastID;
+  Inc(FLastID);
+  Result.Title := Title;
+  Result.Group := gtData;
+  Result.RowType := prItem;
+  FChartMgr.AddSeries(Result);
+  FProject.Expanded[FDataRoot] := True;
+end;
+
 procedure TfrmProjectPanel.LoadData;
 var
   Data: PProjectData;
   Node: PVirtualNode;
+  Parent: PVirtualNode;
 begin
   if not dlgLoadData.Execute then
     Exit;
@@ -1096,44 +1114,23 @@ begin
 
   Data := FProject.GetNodeData(Node);
   if (Data.RowType = prFolder) and (Data.Group = gtData) then
-    Node := FProject.AddChild(Node)
+    Parent := Node
   else
-    Node := FProject.AddChild(FDataRoot);
+    Parent := FDataRoot;
 
-  Data := FProject.GetNodeData(Node);
-  Data.ID := FLastID;
-  inc(FLastID);
-  Data.Title := ExtractFileName(dlgLoadData.FileName);
-  Data.Group := gtData;
-  Data.RowType := prItem;
-
-  FChartMgr.AddSeries(Data);
-
+  Data := CreateDataNode(Parent, ExtractFileName(dlgLoadData.FileName));
   SeriesFromFile(FChartMgr.Series[Data.CurveID], dlgLoadData.FileName, Data.Description);
   SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
 
   FProject.ActiveData := Data;
-  FProject.Expanded[FDataRoot] := True;
   RefreshChartLegend;
 end;
 
 procedure TfrmProjectPanel.PasteData;
 var
   Data: PProjectData;
-  Node: PVirtualNode;
 begin
-  Node := FProject.AddChild(FDataRoot);
-  Data := FProject.GetNodeData(Node);
-
-  Data.ID := FLastID;
-  inc(FLastID);
-  Data.Title := 'Data ' + IntToStr(Node.Index + 1) + '.dat';
-  Data.Group := gtData;
-  Data.RowType := prItem;
-
-  FChartMgr.AddSeries(Data);
-  FProject.Expanded[FDataRoot] := True;
-
+  Data := CreateDataNode(FDataRoot, 'Data ' + IntToStr(FDataRoot.ChildCount) + '.dat');
   SeriesFromClipboard(FChartMgr.Series[Data.CurveID]);
   SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
   RefreshChartLegend;
@@ -1213,7 +1210,7 @@ begin
 
   FLastID := 1;
   FProjectName := DEFAULT_PROJECT_NAME;
-  FProjectDir := IncludeTrailingPathDelimiter(Config.TempPath + CreateClassID);
+  FProjectDir := IncludeTrailingPathDelimiter(TConfig.TempPath + CreateClassID);
   FProjectFileName := FProjectName;
   CreateDir(FProjectDir);
 
