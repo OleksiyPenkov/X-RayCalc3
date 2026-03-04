@@ -65,7 +65,8 @@ type
       FLogData: array of Single;
       FLogDataReady: Boolean;
 
-      function  RefCalc(const ATheta, c1, c2:single; ALayers: TCalcLayers): single;
+      function  RefCalc(const ATheta, c1, c2: single;
+        const AModel: TCalcModelSoA; var AScratch: TCalcScratchSoA): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
       procedure CalcTet(const Params: TCalcParams);
       procedure RunThetaThreads;
@@ -231,9 +232,12 @@ var
   R, c1, c2: single;
   L: single;
   Layers: TCalcLayers;
- begin
+  Model: TCalcModelSoA;
+  Scratch: TCalcScratchSoA;
+begin
   Step := (EndL - StartL) / N;
   SetLength(FResult, N);
+  Scratch.Count := 0;
   for i := 0 to N - 1 do
   begin
     L := StartL + i * Step;
@@ -245,11 +249,15 @@ var
       Layers[j].eRatio := AbsZ(DivZZ(Layers[j].e, Layers[j + 1].e));
       Layers[j + 1].s2 := Sqr(Layers[j + 1].s) * 0.50299;
     end;
+    // Transpose AoS -> SoA
+    Model.CopyFrom(Layers);
+    if Scratch.Count <> Model.Count then
+      Scratch.SetCount(Model.Count);
     // Compute wave constants per lambda
     c1 := 4 * Pi / L;
     c2 := c1 * 0.5;
     FResult[i].t := L;
-    R := RefCalc(Theta, c1, c2, Layers);
+    R := RefCalc(Theta, c1, c2, Model, Scratch);
     if R > FLimit then
       FResult[i].R := R
     else
@@ -262,6 +270,8 @@ var
   i: integer;
   R, c1, c2: single;
   Layers: TCalcLayers;
+  Model: TCalcModelSoA;
+  Scratch: TCalcScratchSoA;
 begin
   if NThreads <= 1 then
     Layers := FLayeredModel.LayersDirect  // single thread — no copy needed
@@ -275,6 +285,10 @@ begin
     Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.50299; { sqr(sigma/1.41) for rfError }
   end;
 
+  // Transpose AoS -> SoA once before angle loop
+  Model.CopyFrom(Layers);
+  Scratch.SetCount(Model.Count);
+
   // Precompute wave constants — constant across all angles
   c1 := 4 * Pi / FParams.Lambda;
   c2 := c1 * 0.5;
@@ -286,7 +300,7 @@ begin
     else
       FResult[Params.N0 + i].t := Params.StartTeta + i * Params.Step;
 
-    R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, c1, c2, Layers);
+    R := RefCalc((FResult[Params.N0 + i].t) / FParams.K, c1, c2, Model, Scratch);
     if R > FLimit then
       FResult[Params.N0 + i].R := R
     else
@@ -356,7 +370,8 @@ begin
   end;
 end;
 
-function TCalc.RefCalc(const ATheta, c1, c2:single; ALayers: TCalcLayers): single;
+function TCalc.RefCalc(const ATheta, c1, c2: single;
+  const AModel: TCalcModelSoA; var AScratch: TCalcScratchSoA): single;
 var
   Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t, t: single;
 
@@ -364,27 +379,32 @@ var
   var
     i: integer;
     L2, expVal, sinP, cosP: single;
-    Rn, a1, a2, b1, b2: TComplex;
+    Rn, a1, a2, b1, b2, RFi, Ri: TComplex;
   begin
-    for i := High(ALayers) - 1 downto 0 do
+    for i := AModel.Count - 2 downto 0 do
     begin
       { Fused: MulRZ(2L, K) * i -> ExpZ -> MulZZ(R, .) }
-      L2 := ALayers[i + 1].L * 2;
-      expVal := FastExp(-L2 * ALayers[i + 1].K.Im);
-      FastSinCos(L2 * ALayers[i + 1].K.Re, sinP, cosP);
-      Rn := ALayers[i + 1].R;
+      L2 := AModel.L[i + 1] * 2;
+      expVal := FastExp(-L2 * AScratch.KIm[i + 1]);
+      FastSinCos(L2 * AScratch.KRe[i + 1], sinP, cosP);
+      Rn.Re := AScratch.RRe[i + 1];
+      Rn.Im := AScratch.RIm[i + 1];
       a1.Re := expVal * (Rn.Re * cosP - Rn.Im * sinP);
       a1.Im := expVal * (Rn.Re * sinP + Rn.Im * cosP);
 
-      b1 := AddZZ(ALayers[i].RF, a1);
-      a2 := MulZZ(ALayers[i].RF, a1);
+      RFi.Re := AScratch.RFRe[i];
+      RFi.Im := AScratch.RFIm[i];
+      b1 := AddZZ(RFi, a1);
+      a2 := MulZZ(RFi, a1);
       b2 := AddZR(a2, 1);
-      ALayers[i].R := DivZZ(b1, b2);
+      Ri := DivZZ(b1, b2);
+      AScratch.RRe[i] := Ri.Re;
+      AScratch.RIm[i] := Ri.Im;
     end;
-    Result := NormZ(ALayers[0].R);
+    Result := Sqr(AScratch.RRe[0]) + Sqr(AScratch.RIm[0]);
   end;
 
-  function Roughness(const RF: TRoughnessFunction; const sigma, s2, s: single):Single; inline;
+  function Roughness(const RF: TRoughnessFunction; const sigma, s2, s: single): single; inline;
   begin
     case RF of
       rfError:
@@ -407,50 +427,68 @@ var
   procedure LayerAmplitudeRefractionS;    { Reflection coefficient Rs }
   var
     i: integer;
-    b1, b2: TComplex;
-    s, rf: Single;
+    Ki, Ki1, b1, b2, RF: TComplex;
+    sv, rfVal: single;
   begin
-    for i := 0 to Length(ALayers) - 2 do
+    for i := 0 to AModel.Count - 2 do
     begin
-      b1 := SubZZ(ALayers[i].K, ALayers[i + 1].K);
-      b2 := AddZZ(ALayers[i].K, ALayers[i + 1].K);
-      ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (ALayers[i].eRatio * sqr_sin_t));
-      s := c1 * sqrt(cos_t * sqrt(s1));
+      Ki.Re := AScratch.KRe[i];
+      Ki.Im := AScratch.KIm[i];
+      Ki1.Re := AScratch.KRe[i + 1];
+      Ki1.Im := AScratch.KIm[i + 1];
+      b1 := SubZZ(Ki, Ki1);
+      b2 := AddZZ(Ki, Ki1);
+      RF := DivZZ(b1, b2);
+      s1 := Abs(1 - (AModel.eRatio[i] * sqr_sin_t));
+      sv := c1 * sqrt(cos_t * sqrt(s1));
 
-      rf := Roughness(FParams.RF, ALayers[i + 1].s, ALayers[i + 1].s2, s);
-      ALayers[i].RoughFactor := rf; { cache for P-polarization reuse }
-      ALayers[i].RF := MulRZ(rf, ALayers[i].RF);
+      rfVal := Roughness(FParams.RF, AModel.s[i + 1], AModel.s2[i + 1], sv);
+      AScratch.RoughFactor[i] := rfVal; { cache for P-polarization reuse }
+      RF := MulRZ(rfVal, RF);
+      AScratch.RFRe[i] := RF.Re;
+      AScratch.RFIm[i] := RF.Im;
     end;
   end;
 
   procedure LayerAmplitudeRefractionP;      { Reflection coefficient Rp }
   var
     i: integer;
-    a1, a2, b1, b2: TComplex;
+    Ki, Ki1, ei, ei1, a1, a2, b1, b2, RF: TComplex;
   begin
-    for i := 0 to Length(ALayers) - 2 do
+    for i := 0 to AModel.Count - 2 do
     begin
-      a1 := DivZZ(ALayers[i].K, ALayers[i].e);
-      a2 := DivZZ(ALayers[i + 1].K, ALayers[i + 1].e);
+      Ki.Re := AScratch.KRe[i];
+      Ki.Im := AScratch.KIm[i];
+      Ki1.Re := AScratch.KRe[i + 1];
+      Ki1.Im := AScratch.KIm[i + 1];
+      ei.Re := AModel.eRe[i];
+      ei.Im := AModel.eIm[i];
+      ei1.Re := AModel.eRe[i + 1];
+      ei1.Im := AModel.eIm[i + 1];
+      a1 := DivZZ(Ki, ei);
+      a2 := DivZZ(Ki1, ei1);
       b1 := SubZZ(a1, a2);
       b2 := AddZZ(a1, a2);
-      ALayers[i].RF := DivZZ(b1, b2);
+      RF := DivZZ(b1, b2);
 
-      ALayers[i].RF := MulRZ(ALayers[i].RoughFactor, ALayers[i].RF); { reuse cached factor }
+      RF := MulRZ(AScratch.RoughFactor[i], RF); { reuse cached factor }
+      AScratch.RFRe[i] := RF.Re;
+      AScratch.RFIm[i] := RF.Im;
     end;
   end;
 
   procedure FresnelCoefficients;   { Fresnel coefficients }
   var
-    i: Integer;
-    a1: TComplex;
+    i: integer;
+    a1, K: TComplex;
   begin
-    for i := 0 to Length(ALayers) - 1 do
-      begin
-        a1 := SqrtZ(AddZR(ALayers[i].e, -sqr_sin_t));
-        ALayers[i].K := MulRZ(c2, a1);
-      end;
+    for i := 0 to AModel.Count - 1 do
+    begin
+      a1 := SqrtZ(AddZR(ToComplex(AModel.eRe[i], AModel.eIm[i]), -sqr_sin_t));
+      K := MulRZ(c2, a1);
+      AScratch.KRe[i] := K.Re;
+      AScratch.KIm[i] := K.Im;
+    end;
   end;
 
 begin

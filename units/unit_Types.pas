@@ -123,6 +123,24 @@ type
 
   TCalcLayers = array of TCalcLayer;
 
+  TCalcModelSoA = record
+    Count: Integer;
+    eRe, eIm: TFloatArray;
+    L, s, ro: TFloatArray;
+    eRatio, s2: TFloatArray;
+    procedure SetCount(N: Integer);
+    procedure CopyFrom(const Layers: TCalcLayers);
+  end;
+
+  TCalcScratchSoA = record
+    Count: Integer;
+    KRe, KIm: TFloatArray;
+    RFRe, RFIm: TFloatArray;
+    RRe, RIm: TFloatArray;
+    RoughFactor: TFloatArray;
+    procedure SetCount(N: Integer);
+  end;
+
   TFuncProfileRec = record
     public
       Func: TFunctionForm;
@@ -234,6 +252,51 @@ begin
     if i = 10 then Break;
   end;
   Poly[10] := High(PolyD);
+end;
+
+{ TCalcModelSoA }
+
+procedure TCalcModelSoA.SetCount(N: Integer);
+begin
+  Count := N;
+  SetLength(eRe, N);
+  SetLength(eIm, N);
+  SetLength(L, N);
+  SetLength(s, N);
+  SetLength(ro, N);
+  SetLength(eRatio, N);
+  SetLength(s2, N);
+end;
+
+procedure TCalcModelSoA.CopyFrom(const Layers: TCalcLayers);
+var
+  i: Integer;
+begin
+  SetCount(Length(Layers));
+  for i := 0 to Count - 1 do
+  begin
+    eRe[i] := Layers[i].e.Re;
+    eIm[i] := Layers[i].e.Im;
+    L[i] := Layers[i].L;
+    s[i] := Layers[i].s;
+    ro[i] := Layers[i].ro;
+    eRatio[i] := Layers[i].eRatio;
+    s2[i] := Layers[i].s2;
+  end;
+end;
+
+{ TCalcScratchSoA }
+
+procedure TCalcScratchSoA.SetCount(N: Integer);
+begin
+  Count := N;
+  SetLength(KRe, N);
+  SetLength(KIm, N);
+  SetLength(RFRe, N);
+  SetLength(RFIm, N);
+  SetLength(RRe, N);
+  SetLength(RIm, N);
+  SetLength(RoughFactor, N);
 end;
 
 { TFitValue }
