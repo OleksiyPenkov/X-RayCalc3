@@ -3,6 +3,7 @@
 interface
 
 uses
+  System.Generics.Collections,
   VCLTee.Series, unit_XRCStructure, VCLTee.Chart, unit_types, unit_ProfileCalc;
 
 type
@@ -15,7 +16,9 @@ type
 
       FDensityProfile: TLineSeries;
       FProfiles: TProfileFunctions;
+      FProfileIndex: TDictionary<Cardinal, TArray<Integer>>;
       function StructureToStacks: TStacksData;
+      procedure SetProfiles(const Value: TProfileFunctions);
     public
       constructor Create;
       destructor Destroy; override;
@@ -28,7 +31,7 @@ type
       procedure ClearProfiles;
       procedure Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
 
-      property Profiles: TProfileFunctions write FProfiles;
+      property Profiles: TProfileFunctions write SetProfiles;
       property DensityProfile: TLineSeries write FDensityProfile;
     end;
 
@@ -106,18 +109,38 @@ begin
       PlotDensityProfile;
 end;
 
+procedure TProfileManager.SetProfiles(const Value: TProfileFunctions);
+var
+  i, Len: Integer;
+  Key: Cardinal;
+  Indices: TArray<Integer>;
+begin
+  FProfiles := Value;
+  FProfileIndex.Clear;
+  for i := 0 to High(FProfiles) do
+  begin
+    Key := Cardinal(FProfiles[i].StackID) shl 16 or FProfiles[i].LayerID;
+    if FProfileIndex.TryGetValue(Key, Indices) then
+    begin
+      Len := Length(Indices);
+      SetLength(Indices, Len + 1);
+      Indices[Len] := i;
+      FProfileIndex[Key] := Indices;
+    end
+    else begin
+      SetLength(Indices, 1);
+      Indices[0] := i;
+      FProfileIndex.Add(Key, Indices);
+    end;
+  end;
+end;
+
 procedure TProfileManager.PlotGradedProfile;
 var
-  StackIndex, LayerIndex, PeriodIndex, GradientIndex, shift, d, p: integer;
-  Profiled: Boolean;
-
-  function IsProfile: boolean;
-  begin
-     Result := (FStructure.Stacks[StackIndex].Layers[LayerIndex].StackID = FProfiles[GradientIndex].StackID) and
-               (FStructure.Stacks[StackIndex].Layers[LayerIndex].ID = FProfiles[GradientIndex].LayerID) and
-               (FProfiles[GradientIndex].PIndex = p);
-  end;
-
+  StackIndex, LayerIndex, PeriodIndex, gi, shift, d, p: integer;
+  Profiled, HasProfiles: Boolean;
+  Key: Cardinal;
+  Indices: TArray<Integer>;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(FStructure.Stacks) do
@@ -126,25 +149,28 @@ begin
 
     for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
     begin
+      Key := Cardinal(FStructure.Stacks[StackIndex].Layers[LayerIndex].StackID) shl 16
+           or FStructure.Stacks[StackIndex].Layers[LayerIndex].ID;
+      HasProfiles := FProfileIndex.TryGetValue(Key, Indices);
+
       for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
       begin
         for p := 1 to 3 do
         begin
           Profiled := False;
-          for GradientIndex := 0 to High(FProfiles) do
-          begin
-            if IsProfile then
-            begin
-              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                    FuncProfile(PeriodIndex + shift, FProfiles[GradientIndex]));
-              Profiled := True;
-            end;
-          end;
+          if HasProfiles then
+            for gi := 0 to High(Indices) do
+              if FProfiles[Indices[gi]].PIndex = p then
+              begin
+                FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
+                                                      FuncProfile(PeriodIndex + shift, FProfiles[Indices[gi]]));
+                Profiled := True;
+              end;
           if not Profiled then
               FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
                                                      FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
-         end;
         end;
+      end;
     end;
     Inc(shift, FStructure.Stacks[StackIndex].N);
     Inc(d, Length(FStructure.Stacks[StackIndex].Layers));
@@ -180,12 +206,12 @@ end;
 
 constructor TProfileManager.Create;
 begin
-
+  FProfileIndex := TDictionary<Cardinal, TArray<Integer>>.Create;
 end;
 
 destructor TProfileManager.Destroy;
 begin
-
+  FProfileIndex.Free;
   inherited;
 end;
 

@@ -35,11 +35,13 @@ type
     FLambda: Single;
     FTotalD: single;
     FProfiles: TProfileFunctions;
+    FProfileIndex: TDictionary<Cardinal, TArray<Integer>>;
 
     procedure PrepareLayers;
     procedure AddMaterial(const AName: string; Lambda: single);
     function GetLayers: TCalcLayers;
     procedure GrowParallel(NewLen: Integer);
+    procedure SetProfiles(const Value: TProfileFunctions);
   public
     constructor Create;
     destructor Destroy; override;
@@ -61,7 +63,7 @@ type
     property StackIDs: TArray<Word> read FStackIDs;
     property TotalD: Single read FTotalD;
     property Materials: TMaterials read FMaterials write FMaterials;
-    property Profiles: TProfileFunctions read FProfiles write FProfiles;
+    property Profiles: TProfileFunctions read FProfiles write SetProfiles;
    end;
 
 implementation
@@ -163,6 +165,8 @@ procedure TLayeredModel.PrepareLayers;
 var
   i, g: Integer;
   c, l_ro: Single;
+  Key: Cardinal;
+  Indices: TArray<Integer>;
 begin
   for I := 1 to High(FLayers) - 1 do
   begin
@@ -172,16 +176,17 @@ begin
     else
       l_ro := FMaterials[CurrentMaterial].ro;   // use default value for density
 
-    for g := 0 to High(FProfiles) do
+    Key := Cardinal(FStackIDs[i]) shl 16 or FLayerIDs[i];
+    if FProfileIndex.TryGetValue(Key, Indices) then
     begin
-      if (FStackIDs[i] = FProfiles[g].StackID) and (FLayerIDs[i] = FProfiles[g].LayerID) then
+      for g := 0 to High(Indices) do
       begin
-        case FProfiles[g].Subj of
-          ptH  : FLayers[i].L := Poly(FProfiles[g].X(i), FProfiles[g]);
-          ptS  : FLayers[i].s := Poly(FProfiles[g].X(i), FProfiles[g]);
-          ptRho: l_ro         := Poly(FProfiles[g].X(i), FProfiles[g]);
+        case FProfiles[Indices[g]].Subj of
+          ptH  : FLayers[i].L := Poly(FProfiles[Indices[g]].X(i), FProfiles[Indices[g]]);
+          ptS  : FLayers[i].s := Poly(FProfiles[Indices[g]].X(i), FProfiles[Indices[g]]);
+          ptRho: l_ro         := Poly(FProfiles[Indices[g]].X(i), FProfiles[Indices[g]]);
         end;
-      end
+      end;
     end;
     c := ClassicalElectronRadius * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
     FLayers[i].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
@@ -194,6 +199,32 @@ begin
   FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
 end;
 
+
+procedure TLayeredModel.SetProfiles(const Value: TProfileFunctions);
+var
+  i, Len: Integer;
+  Key: Cardinal;
+  Indices: TArray<Integer>;
+begin
+  FProfiles := Value;
+  FProfileIndex.Clear;
+  for i := 0 to High(FProfiles) do
+  begin
+    Key := Cardinal(FProfiles[i].StackID) shl 16 or FProfiles[i].LayerID;
+    if FProfileIndex.TryGetValue(Key, Indices) then
+    begin
+      Len := Length(Indices);
+      SetLength(Indices, Len + 1);
+      Indices[Len] := i;
+      FProfileIndex[Key] := Indices;
+    end
+    else begin
+      SetLength(Indices, 1);
+      Indices[0] := i;
+      FProfileIndex.Add(Key, Indices);
+    end;
+  end;
+end;
 
 procedure TLayeredModel.GrowParallel(NewLen: Integer);
 begin
@@ -209,6 +240,7 @@ constructor TLayeredModel.Create;
 begin
   inherited ;
   FMaterialIndex := TDictionary<string, Integer>.Create;
+  FProfileIndex := TDictionary<Cardinal, TArray<Integer>>.Create;
   SetLength(FMaterials, 0);
   SetLength(FLayers, 0);
   SetLength(FLayerNames, 0);
@@ -219,6 +251,7 @@ end;
 
 destructor TLayeredModel.Destroy;
 begin
+  FProfileIndex.Free;
   FMaterialIndex.Free;
   Finalize(FMaterials);
   Finalize(FLayers);
