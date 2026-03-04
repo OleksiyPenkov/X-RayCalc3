@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, System.Classes,
-  Vcl.Controls, Vcl.Forms, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Graphics, Vcl.StdCtrls,
   RzTabs, RzButton,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs,
   VCLTee.Chart, VCLTee.Series, VCLTee.TeCanvas, Vcl.ExtCtrls;
@@ -31,6 +31,8 @@ type
   private
     lsrWorstChi: TLineSeries;
     lsrShake: TPointSeries;
+    chkWorstChi: TCheckBox;
+    procedure chkWorstChiClick(Sender: TObject);
   public
     property ThicknessChart: TChart read chThickness;
     property RoughnessChart: TChart read chRoughness;
@@ -100,6 +102,12 @@ begin
   if lsrShake <> nil then lsrShake.Clear;
 end;
 
+procedure TfrmChartPages.chkWorstChiClick(Sender: TObject);
+begin
+  if lsrWorstChi <> nil then
+    lsrWorstChi.Active := chkWorstChi.Checked;
+end;
+
 procedure TfrmChartPages.PrepareConvergence(NMax: Integer);
 begin
   lsrConvergence.Clear;
@@ -112,6 +120,7 @@ begin
     lsrWorstChi.LinePen.Color := clGray;
     lsrWorstChi.LinePen.Style := psDash;
     lsrWorstChi.Stairs := True;
+    lsrWorstChi.Active := False;
     lsrWorstChi.ShowInLegend := False;
   end
   else
@@ -130,6 +139,18 @@ begin
   end
   else
     lsrShake.Clear;
+
+  if chkWorstChi = nil then
+  begin
+    chkWorstChi := TCheckBox.Create(chFittingProgress);
+    chkWorstChi.Parent := chFittingProgress;
+    chkWorstChi.Caption := 'Worst';
+    chkWorstChi.Width := 55;
+    chkWorstChi.Anchors := [akTop, akRight];
+    chkWorstChi.Left := btnCopyConvergence.Left - chkWorstChi.Width - 4;
+    chkWorstChi.Top := btnCopyConvergence.Top + 2;
+    chkWorstChi.OnClick := chkWorstChiClick;
+  end;
 
   Pages.ActivePage := tsFittingProgress;
   chFittingProgress.BottomAxis.Minimum := 0;
