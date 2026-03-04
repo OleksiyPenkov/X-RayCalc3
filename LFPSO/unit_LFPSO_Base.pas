@@ -25,6 +25,8 @@ type
          Full : Boolean;
     LastChi   : single;
     BestChi   : single;
+    WorstChi  : single;
+    WasShaken : Boolean;
     Step      : integer;
     Curve     : TDataArray;
     Structure : TFitStructure;
@@ -53,6 +55,7 @@ type
       FCalcModel: TLayeredModel;
 
       FReInit : Boolean;
+      FWasShaken : Boolean;
       FFitParams: TFitParams;
       FCalcParams: TCalcThreadParams;
       FStructure: TFitStructure;  // initial (input) structure
@@ -546,6 +549,7 @@ begin
   FLevySigmaU := FastPower(num / den, 1 / levy_beta);
 
   FReInit := False;
+  FWasShaken := False;
   FTerminated := False;
   Vmax0 := FFitParams.Vmax ;
   Ksxr0 := FFitParams.Ksxr ;
@@ -605,8 +609,12 @@ begin
       if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
 
       if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
-        Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0)
+      begin
+        FWasShaken := True;
+        Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0);
+      end
       else begin
+        FWasShaken := False;
         FFitParams.Vmax := Vmax0;
         FFitParams.Ksxr := Ksxr0;
         inc(SuccessCount);
@@ -640,6 +648,8 @@ begin
   msg_prm.Full         := True;
   msg_prm.LastChi      := FGlobalBestChiSqr;
   msg_prm.BestChi      := FAbsoluteBestChiSqr;
+  msg_prm.WorstChi     := FLastWorseChiSQR;
+  msg_prm.WasShaken    := FWasShaken;
   msg_prm.Step         := Step;
   msg_prm.Curve        := Copy(FResultingCurve);
   FStructure.CopyContent(msg_prm.Structure);
@@ -662,6 +672,8 @@ begin
   msg_prm.Full := False;
   msg_prm.LastChi := FGlobalBestChiSqr;
   msg_prm.BestChi := FAbsoluteBestChiSqr;
+  msg_prm.WorstChi := FLastWorseChiSQR;
+  msg_prm.WasShaken := FWasShaken;
   msg_prm.Step := Step;
   msg_prm.Curve := nil;
 

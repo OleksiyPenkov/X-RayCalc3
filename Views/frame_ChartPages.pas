@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, System.Classes,
-  Vcl.Controls, Vcl.Forms,
+  Vcl.Controls, Vcl.Forms, Vcl.Graphics,
   RzTabs, RzButton,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs,
   VCLTee.Chart, VCLTee.Series, VCLTee.TeCanvas, Vcl.ExtCtrls;
@@ -28,6 +28,9 @@ type
     DensityProfile: TLineSeries;
     procedure btnCopyConvergenceClick(Sender: TObject);
     procedure btnProfileCopyClick(Sender: TObject);
+  private
+    lsrWorstChi: TLineSeries;
+    lsrShake: TPointSeries;
   public
     property ThicknessChart: TChart read chThickness;
     property RoughnessChart: TChart read chRoughness;
@@ -38,7 +41,7 @@ type
     procedure ShowFittingProgress;
     procedure ResetToFirstPage;
 
-    procedure AddConvergencePoint(Step: Integer; BestChi: Double);
+    procedure AddConvergencePoint(Step: Integer; BestChi, WorstChi: Double; WasShaken: Boolean);
     procedure ClearConvergence;
     procedure PrepareConvergence(NMax: Integer);
 
@@ -81,19 +84,53 @@ begin
   Pages.ActivePageIndex := 0;
 end;
 
-procedure TfrmChartPages.AddConvergencePoint(Step: Integer; BestChi: Double);
+procedure TfrmChartPages.AddConvergencePoint(Step: Integer; BestChi, WorstChi: Double; WasShaken: Boolean);
 begin
   lsrConvergence.AddXY(Step, BestChi);
+  if lsrWorstChi <> nil then
+    lsrWorstChi.AddXY(Step, WorstChi);
+  if WasShaken and (lsrShake <> nil) then
+    lsrShake.AddXY(Step, BestChi);
 end;
 
 procedure TfrmChartPages.ClearConvergence;
 begin
   lsrConvergence.Clear;
+  if lsrWorstChi <> nil then lsrWorstChi.Clear;
+  if lsrShake <> nil then lsrShake.Clear;
 end;
 
 procedure TfrmChartPages.PrepareConvergence(NMax: Integer);
 begin
   lsrConvergence.Clear;
+
+  if lsrWorstChi = nil then
+  begin
+    lsrWorstChi := TLineSeries.Create(chFittingProgress);
+    lsrWorstChi.ParentChart := chFittingProgress;
+    lsrWorstChi.Title := 'Worst';
+    lsrWorstChi.LinePen.Color := clGray;
+    lsrWorstChi.LinePen.Style := psDash;
+    lsrWorstChi.Stairs := True;
+    lsrWorstChi.ShowInLegend := False;
+  end
+  else
+    lsrWorstChi.Clear;
+
+  if lsrShake = nil then
+  begin
+    lsrShake := TPointSeries.Create(chFittingProgress);
+    lsrShake.ParentChart := chFittingProgress;
+    lsrShake.Title := 'Shake';
+    lsrShake.Pointer.Style := psTriangle;
+    lsrShake.Pointer.Size := 5;
+    lsrShake.SeriesColor := $000080FF;
+    lsrShake.Pointer.Pen.Color := $000040C0;
+    lsrShake.ShowInLegend := False;
+  end
+  else
+    lsrShake.Clear;
+
   Pages.ActivePage := tsFittingProgress;
   chFittingProgress.BottomAxis.Minimum := 0;
   chFittingProgress.BottomAxis.Maximum := NMax;

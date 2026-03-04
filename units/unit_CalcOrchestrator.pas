@@ -407,7 +407,7 @@ var
   NeedsSaving: Boolean;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
-  FChartPages.AddConvergencePoint(msg_prm.Step, msg_prm.BestChi);
+  FChartPages.AddConvergencePoint(msg_prm.Step, msg_prm.BestChi, msg_prm.WorstChi, msg_prm.WasShaken);
 
   FChartInfo.SetChiSquare(msg_prm.LastChi, msg_prm.BestChi);
 
