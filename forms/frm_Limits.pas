@@ -108,7 +108,9 @@ begin
       Inc(Index);
     end;
   end;
-  RunValidation;
+  StructureFromView;
+  ClampToPhysics(FStructure);
+  StructureToView;
 end;
 
 procedure TfrmLimits.EditorKeyDown(Sender: TObject; var Key: Word;

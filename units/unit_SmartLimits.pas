@@ -24,7 +24,11 @@ type
     Message: string;
   end;
 
+const
+  MAX_DENSITY = 23.0;  // Osmium — densest stable element
+
 function ValidateLimits(const Structure: TFitStructure): TArray<TLimitIssue>;
+procedure ClampToPhysics(var Structure: TFitStructure);
 function HasErrors(const Issues: TArray<TLimitIssue>): Boolean;
 function HasWarnings(const Issues: TArray<TLimitIssue>): Boolean;
 function IssuesToText(const Issues: TArray<TLimitIssue>): string;
@@ -101,6 +105,17 @@ begin
            (Abs(FV.max - FV.min) < 0.01 * Abs(FV.V)) then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s range very narrow', [LayerName, ParamNames[p]]));
+
+        // Physics: negative min for H, S, Rho
+        if (p in [1, 2, 3]) and (FV.min < 0) then
+          AddIssue(Result, likError, Index, p,
+            Format('%s: %s min is negative', [LayerName, ParamNames[p]]));
+
+        // Physics: Rho max exceeds densest element
+        if (p = 3) and (FV.max > MAX_DENSITY) then
+          AddIssue(Result, likWarning, Index, p,
+            Format('%s: Rho max exceeds densest element (23 g/cm'#179')',
+              [LayerName]));
       end;
 
       Inc(Index);
@@ -111,6 +126,38 @@ begin
   if AllLocked and (Index > 0) then
     AddIssue(Result, likWarning, -1, 0,
       'All parameters are locked '#8212' nothing to fit');
+end;
+
+procedure ClampToPhysics(var Structure: TFitStructure);
+var
+  i, j, p: Integer;
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+      begin
+        // H and S: min >= 0
+        if p in [1, 2] then
+        begin
+          if Structure.Stacks[i].Layers[j].P[p].min < 0 then
+            Structure.Stacks[i].Layers[j].P[p].min := 0;
+        end;
+
+        // Rho: min >= 0, max <= MAX_DENSITY
+        if p = 3 then
+        begin
+          if Structure.Stacks[i].Layers[j].P[p].min < 0 then
+            Structure.Stacks[i].Layers[j].P[p].min := 0;
+          if Structure.Stacks[i].Layers[j].P[p].max > MAX_DENSITY then
+            Structure.Stacks[i].Layers[j].P[p].max := MAX_DENSITY;
+        end;
+
+        // Ensure value stays within clamped bounds
+        if Structure.Stacks[i].Layers[j].P[p].V < Structure.Stacks[i].Layers[j].P[p].min then
+          Structure.Stacks[i].Layers[j].P[p].V := Structure.Stacks[i].Layers[j].P[p].min;
+        if Structure.Stacks[i].Layers[j].P[p].V > Structure.Stacks[i].Layers[j].P[p].max then
+          Structure.Stacks[i].Layers[j].P[p].V := Structure.Stacks[i].Layers[j].P[p].max;
+      end;
 end;
 
 function HasErrors(const Issues: TArray<TLimitIssue>): Boolean;

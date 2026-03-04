@@ -21,6 +21,13 @@ type
     [Test] procedure Test_MixedIssues;
     [Test] procedure Test_HasErrors_HasWarnings;
     [Test] procedure Test_CellState_Mapping;
+    [Test] procedure Test_NegativeHMin_ReturnsError;
+    [Test] procedure Test_NegativeSMin_ReturnsError;
+    [Test] procedure Test_NegativeRhoMin_ReturnsError;
+    [Test] procedure Test_RhoMaxExceedsDensity_ReturnsWarning;
+    [Test] procedure Test_ClampToPhysics_CorrectsNegatives;
+    [Test] procedure Test_ClampToPhysics_CapsRhoMax;
+    [Test] procedure Test_ClampToPhysics_NoOpOnValid;
   end;
 
 implementation
@@ -246,6 +253,152 @@ begin
   Assert.AreEqual(TLimitIssueKind.likNone, CellState(Issues, 0, 5));
   // Different item -> no issue
   Assert.AreEqual(TLimitIssueKind.likNone, CellState(Issues, 1, 0));
+end;
+
+procedure TTestValidateLimits.Test_NegativeHMin_ReturnsError;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+  Found: Boolean;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].min := -5.0;
+
+  Issues := ValidateLimits(FS);
+  Assert.IsTrue(HasErrors(Issues));
+
+  Found := False;
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 1) and (Issues[i].Kind = likError) and
+       (Pos('H min is negative', Issues[i].Message) > 0) then
+      Found := True;
+  Assert.IsTrue(Found, 'Expected "H min is negative" error');
+end;
+
+procedure TTestValidateLimits.Test_NegativeSMin_ReturnsError;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+  Found: Boolean;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[2].min := -3.0;
+
+  Issues := ValidateLimits(FS);
+  Assert.IsTrue(HasErrors(Issues));
+
+  Found := False;
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 2) and (Issues[i].Kind = likError) and
+       (Pos('S min is negative', Issues[i].Message) > 0) then
+      Found := True;
+  Assert.IsTrue(Found, 'Expected "S min is negative" error');
+end;
+
+procedure TTestValidateLimits.Test_NegativeRhoMin_ReturnsError;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+  Found: Boolean;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].min := -1.0;
+
+  Issues := ValidateLimits(FS);
+  Assert.IsTrue(HasErrors(Issues));
+
+  Found := False;
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 3) and (Issues[i].Kind = likError) and
+       (Pos('Rho min is negative', Issues[i].Message) > 0) then
+      Found := True;
+  Assert.IsTrue(Found, 'Expected "Rho min is negative" error');
+end;
+
+procedure TTestValidateLimits.Test_RhoMaxExceedsDensity_ReturnsWarning;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+  Found: Boolean;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 20.0;
+  FS.Stacks[0].Layers[0].P[3].min := 15.0;
+  FS.Stacks[0].Layers[0].P[3].max := 30.0;
+
+  Issues := ValidateLimits(FS);
+
+  Found := False;
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 3) and (Issues[i].Kind = likWarning) and
+       (Pos('Rho max exceeds densest element', Issues[i].Message) > 0) then
+      Found := True;
+  Assert.IsTrue(Found, 'Expected "Rho max exceeds densest element" warning');
+end;
+
+procedure TTestValidateLimits.Test_ClampToPhysics_CorrectsNegatives;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  // Set negative mins and values below them
+  FS.Stacks[0].Layers[0].P[1].V := -2.0;
+  FS.Stacks[0].Layers[0].P[1].min := -5.0;
+  FS.Stacks[0].Layers[0].P[2].V := -1.0;
+  FS.Stacks[0].Layers[0].P[2].min := -3.0;
+  FS.Stacks[0].Layers[0].P[3].V := -0.5;
+  FS.Stacks[0].Layers[0].P[3].min := -1.0;
+
+  ClampToPhysics(FS);
+
+  // Mins clamped to 0
+  Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[1].min, 'H min should be 0');
+  Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[2].min, 'S min should be 0');
+  Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[3].min, 'Rho min should be 0');
+  // Values adjusted to min
+  Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[1].V, 'H value should be clamped to min');
+  Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[2].V, 'S value should be clamped to min');
+  Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[3].V, 'Rho value should be clamped to min');
+end;
+
+procedure TTestValidateLimits.Test_ClampToPhysics_CapsRhoMax;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 25.0;
+  FS.Stacks[0].Layers[0].P[3].min := 10.0;
+  FS.Stacks[0].Layers[0].P[3].max := 50.0;
+
+  ClampToPhysics(FS);
+
+  Assert.AreEqual(Single(MAX_DENSITY), FS.Stacks[0].Layers[0].P[3].max, 'Rho max should be capped to MAX_DENSITY');
+  Assert.AreEqual(Single(MAX_DENSITY), FS.Stacks[0].Layers[0].P[3].V, 'Rho value should be clamped to max');
+end;
+
+procedure TTestValidateLimits.Test_ClampToPhysics_NoOpOnValid;
+var
+  FS, Original: TFitStructure;
+  p: Integer;
+begin
+  FS := MakeStructure(1);
+  Original := MakeStructure(1);
+
+  ClampToPhysics(FS);
+
+  for p := 1 to 3 do
+  begin
+    Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].V, FS.Stacks[0].Layers[0].P[p].V,
+      Format('P[%d].V should be unchanged', [p]));
+    Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].min, FS.Stacks[0].Layers[0].P[p].min,
+      Format('P[%d].min should be unchanged', [p]));
+    Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].max, FS.Stacks[0].Layers[0].P[p].max,
+      Format('P[%d].max should be unchanged', [p]));
+  end;
 end;
 
 end.
