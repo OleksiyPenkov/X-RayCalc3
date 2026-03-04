@@ -25,6 +25,7 @@ type
   private
     { Owned state - moved from frm_Main }
     FLFPSO: TLFPSO_Base;
+    FFitThread: TThread;
     FStartTime, FFitStartTime: TDateTime;
     FCalc: TCalc;
     FCalcThreadParams: TCalcThreadParams;
@@ -56,6 +57,7 @@ type
     procedure UpdateInterface(const FitStructure: TFitStructure;
       const Poly: TProfileFunctions; const Res: TLayeredModel;
       const CreateExtension: Boolean = True);
+    procedure FinalizeFitting;
     procedure ProcessBenchFile(Sender: TObject; const F: TSearchRec);
     procedure ProcessJobFile(Sender: TObject; const F: TSearchRec);
   public
@@ -63,6 +65,7 @@ type
       AProjectPanel: TfrmProjectPanel; AChartInfo: TfrmChartInfo;
       AChartPages: TfrmChartPages; AChartMgr: TChartManager;
       AProfileMgr: TProfileManager);
+    destructor Destroy; override;
 
     procedure RunCalc(const Recover: Boolean);
     procedure RunFitting;
@@ -71,6 +74,7 @@ type
     procedure RunBenchmark;
     procedure RunBatchJobs;
     procedure HandleFitUpdate(var Msg: TMessage);
+    procedure HandleFitComplete;
 
     property LastChiSquare: Single read FLastChiSquare;
     property BenchmarkMode: Boolean read FBenchmarkMode;
@@ -83,11 +87,30 @@ type
 implementation
 
 uses
+  Winapi.Windows,
   Vcl.Controls,
   unit_DataProcessing, unit_SeriesIO,
   unit_LFPSO_Periodic, unit_LFPSO_Irregular, unit_LFPSO_Poly,
   unit_consts, unit_config, unit_files_list,
   frm_Limits, frm_Benchmark;
+
+type
+  TFittingThread = class(TThread)
+  private
+    FLFPSO: TLFPSO_BASE;
+    FCalcParams: TCalcThreadParams;
+  protected
+    procedure Execute; override;
+  end;
+
+procedure TFittingThread.Execute;
+begin
+  try
+    FLFPSO.Run(FCalcParams);
+  finally
+    PostMessage(Application.MainFormHandle, WM_FIT_COMPLETE, 0, 0);
+  end;
+end;
 
 { TCalcOrchestrator }
 
@@ -103,6 +126,22 @@ begin
   FChartPages := AChartPages;
   FChartMgr := AChartMgr;
   FProfileMgr := AProfileMgr;
+end;
+
+destructor TCalcOrchestrator.Destroy;
+var
+  LThread: TThread;
+begin
+  if FFitThread <> nil then
+  begin
+    FLFPSO.Terminate;
+    LThread := FFitThread;
+    FFitThread := nil;
+    LThread.WaitFor;
+    LThread.Free;
+    FreeAndNil(FLFPSO);
+  end;
+  inherited;
 end;
 
 function TCalcOrchestrator.PrepareCalc: Boolean;
@@ -291,23 +330,40 @@ end;
 
 procedure TCalcOrchestrator.RunFitting;
 var
+  FitThread: TFittingThread;
+begin
+  if FFitThread <> nil then Exit;
+
+  if not GetFitParams then Exit;
+  if not PrepareLFPSO then Exit;
+
+  Screen.Cursor := crHourGlass;
+  FProjectPanel.GenerateAutosaveName;
+  if Assigned(FOnEnableControls) then
+    FOnEnableControls(False);
+  FFitStartTime := Now;
+  FFirstUpdate := True;
+  FABestChiSquare := 1e32;
+
+  FitThread := TFittingThread.Create(True);
+  FitThread.FLFPSO := FLFPSO;
+  FitThread.FCalcParams := FCalcThreadParams;
+  FFitThread := FitThread;
+  FitThread.Start;
+
+  if FBenchmarkMode then
+  begin
+    FFitThread.WaitFor;
+    FinalizeFitting;
+  end;
+end;
+
+procedure TCalcOrchestrator.FinalizeFitting;
+var
   Hour, Min, Sec, MSec: Word;
   FitResult: TLayeredModel;
 begin
-  if not GetFitParams then Exit;
-
   try
-    if not PrepareLFPSO then Exit;
-    Screen.Cursor := crHourGlass;
-    FProjectPanel.GenerateAutosaveName;
-    if Assigned(FOnEnableControls) then
-      FOnEnableControls(False);
-    FFitStartTime := Now;
-
-    FFirstUpdate := True;
-
-    FABestChiSquare := 1e32;
-    FLFPSO.Run(FCalcThreadParams);
     FitResult := FLFPSO.Result;
     try
       UpdateInterface(FLFPSO.Structure, FLFPSO.Polynomes, FitResult, FFirstUpdate);
@@ -326,8 +382,27 @@ begin
     Screen.Cursor := crDefault;
     if Assigned(FOnEnableControls) then
       FOnEnableControls(True);
+    FreeAndNil(FFitThread);
     FreeAndNil(FLFPSO);
   end;
+end;
+
+procedure TCalcOrchestrator.HandleFitComplete;
+begin
+  if FBenchmarkMode or (FFitThread = nil) then Exit;
+
+  if FFitThread.FatalException <> nil then
+  begin
+    ShowMessage('Fitting error: ' + Exception(FFitThread.FatalException).Message);
+    Screen.Cursor := crDefault;
+    if Assigned(FOnEnableControls) then
+      FOnEnableControls(True);
+    FreeAndNil(FFitThread);
+    FreeAndNil(FLFPSO);
+    Exit;
+  end;
+
+  FinalizeFitting;
 end;
 
 procedure TCalcOrchestrator.RecalcFromStructure;

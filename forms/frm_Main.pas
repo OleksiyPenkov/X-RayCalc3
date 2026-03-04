@@ -288,6 +288,7 @@ type
     procedure WMLinkedClick(var Msg: TMessage); message WM_STR_Linked_CLICK;
     procedure OnMyMessage(var Msg: TMessage); message WM_RECALC;
     procedure OnFitUpdateMsg(var Msg: TMessage); message WM_CHI_UPDATE;
+    procedure OnFitCompleteMsg(var Msg: TMessage); message WM_FIT_COMPLETE;
     procedure OnLayerUPMsg(var Msg: TMessage); message WM_STR_LAYER_UP;
     procedure OnLayerDownMsg(var Msg: TMessage); message WM_STR_LAYER_DOWN;
     procedure OnLayerDeleteMsg(var Msg: TMessage); message WM_STR_LAYER_DELETE;
@@ -378,6 +379,11 @@ end;
 procedure TfrmMain.OnFitUpdateMsg(var Msg: TMessage);
 begin
   FOrchestrator.HandleFitUpdate(Msg);
+end;
+
+procedure TfrmMain.OnFitCompleteMsg(var Msg: TMessage);
+begin
+  FOrchestrator.HandleFitComplete;
 end;
 
 procedure TfrmMain.OnLayerDeleteMsg(var Msg: TMessage);
