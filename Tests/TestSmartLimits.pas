@@ -28,6 +28,10 @@ type
     [Test] procedure Test_ClampToPhysics_CorrectsNegatives;
     [Test] procedure Test_ClampToPhysics_CapsRhoMax;
     [Test] procedure Test_ClampToPhysics_NoOpOnValid;
+    [Test] procedure Test_ApplyDensity_FillsZeroV;
+    [Test] procedure Test_ApplyDensity_NoOverrideNonZeroV;
+    [Test] procedure Test_ApplyDensity_SkipsZeroNro;
+    [Test] procedure Test_ApplyDensity_LeavesHAndSUntouched;
   end;
 
 implementation
@@ -399,6 +403,74 @@ begin
     Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].max, FS.Stacks[0].Layers[0].P[p].max,
       Format('P[%d].max should be unchanged', [p]));
   end;
+end;
+
+procedure TTestValidateLimits.Test_ApplyDensity_FillsZeroV;
+var
+  FS: TFitStructure;
+  Nro: array of Single;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 0;
+
+  SetLength(Nro, 1);
+  Nro[0] := 2.329;
+
+  ApplyMaterialDensity(FS, Nro);
+  Assert.AreEqual(Single(2.329), FS.Stacks[0].Layers[0].P[3].V,
+    'V=0 should be filled with Henke Nro');
+end;
+
+procedure TTestValidateLimits.Test_ApplyDensity_NoOverrideNonZeroV;
+var
+  FS: TFitStructure;
+  Nro: array of Single;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 5.0;
+
+  SetLength(Nro, 1);
+  Nro[0] := 2.329;
+
+  ApplyMaterialDensity(FS, Nro);
+  Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[3].V,
+    'Non-zero V should not be overridden');
+end;
+
+procedure TTestValidateLimits.Test_ApplyDensity_SkipsZeroNro;
+var
+  FS: TFitStructure;
+  Nro: array of Single;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 0;
+
+  SetLength(Nro, 1);
+  Nro[0] := 0;
+
+  ApplyMaterialDensity(FS, Nro);
+  Assert.AreEqual(Single(0), FS.Stacks[0].Layers[0].P[3].V,
+    'V should stay 0 when Nro is 0 (unknown material)');
+end;
+
+procedure TTestValidateLimits.Test_ApplyDensity_LeavesHAndSUntouched;
+var
+  FS: TFitStructure;
+  Nro: array of Single;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 7.5;   // H
+  FS.Stacks[0].Layers[0].P[2].V := 3.0;   // S
+  FS.Stacks[0].Layers[0].P[3].V := 0;     // Rho = sentinel
+
+  SetLength(Nro, 1);
+  Nro[0] := 2.329;
+
+  ApplyMaterialDensity(FS, Nro);
+  Assert.AreEqual(Single(7.5), FS.Stacks[0].Layers[0].P[1].V,
+    'H should not be changed');
+  Assert.AreEqual(Single(3.0), FS.Stacks[0].Layers[0].P[2].V,
+    'S should not be changed');
 end;
 
 end.

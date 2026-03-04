@@ -34,6 +34,8 @@ function HasWarnings(const Issues: TArray<TLimitIssue>): Boolean;
 function IssuesToText(const Issues: TArray<TLimitIssue>): string;
 function CellState(const Issues: TArray<TLimitIssue>;
   ItemIndex, SubItemIndex: Integer): TLimitIssueKind;
+procedure ApplyMaterialDensity(var Structure: TFitStructure;
+  const NroValues: array of Single);
 
 implementation
 
@@ -221,6 +223,22 @@ begin
       Result := likWarning;
     end;
   end;
+end;
+
+procedure ApplyMaterialDensity(var Structure: TFitStructure;
+  const NroValues: array of Single);
+var
+  i, j, Index: Integer;
+begin
+  Index := 0;
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      if (Index <= High(NroValues)) and (NroValues[Index] > 0) and
+         (Structure.Stacks[i].Layers[j].P[3].V = 0) then
+        Structure.Stacks[i].Layers[j].P[3].V := NroValues[Index];
+      Inc(Index);
+    end;
 end;
 
 end.

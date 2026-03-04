@@ -70,7 +70,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.UITypes, CommCtrl;
+  System.UITypes, CommCtrl, math_globals, math_complex;
 
 var
   EDIT_COLUMN: integer;
@@ -79,6 +79,9 @@ procedure TfrmLimits.btnInitClick(Sender: TObject);
 var
   i, j, p, Count, Index: integer;
   dP: array [1..3] of single;
+  NroValues: array of Single;
+  f: TComplex;
+  Na, Nro: Single;
 
   function Convert(const Inp, D: single): string;
   var
@@ -92,6 +95,23 @@ begin
   dP[1] := StrToFloat(edFdH.Text);
   dP[2] := StrToFloat(edFdS.Text);
   dP[3] := StrToFloat(edFdRho.Text);
+
+  // Look up Henke bulk density for each layer
+  SetLength(NroValues, FStructure.Total);
+  Index := 0;
+  for i := 0 to High(FStructure.Stacks) do
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      try
+        ReadHenke(FStructure.Stacks[i].Layers[j].Material, 8000, 0, f, Na, Nro);
+        NroValues[Index] := Nro;
+      except
+        on E: EInOutError do
+          NroValues[Index] := 0;
+      end;
+      Inc(Index);
+    end;
+  ApplyMaterialDensity(FStructure, NroValues);
 
   Index := 0;
   for I := 0 to High(FStructure.Stacks) do
