@@ -37,6 +37,8 @@ function CellState(const Issues: TArray<TLimitIssue>;
 procedure ApplyMaterialDensity(var Structure: TFitStructure;
   const NroValues: array of Single);
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);
+procedure NarrowLimits(var Structure: TFitStructure; ShrinkFactor: Single);
+procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single);
 
 implementation
 
@@ -108,6 +110,17 @@ begin
            (Abs(FV.max - FV.min) < 0.01 * Abs(FV.V)) then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s range very narrow', [LayerName, ParamNames[p]]));
+
+        // Value at limit (within 1% of range from boundary)
+        if (FV.min <> FV.max) and (FV.max > FV.min) then
+        begin
+          if (FV.V - FV.min) < 0.01 * (FV.max - FV.min) then
+            AddIssue(Result, likWarning, Index, p,
+              Format('%s: %s value at lower limit', [LayerName, ParamNames[p]]));
+          if (FV.max - FV.V) < 0.01 * (FV.max - FV.min) then
+            AddIssue(Result, likWarning, Index, p,
+              Format('%s: %s value at upper limit', [LayerName, ParamNames[p]]));
+        end;
 
         // Physics: negative min for H, S, Rho
         if (p in [1, 2, 3]) and (FV.min < 0) then
@@ -240,6 +253,51 @@ begin
         Structure.Stacks[i].Layers[j].P[3].V := NroValues[Index];
       Inc(Index);
     end;
+end;
+
+procedure NarrowLimits(var Structure: TFitStructure; ShrinkFactor: Single);
+var
+  i, j, p: Integer;
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+      begin
+        // Skip locked params (min == max)
+        if Structure.Stacks[i].Layers[j].P[p].min = Structure.Stacks[i].Layers[j].P[p].max then
+          Continue;
+
+        with Structure.Stacks[i].Layers[j].P[p] do
+        begin
+          min := V - (V - min) * ShrinkFactor;
+          max := V + (max - V) * ShrinkFactor;
+        end;
+      end;
+end;
+
+procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single);
+var
+  i, j, p: Integer;
+  Range: Single;
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+      begin
+        with Structure.Stacks[i].Layers[j].P[p] do
+        begin
+          if (min = max) or (max <= min) then
+            Continue;
+
+          Range := max - min;
+
+          if (V - min) < 0.01 * Range then
+            min := min - Range * ExpandFactor;
+
+          if (max - V) < 0.01 * Range then
+            max := max + Range * ExpandFactor;
+        end;
+      end;
 end;
 
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);

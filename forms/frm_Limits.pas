@@ -31,11 +31,15 @@ type
     Label15: TLabel;
     edFdRho: TEdit;
     btnInit: TBitBtn;
+    btnNarrow: TBitBtn;
+    btnWiden: TBitBtn;
     btnSet: TRzBitBtn;
     RzBitBtn2: TRzBitBtn;
     procedure ListViewClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btnInitClick(Sender: TObject);
+    procedure btnNarrowClick(Sender: TObject);
+    procedure btnWidenClick(Sender: TObject);
     procedure RzBitBtn2Click(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
@@ -138,6 +142,24 @@ begin
     end;
   end;
   StructureFromView;
+  ClampToPhysics(FStructure);
+  ApplyGeometryCoupling(FStructure);
+  StructureToView;
+end;
+
+procedure TfrmLimits.btnNarrowClick(Sender: TObject);
+begin
+  StructureFromView;
+  NarrowLimits(FStructure, 0.5);
+  ClampToPhysics(FStructure);
+  ApplyGeometryCoupling(FStructure);
+  StructureToView;
+end;
+
+procedure TfrmLimits.btnWidenClick(Sender: TObject);
+begin
+  StructureFromView;
+  WidenAtLimit(FStructure, 0.5);
   ClampToPhysics(FStructure);
   ApplyGeometryCoupling(FStructure);
   StructureToView;

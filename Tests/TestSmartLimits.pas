@@ -37,6 +37,17 @@ type
     [Test] procedure Test_Geometry_NoOpWhenWithinBounds;
     [Test] procedure Test_Geometry_PeriodicWrap;
     [Test] procedure Test_Geometry_HAndRhoUntouched;
+    [Test] procedure Test_Narrow_HalvesRange;
+    [Test] procedure Test_Narrow_VAtLowerLimit;
+    [Test] procedure Test_Narrow_VAtUpperLimit;
+    [Test] procedure Test_Narrow_SkipsLocked;
+    [Test] procedure Test_Validate_AtLowerLimit;
+    [Test] procedure Test_Validate_AtUpperLimit;
+    [Test] procedure Test_Validate_NotAtLimit;
+    [Test] procedure Test_Widen_AtLowerLimit;
+    [Test] procedure Test_Widen_AtUpperLimit;
+    [Test] procedure Test_Widen_SkipsNotAtLimit;
+    [Test] procedure Test_Widen_SkipsLocked;
   end;
 
 implementation
@@ -576,6 +587,192 @@ begin
   // S.min and S.V untouched (only S.max modified)
   Assert.AreEqual(Single(3.0), FS.Stacks[0].Layers[0].P[2].min, 'S.min should be unchanged');
   Assert.AreEqual(Single(8.0), FS.Stacks[0].Layers[0].P[2].V, 'S.V should be unchanged');
+end;
+
+procedure TTestValidateLimits.Test_Narrow_HalvesRange;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 50.0;
+  FS.Stacks[0].Layers[0].P[1].min := 30.0;
+  FS.Stacks[0].Layers[0].P[1].max := 70.0;
+
+  NarrowLimits(FS, 0.5);
+
+  Assert.AreEqual(Single(40.0), FS.Stacks[0].Layers[0].P[1].min, 'min should narrow to 40');
+  Assert.AreEqual(Single(60.0), FS.Stacks[0].Layers[0].P[1].max, 'max should narrow to 60');
+end;
+
+procedure TTestValidateLimits.Test_Narrow_VAtLowerLimit;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 30.0;   // V == min
+  FS.Stacks[0].Layers[0].P[1].min := 30.0;
+  FS.Stacks[0].Layers[0].P[1].max := 70.0;
+
+  NarrowLimits(FS, 0.5);
+
+  Assert.AreEqual(Single(30.0), FS.Stacks[0].Layers[0].P[1].min, 'min should stay at 30');
+  Assert.AreEqual(Single(50.0), FS.Stacks[0].Layers[0].P[1].max, 'max should narrow to 50');
+end;
+
+procedure TTestValidateLimits.Test_Narrow_VAtUpperLimit;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 70.0;   // V == max
+  FS.Stacks[0].Layers[0].P[1].min := 30.0;
+  FS.Stacks[0].Layers[0].P[1].max := 70.0;
+
+  NarrowLimits(FS, 0.5);
+
+  Assert.AreEqual(Single(50.0), FS.Stacks[0].Layers[0].P[1].min, 'min should narrow to 50');
+  Assert.AreEqual(Single(70.0), FS.Stacks[0].Layers[0].P[1].max, 'max should stay at 70');
+end;
+
+procedure TTestValidateLimits.Test_Narrow_SkipsLocked;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 10.0;
+  FS.Stacks[0].Layers[0].P[1].min := 10.0;
+  FS.Stacks[0].Layers[0].P[1].max := 10.0;
+
+  NarrowLimits(FS, 0.5);
+
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].min, 'locked min should be unchanged');
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].max, 'locked max should be unchanged');
+end;
+
+procedure TTestValidateLimits.Test_Validate_AtLowerLimit;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+  Found: Boolean;
+begin
+  FS := MakeStructure(1);
+  // V at lower limit: V = min
+  FS.Stacks[0].Layers[0].P[1].V := 5.0;
+  FS.Stacks[0].Layers[0].P[1].min := 5.0;
+  FS.Stacks[0].Layers[0].P[1].max := 15.0;
+
+  Issues := ValidateLimits(FS);
+  Found := False;
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 1) and (Pos('at lower limit', Issues[i].Message) > 0) then
+      Found := True;
+  Assert.IsTrue(Found, 'Expected "value at lower limit" warning');
+end;
+
+procedure TTestValidateLimits.Test_Validate_AtUpperLimit;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+  Found: Boolean;
+begin
+  FS := MakeStructure(1);
+  // V at upper limit: V = max
+  FS.Stacks[0].Layers[0].P[1].V := 15.0;
+  FS.Stacks[0].Layers[0].P[1].min := 5.0;
+  FS.Stacks[0].Layers[0].P[1].max := 15.0;
+
+  Issues := ValidateLimits(FS);
+  Found := False;
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 1) and (Pos('at upper limit', Issues[i].Message) > 0) then
+      Found := True;
+  Assert.IsTrue(Found, 'Expected "value at upper limit" warning');
+end;
+
+procedure TTestValidateLimits.Test_Validate_NotAtLimit;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+  i: Integer;
+begin
+  FS := MakeStructure(1);
+  // V at center — no "at limit" warnings expected
+  FS.Stacks[0].Layers[0].P[1].V := 10.0;
+  FS.Stacks[0].Layers[0].P[1].min := 5.0;
+  FS.Stacks[0].Layers[0].P[1].max := 15.0;
+
+  Issues := ValidateLimits(FS);
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 1) and (Pos('at lower limit', Issues[i].Message) > 0) then
+      Assert.Fail('Unexpected "value at lower limit" warning');
+  for i := 0 to High(Issues) do
+    if (Issues[i].ParamIndex = 1) and (Pos('at upper limit', Issues[i].Message) > 0) then
+      Assert.Fail('Unexpected "value at upper limit" warning');
+  Assert.Pass;
+end;
+
+procedure TTestValidateLimits.Test_Widen_AtLowerLimit;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 30.0;   // V == min (at lower limit)
+  FS.Stacks[0].Layers[0].P[1].min := 30.0;
+  FS.Stacks[0].Layers[0].P[1].max := 70.0;
+
+  WidenAtLimit(FS, 0.5);
+
+  // Range=40, min extends by 40*0.5=20 downward
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].min, 'min should widen to 10');
+  Assert.AreEqual(Single(70.0), FS.Stacks[0].Layers[0].P[1].max, 'max should stay at 70');
+end;
+
+procedure TTestValidateLimits.Test_Widen_AtUpperLimit;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 70.0;   // V == max (at upper limit)
+  FS.Stacks[0].Layers[0].P[1].min := 30.0;
+  FS.Stacks[0].Layers[0].P[1].max := 70.0;
+
+  WidenAtLimit(FS, 0.5);
+
+  // Range=40, max extends by 40*0.5=20 upward
+  Assert.AreEqual(Single(30.0), FS.Stacks[0].Layers[0].P[1].min, 'min should stay at 30');
+  Assert.AreEqual(Single(90.0), FS.Stacks[0].Layers[0].P[1].max, 'max should widen to 90');
+end;
+
+procedure TTestValidateLimits.Test_Widen_SkipsNotAtLimit;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 50.0;   // V at center
+  FS.Stacks[0].Layers[0].P[1].min := 30.0;
+  FS.Stacks[0].Layers[0].P[1].max := 70.0;
+
+  WidenAtLimit(FS, 0.5);
+
+  Assert.AreEqual(Single(30.0), FS.Stacks[0].Layers[0].P[1].min, 'min should be unchanged');
+  Assert.AreEqual(Single(70.0), FS.Stacks[0].Layers[0].P[1].max, 'max should be unchanged');
+end;
+
+procedure TTestValidateLimits.Test_Widen_SkipsLocked;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 10.0;
+  FS.Stacks[0].Layers[0].P[1].min := 10.0;
+  FS.Stacks[0].Layers[0].P[1].max := 10.0;
+
+  WidenAtLimit(FS, 0.5);
+
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].min, 'locked min should be unchanged');
+  Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].max, 'locked max should be unchanged');
 end;
 
 end.
