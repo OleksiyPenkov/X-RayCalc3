@@ -316,6 +316,7 @@ begin
 
   Params.RF := rfError;
   Params.N := StrToInt(edN.Text);
+  Params.MVAWindow := 10;
 end;
 
 procedure TfrmCalcSettings.GetAxisRange(var AMin, AMax: Single);

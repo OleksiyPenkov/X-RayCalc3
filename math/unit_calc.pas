@@ -73,7 +73,7 @@ type
       procedure Convolute(Width: single);
       procedure PrepareWorkers;
       procedure Restore(const N1, N2: integer); inline;
-      procedure MVA(const N1, N2: integer); inline;
+      procedure MVA(const N1, N2, W: integer); inline;
     public
       constructor Create;
       destructor Destroy; override;
@@ -523,9 +523,7 @@ begin
   end;
 end;
 
-procedure TCalc.MVA(const N1, N2: integer);
-const
-  W = 10;
+procedure TCalc.MVA(const N1, N2, W: integer);
 var
   i, j: integer;
   S: single;
@@ -597,7 +595,7 @@ begin
   end;
 
   Restore(0, N - 1);
-  MVA(Size - N, Size - 1);
+  MVA(Size - N, Size - 1, FParams.MVAWindow);
 
   Move(FTemp[0], FResult[0], Size * SizeOf(TDataPoint));
   FTail := N;

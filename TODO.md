@@ -15,7 +15,7 @@
 |---|------|------|-------|
 | ~~5~~ | ~~SoA layout for inner `RefCalc` loop — full Structure-of-Arrays for hot path (e, L, s, ro) for better x64 vectorization~~ | ~~🟡 M~~ | Done — `de34747` added `TCalcModelSoA`/`TCalcScratchSoA`, rewrote `RefCalc` |
 | ~~6~~ | ~~Hash-map profile function lookup — `TProfileFunctions` searched O(n) per layer by `(StackID, LayerID)`. Replace with `TDictionary`~~ | ~~🟡 M~~ | Done — `7ce344c` added `FProfileIndex` dictionary to `TLayeredModel` and `TProfileManager` |
-| 7 | Parameterize convolution window size (currently hardcoded W=10) — allow users to trade smoothness vs. speed | 🟢 S | `unit_calc.pas` |
+| ~~7~~ | ~~Parameterize convolution window size (currently hardcoded W=10) — allow users to trade smoothness vs. speed~~ | ~~🟢 S~~ | Done — `MVAWindow` field on `TCalcThreadParams`, default 10 |
 
 ## Main Form Decoupling
 

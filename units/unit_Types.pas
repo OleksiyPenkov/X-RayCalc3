@@ -77,6 +77,7 @@ type
     K: integer;
     P: TPolarisation;
     RF: TRoughnessFunction;
+    MVAWindow: Integer;
     case Mode: TCalcMode of
       cmTheta:
         (StartT, EndT, DT: single;
