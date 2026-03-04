@@ -16,6 +16,7 @@ uses
 
 const
   WM_CHI_UPDATE = WM_STR_BASE + 100;
+  WM_FIT_COMPLETE = WM_STR_BASE + 101;
 
 type
 
@@ -383,6 +384,7 @@ function TLFPSO_BASE.FindTheBest: boolean;
 var
   i, bestIdx: integer;
   WorkerBests: array of TWorkerBest;
+  ThreadMsg: TMsg;
 begin
   Result := False;
 
@@ -423,6 +425,13 @@ begin
         WorkerBests[taskIndex].WorstChi := Chi;
     end);
 
+  // Drain OTL task-completion messages from this thread's queue
+  while PeekMessage(ThreadMsg, 0, 0, 0, PM_REMOVE) do
+  begin
+    TranslateMessage(ThreadMsg);
+    DispatchMessage(ThreadMsg);
+  end;
+
   // Sequential reduction — merge per-worker results
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
@@ -451,9 +460,7 @@ begin
       FWorkers[i].Model.Materials := Copy(FMaterials);
   end;
 
-  Application.ProcessMessages;
   if FTerminated then Exit;
-
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
@@ -634,8 +641,8 @@ begin
   msg_prm.LastChi      := FGlobalBestChiSqr;
   msg_prm.BestChi      := FAbsoluteBestChiSqr;
   msg_prm.Step         := Step;
-  msg_prm.Curve        := FResultingCurve;
-  msg_prm.Structure    := FStructure;
+  msg_prm.Curve        := Copy(FResultingCurve);
+  FStructure.CopyContent(msg_prm.Structure);
   msg_prm.Poly         := GetPolynomes;
   msg_prm.LayeredModel := FitModelToLayer(abest);
 
@@ -645,7 +652,6 @@ begin
     LPARAM(msg_prm),
     0
   );
-  Application.ProcessMessages;
 end;
 
 procedure TLFPSO_BASE.SendUpdateStep(const Step: integer);
@@ -665,7 +671,6 @@ begin
     LPARAM(msg_prm),
     0
   );
-  Application.ProcessMessages;
 end;
 
 procedure TLFPSO_BASE.SetDomain(const Count, Order: integer; var X: TPopulation);

@@ -33,10 +33,8 @@ type
 implementation
 
 uses
-  Forms,
   System.SysUtils,
-  Neslib.FastMath,
-  Dialogs;
+  Neslib.FastMath;
 
 { TLFPSO Periodic}
 

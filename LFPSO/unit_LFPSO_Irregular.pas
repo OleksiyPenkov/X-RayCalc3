@@ -43,11 +43,9 @@ type
 implementation
 
 uses
-  Forms,
   System.SysUtils,
   Neslib.FastMath,
-  unit_DataProcessing,
-  Dialogs;
+  unit_DataProcessing;
 
 { TLFPSO Periodic}
 

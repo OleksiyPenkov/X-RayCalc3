@@ -45,10 +45,9 @@ type
 implementation
 
 uses
-  Forms,
   System.SysUtils,
   Neslib.FastMath,
-  Dialogs, math_globals;
+  math_globals;
 
 { TLFPSO Periodic}
 
