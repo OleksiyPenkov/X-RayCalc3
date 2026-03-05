@@ -347,6 +347,7 @@ begin
   Params.w1 := StrToFloat(INF.ReadString('LFPSO', 'w1', '0.3'));
   Params.w2 := StrToFloat(INF.ReadString('LFPSO', 'w2', '0.3'));
   Params.AdaptVel := INF.ReadBool('LFPSO', 'AdaptV', False);
+  Params.UseConstriction := INF.ReadBool('LFPSO', 'Constriction', True);
   Params.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
   Params.Ksxr := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
   Params.PolyFactor := INF.ReadInteger('LFPSO', 'PolyFactor', 10);
@@ -364,6 +365,7 @@ begin
   INF.WriteString('LFPSO', 'w1', Params.w1.ToString);
   INF.WriteString('LFPSO', 'w2', Params.w2.ToString);
   INF.WriteBool('LFPSO', 'AdaptV', Params.AdaptVel);
+  INF.WriteBool('LFPSO', 'Constriction', Params.UseConstriction);
   INF.WriteInteger('LFPSO', 'SmoothWindow', Params.SmoothWindow);
   INF.WriteString('LFPSO', 'Ksxr', Params.Ksxr.ToString);
   INF.WriteInteger('LFPSO', 'PolyFactor', Params.PolyFactor);

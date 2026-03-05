@@ -20,6 +20,8 @@ type
     property Pub_FTerminated: Boolean read FTerminated write FTerminated;
     property Pub_CFactor: single read CFactor write CFactor;
     property Pub_FLevySigmaU: single read FLevySigmaU write FLevySigmaU;
+    property Pub_FLevyScale: single read FLevyScale write FLevyScale;
+    property Pub_FConstrictionChi: single read FConstrictionChi write FConstrictionChi;
     property Pub_FGlobalBestChiSqr: single read FGlobalBestChiSqr write FGlobalBestChiSqr;
     property Pub_FAbsoluteBestChiSqr: single read FAbsoluteBestChiSqr write FAbsoluteBestChiSqr;
 
@@ -48,6 +50,7 @@ type
     procedure TestInit_Domains(const Order: integer);
     procedure TestSet_Init_X(const LIndex, PIndex: integer; Val: TFitValue);
     procedure TestApplyCFactor(var c1, c2: single);
+    function TestCalcDiversity: single;
     procedure TestUpdateStructure(var Solution: TSolution);
     function TestFitModelToLayer(const Solution: TSolution): TLayeredModel;
   end;
@@ -99,17 +102,25 @@ type
     { Set_Init_X }
     [Test] procedure Test_Set_Init_X_SetsValues;
 
-    { CheckLimits — velocity and position clamping }
+    { CheckLimits — velocity clamping and position reflection }
     [Test] procedure Test_CheckLimits_ClampsVelocityHigh;
     [Test] procedure Test_CheckLimits_ClampsVelocityLow;
-    [Test] procedure Test_CheckLimits_ClampsPositionHigh;
-    [Test] procedure Test_CheckLimits_ClampsPositionLow;
+    [Test] procedure Test_CheckLimits_ReflectsPositionHigh;
+    [Test] procedure Test_CheckLimits_ReflectsPositionLow;
     [Test] procedure Test_CheckLimits_NoClampNeeded;
 
     { ApplyCFactor }
     [Test] procedure Test_ApplyCFactor_AdaptVelTrue_Positive;
     [Test] procedure Test_ApplyCFactor_AdaptVelFalse;
     [Test] procedure Test_ApplyCFactor_AdaptVelTrue_ZeroCFactor;
+    [Test] procedure Test_ApplyCFactor_Constriction;
+
+    { Omega — constriction mode }
+    [Test] procedure Test_Omega_Constriction;
+
+    { CalcDiversity }
+    [Test] procedure Test_CalcDiversity_Uniform;
+    [Test] procedure Test_CalcDiversity_Converged;
 
     { Rand }
     [Test] procedure Test_Rand_StaysInRange;
@@ -174,6 +185,9 @@ begin Set_Init_X(LIndex, PIndex, Val); end;
 
 procedure TTestableLFPSO.TestApplyCFactor(var c1, c2: single);
 begin ApplyCFactor(c1, c2); end;
+
+function TTestableLFPSO.TestCalcDiversity: single;
+begin Result := CalcDiversity; end;
 
 procedure TTestableLFPSO.TestUpdateStructure(var Solution: TSolution);
 begin UpdateStructure(Solution); end;
@@ -516,7 +530,7 @@ begin
     'X = 50 + clamped V(-10) = 40');
 end;
 
-procedure TTestLFPSOBase.Test_CheckLimits_ClampsPositionHigh;
+procedure TTestLFPSOBase.Test_CheckLimits_ReflectsPositionHigh;
 var
   Params: TFitParams;
 begin
@@ -526,6 +540,8 @@ begin
   FPSO.Pub_FLayersCount := 1;
   FPSO.TestInit_Domains(0);
 
+  // X=95 + V=8 = 103, exceeds Xmax=100
+  // Reflection: 2*100 - 103 = 97, V reversed and damped: -8*0.5 = -4
   FPSO.GetX[0][0][1][0] := 95.0;
   FPSO.GetV[0][0][1][0] := 8.0;
   FPSO.GetVmax[0][0][1][0] := 10.0;
@@ -535,11 +551,13 @@ begin
 
   FPSO.TestCheckLimits(0, 0, 1);
 
-  Assert.AreEqual(Single(100.0), FPSO.GetX[0][0][1][0], 1E-5,
-    'X clamped to Xmax=100');
+  Assert.AreEqual(Single(97.0), FPSO.GetX[0][0][1][0], 1E-5,
+    'X reflected off Xmax: 2*100-103=97');
+  Assert.AreEqual(Single(-4.0), FPSO.GetV[0][0][1][0], 1E-5,
+    'V reversed and damped: -8*0.5=-4');
 end;
 
-procedure TTestLFPSOBase.Test_CheckLimits_ClampsPositionLow;
+procedure TTestLFPSOBase.Test_CheckLimits_ReflectsPositionLow;
 var
   Params: TFitParams;
 begin
@@ -549,6 +567,8 @@ begin
   FPSO.Pub_FLayersCount := 1;
   FPSO.TestInit_Domains(0);
 
+  // X=3 + V=-8 = -5, below Xmin=0
+  // Reflection: 2*0 - (-5) = 5, V reversed and damped: 8*0.5 = 4
   FPSO.GetX[0][0][1][0] := 3.0;
   FPSO.GetV[0][0][1][0] := -8.0;
   FPSO.GetVmax[0][0][1][0] := 10.0;
@@ -558,8 +578,10 @@ begin
 
   FPSO.TestCheckLimits(0, 0, 1);
 
-  Assert.AreEqual(Single(0.0), FPSO.GetX[0][0][1][0], 1E-5,
-    'X clamped to Xmin=0');
+  Assert.AreEqual(Single(5.0), FPSO.GetX[0][0][1][0], 1E-5,
+    'X reflected off Xmin: 2*0-(-5)=5');
+  Assert.AreEqual(Single(4.0), FPSO.GetV[0][0][1][0], 1E-5,
+    'V reversed and damped: 8*0.5=4');
 end;
 
 procedure TTestLFPSOBase.Test_CheckLimits_NoClampNeeded;
@@ -668,6 +690,7 @@ begin
   num := Gamma(1 + beta) * Sin(Pi * beta / 2);
   den := Gamma((1 + beta) / 2) * beta * Power(2, (beta - 1) / 2);
   FPSO.Pub_FLevySigmaU := Power(num / den, 1 / beta);
+  FPSO.Pub_FLevyScale := 0.01;  // set adaptive scale
 
   RandSeed := 42;
   for i := 1 to 100 do
@@ -726,6 +749,116 @@ begin
   finally
     Model.Free;
   end;
+end;
+
+{ ApplyCFactor — Constriction }
+
+procedure TTestLFPSOBase.Test_ApplyCFactor_Constriction;
+const
+  PHI = 4.1;
+  PHI_HALF = 2.05;
+var
+  Params: TFitParams;
+  c1, c2: single;
+begin
+  Params := MakeSimpleFitParams;
+  Params.UseConstriction := True;
+  FPSO.TestSetParams(Params);
+  // Precompute chi as Run would
+  FPSO.Pub_FConstrictionChi := 2.0 / Abs(2.0 - PHI - Sqrt(PHI * PHI - 4 * PHI));
+
+  c1 := 0; c2 := 0;
+  FPSO.TestApplyCFactor(c1, c2);
+
+  Assert.AreEqual(FPSO.Pub_FConstrictionChi * PHI_HALF, c1, 1E-3,
+    'c1 = chi * 2.05 in constriction mode');
+  Assert.AreEqual(FPSO.Pub_FConstrictionChi * PHI_HALF, c2, 1E-3,
+    'c2 = chi * 2.05 in constriction mode');
+end;
+
+{ Omega — constriction }
+
+procedure TTestLFPSOBase.Test_Omega_Constriction;
+var
+  Params: TFitParams;
+const
+  PHI = 4.1;
+begin
+  Params := MakeSimpleFitParams;
+  Params.UseConstriction := True;
+  FPSO.TestSetParams(Params);
+  FPSO.Pub_FConstrictionChi := 2.0 / Abs(2.0 - PHI - Sqrt(PHI * PHI - 4 * PHI));
+
+  // Omega should return chi regardless of t
+  Assert.AreEqual(FPSO.Pub_FConstrictionChi, FPSO.TestOmega(0, 100), 1E-5,
+    'Omega returns chi at t=0');
+  Assert.AreEqual(FPSO.Pub_FConstrictionChi, FPSO.TestOmega(50, 100), 1E-5,
+    'Omega returns chi at t=50');
+  Assert.AreEqual(FPSO.Pub_FConstrictionChi, FPSO.TestOmega(100, 100), 1E-5,
+    'Omega returns chi at t=100');
+end;
+
+{ CalcDiversity }
+
+procedure TTestLFPSOBase.Test_CalcDiversity_Uniform;
+var
+  Params: TFitParams;
+  i: integer;
+begin
+  Params := MakeSimpleFitParams;
+  Params.Pop := 5;
+  FPSO.TestSetParams(Params);
+  FPSO.Pub_FLayersCount := 1;
+  FPSO.TestInit_Domains(0);
+
+  // Set up Xrange
+  FPSO.GetXmax[0][0][1][0] := 100.0;
+  FPSO.GetXmin[0][0][1][0] := 0.0;
+  FPSO.GetXrange[0][0][1][0] := 100.0;
+  FPSO.GetXmax[0][0][2][0] := 100.0;
+  FPSO.GetXmin[0][0][2][0] := 0.0;
+  FPSO.GetXrange[0][0][2][0] := 100.0;
+  FPSO.GetXmax[0][0][3][0] := 100.0;
+  FPSO.GetXmin[0][0][3][0] := 0.0;
+  FPSO.GetXrange[0][0][3][0] := 100.0;
+
+  // Spread particles across the range
+  for i := 0 to 4 do
+  begin
+    FPSO.GetX[i][0][1][0] := 20.0 * i;  // 0, 20, 40, 60, 80
+    FPSO.GetX[i][0][2][0] := 20.0 * i;
+    FPSO.GetX[i][0][3][0] := 20.0 * i;
+  end;
+
+  Assert.IsTrue(FPSO.TestCalcDiversity > 0.1,
+    'Uniform spread should have high diversity');
+end;
+
+procedure TTestLFPSOBase.Test_CalcDiversity_Converged;
+var
+  Params: TFitParams;
+  i: integer;
+begin
+  Params := MakeSimpleFitParams;
+  Params.Pop := 5;
+  FPSO.TestSetParams(Params);
+  FPSO.Pub_FLayersCount := 1;
+  FPSO.TestInit_Domains(0);
+
+  FPSO.GetXrange[0][0][1][0] := 100.0;
+  FPSO.GetXrange[0][0][2][0] := 100.0;
+  FPSO.GetXrange[0][0][3][0] := 100.0;
+
+  // All particles at the same point
+  for i := 0 to 4 do
+  begin
+    FPSO.GetX[i][0][1][0] := 50.0;
+    FPSO.GetX[i][0][2][0] := 50.0;
+    FPSO.GetX[i][0][3][0] := 50.0;
+  end;
+
+  Assert.AreEqual(Single(0.0), Single(FPSO.TestCalcDiversity), 1E-5,
+    'Converged population should have zero diversity');
 end;
 
 { Terminate }

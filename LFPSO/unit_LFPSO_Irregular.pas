@@ -73,19 +73,31 @@ end;
 
 procedure TLFPSO_Irregular.UpdateLFPSO(const t: integer);
 var
-  i, j, k: integer;
+  i, j, k, randIdx: integer;
   c1, c2: single;
+  LTarget: single;
 begin
   ApplyCFactor(c1, c2);
 
   for i := 1 to High(X) do // for every member of the population
   begin
+    // 30% chance: Levy toward random peer for exploration diversity
+    if Random < 0.3 then
+      randIdx := Random(Length(X))
+    else
+      randIdx := -1;  // use gbest
+
     for j := 0 to High(X[I]) do // for every layer
       for k := 1 to 3 do           // for H, s, rho
       begin
         if FLinks[j][k] = -1 then
         begin
-          V[i][j][k][0] := Omega(t, FTMax) * LevyWalk(X[i][j][k][0], gbest[j][k][0])  +
+          if randIdx >= 0 then
+            LTarget := X[randIdx][j][k][0]
+          else
+            LTarget := gbest[j][k][0];
+
+          V[i][j][k][0] := Omega(t, FTMax) * LevyWalk(X[i][j][k][0], LTarget)  +
                         c1 * Random * (pbest[j][k][0] - X[i][j][k][0]) +
                         c2 * Random * (gbest[j][k][0] - X[i][j][k][0]);
         end

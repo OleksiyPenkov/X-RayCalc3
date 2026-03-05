@@ -79,6 +79,20 @@ object frmFitSettings: TfrmFitSettings
         TabOrder = 1
         Visible = False
       end
+      object cbConstriction: TRzCheckBox
+        Left = 130
+        Top = 22
+        Width = 130
+        Height = 17
+        Hint =
+          'Use Clerc-Kennedy constriction factor instead of linear inertia ' +
+          'decay. Analytically guarantees convergence.'
+        AlignmentVertical = avCenter
+        Caption = 'Constriction factor'
+        State = cbChecked
+        TabOrder = 2
+        OnEnter = ShowParamHint
+      end
     end
     object RzGroupBox2: TRzGroupBox
       AlignWithMargins = True

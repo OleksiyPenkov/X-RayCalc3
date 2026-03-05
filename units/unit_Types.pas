@@ -103,6 +103,7 @@ type
          Shake : boolean;
     ThetaWeight: integer;
        AdaptVel: Boolean;
+ UseConstriction: Boolean;
          RangeSeed: Boolean;
       MaxPOrder: Integer;
           Ksxr : Single;

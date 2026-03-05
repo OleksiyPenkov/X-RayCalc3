@@ -16,6 +16,7 @@ type
     edFitTolerance: TEdit;
     Label20: TLabel;
     cbAdaptiveVelocity: TRzCheckBox;
+    cbConstriction: TRzCheckBox;
     RzGroupBox2: TRzGroupBox;
     Label16: TLabel;
     edFVmax: TEdit;
@@ -61,7 +62,7 @@ implementation
 
 procedure TfrmFitSettings.ShowParamHint(Sender: TObject);
 begin
-  Tip.Caption := (Sender as TEdit).Hint;
+  Tip.Caption := (Sender as TControl).Hint;
 end;
 
 procedure TfrmFitSettings.ShowSettings(var Params: TFitParams);
@@ -80,22 +81,24 @@ begin
   edKsxr.Text             := Params.Ksxr.ToString(ffFixed, 2, 2);
 
   cbAdaptiveVelocity.Checked := Params.AdaptVel;
+  cbConstriction.Checked     := Params.UseConstriction;
 
   if ShowModal = mrOk then
   begin
-    Params.Vmax         := StrToFloat(edFVmax.Text);
-    Params.JammingMax   := StrToInt(edLFPSOSkip.Text);
-    Params.ReInitMax    := StrToInt(edLFPSORImax.Text);
-    Params.KChiSqr      := StrToFloat(edLFPSOChiFactor.Text);
-    Params.KVmax        := StrToFloat(edLFPSOkVmax.Text);
-    Params.w1           := StrToFloat(edLFPSOOmega1.Text);
-    Params.w2           := StrToFloat(edLFPSOOmega2.Text);
-    Params.Tolerance    := StrToFloat(edFitTolerance.Text);
-    Params.AdaptVel     := cbAdaptiveVelocity.Checked;
-    Params.SmoothWindow := StrToInt(edIrrSmoothWindow.Text);
+    Params.Vmax            := StrToFloat(edFVmax.Text);
+    Params.JammingMax      := StrToInt(edLFPSOSkip.Text);
+    Params.ReInitMax       := StrToInt(edLFPSORImax.Text);
+    Params.KChiSqr         := StrToFloat(edLFPSOChiFactor.Text);
+    Params.KVmax           := StrToFloat(edLFPSOkVmax.Text);
+    Params.w1              := StrToFloat(edLFPSOOmega1.Text);
+    Params.w2              := StrToFloat(edLFPSOOmega2.Text);
+    Params.Tolerance       := StrToFloat(edFitTolerance.Text);
+    Params.AdaptVel        := cbAdaptiveVelocity.Checked;
+    Params.UseConstriction := cbConstriction.Checked;
+    Params.SmoothWindow    := StrToInt(edIrrSmoothWindow.Text);
 
-    Params.PolyFactor   := sePolyFactor.Value;
-    Params.Ksxr         := StrToFloat(edKsxr.Text);
+    Params.PolyFactor      := sePolyFactor.Value;
+    Params.Ksxr            := StrToFloat(edKsxr.Text);
 
   end;
 end;

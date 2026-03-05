@@ -91,6 +91,9 @@ type
       FMovAvg: TDataArray;
       CFactor: single;
       FLevySigmaU: single;  // precomputed Levy walk constant
+      FLevyScale: single;   // adaptive Levy scale factor (0.01..0.1)
+      FConstrictionChi: single;  // Clerc-Kennedy constriction coefficient
+      FDiversity: single;        // current population diversity
 
       FWorkers: array of TCalcWorker;
       FNWorkers: Integer;
@@ -118,6 +121,7 @@ type
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_Domains(const Order: Integer);
       procedure ApplyCFactor(var c1, c2: single);// inline;
+      function CalcDiversity: single;
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
     private
@@ -232,7 +236,10 @@ end;
 
 function TLFPSO_BASE.Omega(const t, TMax: integer): single;
 begin
-  Result := FFitParams.w1 + FFitParams.w2 * (1 - t / Tmax);
+  if FFitParams.UseConstriction then
+    Result := FConstrictionChi
+  else
+    Result := FFitParams.w1 + FFitParams.w2 * (1 - t / Tmax);
 end;
 
 constructor TLFPSO_BASE.Create;
@@ -337,8 +344,15 @@ begin
 end;
 
 procedure TLFPSO_BASE.ApplyCFactor(var c1, c2: single);
+const
+  PHI_HALF = 2.05;  // Clerc-Kennedy standard per-component phi
 begin
-  if FFitParams.AdaptVel and (CFactor > 0) then
+  if FFitParams.UseConstriction then
+  begin
+    c1 := FConstrictionChi * PHI_HALF;
+    c2 := FConstrictionChi * PHI_HALF;
+  end
+  else if FFitParams.AdaptVel and (CFactor > 0) then
   begin
     c1 := CFactor;
     c2 := CFactor;
@@ -349,7 +363,45 @@ begin
   end;
 end;
 
+function TLFPSO_BASE.CalcDiversity: single;
+var
+  i, j, k, nParams, nPop: integer;
+  mean, variance, sumVar: double;
+begin
+  Result := 0;
+  nPop := Length(X);
+  if nPop < 2 then Exit;
+
+  sumVar := 0;
+  nParams := 0;
+
+  for j := 0 to High(X[0]) do
+    for k := 1 to 3 do
+    begin
+      if Xrange[0][j][k][0] < 1e-10 then Continue;
+
+      mean := 0;
+      for i := 0 to High(X) do
+        mean := mean + X[i][j][k][0];
+      mean := mean / nPop;
+
+      variance := 0;
+      for i := 0 to High(X) do
+        variance := variance + Sqr(X[i][j][k][0] - mean);
+      variance := variance / (nPop - 1);
+
+      // Normalize by range squared to get relative diversity
+      sumVar := sumVar + variance / Sqr(Xrange[0][j][k][0]);
+      Inc(nParams);
+    end;
+
+  if nParams > 0 then
+    Result := Sqrt(sumVar / nParams);
+end;
+
 procedure TLFPSO_BASE.CheckLimits(const i, j, k: integer);
+var
+  XNew: single;
 begin
   if V[i][j][k][0] > Vmax[0][j][k][0] then
              V[i][j][k][0] := Vmax[0][j][k][0];
@@ -357,13 +409,25 @@ begin
   if V[i][j][k][0] < Vmin[0][j][k][0] then
              V[i][j][k][0] := Vmin[0][j][k][0];
 
-  X[i][j][k][0] := X[i][j][k][0] + V[i][j][k][0];
+  XNew := X[i][j][k][0] + V[i][j][k][0];
 
-  if X[i][j][k][0] > Xmax[0][j][k][0] then
-             X[i][j][k][0] := Xmax[0][j][k][0];
+  // Reflective boundary handling: bounce off walls with damped velocity
+  if XNew > Xmax[0][j][k][0] then
+  begin
+    XNew := 2 * Xmax[0][j][k][0] - XNew;
+    V[i][j][k][0] := -V[i][j][k][0] * 0.5;
+    if XNew < Xmin[0][j][k][0] then
+      XNew := Xmin[0][j][k][0];
+  end
+  else if XNew < Xmin[0][j][k][0] then
+  begin
+    XNew := 2 * Xmin[0][j][k][0] - XNew;
+    V[i][j][k][0] := -V[i][j][k][0] * 0.5;
+    if XNew > Xmax[0][j][k][0] then
+      XNew := Xmax[0][j][k][0];
+  end;
 
-  if X[i][j][k][0] < Xmin[0][j][k][0] then
-             X[i][j][k][0] := Xmin[0][j][k][0];
+  X[i][j][k][0] := XNew;
 end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;
@@ -377,7 +441,7 @@ begin
   v := Random;
   z := u / abs(FastPower(v, inv_beta));
 
-  S := 0.01 * z * (X - gBest);
+  S := FLevyScale * z * (X - gBest);
   dX := X * S;
   Result := dX * Random;
 end;
@@ -533,9 +597,10 @@ end;
 procedure TLFPSO_BASE.Run(CalcConditions: TCalcThreadParams);
 const
   levy_beta = 1.5;
+  CONSTR_PHI = 4.1;  // Clerc-Kennedy total phi (2.05 + 2.05)
 var
   i, t: integer;
-  switch: double;
+  switch, LevyProb: double;
   ReInitCount: integer;
   Vmax0, Ksxr0: single;
   SuccessCount: integer;
@@ -547,6 +612,14 @@ begin
   num := gamma(1 + levy_beta) * FastSin(pi * levy_beta / 2);
   den := gamma((1 + levy_beta) / 2) * levy_beta * FastPower(2, (levy_beta - 1) / 2);
   FLevySigmaU := FastPower(num / den, 1 / levy_beta);
+
+  // Precompute constriction coefficient if enabled
+  if FFitParams.UseConstriction then
+    FConstrictionChi := 2.0 / Abs(2.0 - CONSTR_PHI - Sqrt(CONSTR_PHI * CONSTR_PHI - 4 * CONSTR_PHI))
+  else
+    FConstrictionChi := 1.0;
+
+  FLevyScale := 0.01;  // initial scale (will be updated adaptively)
 
   FReInit := False;
   FWasShaken := False;
@@ -589,14 +662,25 @@ begin
     begin
       if FTerminated then Break;
 
+      // Adaptive Levy scale: larger steps early (exploration), smaller late (fine-tuning)
+      FLevyScale := 0.01 + 0.09 * (1 - t / FTMax);
+
       // Adaptive velocity: linearly decrease c1,c2 from (w1+w2) to w1
       if FFitParams.AdaptVel then
         CFactor := FFitParams.w1 + FFitParams.w2 * (1 - t / FTMax)
       else
         CFactor := 1;
 
+      // Adaptive PSO/Levy switching:
+      // Base: more Levy early (exploration), more PSO late (exploitation)
+      LevyProb := 0.3 + 0.4 * (1 - t / FTMax);
+      // Stagnation boost: increase Levy probability when stuck
+      if FJammingCount > 0 then
+        LevyProb := LevyProb + 0.05 * FJammingCount;
+      if LevyProb > 0.9 then LevyProb := 0.9;
+
       switch := Random;
-      if switch < 0.5 then
+      if switch > LevyProb then
         UpdatePSO(SuccessCount)
       else
         UpdateLFPSO(SuccessCount);
@@ -610,8 +694,19 @@ begin
 
       if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
       begin
-        FWasShaken := True;
-        Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0);
+        // Diversity-aware shake: delay shake while population is still diverse
+        FDiversity := CalcDiversity;
+        if (FDiversity < 0.01) or (FJammingCount > FFitParams.JammingMax + 3) then
+        begin
+          FWasShaken := True;
+          Shake(t, SuccessCount, ReInitCount, Vmax0, Ksxr0);
+        end
+        else begin
+          FWasShaken := False;
+          FFitParams.Vmax := Vmax0;
+          FFitParams.Ksxr := Ksxr0;
+          inc(SuccessCount);
+        end;
       end
       else begin
         FWasShaken := False;
