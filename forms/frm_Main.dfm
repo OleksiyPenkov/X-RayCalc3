@@ -798,6 +798,12 @@ object frmMain: TfrmMain
       object CopyasWMF1: TMenuItem
         Action = FilePlotCopyWMF
       end
+      object N16: TMenuItem
+        Caption = '-'
+      end
+      object ExportFitResults1: TMenuItem
+        Action = FitExportJSON
+      end
     end
     object ools1: TMenuItem
       Caption = 'Tools'
@@ -1936,6 +1942,18 @@ object frmMain: TfrmMain
       Caption = 'Batch jobs Fitting'
       OnExecute = actCalcFitJobsExecute
     end
+    object FitExportJSON: TAction
+      Category = 'Result'
+      Caption = 'Export fit results...'
+      OnExecute = FitExportJSONExecute
+    end
+  end
+  object dlgSaveFitJSON: TSaveDialog
+    DefaultExt = 'json'
+    Filter = 'JSON files (*.json)|*.json'
+    Title = 'Export Fit Results'
+    Left = 504
+    Top = 216
   end
   object ilCalc: TImageList
     ColorDepth = cd32Bit

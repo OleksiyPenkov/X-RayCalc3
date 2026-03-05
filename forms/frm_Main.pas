@@ -184,6 +184,10 @@ type
     actDataTrim: TAction;
     rim1: TMenuItem;
     actCalcFitJobs: TAction;
+    FitExportJSON: TAction;
+    dlgSaveFitJSON: TSaveDialog;
+    N16: TMenuItem;
+    ExportFitResults1: TMenuItem;
     Calcbatchjobs1: TMenuItem;
     pmRecentList: TPopupMenu;
     pmRecentList1: TMenuItem;
@@ -252,6 +256,7 @@ type
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
     procedure DataNormAutoExecute(Sender: TObject);
+    procedure FitExportJSONExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
     FOrchestrator: TCalcOrchestrator;
@@ -718,6 +723,17 @@ end;
 procedure TfrmMain.ResultSaveExecute(Sender: TObject);
 begin
   FChartInfo.SaveResultToFile;
+end;
+
+procedure TfrmMain.FitExportJSONExecute(Sender: TObject);
+begin
+  if not FOrchestrator.HasFitResults then
+  begin
+    ShowMessage('No fitting results available. Run fitting first.');
+    Exit;
+  end;
+  if dlgSaveFitJSON.Execute then
+    FOrchestrator.ExportFitResultsToJSON(dlgSaveFitJSON.FileName);
 end;
 
 procedure TfrmMain.LayerAddExecute(Sender: TObject);
