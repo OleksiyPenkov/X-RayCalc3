@@ -285,6 +285,8 @@ procedure TCalcOrchestrator.StopCalc;
 begin
   if FLFPSO <> nil then
     FLFPSO.Terminate;
+  if FFitThread <> nil then
+    FFitThread.Terminate;
 end;
 
 procedure TCalcOrchestrator.UpdateInterface(const FitStructure: TFitStructure;

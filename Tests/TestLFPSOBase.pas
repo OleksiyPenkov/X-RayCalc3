@@ -17,7 +17,7 @@ type
     property Pub_FLayersCount: integer read FLayersCount write FLayersCount;
     property Pub_FPopulation: integer read FPopulation write FPopulation;
     property Pub_FTMax: integer read FTMax write FTMax;
-    property Pub_FTerminated: Boolean read FTerminated write FTerminated;
+    property Pub_FTerminated: Integer read FTerminated write FTerminated;
     property Pub_CFactor: single read CFactor write CFactor;
     property Pub_FLevySigmaU: single read FLevySigmaU write FLevySigmaU;
     property Pub_FLevyScale: single read FLevyScale write FLevyScale;
@@ -865,9 +865,9 @@ end;
 
 procedure TTestLFPSOBase.Test_Terminate_SetsFlag;
 begin
-  Assert.IsFalse(FPSO.Pub_FTerminated, 'Not terminated initially');
+  Assert.AreEqual(0, FPSO.Pub_FTerminated, 'Not terminated initially');
   FPSO.Terminate;
-  Assert.IsTrue(FPSO.Pub_FTerminated, 'Terminated after call');
+  Assert.AreEqual(1, FPSO.Pub_FTerminated, 'Terminated after call');
 end;
 
 end.

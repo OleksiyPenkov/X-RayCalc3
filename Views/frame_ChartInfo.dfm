@@ -325,7 +325,6 @@ object frmChartInfo: TfrmChartInfo
       Width = 128
       Height = 40
       FrameColor = clRed
-      ModalResult = 3
       Caption = 'Stop'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clRed

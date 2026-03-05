@@ -946,6 +946,7 @@ begin
   FChartInfo.OnGetActiveDataSeries := GetActiveDataSeries;
   FChartInfo.OnSaveActiveData := OnSaveActiveData;
   FChartInfo.OnLegendCheckBoxClick := OnLegendCheckBoxClick;
+  FChartInfo.btnStop.OnClick := CalcStopExecute;
 
   FStructurePanel.ConnectActions(vilModel,
     PeriodAdd, PeriodInsert, PeriodDelete,

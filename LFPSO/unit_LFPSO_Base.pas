@@ -87,7 +87,7 @@ type
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
       FLimit: single;
-      FTerminated: Boolean;
+      FTerminated: Integer;  // 0 = running, 1 = terminated (interlocked for thread safety)
       FMovAvg: TDataArray;
       CFactor: single;
       FLevySigmaU: single;  // precomputed Levy walk constant
@@ -527,7 +527,7 @@ begin
       FWorkers[i].Model.Materials := Copy(FMaterials);
   end;
 
-  if FTerminated then Exit;
+  if FTerminated <> 0 then Exit;
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
@@ -623,7 +623,7 @@ begin
 
   FReInit := False;
   FWasShaken := False;
-  FTerminated := False;
+  InterlockedExchange(FTerminated, 0);
   Vmax0 := FFitParams.Vmax ;
   Ksxr0 := FFitParams.Ksxr ;
   ReInitCount := 0;
@@ -660,7 +660,7 @@ begin
 
     for t := 1 to FTMax do
     begin
-      if FTerminated then Break;
+      if FTerminated <> 0 then Break;
 
       // Adaptive Levy scale: larger steps early (exploration), smaller late (fine-tuning)
       FLevyScale := 0.01 + 0.09 * (1 - t / FTMax);
@@ -815,7 +815,7 @@ end;
 
 procedure TLFPSO_BASE.Terminate;
 begin
-  FTerminated := True;
+  InterlockedExchange(FTerminated, 1);
 end;
 
 procedure TLFPSO_BASE.UpdateLFPSO(const t: integer);
