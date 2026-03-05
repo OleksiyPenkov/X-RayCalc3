@@ -171,6 +171,7 @@ procedure TfrmLimits.btnFixClick(Sender: TObject);
 begin
   StructureFromView;
   AutoFixErrors(FStructure);
+  WidenAtLimit(FStructure, 0.5);
   ClampToPhysics(FStructure);
   ApplyGeometryCoupling(FStructure);
   StructureToView;

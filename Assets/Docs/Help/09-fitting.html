@@ -78,14 +78,49 @@
 <ol>
   <li>Select the model in the project tree.</li>
   <li>Click the <strong>Set Fit Limits</strong> button in the structure toolbar.</li>
-  <li>The Limits dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;) with columns for:
+  <li>The Limits dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;) with columns for Min and Max of each parameter.</li>
+  <li>Click any cell to edit its value directly.</li>
+  <li>Only parameters with Min &ne; Max will be adjusted during fitting. Set Min = Max to lock (fix) a parameter.</li>
+</ol>
+
+<h4>Limit Actions</h4>
+<p>The dialog provides action buttons for batch operations on limits:</p>
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; percentages. For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
+  <tr><td><strong>Narrow</strong></td><td>Shrinks all unlocked limits toward the current fitted value by 50%, reducing the search space. Useful after a successful fit to refine results.</td></tr>
+  <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 1% of the range edge). Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range.</td></tr>
+  <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling.</td></tr>
+</table>
+
+<h4>Validation and Visual Feedback</h4>
+<p>The dialog validates limits in real time and highlights problematic cells:</p>
+<ul>
+  <li><span style="background:#FFCCCC;padding:1px 6px">Red cells</span> indicate <strong>errors</strong> that must be fixed before fitting:
     <ul>
-      <li><strong>Min:</strong> Lower bound for fitting</li>
-      <li><strong>Max:</strong> Upper bound for fitting</li>
+      <li>Min &gt; Max (inverted range)</li>
+      <li>Negative Min for H, &sigma;, or &rho;</li>
     </ul>
   </li>
-  <li>Only parameters with Min &ne; Max will be adjusted during fitting. Set Min = Max to fix a parameter.</li>
-</ol>
+  <li><span style="background:#FFFFCC;padding:1px 6px">Yellow cells</span> indicate <strong>warnings</strong> &mdash; fitting is allowed but results may be suboptimal:
+    <ul>
+      <li>Fitted value below Min or above Max</li>
+      <li>Fitted value at a limit boundary (within 1% of range)</li>
+      <li>Range too wide (&gt;100&times;) or too narrow (&lt;1% of value)</li>
+      <li>&rho; Max exceeds densest stable element (23 g/cm&sup3;)</li>
+      <li>All parameters locked &mdash; nothing to fit</li>
+    </ul>
+  </li>
+</ul>
+<p>Click <strong>Fix</strong> to resolve all highlighted issues automatically, or address them manually by editing individual cells.</p>
+
+<h4>Physics Constraints</h4>
+<p>All limit operations automatically enforce physical constraints:</p>
+<ul>
+  <li>H, &sigma;, &rho; &ge; 0 (no negative values)</li>
+  <li>&rho; &le; 23 g/cm&sup3; (densest stable element, Osmium)</li>
+  <li>&sigma; Max &le; min(own H, neighboring layer H) &mdash; roughness cannot exceed layer thickness or the thickness of the layer below</li>
+</ul>
 
 <h3 id="fit-modes">Fitting Modes</h3>
 <p>The software provides several structure-representation methods. The user chooses the most suitable depending on the nature of the coating:</p>

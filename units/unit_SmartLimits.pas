@@ -309,12 +309,24 @@ begin
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
       for p := 1 to 3 do
+      begin
+        // Fix inverted min/max
         if Structure.Stacks[i].Layers[j].P[p].min > Structure.Stacks[i].Layers[j].P[p].max then
         begin
           Tmp := Structure.Stacks[i].Layers[j].P[p].min;
           Structure.Stacks[i].Layers[j].P[p].min := Structure.Stacks[i].Layers[j].P[p].max;
           Structure.Stacks[i].Layers[j].P[p].max := Tmp;
         end;
+
+        // Fix value out of range
+        with Structure.Stacks[i].Layers[j].P[p] do
+        begin
+          if V < min then
+            min := V;
+          if V > max then
+            max := V;
+        end;
+      end;
 end;
 
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);

@@ -5,6 +5,7 @@ object frmLimits: TfrmLimits
   Margins.Top = 3
   Margins.Right = 3
   Margins.Bottom = 3
+  BorderStyle = bsDialog
   Caption = 'Fitting Limits'
   ClientHeight = 476
   ClientWidth = 569
@@ -210,6 +211,8 @@ object frmLimits: TfrmLimits
       Margins.Bottom = 3
       Caption = 'Initialize'
       TabOrder = 4
+      Hint = 'Generate limits from current values using DH/DS/DRho percentages'
+      ShowHint = True
       OnClick = btnInitClick
     end
     object btnNarrow: TBitBtn
@@ -223,6 +226,8 @@ object frmLimits: TfrmLimits
       Margins.Bottom = 3
       Caption = 'Narrow'
       TabOrder = 5
+      Hint = 'Shrink limits toward fitted values by 50%'
+      ShowHint = True
       OnClick = btnNarrowClick
     end
     object btnWiden: TBitBtn
@@ -236,6 +241,8 @@ object frmLimits: TfrmLimits
       Margins.Bottom = 3
       Caption = 'Widen'
       TabOrder = 6
+      Hint = 'Expand limits where fitted value is at a boundary'
+      ShowHint = True
       OnClick = btnWidenClick
     end
     object btnFix: TBitBtn
@@ -249,6 +256,8 @@ object frmLimits: TfrmLimits
       Margins.Bottom = 3
       Caption = 'Fix'
       TabOrder = 7
+      Hint = 'Auto-fix all errors and warnings'
+      ShowHint = True
       OnClick = btnFixClick
     end
   end

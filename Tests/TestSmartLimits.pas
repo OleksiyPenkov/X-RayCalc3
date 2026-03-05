@@ -51,6 +51,8 @@ type
     [Test] procedure Test_AutoFix_SwapsInvertedMinMax;
     [Test] procedure Test_AutoFix_NoOpOnValid;
     [Test] procedure Test_AutoFix_ClearsAllErrors;
+    [Test] procedure Test_AutoFix_FixesValueBelowMin;
+    [Test] procedure Test_AutoFix_FixesValueAboveMax;
   end;
 
 implementation
@@ -809,6 +811,40 @@ begin
     Assert.AreEqual(Original.Stacks[0].Layers[0].P[p].max, FS.Stacks[0].Layers[0].P[p].max,
       Format('P[%d].max should be unchanged', [p]));
   end;
+end;
+
+procedure TTestValidateLimits.Test_AutoFix_FixesValueBelowMin;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 2.0;
+  FS.Stacks[0].Layers[0].P[1].min := 5.0;
+  FS.Stacks[0].Layers[0].P[1].max := 15.0;
+
+  AutoFixErrors(FS);
+
+  Assert.AreEqual(Single(2.0), FS.Stacks[0].Layers[0].P[1].min,
+    'min should be lowered to V when V < min');
+  Assert.AreEqual(Single(15.0), FS.Stacks[0].Layers[0].P[1].max,
+    'max should be unchanged');
+end;
+
+procedure TTestValidateLimits.Test_AutoFix_FixesValueAboveMax;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[2].V := 20.0;
+  FS.Stacks[0].Layers[0].P[2].min := 5.0;
+  FS.Stacks[0].Layers[0].P[2].max := 15.0;
+
+  AutoFixErrors(FS);
+
+  Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[2].min,
+    'min should be unchanged');
+  Assert.AreEqual(Single(20.0), FS.Stacks[0].Layers[0].P[2].max,
+    'max should be raised to V when V > max');
 end;
 
 procedure TTestValidateLimits.Test_AutoFix_ClearsAllErrors;
