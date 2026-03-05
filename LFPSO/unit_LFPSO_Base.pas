@@ -32,6 +32,11 @@ type
     Structure : TFitStructure;
          Poly : TProfileFunctions;
          LayeredModel  : TLayeredModel;
+    Diversity     : single;
+    MeanVelocity  : single;
+    JammingCount  : integer;
+    LevyScale     : single;
+    CFact         : single;
   end;
 
   TLayerIndexes = array [1..3] of SmallInt;
@@ -94,6 +99,7 @@ type
       FLevyScale: single;   // adaptive Levy scale factor (0.01..0.1)
       FConstrictionChi: single;  // Clerc-Kennedy constriction coefficient
       FDiversity: single;        // current population diversity
+      FMeanVelocity: single;     // current mean velocity (normalized)
 
       FWorkers: array of TCalcWorker;
       FNWorkers: Integer;
@@ -122,6 +128,7 @@ type
       procedure Init_Domains(const Order: Integer);
       procedure ApplyCFactor(var c1, c2: single);// inline;
       function CalcDiversity: single;
+      function CalcMeanVelocity: single;
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
     private
@@ -397,6 +404,37 @@ begin
 
   if nParams > 0 then
     Result := Sqrt(sumVar / nParams);
+end;
+
+function TLFPSO_BASE.CalcMeanVelocity: single;
+var
+  i, j, k, nParams, nPop: integer;
+  sumNorm: double;
+  vAbs, vmaxVal: single;
+begin
+  Result := 0;
+  nPop := Length(V);
+  if nPop = 0 then Exit;
+
+  sumNorm := 0;
+  nParams := 0;
+
+  for j := 0 to High(V[0]) do
+    for k := 1 to 3 do
+    begin
+      vmaxVal := Abs(Vmax[0][j][k][0]);
+      if vmaxVal < 1e-10 then Continue;
+
+      for i := 0 to High(V) do
+      begin
+        vAbs := Abs(V[i][j][k][0]);
+        sumNorm := sumNorm + vAbs / vmaxVal;
+      end;
+      Inc(nParams);
+    end;
+
+  if nParams > 0 then
+    Result := sumNorm / (nPop * nParams);
 end;
 
 procedure TLFPSO_BASE.CheckLimits(const i, j, k: integer);
@@ -685,6 +723,9 @@ begin
       else
         UpdateLFPSO(SuccessCount);
 
+      FDiversity := CalcDiversity;
+      FMeanVelocity := CalcMeanVelocity;
+
       if FindTheBest then
          SendUpdateMessage(t)
       else
@@ -695,7 +736,6 @@ begin
       if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
       begin
         // Diversity-aware shake: delay shake while population is still diverse
-        FDiversity := CalcDiversity;
         if (FDiversity < 0.01) or (FJammingCount > FFitParams.JammingMax + 3) then
         begin
           FWasShaken := True;
@@ -750,6 +790,11 @@ begin
   FStructure.CopyContent(msg_prm.Structure);
   msg_prm.Poly         := GetPolynomes;
   msg_prm.LayeredModel := FitModelToLayer(abest);
+  msg_prm.Diversity    := FDiversity;
+  msg_prm.MeanVelocity := FMeanVelocity;
+  msg_prm.JammingCount := FJammingCount;
+  msg_prm.LevyScale    := FLevyScale;
+  msg_prm.CFact        := CFactor;
 
   PostMessage(
     Application.MainFormHandle,
@@ -771,6 +816,11 @@ begin
   msg_prm.WasShaken := FWasShaken;
   msg_prm.Step := Step;
   msg_prm.Curve := nil;
+  msg_prm.Diversity    := FDiversity;
+  msg_prm.MeanVelocity := FMeanVelocity;
+  msg_prm.JammingCount := FJammingCount;
+  msg_prm.LevyScale    := FLevyScale;
+  msg_prm.CFact        := CFactor;
 
   PostMessage(
     Application.MainFormHandle,

@@ -312,5 +312,73 @@ object frmChartPages: TfrmChartPages
         end
       end
     end
+    object tsDiagnostics: TRzTabSheet
+      Color = 15987699
+      Caption = 'Diagnostics'
+      object chDiagnostics: TChart
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 1038
+        Height = 132
+        Cursor = crCross
+        Border.Color = clDefault
+        Border.Visible = True
+        Legend.TopPos = 0
+        Legend.Visible = True
+        Legend.CheckBoxes = True
+        MarginBottom = 2
+        MarginLeft = 2
+        MarginRight = 5
+        MarginTop = 5
+        MarginUnits = muPixels
+        Title.Text.Strings = (
+          'TChart')
+        Title.Visible = False
+        BottomAxis.Automatic = False
+        BottomAxis.AutomaticMaximum = False
+        BottomAxis.AutomaticMinimum = False
+        BottomAxis.Axis.Width = 1
+        BottomAxis.Increment = 10.000000000000000000
+        BottomAxis.Maximum = 100.000000000000000000
+        BottomAxis.Minimum = -1.000000000000000000
+        BottomAxis.Title.Caption = 'Iteration'
+        DepthAxis.Axis.Width = 1
+        DepthTopAxis.Axis.Width = 1
+        LeftAxis.Automatic = False
+        LeftAxis.AutomaticMaximum = False
+        LeftAxis.AutomaticMinimum = False
+        LeftAxis.Axis.Width = 1
+        LeftAxis.Maximum = 1.100000000000000000
+        LeftAxis.Minimum = 0.000000000000000000
+        LeftAxis.MaximumOffset = 2
+        LeftAxis.MinimumOffset = 4
+        RightAxis.Axis.Width = 1
+        TopAxis.Axis.Width = 1
+        View3D = False
+        View3DOptions.PenZoom = 200
+        View3DOptions.CheckBoxZoom = 200
+        View3DOptions.ZoomText = ztManual
+        ZoomWheel = pmwNormal
+        Align = alClient
+        BevelOuter = bvNone
+        Color = 16771538
+        TabOrder = 0
+        DesignSize = (
+          1038
+          132)
+        DefaultCanvas = 'TGDIPlusCanvas'
+        ColorPaletteIndex = 13
+        object btnCopyDiagnostics: TRzButton
+          Left = 968
+          Top = 9
+          Width = 59
+          Anchors = [akTop, akRight]
+          Caption = 'Copy'
+          TabOrder = 0
+          OnClick = btnCopyDiagnosticsClick
+        end
+      end
+    end
   end
 end
