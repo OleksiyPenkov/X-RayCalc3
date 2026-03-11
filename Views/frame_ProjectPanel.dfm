@@ -256,11 +256,32 @@ object frmProjectPanel: TfrmProjectPanel
         CollectionIndex = 11
         CollectionName = 'Project\12_DeleteExtension'
         Name = '12_DeleteExtension'
+      end
+      item
+        CollectionIndex = 33
+        CollectionName = 'Menu\Menu_Normalize'
+        Name = 'Menu_Normalize'
+      end
+      item
+        CollectionIndex = 9
+        CollectionName = 'Project\10_Edit'
+        Name = '10_Edit'
+      end
+      item
+        CollectionIndex = 27
+        CollectionName = 'Calc\46_CopyResult'
+        Name = '46_CopyResult'
+      end
+      item
+        CollectionIndex = 6
+        CollectionName = 'Project\07_Export'
+        Name = '07_Export'
       end>
     Left = 120
     Top = 540
   end
   object pmProject: TPopupMenu
+    Images = vliProject
     OnPopup = pmProjectPopup
     Left = 32
     Top = 408
@@ -282,6 +303,7 @@ object frmProjectPanel: TfrmProjectPanel
     end
     object pmiNorm: TMenuItem
       Caption = 'Normalize'
+      ImageIndex = 12
       object Auto1: TMenuItem
       end
       object Manual1: TMenuItem
@@ -291,15 +313,18 @@ object frmProjectPanel: TfrmProjectPanel
       Caption = '-'
     end
     object Properties1: TMenuItem
+      ImageIndex = 13
     end
     object N5: TMenuItem
       Caption = '-'
     end
     object pmCopytoclipboard: TMenuItem
       Caption = 'Copy data'
+      ImageIndex = 14
     end
     object pmExporttofile: TMenuItem
       Caption = 'Export Data'
+      ImageIndex = 15
     end
   end
   object dlgOpenProject: TOpenDialog

@@ -14,10 +14,12 @@ interface
 uses
   SysUtils, Classes, Controls, ExtCtrls, RzEdit, RzSpnEdt,
   RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, VCL.Menus, unit_types,
-  Messages, Winapi.Windows, unit_consts, editor_Layer, unit_XRCPanel;
+  Messages, Winapi.Windows, unit_consts, editor_Layer, unit_XRCPanel,
+  System.ImageList, Vcl.ImgList;
 
 type
   TXRCLayerControl = class (TXRCPanel)
+    class var FMenuImages: TCustomImageList;
     protected
       procedure MyKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     private
@@ -72,6 +74,7 @@ type
       destructor  Destroy; override;
       property Substrate: boolean read FSubstrate write SetSubstrate;
       procedure Edit;
+      class property MenuImages: TCustomImageList read FMenuImages write FMenuImages;
     published
       property Increment: Double write SetIncrement;
       property Enabled: Boolean read GetEnabled write SetEnabled;
@@ -99,8 +102,9 @@ uses
    unit_SMessages;
 
 const
-  Captions: array [1..5] of string = ('Move up','Move down','Insert above','-','Delete');
-  Tags    : array [1..5] of Cardinal = (WM_STR_LAYER_UP, WM_STR_LAYER_DOWN, WM_STR_LAYER_INSERT, 0, WM_STR_LAYER_DELETE);
+  Captions  : array [1..5] of string   = ('Move up','Move down','Insert above','-','Delete');
+  Tags      : array [1..5] of Cardinal = (WM_STR_LAYER_UP, WM_STR_LAYER_DOWN, WM_STR_LAYER_INSERT, 0, WM_STR_LAYER_DELETE);
+  ImgIndices: array [1..5] of Integer  = (7, 5, 0, -1, 6);
 
 { TXRCLayerControl }
 
@@ -227,13 +231,15 @@ var
   i: Integer;
 begin
   FMenu := TPopupMenu.Create(Self);
+  FMenu.Images := FMenuImages;
   Self.PopupMenu := FMenu;
 
   for I := 1 to 5 do
   begin
-    Item := TMenuItem.Create(FMenu);;
-    Item.Tag     := Tags[i];
-    Item.Caption := Captions[i];
+    Item := TMenuItem.Create(FMenu);
+    Item.Tag        := Tags[i];
+    Item.Caption    := Captions[i];
+    Item.ImageIndex := ImgIndices[i];
     if Tags[i] <> 0 then
       Item.OnClick := MenuOnClick;
     FMenu.Items.Add(Item);

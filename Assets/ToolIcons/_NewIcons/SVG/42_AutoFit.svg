@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <path d="M3,25 L9,14 L14,20 L20,5 L28,15" fill="none" stroke="#7B1FA2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3,27 L9,18 L14,23 L20,9 L28,18" fill="none" stroke="#CE93D8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3,3"/>
+  <text x="23" y="28" font-size="12" font-weight="bold" fill="#6A1B9A" font-family="Arial">A</text>
+</svg>

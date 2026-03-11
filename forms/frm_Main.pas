@@ -195,6 +195,7 @@ type
     ImageCollection: TImageCollection;
     vilModel: TVirtualImageList;
     vilCalc: TVirtualImageList;
+    vilMenu: TVirtualImageList;
     FCalcSettings: TfrmCalcSettings;
     FChartPages: TfrmChartPages;
     FChartInfo: TfrmChartInfo;
@@ -970,6 +971,7 @@ begin
   FStructurePanel.OnIncrementChange := OnIncrementChange;
   FStructurePanel.OnSetFitLimits := OnSetFitLimits;
 
+  TXRCLayerControl.MenuImages := vilModel;
   Structure := TXRCStructure.Create(FStructurePanel, FDPI);
   Structure.Parent := FStructurePanel;
   FProjectPanel.SetStructure(Structure);
