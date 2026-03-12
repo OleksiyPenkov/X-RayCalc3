@@ -275,6 +275,18 @@ tr:hover { background: #eaf2f8; }
   font-size: 14px;
 }
 
+/* ── Inline Icons ── */
+img.icon {
+  height: 20px;
+  width: 20px;
+  vertical-align: text-bottom;
+  margin: 0 2px;
+  display: inline-block;
+}
+td img.icon {
+  vertical-align: middle;
+}
+
 /* ── Figures ── */
 figure {
   margin: 20px 0 24px;

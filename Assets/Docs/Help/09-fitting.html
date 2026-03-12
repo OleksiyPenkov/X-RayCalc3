@@ -38,6 +38,7 @@
     <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
     <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
     <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
   <a href="10-results.html">10. Results &amp; Export</a>
   <a href="11-charts.html">11. Charts</a>
   <a href="12-profiles.html">12. Profile Extensions</a>
@@ -60,6 +61,8 @@
 </figure>
 
 <p>The LFPSO algorithm creates a population of solutions (particles), each being a vector of structural parameters. The population is iteratively modified to produce better-fitting solutions. The L&eacute;vy flight is a random walk that uses the L&eacute;vy distribution to determine step sizes, providing efficient global exploration due to occasional long jumps. The Shake modification re-initializes the population when convergence stalls, helping the algorithm escape local minima.</p>
+
+<p>Version 3.6 introduces several <a href="#convergence-enhancements">convergence enhancements</a> that improve exploration/exploitation balance, boundary handling, and shake triggering. Six improvements are always active; the Clerc-Kennedy constriction factor is optional (enabled by default in Advanced Settings).</p>
 
 <figure>
   <img src="images/fig4.jpg" alt="Shake LFPSO concept">
@@ -187,6 +190,7 @@
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Tolerance</strong></td><td>Target cost function value; fitting stops when reached</td><td>0.005</td></tr>
+  <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
 </table>
 
 <h4>LFPSO Parameters</h4>
@@ -218,7 +222,7 @@
 <ol>
   <li>Ensure a model with experimental data and fit limits is selected.</li>
   <li>Configure fitting mode and parameters.</li>
-  <li>Choose <strong>Calc &gt; Auto Fitting</strong> or click the <strong>Fast Forward</strong> toolbar button.</li>
+  <li>Choose <strong>Calc &gt; Auto Fitting</strong> or click the <img src="images/icons/41_Forward.png" alt="Fast Forward" class="icon"> <strong>Fast Forward</strong> toolbar button.</li>
   <li>The fitting process begins:
     <ul>
       <li>The main chart updates in real time, showing the best-fit curve converging toward the experimental data.</li>
@@ -235,6 +239,51 @@
     </ul>
   </li>
 </ol>
+
+<h3 id="convergence-enhancements">Convergence Enhancements <span class="badge">v3.6</span></h3>
+<p>Version 3.6 introduces several improvements to the LFPSO algorithm that significantly improve convergence speed and reliability. Six enhancements are always active and require no configuration; one is optional.</p>
+
+<h4>Always-On Improvements</h4>
+
+<table>
+  <tr><th>Enhancement</th><th>Description</th></tr>
+  <tr>
+    <td><strong>Reflective boundaries</strong></td>
+    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search.</td>
+  </tr>
+  <tr>
+    <td><strong>Adaptive L&eacute;vy scale</strong></td>
+    <td>The L&eacute;vy flight step size starts large (0.10) for broad exploration and decreases to 0.01 by the end of fitting for fine-tuning. Previously, a fixed value of 0.01 was used throughout.</td>
+  </tr>
+  <tr>
+    <td><strong>Adaptive PSO/L&eacute;vy switching</strong></td>
+    <td>Early iterations favor L&eacute;vy flights (70%) for exploration; later iterations favor PSO updates (70%) for exploitation. When the algorithm stagnates, L&eacute;vy probability increases automatically to escape local minima. Previously, a fixed 50/50 split was used.</td>
+  </tr>
+  <tr>
+    <td><strong>Random-peer L&eacute;vy targets</strong></td>
+    <td>30% of L&eacute;vy flights are directed toward a randomly chosen peer particle instead of the global best. This creates diverse search directions and helps explore regions that global-best targeting would miss &mdash; particularly valuable for the multimodal fitness landscapes common in X-ray reflectivity.</td>
+  </tr>
+  <tr>
+    <td><strong>Population diversity monitoring</strong></td>
+    <td>The algorithm now tracks the normalized spread of particle positions across all parameters, providing a measure of how converged or diverse the swarm is.</td>
+  </tr>
+  <tr>
+    <td><strong>Diversity-aware shake</strong></td>
+    <td>The shake mechanism now checks population diversity before triggering. If the swarm is still diverse (spread &ge; 1% of parameter ranges), the shake is delayed for up to 3 additional iterations to let ongoing exploration proceed. If diversity has collapsed (&lt; 1%), the shake fires immediately. This prevents premature reinitializations that waste computation.</td>
+  </tr>
+</table>
+
+<h4 id="constriction">Constriction Factor (Optional)</h4>
+<p>When the <strong>Constriction factor</strong> checkbox is enabled in Advanced Settings, the standard linear inertia weight decay is replaced by the Clerc-Kennedy constriction coefficient:</p>
+
+<div class="note">
+  <strong>V = &chi; &times; (V + &phi;<sub>1</sub>r<sub>1</sub>(p<sub>best</sub> &minus; X) + &phi;<sub>2</sub>r<sub>2</sub>(g<sub>best</sub> &minus; X))</strong><br>
+  where &phi; = &phi;<sub>1</sub> + &phi;<sub>2</sub> = 4.1, &ensp; &chi; = 2 / |2 &minus; &phi; &minus; &radic;(&phi;&sup2; &minus; 4&phi;)| &asymp; 0.7298
+</div>
+
+<p>Unlike the empirical linear schedule, the constriction coefficient is mathematically proven to guarantee convergence while maintaining effective exploration. The higher cognitive and social coefficients (&phi;<sub>1</sub> = &phi;<sub>2</sub> = 2.05 vs. the previous c<sub>1</sub> = c<sub>2</sub> = 1) give particles stronger attraction to good solutions, while the constriction factor prevents velocity explosion.</p>
+
+<p><strong>When to use:</strong> The constriction factor is enabled by default and is recommended for most problems. Consider disabling it if you notice premature convergence on problems with many sharp local minima &mdash; the linear inertia decay may provide more aggressive exploration in such cases. When disabled, the &omega;<sub>1</sub> and &omega;<sub>2</sub> parameters in the LFPSO section control the inertia schedule.</p>
 
 <h3>Understanding the Cost Function</h3>
 <p>The cost function (E) measures the deviation between the calculated and target XRR curves:</p>

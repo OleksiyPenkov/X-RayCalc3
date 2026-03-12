@@ -38,6 +38,7 @@
     <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
     <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
     <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
   <a href="10-results.html">10. Results &amp; Export</a>
   <a href="11-charts.html">11. Charts</a>
   <a href="12-profiles.html">12. Profile Extensions</a>
@@ -55,7 +56,7 @@
 <h3>Loading Data from File</h3>
 <ol>
   <li>Select a model or data item in the project tree.</li>
-  <li>Choose <strong>Data &gt; Load from File</strong> or click the <strong>Load Data</strong> toolbar button.</li>
+  <li>Choose <strong>Data &gt; Load from File</strong> or click the <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> <strong>Load Data</strong> toolbar button.</li>
   <li>Browse for a text file containing two-column data (angle/wavelength and reflectivity).</li>
   <li>The data appears as a series on the main chart.</li>
 </ol>
@@ -63,7 +64,7 @@
 <h3>Pasting Data from Clipboard</h3>
 <ol>
   <li>Copy two-column data from another application (e.g., a spreadsheet).</li>
-  <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <strong>Paste Data</strong> toolbar button.</li>
+  <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> <strong>Paste Data</strong> toolbar button.</li>
   <li>The data is imported into the current model.</li>
 </ol>
 
@@ -94,14 +95,14 @@ Theta    Reflectivity
 <h3>Data Processing</h3>
 
 <h4>Normalize</h4>
-<p><strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. This scales the reflectivity values so the maximum equals 1.0 (or another chosen value).</p>
+<p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. This scales the reflectivity values so the maximum equals 1.0 (or another chosen value).</p>
 <p><strong>Data &gt; Normalize (Auto)</strong> automatically normalizes the data by dividing all reflectivity values by the maximum value.</p>
 
 <h4>Smooth</h4>
-<p><strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise in the experimental data while preserving peak shapes.</p>
+<p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise in the experimental data while preserving peak shapes.</p>
 
 <h4>Trim</h4>
-<p><strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.</p>
+<p><img src="images/icons/Menu_Trim.png" alt="Trim" class="icon"> <strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.</p>
 
 <h3>Data Conditioning Walkthrough</h3>
 <p>Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:</p>

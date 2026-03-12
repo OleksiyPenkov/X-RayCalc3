@@ -38,6 +38,7 @@
     <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
     <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
     <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
   <a href="10-results.html">10. Results &amp; Export</a>
   <a href="11-charts.html">11. Charts</a>
   <a href="12-profiles.html">12. Profile Extensions</a>
@@ -63,15 +64,15 @@
 
 <h4>Left Column &mdash; Project Panel</h4>
 <ul>
-  <li><strong>File Toolbar:</strong> New, Open, Reopen, Save, Print</li>
-  <li><strong>Project Toolbar:</strong> Add Model, Export, Copy, Paste, Edit Properties, Add Extension, Copy Image, Print, Delete</li>
+  <li><strong>File Toolbar:</strong> <img src="images/icons/01_New.png" alt="New" class="icon">&nbsp;New, <img src="images/icons/02_OpenProject.png" alt="Open" class="icon">&nbsp;Open, <img src="images/icons/03_Reopen.png" alt="Reopen" class="icon">&nbsp;Reopen, <img src="images/icons/04_Save.png" alt="Save" class="icon">&nbsp;Save, <img src="images/icons/05_Print.png" alt="Print" class="icon">&nbsp;Print</li>
+  <li><strong>Project Toolbar:</strong> <img src="images/icons/06_AddModel.png" alt="Add Model" class="icon">&nbsp;Add Model, <img src="images/icons/07_Export.png" alt="Export" class="icon">&nbsp;Export, <img src="images/icons/08_Copy.png" alt="Copy" class="icon">&nbsp;Copy, <img src="images/icons/09_Paste.png" alt="Paste" class="icon">&nbsp;Paste, <img src="images/icons/10_Edit.png" alt="Edit" class="icon">&nbsp;Edit Properties, <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon">&nbsp;Add Extension, <img src="images/icons/47_CopyImage.png" alt="Copy Image" class="icon">&nbsp;Copy Image, <img src="images/icons/05_Print.png" alt="Print" class="icon">&nbsp;Print, <img src="images/icons/12_DeleteExtension.png" alt="Delete" class="icon">&nbsp;Delete</li>
   <li><strong>Project Tree:</strong> Hierarchical view of all models, data sets, and folders in the current project</li>
   <li><strong>Description:</strong> Read-only text memo showing the description of the selected item</li>
 </ul>
 
 <h4 id="structure-panel">Middle Column &mdash; Structure Panel</h4>
 <ul>
-  <li><strong>Structure Toolbar:</strong> Stack operations (Add, Insert, Delete) and Layer operations (Add, Insert, Copy, Cut, Paste, Delete)</li>
+  <li><strong>Structure Toolbar:</strong> Stack operations (<img src="images/icons/add_period.png" alt="Add Stack" class="icon">&nbsp;Add, <img src="images/icons/add_row_32_h.png" alt="Insert Stack" class="icon">&nbsp;Insert, <img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon">&nbsp;Delete) and Layer operations (<img src="images/icons/add_layer.png" alt="Add Layer" class="icon">&nbsp;Add, <img src="images/icons/add_row_32_h.png" alt="Insert" class="icon">&nbsp;Insert, <img src="images/icons/clipboard_copy_lined_32.png" alt="Copy" class="icon">&nbsp;Copy, <img src="images/icons/clipboard_cut_32_h.png" alt="Cut" class="icon">&nbsp;Cut, <img src="images/icons/clipboard_paste_lined_32.png" alt="Paste" class="icon">&nbsp;Paste, <img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon">&nbsp;Delete)</li>
   <li><strong>Increment Selector:</strong> Step size for quick parameter adjustment (10, 5, 1, 0.25, 0.1, 0.01)</li>
   <li><strong>Set Fit Limits Button:</strong> Opens the parameter bounds editor for fitting</li>
   <li><strong>Visual Structure Editor:</strong> Interactive graphical representation of the layer structure &mdash; shows Ambient, Stacks (with N repetitions), individual Layers (with H, &sigma;, &rho; values), and Substrate. Double-click elements to edit properties; click parameter values for in-place editing.</li>
@@ -79,7 +80,7 @@
 
 <h4>Right Column &mdash; Working Area</h4>
 <ul>
-  <li><strong>Calculation Toolbar:</strong> Load Data, Paste Data, Calculate, Save Result, Copy Result, Batch Execute, Auto Fit, Stop</li>
+  <li><strong>Calculation Toolbar:</strong> <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon">&nbsp;Load Data, <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon">&nbsp;Paste Data, <img src="images/icons/40_Play.png" alt="Calculate" class="icon">&nbsp;Calculate, <img src="images/icons/45_ResultSave.png" alt="Save Result" class="icon">&nbsp;Save Result, <img src="images/icons/46_CopyResult.png" alt="Copy Result" class="icon">&nbsp;Copy Result, <img src="images/icons/Menu_BatchJobs.png" alt="Batch Execute" class="icon">&nbsp;Batch Execute, <img src="images/icons/41_Forward.png" alt="Auto Fit" class="icon">&nbsp;Auto Fit, Stop</li>
   <li><strong>Settings Panel:</strong> Calculation mode and parameters (left half) alongside Fitting mode and parameters (right half)</li>
   <li><strong>Main Chart:</strong> Interactive reflectivity plot (&theta; or &lambda; vs. reflectivity)</li>
   <li><strong>Chart Info Bar:</strong> Cursor position, peak detection, area integration, &chi;&sup2; values</li>
