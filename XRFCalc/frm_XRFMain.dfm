@@ -572,6 +572,7 @@ object frmXRFMain: TfrmXRFMain
           Height = 25
           Caption = 'Save Struct.'
           TabOrder = 1
+          OnClick = btnSaveStructureClick
         end
         object btnSaveCurves: TButton
           Left = 95
@@ -580,6 +581,7 @@ object frmXRFMain: TfrmXRFMain
           Height = 25
           Caption = 'Save Curves'
           TabOrder = 2
+          OnClick = btnSaveCurvesClick
         end
         object btnExportXRC: TButton
           Left = 182
@@ -588,6 +590,7 @@ object frmXRFMain: TfrmXRFMain
           Height = 25
           Caption = 'Export to XRC3'
           TabOrder = 3
+          OnClick = btnExportXRCClick
         end
       end
     end

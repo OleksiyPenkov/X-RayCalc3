@@ -121,6 +121,9 @@ type
     procedure btnBrowseOutputClick(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
+    procedure btnSaveStructureClick(Sender: TObject);
+    procedure btnSaveCurvesClick(Sender: TObject);
+    procedure btnExportXRCClick(Sender: TObject);
   private
     FThread: TOptimizationThread;
     FLastIterationData: TIterationData;
@@ -143,7 +146,7 @@ implementation
 
 uses
   Vcl.FileCtrl,
-  unit_universal_io, cmd_unit_types;
+  unit_universal_io, cmd_unit_types, unit_materials_mix;
 
 {$R *.dfm}
 
@@ -526,6 +529,104 @@ begin
     sgResults.Cells[1, i + 1] := Format('%.4f', [Data.PerElement[i].RPeak]);
     sgResults.Cells[2, i + 1] := Format('%.3f', [Data.PerElement[i].FWHM]);
   end;
+end;
+
+procedure TfrmXRFMain.btnSaveStructureClick(Sender: TObject);
+var
+  IO: TUniversalIO;
+  Config: TUniversalConfig;
+  Results: TTargetResults;
+  i: Integer;
+  Dir: string;
+begin
+  Config := CollectConfigFromUI;
+  Dir := Config.OutputDir;
+  if Dir = '' then
+    Dir := ExtractFilePath(Application.ExeName);
+
+  SetLength(Results, Length(FLastIterationData.PerElement));
+  for i := 0 to High(Results) do
+  begin
+    Results[i].RPeak := FLastIterationData.PerElement[i].RPeak;
+    Results[i].FWHM := FLastIterationData.PerElement[i].FWHM;
+  end;
+
+  IO := TUniversalIO.Create;
+  try
+    IO.SaveBestStructure(Config, FLastIterationData.BestGenome,
+      FLastIterationData.FoM, Results, Dir);
+  finally
+    IO.Free;
+  end;
+
+  MessageDlg('Structure saved to ' + Dir, mtInformation, [mbOK], 0);
+end;
+
+procedure TfrmXRFMain.btnSaveCurvesClick(Sender: TObject);
+var
+  i, j: Integer;
+  Dir, FileName: string;
+  SL: TStringList;
+begin
+  Dir := edOutputDir.Text;
+  if Dir = '' then
+    Dir := ExtractFilePath(Application.ExeName);
+  Dir := IncludeTrailingPathDelimiter(Dir) + 'best_curves';
+  System.SysUtils.ForceDirectories(Dir);
+
+  for i := 0 to High(FLastCurves) do
+  begin
+    FileName := IncludeTrailingPathDelimiter(Dir) + FLastCurves[i].Element + '.dat';
+    SL := TStringList.Create;
+    try
+      SL.Add('Theta(deg)'#9'Reflectivity');
+      for j := 0 to High(FLastCurves[i].Theta) do
+        SL.Add(Format('%.4f'#9'%.6e', [FLastCurves[i].Theta[j], FLastCurves[i].Refl[j]]));
+      SL.SaveToFile(FileName);
+    finally
+      SL.Free;
+    end;
+  end;
+
+  MessageDlg(Format('Saved %d curve files to %s', [Length(FLastCurves), Dir]),
+    mtInformation, [mbOK], 0);
+end;
+
+procedure TfrmXRFMain.btnExportXRCClick(Sender: TObject);
+var
+  IO: TUniversalIO;
+  Mixer: TMaterialMixer;
+  Config: TUniversalConfig;
+  ElementNames: array of string;
+  TargetLambdas: array of Single;
+  Dir: string;
+  i: Integer;
+begin
+  if not dlgSaveStructure.Execute then
+    Exit;
+
+  Config := CollectConfigFromUI;
+  Dir := ExtractFilePath(dlgSaveStructure.FileName);
+
+  SetLength(ElementNames, Length(Config.ElementPool));
+  for i := 0 to High(Config.ElementPool) do
+    ElementNames[i] := Config.ElementPool[i];
+
+  SetLength(TargetLambdas, Length(Config.Targets));
+  for i := 0 to High(Config.Targets) do
+    TargetLambdas[i] := Config.Targets[i].Lambda;
+
+  Mixer := TMaterialMixer.Create;
+  IO := TUniversalIO.Create;
+  try
+    Mixer.Initialize(ElementNames, TargetLambdas, Config.Substrate, Config.HenkePath);
+    IO.SaveXRCStructure(Config, FLastIterationData.BestGenome, Mixer, Dir);
+  finally
+    IO.Free;
+    Mixer.Free;
+  end;
+
+  MessageDlg('XRC structure exported to ' + Dir, mtInformation, [mbOK], 0);
 end;
 
 end.
