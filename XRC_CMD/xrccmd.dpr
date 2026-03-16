@@ -20,7 +20,7 @@ uses
   cmd_unit_universal in 'Units\cmd_unit_universal.pas',
   unit_universal_types in '..\Universal\unit_universal_types.pas',
   cmd_unit_universal_fitness in 'Units\cmd_unit_universal_fitness.pas',
-  cmd_unit_universal_pso in 'Units\cmd_unit_universal_pso.pas',
+  unit_universal_pso in '..\Universal\unit_universal_pso.pas',
   cmd_unit_universal_io in 'Units\cmd_unit_universal_io.pas',
   unit_materials_mix in '..\Math\unit_materials_mix.pas';
 

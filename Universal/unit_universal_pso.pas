@@ -1,4 +1,4 @@
-unit cmd_unit_universal_pso;
+unit unit_universal_pso;
 
 interface
 
