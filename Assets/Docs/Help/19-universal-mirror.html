@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Mirror Optimizer — X-Ray Calc 3 Manual</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
+  <div class="page-title">User Manual</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-introduction.html">1. Introduction</a>
+  <a href="02-quick-start.html">2. Quick Start</a>
+  <a href="03-installation.html">3. Installation</a>
+  <a href="04-overview.html">4. Application Overview</a>
+    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
+    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
+    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
+  <a href="05-projects.html">5. Projects</a>
+  <a href="06-models.html">6. Defining a Model</a>
+    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
+    <a href="06-models.html#layers" class="sub">Layers</a>
+  <a href="07-data.html">7. Experimental Data</a>
+  <a href="08-calculation.html">8. Calculation</a>
+    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
+    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
+  <a href="09-fitting.html">9. Fitting</a>
+    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
+    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
+    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
+    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
+    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
+  <a href="10-results.html">10. Results &amp; Export</a>
+  <a href="11-charts.html">11. Charts</a>
+  <a href="12-profiles.html">12. Profile Extensions</a>
+  <a href="13-tools.html">13. Tools</a>
+  <a href="14-settings.html">14. Settings</a>
+  <a href="15-shortcuts.html">15. Quick Reference</a>
+  <a href="16-formats.html">16. File Formats</a>
+  <a href="17-examples.html">17. Examples</a>
+  <a href="18-troubleshooting.html">18. Troubleshooting</a>
+  <a href="19-universal-mirror.html">19. Universal Mirror</a>
+    <a href="19-universal-mirror.html#concept" class="sub">Concept</a>
+    <a href="19-universal-mirror.html#usage" class="sub">CLI Usage</a>
+    <a href="19-universal-mirror.html#config" class="sub">Configuration File</a>
+    <a href="19-universal-mirror.html#output" class="sub">Output Files</a>
+    <a href="19-universal-mirror.html#resume" class="sub">Checkpoint &amp; Resume</a>
+    <a href="19-universal-mirror.html#fom" class="sub">Figure of Merit</a>
+    <a href="19-universal-mirror.html#example" class="sub">Example Workflow</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">19</span> Universal Mirror Optimizer <span class="badge">v3.7</span></h2>
+<p>The <strong>Universal Mirror Optimizer</strong> is a command-line tool that designs periodic multilayer mirrors (PMMs) optimized for <em>multiple characteristic wavelengths simultaneously</em>. Given a set of target elements (e.g. C&nbsp;K&alpha; and O&nbsp;K&alpha;), the optimizer searches for the best combination of materials, period thickness, layer ratio, number of periods, and interface roughness to maximize reflectivity across all targets at once.</p>
+
+<p>This tool is part of the <code>xrccmd</code> command-line interface and uses the same Fresnel reflectivity engine and Henke optical constants database as the main X-Ray Calc 3 GUI application.</p>
+
+<h3 id="concept">Concept</h3>
+<p>Traditional multilayer mirror design targets a single wavelength. When an analytical instrument (e.g. an electron microprobe or X-ray fluorescence spectrometer) needs to measure multiple characteristic lines, the standard approach is to use separate mirrors for each element. The Universal Mirror Optimizer explores whether a single bilayer structure can provide useful reflectivity at two or more wavelengths simultaneously, even if it compromises peak performance at any single wavelength.</p>
+
+<p>The optimizer uses the <strong>Virtual Crystal Approximation</strong> (VCA) to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from a user-defined pool (e.g. W, Si, C). The dielectric constant of the mixed material is computed as a weighted average of the constituents&rsquo; optical constants from the Henke database.</p>
+
+<h4>Search Space</h4>
+<p>The optimizer searches over the following parameters:</p>
+<table>
+  <tr><th>Parameter</th><th>Description</th></tr>
+  <tr><td><strong>Composition</strong> (per layer)</td><td>Element fractions for each layer in the bilayer period. Fractions are normalized to sum to 1.0.</td></tr>
+  <tr><td><strong>d</strong></td><td>Period thickness in &Aring;ngstr&ouml;ms</td></tr>
+  <tr><td><strong>&gamma;</strong> (gamma)</td><td>Ratio of the reflector layer thickness to the full period (0&ndash;1)</td></tr>
+  <tr><td><strong>N</strong></td><td>Number of periods (rounded to integer for evaluation)</td></tr>
+  <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms (shared by all interfaces)</td></tr>
+  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer (0.7&ndash;1.3 typical), accounting for thin-film density deviations</td></tr>
+</table>
+
+<h4>Optimization Algorithm</h4>
+<p>The optimizer uses <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO) with the same adaptive enhancements as the GUI fitting engine (see <a href="09-fitting.html#convergence-enhancements">Chapter 9: Convergence Enhancements</a>). Key features include:</p>
+<ul>
+  <li>Adaptive PSO/L&eacute;vy flight switching (more exploration early, more exploitation late)</li>
+  <li>Reflective boundary handling with velocity damping</li>
+  <li>Composition normalization (fractions always sum to 1.0)</li>
+  <li>Diversity-aware shake mechanism for stagnation escape</li>
+  <li>Parallel fitness evaluation using all available CPU cores</li>
+</ul>
+
+<h3 id="usage">CLI Usage</h3>
+<p>The Universal Mirror Optimizer is invoked via the <code>xrccmd</code> command-line tool with the <code>-u</code> switch:</p>
+<pre><code>xrccmd -u config.json [-v]</code></pre>
+<table>
+  <tr><th>Switch</th><th>Description</th></tr>
+  <tr><td><code>-u config.json</code></td><td>Run the Universal Mirror Optimizer with the specified JSON configuration file</td></tr>
+  <tr><td><code>-v</code></td><td>Verbose mode &mdash; prints checkpoint saves and shake events during optimization</td></tr>
+</table>
+
+<h4>Console Output</h4>
+<p>During optimization, the console displays a progress table updated every iteration:</p>
+<pre><code>Universal Mirror Optimizer v1.0
+Targets: C(44.7A) O(23.6A)
+Pool: W Si C
+Structure: bilayer, d=[20..80], N=[20..100]
+Population: 100, Max iterations: 500
+---
+ Iter       FoM   R_C   R_O    Div
+    0    0.0124  0.012  0.003  0.438
+    1    0.0298  0.031  0.009  0.412
+    2    0.0356  0.037  0.015  0.391
+  ...
+  500    0.1823  0.187  0.044  0.003
+---
+Optimization complete.
+Best FoM: 0.182300
+Period d=54.94 A, gamma=0.697, N=36, sigma=0.72 A
+Layer 1: C=100.0%
+Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
+
+<p>Columns: <strong>Iter</strong> = iteration number, <strong>FoM</strong> = figure of merit (higher is better), <strong>R_<em>X</em></strong> = peak reflectivity for each target element, <strong>Div</strong> = population diversity (0&ndash;1, lower = more converged).</p>
+
+<h3 id="config">Configuration File</h3>
+<p>The optimizer is configured via a JSON file with the following sections:</p>
+
+<h4>Targets</h4>
+<p>An array of target characteristic lines to optimize for:</p>
+<pre><code>"targets": [
+  {"element": "C",  "lambda": 44.7, "weight": 1.0},
+  {"element": "O",  "lambda": 23.6, "weight": 1.0}
+]</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>element</code></td><td>string</td><td>Element name (used for labeling output)</td></tr>
+  <tr><td><code>lambda</code></td><td>number</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms (e.g. C&nbsp;K&alpha; = 44.7&nbsp;&Aring;)</td></tr>
+  <tr><td><code>weight</code></td><td>number</td><td>Relative weight in the figure of merit. Use higher values to prioritize specific targets.</td></tr>
+</table>
+
+<h4>Element Pool</h4>
+<p>The set of materials available for layer composition:</p>
+<pre><code>"element_pool": ["W", "Si", "C"]</code></pre>
+<p>Each element must have a corresponding Henke database file (<code>.bin</code>) in the Henke data directory. The optimizer can mix any combination of these elements in each layer.</p>
+
+<h4>Structure</h4>
+<p>Defines the mirror topology and parameter search ranges:</p>
+<pre><code>"structure": {
+  "type": "bilayer",
+  "layers_per_period": 2,
+  "d":              {"min": 20, "max": 80},
+  "gamma":          {"min": 0.2, "max": 0.8},
+  "N":              {"min": 20, "max": 100},
+  "sigma":          {"min": 0.5, "max": 3},
+  "density_factor": {"min": 0.7, "max": 1.3}
+}</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>type</code></td><td>string</td><td>Structure type. Currently only <code>"bilayer"</code> is supported (two layers per period).</td></tr>
+  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Must be <code>2</code> for bilayer mode.</td></tr>
+  <tr><td><code>d</code></td><td>range</td><td>Period thickness search range in &Aring;. Ensure the range accommodates all target wavelengths (d &gt; &lambda;/2 for a valid Bragg condition).</td></tr>
+  <tr><td><code>gamma</code></td><td>range</td><td>Reflector/period thickness ratio (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
+  <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
+  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;. Shared by all interfaces in the structure.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Density multiplier range for each layer. 1.0 = bulk density. Values &lt; 1 model porous or amorphous films; values &gt; 1 model compressive stress.</td></tr>
+</table>
+
+<div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;.</div>
+
+<h4>Fitness</h4>
+<p>Controls the figure of merit calculation:</p>
+<pre><code>"fitness": {
+  "w_R": 1.0,
+  "w_FWHM": 0.3,
+  "R_min_threshold": 0.0001,
+  "polarization": "sp"
+}</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>w_R</code></td><td>number</td><td>Weight for peak reflectivity in the FoM. Higher values emphasize maximizing R<sub>peak</sub>.</td></tr>
+  <tr><td><code>w_FWHM</code></td><td>number</td><td>Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
+  <tr><td><code>R_min_threshold</code></td><td>number</td><td>Minimum acceptable peak reflectivity. Particles below this threshold receive a heavy penalty (100.0) to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
+  <tr><td><code>polarization</code></td><td>string</td><td>Polarization mode: <code>"sp"</code> for averaged S+P (recommended for most applications).</td></tr>
+</table>
+
+<h4>Optimizer</h4>
+<p>LFPSO algorithm parameters:</p>
+<pre><code>"optimizer": {
+  "population": 100,
+  "iterations": 500,
+  "tolerance": 1e-8,
+  "stagnation_limit": 50,
+  "w1": 0.4,
+  "w2": 0.5,
+  "jamming_max": 5,
+  "checkpoint_every": 50
+}</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>population</code></td><td>integer</td><td>&mdash;</td><td>Number of particles (candidate solutions) in the swarm. Larger populations explore more broadly but run slower per iteration.</td></tr>
+  <tr><td><code>iterations</code></td><td>integer</td><td>&mdash;</td><td>Maximum number of optimization iterations.</td></tr>
+  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>Target FoM threshold (not actively used for early stopping; kept for future use).</td></tr>
+  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Number of iterations without improvement before the optimizer declares convergence and stops.</td></tr>
+  <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight (permanent velocity component).</td></tr>
+  <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia reducing factor (decays over iterations).</td></tr>
+  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Iterations without improvement before a shake event is considered (subject to diversity check).</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Set to 0 to disable periodic checkpoints.</td></tr>
+</table>
+
+<div class="tip"><strong>Recommended settings:</strong> For a 3-element pool with 2 targets, <code>population: 100</code> and <code>iterations: 500</code> is a good starting point. Increase population for larger element pools. Reduce iterations for quick exploratory runs.</div>
+
+<h4>Top-Level Fields</h4>
+<pre><code>"substrate": "Si",
+"henke_path": null,
+"output_dir": "./results",
+"resume_from": null</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>substrate</code></td><td>string</td><td>Substrate material (used for the bottom layer of the mirror structure).</td></tr>
+  <tr><td><code>henke_path</code></td><td>string or null</td><td>Path to the Henke database directory. <code>null</code> uses the default location next to the executable (<code>Henke/</code>).</td></tr>
+  <tr><td><code>output_dir</code></td><td>string</td><td>Directory where all output files are written. Created automatically if it does not exist.</td></tr>
+  <tr><td><code>resume_from</code></td><td>string or null</td><td>Path to a checkpoint file to resume from. <code>null</code> starts a fresh optimization. See <a href="#resume">Checkpoint &amp; Resume</a>.</td></tr>
+</table>
+
+<h3 id="output">Output Files</h3>
+<p>The optimizer writes several files to the <code>output_dir</code> upon completion:</p>
+
+<table>
+  <tr><th>File</th><th>Description</th></tr>
+  <tr><td><code>best_structure.json</code></td><td>The optimized mirror structure in XRC3-compatible JSON format, including the full genome (composition, period, gamma, N, sigma), per-target reflectivity results (R<sub>peak</sub>, FWHM, &theta;<sub>Bragg</sub>), and a structure definition that can be imported into the GUI.</td></tr>
+  <tr><td><code>best_curves/<em>Element</em>.dat</code></td><td>Tab-separated reflectivity curves for each target element. Two columns: angle (degrees) and reflectivity. One file per target.</td></tr>
+  <tr><td><code>population.json</code></td><td>The top 10 solutions ranked by FoM. Useful for comparing alternative mirror designs that may trade off performance between targets differently.</td></tr>
+  <tr><td><code>checkpoint.json</code></td><td>Full optimizer state (all particle positions, velocities, and personal bests). Used for resuming interrupted runs.</td></tr>
+  <tr><td><code>progress.log</code></td><td>Plain text log of every iteration&rsquo;s FoM, per-target R<sub>peak</sub>, and population diversity. Matches the console output.</td></tr>
+</table>
+
+<h4>best_structure.json Format</h4>
+<p>The output structure file contains two sections:</p>
+<ul>
+  <li><strong><code>optimizer_result</code></strong> &mdash; numerical results: FoM, structural parameters (d, &gamma;, N, &sigma;), layer compositions, and per-element reflectivity metrics.</li>
+  <li><strong><code>structure</code></strong> &mdash; the mirror definition in a format compatible with the X-Ray Calc 3 project file. Contains the periodic bilayer stack and substrate definition with layer thickness, roughness, and density factor values.</li>
+</ul>
+
+<h4>Reflectivity Curve Files</h4>
+<p>Each <code>.dat</code> file in the <code>best_curves/</code> subdirectory contains a 200-point reflectivity scan centered on the Bragg angle &plusmn; 5&deg; for that target wavelength. The data is tab-separated with columns:</p>
+<pre><code>  angle(deg)    reflectivity
+  3.2400        1.23456789e-03
+  3.2900        2.34567890e-03
+  ...</code></pre>
+
+<h3 id="resume">Checkpoint &amp; Resume</h3>
+<p>Long optimization runs can be interrupted (Ctrl+C) and resumed later. The optimizer handles this gracefully:</p>
+
+<ol>
+  <li><strong>Automatic checkpoints</strong> &mdash; saved every <code>checkpoint_every</code> iterations to <code>checkpoint.json</code> in the output directory.</li>
+  <li><strong>Ctrl+C handling</strong> &mdash; when the user presses Ctrl+C, the optimizer saves a final checkpoint before exiting. No data is lost.</li>
+  <li><strong>Resume</strong> &mdash; set <code>"resume_from"</code> in the configuration file to the path of a checkpoint file. The optimizer restores all particle positions, velocities, personal bests, and the global/all-time best, then continues from where it left off.</li>
+</ol>
+
+<p>Example resume configuration:</p>
+<pre><code>{
+  "targets": [...],
+  "element_pool": ["W", "Si", "C"],
+  ...
+  "optimizer": {
+    "population": 100,
+    "iterations": 1000,
+    ...
+  },
+  "output_dir": "./results",
+  "resume_from": "./results/checkpoint.json"
+}</code></pre>
+
+<div class="warning"><strong>Important:</strong> When resuming, the <code>population</code> size and <code>element_pool</code> must match the checkpoint. The <code>iterations</code> count can be increased to allow more optimization cycles.</div>
+
+<h3 id="fom">Figure of Merit</h3>
+<p>The figure of merit (FoM) combines peak reflectivity and angular bandwidth for all target wavelengths:</p>
+
+<div class="note">
+  <strong>FoM = &Sigma;<sub>i</sub> [ weight<sub>i</sub> &times; ( w<sub>R</sub> &times; R<sub>peak,i</sub> &minus; w<sub>FWHM</sub> &times; FWHM<sub>i</sub> / FWHM<sub>ref,i</sub> ) ]</strong>
+</div>
+
+<p>where:</p>
+<ul>
+  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, extracted from a 200-point scan around the Bragg angle</li>
+  <li><strong>FWHM<sub>i</sub></strong> &mdash; angular full width at half maximum (degrees) of the Bragg peak</li>
+  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; theoretical minimum FWHM = &lambda; / (N&middot;d&middot;cos&theta;<sub>B</sub>), converted to degrees. Normalizes the FWHM penalty so it is comparable across targets.</li>
+  <li><strong>weight<sub>i</sub></strong> &mdash; per-target weight from the configuration</li>
+  <li><strong>w<sub>R</sub></strong>, <strong>w<sub>FWHM</sub></strong> &mdash; global weights for reflectivity and bandwidth terms</li>
+</ul>
+
+<p>Higher FoM is better. Particles with R<sub>peak</sub> below <code>R_min_threshold</code> for any target receive a heavy penalty (100.0 per dark target) to steer the swarm toward functional solutions.</p>
+
+<h3 id="example">Example Workflow</h3>
+<p>This example designs a multilayer mirror for simultaneous C&nbsp;K&alpha; (44.7&nbsp;&Aring;) and O&nbsp;K&alpha; (23.6&nbsp;&Aring;) characterization using W/Si/C materials on a Si substrate.</p>
+
+<h4>Step 1: Create the configuration file</h4>
+<p>Save the following as <code>dual_mirror.json</code>:</p>
+<pre><code>{
+  "targets": [
+    {"element": "C",  "lambda": 44.7, "weight": 1.0},
+    {"element": "O",  "lambda": 23.6, "weight": 1.0}
+  ],
+  "element_pool": ["W", "Si", "C"],
+  "structure": {
+    "type": "bilayer",
+    "layers_per_period": 2,
+    "d":              {"min": 20, "max": 80},
+    "gamma":          {"min": 0.2, "max": 0.8},
+    "N":              {"min": 20, "max": 100},
+    "sigma":          {"min": 0.5, "max": 3},
+    "density_factor": {"min": 0.7, "max": 1.3}
+  },
+  "fitness": {
+    "w_R": 1.0,
+    "w_FWHM": 0.3,
+    "R_min_threshold": 0.0001,
+    "polarization": "sp"
+  },
+  "optimizer": {
+    "population": 100,
+    "iterations": 500,
+    "tolerance": 1e-8,
+    "stagnation_limit": 50,
+    "w1": 0.4,
+    "w2": 0.5,
+    "jamming_max": 5,
+    "checkpoint_every": 50
+  },
+  "substrate": "Si",
+  "henke_path": null,
+  "output_dir": "./dual_mirror_results",
+  "resume_from": null
+}</code></pre>
+
+<h4>Step 2: Run the optimizer</h4>
+<pre><code>xrccmd -u dual_mirror.json -v</code></pre>
+<p>The <code>-v</code> flag enables verbose output, showing checkpoint saves and shake events. A typical run with population 100 and 500 iterations takes a few minutes on a modern multi-core CPU.</p>
+
+<h4>Step 3: Review results</h4>
+<p>After completion, examine the output directory:</p>
+<ul>
+  <li><code>dual_mirror_results/best_structure.json</code> &mdash; the optimal mirror design and its performance</li>
+  <li><code>dual_mirror_results/best_curves/C.dat</code> &mdash; reflectivity curve at C&nbsp;K&alpha; (44.7&nbsp;&Aring;)</li>
+  <li><code>dual_mirror_results/best_curves/O.dat</code> &mdash; reflectivity curve at O&nbsp;K&alpha; (23.6&nbsp;&Aring;)</li>
+  <li><code>dual_mirror_results/population.json</code> &mdash; top 10 alternative solutions</li>
+</ul>
+<p>The reflectivity curve files can be plotted in any graphing tool (Origin, gnuplot, Python/matplotlib) or imported into the X-Ray Calc 3 GUI for comparison with experimental data.</p>
+
+<h4>Step 4: Continue optimization (optional)</h4>
+<p>If you want to refine the result further, increase the iteration count and add a resume path:</p>
+<pre><code>{
+  ...
+  "optimizer": {
+    "population": 100,
+    "iterations": 1000,
+    ...
+  },
+  "resume_from": "./dual_mirror_results/checkpoint.json"
+}</code></pre>
+<p>Then re-run: <code>xrccmd -u dual_mirror.json -v</code></p>
+
+<h3 id="tips">Tips and Best Practices</h3>
+<ul>
+  <li><strong>Start small, then refine.</strong> Begin with a small population (20&ndash;50) and few iterations (50&ndash;100) to verify the configuration produces sensible results, then increase for production runs.</li>
+  <li><strong>Element pool size.</strong> Each additional element adds composition dimensions for each layer. Pools of 3&ndash;5 elements work well. Very large pools may require larger populations.</li>
+  <li><strong>Period range.</strong> Ensure d<sub>min</sub> &gt; &lambda;<sub>max</sub>/2 so all targets have valid Bragg conditions. A generous range (e.g. 20&ndash;80 &Aring;) allows the optimizer to find the best compromise period.</li>
+  <li><strong>Weighting targets.</strong> If one target is more important, increase its <code>weight</code> in the configuration. The optimizer will prioritize that target&rsquo;s reflectivity at the expense of the others.</li>
+  <li><strong>Interpreting diversity.</strong> A diversity value near zero means all particles have converged to similar solutions. If diversity drops quickly but FoM is still low, consider increasing the population or widening the search ranges.</li>
+  <li><strong>Population JSON.</strong> The <code>population.json</code> file contains up to 10 distinct solutions. These often reveal physically different mirror designs (different compositions or periods) with similar overall FoM. Examining them can provide insight into the design trade-space.</li>
+</ul>
+
+<div class="page-nav">
+  <a href="18-troubleshooting.html">&larr; Troubleshooting</a>
+  <a href="UserManual.html">Home</a>
+  <span class="spacer"></span>
+</div>
+
+<div class="footer">
+  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>
