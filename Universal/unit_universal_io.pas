@@ -327,7 +327,8 @@ begin
     Line := Line + Format('  %5.3f', [TargetResults[i].RPeak]);
   Line := Line + Format('  %5.3f', [Diversity]);
 
-  WriteLn(Line);
+  if IsConsole then
+    WriteLn(Line);
   if FLogOpen then
   begin
     WriteLn(FLogFile, Line);
