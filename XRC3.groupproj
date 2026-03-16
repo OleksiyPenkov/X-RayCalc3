@@ -15,6 +15,9 @@
         <Projects Include="XRC_CMD\xrccmd.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="XRFCalc\XRFCalc.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -59,14 +62,23 @@
     <Target Name="xrccmd:Make">
         <MSBuild Projects="XRC_CMD\xrccmd.dproj" Targets="Make"/>
     </Target>
+    <Target Name="XRFCalc">
+        <MSBuild Projects="XRFCalc\XRFCalc.dproj"/>
+    </Target>
+    <Target Name="XRFCalc:Clean">
+        <MSBuild Projects="XRFCalc\XRFCalc.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="XRFCalc:Make">
+        <MSBuild Projects="XRFCalc\XRFCalc.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;XRCPreviewHandlerLib;xrccmd"/>
+        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;XRCPreviewHandlerLib;xrccmd;XRFCalc"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;XRCPreviewHandlerLib:Clean;xrccmd:Clean"/>
+        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;XRCPreviewHandlerLib:Clean;xrccmd:Clean;XRFCalc:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;XRCPreviewHandlerLib:Make;xrccmd:Make"/>
+        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;XRCPreviewHandlerLib:Make;xrccmd:Make;XRFCalc:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
