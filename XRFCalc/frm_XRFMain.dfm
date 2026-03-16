@@ -613,6 +613,7 @@ object frmXRFMain: TfrmXRFMain
         Height = 25
         Caption = 'Start'
         TabOrder = 0
+        OnClick = btnStartClick
       end
       object btnStop: TButton
         Left = 58
@@ -622,6 +623,7 @@ object frmXRFMain: TfrmXRFMain
         Caption = 'Stop'
         Enabled = False
         TabOrder = 1
+        OnClick = btnStopClick
       end
       object btnLoadConfig: TButton
         Left = 116

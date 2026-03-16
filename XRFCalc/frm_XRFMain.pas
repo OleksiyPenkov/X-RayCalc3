@@ -9,7 +9,7 @@ uses
   Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.Grids,
   Vcl.CheckLst,
   VclTee.TeeGDIPlus, VclTee.TeEngine, VclTee.Series, VclTee.Chart,
-  unit_universal_types;
+  unit_universal_types, unit_universal_optimizer, unit_xrf_thread;
 
 type
   TfrmXRFMain = class(TForm)
@@ -119,7 +119,18 @@ type
     procedure btnSaveConfigClick(Sender: TObject);
     procedure btnBrowseHenkeClick(Sender: TObject);
     procedure btnBrowseOutputClick(Sender: TObject);
+    procedure btnStartClick(Sender: TObject);
+    procedure btnStopClick(Sender: TObject);
   private
+    FThread: TOptimizationThread;
+    FLastIterationData: TIterationData;
+    FLastCurves: TArray<TCurveData>;
+    procedure HandleIteration(const Data: TIterationData);
+    procedure HandleCompletion(const Data: TIterationData;
+      const Curves: TArray<TCurveData>);
+    procedure HandleError(const ErrorMsg: string);
+    procedure SetRunningState(Running: Boolean);
+    procedure ShowResultsSummary(const Data: TIterationData);
     procedure LoadConfigToUI(const Config: TUniversalConfig);
     function CollectConfigFromUI: TUniversalConfig;
   public
@@ -153,6 +164,15 @@ const
     (Element: 'Al'; Lambda: 8.338),
     (Element: 'Si'; Lambda: 7.126)
   );
+
+function ValidateConfig(const Config: TUniversalConfig; out Error: string): Boolean;
+begin
+  Result := False;
+  if Length(Config.Targets) = 0 then begin Error := 'No target elements selected.'; Exit; end;
+  if Length(Config.ElementPool) = 0 then begin Error := 'No elements in pool.'; Exit; end;
+  if Config.OutputDir = '' then begin Error := 'Output directory not set.'; Exit; end;
+  Result := True;
+end;
 
 { TfrmXRFMain }
 
@@ -381,6 +401,131 @@ begin
   Dir := edOutputDir.Text;
   if SelectDirectory('Select output directory', '', Dir) then
     edOutputDir.Text := Dir;
+end;
+
+procedure TfrmXRFMain.SetRunningState(Running: Boolean);
+begin
+  sbConfig.Enabled := not Running;
+  btnStart.Enabled := not Running;
+  btnStop.Enabled := Running;
+  btnLoadConfig.Enabled := not Running;
+  btnSaveConfig.Enabled := not Running;
+  if not Running then
+    lblProgress.Caption := 'Ready';
+end;
+
+procedure TfrmXRFMain.btnStartClick(Sender: TObject);
+var
+  Config: TUniversalConfig;
+  Error: string;
+  CheckpointPath: string;
+begin
+  Config := CollectConfigFromUI;
+  if not ValidateConfig(Config, Error) then
+  begin
+    MessageDlg(Error, mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  CheckpointPath := IncludeTrailingPathDelimiter(Config.OutputDir) + 'checkpoint.json';
+  if FileExists(CheckpointPath) then
+  begin
+    if MessageDlg('Checkpoint found. Resume?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+      Config.ResumeFrom := CheckpointPath;
+  end;
+
+  SetRunningState(True);
+  grpResults.Visible := False;
+
+  serFoM.Clear;
+  serRPeak.Clear;
+  chartCurves.RemoveAllSeries;
+
+  FThread := TOptimizationThread.Create(Config);
+  FThread.OnIteration := HandleIteration;
+  FThread.OnCompleted := HandleCompletion;
+  FThread.OnError := HandleError;
+  FThread.Start;
+end;
+
+procedure TfrmXRFMain.btnStopClick(Sender: TObject);
+begin
+  if Assigned(FThread) then
+    FThread.CancelOptimization;
+end;
+
+procedure TfrmXRFMain.HandleIteration(const Data: TIterationData);
+var
+  i: Integer;
+begin
+  FLastIterationData := Data;
+
+  serFoM.AddXY(Data.Iteration, Data.FoM);
+
+  serRPeak.Clear;
+  for i := 0 to High(Data.PerElement) do
+    serRPeak.Add(Data.PerElement[i].RPeak, Data.PerElement[i].Element);
+
+  lblProgress.Caption := Format('Iteration %d / %d  FoM: %.4f',
+    [Data.Iteration, Data.MaxIterations, Data.FoM]);
+end;
+
+procedure TfrmXRFMain.HandleCompletion(const Data: TIterationData;
+  const Curves: TArray<TCurveData>);
+var
+  i, j: Integer;
+  Series: TLineSeries;
+begin
+  FLastIterationData := Data;
+  FLastCurves := Curves;
+
+  SetRunningState(False);
+  FThread.WaitFor;
+  FThread.Free;
+  FThread := nil;
+
+  chartCurves.RemoveAllSeries;
+  for i := 0 to High(Curves) do
+  begin
+    Series := TLineSeries.Create(chartCurves);
+    Series.Title := Curves[i].Element;
+    Series.LinePen.Width := 2;
+    chartCurves.AddSeries(Series);
+    for j := 0 to High(Curves[i].Theta) do
+      Series.AddXY(Curves[i].Theta[j], Curves[i].Refl[j]);
+  end;
+
+  ShowResultsSummary(Data);
+  lblProgress.Caption := Format('Complete - FoM: %.4f', [Data.FoM]);
+end;
+
+procedure TfrmXRFMain.HandleError(const ErrorMsg: string);
+begin
+  SetRunningState(False);
+  if Assigned(FThread) then
+  begin
+    FThread.Free;
+    FThread := nil;
+  end;
+  MessageDlg('Optimization error: ' + ErrorMsg, mtError, [mbOK], 0);
+end;
+
+procedure TfrmXRFMain.ShowResultsSummary(const Data: TIterationData);
+var
+  i: Integer;
+begin
+  grpResults.Visible := True;
+
+  sgResults.RowCount := Length(Data.PerElement) + 1;
+  sgResults.Cells[0, 0] := 'Element';
+  sgResults.Cells[1, 0] := 'R_peak';
+  sgResults.Cells[2, 0] := 'FWHM';
+  for i := 0 to High(Data.PerElement) do
+  begin
+    sgResults.Cells[0, i + 1] := Data.PerElement[i].Element;
+    sgResults.Cells[1, i + 1] := Format('%.4f', [Data.PerElement[i].RPeak]);
+    sgResults.Cells[2, i + 1] := Format('%.3f', [Data.PerElement[i].FWHM]);
+  end;
 end;
 
 end.
