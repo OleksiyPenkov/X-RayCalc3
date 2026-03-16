@@ -93,15 +93,20 @@ object frmXRFMain: TfrmXRFMain
           Items.Strings = (
             'W'
             'Mo'
+            'Co'
             'V'
+            'Cr'
+            'Ru'
+            'Ni'
+            'Ti'
+            'Al'
             'Si'
             'C'
             'B'
-            'Ni'
-            'Ti'
             'B4C'
             'SiC'
-            'SiN')
+            'Si3N4'
+            'WC')
           TabOrder = 0
         end
       end
