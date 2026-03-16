@@ -676,7 +676,6 @@ object frmXRFMain: TfrmXRFMain
       Width = 715
       Height = 5
       Align = alTop
-      TabOrder = 1
     end
     object pnlBottomCharts: TPanel
       Left = 0
@@ -705,7 +704,6 @@ object frmXRFMain: TfrmXRFMain
         Top = 0
         Width = 5
         Height = 395
-        TabOrder = 1
       end
       object chartCurves: TChart
         Left = 355
