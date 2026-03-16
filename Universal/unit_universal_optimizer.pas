@@ -42,6 +42,7 @@ type
     FFitness: TUniversalFitness;
     FIO: TUniversalIO;
     FMixer: TMaterialMixer;
+    FPool: TThreadPool;
     FCancelled: Boolean;
     FOnIteration: TIterationEvent;
     FOnCompleted: TCompletionEvent;
@@ -85,7 +86,8 @@ begin
     begin
       P := FPSO.GetParticle(Index);
       P^.CurrentFoM := FFitness.Evaluate(P^.X, P^.TargetResults);
-    end);
+    end,
+    FPool);
 end;
 
 function TUniversalOptimizer.BuildIterationData(Iteration: Integer;
@@ -138,6 +140,9 @@ begin
       ElementNames[i] := FConfig.ElementPool[i];
 
     // Create engine objects
+    FPool := TThreadPool.Create;
+    FPool.SetMinWorkerThreads(TThread.ProcessorCount);
+    FPool.SetMaxWorkerThreads(TThread.ProcessorCount);
     FMixer := TMaterialMixer.Create;
     FPSO := TUniversalPSO.Create(FConfig);
     FFitness := TUniversalFitness.Create(FMixer, FConfig);
@@ -262,10 +267,12 @@ begin
       FPSO.Free;
       FFitness.Free;
       FIO.Free;
+      FPool.Free;
       FMixer := nil;
       FPSO := nil;
       FFitness := nil;
       FIO := nil;
+      FPool := nil;
     end;
   except
     on E: Exception do

@@ -32,7 +32,7 @@ type
 implementation
 
 uses
-  Winapi.Windows, System.Threading;
+  Winapi.Windows;
 
 constructor TOptimizationThread.Create(const AConfig: TUniversalConfig);
 begin
@@ -99,11 +99,6 @@ end;
 
 procedure TOptimizationThread.Execute;
 begin
-  // Ensure thread pool has enough workers for TParallel.For called from
-  // this worker thread (by default the pool may undercount by one since
-  // the main/UI thread is idle and not participating as a worker).
-  TThreadPool.Default.SetMinWorkerThreads(TThread.ProcessorCount);
-
   FOptimizer := TUniversalOptimizer.Create(FConfig);
   try
     FOptimizer.OnIteration := DoIteration;
