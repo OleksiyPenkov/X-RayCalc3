@@ -1,4 +1,4 @@
-unit cmd_unit_universal_io;
+unit unit_universal_io;
 
 interface
 
@@ -18,6 +18,8 @@ type
     destructor Destroy; override;
 
     class function LoadConfig(const FileName: string): TUniversalConfig;
+    class procedure SaveConfig(const Config: TUniversalConfig;
+      const FileName: string);
 
     procedure OpenLog(const OutputDir: string;
       const TargetNames: array of string);
@@ -146,6 +148,16 @@ begin
       Result.Fitness.ThetaMin := JFitness.GetValue<Double>('theta_min')
     else
       Result.Fitness.ThetaMin := 0;
+    // Polarization
+    if JFitness.FindValue('polarization') <> nil then
+    begin
+      if SameText(JFitness.GetValue<string>('polarization'), 's') then
+        Result.Fitness.Polarization := cmS
+      else
+        Result.Fitness.Polarization := cmSP;
+    end
+    else
+      Result.Fitness.Polarization := cmSP;  // default
 
     JOptimizer := JSON.GetValue<TJSONObject>('optimizer');
     Result.Optimizer.Population := JOptimizer.GetValue<Integer>('population');
@@ -170,6 +182,113 @@ begin
       Result.ResumeFrom := ''
     else
       Result.ResumeFrom := JSON.GetValue<string>('resume_from');
+  finally
+    JSON.Free;
+  end;
+end;
+
+class procedure TUniversalIO.SaveConfig(const Config: TUniversalConfig;
+  const FileName: string);
+var
+  JSON, JStructure, JFitness, JOptimizer, JTarget, JRange: TJSONObject;
+  JTargets, JPool: TJSONArray;
+  i: Integer;
+begin
+  JSON := TJSONObject.Create;
+  try
+    // Targets
+    JTargets := TJSONArray.Create;
+    for i := 0 to High(Config.Targets) do
+    begin
+      JTarget := TJSONObject.Create;
+      JTarget.AddPair('element', Config.Targets[i].Name);
+      JTarget.AddPair('lambda', TJSONNumber.Create(Config.Targets[i].Lambda));
+      JTarget.AddPair('weight', TJSONNumber.Create(Config.Targets[i].Weight));
+      JTargets.Add(JTarget);
+    end;
+    JSON.AddPair('targets', JTargets);
+
+    // Element pool
+    JPool := TJSONArray.Create;
+    for i := 0 to High(Config.ElementPool) do
+      JPool.Add(Config.ElementPool[i]);
+    JSON.AddPair('element_pool', JPool);
+
+    // Structure
+    JStructure := TJSONObject.Create;
+    JStructure.AddPair('type', Config.Structure.StructureType);
+    JStructure.AddPair('layers_per_period', TJSONNumber.Create(Config.Structure.LayersPerPeriod));
+    JStructure.AddPair('pure_elements', TJSONBool.Create(Config.Structure.PureElements));
+
+    JRange := TJSONObject.Create;
+    JRange.AddPair('min', TJSONNumber.Create(Config.Structure.dRange.Min));
+    JRange.AddPair('max', TJSONNumber.Create(Config.Structure.dRange.Max));
+    JStructure.AddPair('d', JRange);
+
+    JRange := TJSONObject.Create;
+    JRange.AddPair('min', TJSONNumber.Create(Config.Structure.GammaRange.Min));
+    JRange.AddPair('max', TJSONNumber.Create(Config.Structure.GammaRange.Max));
+    JStructure.AddPair('gamma', JRange);
+
+    JRange := TJSONObject.Create;
+    JRange.AddPair('min', TJSONNumber.Create(Config.Structure.NRange.Min));
+    JRange.AddPair('max', TJSONNumber.Create(Config.Structure.NRange.Max));
+    JStructure.AddPair('N', JRange);
+
+    if Config.Structure.SigmaFixed >= 0 then
+      JStructure.AddPair('sigma', TJSONNumber.Create(Config.Structure.SigmaFixed))
+    else
+    begin
+      JRange := TJSONObject.Create;
+      JRange.AddPair('min', TJSONNumber.Create(Config.Structure.SigmaRange.Min));
+      JRange.AddPair('max', TJSONNumber.Create(Config.Structure.SigmaRange.Max));
+      JStructure.AddPair('sigma', JRange);
+    end;
+
+    JRange := TJSONObject.Create;
+    JRange.AddPair('min', TJSONNumber.Create(Config.Structure.DensityFactorRange.Min));
+    JRange.AddPair('max', TJSONNumber.Create(Config.Structure.DensityFactorRange.Max));
+    JStructure.AddPair('density_factor', JRange);
+    JSON.AddPair('structure', JStructure);
+
+    // Fitness
+    JFitness := TJSONObject.Create;
+    JFitness.AddPair('w_R', TJSONNumber.Create(Config.Fitness.wR));
+    JFitness.AddPair('w_FWHM', TJSONNumber.Create(Config.Fitness.wFWHM));
+    JFitness.AddPair('R_min_threshold', TJSONNumber.Create(Config.Fitness.RMinThreshold));
+    if Config.Fitness.Polarization = cmS then
+      JFitness.AddPair('polarization', 's')
+    else
+      JFitness.AddPair('polarization', 'sp');
+    JFitness.AddPair('delta_theta', TJSONNumber.Create(Config.Fitness.DeltaTheta));
+    JFitness.AddPair('theta_min', TJSONNumber.Create(Config.Fitness.ThetaMin));
+    JSON.AddPair('fitness', JFitness);
+
+    // Optimizer
+    JOptimizer := TJSONObject.Create;
+    JOptimizer.AddPair('population', TJSONNumber.Create(Config.Optimizer.Population));
+    JOptimizer.AddPair('iterations', TJSONNumber.Create(Config.Optimizer.Iterations));
+    JOptimizer.AddPair('tolerance', TJSONNumber.Create(Config.Optimizer.Tolerance));
+    JOptimizer.AddPair('stagnation_limit', TJSONNumber.Create(Config.Optimizer.StagnationLimit));
+    JOptimizer.AddPair('w1', TJSONNumber.Create(Config.Optimizer.w1));
+    JOptimizer.AddPair('w2', TJSONNumber.Create(Config.Optimizer.w2));
+    JOptimizer.AddPair('jamming_max', TJSONNumber.Create(Config.Optimizer.JammingMax));
+    JOptimizer.AddPair('checkpoint_every', TJSONNumber.Create(Config.Optimizer.CheckpointEvery));
+    JSON.AddPair('optimizer', JOptimizer);
+
+    // Top-level fields
+    JSON.AddPair('substrate', Config.Substrate);
+    if Config.HenkePath = '' then
+      JSON.AddPair('henke_path', TJSONNull.Create)
+    else
+      JSON.AddPair('henke_path', Config.HenkePath);
+    JSON.AddPair('output_dir', Config.OutputDir);
+    if Config.ResumeFrom <> '' then
+      JSON.AddPair('resume_from', Config.ResumeFrom)
+    else
+      JSON.AddPair('resume_from', TJSONNull.Create);
+
+    TFile.WriteAllText(FileName, JSON.Format);
   finally
     JSON.Free;
   end;
