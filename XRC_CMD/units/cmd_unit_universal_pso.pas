@@ -25,6 +25,7 @@ type
     FGammaMin, FGammaMax, FGammaRange: Single;
     FNMin, FNMax, FNRange: Single;
     FSigmaMin, FSigmaMax, FSigmaRange: Single;
+    FSigmaFixed: Boolean;
     FDFMin, FDFMax, FDFRange: Single;
 
     procedure InitRanges;
@@ -97,6 +98,7 @@ begin
   FSigmaMin := FConfig.Structure.SigmaRange.Min;
   FSigmaMax := FConfig.Structure.SigmaRange.Max;
   FSigmaRange := FSigmaMax - FSigmaMin;
+  FSigmaFixed := FConfig.Structure.SigmaFixed >= 0;
 
   FDFMin := FConfig.Structure.DensityFactorRange.Min;
   FDFMax := FConfig.Structure.DensityFactorRange.Max;
@@ -210,7 +212,10 @@ begin
     FParticles[i].X.d := FdMin + Random * FdRange;
     FParticles[i].X.Gamma := FGammaMin + Random * FGammaRange;
     FParticles[i].X.N := FNMin + Random * FNRange;
-    FParticles[i].X.Sigma := FSigmaMin + Random * FSigmaRange;
+    if FSigmaFixed then
+      FParticles[i].X.Sigma := FConfig.Structure.SigmaFixed
+    else
+      FParticles[i].X.Sigma := FSigmaMin + Random * FSigmaRange;
 
     // Composition initialization
     if FConfig.Structure.PureElements then
@@ -287,11 +292,14 @@ begin
       + C2 * r2 * (FGBest.N - FParticles[i].X.N);
     FParticles[i].X.N := FParticles[i].X.N + FParticles[i].V.N;
 
-    r1 := Random; r2 := Random;
-    FParticles[i].V.Sigma := Omega * FParticles[i].V.Sigma
-      + C1 * r1 * (FParticles[i].PBest.Sigma - FParticles[i].X.Sigma)
-      + C2 * r2 * (FGBest.Sigma - FParticles[i].X.Sigma);
-    FParticles[i].X.Sigma := FParticles[i].X.Sigma + FParticles[i].V.Sigma;
+    if not FSigmaFixed then
+    begin
+      r1 := Random; r2 := Random;
+      FParticles[i].V.Sigma := Omega * FParticles[i].V.Sigma
+        + C1 * r1 * (FParticles[i].PBest.Sigma - FParticles[i].X.Sigma)
+        + C2 * r2 * (FGBest.Sigma - FParticles[i].X.Sigma);
+      FParticles[i].X.Sigma := FParticles[i].X.Sigma + FParticles[i].V.Sigma;
+    end;
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
     begin
@@ -367,12 +375,15 @@ begin
       + C2 * r2 * (FGBest.N - FParticles[i].X.N);
     FParticles[i].X.N := FParticles[i].X.N + FParticles[i].V.N;
 
-    Step := LevyStep;
-    r1 := Random; r2 := Random;
-    FParticles[i].V.Sigma := Omega * Step * (FParticles[i].X.Sigma - Target.Sigma)
-      + C1 * r1 * (FParticles[i].PBest.Sigma - FParticles[i].X.Sigma)
-      + C2 * r2 * (FGBest.Sigma - FParticles[i].X.Sigma);
-    FParticles[i].X.Sigma := FParticles[i].X.Sigma + FParticles[i].V.Sigma;
+    if not FSigmaFixed then
+    begin
+      Step := LevyStep;
+      r1 := Random; r2 := Random;
+      FParticles[i].V.Sigma := Omega * Step * (FParticles[i].X.Sigma - Target.Sigma)
+        + C1 * r1 * (FParticles[i].PBest.Sigma - FParticles[i].X.Sigma)
+        + C2 * r2 * (FGBest.Sigma - FParticles[i].X.Sigma);
+      FParticles[i].X.Sigma := FParticles[i].X.Sigma + FParticles[i].V.Sigma;
+    end;
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
     begin

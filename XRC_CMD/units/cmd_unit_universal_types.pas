@@ -89,6 +89,7 @@ type
     dRange: TParamRange;
     GammaRange: TParamRange;
     NRange: TParamRange;
+    SigmaFixed: Single;          // fixed roughness value (<=0 means use SigmaRange)
     SigmaRange: TParamRange;
     DensityFactorRange: TParamRange;
   end;

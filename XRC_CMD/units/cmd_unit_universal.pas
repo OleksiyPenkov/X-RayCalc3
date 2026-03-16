@@ -10,7 +10,7 @@ procedure cmdUniversalMirror(const ConfigFile: string; Verbose: Boolean);
 implementation
 
 uses
-  System.Math, System.Classes, Windows,
+  System.Math, System.Classes, System.Threading, Windows,
   cmd_unit_types, cmd_unit_universal_types, cmd_unit_universal_io,
   cmd_unit_universal_fitness, cmd_unit_universal_pso,
   unit_materials_mix;
@@ -27,15 +27,15 @@ begin
 end;
 
 procedure EvaluatePopulation(PSO: TUniversalPSO; Fitness: TUniversalFitness);
-var
-  i: Integer;
-  P: PParticle;
 begin
-  for i := 0 to PSO.ParticleCount - 1 do
-  begin
-    P := PSO.GetParticle(i);
-    P^.CurrentFoM := Fitness.Evaluate(P^.X, P^.TargetResults);
-  end;
+  TParallel.&For(0, PSO.ParticleCount - 1,
+    procedure(Index: Integer)
+    var
+      P: PParticle;
+    begin
+      P := PSO.GetParticle(Index);
+      P^.CurrentFoM := Fitness.Evaluate(P^.X, P^.TargetResults);
+    end);
 end;
 
 procedure cmdUniversalMirror(const ConfigFile: string; Verbose: Boolean);

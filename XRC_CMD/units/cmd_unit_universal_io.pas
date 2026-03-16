@@ -112,9 +112,19 @@ begin
     Result.Structure.NRange.Min := JRange.GetValue<Double>('min');
     Result.Structure.NRange.Max := JRange.GetValue<Double>('max');
 
-    JRange := JStructure.GetValue<TJSONObject>('sigma');
-    Result.Structure.SigmaRange.Min := JRange.GetValue<Double>('min');
-    Result.Structure.SigmaRange.Max := JRange.GetValue<Double>('max');
+    if JStructure.GetValue('sigma') is TJSONNumber then
+    begin
+      Result.Structure.SigmaFixed := JStructure.GetValue<Double>('sigma');
+      Result.Structure.SigmaRange.Min := Result.Structure.SigmaFixed;
+      Result.Structure.SigmaRange.Max := Result.Structure.SigmaFixed;
+    end
+    else
+    begin
+      JRange := JStructure.GetValue<TJSONObject>('sigma');
+      Result.Structure.SigmaRange.Min := JRange.GetValue<Double>('min');
+      Result.Structure.SigmaRange.Max := JRange.GetValue<Double>('max');
+      Result.Structure.SigmaFixed := -1;
+    end;
 
     JRange := JStructure.GetValue<TJSONObject>('density_factor');
     Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
