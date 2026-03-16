@@ -225,7 +225,7 @@ type
 implementation
 
 uses
-  System.Win.ComObj, System.IOUtils, AbUtils,
+  System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
   editor_JSON, frm_ExtensionType;
 
@@ -1031,6 +1031,7 @@ procedure TfrmProjectPanel.ImportStructure;
 var
   Dlg: TOpenDialog;
   JSON: string;
+  JObj: TJSONObject;
 begin
   Dlg := TOpenDialog.Create(nil);
   try
@@ -1039,6 +1040,26 @@ begin
     if Dlg.Execute then
     begin
       JSON := TFile.ReadAllText(Dlg.FileName);
+
+      JObj := TJSONObject.ParseJSONValue(JSON) as TJSONObject;
+      if JObj = nil then
+      begin
+        MessageDlg('Invalid JSON file.', mtError, [mbOK], 0);
+        Exit;
+      end;
+      try
+        if (JObj.FindValue('Stacks') = nil) or (JObj.FindValue('Subs') = nil) then
+        begin
+          MessageDlg('This file is not a valid XRC structure.' + sLineBreak +
+            'Expected format with "Stacks" and "Subs" keys.' + sLineBreak +
+            'Use best_structure_xrc.json from Universal Mirror output.',
+            mtError, [mbOK], 0);
+          Exit;
+        end;
+      finally
+        JObj.Free;
+      end;
+
       if FProject.ActiveModel <> nil then
         FProject.ActiveModel.Data := Structure.ToString;
       CreateNewModel(FModelsRoot);
