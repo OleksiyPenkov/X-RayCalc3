@@ -124,6 +124,8 @@ type
     procedure btnSaveStructureClick(Sender: TObject);
     procedure btnSaveCurvesClick(Sender: TObject);
     procedure btnExportXRCClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     FThread: TOptimizationThread;
     FLastIterationData: TIterationData;
@@ -145,7 +147,7 @@ var
 implementation
 
 uses
-  Vcl.FileCtrl,
+  System.IniFiles, Vcl.FileCtrl,
   unit_universal_io, cmd_unit_types, unit_materials_mix;
 
 {$R *.dfm}
@@ -177,7 +179,38 @@ begin
   Result := True;
 end;
 
+function GetSettingsPath: string;
+begin
+  Result := ChangeFileExt(Application.ExeName, '.ini');
+end;
+
 { TfrmXRFMain }
+
+procedure TfrmXRFMain.FormCreate(Sender: TObject);
+var
+  Ini: TIniFile;
+begin
+  Ini := TIniFile.Create(GetSettingsPath);
+  try
+    edHenkePath.Text := Ini.ReadString('Paths', 'HenkePath', '');
+    edOutputDir.Text := Ini.ReadString('Paths', 'OutputDir', '');
+  finally
+    Ini.Free;
+  end;
+end;
+
+procedure TfrmXRFMain.FormDestroy(Sender: TObject);
+var
+  Ini: TIniFile;
+begin
+  Ini := TIniFile.Create(GetSettingsPath);
+  try
+    Ini.WriteString('Paths', 'HenkePath', edHenkePath.Text);
+    Ini.WriteString('Paths', 'OutputDir', edOutputDir.Text);
+  finally
+    Ini.Free;
+  end;
+end;
 
 procedure TfrmXRFMain.LoadConfigToUI(const Config: TUniversalConfig);
 var
