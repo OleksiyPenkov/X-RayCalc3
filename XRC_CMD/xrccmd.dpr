@@ -16,11 +16,18 @@ uses
   cmd_unit_main in 'Units\cmd_unit_main.pas',
   cmd_unit_materials in 'Units\cmd_unit_materials.pas',
   cmd_unit_types in 'Units\cmd_unit_types.pas',
-  cmd_unit_load in 'Units\cmd_unit_load.pas';
+  cmd_unit_load in 'Units\cmd_unit_load.pas',
+  cmd_unit_universal in 'Units\cmd_unit_universal.pas',
+  cmd_unit_universal_types in 'Units\cmd_unit_universal_types.pas',
+  cmd_unit_universal_fitness in 'Units\cmd_unit_universal_fitness.pas',
+  cmd_unit_universal_pso in 'Units\cmd_unit_universal_pso.pas',
+  cmd_unit_universal_io in 'Units\cmd_unit_universal_io.pas',
+  unit_materials_mix in '..\Math\unit_materials_mix.pas';
 
 var
   Value: string;
-  OperationMode: (omHelp, omSingleCalc, omFolderCalc, omFitting);
+  OperationMode: (omHelp, omSingleCalc, omFolderCalc, omFitting, omUniversal);
+  UniversalConfigFile: string;
   VerboseMode : boolean = False;
 begin
   try
@@ -53,6 +60,12 @@ begin
         OperationMode := omFitting;
       end;
 
+      if FindCmdLineSwitch('u', Value, True, [clstValueNextParam]) then
+      begin
+        UniversalConfigFile := Value;
+        OperationMode := omUniversal;
+      end;
+
       VerboseMode := FindCmdLineSwitch('v');
       if FindCmdLineSwitch('h') then OperationMode := omHelp;
 
@@ -68,6 +81,7 @@ begin
        omSingleCalc : cmdCalc(VerboseMode);
        omFolderCalc : cmdFolderCalc(VerboseMode);
        omFitting    : cmdFitting(VerboseMode);
+       omUniversal  : cmdUniversalMirror(UniversalConfigFile, VerboseMode);
      end;
 
      write('Done.');

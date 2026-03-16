@@ -48,7 +48,6 @@ type
       NThreads : byte;
       FChiSquare: single;
 
-      function  RefCalc(t, Lambda:single; ALayers: TLayers): single;
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
       procedure CalcTet(const Params: TThreadCalcParams);
       procedure CalcFollowModel(const Params: TThreadCalcParams);
@@ -63,6 +62,7 @@ type
       destructor Destroy; override;
       procedure Run;
       function CalcChiSquare: Single;
+      function  RefCalc(t, Lambda:single; ALayers: TLayers): single;
 
       property CalcData: TCalcParams read FCD write FCD;
       property Results: TDataArray read FResult;
