@@ -647,6 +647,69 @@ object frmXRFMain: TfrmXRFMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
+    object chartConvergence: TChart
+      Left = 0
+      Top = 0
+      Width = 715
+      Height = 200
+      Align = alTop
+      Title.Text.Strings = (
+        'FoM Convergence')
+      Legend.Visible = False
+      TabOrder = 0
+      object serFoM: TLineSeries
+        Title = 'FoM'
+      end
+    end
+    object splCharts: TSplitter
+      Left = 0
+      Top = 200
+      Width = 715
+      Height = 5
+      Align = alTop
+      TabOrder = 1
+    end
+    object pnlBottomCharts: TPanel
+      Left = 0
+      Top = 205
+      Width = 715
+      Height = 395
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 2
+      object chartRPeak: TChart
+        Left = 0
+        Top = 0
+        Width = 350
+        Height = 395
+        Align = alLeft
+        Title.Text.Strings = (
+          'Peak Reflectivity')
+        Legend.Visible = False
+        TabOrder = 0
+        object serRPeak: TBarSeries
+          Title = 'R_peak'
+        end
+      end
+      object splBottom: TSplitter
+        Left = 350
+        Top = 0
+        Width = 5
+        Height = 395
+        TabOrder = 1
+      end
+      object chartCurves: TChart
+        Left = 355
+        Top = 0
+        Width = 360
+        Height = 395
+        Align = alClient
+        Title.Text.Strings = (
+          'Reflectivity Curves')
+        Legend.Visible = True
+        TabOrder = 2
+      end
+    end
   end
   object dlgOpen: TOpenDialog
     Filter = 'JSON files|*.json'

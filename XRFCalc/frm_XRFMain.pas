@@ -7,7 +7,8 @@ uses
   System.SysUtils, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.Grids,
-  Vcl.CheckLst;
+  Vcl.CheckLst,
+  VclTee.TeeGDIPlus, VclTee.TeEngine, VclTee.Series, VclTee.Chart;
 
 type
   TfrmXRFMain = class(TForm)
@@ -104,6 +105,15 @@ type
     dlgOpen: TOpenDialog;
     dlgSave: TSaveDialog;
     dlgSaveStructure: TSaveDialog;
+    // Charts
+    chartConvergence: TChart;
+    serFoM: TLineSeries;
+    splCharts: TSplitter;
+    pnlBottomCharts: TPanel;
+    chartRPeak: TChart;
+    serRPeak: TBarSeries;
+    splBottom: TSplitter;
+    chartCurves: TChart;
   private
   public
   end;
