@@ -40,7 +40,11 @@ uses
   unit_ProfileCalc in '..\Math\unit_ProfileCalc.pas',
   TestProfileCalc in 'TestProfileCalc.pas',
   unit_SmartLimits in '..\Units\unit_SmartLimits.pas',
-  TestSmartLimits in 'TestSmartLimits.pas';
+  TestSmartLimits in 'TestSmartLimits.pas',
+  cmd_unit_types in '..\XRC_CMD\Units\cmd_unit_types.pas',
+  cmd_math_globals in '..\XRC_CMD\Units\cmd_math_globals.pas',
+  unit_materials_mix in '..\Math\unit_materials_mix.pas',
+  TestMaterialMix in 'TestMaterialMix.pas';
 
 {$R *.res}
 
