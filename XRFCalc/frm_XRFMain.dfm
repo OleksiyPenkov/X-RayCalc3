@@ -664,6 +664,7 @@ object frmXRFMain: TfrmXRFMain
       Align = alTop
       Title.Text.Strings = (
         'FoM Convergence')
+      View3D = False
       Legend.Visible = False
       TabOrder = 0
       object serFoM: TLineSeries
@@ -693,6 +694,7 @@ object frmXRFMain: TfrmXRFMain
         Align = alLeft
         Title.Text.Strings = (
           'Peak Reflectivity')
+        View3D = False
         Legend.Visible = False
         TabOrder = 0
         object serRPeak: TBarSeries
@@ -713,6 +715,7 @@ object frmXRFMain: TfrmXRFMain
         Align = alClient
         Title.Text.Strings = (
           'Reflectivity Curves')
+        View3D = False
         Legend.Visible = True
         TabOrder = 2
       end
