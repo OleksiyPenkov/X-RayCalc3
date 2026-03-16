@@ -79,6 +79,10 @@ begin
       WriteLn('Mode: mixed compositions');
     WriteLn(Format('Population: %d, Max iterations: %d',
       [Config.Optimizer.Population, Config.Optimizer.Iterations]));
+    if Config.Fitness.DeltaTheta > 0 then
+      WriteLn(Format('Beam divergence: %.3f deg', [Config.Fitness.DeltaTheta]));
+    if Config.Fitness.ThetaMin > 0 then
+      WriteLn(Format('Theta min: %.1f deg', [Config.Fitness.ThetaMin]));
     WriteLn('---');
 
     // Print header

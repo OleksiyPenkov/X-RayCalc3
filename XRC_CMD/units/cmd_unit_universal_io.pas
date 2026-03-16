@@ -138,6 +138,14 @@ begin
     Result.Fitness.wR := JFitness.GetValue<Double>('w_R');
     Result.Fitness.wFWHM := JFitness.GetValue<Double>('w_FWHM');
     Result.Fitness.RMinThreshold := JFitness.GetValue<Double>('R_min_threshold');
+    if JFitness.FindValue('delta_theta') <> nil then
+      Result.Fitness.DeltaTheta := JFitness.GetValue<Double>('delta_theta')
+    else
+      Result.Fitness.DeltaTheta := 0;
+    if JFitness.FindValue('theta_min') <> nil then
+      Result.Fitness.ThetaMin := JFitness.GetValue<Double>('theta_min')
+    else
+      Result.Fitness.ThetaMin := 0;
 
     JOptimizer := JSON.GetValue<TJSONObject>('optimizer');
     Result.Optimizer.Population := JOptimizer.GetValue<Integer>('population');

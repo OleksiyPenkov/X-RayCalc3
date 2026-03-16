@@ -20,6 +20,7 @@ type
       NPoints: Integer): TDataArray;
     function ExtractRPeak(const Curve: TDataArray): Single;
     function ExtractFWHM(const Curve: TDataArray; RPeak: Single): Single;
+    procedure Convolute(var Curve: TDataArray; Width: Single);
   public
     constructor Create(AMixer: TMaterialMixer; const AConfig: TUniversalConfig);
 
@@ -111,7 +112,7 @@ var
   StartT, EndT, Step: Single;
   i: Integer;
 begin
-  StartT := Max(0.1, ThetaCenter - ThetaHalfRange);
+  StartT := Max(FConfig.Fitness.ThetaMin + 0.1, ThetaCenter - ThetaHalfRange);
   EndT := ThetaCenter + ThetaHalfRange;
   Step := (EndT - StartT) / NPoints;
 
@@ -186,6 +187,46 @@ begin
   Result := ThetaRight - ThetaLeft;
 end;
 
+procedure TUniversalFitness.Convolute(var Curve: TDataArray; Width: Single);
+var
+  Size, N, i, k, p: Integer;
+  Delta, Sum, t1, c, sqrW: Single;
+  Temp: TDataArray;
+begin
+  if Width <= 0 then Exit;
+
+  Size := Length(Curve);
+  if Size < 3 then Exit;
+
+  Width := Width * 0.849;
+  sqrW := Sqr(Width);
+  c := 1 / (Width * Sqrt(Pi / 2));
+
+  Delta := (Curve[Size - 1].t - Curve[0].t) / Size;
+  N := Round(3 * Width / Delta);
+  if N < 1 then N := 1;
+  if N >= Size div 2 then N := Size div 2 - 1;
+
+  SetLength(Temp, Size - 2 * N);
+
+  p := 0;
+  for i := N to Size - N - 1 do
+  begin
+    t1 := -(N * Delta);
+    Sum := 0;
+    for k := i - N to i + N do
+    begin
+      Sum := Sum + Curve[k].r * c * Exp(-2 * Sqr(t1) / sqrW) * Delta;
+      t1 := t1 + Delta;
+    end;
+    Temp[p].t := Curve[i].t;
+    Temp[p].r := Sum;
+    Inc(p);
+  end;
+
+  Curve := Temp;
+end;
+
 function TUniversalFitness.Evaluate(const Genome: TGenome;
   var Results: TTargetResults): Single;
 var
@@ -215,12 +256,21 @@ begin
 
     ThetaBragg := RadToDeg(ArcSin(SinArg));
     Results[i].ThetaBragg := ThetaBragg;
+
+    // Skip total reflection zone
+    if (FConfig.Fitness.ThetaMin > 0) and (ThetaBragg < FConfig.Fitness.ThetaMin) then
+    begin
+      Penalty := Penalty + PENALTY_DARK;
+      Continue;
+    end;
+
     Results[i].Valid := True;
 
     // Build layer array and evaluate
     Layers := BuildLayers(Genome, i);
     Curve := ScanReflectivity(Layers, FConfig.Targets[i].Lambda,
       ThetaBragg, SCAN_HALF_RANGE, SCAN_POINTS);
+    Convolute(Curve, FConfig.Fitness.DeltaTheta);
 
     Results[i].RPeak := ExtractRPeak(Curve);
     Results[i].FWHM := ExtractFWHM(Curve, Results[i].RPeak);
@@ -262,6 +312,7 @@ begin
   Layers := BuildLayers(Genome, TargetIdx);
   Result := ScanReflectivity(Layers, FConfig.Targets[TargetIdx].Lambda,
     ThetaBragg, SCAN_HALF_RANGE, SCAN_POINTS);
+  Convolute(Result, FConfig.Fitness.DeltaTheta);
 end;
 
 end.

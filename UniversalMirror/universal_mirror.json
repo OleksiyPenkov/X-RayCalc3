@@ -9,13 +9,13 @@
     {"element": "Mg", "lambda": 9.89,  "weight": 1.0},
     {"element": "Al", "lambda": 8.338, "weight": 1.0}
   ],
-  "element_pool": ["W", "Mo", "V", "Si", "C", "B", "Ni", "Ti"],
+  "element_pool": ["W", "Mo", "V", "Si", "C", "B", "Ni", "Ti", "B4C", "SiC", "SiN"],
   "structure": {
     "type": "bilayer",
     "layers_per_period": 2,
     "pure_elements": true,
     "d":              {"min": 10,  "max": 120},
-    "gamma":          {"min": 0.1, "max": 0.9},
+    "gamma":          {"min": 0.2, "max": 0.6},
     "N":              {"min": 20,  "max": 200},
     "sigma":          3.5,
     "density_factor": {"min": 0.5, "max": 1.5}
@@ -24,11 +24,13 @@
     "w_R": 1.0,
     "w_FWHM": 0.5,
     "R_min_threshold": 0.001,
-    "polarization": "sp"
+    "polarization": "sp",
+    "delta_theta": 0.05,
+    "theta_min": 5.0
   },
   "optimizer": {
-    "population": 50,
-    "iterations": 5000,
+    "population": 500,
+    "iterations": 100,
     "tolerance": 1e-6,
     "stagnation_limit": 200,
     "w1": 0.4,
@@ -36,7 +38,7 @@
     "jamming_max": 30,
     "checkpoint_every": 100
   },
-  "substrate": "Si",
+  "substrate": "SiO2",
   "henke_path": null,
   "output_dir": "./UniversalMirror/results",
   "resume_from": null
