@@ -341,6 +341,7 @@ begin
   AssignFile(F, FileName);
   Rewrite(F);
   try
+    WriteLn(F, 'Theta(deg)'#9'Reflectivity');
     for i := 0 to High(Curve) do
       WriteLn(F, Format('%.4f'#9'%.8e', [Curve[i].t, Curve[i].r]));
   finally
