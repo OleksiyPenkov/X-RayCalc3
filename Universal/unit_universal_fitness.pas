@@ -1,4 +1,4 @@
-unit cmd_unit_universal_fitness;
+unit unit_universal_fitness;
 
 interface
 
@@ -33,7 +33,7 @@ type
 implementation
 
 uses
-  cmd_unit_calc;
+  unit_universal_refcalc;
 
 const
   SCAN_POINTS = 200;
@@ -107,32 +107,20 @@ function TUniversalFitness.ScanReflectivity(const Layers: TLayers;
   Lambda, ThetaCenter, ThetaHalfRange: Single;
   NPoints: Integer): TDataArray;
 var
-  Calc: TCalc;
-  Params: TCalcParams;
   StartT, EndT, Step: Single;
   i: Integer;
+  LocalLayers: TLayers;
 begin
   StartT := Max(FConfig.Fitness.ThetaMin + 0.1, ThetaCenter - ThetaHalfRange);
   EndT := ThetaCenter + ThetaHalfRange;
   Step := (EndT - StartT) / NPoints;
-
   SetLength(Result, NPoints);
-
-  Calc := TCalc.Create;
-  try
-    Params.P := cmSP;
-    Params.RF := rfError;
-    Params.Lambda := Lambda;
-    Params.K := 1;
-    Calc.CalcData := Params;
-
-    for i := 0 to NPoints - 1 do
-    begin
-      Result[i].t := StartT + i * Step;
-      Result[i].r := Calc.RefCalc(Result[i].t, Lambda, Layers);
-    end;
-  finally
-    Calc.Free;
+  for i := 0 to NPoints - 1 do
+  begin
+    Result[i].t := StartT + i * Step;
+    LocalLayers := Copy(Layers);
+    Result[i].r := RefCalcStandalone(Result[i].t, Lambda, LocalLayers,
+      FConfig.Fitness.Polarization, rfError);
   end;
 end;
 

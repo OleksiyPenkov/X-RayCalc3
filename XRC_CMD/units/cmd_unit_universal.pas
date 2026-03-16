@@ -12,7 +12,7 @@ implementation
 uses
   System.Math, System.Classes, System.Threading, Windows,
   cmd_unit_types, unit_universal_types, cmd_unit_universal_io,
-  cmd_unit_universal_fitness, unit_universal_pso,
+  unit_universal_fitness, unit_universal_pso,
   unit_materials_mix;
 
 var
