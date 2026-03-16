@@ -85,6 +85,7 @@ type
   TStructureConfig = record
     StructureType: string;  // 'bilayer'
     LayersPerPeriod: Integer;
+    PureElements: Boolean;  // true = no mixing, each layer is a single element
     dRange: TParamRange;
     GammaRange: TParamRange;
     NRange: TParamRange;

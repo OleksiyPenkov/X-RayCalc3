@@ -19,7 +19,8 @@ type
 
     class function LoadConfig(const FileName: string): TUniversalConfig;
 
-    procedure OpenLog(const OutputDir: string);
+    procedure OpenLog(const OutputDir: string;
+      const TargetNames: array of string);
     procedure LogIteration(Iteration: Integer; FoM: Single;
       const TargetResults: array of TTargetResult;
       const TargetNames: array of string;
@@ -94,6 +95,11 @@ begin
     Result.Structure.StructureType := JStructure.GetValue<string>('type');
     Result.Structure.LayersPerPeriod := JStructure.GetValue<Integer>('layers_per_period');
 
+    if JStructure.GetValue('pure_elements') <> nil then
+      Result.Structure.PureElements := JStructure.GetValue<Boolean>('pure_elements')
+    else
+      Result.Structure.PureElements := False;
+
     JRange := JStructure.GetValue<TJSONObject>('d');
     Result.Structure.dRange.Min := JRange.GetValue<Double>('min');
     Result.Structure.dRange.Max := JRange.GetValue<Double>('max');
@@ -147,13 +153,24 @@ begin
   end;
 end;
 
-procedure TUniversalIO.OpenLog(const OutputDir: string);
+procedure TUniversalIO.OpenLog(const OutputDir: string;
+  const TargetNames: array of string);
+var
+  i: Integer;
+  Header: string;
 begin
   FOutputDir := OutputDir;
   EnsureOutputDir;
   AssignFile(FLogFile, TPath.Combine(OutputDir, 'progress.log'));
   Rewrite(FLogFile);
   FLogOpen := True;
+
+  Header := Format('%5s  %8s', ['Iter', 'FoM']);
+  for i := 0 to High(TargetNames) do
+    Header := Header + Format('  %5s', ['R_' + TargetNames[i]]);
+  Header := Header + Format('  %5s', ['Div']);
+  WriteLn(FLogFile, Header);
+  Flush(FLogFile);
 end;
 
 procedure TUniversalIO.LogIteration(Iteration: Integer; FoM: Single;

@@ -93,7 +93,7 @@ begin
       Mixer.Initialize(ElementNames, TargetLambdas,
         Config.Substrate, Config.HenkePath);
 
-      IO.OpenLog(Config.OutputDir);
+      IO.OpenLog(Config.OutputDir, TargetNames);
 
       // Initialize or resume
       if Config.ResumeFrom <> '' then

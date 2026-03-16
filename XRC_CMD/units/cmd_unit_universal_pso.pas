@@ -105,8 +105,8 @@ end;
 
 procedure TUniversalPSO.NormalizeComposition(var Comp: TCompositionGenes);
 var
-  i: Integer;
-  Sum: Single;
+  i, BestIdx: Integer;
+  Sum, BestVal: Single;
 begin
   Sum := 0;
   for i := 0 to High(Comp) do
@@ -120,11 +120,29 @@ begin
   begin
     for i := 0 to High(Comp) do
       Comp[i] := 1.0 / Length(Comp);
-    Exit;
+    Sum := 1.0;
+  end
+  else
+  begin
+    for i := 0 to High(Comp) do
+      Comp[i] := Comp[i] / Sum;
   end;
 
-  for i := 0 to High(Comp) do
-    Comp[i] := Comp[i] / Sum;
+  // Pure elements mode: snap to one-hot (argmax)
+  if FConfig.Structure.PureElements then
+  begin
+    BestIdx := 0;
+    BestVal := Comp[0];
+    for i := 1 to High(Comp) do
+      if Comp[i] > BestVal then
+      begin
+        BestVal := Comp[i];
+        BestIdx := i;
+      end;
+    for i := 0 to High(Comp) do
+      Comp[i] := 0;
+    Comp[BestIdx] := 1.0;
+  end;
 end;
 
 procedure TUniversalPSO.ReflectBound(var Value, Velocity: Single;
@@ -196,9 +214,18 @@ begin
     // Random composition fractions + normalize
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
     begin
-      for j := 0 to FPoolSize - 1 do
-        FParticles[i].X.Composition[Role][j] := Random;
-      NormalizeComposition(FParticles[i].X.Composition[Role]);
+      if FConfig.Structure.PureElements then
+      begin
+        for j := 0 to FPoolSize - 1 do
+          FParticles[i].X.Composition[Role][j] := 0;
+        FParticles[i].X.Composition[Role][Random(FPoolSize)] := 1.0;
+      end
+      else
+      begin
+        for j := 0 to FPoolSize - 1 do
+          FParticles[i].X.Composition[Role][j] := Random;
+        NormalizeComposition(FParticles[i].X.Composition[Role]);
+      end;
 
       FParticles[i].X.DensityFactor[Role] := FDFMin + Random * FDFRange;
     end;
