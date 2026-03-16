@@ -3,7 +3,7 @@ unit cmd_unit_universal_pso;
 interface
 
 uses
-  System.SysUtils, System.Math, cmd_unit_universal_types;
+  System.SysUtils, System.Math, unit_universal_types;
 
 type
   TUniversalPSO = class

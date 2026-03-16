@@ -1,9 +1,10 @@
-unit cmd_unit_universal_types;
+unit unit_universal_types;
 
 interface
 
 uses
-  System.SysUtils, System.Math;
+  System.SysUtils, System.Math,
+  cmd_unit_types;
 
 const
   MAX_POOL_ELEMENTS = 16;
@@ -99,6 +100,7 @@ type
     wR: Single;             // weight for R_peak
     wFWHM: Single;          // weight for FWHM penalty
     RMinThreshold: Single;  // minimum acceptable R_peak
+    Polarization: TPolarisation;
     DeltaTheta: Single;     // beam divergence FWHM in degrees (0 = ideal)
     ThetaMin: Single;       // minimum Bragg angle in degrees (skip total reflection zone)
   end;

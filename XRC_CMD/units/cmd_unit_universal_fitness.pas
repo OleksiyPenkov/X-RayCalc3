@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Math, math_complex,
-  cmd_unit_types, cmd_unit_universal_types, unit_materials_mix;
+  cmd_unit_types, unit_universal_types, unit_materials_mix;
 
 type
   TUniversalFitness = class
