@@ -534,6 +534,7 @@ object frmXRFMain: TfrmXRFMain
           Height = 25
           Caption = '...'
           TabOrder = 2
+          OnClick = btnBrowseHenkeClick
         end
         object btnBrowseOutput: TButton
           Left = 240
@@ -542,6 +543,7 @@ object frmXRFMain: TfrmXRFMain
           Height = 25
           Caption = '...'
           TabOrder = 3
+          OnClick = btnBrowseOutputClick
         end
       end
       object grpResults: TGroupBox
@@ -628,6 +630,7 @@ object frmXRFMain: TfrmXRFMain
         Height = 25
         Caption = 'Load'
         TabOrder = 2
+        OnClick = btnLoadConfigClick
       end
       object btnSaveConfig: TButton
         Left = 170
@@ -636,6 +639,7 @@ object frmXRFMain: TfrmXRFMain
         Height = 25
         Caption = 'Save'
         TabOrder = 3
+        OnClick = btnSaveConfigClick
       end
     end
   end
