@@ -1039,7 +1039,8 @@ begin
     if Dlg.Execute then
     begin
       JSON := TFile.ReadAllText(Dlg.FileName);
-      FProject.ActiveModel.Data := Structure.ToString;
+      if FProject.ActiveModel <> nil then
+        FProject.ActiveModel.Data := Structure.ToString;
       CreateNewModel(FModelsRoot);
       FProject.ActiveModel.Data := JSON;
       Structure.FromString(JSON);
