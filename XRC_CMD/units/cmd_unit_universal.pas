@@ -11,7 +11,6 @@ implementation
 
 uses
   System.Math, System.Classes, Windows,
-  OtlParallel, OtlTaskControl,
   cmd_unit_types, cmd_unit_universal_types, cmd_unit_universal_io,
   cmd_unit_universal_fitness, cmd_unit_universal_pso,
   unit_materials_mix;
@@ -25,6 +24,18 @@ begin
   WriteLn('');
   WriteLn('Interrupt received. Saving checkpoint and exiting...');
   Result := True;
+end;
+
+procedure EvaluatePopulation(PSO: TUniversalPSO; Fitness: TUniversalFitness);
+var
+  i: Integer;
+  P: PParticle;
+begin
+  for i := 0 to PSO.ParticleCount - 1 do
+  begin
+    P := PSO.GetParticle(i);
+    P^.CurrentFoM := Fitness.Evaluate(P^.X, P^.TargetResults);
+  end;
 end;
 
 procedure cmdUniversalMirror(const ConfigFile: string; Verbose: Boolean);
@@ -62,6 +73,10 @@ begin
       [Config.Structure.StructureType,
        Config.Structure.dRange.Min, Config.Structure.dRange.Max,
        Config.Structure.NRange.Min, Config.Structure.NRange.Max]));
+    if Config.Structure.PureElements then
+      WriteLn('Mode: pure elements (no mixing)')
+    else
+      WriteLn('Mode: mixed compositions');
     WriteLn(Format('Population: %d, Max iterations: %d',
       [Config.Optimizer.Population, Config.Optimizer.Iterations]));
     WriteLn('---');
@@ -110,16 +125,9 @@ begin
         StartIter := 0;
       end;
 
-      // Initial evaluation (parallel)
+      // Initial evaluation
       SetLength(BestResults, Length(Config.Targets));
-      Parallel.ForEach(0, PSO.ParticleCount - 1, 1).Execute(
-        procedure(const Index: Integer)
-        var
-          LP: PParticle;
-        begin
-          LP := PSO.GetParticle(Index);
-          LP^.CurrentFoM := Fitness.Evaluate(LP^.X, LP^.TargetResults);
-        end);
+      EvaluatePopulation(PSO, Fitness);
       PSO.UpdateBests;
 
       Fitness.Evaluate(PSO.ABest, BestResults);
@@ -141,16 +149,8 @@ begin
         else
           PSO.UpdateLFPSO(t, Config.Optimizer.Iterations);
 
-        // Parallel fitness evaluation
-        Parallel.&For(0, PSO.ParticleCount - 1).Execute(
-          procedure(Index: Integer)
-          var
-            LP: PParticle;
-          begin
-            LP := PSO.GetParticle(Index);
-            LP^.CurrentFoM := Fitness.Evaluate(LP^.X, LP^.TargetResults);
-          end
-        );
+        // Fitness evaluation
+        EvaluatePopulation(PSO, Fitness);
 
         PSO.UpdateBests;
 

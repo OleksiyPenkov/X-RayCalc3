@@ -193,6 +193,7 @@ end;
 procedure TUniversalPSO.InitializePopulation;
 var
   i, j, Role: Integer;
+  Elem0, Elem1: Integer;
 begin
   SetLength(FParticles, FConfig.Optimizer.Population);
 
@@ -211,24 +212,36 @@ begin
     FParticles[i].X.N := FNMin + Random * FNRange;
     FParticles[i].X.Sigma := FSigmaMin + Random * FSigmaRange;
 
-    // Random composition fractions + normalize
-    for Role := 0 to LAYERS_PER_PERIOD - 1 do
+    // Composition initialization
+    if FConfig.Structure.PureElements then
     begin
-      if FConfig.Structure.PureElements then
-      begin
-        for j := 0 to FPoolSize - 1 do
-          FParticles[i].X.Composition[Role][j] := 0;
-        FParticles[i].X.Composition[Role][Random(FPoolSize)] := 1.0;
-      end
-      else
+      // Seed diverse element pairs systematically then random
+      Elem0 := i mod FPoolSize;
+      Elem1 := (i div FPoolSize) mod FPoolSize;
+      // Ensure different elements for each layer role
+      if (Elem0 = Elem1) and (FPoolSize > 1) then
+        Elem1 := (Elem1 + 1) mod FPoolSize;
+
+      for j := 0 to FPoolSize - 1 do
+        FParticles[i].X.Composition[0][j] := 0;
+      FParticles[i].X.Composition[0][Elem0] := 1.0;
+
+      for j := 0 to FPoolSize - 1 do
+        FParticles[i].X.Composition[1][j] := 0;
+      FParticles[i].X.Composition[1][Elem1] := 1.0;
+    end
+    else
+    begin
+      for Role := 0 to LAYERS_PER_PERIOD - 1 do
       begin
         for j := 0 to FPoolSize - 1 do
           FParticles[i].X.Composition[Role][j] := Random;
         NormalizeComposition(FParticles[i].X.Composition[Role]);
       end;
-
-      FParticles[i].X.DensityFactor[Role] := FDFMin + Random * FDFRange;
     end;
+
+    for Role := 0 to LAYERS_PER_PERIOD - 1 do
+      FParticles[i].X.DensityFactor[Role] := FDFMin + Random * FDFRange;
 
     // Initial velocities (10% of range)
     FParticles[i].V.d := (Random - 0.5) * FdRange * 0.2;
@@ -475,10 +488,20 @@ begin
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
     begin
-      for j := 0 to FPoolSize - 1 do
-        FParticles[i].X.Composition[Role][j] :=
-          FParticles[i].X.Composition[Role][j] + (Random - 0.5) * 0.2;
-      NormalizeComposition(FParticles[i].X.Composition[Role]);
+      if FConfig.Structure.PureElements and (Random < 0.5) then
+      begin
+        // 50% chance to pick a completely random element
+        for j := 0 to FPoolSize - 1 do
+          FParticles[i].X.Composition[Role][j] := 0;
+        FParticles[i].X.Composition[Role][Random(FPoolSize)] := 1.0;
+      end
+      else
+      begin
+        for j := 0 to FPoolSize - 1 do
+          FParticles[i].X.Composition[Role][j] :=
+            FParticles[i].X.Composition[Role][j] + (Random - 0.5) * 0.2;
+        NormalizeComposition(FParticles[i].X.Composition[Role]);
+      end;
 
       FParticles[i].X.DensityFactor[Role] :=
         FParticles[i].X.DensityFactor[Role] + (Random - 0.5) * FDFRange * 0.2;
