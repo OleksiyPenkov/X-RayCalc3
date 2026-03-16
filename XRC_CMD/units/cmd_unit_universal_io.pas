@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.IOUtils, System.Math,
-  cmd_unit_universal_types, cmd_unit_types;
+  cmd_unit_universal_types, cmd_unit_types, unit_materials_mix;
 
 type
   TUniversalIO = class
@@ -36,6 +36,10 @@ type
     procedure SavePopulation(const Config: TUniversalConfig;
       const Particles: array of TParticle;
       TopN: Integer; const OutputDir: string);
+
+    procedure SaveXRCStructure(const Config: TUniversalConfig;
+      const Best: TGenome; Mixer: TMaterialMixer;
+      const OutputDir: string);
 
     procedure SaveCheckpoint(const State: TOptState;
       const Config: TUniversalConfig;
@@ -323,6 +327,88 @@ begin
     );
   finally
     JSON.Free;
+  end;
+end;
+
+procedure TUniversalIO.SaveXRCStructure(const Config: TUniversalConfig;
+  const Best: TGenome; Mixer: TMaterialMixer;
+  const OutputDir: string);
+var
+  JStruct, JStack, JLayer, JSub: TJSONObject;
+  JStacks, JLayers: TJSONArray;
+  NInt, i, j, DomIdx: Integer;
+  H, EffDensity: Single;
+  MatName: string;
+begin
+  NInt := NRound(Best.N);
+
+  JStruct := TJSONObject.Create;
+  try
+    JStacks := TJSONArray.Create;
+    JStack := TJSONObject.Create;
+    JStack.AddPair('T', 'ML');
+    JStack.AddPair('N', NInt);
+
+    JLayers := TJSONArray.Create;
+    for i := 0 to LAYERS_PER_PERIOD - 1 do
+    begin
+      // Find dominant element
+      DomIdx := 0;
+      for j := 1 to High(Config.ElementPool) do
+        if Best.Composition[i][j] > Best.Composition[i][DomIdx] then
+          DomIdx := j;
+      MatName := Mixer.GetElementName(DomIdx);
+
+      // Layer thickness
+      if i = 0 then
+        H := Best.d * Best.Gamma
+      else
+        H := Best.d * (1 - Best.Gamma);
+
+      // Effective density = weighted sum of bulk densities * density factor
+      EffDensity := 0;
+      for j := 0 to High(Config.ElementPool) do
+        EffDensity := EffDensity + Best.Composition[i][j] * Mixer.GetElementDensity(j);
+      EffDensity := EffDensity * Best.DensityFactor[i];
+
+      JLayer := TJSONObject.Create;
+      JLayer.AddPair('M', MatName);
+      JLayer.AddPair('H', TJSONNumber.Create(RoundTo(H, -2)));
+      JLayer.AddPair('HP', False);
+      JLayer.AddPair('Hmin', TJSONNumber.Create(RoundTo(H * 0.5, -2)));
+      JLayer.AddPair('Hmax', TJSONNumber.Create(RoundTo(H * 1.5, -2)));
+      JLayer.AddPair('ProfileH', '');
+      JLayer.AddPair('s', TJSONNumber.Create(RoundTo(Best.Sigma, -2)));
+      JLayer.AddPair('SP', False);
+      JLayer.AddPair('Smin', TJSONNumber.Create(RoundTo(Best.Sigma * 0.5, -2)));
+      JLayer.AddPair('Smax', TJSONNumber.Create(RoundTo(Best.Sigma * 1.5, -2)));
+      JLayer.AddPair('ProfileS', '');
+      JLayer.AddPair('r', TJSONNumber.Create(RoundTo(EffDensity, -3)));
+      JLayer.AddPair('RP', False);
+      JLayer.AddPair('Rmin', TJSONNumber.Create(RoundTo(EffDensity * 0.5, -3)));
+      JLayer.AddPair('Rmax', TJSONNumber.Create(RoundTo(EffDensity * 1.5, -3)));
+      JLayer.AddPair('ProfileR', '');
+      JLayers.Add(JLayer);
+    end;
+    JStack.AddPair('Layers', JLayers);
+    JStacks.Add(JStack);
+
+    JSub := TJSONObject.Create;
+    JSub.AddPair('M', Config.Substrate);
+    JSub.AddPair('s', TJSONNumber.Create(0.1));
+    JSub.AddPair('r', TJSONNumber.Create(RoundTo(Mixer.GetSubstrateDensity, -3)));
+
+    JStruct.AddPair('Stacks', JStacks);
+    JStruct.AddPair('Subs', JSub);
+
+    if not TDirectory.Exists(OutputDir) then
+      TDirectory.CreateDirectory(OutputDir);
+    TFile.WriteAllText(
+      TPath.Combine(OutputDir, 'best_structure_xrc.json'),
+      JStruct.Format(2)
+    );
+  finally
+    JStruct.Free;
   end;
 end;
 

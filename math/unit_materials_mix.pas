@@ -50,6 +50,10 @@ type
       out Epsilon: TComplex
     );
 
+    function GetElementDensity(Index: Integer): Single;
+    function GetSubstrateDensity: Single;
+    function GetElementName(Index: Integer): string;
+
     property ElementCount: Integer read FElementCount;
     property TargetCount: Integer read FTargetCount;
   end;
@@ -168,6 +172,21 @@ begin
 
   Epsilon.re := 1 - FSubstrateHenke[TargetIdx].f1 * c;
   Epsilon.im := FSubstrateHenke[TargetIdx].f2 * c;
+end;
+
+function TMaterialMixer.GetElementDensity(Index: Integer): Single;
+begin
+  Result := FElements[Index].BulkDensity;
+end;
+
+function TMaterialMixer.GetSubstrateDensity: Single;
+begin
+  Result := FSubstrateInfo.BulkDensity;
+end;
+
+function TMaterialMixer.GetElementName(Index: Integer): string;
+begin
+  Result := FElements[Index].Name;
 end;
 
 end.

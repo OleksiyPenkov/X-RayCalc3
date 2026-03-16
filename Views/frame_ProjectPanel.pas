@@ -159,6 +159,7 @@ type
     procedure DeleteSelectedItems;
     procedure EditSelectedItem;
     procedure EditModelText;
+    procedure ImportStructure;
     procedure AddFolder;
     procedure AddExtension;
 
@@ -224,7 +225,7 @@ type
 implementation
 
 uses
-  System.Win.ComObj, AbUtils,
+  System.Win.ComObj, System.IOUtils, AbUtils,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
   editor_JSON, frm_ExtensionType;
 
@@ -1023,6 +1024,28 @@ begin
   begin
     Str := StringReplace(Str, #13#10, '', [rfReplaceAll]);
     Structure.FromString(Str);
+  end;
+end;
+
+procedure TfrmProjectPanel.ImportStructure;
+var
+  Dlg: TOpenDialog;
+  JSON: string;
+begin
+  Dlg := TOpenDialog.Create(nil);
+  try
+    Dlg.Filter := 'JSON files (*.json)|*.json|All files (*.*)|*.*';
+    Dlg.Title := 'Import Structure';
+    if Dlg.Execute then
+    begin
+      JSON := TFile.ReadAllText(Dlg.FileName);
+      FProject.ActiveModel.Data := Structure.ToString;
+      CreateNewModel(FModelsRoot);
+      FProject.ActiveModel.Data := JSON;
+      Structure.FromString(JSON);
+    end;
+  finally
+    Dlg.Free;
   end;
 end;
 

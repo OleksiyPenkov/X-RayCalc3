@@ -210,6 +210,7 @@ begin
       Fitness.Evaluate(PSO.ABest, BestResults);
       IO.SaveBestStructure(Config, PSO.ABest, -PSO.ABestFoM, BestResults,
         Config.OutputDir);
+      IO.SaveXRCStructure(Config, PSO.ABest, Mixer, Config.OutputDir);
 
       for i := 0 to High(Config.Targets) do
       begin

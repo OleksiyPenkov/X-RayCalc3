@@ -495,6 +495,8 @@ object frmMain: TfrmMain
           Hint = 'Auto Fitting'
           ImageIndex = 2
           Action = actAutoFitting
+          ParentShowHint = False
+          ShowHint = True
         end
         object BtnFastForward: TRzToolButton
           Left = 35
@@ -502,6 +504,8 @@ object frmMain: TfrmMain
           Hint = 'Calculate all'
           ImageIndex = 1
           Action = CalcAll
+          ParentShowHint = False
+          ShowHint = True
         end
         object btnCopyImage: TRzToolButton
           Left = 169
@@ -515,7 +519,11 @@ object frmMain: TfrmMain
         object btnPrintGraphics: TRzToolButton
           Left = 197
           Top = 2
+          Hint = 'Save chart as image'
           ImageIndex = 8
+          Action = FilePlotToFile
+          ParentShowHint = False
+          ShowHint = True
         end
       end
       inline FChartInfo: TfrmChartInfo
@@ -712,6 +720,9 @@ object frmMain: TfrmMain
       object actProjecEditModelText1: TMenuItem
         ImageIndex = 9
         Action = actProjecEditModelText
+      end
+      object mnuImportStructure: TMenuItem
+        Action = actImportStructure
       end
       object Copyasimage1: TMenuItem
         ImageIndex = 28
@@ -1630,23 +1641,27 @@ object frmMain: TfrmMain
     object FileNew: TAction
       Category = 'Project'
       Caption = 'New project'
+      Hint = 'New project'
       OnExecute = FileNewExecute
     end
     object FileOpen: TAction
       Category = 'Project'
       Caption = 'Open project ...'
+      Hint = 'Open project'
       ShortCut = 114
       OnExecute = FileOpenExecute
     end
     object FileSave: TAction
       Category = 'Project'
       Caption = 'Save project'
+      Hint = 'Save project'
       ShortCut = 16467
       OnExecute = FileSaveExecute
     end
     object FilePrint: TAction
       Category = 'Project'
       Caption = 'Print'
+      Hint = 'Print'
       OnExecute = FilePrintExecute
     end
     object FileClose: TAction
@@ -1941,6 +1956,11 @@ object frmMain: TfrmMain
       Caption = 'Edit as text ...'
       OnExecute = actProjecEditModelTextExecute
     end
+    object actImportStructure: TAction
+      Category = 'Project Item'
+      Caption = 'Import structure ...'
+      OnExecute = actImportStructureExecute
+    end
     object actDataSmooth: TAction
       Category = 'Data'
       Caption = 'Smooth'
@@ -1956,6 +1976,7 @@ object frmMain: TfrmMain
     object actProjectReopen: TAction
       Category = 'Project'
       Caption = 'Reopen'
+      Hint = 'Reopen project'
       ShortCut = 114
       OnExecute = actProjectReopenExecute
     end

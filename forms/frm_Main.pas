@@ -162,6 +162,8 @@ type
     EditHenketable1: TMenuItem;
     actProjecEditModelText: TAction;
     actProjecEditModelText1: TMenuItem;
+    actImportStructure: TAction;
+    mnuImportStructure: TMenuItem;
     N9: TMenuItem;
     N10: TMenuItem;
     Fitting1: TMenuItem;
@@ -243,6 +245,7 @@ type
     procedure CalcStopExecute(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
     procedure actProjecEditModelTextExecute(Sender: TObject);
+    procedure actImportStructureExecute(Sender: TObject);
     procedure actDataSmoothExecute(Sender: TObject);
     procedure acStructureUndoExecute(Sender: TObject);
     procedure actProjectReopenExecute(Sender: TObject);
@@ -516,6 +519,11 @@ end;
 procedure TfrmMain.actProjecEditModelTextExecute(Sender: TObject);
 begin
   FProjectPanel.EditModelText;
+end;
+
+procedure TfrmMain.actImportStructureExecute(Sender: TObject);
+begin
+  FProjectPanel.ImportStructure;
 end;
 
 procedure TfrmMain.actProjectItemDuplicateExecute(Sender: TObject);
