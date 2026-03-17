@@ -8,7 +8,7 @@ uses
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
   Vcl.ToolWin, Vcl.ExtCtrls, Vcl.ExtDlgs, Vcl.Menus,
   System.ImageList, Vcl.ImgList,
-  RzSplit,
+  RzSplit, RzPanel, RzStatus,
   JamShellBreadCrumbBar, ShellControls, ShellLink,
   Jam.Shell.Types, Jam.Shell.Controls.Types,
   Jam.Shell.Controls.BaseShellListView,
@@ -25,7 +25,8 @@ type
     mnuView: TMenuItem;
     mnuTools: TMenuItem;
     mnuRegisterExt: TMenuItem;
-    StatusBar1: TStatusBar;
+    StatusBar: TRzStatusBar;
+    spStatus: TRzStatusPane;
     ToolBar1: TToolBar;
     ToolBarImages: TImageList;
     btnRefresh: TToolButton;
@@ -188,11 +189,11 @@ begin
     FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
 
     tabCompare.TabVisible := False;
-    StatusBar1.SimpleText := Format('FoM: %.6f  |  %s',
+    spStatus.Caption := Format('FoM: %.6f  |  %s',
       [FLoader.Manifest.FoM, ExtractFileName(FileName)]);
   except
     on E: Exception do
-      StatusBar1.SimpleText := 'Error: ' + E.Message;
+      spStatus.Caption := 'Error: ' + E.Message;
   end;
 end;
 
@@ -221,10 +222,10 @@ begin
     FCompareView.LoadComparison(Manifests, FileNames);
     tabCompare.TabVisible := True;
 
-    StatusBar1.SimpleText := Format('%d files compared', [FLoader.ResultCount]);
+    spStatus.Caption := Format('%d files compared', [FLoader.ResultCount]);
   except
     on E: Exception do
-      StatusBar1.SimpleText := 'Error: ' + E.Message;
+      spStatus.Caption := 'Error: ' + E.Message;
   end;
 end;
 

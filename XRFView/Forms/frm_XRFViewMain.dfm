@@ -151,13 +151,24 @@ object frmXRFViewMain: TfrmXRFViewMain
       end
     end
   end
-  object StatusBar1: TStatusBar
+  object StatusBar: TRzStatusBar
     Left = 0
     Top = 580
     Width = 1000
     Height = 20
-    SimplePanel = True
-    TabOrder = 2
+    BorderInner = fsNone
+    BorderOuter = fsNone
+    BorderSides = [sdLeft, sdTop, sdRight, sdBottom]
+    BorderWidth = 0
+    object spStatus: TRzStatusPane
+      Left = 0
+      Top = 0
+      Width = 1000
+      Height = 20
+      Align = alClient
+      AutoSize = True
+      Caption = ''
+    end
   end
   object MainMenu1: TMainMenu
     Left = 456
