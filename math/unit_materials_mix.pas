@@ -53,6 +53,13 @@ type
     function GetElementDensity(Index: Integer): Single;
     function GetSubstrateDensity: Single;
     function GetElementName(Index: Integer): string;
+    function FindElementIndex(const Name: string): Integer;
+    procedure CalcSingleEpsilon(
+      ElementIndex: Integer;
+      Density: Single;
+      TargetIdx: Integer;
+      out Epsilon: TComplex
+    );
 
     property ElementCount: Integer read FElementCount;
     property TargetCount: Integer read FTargetCount;
@@ -142,7 +149,7 @@ begin
   A_mix := 0;
   rho_mix := 0;
 
-  for i := 0 to FElementCount - 1 do
+  for i := 0 to High(Fractions) do
   begin
     f1_mix := f1_mix + Fractions[i] * FHenkeCache[i][TargetIdx].f1;
     f2_mix := f2_mix + Fractions[i] * FHenkeCache[i][TargetIdx].f2;
@@ -187,6 +194,31 @@ end;
 function TMaterialMixer.GetElementName(Index: Integer): string;
 begin
   Result := FElements[Index].Name;
+end;
+
+function TMaterialMixer.FindElementIndex(const Name: string): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to FElementCount - 1 do
+    if SameText(FElements[i].Name, Name) then
+      Exit(i);
+  Result := -1;
+end;
+
+procedure TMaterialMixer.CalcSingleEpsilon(
+  ElementIndex: Integer;
+  Density: Single;
+  TargetIdx: Integer;
+  out Epsilon: TComplex);
+var
+  c, Lambda: Single;
+begin
+  Lambda := FTargetLambdas[TargetIdx];
+  c := ClassicalElectronRadius * Density
+       / FElements[ElementIndex].AtomicMass * Sqr(Lambda);
+  Epsilon.re := 1 - FHenkeCache[ElementIndex][TargetIdx].f1 * c;
+  Epsilon.im := FHenkeCache[ElementIndex][TargetIdx].f2 * c;
 end;
 
 end.
