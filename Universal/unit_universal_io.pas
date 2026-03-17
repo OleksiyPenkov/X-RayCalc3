@@ -395,6 +395,8 @@ begin
     JResult.AddPair('gamma', TJSONNumber.Create(Best.Gamma));
     JResult.AddPair('N', TJSONNumber.Create(NInt));
     JResult.AddPair('sigma', TJSONNumber.Create(Best.Sigma));
+    if Best.CapH > 0 then
+      JResult.AddPair('cap_h', TJSONNumber.Create(Best.CapH));
 
     JComp := TJSONObject.Create;
     for i := 0 to LAYERS_PER_PERIOD - 1 do
@@ -520,8 +522,37 @@ begin
 
     if TemplIdx >= 0 then
     begin
-      // Template-expanded layers
+      // Cap layer as separate stack (if present)
       Templ := Templates[TemplIdx];
+      if Templ.HasCap and (Best.CapH > 0) then
+      begin
+        var JCapStack := TJSONObject.Create;
+        JCapStack.AddPair('T', 'SL');
+        JCapStack.AddPair('N', 1);
+        var JCapLayers := TJSONArray.Create;
+        JLayer := TJSONObject.Create;
+        JLayer.AddPair('M', Templ.Cap.Material);
+        JLayer.AddPair('H', TJSONNumber.Create(RoundTo(Best.CapH, -2)));
+        JLayer.AddPair('HP', True);
+        JLayer.AddPair('Hmin', TJSONNumber.Create(RoundTo(Templ.Cap.ThicknessRange.Min, -2)));
+        JLayer.AddPair('Hmax', TJSONNumber.Create(RoundTo(Templ.Cap.ThicknessRange.Max, -2)));
+        JLayer.AddPair('ProfileH', '');
+        JLayer.AddPair('s', TJSONNumber.Create(RoundTo(Templ.Cap.Sigma, -2)));
+        JLayer.AddPair('SP', False);
+        JLayer.AddPair('Smin', TJSONNumber.Create(RoundTo(Templ.Cap.Sigma * 0.5, -2)));
+        JLayer.AddPair('Smax', TJSONNumber.Create(RoundTo(Templ.Cap.Sigma * 1.5, -2)));
+        JLayer.AddPair('ProfileS', '');
+        JLayer.AddPair('r', TJSONNumber.Create(RoundTo(Templ.Cap.Density, -3)));
+        JLayer.AddPair('RP', False);
+        JLayer.AddPair('Rmin', TJSONNumber.Create(RoundTo(Templ.Cap.Density * 0.5, -3)));
+        JLayer.AddPair('Rmax', TJSONNumber.Create(RoundTo(Templ.Cap.Density * 1.5, -3)));
+        JLayer.AddPair('ProfileR', '');
+        JCapLayers.Add(JLayer);
+        JCapStack.AddPair('Layers', JCapLayers);
+        JStacks.Add(JCapStack);
+      end;
+
+      // Template-expanded layers
       for i := 0 to High(Templ.Layers) do
       begin
         case Templ.Layers[i].ThicknessType of
@@ -726,6 +757,7 @@ var
     Result.AddPair('gamma', TJSONNumber.Create(G.Gamma));
     Result.AddPair('N', TJSONNumber.Create(G.N));
     Result.AddPair('sigma', TJSONNumber.Create(G.Sigma));
+    Result.AddPair('cap_h', TJSONNumber.Create(G.CapH));
     Result.AddPair('df0', TJSONNumber.Create(G.DensityFactor[0]));
     Result.AddPair('df1', TJSONNumber.Create(G.DensityFactor[1]));
   end;
@@ -765,6 +797,7 @@ begin
       JVel.AddPair('gamma', TJSONNumber.Create(State.Particles[i].V.Gamma));
       JVel.AddPair('N', TJSONNumber.Create(State.Particles[i].V.N));
       JVel.AddPair('sigma', TJSONNumber.Create(State.Particles[i].V.Sigma));
+      JVel.AddPair('cap_h', TJSONNumber.Create(State.Particles[i].V.CapH));
       JVel.AddPair('df0', TJSONNumber.Create(State.Particles[i].V.DensityFactor[0]));
       JVel.AddPair('df1', TJSONNumber.Create(State.Particles[i].V.DensityFactor[1]));
       JParticle.AddPair('v', JVel);
@@ -806,6 +839,10 @@ var
     Result.Gamma := JG.GetValue<Double>('gamma');
     Result.N := JG.GetValue<Double>('N');
     Result.Sigma := JG.GetValue<Double>('sigma');
+    if JG.FindValue('cap_h') <> nil then
+      Result.CapH := JG.GetValue<Double>('cap_h')
+    else
+      Result.CapH := 0;
     Result.DensityFactor[0] := JG.GetValue<Double>('df0');
     Result.DensityFactor[1] := JG.GetValue<Double>('df1');
   end;
@@ -843,6 +880,10 @@ begin
       Result.Particles[i].V.Gamma := JVel.GetValue<Double>('gamma');
       Result.Particles[i].V.N := JVel.GetValue<Double>('N');
       Result.Particles[i].V.Sigma := JVel.GetValue<Double>('sigma');
+      if JVel.FindValue('cap_h') <> nil then
+        Result.Particles[i].V.CapH := JVel.GetValue<Double>('cap_h')
+      else
+        Result.Particles[i].V.CapH := 0;
       Result.Particles[i].V.DensityFactor[0] := JVel.GetValue<Double>('df0');
       Result.Particles[i].V.DensityFactor[1] := JVel.GetValue<Double>('df1');
     end;

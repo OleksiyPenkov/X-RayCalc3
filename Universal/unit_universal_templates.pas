@@ -126,6 +126,22 @@ begin
       end;
 
       ComputeReductions(Result[PairIdx]);
+
+      // Parse optional cap
+      if JPairObj.FindValue('cap') <> nil then
+      begin
+        var JCap := JPairObj.GetValue<TJSONObject>('cap');
+        Result[PairIdx].HasCap := True;
+        Result[PairIdx].Cap.Material := JCap.GetValue<string>('material');
+        Result[PairIdx].Cap.Sigma := JCap.GetValue<Double>('sigma');
+        Result[PairIdx].Cap.Density := JCap.GetValue<Double>('density');
+        var JCapRange := JCap.GetValue<TJSONObject>('thickness');
+        Result[PairIdx].Cap.ThicknessRange.Min := JCapRange.GetValue<Double>('min');
+        Result[PairIdx].Cap.ThicknessRange.Max := JCapRange.GetValue<Double>('max');
+      end
+      else
+        Result[PairIdx].HasCap := False;
+
       Inc(PairIdx);
     end;
   finally
@@ -186,6 +202,25 @@ begin
         if Count >= Length(Result) then
           SetLength(Result, Length(Result) * 2);
         Result[Count] := Lib[i].Layers[j].Material;
+        Inc(Count);
+      end;
+    end;
+
+    // Also collect cap material if present
+    if Lib[i].HasCap then
+    begin
+      Found := False;
+      for k := 0 to Count - 1 do
+        if SameText(Result[k], Lib[i].Cap.Material) then
+        begin
+          Found := True;
+          Break;
+        end;
+      if not Found then
+      begin
+        if Count >= Length(Result) then
+          SetLength(Result, Length(Result) * 2);
+        Result[Count] := Lib[i].Cap.Material;
         Inc(Count);
       end;
     end;

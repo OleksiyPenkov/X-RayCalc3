@@ -99,6 +99,8 @@ begin
   begin
     // Template path: variable layers per period
     TotalLayers := 2 + NInt * Length(Templ.Layers);
+    if Templ.HasCap then
+      Inc(TotalLayers);
     SetLength(Result, TotalLayers);
 
     // Layer 0: vacuum
@@ -108,6 +110,19 @@ begin
     Result[0].S := 0;
 
     LayerIdx := 1;
+
+    // Cap layer (if present)
+    if Templ.HasCap then
+    begin
+      ElemIdx := FMixer.FindElementIndex(Templ.Cap.Material);
+      FMixer.CalcSingleEpsilon(ElemIdx, Templ.Cap.Density, TargetIdx, Eps);
+      Result[LayerIdx].e := Eps;
+      Result[LayerIdx].H := Genome.CapH;
+      Result[LayerIdx].S := Templ.Cap.Sigma;
+      Result[LayerIdx].Rho := Templ.Cap.Density;
+      Inc(LayerIdx);
+    end;
+
     for Period := 0 to NInt - 1 do
     begin
       for j := 0 to High(Templ.Layers) do

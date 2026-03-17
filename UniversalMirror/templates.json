@@ -1,35 +1,49 @@
 {
   "Mo/Si": {
-    "description": "Mo/Si with MoSi2 interdiffusion layers (~1nm each side)",
+    "description": "MoSi(xxxxxx) by Mingfeng",
     "layers": [
-      { "material": "Mo",    "thickness": "gamma",    "sigma": 0.3, "density": 10.2 },
-      { "material": "MoSi2", "thickness": 1.0,        "sigma": 0.3, "density": 6.3  },
-      { "material": "Si",    "thickness": "1-gamma",  "sigma": 0.5, "density": 2.33 },
-      { "material": "MoSi2", "thickness": 0.8,        "sigma": 0.3, "density": 6.3  }
-    ]
+      { "material": "Mo",    "thickness": "gamma",    "sigma": 4.0, "density": 10.2 },
+      { "material": "MoSi2", "thickness": 1.0,        "sigma": 3.5, "density": 6.3  },
+      { "material": "Si",    "thickness": "1-gamma",  "sigma": 2.8, "density": 2.33 },
+      { "material": "MoSi2", "thickness": 0.8,        "sigma": 2.4, "density": 6.3  }
+    ],
+    "cap": {
+      "material": "Si",
+      "sigma": 2.0,
+      "density": 2.33,
+      "thickness": { "min": 10, "max": 60 }
+    }
   },
   "W/Si": {
-    "description": "W/Si with WSi2 interdiffusion layers",
+    "description": "Ref.",
     "layers": [
       { "material": "W",     "thickness": "gamma",    "sigma": 0.2, "density": 19.3 },
       { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 },
       { "material": "Si",    "thickness": "1-gamma",  "sigma": 0.4, "density": 2.33 },
       { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 }
-    ]
+    ],
+    "cap": {
+      "material": "Si",
+      "sigma": 0.3,
+      "density": 2.33,
+      "thickness": { "min": 10, "max": 60 }
+    }
   },
   "W/B4C": {
-    "description": "W/B4C ideal bilayer (no known interlayers)",
+    "description": "W/B4C(260201B) by JingJing",
     "layers": [
-      { "material": "W",   "thickness": "gamma",    "sigma": 0.2, "density": 19.3 },
-      { "material": "B4C", "thickness": "1-gamma",  "sigma": 0.3, "density": 2.52 }
+      { "material": "WC",  "thickness": 1.95,       "sigma": 2, "density": 6.51 },
+      { "material": "W",   "thickness": "gamma",   "sigma": 5.27, "density": 19.24},
+      { "material": "WC",  "thickness": 4.94,       "sigma": 9.82, "density": 11.82},
+      { "material": "B4C", "thickness": "1-gamma", "sigma": 2.66, "density": 2.39}
     ]
   },
   "Cr/Sc": {
-    "description": "Cr/Sc with CrSc interdiffusion layer on Cr-on-Sc interface",
+    "description": "Ref.",
     "layers": [
-      { "material": "Cr",   "thickness": "gamma",    "sigma": 0.3, "density": 7.19  },
-      { "material": "Sc",   "thickness": "1-gamma",  "sigma": 0.3, "density": 2.99  },
-      { "material": "CrSc", "thickness": 0.5,        "sigma": 0.3, "density": 5.09  }
+      { "material": "Cr",   "thickness": "gamma",    "sigma": 4, "density": 7.19  },
+      { "material": "Sc",   "thickness": "1-gamma",  "sigma": 4, "density": 2.99  },
+      { "material": "CrSc", "thickness": 0.5,        "sigma": 4, "density": 5.09  }
     ]
   }
 }

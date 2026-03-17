@@ -41,6 +41,11 @@ type
 
   TTargetResults = array of TTargetResult;
 
+  // Range parameter (min/max bounds)
+  TParamRange = record
+    Min, Max: Single;
+  end;
+
   // Template sub-layer thickness type
   TThicknessType = (ttGamma, ttOneMinusGamma, ttFixed);
 
@@ -53,6 +58,14 @@ type
     Density: Single;         // bulk density (g/cm3)
   end;
 
+  // Optional capping layer definition
+  TTemplateCap = record
+    Material: string;
+    Sigma: Single;            // interface roughness (Angstroms)
+    Density: Single;          // bulk density (g/cm3)
+    ThicknessRange: TParamRange; // optimizable thickness range (Angstroms)
+  end;
+
   // A complete template for one material pair
   TTemplatePair = record
     Key: string;              // "Mo/Si" - lookup key
@@ -60,15 +73,12 @@ type
     Layers: array of TTemplateLayer;
     GammaReduction: Single;   // sum of fixed thicknesses subtracted from gamma layer
     OneMinusGammaReduction: Single; // sum of fixed thicknesses subtracted from 1-gamma layer
+    HasCap: Boolean;          // true if capping layer defined
+    Cap: TTemplateCap;        // capping layer (only used when HasCap = true)
   end;
 
   // Library of all loaded templates
   TTemplateLibrary = array of TTemplatePair;
-
-  // Range parameter (min/max bounds)
-  TParamRange = record
-    Min, Max: Single;
-  end;
 
   // Composition fractions for one layer role
   TCompositionGenes = array of Single; // length = element_pool count, sum = 1.0
@@ -80,6 +90,7 @@ type
     Gamma: Single;          // reflector/period ratio
     N: Single;              // number of periods (float, rounded for eval)
     Sigma: Single;          // interface roughness (A)
+    CapH: Single;           // capping layer thickness (A), 0 = no cap
     DensityFactor: array [0..LAYERS_PER_PERIOD-1] of Single; // per-layer density multiplier
   end;
 
@@ -90,6 +101,7 @@ type
     Gamma: Single;
     N: Single;
     Sigma: Single;
+    CapH: Single;
     DensityFactor: array [0..LAYERS_PER_PERIOD-1] of Single;
   end;
 
@@ -117,6 +129,7 @@ type
     SigmaFixed: Single;          // fixed roughness value (<=0 means use SigmaRange)
     SigmaRange: TParamRange;
     DensityFactorRange: TParamRange;
+    CapHRange: TParamRange;          // capping layer thickness range (0,0 = no cap)
   end;
 
   // Fitness configuration from JSON
@@ -182,6 +195,7 @@ begin
   Result.Gamma := 0;
   Result.N := 0;
   Result.Sigma := 0;
+  Result.CapH := 0;
   Result.DensityFactor[0] := 1.0;
   Result.DensityFactor[1] := 1.0;
 end;
@@ -196,6 +210,7 @@ begin
   Result.Gamma := 0;
   Result.N := 0;
   Result.Sigma := 0;
+  Result.CapH := 0;
   Result.DensityFactor[0] := 0;
   Result.DensityFactor[1] := 0;
 end;

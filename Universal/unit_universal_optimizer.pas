@@ -165,6 +165,44 @@ begin
       end;
     end;
 
+    // Compute CapHRange from matching templates
+    var CapMin: Single := MaxSingle;
+    var CapMax: Single := 0;
+    var HasAnyCap := False;
+    for var ti := 0 to High(FTemplates) do
+    begin
+      if not FTemplates[ti].HasCap then Continue;
+      var SlashPos := Pos('/', FTemplates[ti].Key);
+      if SlashPos <= 0 then Continue;
+      var TMat1 := Copy(FTemplates[ti].Key, 1, SlashPos - 1);
+      var TMat2 := Copy(FTemplates[ti].Key, SlashPos + 1, MaxInt);
+      var M1InPool := False;
+      var M2InPool := False;
+      for var ei := 0 to High(FConfig.ElementPool) do
+      begin
+        if SameText(FConfig.ElementPool[ei], TMat1) then M1InPool := True;
+        if SameText(FConfig.ElementPool[ei], TMat2) then M2InPool := True;
+      end;
+      if M1InPool and M2InPool then
+      begin
+        HasAnyCap := True;
+        if FTemplates[ti].Cap.ThicknessRange.Min < CapMin then
+          CapMin := FTemplates[ti].Cap.ThicknessRange.Min;
+        if FTemplates[ti].Cap.ThicknessRange.Max > CapMax then
+          CapMax := FTemplates[ti].Cap.ThicknessRange.Max;
+      end;
+    end;
+    if HasAnyCap then
+    begin
+      FConfig.Structure.CapHRange.Min := CapMin;
+      FConfig.Structure.CapHRange.Max := CapMax;
+    end
+    else
+    begin
+      FConfig.Structure.CapHRange.Min := 0;
+      FConfig.Structure.CapHRange.Max := 0;
+    end;
+
     // Create engine objects
     FPool := TThreadPool.Create;
     FPool.SetMinWorkerThreads(TThread.ProcessorCount);
