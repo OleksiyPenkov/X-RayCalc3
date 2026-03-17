@@ -41,6 +41,30 @@ type
 
   TTargetResults = array of TTargetResult;
 
+  // Template sub-layer thickness type
+  TThicknessType = (ttGamma, ttOneMinusGamma, ttFixed);
+
+  // One sub-layer in a material pair template
+  TTemplateLayer = record
+    Material: string;
+    ThicknessType: TThicknessType;
+    FixedThickness: Single;  // Angstroms, only used when ThicknessType = ttFixed
+    Sigma: Single;           // interface roughness (Angstroms)
+    Density: Single;         // bulk density (g/cm3)
+  end;
+
+  // A complete template for one material pair
+  TTemplatePair = record
+    Key: string;              // "Mo/Si" - lookup key
+    Description: string;      // human-readable description
+    Layers: array of TTemplateLayer;
+    GammaReduction: Single;   // sum of fixed thicknesses subtracted from gamma layer
+    OneMinusGammaReduction: Single; // sum of fixed thicknesses subtracted from 1-gamma layer
+  end;
+
+  // Library of all loaded templates
+  TTemplateLibrary = array of TTemplatePair;
+
   // Range parameter (min/max bounds)
   TParamRange = record
     Min, Max: Single;
@@ -127,6 +151,7 @@ type
     HenkePath: string;
     OutputDir: string;
     ResumeFrom: string;
+    TemplatePath: string;     // path to template JSON file (empty = no templates)
   end;
 
   // Optimizer state (for checkpoint/resume)
