@@ -84,14 +84,18 @@ begin
   Content := TFile.ReadAllText(FileName);
   JSON := TJSONObject.ParseJSONValue(Content) as TJSONObject;
   try
-    JTargets := JSON.GetValue<TJSONArray>('targets');
-    SetLength(Result.Targets, JTargets.Count);
+    // Try "lines" first, fall back to "targets" for backward compatibility
+    if JSON.FindValue('lines') <> nil then
+      JTargets := JSON.GetValue<TJSONArray>('lines')
+    else
+      JTargets := JSON.GetValue<TJSONArray>('targets');
+    SetLength(Result.Lines, JTargets.Count);
     for i := 0 to JTargets.Count - 1 do
     begin
       JTarget := JTargets.Items[i] as TJSONObject;
-      Result.Targets[i].Name := JTarget.GetValue<string>('element');
-      Result.Targets[i].Lambda := JTarget.GetValue<Double>('lambda');
-      Result.Targets[i].Weight := JTarget.GetValue<Double>('weight');
+      Result.Lines[i].Name := JTarget.GetValue<string>('element');
+      Result.Lines[i].Lambda := JTarget.GetValue<Double>('lambda');
+      Result.Lines[i].Weight := JTarget.GetValue<Double>('weight');
     end;
 
     JPool := JSON.GetValue<TJSONArray>('element_pool');
@@ -217,17 +221,17 @@ var
 begin
   JSON := TJSONObject.Create;
   try
-    // Targets
+    // Lines
     JTargets := TJSONArray.Create;
-    for i := 0 to High(Config.Targets) do
+    for i := 0 to High(Config.Lines) do
     begin
       JTarget := TJSONObject.Create;
-      JTarget.AddPair('element', Config.Targets[i].Name);
-      JTarget.AddPair('lambda', TJSONNumber.Create(Config.Targets[i].Lambda));
-      JTarget.AddPair('weight', TJSONNumber.Create(Config.Targets[i].Weight));
+      JTarget.AddPair('element', Config.Lines[i].Name);
+      JTarget.AddPair('lambda', TJSONNumber.Create(Config.Lines[i].Lambda));
+      JTarget.AddPair('weight', TJSONNumber.Create(Config.Lines[i].Weight));
       JTargets.Add(JTarget);
     end;
-    JSON.AddPair('targets', JTargets);
+    JSON.AddPair('lines', JTargets);
 
     // Element pool
     JPool := TJSONArray.Create;
@@ -423,14 +427,14 @@ begin
     JResult.AddPair('composition', JComp);
 
     JPerElem := TJSONObject.Create;
-    for i := 0 to High(Config.Targets) do
+    for i := 0 to High(Config.Lines) do
     begin
       JElem := TJSONObject.Create;
       JElem.AddPair('R_peak', TJSONNumber.Create(
         RoundTo(TargetResults[i].RPeak, -4)));
       JElem.AddPair('FWHM', TJSONNumber.Create(
         RoundTo(TargetResults[i].FWHM, -3)));
-      JPerElem.AddPair(Config.Targets[i].Name, JElem);
+      JPerElem.AddPair(Config.Lines[i].Name, JElem);
     end;
     JResult.AddPair('per_element', JPerElem);
     JSON.AddPair('optimizer_result', JResult);

@@ -109,8 +109,8 @@ begin
   // Print banner
   WriteLn('Universal Mirror Optimizer v1.0');
   Write('Targets:');
-  for i := 0 to High(Config.Targets) do
-    Write(Format(' %s(%.1fA)', [Config.Targets[i].Name, Config.Targets[i].Lambda]));
+  for i := 0 to High(Config.Lines) do
+    Write(Format(' %s(%.1fA)', [Config.Lines[i].Name, Config.Lines[i].Lambda]));
   WriteLn;
   Write('Pool:');
   for i := 0 to High(Config.ElementPool) do
@@ -134,8 +134,8 @@ begin
 
   // Print header
   Write(Format('%5s  %8s', ['Iter', 'FoM']));
-  for i := 0 to High(Config.Targets) do
-    Write(Format('  %5s', ['R_' + Config.Targets[i].Name]));
+  for i := 0 to High(Config.Lines) do
+    Write(Format('  %5s', ['R_' + Config.Lines[i].Name]));
   WriteLn(Format('  %5s', ['Div']));
 
   Handler := TConsoleHandler.Create(Config, Verbose);

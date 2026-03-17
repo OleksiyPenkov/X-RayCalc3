@@ -140,7 +140,7 @@ type
     FXrccmdProcess: THandle;
     FLogLineCount: Integer;
     FXrccmdOutputDir: string;
-    FXrccmdTargetNames: TArray<string>;
+    FXrccmdLineNames: TArray<string>;
     procedure HandleIteration(const Data: TIterationData);
     procedure HandleCompletion(const Data: TIterationData;
       const Curves: TArray<TCurveData>);
@@ -187,7 +187,7 @@ const
 function ValidateConfig(const Config: TUniversalConfig; out Error: string): Boolean;
 begin
   Result := False;
-  if Length(Config.Targets) = 0 then begin Error := 'No target elements selected.'; Exit; end;
+  if Length(Config.Lines) = 0 then begin Error := 'No XRF lines selected.'; Exit; end;
   if Length(Config.ElementPool) = 0 then begin Error := 'No elements in pool.'; Exit; end;
   if Config.OutputDir = '' then begin Error := 'Output directory not set.'; Exit; end;
   Result := True;
@@ -272,14 +272,14 @@ begin
     sgWeights.Cells[1, i + 1] := '1.0';
   end;
 
-  for i := 0 to High(Config.Targets) do
+  for i := 0 to High(Config.Lines) do
   begin
     for j := 0 to clbTargets.Count - 1 do
     begin
-      if SameText(clbTargets.Items[j], Config.Targets[i].Name) then
+      if SameText(clbTargets.Items[j], Config.Lines[i].Name) then
       begin
         clbTargets.Checked[j] := True;
-        sgWeights.Cells[1, j + 1] := FormatFloat('0.###', Config.Targets[i].Weight);
+        sgWeights.Cells[1, j + 1] := FormatFloat('0.###', Config.Lines[i].Weight);
         Break;
       end;
     end;
@@ -354,23 +354,23 @@ begin
 
   // Targets: collect checked items with lambda and weight
   TargetIdx := 0;
-  SetLength(Result.Targets, clbTargets.Count);
+  SetLength(Result.Lines, clbTargets.Count);
   for i := 0 to clbTargets.Count - 1 do
   begin
     if clbTargets.Checked[i] then
     begin
-      Result.Targets[TargetIdx].Name := clbTargets.Items[i];
+      Result.Lines[TargetIdx].Name := clbTargets.Items[i];
       // Find matching lambda from KAlphaData
       if i < TARGET_COUNT then
-        Result.Targets[TargetIdx].Lambda := KAlphaData[i].Lambda
+        Result.Lines[TargetIdx].Lambda := KAlphaData[i].Lambda
       else
-        Result.Targets[TargetIdx].Lambda := 0;
+        Result.Lines[TargetIdx].Lambda := 0;
       // Read weight from grid
-      Result.Targets[TargetIdx].Weight := StrToFloatDef(sgWeights.Cells[1, i + 1], 1.0, FS);
+      Result.Lines[TargetIdx].Weight := StrToFloatDef(sgWeights.Cells[1, i + 1], 1.0, FS);
       Inc(TargetIdx);
     end;
   end;
-  SetLength(Result.Targets, TargetIdx);
+  SetLength(Result.Lines, TargetIdx);
 
   // Element pool: collect checked items
   TargetIdx := 0;
@@ -627,9 +627,9 @@ begin
 
   // Remember output dir and target names for log parsing
   FXrccmdOutputDir := Config.OutputDir;
-  SetLength(FXrccmdTargetNames, Length(Config.Targets));
-  for i := 0 to High(Config.Targets) do
-    FXrccmdTargetNames[i] := Config.Targets[i].Name;
+  SetLength(FXrccmdLineNames, Length(Config.Lines));
+  for i := 0 to High(Config.Lines) do
+    FXrccmdLineNames[i] := Config.Lines[i].Name;
 
   // Launch xrccmd
   CmdLine := '"' + XrccmdExe + '" -u "' + ConfigPath + '"';
@@ -710,8 +710,8 @@ begin
         FoM := StrToFloatDef(Parts[1], 0, FS);
 
         // R_peak values: Parts[2..2+NTargets-1]
-        SetLength(RPeakValues, Length(FXrccmdTargetNames));
-        for j := 0 to High(FXrccmdTargetNames) do
+        SetLength(RPeakValues, Length(FXrccmdLineNames));
+        for j := 0 to High(FXrccmdLineNames) do
         begin
           if j + 2 < Length(Parts) then
             RPeakValues[j] := StrToFloatDef(Parts[j + 2], 0, FS)
@@ -724,8 +724,8 @@ begin
 
         // Update R_peak bar chart
         serRPeak.Clear;
-        for j := 0 to High(FXrccmdTargetNames) do
-          serRPeak.Add(RPeakValues[j], FXrccmdTargetNames[j]);
+        for j := 0 to High(FXrccmdLineNames) do
+          serRPeak.Add(RPeakValues[j], FXrccmdLineNames[j]);
 
         // Update progress label — use last two parts for time
         if Length(Parts) >= 2 then
@@ -1074,7 +1074,7 @@ var
   Mixer: TMaterialMixer;
   Config: TUniversalConfig;
   ElementNames: array of string;
-  TargetLambdas: array of Single;
+  LineLambdas: array of Single;
   Dir: string;
   i: Integer;
 begin
@@ -1088,14 +1088,14 @@ begin
   for i := 0 to High(Config.ElementPool) do
     ElementNames[i] := Config.ElementPool[i];
 
-  SetLength(TargetLambdas, Length(Config.Targets));
-  for i := 0 to High(Config.Targets) do
-    TargetLambdas[i] := Config.Targets[i].Lambda;
+  SetLength(LineLambdas, Length(Config.Lines));
+  for i := 0 to High(Config.Lines) do
+    LineLambdas[i] := Config.Lines[i].Lambda;
 
   Mixer := TMaterialMixer.Create;
   IO := TUniversalIO.Create;
   try
-    Mixer.Initialize(ElementNames, TargetLambdas, Config.Substrate, Config.HenkePath);
+    Mixer.Initialize(ElementNames, LineLambdas, Config.Substrate, Config.HenkePath);
     IO.SaveXRCStructure(Config, FLastIterationData.BestGenome, Mixer, nil, Dir);
   finally
     IO.Free;

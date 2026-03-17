@@ -8,7 +8,7 @@ uses
 
 const
   MAX_POOL_ELEMENTS = 16;
-  MAX_TARGETS = 16;
+  MAX_LINES = 16;
   LAYERS_PER_PERIOD = 2; // bilayer v1.0
 
 type
@@ -24,10 +24,10 @@ type
     f1, f2: Single;
   end;
 
-  // Target element definition
-  TTargetElement = record
+  // XRF emission line definition
+  TXRFLine = record
     Name: string;
-    Lambda: Single;       // Ka wavelength in Angstroms
+    Lambda: Single;       // characteristic wavelength in Angstroms
     Weight: Single;       // relative weight in FoM
   end;
 
@@ -159,7 +159,7 @@ type
 
   // Full configuration
   TUniversalConfig = record
-    Targets: array of TTargetElement;
+    Lines: array of TXRFLine;
     ElementPool: array of string;
     Structure: TStructureConfig;
     Fitness: TFitnessConfig;

@@ -226,7 +226,7 @@ begin
     FParticles[i].PBest := CreateGenome(FPoolSize);
     FParticles[i].PBestFoM := MaxSingle;
     FParticles[i].CurrentFoM := MaxSingle;
-    SetLength(FParticles[i].TargetResults, Length(FConfig.Targets));
+    SetLength(FParticles[i].TargetResults, Length(FConfig.Lines));
 
     // Random structural parameters
     FParticles[i].X.d := FdMin + Random * FdRange;
@@ -639,7 +639,7 @@ begin
   // Ensure TargetResults is allocated (not saved in checkpoint)
   for i := 0 to High(FParticles) do
     if Length(FParticles[i].TargetResults) = 0 then
-      SetLength(FParticles[i].TargetResults, Length(FConfig.Targets));
+      SetLength(FParticles[i].TargetResults, Length(FConfig.Lines));
 end;
 
 end.

@@ -56,7 +56,7 @@ begin
   FMixer := AMixer;
   FConfig := AConfig;
   FTemplates := ATemplates;
-  FTargetCount := Length(AConfig.Targets);
+  FTargetCount := Length(AConfig.Lines);
   FPoolSize := Length(AConfig.ElementPool);
   SetLength(FCurveBuf, SCAN_POINTS);
   SetLength(FConvBuf, SCAN_POINTS);
@@ -342,11 +342,11 @@ var
   Penalty: Single;
   Key: string;
   TemplIdx: Integer;
-  ThetaArr: array[0..MAX_TARGETS-1] of Single;
-  RPeakArr: array[0..MAX_TARGETS-1] of Single;
-  FWHMArr: array[0..MAX_TARGETS-1] of Single;
-  ValidArr: array[0..MAX_TARGETS-1] of Boolean;
-  CrossR: array[0..MAX_TARGETS-1, 0..MAX_TARGETS-1] of Single;
+  ThetaArr: array[0..MAX_LINES-1] of Single;
+  RPeakArr: array[0..MAX_LINES-1] of Single;
+  FWHMArr: array[0..MAX_LINES-1] of Single;
+  ValidArr: array[0..MAX_LINES-1] of Boolean;
+  CrossR: array[0..MAX_LINES-1, 0..MAX_LINES-1] of Single;
   ContamSum, Purity, REffective: Single;
 begin
   FoM := 0;
@@ -381,7 +381,7 @@ begin
     for j := 0 to FTargetCount - 1 do
       CrossR[i, j] := 0;
 
-    SinArg := FConfig.Targets[i].Lambda / (2 * Genome.d);
+    SinArg := FConfig.Lines[i].Lambda / (2 * Genome.d);
     if SinArg >= 1.0 then
       Continue;
 
@@ -405,7 +405,7 @@ begin
       Continue;
 
     BuildLayers(Genome, i);
-    ScanReflectivity(FConfig.Targets[i].Lambda,
+    ScanReflectivity(FConfig.Lines[i].Lambda,
       ThetaArr[i], SCAN_HALF_RANGE, SCAN_POINTS);
     Convolute(FConfig.Fitness.DeltaTheta);
 
@@ -420,7 +420,7 @@ begin
     if FConfig.Fitness.wPurity > 0 then
       for j := 0 to FTargetCount - 1 do
         if (j <> i) and ValidArr[j] then
-          CrossR[j, i] := RefCalcStandalone(ThetaArr[j], FConfig.Targets[i].Lambda,
+          CrossR[j, i] := RefCalcStandalone(ThetaArr[j], FConfig.Lines[i].Lambda,
             FLayersBuf, FConfig.Fitness.Polarization, rfError);
   end;
 
@@ -450,11 +450,11 @@ begin
 
     // FWHM_ref
     FWHMRef := RadToDeg(
-      FConfig.Targets[i].Lambda / (NInt * Genome.d * Cos(DegToRad(ThetaArr[i])))
+      FConfig.Lines[i].Lambda / (NInt * Genome.d * Cos(DegToRad(ThetaArr[i])))
     );
     if FWHMRef < 1e-10 then FWHMRef := 1e-10;
 
-    FoM := FoM + FConfig.Targets[i].Weight * (
+    FoM := FoM + FConfig.Lines[i].Weight * (
       FConfig.Fitness.wR * REffective -
       FConfig.Fitness.wFWHM * FWHMArr[i] / FWHMRef
     );
@@ -473,7 +473,7 @@ function TUniversalFitness.GetCurve(const Genome: TGenome;
 var
   ThetaBragg, SinArg: Single;
 begin
-  SinArg := FConfig.Targets[TargetIdx].Lambda / (2 * Genome.d);
+  SinArg := FConfig.Lines[TargetIdx].Lambda / (2 * Genome.d);
   if SinArg >= 1.0 then
   begin
     SetLength(Result, 0);
@@ -482,7 +482,7 @@ begin
 
   ThetaBragg := RadToDeg(ArcSin(SinArg));
   BuildLayers(Genome, TargetIdx);
-  ScanReflectivity(FConfig.Targets[TargetIdx].Lambda,
+  ScanReflectivity(FConfig.Lines[TargetIdx].Lambda,
     ThetaBragg, SCAN_HALF_RANGE, SCAN_POINTS);
   Convolute(FConfig.Fitness.DeltaTheta);
   Result := Copy(FCurveBuf, 0, FCurveLen);

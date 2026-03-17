@@ -109,10 +109,10 @@ begin
   Result.BestGenome := FPSO.ABest;
   Result.ElapsedSec := ElapsedSec;
 
-  SetLength(Result.PerElement, Length(FConfig.Targets));
-  for i := 0 to High(FConfig.Targets) do
+  SetLength(Result.PerElement, Length(FConfig.Lines));
+  for i := 0 to High(FConfig.Lines) do
   begin
-    Result.PerElement[i].Element := FConfig.Targets[i].Name;
+    Result.PerElement[i].Element := FConfig.Lines[i].Name;
     Result.PerElement[i].RPeak := BestResults[i].RPeak;
     Result.PerElement[i].FWHM := BestResults[i].FWHM;
   end;
@@ -136,12 +136,12 @@ begin
   try
     SW := TStopwatch.StartNew;
     // Build arrays from config
-    SetLength(TargetLambdas, Length(FConfig.Targets));
-    SetLength(TargetNames, Length(FConfig.Targets));
-    for i := 0 to High(FConfig.Targets) do
+    SetLength(TargetLambdas, Length(FConfig.Lines));
+    SetLength(TargetNames, Length(FConfig.Lines));
+    for i := 0 to High(FConfig.Lines) do
     begin
-      TargetLambdas[i] := FConfig.Targets[i].Lambda;
-      TargetNames[i] := FConfig.Targets[i].Name;
+      TargetLambdas[i] := FConfig.Lines[i].Lambda;
+      TargetNames[i] := FConfig.Lines[i].Name;
     end;
 
     SetLength(ElementNames, Length(FConfig.ElementPool));
@@ -246,7 +246,7 @@ begin
       end;
 
       // Initial evaluation
-      SetLength(BestResults, Length(FConfig.Targets));
+      SetLength(BestResults, Length(FConfig.Lines));
       EvaluatePopulation;
       FPSO.UpdateBests;
 
@@ -312,13 +312,13 @@ begin
       FIO.SaveXRCStructure(FConfig, FPSO.ABest, FMixer, FTemplates, FConfig.OutputDir);
 
       // Compute curves once, use for both file saving and completion event
-      SetLength(Curves, Length(FConfig.Targets));
-      for i := 0 to High(FConfig.Targets) do
+      SetLength(Curves, Length(FConfig.Lines));
+      for i := 0 to High(FConfig.Lines) do
       begin
         Curve := FFitness.GetCurve(FPSO.ABest, i);
         if Length(Curve) > 0 then
-          FIO.SaveCurve(FConfig.Targets[i].Name, Curve, FConfig.OutputDir);
-        Curves[i].Element := FConfig.Targets[i].Name;
+          FIO.SaveCurve(FConfig.Lines[i].Name, Curve, FConfig.OutputDir);
+        Curves[i].Element := FConfig.Lines[i].Name;
         SetLength(Curves[i].Theta, Length(Curve));
         SetLength(Curves[i].Refl, Length(Curve));
         for j := 0 to High(Curve) do
