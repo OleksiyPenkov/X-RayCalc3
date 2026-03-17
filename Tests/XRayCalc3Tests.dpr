@@ -49,7 +49,9 @@ uses
   unit_universal_templates in '..\Universal\unit_universal_templates.pas',
   unit_universal_io in '..\Universal\unit_universal_io.pas',
   unit_xrf_lines in '..\Universal\unit_xrf_lines.pas',
-  TestXRFLines in 'TestXRFLines.pas';
+  unit_xrfx_package in '..\Universal\unit_xrfx_package.pas',
+  TestXRFLines in 'TestXRFLines.pas',
+  TestXRFXPackage in 'TestXRFXPackage.pas';
 
 {$R *.res}
 
