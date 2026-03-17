@@ -147,7 +147,7 @@ begin
     // Collect interlayer materials and merge with element pool
     if Length(FTemplates) > 0 then
     begin
-      var ExtraMats := CollectTemplateMaterials(FTemplates);
+      var ExtraMats := CollectTemplateMaterials(FTemplates, ElementNames);
       for var m := 0 to High(ExtraMats) do
       begin
         var AlreadyInPool := False;

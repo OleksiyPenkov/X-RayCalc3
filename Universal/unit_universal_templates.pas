@@ -9,7 +9,8 @@ uses
 function LoadTemplates(const FileName: string): TTemplateLibrary;
 function FindTemplate(const Lib: TTemplateLibrary;
   const Key: string): Integer;
-function CollectTemplateMaterials(const Lib: TTemplateLibrary): TArray<string>;
+function CollectTemplateMaterials(const Lib: TTemplateLibrary;
+  const Pool: array of string): TArray<string>;
 
 implementation
 
@@ -144,15 +145,33 @@ begin
 end;
 
 function CollectTemplateMaterials(
-  const Lib: TTemplateLibrary): TArray<string>;
+  const Lib: TTemplateLibrary;
+  const Pool: array of string): TArray<string>;
 var
-  i, j, k: Integer;
-  Found: Boolean;
+  i, j, k, SlashPos: Integer;
+  Found, Mat1InPool, Mat2InPool: Boolean;
   Count: Integer;
+  Mat1, Mat2: string;
 begin
   Count := 0;
   SetLength(Result, 64);
   for i := 0 to High(Lib) do
+  begin
+    // Only include materials from templates whose key materials are both in the pool
+    SlashPos := Pos('/', Lib[i].Key);
+    if SlashPos <= 0 then Continue;
+    Mat1 := Copy(Lib[i].Key, 1, SlashPos - 1);
+    Mat2 := Copy(Lib[i].Key, SlashPos + 1, MaxInt);
+
+    Mat1InPool := False;
+    Mat2InPool := False;
+    for k := 0 to High(Pool) do
+    begin
+      if SameText(Pool[k], Mat1) then Mat1InPool := True;
+      if SameText(Pool[k], Mat2) then Mat2InPool := True;
+    end;
+    if not (Mat1InPool and Mat2InPool) then Continue;
+
     for j := 0 to High(Lib[i].Layers) do
     begin
       Found := False;
@@ -170,6 +189,7 @@ begin
         Inc(Count);
       end;
     end;
+  end;
   SetLength(Result, Count);
 end;
 
