@@ -24,6 +24,7 @@ uses
   unit_universal_io in '..\Universal\unit_universal_io.pas',
   unit_universal_optimizer in '..\Universal\unit_universal_optimizer.pas',
   unit_universal_templates in '..\Universal\unit_universal_templates.pas',
+  unit_xrfx_package in '..\Universal\unit_xrfx_package.pas',
   unit_materials_mix in '..\Math\unit_materials_mix.pas';
 
 var

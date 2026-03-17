@@ -12,19 +12,23 @@ implementation
 uses
   System.Math, Windows,
   cmd_unit_types, unit_universal_types, unit_universal_io,
-  unit_universal_optimizer;
+  unit_universal_optimizer, unit_xrfx_package;
 
 type
   TConsoleHandler = class
   private
     FConfig: TUniversalConfig;
     FVerbose: Boolean;
+    FLastIterData: TIterationData;
+    FCompleted: Boolean;
   public
     constructor Create(const AConfig: TUniversalConfig; AVerbose: Boolean);
     procedure HandleIteration(const Data: TIterationData);
     procedure HandleCompletion(const Data: TIterationData;
       const Curves: TArray<TCurveData>);
     procedure HandleError(const ErrorMsg: string);
+    property Completed: Boolean read FCompleted;
+    property LastIterData: TIterationData read FLastIterData;
   end;
 
 var
@@ -74,6 +78,9 @@ procedure TConsoleHandler.HandleCompletion(const Data: TIterationData;
 var
   i, j: Integer;
 begin
+  FLastIterData := Data;
+  FCompleted := True;
+
   WriteLn('---');
   WriteLn('Optimization complete.');
   WriteLn(Format('Best FoM: %.6f', [Data.FoM]));
@@ -147,6 +154,25 @@ begin
       GOptimizer.OnCompleted := Handler.HandleCompletion;
       GOptimizer.OnError := Handler.HandleError;
       GOptimizer.Run;
+
+      // Package results into .xrfx
+      if Handler.Completed then
+      begin
+        var PerElem: TArray<TXRFXElementResult>;
+        SetLength(PerElem, Length(Handler.LastIterData.PerElement));
+        for var k := 0 to High(PerElem) do
+        begin
+          PerElem[k].Line := Handler.LastIterData.PerElement[k].Element;
+          PerElem[k].PeakR := Handler.LastIterData.PerElement[k].RPeak;
+          PerElem[k].FWHM := Handler.LastIterData.PerElement[k].FWHM;
+        end;
+
+        var XRFXPath := ChangeFileExt(ConfigFile, XRFX_EXT);
+        CreateXRFXPackage(Config, Handler.LastIterData.BestGenome,
+          Handler.LastIterData.FoM,
+          PerElem, Config.OutputDir, ConfigFile, XRFXPath);
+        WriteLn('Package saved: ' + XRFXPath);
+      end;
     finally
       GOptimizer.Free;
       GOptimizer := nil;
