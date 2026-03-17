@@ -439,13 +439,31 @@ end;
 { TTestExtraction }
 
 procedure TTestExtraction.Test_ExtractXRFXPackage_CreatesFiles;
+var
+  XRFXPath, ExtractDir: string;
 begin
-  Assert.Pass('Stub');
+  XRFXPath := CreateSampleXRFX;
+  ExtractDir := TPath.Combine(FTempDir, 'extracted');
+  ExtractXRFXPackage(XRFXPath, ExtractDir);
+
+  Assert.IsTrue(TFile.Exists(TPath.Combine(ExtractDir, 'manifest.json')));
+  Assert.IsTrue(TFile.Exists(TPath.Combine(ExtractDir, 'best_structure.json')));
+  Assert.IsTrue(TFile.Exists(TPath.Combine(ExtractDir, 'best_structure_xrc.json')));
+  Assert.IsTrue(TFile.Exists(TPath.Combine(ExtractDir, 'best_curves\Na.dat')));
 end;
 
 procedure TTestExtraction.Test_ExtractXRFXPackage_ManifestReadable;
+var
+  XRFXPath, ExtractDir: string;
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  XRFXPath := CreateSampleXRFX;
+  ExtractDir := TPath.Combine(FTempDir, 'extracted');
+  ExtractXRFXPackage(XRFXPath, ExtractDir);
+
+  M := LoadManifest(TPath.Combine(ExtractDir, 'manifest.json'));
+  Assert.AreEqual(1, M.Version);
+  Assert.AreEqual(Double(0.5), M.FoM, 1E-6);
 end;
 
 { TTestXRCStructureLoading }
