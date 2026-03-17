@@ -103,8 +103,77 @@ begin
 end;
 
 function LoadManifest(const ManifestPath: string): TXRFXManifest;
+var
+  Content: string;
+  JSON, JStruct, JOpt, JFiles: TJSONObject;
+  JLines, JPool, JPerElem, JCurves: TJSONArray;
+  JElem: TJSONObject;
+  i: Integer;
 begin
-  raise ENotImplemented.Create('LoadManifest not yet implemented');
+  Content := TFile.ReadAllText(ManifestPath);
+  JSON := TJSONObject.ParseJSONValue(Content) as TJSONObject;
+  try
+    Result.Version := JSON.GetValue<Integer>('version');
+    Result.Created := JSON.GetValue<string>('created', '');
+
+    if JSON.FindValue('generator') <> nil then
+      Result.Generator := JSON.GetValue<string>('generator');
+
+    Result.FoM := JSON.GetValue<Double>('fom');
+    Result.Substrate := JSON.GetValue<string>('substrate');
+
+    // target_lines
+    JLines := JSON.GetValue<TJSONArray>('target_lines');
+    SetLength(Result.TargetLines, JLines.Count);
+    for i := 0 to JLines.Count - 1 do
+      Result.TargetLines[i] := JLines.Items[i].Value;
+
+    // element_pool
+    JPool := JSON.GetValue<TJSONArray>('element_pool');
+    SetLength(Result.ElementPool, JPool.Count);
+    for i := 0 to JPool.Count - 1 do
+      Result.ElementPool[i] := JPool.Items[i].Value;
+
+    // structure_summary
+    JStruct := JSON.GetValue<TJSONObject>('structure_summary');
+    Result.Structure.StructureType := JStruct.GetValue<string>('type');
+    Result.Structure.D := JStruct.GetValue<Double>('d');
+    Result.Structure.Gamma := JStruct.GetValue<Double>('gamma');
+    Result.Structure.N := JStruct.GetValue<Integer>('N');
+    Result.Structure.Sigma := JStruct.GetValue<Double>('sigma');
+
+    // optimizer
+    JOpt := JSON.GetValue<TJSONObject>('optimizer');
+    Result.Optimizer.Population := JOpt.GetValue<Integer>('population');
+    Result.Optimizer.Iterations := JOpt.GetValue<Integer>('iterations');
+    Result.Optimizer.StagnationLimit := JOpt.GetValue<Integer>('stagnation_limit');
+
+    // per_element
+    JPerElem := JSON.GetValue<TJSONArray>('per_element');
+    SetLength(Result.PerElement, JPerElem.Count);
+    for i := 0 to JPerElem.Count - 1 do
+    begin
+      JElem := JPerElem.Items[i] as TJSONObject;
+      Result.PerElement[i].Line := JElem.GetValue<string>('line');
+      Result.PerElement[i].PeakR := JElem.GetValue<Double>('peak_R');
+      Result.PerElement[i].FWHM := JElem.GetValue<Double>('fwhm');
+    end;
+
+    // files.curves
+    if JSON.FindValue('files') <> nil then
+    begin
+      JFiles := JSON.GetValue<TJSONObject>('files');
+      if JFiles.FindValue('curves') <> nil then
+      begin
+        JCurves := JFiles.GetValue<TJSONArray>('curves');
+        SetLength(Result.CurveFiles, JCurves.Count);
+        for i := 0 to JCurves.Count - 1 do
+          Result.CurveFiles[i] := JCurves.Items[i].Value;
+      end;
+    end;
+  finally
+    JSON.Free;
+  end;
 end;
 
 function LoadXRCStructure(const JsonPath: string): TXRFXStructure;

@@ -267,38 +267,71 @@ end;
 { TTestManifestLoading }
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesVersion;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual(1, M.Version);
 end;
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesFoM;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual(Double(0.00342), M.FoM, 1E-6);
 end;
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesTargetLines;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual(2, Length(M.TargetLines));
+  Assert.AreEqual('Na-Ka', M.TargetLines[0]);
+  Assert.AreEqual('Al-Ka', M.TargetLines[1]);
 end;
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesPerElement;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual(2, Length(M.PerElement));
+  Assert.AreEqual('Na-Ka', M.PerElement[0].Line);
+  Assert.AreEqual(Double(0.08), M.PerElement[0].PeakR, 1E-6);
+  Assert.AreEqual(Double(0.38), M.PerElement[0].FWHM, 1E-6);
 end;
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesStructureSummary;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual('bilayer', M.Structure.StructureType);
+  Assert.AreEqual(Double(45.2), M.Structure.D, 1E-6);
+  Assert.AreEqual(Double(0.35), M.Structure.Gamma, 1E-6);
+  Assert.AreEqual(120, M.Structure.N);
+  Assert.AreEqual(Double(3.5), M.Structure.Sigma, 1E-6);
 end;
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesOptimizerInfo;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual(500, M.Optimizer.Population);
+  Assert.AreEqual(1000, M.Optimizer.Iterations);
+  Assert.AreEqual(200, M.Optimizer.StagnationLimit);
 end;
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesCurveFiles;
+var
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  M := LoadManifest(CreateSampleManifestFile);
+  Assert.AreEqual(2, Length(M.CurveFiles));
+  Assert.AreEqual('best_curves/Na.dat', M.CurveFiles[0]);
 end;
 
 { TTestExtraction }
