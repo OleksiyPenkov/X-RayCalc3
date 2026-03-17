@@ -53,19 +53,44 @@ object frmXRFViewMain: TfrmXRFViewMain
     Top = 29
     Width = 1000
     Height = 551
-    Align = alClient
-    Orientation = soHorizontal
     Position = 300
+    Percent = 30
+    UpperLeft.Color = clBtnFace
+    LowerRight.Color = clBtnFace
+    Align = alClient
     TabOrder = 1
+    BarSize = (
+      300
+      0
+      304
+      551)
+    UpperLeftControls = (
+      ShellSplitter)
+    LowerRightControls = (
+      PageControl1)
     object ShellSplitter: TRzSplitter
       Left = 0
       Top = 0
       Width = 300
       Height = 551
-      Align = alClient
-      Orientation = soVertical
+      Orientation = orVertical
+      Position = 220
       Percent = 40
+      UsePercent = True
+      UpperLeft.Color = clBtnFace
+      LowerRight.Color = clBtnFace
+      Align = alClient
       TabOrder = 0
+      BarSize = (
+        0
+        220
+        300
+        224)
+      UpperLeftControls = (
+        JamShellBreadCrumbBar1
+        ShellTree)
+      LowerRightControls = (
+        ShellList)
       object JamShellBreadCrumbBar1: TJamShellBreadCrumbBar
         Left = 0
         Top = 0
@@ -87,7 +112,7 @@ object frmXRFViewMain: TfrmXRFViewMain
         Top = 224
         Width = 300
         Height = 327
-        Align = alBottom
+        Align = alClient
         ShellLink = JamShellLink1
         FileFilter = '*.xrfx'
         MultiSelect = True
