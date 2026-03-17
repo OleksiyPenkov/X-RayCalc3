@@ -44,7 +44,12 @@ uses
   cmd_unit_types in '..\XRC_CMD\Units\cmd_unit_types.pas',
   cmd_math_globals in '..\XRC_CMD\Units\cmd_math_globals.pas',
   unit_materials_mix in '..\Math\unit_materials_mix.pas',
-  TestMaterialMix in 'TestMaterialMix.pas';
+  TestMaterialMix in 'TestMaterialMix.pas',
+  unit_universal_types in '..\Universal\unit_universal_types.pas',
+  unit_universal_templates in '..\Universal\unit_universal_templates.pas',
+  unit_universal_io in '..\Universal\unit_universal_io.pas',
+  unit_xrf_lines in '..\Universal\unit_xrf_lines.pas',
+  TestXRFLines in 'TestXRFLines.pas';
 
 {$R *.res}
 
