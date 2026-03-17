@@ -34,8 +34,6 @@ type
     lblNMin: TLabel;
     lblNMax: TLabel;
     lblSigma: TLabel;
-    lblDensityMin: TLabel;
-    lblDensityMax: TLabel;
     edDMin: TEdit;
     edDMax: TEdit;
     edGammaMin: TEdit;
@@ -43,8 +41,6 @@ type
     edNMin: TEdit;
     edNMax: TEdit;
     edSigma: TEdit;
-    edDensityMin: TEdit;
-    edDensityMax: TEdit;
     cbPureElements: TCheckBox;
     // Fitness
     grpFitness: TGroupBox;
@@ -273,8 +269,6 @@ begin
   edNMin.Text := FormatFloat('0', Config.Structure.NRange.Min);
   edNMax.Text := FormatFloat('0', Config.Structure.NRange.Max);
   edSigma.Text := FormatFloat('0.###', Config.Structure.SigmaFixed);
-  edDensityMin.Text := FormatFloat('0.###', Config.Structure.DensityFactorRange.Min);
-  edDensityMax.Text := FormatFloat('0.###', Config.Structure.DensityFactorRange.Max);
   cbPureElements.Checked := Config.Structure.PureElements;
 
   // Fitness
@@ -360,8 +354,8 @@ begin
   Result.Structure.NRange.Min := StrToFloatDef(edNMin.Text, 0, FS);
   Result.Structure.NRange.Max := StrToFloatDef(edNMax.Text, 0, FS);
   Result.Structure.SigmaFixed := StrToFloatDef(edSigma.Text, 0, FS);
-  Result.Structure.DensityFactorRange.Min := StrToFloatDef(edDensityMin.Text, 0, FS);
-  Result.Structure.DensityFactorRange.Max := StrToFloatDef(edDensityMax.Text, 0, FS);
+  Result.Structure.DensityFactorRange.Min := 1.0;
+  Result.Structure.DensityFactorRange.Max := 1.0;
 
   // Fitness
   Result.Fitness.wR := StrToFloatDef(edWR.Text, 1.0, FS);

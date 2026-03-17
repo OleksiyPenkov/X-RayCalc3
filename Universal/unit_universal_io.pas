@@ -134,9 +134,17 @@ begin
       Result.Structure.SigmaFixed := -1;
     end;
 
-    JRange := JStructure.GetValue<TJSONObject>('density_factor');
-    Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
-    Result.Structure.DensityFactorRange.Max := JRange.GetValue<Double>('max');
+    if JStructure.FindValue('density_factor') <> nil then
+    begin
+      JRange := JStructure.GetValue<TJSONObject>('density_factor');
+      Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
+      Result.Structure.DensityFactorRange.Max := JRange.GetValue<Double>('max');
+    end
+    else
+    begin
+      Result.Structure.DensityFactorRange.Min := 1.0;
+      Result.Structure.DensityFactorRange.Max := 1.0;
+    end;
 
     JFitness := JSON.GetValue<TJSONObject>('fitness');
     Result.Fitness.wR := JFitness.GetValue<Double>('w_R');
@@ -431,7 +439,7 @@ begin
       else
         LayerValues.Add(RoundTo(H2, -3));
       LayerValues.Add(RoundTo(Best.Sigma, -2));
-      LayerValues.Add(RoundTo(Best.DensityFactor[i], -2));
+      LayerValues.Add(1.0);
 
       JLayerObj := TJSONObject.Create;
       JLayerObj.AddPair(LayerName, LayerValues);
@@ -562,7 +570,6 @@ begin
         EffDensity := 0;
         for j := 0 to High(Config.ElementPool) do
           EffDensity := EffDensity + Best.Composition[i][j] * Mixer.GetElementDensity(j);
-        EffDensity := EffDensity * Best.DensityFactor[i];
 
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', MatName);

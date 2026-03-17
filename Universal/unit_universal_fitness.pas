@@ -163,7 +163,7 @@ begin
       begin
         FMixer.CalcMixedEpsilon(
           Genome.Composition[Role],
-          Genome.DensityFactor[Role],
+          1.0,
           TargetIdx,
           Eps, Dens
         );

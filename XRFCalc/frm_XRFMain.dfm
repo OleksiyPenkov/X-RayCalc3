@@ -116,7 +116,7 @@ object frmXRFMain: TfrmXRFMain
         Left = 0
         Top = 330
         Width = 280
-        Height = 230
+        Height = 150
         Align = alTop
         Caption = 'Structure'
         TabOrder = 2
@@ -169,20 +169,6 @@ object frmXRFMain: TfrmXRFMain
           Height = 15
           Caption = 'sigma'
         end
-        object lblDensityMin: TLabel
-          Left = 8
-          Top = 124
-          Width = 50
-          Height = 15
-          Caption = 'dens min'
-        end
-        object lblDensityMax: TLabel
-          Left = 170
-          Top = 124
-          Width = 52
-          Height = 15
-          Caption = 'dens max'
-        end
         object edDMin: TEdit
           Left = 80
           Top = 18
@@ -232,27 +218,13 @@ object frmXRFMain: TfrmXRFMain
           Height = 23
           TabOrder = 6
         end
-        object edDensityMin: TEdit
-          Left = 80
-          Top = 122
-          Width = 80
-          Height = 23
-          TabOrder = 7
-        end
-        object edDensityMax: TEdit
-          Left = 210
-          Top = 122
-          Width = 80
-          Height = 23
-          TabOrder = 8
-        end
         object cbPureElements: TCheckBox
           Left = 8
-          Top = 152
+          Top = 124
           Width = 120
           Height = 17
           Caption = 'Pure elements'
-          TabOrder = 9
+          TabOrder = 7
         end
       end
       object grpFitness: TGroupBox
