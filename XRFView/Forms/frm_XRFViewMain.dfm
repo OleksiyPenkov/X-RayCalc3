@@ -114,7 +114,7 @@ object frmXRFViewMain: TfrmXRFViewMain
         Height = 327
         Align = alClient
         ShellLink = JamShellLink1
-        FileFilter = '*.xrfx'
+        Filter = '*.xrfx'
         MultiSelect = True
         ReadOnly = True
         ViewStyle = vsReport
