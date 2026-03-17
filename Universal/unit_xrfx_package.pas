@@ -350,8 +350,67 @@ begin
 end;
 
 function LoadProgressLog(const LogPath: string): TArray<TProgressEntry>;
+var
+  AllLines: TStringDynArray;
+  Line: string;
+  Parts, HeaderParts: TArray<string>;
+  i, j, NumElements, NumExpectedTokens: Integer;
+  Entry: TProgressEntry;
+  ResultList: TList<TProgressEntry>;
+  FS: TFormatSettings;
 begin
-  raise ENotImplemented.Create('LoadProgressLog not yet implemented');
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+
+  AllLines := TFile.ReadAllLines(LogPath);
+  ResultList := TList<TProgressEntry>.Create;
+  try
+    // Step 1: Parse header to count R_ columns
+    NumElements := 0;
+    for i := 0 to High(AllLines) do
+    begin
+      Line := Trim(AllLines[i]);
+      if Line.StartsWith('Iter') then
+      begin
+        HeaderParts := Line.Split([' ', #9], TStringSplitOptions.ExcludeEmpty);
+        for j := 0 to High(HeaderParts) do
+          if HeaderParts[j].StartsWith('R_') then
+            Inc(NumElements);
+        Break;
+      end;
+    end;
+
+    // We need: Iter + FoM + NumElements R values + Div
+    NumExpectedTokens := 2 + NumElements + 1;
+
+    // Step 2: Parse data lines
+    for i := 0 to High(AllLines) do
+    begin
+      Line := Trim(AllLines[i]);
+      if (Line = '') or Line.StartsWith('Iter') then
+        Continue;
+
+      Parts := Line.Split([' ', #9], TStringSplitOptions.ExcludeEmpty);
+      if Length(Parts) < NumExpectedTokens then
+        Continue;
+
+      Entry := Default(TProgressEntry);
+      Entry.Iteration := StrToInt(Parts[0]);
+      Entry.FoM := StrToFloat(Parts[1], FS);
+
+      SetLength(Entry.ElementR, NumElements);
+      for j := 0 to NumElements - 1 do
+        Entry.ElementR[j] := StrToFloat(Parts[2 + j], FS);
+
+      Entry.Diversity := StrToFloat(Parts[2 + NumElements], FS);
+
+      ResultList.Add(Entry);
+    end;
+
+    Result := ResultList.ToArray;
+  finally
+    ResultList.Free;
+  end;
 end;
 
 end.

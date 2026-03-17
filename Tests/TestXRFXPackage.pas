@@ -501,18 +501,33 @@ end;
 { TTestProgressLogLoading }
 
 procedure TTestProgressLogLoading.Test_LoadProgressLog_ParsesIterations;
+var
+  Entries: TArray<TProgressEntry>;
 begin
-  Assert.Pass('Stub');
+  Entries := LoadProgressLog(CreateSampleProgressLog);
+  Assert.AreEqual(2, Length(Entries));
+  Assert.AreEqual(0, Entries[0].Iteration);
+  Assert.AreEqual(10, Entries[1].Iteration);
 end;
 
 procedure TTestProgressLogLoading.Test_LoadProgressLog_ParsesFoM;
+var
+  Entries: TArray<TProgressEntry>;
 begin
-  Assert.Pass('Stub');
+  Entries := LoadProgressLog(CreateSampleProgressLog);
+  Assert.AreEqual(Double(0.0630), Entries[0].FoM, 1E-4);
+  Assert.AreEqual(Double(0.3013), Entries[1].FoM, 1E-4);
 end;
 
 procedure TTestProgressLogLoading.Test_LoadProgressLog_ParsesElementR;
+var
+  Entries: TArray<TProgressEntry>;
 begin
-  Assert.Pass('Stub');
+  Entries := LoadProgressLog(CreateSampleProgressLog);
+  // 2 element columns: R_Na, R_Al
+  Assert.AreEqual(2, Length(Entries[0].ElementR));
+  Assert.AreEqual(Double(0.342), Entries[0].ElementR[0], 1E-3);
+  Assert.AreEqual(Double(0.422), Entries[0].ElementR[1], 1E-3);
 end;
 
 end.
