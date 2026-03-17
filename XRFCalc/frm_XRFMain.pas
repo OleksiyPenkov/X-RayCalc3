@@ -162,27 +162,9 @@ implementation
 
 uses
   System.IniFiles, System.IOUtils, System.JSON, Vcl.FileCtrl,
-  unit_universal_io, cmd_unit_types, unit_materials_mix;
+  unit_universal_io, cmd_unit_types, unit_materials_mix, unit_xrf_lines;
 
 {$R *.dfm}
-
-const
-  TARGET_COUNT = 10;
-  KAlphaData: array[0..TARGET_COUNT-1] of record
-    Element: string;
-    Lambda: Double;
-  end = (
-    (Element: 'B';  Lambda: 67.6),
-    (Element: 'C';  Lambda: 44.7),
-    (Element: 'N';  Lambda: 31.6),
-    (Element: 'O';  Lambda: 23.6),
-    (Element: 'F';  Lambda: 18.3),
-    (Element: 'Ne'; Lambda: 14.6),
-    (Element: 'Na'; Lambda: 11.9),
-    (Element: 'Mg'; Lambda: 9.89),
-    (Element: 'Al'; Lambda: 8.338),
-    (Element: 'Si'; Lambda: 7.126)
-  );
 
 function ValidateConfig(const Config: TUniversalConfig; out Error: string): Boolean;
 begin
@@ -264,7 +246,7 @@ begin
     clbTargets.Checked[i] := False;
 
   // Initialize weights grid header row
-  sgWeights.Cells[0, 0] := 'Target';
+  sgWeights.Cells[0, 0] := 'Element';
   sgWeights.Cells[1, 0] := 'Weight';
   for i := 0 to clbTargets.Count - 1 do
   begin
@@ -352,7 +334,7 @@ begin
   FS := TFormatSettings.Create;
   FS.DecimalSeparator := '.';
 
-  // Targets: collect checked items with lambda and weight
+  // Lines: collect checked items with lambda and weight
   TargetIdx := 0;
   SetLength(Result.Lines, clbTargets.Count);
   for i := 0 to clbTargets.Count - 1 do
@@ -360,12 +342,7 @@ begin
     if clbTargets.Checked[i] then
     begin
       Result.Lines[TargetIdx].Name := clbTargets.Items[i];
-      // Find matching lambda from KAlphaData
-      if i < TARGET_COUNT then
-        Result.Lines[TargetIdx].Lambda := KAlphaData[i].Lambda
-      else
-        Result.Lines[TargetIdx].Lambda := 0;
-      // Read weight from grid
+      Result.Lines[TargetIdx].Lambda := GetXRFLambda(clbTargets.Items[i]);
       Result.Lines[TargetIdx].Weight := StrToFloatDef(sgWeights.Cells[1, i + 1], 1.0, FS);
       Inc(TargetIdx);
     end;

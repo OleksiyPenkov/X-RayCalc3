@@ -169,9 +169,9 @@ object frmXRFMain: TfrmXRFMain
             Left = 3
             Top = 3
             Width = 395
-            Height = 180
+            Height = 280
             Align = alTop
-            Caption = 'Targets'
+            Caption = 'XRF Lines'
             TabOrder = 0
             ExplicitLeft = 0
             ExplicitTop = 0
@@ -194,7 +194,23 @@ object frmXRFMain: TfrmXRFMain
                 'Na'
                 'Mg'
                 'Al'
-                'Si')
+                'Si'
+                'P'
+                'S'
+                'Cl'
+                'Ar'
+                'K'
+                'Ca'
+                'Sc'
+                'Ti'
+                'V'
+                'Cr'
+                'Mn'
+                'Fe'
+                'Co'
+                'Ni'
+                'Cu'
+                'Zn')
               TabOrder = 0
               ExplicitLeft = 2
               ExplicitTop = 17
@@ -209,7 +225,7 @@ object frmXRFMain: TfrmXRFMain
               Align = alClient
               ColCount = 2
               FixedCols = 0
-              RowCount = 11
+              RowCount = 27
               Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing]
               TabOrder = 1
               ExplicitLeft = 102
@@ -220,7 +236,7 @@ object frmXRFMain: TfrmXRFMain
           object grpElements: TGroupBox
             AlignWithMargins = True
             Left = 3
-            Top = 189
+            Top = 289
             Width = 395
             Height = 150
             Align = alTop
