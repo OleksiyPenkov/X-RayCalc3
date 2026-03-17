@@ -29,24 +29,28 @@ object frmXRFViewMain: TfrmXRFViewMain
       Left = 0
       Top = 0
       Caption = 'Refresh'
+      ImageIndex = 0
       OnClick = btnRefreshClick
     end
     object btnExportStructure: TToolButton
-      Left = 23
+      Left = 100
       Top = 0
       Caption = 'Export Structure'
+      ImageIndex = 1
       OnClick = btnExportStructureClick
     end
     object btnCopyData: TToolButton
-      Left = 46
+      Left = 200
       Top = 0
       Caption = 'Copy Data'
+      ImageIndex = 2
       OnClick = btnCopyDataClick
     end
     object btnSaveImage: TToolButton
-      Left = 69
+      Left = 300
       Top = 0
       Caption = 'Save Image'
+      ImageIndex = 3
       OnClick = btnSaveImageClick
     end
   end
@@ -194,6 +198,8 @@ object frmXRFViewMain: TfrmXRFViewMain
     end
   end
   object ToolBarImages: TImageList
+    Width = 32
+    Height = 32
     Left = 504
     Top = 280
   end

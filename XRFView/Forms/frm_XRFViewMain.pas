@@ -67,6 +67,7 @@ type
     FCompareView: TframeCompareView;
     procedure ProcessFile(const FileName: string);
     procedure ProcessMultipleFiles(const FileNames: TArray<string>);
+    procedure LoadToolBarIcons;
     function  GetIniPath: string;
     procedure LoadSettings;
     procedure SaveSettings;
@@ -78,7 +79,7 @@ var
 implementation
 
 uses
-  System.Win.Registry, System.IniFiles, ClipBrd;
+  System.Win.Registry, System.IniFiles, ClipBrd, Vcl.Imaging.pngimage;
 
 {$R *.dfm}
 
@@ -102,9 +103,42 @@ begin
   end;
 end;
 
+procedure TfrmXRFViewMain.LoadToolBarIcons;
+const
+  ResNames: array[0..3] of string = (
+    'ICON_REFRESH', 'ICON_EXPORT', 'ICON_COPY', 'ICON_SAVEIMG');
+var
+  i: Integer;
+  RS: TResourceStream;
+  PNG: TPngImage;
+  Bmp: TBitmap;
+begin
+  ToolBarImages.Clear;
+  for i := 0 to High(ResNames) do
+  begin
+    if FindResource(HInstance, PChar(ResNames[i]), RT_RCDATA) = 0 then Continue;
+    RS := TResourceStream.Create(HInstance, ResNames[i], RT_RCDATA);
+    PNG := TPngImage.Create;
+    Bmp := TBitmap.Create;
+    try
+      PNG.LoadFromStream(RS);
+      Bmp.SetSize(ToolBarImages.Width, ToolBarImages.Height);
+      Bmp.Canvas.Brush.Color := clBtnFace;
+      Bmp.Canvas.FillRect(Rect(0, 0, Bmp.Width, Bmp.Height));
+      Bmp.Canvas.Draw(0, 0, PNG);
+      ToolBarImages.Add(Bmp, nil);
+    finally
+      Bmp.Free;
+      PNG.Free;
+      RS.Free;
+    end;
+  end;
+end;
+
 procedure TfrmXRFViewMain.FormCreate(Sender: TObject);
 begin
   FLoader := TXRFViewLoader.Create;
+  LoadToolBarIcons;
 
   FStructureView := TframeStructureView.Create(Self);
   FStructureView.Parent := tabStructure;

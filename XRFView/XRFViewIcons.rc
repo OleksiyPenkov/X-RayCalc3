@@ -1,0 +1,4 @@
+ICON_REFRESH RCDATA "..\\Assets\\ToolIcons\\XRFView\\00_Refresh.png"
+ICON_EXPORT RCDATA "..\\Assets\\ToolIcons\\XRFView\\01_ExportStructure.png"
+ICON_COPY RCDATA "..\\Assets\\ToolIcons\\XRFView\\02_CopyData.png"
+ICON_SAVEIMG RCDATA "..\\Assets\\ToolIcons\\XRFView\\03_SaveImage.png"

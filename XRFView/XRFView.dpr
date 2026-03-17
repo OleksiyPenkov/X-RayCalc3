@@ -13,6 +13,7 @@ uses
   unit_universal_types in '..\Universal\unit_universal_types.pas';
 
 {$R *.res}
+{$R XRFViewIcons.RES}
 
 begin
   Application.Initialize;
