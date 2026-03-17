@@ -1,0 +1,45 @@
+{
+  "lines": [
+    {"element": "C",  "lambda": 44.7,  "weight": 1.0},
+    {"element": "N",  "lambda": 31.6,  "weight": 1.0},
+    {"element": "O",  "lambda": 23.6,  "weight": 1.0},
+    {"element": "F",  "lambda": 18.3,  "weight": 1.0},
+    {"element": "Na", "lambda": 11.9,  "weight": 1.0},
+    {"element": "Mg", "lambda": 9.89,  "weight": 1.0},
+    {"element": "Al", "lambda": 8.338, "weight": 1.0}
+  ],
+  "element_pool": ["W", "Mo", "V", "Si", "C", "B", "Ni", "Ti", "B4C", "SiC", "SiN"],
+  "structure": {
+    "type": "bilayer",
+    "layers_per_period": 2,
+    "pure_elements": true,
+    "d":              {"min": 10,  "max": 120},
+    "gamma":          {"min": 0.2, "max": 0.6},
+    "N":              {"min": 20,  "max": 200},
+    "sigma":          3.5,
+    "density_factor": {"min": 0.5, "max": 1.5}
+  },
+  "fitness": {
+    "w_R": 1.0,
+    "w_FWHM": 0.5,
+    "R_min_threshold": 0.001,
+    "polarization": "sp",
+    "delta_theta": 0.05,
+    "theta_min": 3.0,
+    "w_purity": 1.0
+  },
+  "optimizer": {
+    "population": 500,
+    "iterations": 100,
+    "tolerance": 1e-6,
+    "stagnation_limit": 200,
+    "w1": 0.4,
+    "w2": 0.5,
+    "jamming_max": 30,
+    "checkpoint_every": 100
+  },
+  "substrate": "SiO2",
+  "henke_path": null,
+  "output_dir": "./UniversalMirror/Al_C_results",
+  "resume_from": null
+}
