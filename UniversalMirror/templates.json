@@ -1,0 +1,35 @@
+{
+  "Mo/Si": {
+    "description": "Mo/Si with MoSi2 interdiffusion layers (~1nm each side)",
+    "layers": [
+      { "material": "Mo",    "thickness": "gamma",    "sigma": 0.3, "density": 10.2 },
+      { "material": "MoSi2", "thickness": 1.0,        "sigma": 0.3, "density": 6.3  },
+      { "material": "Si",    "thickness": "1-gamma",  "sigma": 0.5, "density": 2.33 },
+      { "material": "MoSi2", "thickness": 0.8,        "sigma": 0.3, "density": 6.3  }
+    ]
+  },
+  "W/Si": {
+    "description": "W/Si with WSi2 interdiffusion layers",
+    "layers": [
+      { "material": "W",     "thickness": "gamma",    "sigma": 0.2, "density": 19.3 },
+      { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 },
+      { "material": "Si",    "thickness": "1-gamma",  "sigma": 0.4, "density": 2.33 },
+      { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 }
+    ]
+  },
+  "W/B4C": {
+    "description": "W/B4C ideal bilayer (no known interlayers)",
+    "layers": [
+      { "material": "W",   "thickness": "gamma",    "sigma": 0.2, "density": 19.3 },
+      { "material": "B4C", "thickness": "1-gamma",  "sigma": 0.3, "density": 2.52 }
+    ]
+  },
+  "Cr/Sc": {
+    "description": "Cr/Sc with CrSc interdiffusion layer on Cr-on-Sc interface",
+    "layers": [
+      { "material": "Cr",   "thickness": "gamma",    "sigma": 0.3, "density": 7.19  },
+      { "material": "Sc",   "thickness": "1-gamma",  "sigma": 0.3, "density": 2.99  },
+      { "material": "CrSc", "thickness": 0.5,        "sigma": 0.3, "density": 5.09  }
+    ]
+  }
+}
