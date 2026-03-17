@@ -55,6 +55,7 @@
     <a href="19-universal-mirror.html#output" class="sub">Output Files</a>
     <a href="19-universal-mirror.html#resume" class="sub">Checkpoint &amp; Resume</a>
     <a href="19-universal-mirror.html#fom" class="sub">Figure of Merit</a>
+    <a href="19-universal-mirror.html#purity" class="sub">Spectral Purity</a>
     <a href="19-universal-mirror.html#example" class="sub">Example Workflow</a>
 </aside>
 
@@ -150,6 +151,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <pre><code>"structure": {
   "type": "bilayer",
   "layers_per_period": 2,
+  "pure_elements": true,
   "d":              {"min": 20, "max": 80},
   "gamma":          {"min": 0.2, "max": 0.8},
   "N":              {"min": 20, "max": 100},
@@ -160,6 +162,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
   <tr><td><code>type</code></td><td>string</td><td>Structure type. Currently only <code>"bilayer"</code> is supported (two layers per period).</td></tr>
   <tr><td><code>layers_per_period</code></td><td>integer</td><td>Must be <code>2</code> for bilayer mode.</td></tr>
+  <tr><td><code>pure_elements</code></td><td>boolean</td><td>When <code>true</code>, each layer is forced to use a single material from the pool (the dominant component). When <code>false</code>, layers can be arbitrary mixtures. Pure-element mode is recommended for most practical applications.</td></tr>
   <tr><td><code>d</code></td><td>range</td><td>Period thickness search range in &Aring;. Ensure the range accommodates all target wavelengths (d &gt; &lambda;/2 for a valid Bragg condition).</td></tr>
   <tr><td><code>gamma</code></td><td>range</td><td>Reflector/period thickness ratio (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
   <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
@@ -175,7 +178,10 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   "w_R": 1.0,
   "w_FWHM": 0.3,
   "R_min_threshold": 0.0001,
-  "polarization": "sp"
+  "polarization": "sp",
+  "delta_theta": 0.1,
+  "theta_min": 3.0,
+  "w_purity": 1.0
 }</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
@@ -183,6 +189,9 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>w_FWHM</code></td><td>number</td><td>Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
   <tr><td><code>R_min_threshold</code></td><td>number</td><td>Minimum acceptable peak reflectivity. Particles below this threshold receive a heavy penalty (100.0) to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
   <tr><td><code>polarization</code></td><td>string</td><td>Polarization mode: <code>"sp"</code> for averaged S+P (recommended for most applications).</td></tr>
+  <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian of this width before extracting R<sub>peak</sub> and FWHM.</td></tr>
+  <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees. Targets whose Bragg angle falls below this value receive a heavy penalty. Prevents solutions at impractically low grazing angles.</td></tr>
+  <tr><td><code>w_purity</code></td><td>number</td><td>Weight for the spectral purity penalty (0&ndash;1). Controls how strongly higher-order Bragg peak contamination between targets is penalized. 0 = no purity penalty, 1 = full penalty. Default: 1.0. See <a href="#purity">Spectral Purity</a>.</td></tr>
 </table>
 
 <h4>Optimizer</h4>
@@ -279,11 +288,12 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <p>The figure of merit (FoM) combines peak reflectivity and angular bandwidth for all target wavelengths:</p>
 
 <div class="note">
-  <strong>FoM = &Sigma;<sub>i</sub> [ weight<sub>i</sub> &times; ( w<sub>R</sub> &times; R<sub>peak,i</sub> &minus; w<sub>FWHM</sub> &times; FWHM<sub>i</sub> / FWHM<sub>ref,i</sub> ) ]</strong>
+  <strong>FoM = &Sigma;<sub>i</sub> [ weight<sub>i</sub> &times; ( w<sub>R</sub> &times; R<sub>eff,i</sub> &minus; w<sub>FWHM</sub> &times; FWHM<sub>i</sub> / FWHM<sub>ref,i</sub> ) ]</strong>
 </div>
 
 <p>where:</p>
 <ul>
+  <li><strong>R<sub>eff,i</sub></strong> &mdash; effective reflectivity for target <em>i</em>, which equals R<sub>peak,i</sub> when <code>w_purity</code> is 0, or purity-adjusted reflectivity when <code>w_purity</code> &gt; 0 (see <a href="#purity">Spectral Purity</a>)</li>
   <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, extracted from a 200-point scan around the Bragg angle</li>
   <li><strong>FWHM<sub>i</sub></strong> &mdash; angular full width at half maximum (degrees) of the Bragg peak</li>
   <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; theoretical minimum FWHM = &lambda; / (N&middot;d&middot;cos&theta;<sub>B</sub>), converted to degrees. Normalizes the FWHM penalty so it is comparable across targets.</li>
@@ -292,6 +302,38 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 </ul>
 
 <p>Higher FoM is better. Particles with R<sub>peak</sub> below <code>R_min_threshold</code> for any target receive a heavy penalty (100.0 per dark target) to steer the swarm toward functional solutions.</p>
+
+<h3 id="purity">Spectral Purity</h3>
+<p>When optimizing a mirror for multiple characteristic wavelengths, higher-order Bragg reflections can cause <strong>cross-contamination</strong> between measurement channels. For example, a mirror tuned to O&nbsp;K&alpha; (23.6&nbsp;&Aring;) at its first-order Bragg angle will also reflect wavelengths at &lambda;/2 = 11.8&nbsp;&Aring; via the second order &mdash; which nearly coincides with Na&nbsp;K&alpha; (11.9&nbsp;&Aring;). When both O and Na are among the target elements, any Na fluorescence reaching the detector at the O measurement angle is misattributed to O.</p>
+
+<p>The spectral purity penalty addresses this by computing a <strong>cross-reflectivity matrix</strong> and penalizing solutions where contamination is significant.</p>
+
+<h4>Cross-Reflectivity Matrix</h4>
+<p>For each pair of targets <em>i</em> and <em>j</em>, the optimizer computes:</p>
+<div class="note">
+  <strong>CrossR[j, i] = R(&theta;<sub>j</sub>, &lambda;<sub>i</sub>)</strong>
+</div>
+<p>This is the reflectivity of light with wavelength &lambda;<sub>i</sub> hitting the mirror at the Bragg angle of target <em>j</em>. A high value of CrossR[j, i] means that when the spectrometer measures target <em>j</em>, it also picks up signal from target <em>i</em>&rsquo;s wavelength via higher-order reflection. The calculation uses the full multilayer reflectivity at each (&theta;, &lambda;) point &mdash; all Bragg orders are naturally included.</p>
+
+<h4>Purity and Effective Reflectivity</h4>
+<p>For each target <em>j</em>, the <strong>purity</strong> is defined as:</p>
+<div class="note">
+  <strong>Purity<sub>j</sub> = R<sub>peak,j</sub> / ( R<sub>peak,j</sub> + &Sigma;<sub>i&ne;j</sub> CrossR[j, i] )</strong>
+</div>
+<p>Purity ranges from 0 (entirely contaminated) to 1 (no contamination). The effective reflectivity used in the FoM is then:</p>
+<div class="note">
+  <strong>R<sub>eff,j</sub> = R<sub>peak,j</sub> &times; ( 1 + w<sub>purity</sub> &times; ( Purity<sub>j</sub> &minus; 1 ) )</strong>
+</div>
+<p>When <code>w_purity = 0</code>, R<sub>eff</sub> = R<sub>peak</sub> (no penalty). When <code>w_purity = 1</code>, R<sub>eff</sub> = R<sub>peak</sub> &times; Purity, giving maximum penalization of contaminated channels. Intermediate values blend between the two.</p>
+
+<h4>Physical Background</h4>
+<p>Higher-order contamination depends on two structural factors:</p>
+<ul>
+  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls which orders are suppressed. &gamma; = 0.5 completely eliminates all even-order reflections (2nd, 4th, &hellip;). Values far from 0.5 produce strong even-order peaks. Second-order contamination is typically the most significant.</li>
+  <li><strong>&sigma; (roughness)</strong> &mdash; interfacial roughness attenuates higher orders via the Debye-Waller factor, which decays exponentially with order number. Orders above 4&ndash;5 are generally negligible for typical roughness values.</li>
+</ul>
+
+<div class="tip"><strong>Practical note:</strong> The overlap pattern is inherent to the target wavelength set &mdash; second-order overlap at &lambda;/2 is independent of the period <em>d</em>. The optimizer can only mitigate overlaps through &gamma; (order suppression), material choice (absorption edges), and roughness. For large element pools with many close-spaced wavelengths, use <code>w_purity = 1.0</code> and a population &ge; 500 to give the optimizer enough room to find purity-optimized solutions.</div>
 
 <h3 id="example">Example Workflow</h3>
 <p>This example designs a multilayer mirror for simultaneous C&nbsp;K&alpha; (44.7&nbsp;&Aring;) and O&nbsp;K&alpha; (23.6&nbsp;&Aring;) characterization using W/Si/C materials on a Si substrate.</p>
