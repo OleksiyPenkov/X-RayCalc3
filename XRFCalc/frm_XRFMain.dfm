@@ -33,20 +33,18 @@ object frmXRFMain: TfrmXRFMain
       Top = 0
       Width = 400
       Height = 966
+      VertScrollBar.Position = 80
       Align = alClient
       BorderStyle = bsNone
       TabOrder = 0
-      ExplicitWidth = 280
-      ExplicitHeight = 560
       object grpTargets: TGroupBox
         Left = 0
-        Top = 0
+        Top = -80
         Width = 383
         Height = 180
         Align = alTop
         Caption = 'Targets'
         TabOrder = 0
-        ExplicitWidth = 263
         object clbTargets: TCheckListBox
           Left = 2
           Top = 17
@@ -78,18 +76,16 @@ object frmXRFMain: TfrmXRFMain
           RowCount = 11
           Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing]
           TabOrder = 1
-          ExplicitWidth = 159
         end
       end
       object grpElements: TGroupBox
         Left = 0
-        Top = 180
+        Top = 100
         Width = 383
         Height = 150
         Align = alTop
         Caption = 'Element Pool'
         TabOrder = 1
-        ExplicitWidth = 263
         object clbElements: TCheckListBox
           Left = 2
           Top = 17
@@ -116,18 +112,16 @@ object frmXRFMain: TfrmXRFMain
             'Si3N4'
             'WC')
           TabOrder = 0
-          ExplicitWidth = 259
         end
       end
       object grpStructure: TGroupBox
         Left = 0
-        Top = 330
+        Top = 250
         Width = 383
         Height = 150
         Align = alTop
         Caption = 'Structure'
         TabOrder = 2
-        ExplicitWidth = 263
         object lblDMin: TLabel
           Left = 8
           Top = 20
@@ -237,13 +231,12 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpFitness: TGroupBox
         Left = 0
-        Top = 480
+        Top = 400
         Width = 383
         Height = 180
         Align = alTop
         Caption = 'Fitness'
         TabOrder = 3
-        ExplicitWidth = 263
         object lblWR: TLabel
           Left = 8
           Top = 20
@@ -337,13 +330,12 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpOptimizer: TGroupBox
         Left = 0
-        Top = 660
+        Top = 580
         Width = 383
         Height = 230
         Align = alTop
         Caption = 'Optimizer'
         TabOrder = 4
-        ExplicitWidth = 263
         object lblPopulation: TLabel
           Left = 8
           Top = 20
@@ -459,13 +451,12 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpSubstrate: TGroupBox
         Left = 0
-        Top = 890
+        Top = 810
         Width = 383
         Height = 50
         Align = alTop
         Caption = 'Substrate'
         TabOrder = 5
-        ExplicitWidth = 263
         object lblSubstrate: TLabel
           Left = 8
           Top = 22
@@ -483,13 +474,12 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpPaths: TGroupBox
         Left = 0
-        Top = 940
+        Top = 860
         Width = 383
-        Height = 106
+        Height = 132
         Align = alTop
         Caption = 'Paths'
         TabOrder = 6
-        ExplicitWidth = 263
         object lblHenkePath: TLabel
           Left = 8
           Top = 22
@@ -510,6 +500,13 @@ object frmXRFMain: TfrmXRFMain
           Width = 49
           Height = 15
           Caption = 'Template'
+        end
+        object lblXrccmdPath: TLabel
+          Left = 8
+          Top = 100
+          Width = 40
+          Height = 15
+          Caption = 'xrccmd'
         end
         object edHenkePath: TEdit
           Left = 60
@@ -559,17 +556,32 @@ object frmXRFMain: TfrmXRFMain
           TabOrder = 5
           OnClick = btnBrowseTemplateClick
         end
+        object edXrccmdPath: TEdit
+          Left = 60
+          Top = 98
+          Width = 175
+          Height = 23
+          TabOrder = 6
+        end
+        object btnBrowseXrccmd: TButton
+          Left = 240
+          Top = 97
+          Width = 30
+          Height = 25
+          Caption = '...'
+          TabOrder = 7
+          OnClick = btnBrowseXrccmdClick
+        end
       end
       object grpResults: TGroupBox
         Left = 0
-        Top = 1046
+        Top = 966
         Width = 383
         Height = 200
         Align = alTop
         Caption = 'Results'
         TabOrder = 7
         Visible = False
-        ExplicitWidth = 263
         object sgResults: TStringGrid
           Left = 8
           Top = 18
@@ -612,22 +624,20 @@ object frmXRFMain: TfrmXRFMain
       Left = 0
       Top = 966
       Width = 400
-      Height = 40
+      Height = 62
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitTop = 560
-      ExplicitWidth = 280
       object lblProgress: TLabel
-        Left = 224
-        Top = 14
+        Left = 4
+        Top = 42
         Width = 32
         Height = 15
         Caption = 'Ready'
       end
       object btnStart: TButton
         Left = 4
-        Top = 8
+        Top = 4
         Width = 50
         Height = 25
         Caption = 'Start'
@@ -636,7 +646,7 @@ object frmXRFMain: TfrmXRFMain
       end
       object btnStop: TButton
         Left = 58
-        Top = 8
+        Top = 4
         Width = 50
         Height = 25
         Caption = 'Stop'
@@ -644,23 +654,41 @@ object frmXRFMain: TfrmXRFMain
         TabOrder = 1
         OnClick = btnStopClick
       end
-      object btnLoadConfig: TButton
+      object btnRunXrccmd: TButton
         Left = 116
-        Top = 8
+        Top = 4
+        Width = 80
+        Height = 25
+        Caption = 'Run xrccmd'
+        TabOrder = 2
+        OnClick = btnRunXrccmdClick
+      end
+      object btnLoadConfig: TButton
+        Left = 204
+        Top = 4
         Width = 50
         Height = 25
         Caption = 'Load'
-        TabOrder = 2
+        TabOrder = 3
         OnClick = btnLoadConfigClick
       end
       object btnSaveConfig: TButton
-        Left = 170
-        Top = 8
+        Left = 258
+        Top = 4
         Width = 50
         Height = 25
         Caption = 'Save'
-        TabOrder = 3
+        TabOrder = 4
         OnClick = btnSaveConfigClick
+      end
+      object btnLoadResults: TButton
+        Left = 316
+        Top = 4
+        Width = 75
+        Height = 25
+        Caption = 'Load Results'
+        TabOrder = 5
+        OnClick = btnLoadResultsClick
       end
     end
   end
@@ -672,9 +700,6 @@ object frmXRFMain: TfrmXRFMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitLeft = 285
-    ExplicitWidth = 715
-    ExplicitHeight = 600
     object splCharts: TSplitter
       Left = 0
       Top = 200
@@ -696,7 +721,6 @@ object frmXRFMain: TfrmXRFMain
       View3D = False
       Align = alTop
       TabOrder = 0
-      ExplicitWidth = 715
       DefaultCanvas = 'TGDIPlusCanvas'
       ColorPaletteIndex = 13
       object serFoM: TLineSeries
@@ -719,8 +743,6 @@ object frmXRFMain: TfrmXRFMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitWidth = 715
-      ExplicitHeight = 395
       object splBottom: TSplitter
         Left = 350
         Top = 0
@@ -739,7 +761,6 @@ object frmXRFMain: TfrmXRFMain
         View3D = False
         Align = alLeft
         TabOrder = 0
-        ExplicitHeight = 395
         DefaultCanvas = 'TGDIPlusCanvas'
         ColorPaletteIndex = 13
         object serRPeak: TBarSeries
@@ -761,8 +782,6 @@ object frmXRFMain: TfrmXRFMain
         View3D = False
         Align = alClient
         TabOrder = 1
-        ExplicitWidth = 360
-        ExplicitHeight = 395
         DefaultCanvas = 'TGDIPlusCanvas'
         ColorPaletteIndex = 13
       end
@@ -783,6 +802,19 @@ object frmXRFMain: TfrmXRFMain
     DefaultExt = 'json'
     Filter = 'JSON|*.json'
     Left = 580
+    Top = 300
+  end
+  object tmrProgress: TTimer
+    Enabled = False
+    Interval = 500
+    OnTimer = tmrProgressTimer
+    Left = 620
+    Top = 300
+  end
+  object dlgOpenXrccmd: TOpenDialog
+    Filter = 'Executable|*.exe'
+    Title = 'Select xrccmd.exe'
+    Left = 660
     Top = 300
   end
 end

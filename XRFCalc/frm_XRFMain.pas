@@ -90,6 +90,9 @@ type
     lblTemplatePath: TLabel;
     edTemplatePath: TEdit;
     btnBrowseTemplate: TButton;
+    lblXrccmdPath: TLabel;
+    edXrccmdPath: TEdit;
+    btnBrowseXrccmd: TButton;
     // Results (hidden by default)
     grpResults: TGroupBox;
     sgResults: TStringGrid;
@@ -99,13 +102,18 @@ type
     // Control buttons
     btnStart: TButton;
     btnStop: TButton;
+    btnRunXrccmd: TButton;
     btnLoadConfig: TButton;
     btnSaveConfig: TButton;
+    btnLoadResults: TButton;
     lblProgress: TLabel;
     // Dialogs
     dlgOpen: TOpenDialog;
     dlgSave: TSaveDialog;
     dlgSaveStructure: TSaveDialog;
+    dlgOpenXrccmd: TOpenDialog;
+    // Timer
+    tmrProgress: TTimer;
     // Charts
     chartConvergence: TChart;
     serFoM: TLineSeries;
@@ -120,17 +128,25 @@ type
     procedure btnBrowseHenkeClick(Sender: TObject);
     procedure btnBrowseOutputClick(Sender: TObject);
     procedure btnBrowseTemplateClick(Sender: TObject);
+    procedure btnBrowseXrccmdClick(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
+    procedure btnRunXrccmdClick(Sender: TObject);
+    procedure btnLoadResultsClick(Sender: TObject);
     procedure btnSaveStructureClick(Sender: TObject);
     procedure btnSaveCurvesClick(Sender: TObject);
     procedure btnExportXRCClick(Sender: TObject);
+    procedure tmrProgressTimer(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
     FThread: TOptimizationThread;
     FLastIterationData: TIterationData;
     FLastCurves: TArray<TCurveData>;
+    FXrccmdProcess: THandle;
+    FLogLineCount: Integer;
+    FXrccmdOutputDir: string;
+    FXrccmdTargetNames: TArray<string>;
     procedure HandleIteration(const Data: TIterationData);
     procedure HandleCompletion(const Data: TIterationData;
       const Curves: TArray<TCurveData>);
@@ -139,6 +155,9 @@ type
     procedure ShowResultsSummary(const Data: TIterationData);
     procedure LoadConfigToUI(const Config: TUniversalConfig);
     function CollectConfigFromUI: TUniversalConfig;
+    function FindXrccmdPath: string;
+    procedure LoadResultsFromDir(const Dir: string);
+    procedure XrccmdFinished;
   public
   end;
 
@@ -148,7 +167,7 @@ var
 implementation
 
 uses
-  System.IniFiles, Vcl.FileCtrl,
+  System.IniFiles, System.IOUtils, System.JSON, Vcl.FileCtrl,
   unit_universal_io, cmd_unit_types, unit_materials_mix;
 
 {$R *.dfm}
@@ -191,14 +210,19 @@ procedure TfrmXRFMain.FormCreate(Sender: TObject);
 var
   Ini: TIniFile;
 begin
+  FXrccmdProcess := 0;
   Ini := TIniFile.Create(GetSettingsPath);
   try
     edHenkePath.Text := Ini.ReadString('Paths', 'HenkePath', '');
     edOutputDir.Text := Ini.ReadString('Paths', 'OutputDir', '');
     edTemplatePath.Text := Ini.ReadString('Paths', 'TemplatePath', '');
+    edXrccmdPath.Text := Ini.ReadString('Paths', 'XrccmdPath', '');
   finally
     Ini.Free;
   end;
+
+  if edXrccmdPath.Text = '' then
+    edXrccmdPath.Text := FindXrccmdPath;
 end;
 
 procedure TfrmXRFMain.FormDestroy(Sender: TObject);
@@ -210,15 +234,36 @@ begin
     Ini.WriteString('Paths', 'HenkePath', edHenkePath.Text);
     Ini.WriteString('Paths', 'OutputDir', edOutputDir.Text);
     Ini.WriteString('Paths', 'TemplatePath', edTemplatePath.Text);
+    Ini.WriteString('Paths', 'XrccmdPath', edXrccmdPath.Text);
   finally
     Ini.Free;
   end;
 end;
 
+function TfrmXRFMain.FindXrccmdPath: string;
+var
+  Dir, Candidate: string;
+begin
+  Result := '';
+  Dir := ExtractFilePath(Application.ExeName);
+
+  // Same directory as XRFCalc.exe
+  Candidate := Dir + 'xrccmd.exe';
+  if FileExists(Candidate) then
+  begin
+    Result := Candidate;
+    Exit;
+  end;
+
+  // Sibling XRC_CMD output
+  Candidate := ExpandFileName(Dir + '..\XRC_CMD\Out\BIN\xrccmd.exe');
+  if FileExists(Candidate) then
+    Result := Candidate;
+end;
+
 procedure TfrmXRFMain.LoadConfigToUI(const Config: TUniversalConfig);
 var
   i, j: Integer;
-  Found: Boolean;
 begin
   // Targets: uncheck all, then check matching ones
   for i := 0 to clbTargets.Count - 1 do
@@ -395,11 +440,22 @@ end;
 procedure TfrmXRFMain.btnLoadConfigClick(Sender: TObject);
 var
   Config: TUniversalConfig;
+  ConfigDir: string;
 begin
   if dlgOpen.Execute then
   begin
     try
       Config := TUniversalIO.LoadConfig(dlgOpen.FileName);
+
+      // Resolve relative paths against the config file's directory
+      ConfigDir := ExtractFilePath(ExpandFileName(dlgOpen.FileName));
+      if (Config.OutputDir <> '') and not TPath.IsPathRooted(Config.OutputDir) then
+        Config.OutputDir := ExpandFileName(ConfigDir + Config.OutputDir);
+      if (Config.HenkePath <> '') and not TPath.IsPathRooted(Config.HenkePath) then
+        Config.HenkePath := ExpandFileName(ConfigDir + Config.HenkePath);
+      if (Config.TemplatePath <> '') and not TPath.IsPathRooted(Config.TemplatePath) then
+        Config.TemplatePath := ExpandFileName(ConfigDir + Config.TemplatePath);
+
       LoadConfigToUI(Config);
     except
       on E: Exception do
@@ -459,13 +515,23 @@ begin
   end;
 end;
 
+procedure TfrmXRFMain.btnBrowseXrccmdClick(Sender: TObject);
+begin
+  if edXrccmdPath.Text <> '' then
+    dlgOpenXrccmd.InitialDir := ExtractFilePath(edXrccmdPath.Text);
+  if dlgOpenXrccmd.Execute then
+    edXrccmdPath.Text := dlgOpenXrccmd.FileName;
+end;
+
 procedure TfrmXRFMain.SetRunningState(Running: Boolean);
 begin
   sbConfig.Enabled := not Running;
   btnStart.Enabled := not Running;
+  btnRunXrccmd.Enabled := not Running;
   btnStop.Enabled := Running;
   btnLoadConfig.Enabled := not Running;
   btnSaveConfig.Enabled := not Running;
+  btnLoadResults.Enabled := not Running;
   if not Running then
     lblProgress.Caption := 'Ready';
 end;
@@ -508,6 +574,363 @@ procedure TfrmXRFMain.btnStopClick(Sender: TObject);
 begin
   if Assigned(FThread) then
     FThread.CancelOptimization;
+
+  // Stop xrccmd process if running
+  if FXrccmdProcess <> 0 then
+  begin
+    TerminateProcess(FXrccmdProcess, 1);
+    CloseHandle(FXrccmdProcess);
+    FXrccmdProcess := 0;
+    tmrProgress.Enabled := False;
+    SetRunningState(False);
+    lblProgress.Caption := 'xrccmd stopped';
+  end;
+end;
+
+procedure TfrmXRFMain.btnRunXrccmdClick(Sender: TObject);
+var
+  Config: TUniversalConfig;
+  Error: string;
+  XrccmdExe, ConfigPath, CmdLine, LogPath: string;
+  SI: TStartupInfo;
+  PI: TProcessInformation;
+  i: Integer;
+begin
+  XrccmdExe := edXrccmdPath.Text;
+  if (XrccmdExe = '') or not FileExists(XrccmdExe) then
+  begin
+    MessageDlg('xrccmd.exe not found. Set the path in Paths group.', mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  Config := CollectConfigFromUI;
+  if not ValidateConfig(Config, Error) then
+  begin
+    MessageDlg(Error, mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  // Ensure output dir is absolute
+  Config.OutputDir := ExpandFileName(Config.OutputDir);
+  if not System.SysUtils.ForceDirectories(Config.OutputDir) then
+  begin
+    MessageDlg('Cannot create output directory: ' + Config.OutputDir, mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  // Save config to output dir
+  ConfigPath := IncludeTrailingPathDelimiter(Config.OutputDir) + '_xrccmd_config.json';
+  TUniversalIO.SaveConfig(Config, ConfigPath);
+
+  // Delete old progress.log so we start tailing fresh
+  LogPath := IncludeTrailingPathDelimiter(Config.OutputDir) + 'progress.log';
+  if FileExists(LogPath) then
+    DeleteFile(LogPath);
+
+  // Remember output dir and target names for log parsing
+  FXrccmdOutputDir := Config.OutputDir;
+  SetLength(FXrccmdTargetNames, Length(Config.Targets));
+  for i := 0 to High(Config.Targets) do
+    FXrccmdTargetNames[i] := Config.Targets[i].Name;
+
+  // Launch xrccmd
+  CmdLine := '"' + XrccmdExe + '" -u "' + ConfigPath + '"';
+
+  FillChar(SI, SizeOf(SI), 0);
+  SI.cb := SizeOf(SI);
+  SI.dwFlags := STARTF_USESHOWWINDOW;
+  SI.wShowWindow := SW_MINIMIZE;
+
+  FillChar(PI, SizeOf(PI), 0);
+
+  if not CreateProcess(nil, PChar(CmdLine), nil, nil, False,
+    CREATE_NEW_CONSOLE, nil, PChar(Config.OutputDir), SI, PI) then
+  begin
+    MessageDlg('Failed to launch xrccmd: ' + SysErrorMessage(GetLastError),
+      mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  CloseHandle(PI.hThread);
+  FXrccmdProcess := PI.hProcess;
+
+  // Prepare UI
+  SetRunningState(True);
+  grpResults.Visible := False;
+  serFoM.Clear;
+  serRPeak.Clear;
+  chartCurves.RemoveAllSeries;
+  FLogLineCount := 0;
+  lblProgress.Caption := 'xrccmd running...';
+
+  tmrProgress.Enabled := True;
+end;
+
+procedure TfrmXRFMain.tmrProgressTimer(Sender: TObject);
+var
+  LogPath, Line: string;
+  SL: TStringList;
+  i, j: Integer;
+  Parts: TArray<string>;
+  Iter: Integer;
+  FoM: Double;
+  RPeakValues: TArray<Double>;
+  ExitCode: DWORD;
+  FS: TFormatSettings;
+begin
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+
+  // Tail progress.log for new lines
+  LogPath := IncludeTrailingPathDelimiter(FXrccmdOutputDir) + 'progress.log';
+  if FileExists(LogPath) then
+  begin
+    SL := TStringList.Create;
+    try
+      try
+        SL.LoadFromFile(LogPath);
+      except
+        // File may be locked by xrccmd writing — skip this tick
+        Exit;
+      end;
+
+      for i := FLogLineCount to SL.Count - 1 do
+      begin
+        Line := Trim(SL[i]);
+        if (Line = '') or (i = 0) then  // skip header
+          Continue;
+
+        // Parse: "  Iter    FoM  R_1  R_2 ... Div  MM:SS"
+        // Split by whitespace
+        Parts := Line.Split([' '], TStringSplitOptions.ExcludeEmpty);
+        if Length(Parts) < 3 then
+          Continue;
+
+        Iter := StrToIntDef(Parts[0], -1);
+        if Iter < 0 then
+          Continue;
+        FoM := StrToFloatDef(Parts[1], 0, FS);
+
+        // R_peak values: Parts[2..2+NTargets-1]
+        SetLength(RPeakValues, Length(FXrccmdTargetNames));
+        for j := 0 to High(FXrccmdTargetNames) do
+        begin
+          if j + 2 < Length(Parts) then
+            RPeakValues[j] := StrToFloatDef(Parts[j + 2], 0, FS)
+          else
+            RPeakValues[j] := 0;
+        end;
+
+        // Update FoM chart
+        serFoM.AddXY(Iter, FoM);
+
+        // Update R_peak bar chart
+        serRPeak.Clear;
+        for j := 0 to High(FXrccmdTargetNames) do
+          serRPeak.Add(RPeakValues[j], FXrccmdTargetNames[j]);
+
+        // Update progress label — use last two parts for time
+        if Length(Parts) >= 2 then
+          lblProgress.Caption := Format('xrccmd: Iter %d  FoM: %.4f  [%s]',
+            [Iter, FoM, Parts[High(Parts)]]);
+      end;
+
+      FLogLineCount := SL.Count;
+    finally
+      SL.Free;
+    end;
+  end;
+
+  // Check if process has exited
+  if FXrccmdProcess <> 0 then
+  begin
+    if GetExitCodeProcess(FXrccmdProcess, ExitCode) then
+    begin
+      if ExitCode <> STILL_ACTIVE then
+      begin
+        CloseHandle(FXrccmdProcess);
+        FXrccmdProcess := 0;
+        tmrProgress.Enabled := False;
+        XrccmdFinished;
+      end;
+    end;
+  end;
+end;
+
+procedure TfrmXRFMain.XrccmdFinished;
+begin
+  SetRunningState(False);
+  lblProgress.Caption := 'xrccmd complete — loading results...';
+  Application.ProcessMessages;
+
+  LoadResultsFromDir(FXrccmdOutputDir);
+end;
+
+procedure TfrmXRFMain.btnLoadResultsClick(Sender: TObject);
+var
+  Dir: string;
+begin
+  Dir := edOutputDir.Text;
+  if SelectDirectory('Select results directory', '', Dir) then
+    LoadResultsFromDir(Dir);
+end;
+
+procedure TfrmXRFMain.LoadResultsFromDir(const Dir: string);
+var
+  StructPath, CurvesDir, Line: string;
+  JSON: TJSONObject;
+  JPerElem, JElem: TJSONObject;
+  Pair: TJSONPair;
+  SL: TStringList;
+  i, j, Row: Integer;
+  Series: TLineSeries;
+  Parts: TArray<string>;
+  FoM: Double;
+  FS: TFormatSettings;
+  CurveFiles: TArray<string>;
+  ElemName: string;
+begin
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+
+  StructPath := IncludeTrailingPathDelimiter(Dir) + 'best_structure.json';
+  if not FileExists(StructPath) then
+  begin
+    MessageDlg('best_structure.json not found in ' + Dir, mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  // Parse best_structure.json
+  SL := TStringList.Create;
+  try
+    SL.LoadFromFile(StructPath);
+    JSON := TJSONObject.ParseJSONValue(SL.Text) as TJSONObject;
+  finally
+    SL.Free;
+  end;
+
+  if JSON = nil then
+  begin
+    MessageDlg('Failed to parse best_structure.json', mtError, [mbOK], 0);
+    Exit;
+  end;
+
+  try
+    // Extract per_element results
+    FoM := 0;
+    if JSON.GetValue('optimizer_result') is TJSONObject then
+    begin
+      var JResult := JSON.GetValue('optimizer_result') as TJSONObject;
+      if JResult.GetValue('FoM') <> nil then
+        FoM := (JResult.GetValue('FoM') as TJSONNumber).AsDouble;
+
+      if JResult.GetValue('per_element') is TJSONObject then
+      begin
+        JPerElem := JResult.GetValue('per_element') as TJSONObject;
+
+        // Populate results grid
+        grpResults.Visible := True;
+        sgResults.RowCount := JPerElem.Count + 1;
+        sgResults.Cells[0, 0] := 'Element';
+        sgResults.Cells[1, 0] := 'R_peak';
+        sgResults.Cells[2, 0] := 'FWHM';
+
+        Row := 1;
+        // Also build PerElement data for FLastIterationData
+        SetLength(FLastIterationData.PerElement, JPerElem.Count);
+        for i := 0 to JPerElem.Count - 1 do
+        begin
+          Pair := JPerElem.Pairs[i];
+          ElemName := Pair.JsonString.Value;
+          JElem := Pair.JsonValue as TJSONObject;
+
+          sgResults.Cells[0, Row] := ElemName;
+          if JElem.GetValue('R_peak') <> nil then
+            sgResults.Cells[1, Row] := Format('%.4f',
+              [(JElem.GetValue('R_peak') as TJSONNumber).AsDouble])
+          else
+            sgResults.Cells[1, Row] := '';
+          if JElem.GetValue('FWHM') <> nil then
+            sgResults.Cells[2, Row] := Format('%.3f',
+              [(JElem.GetValue('FWHM') as TJSONNumber).AsDouble])
+          else
+            sgResults.Cells[2, Row] := '';
+
+          FLastIterationData.PerElement[i].Element := ElemName;
+          if JElem.GetValue('R_peak') <> nil then
+            FLastIterationData.PerElement[i].RPeak :=
+              (JElem.GetValue('R_peak') as TJSONNumber).AsDouble;
+          if JElem.GetValue('FWHM') <> nil then
+            FLastIterationData.PerElement[i].FWHM :=
+              (JElem.GetValue('FWHM') as TJSONNumber).AsDouble;
+
+          Inc(Row);
+        end;
+
+        FLastIterationData.FoM := FoM;
+
+        // Update R_peak bar chart
+        serRPeak.Clear;
+        for i := 0 to High(FLastIterationData.PerElement) do
+          serRPeak.Add(FLastIterationData.PerElement[i].RPeak,
+            FLastIterationData.PerElement[i].Element);
+      end;
+    end;
+  finally
+    JSON.Free;
+  end;
+
+  // Load curves from best_curves/*.dat
+  CurvesDir := IncludeTrailingPathDelimiter(Dir) + 'best_curves';
+  chartCurves.RemoveAllSeries;
+  SetLength(FLastCurves, 0);
+
+  if TDirectory.Exists(CurvesDir) then
+  begin
+    CurveFiles := TDirectory.GetFiles(CurvesDir, '*.dat');
+    SetLength(FLastCurves, Length(CurveFiles));
+
+    for i := 0 to High(CurveFiles) do
+    begin
+      ElemName := TPath.GetFileNameWithoutExtension(CurveFiles[i]);
+      FLastCurves[i].Element := ElemName;
+
+      SL := TStringList.Create;
+      try
+        SL.LoadFromFile(CurveFiles[i]);
+
+        SetLength(FLastCurves[i].Theta, 0);
+        SetLength(FLastCurves[i].Refl, 0);
+
+        Series := TLineSeries.Create(chartCurves);
+        Series.Title := ElemName;
+        Series.LinePen.Width := 2;
+        chartCurves.AddSeries(Series);
+
+        for j := 1 to SL.Count - 1 do  // skip header
+        begin
+          Line := Trim(SL[j]);
+          if Line = '' then Continue;
+          Parts := Line.Split([#9]);
+          if Length(Parts) >= 2 then
+          begin
+            var Theta := StrToFloatDef(Parts[0], 0, FS);
+            var Refl := StrToFloatDef(Parts[1], 0, FS);
+            Series.AddXY(Theta, Refl);
+
+            SetLength(FLastCurves[i].Theta, Length(FLastCurves[i].Theta) + 1);
+            FLastCurves[i].Theta[High(FLastCurves[i].Theta)] := Theta;
+            SetLength(FLastCurves[i].Refl, Length(FLastCurves[i].Refl) + 1);
+            FLastCurves[i].Refl[High(FLastCurves[i].Refl)] := Refl;
+          end;
+        end;
+      finally
+        SL.Free;
+      end;
+    end;
+  end;
+
+  lblProgress.Caption := Format('Results loaded from %s  FoM: %.4f', [Dir, FoM]);
 end;
 
 procedure TfrmXRFMain.HandleIteration(const Data: TIterationData);
@@ -522,8 +945,9 @@ begin
   for i := 0 to High(Data.PerElement) do
     serRPeak.Add(Data.PerElement[i].RPeak, Data.PerElement[i].Element);
 
-  lblProgress.Caption := Format('Iteration %d / %d  FoM: %.4f',
-    [Data.Iteration, Data.MaxIterations, Data.FoM]);
+  lblProgress.Caption := Format('Iteration %d / %d  FoM: %.4f  [%d:%02d]',
+    [Data.Iteration, Data.MaxIterations, Data.FoM,
+     Trunc(Data.ElapsedSec) div 60, Trunc(Data.ElapsedSec) mod 60]);
 end;
 
 procedure TfrmXRFMain.HandleCompletion(const Data: TIterationData;
@@ -552,7 +976,8 @@ begin
   end;
 
   ShowResultsSummary(Data);
-  lblProgress.Caption := Format('Complete - FoM: %.4f', [Data.FoM]);
+  lblProgress.Caption := Format('Complete - FoM: %.4f  [%d:%02d]',
+    [Data.FoM, Trunc(Data.ElapsedSec) div 60, Trunc(Data.ElapsedSec) mod 60]);
 end;
 
 procedure TfrmXRFMain.HandleError(const ErrorMsg: string);
@@ -673,7 +1098,7 @@ begin
   IO := TUniversalIO.Create;
   try
     Mixer.Initialize(ElementNames, TargetLambdas, Config.Substrate, Config.HenkePath);
-    IO.SaveXRCStructure(Config, FLastIterationData.BestGenome, Mixer, Dir);
+    IO.SaveXRCStructure(Config, FLastIterationData.BestGenome, Mixer, nil, Dir);
   finally
     IO.Free;
     Mixer.Free;

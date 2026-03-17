@@ -89,7 +89,7 @@
         "theta_min": 3.0
     },
     "optimizer": {
-        "population": 3000,
+        "population": 100,
         "iterations": 100,
         "tolerance": 9.99999997475243E-7,
         "stagnation_limit": 200,

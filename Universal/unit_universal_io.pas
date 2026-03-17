@@ -27,7 +27,7 @@ type
     procedure LogIteration(Iteration: Integer; FoM: Single;
       const TargetResults: array of TTargetResult;
       const TargetNames: array of string;
-      Diversity: Single);
+      Diversity: Single; ElapsedSec: Double);
     procedure CloseLog;
 
     procedure SaveBestStructure(const Config: TUniversalConfig;
@@ -330,7 +330,7 @@ begin
   Header := Format('%5s  %8s', ['Iter', 'FoM']);
   for i := 0 to High(TargetNames) do
     Header := Header + Format('  %5s', ['R_' + TargetNames[i]]);
-  Header := Header + Format('  %5s', ['Div']);
+  Header := Header + Format('  %5s  %8s', ['Div', 'Time']);
   WriteLn(FLogFile, Header);
   Flush(FLogFile);
 end;
@@ -338,15 +338,18 @@ end;
 procedure TUniversalIO.LogIteration(Iteration: Integer; FoM: Single;
   const TargetResults: array of TTargetResult;
   const TargetNames: array of string;
-  Diversity: Single);
+  Diversity: Single; ElapsedSec: Double);
 var
   i: Integer;
   Line: string;
+  Min, Sec: Integer;
 begin
   Line := Format('%5d  %8.4f', [Iteration, FoM]);
   for i := 0 to High(TargetResults) do
     Line := Line + Format('  %5.3f', [TargetResults[i].RPeak]);
-  Line := Line + Format('  %5.3f', [Diversity]);
+  Min := Trunc(ElapsedSec) div 60;
+  Sec := Trunc(ElapsedSec) mod 60;
+  Line := Line + Format('  %5.3f  %4d:%02d', [Diversity, Min, Sec]);
 
   if IsConsole then
     WriteLn(Line);

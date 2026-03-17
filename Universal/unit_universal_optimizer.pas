@@ -3,7 +3,7 @@ unit unit_universal_optimizer;
 interface
 
 uses
-  System.SysUtils, System.Math, System.Classes, System.Threading,
+  System.SysUtils, System.Math, System.Classes,
   cmd_unit_types, unit_universal_types, unit_universal_io,
   unit_universal_fitness, unit_universal_pso, unit_materials_mix,
   unit_universal_templates;
@@ -23,6 +23,7 @@ type
     Diversity: Double;
     JammingCount: Integer;
     BestGenome: TGenome;
+    ElapsedSec: Double;
   end;
 
   TCurveData = record
@@ -43,15 +44,15 @@ type
     FFitness: TUniversalFitness;
     FIO: TUniversalIO;
     FMixer: TMaterialMixer;
-    FPool: TThreadPool;
     FCancelled: Boolean;
     FTemplates: TTemplateLibrary;
+    FWorkerFitness: array of TUniversalFitness;
     FOnIteration: TIterationEvent;
     FOnCompleted: TCompletionEvent;
     FOnError: TErrorEvent;
     procedure EvaluatePopulation;
     function BuildIterationData(Iteration: Integer;
-      const BestResults: TTargetResults): TIterationData;
+      const BestResults: TTargetResults; ElapsedSec: Double): TIterationData;
   public
     constructor Create(const AConfig: TUniversalConfig);
     destructor Destroy; override;
@@ -63,6 +64,9 @@ type
   end;
 
 implementation
+
+uses
+  System.Diagnostics, OtlParallel;
 
 { TUniversalOptimizer }
 
@@ -81,19 +85,19 @@ end;
 
 procedure TUniversalOptimizer.EvaluatePopulation;
 begin
-  TParallel.&For(0, FPSO.ParticleCount - 1,
-    procedure(Index: Integer)
+  Parallel.&For(0, FPSO.ParticleCount - 1)
+    .NumTasks(TThread.ProcessorCount)
+    .Execute(procedure(taskIndex, particleIndex: Integer)
     var
       P: PParticle;
     begin
-      P := FPSO.GetParticle(Index);
-      P^.CurrentFoM := FFitness.Evaluate(P^.X, P^.TargetResults);
-    end,
-    FPool);
+      P := FPSO.GetParticle(particleIndex);
+      P^.CurrentFoM := FWorkerFitness[taskIndex].Evaluate(P^.X, P^.TargetResults);
+    end);
 end;
 
 function TUniversalOptimizer.BuildIterationData(Iteration: Integer;
-  const BestResults: TTargetResults): TIterationData;
+  const BestResults: TTargetResults; ElapsedSec: Double): TIterationData;
 var
   i: Integer;
 begin
@@ -103,6 +107,7 @@ begin
   Result.Diversity := FPSO.Diversity;
   Result.JammingCount := FPSO.JammingCount;
   Result.BestGenome := FPSO.ABest;
+  Result.ElapsedSec := ElapsedSec;
 
   SetLength(Result.PerElement, Length(FConfig.Targets));
   for i := 0 to High(FConfig.Targets) do
@@ -126,8 +131,10 @@ var
   Curve: TDataArray;
   Curves: TArray<TCurveData>;
   IterData: TIterationData;
+  SW: TStopwatch;
 begin
   try
+    SW := TStopwatch.StartNew;
     // Build arrays from config
     SetLength(TargetLambdas, Length(FConfig.Targets));
     SetLength(TargetNames, Length(FConfig.Targets));
@@ -212,12 +219,12 @@ begin
     end;
 
     // Create engine objects
-    FPool := TThreadPool.Create;
-    FPool.SetMinWorkerThreads(TThread.ProcessorCount);
-    FPool.SetMaxWorkerThreads(TThread.ProcessorCount);
     FMixer := TMaterialMixer.Create;
     FPSO := TUniversalPSO.Create(FConfig);
     FFitness := TUniversalFitness.Create(FMixer, FConfig, FTemplates);
+    SetLength(FWorkerFitness, TThread.ProcessorCount);
+    for i := 0 to High(FWorkerFitness) do
+      FWorkerFitness[i] := TUniversalFitness.Create(FMixer, FConfig, FTemplates);
     FIO := TUniversalIO.Create;
     try
       FMixer.Initialize(ElementNames, TargetLambdas,
@@ -245,9 +252,9 @@ begin
 
       FFitness.Evaluate(FPSO.ABest, BestResults);
       FIO.LogIteration(0, -FPSO.ABestFoM, BestResults, TargetNames,
-        FPSO.Diversity);
+        FPSO.Diversity, SW.Elapsed.TotalSeconds);
 
-      IterData := BuildIterationData(0, BestResults);
+      IterData := BuildIterationData(0, BestResults, SW.Elapsed.TotalSeconds);
       if Assigned(FOnIteration) then
         FOnIteration(IterData);
 
@@ -272,9 +279,9 @@ begin
 
         FFitness.Evaluate(FPSO.ABest, BestResults);
         FIO.LogIteration(t + 1, -FPSO.ABestFoM, BestResults, TargetNames,
-          FPSO.Diversity);
+          FPSO.Diversity, SW.Elapsed.TotalSeconds);
 
-        IterData := BuildIterationData(t + 1, BestResults);
+        IterData := BuildIterationData(t + 1, BestResults, SW.Elapsed.TotalSeconds);
         if Assigned(FOnIteration) then
           FOnIteration(IterData);
 
@@ -330,21 +337,24 @@ begin
       FIO.CloseLog;
 
       // Fire completion event with cached curves
-      IterData := BuildIterationData(FConfig.Optimizer.Iterations, BestResults);
+      SW.Stop;
+      IterData := BuildIterationData(FConfig.Optimizer.Iterations, BestResults,
+        SW.Elapsed.TotalSeconds);
       if Assigned(FOnCompleted) then
         FOnCompleted(IterData, Curves);
 
     finally
+      for i := 0 to High(FWorkerFitness) do
+        FWorkerFitness[i].Free;
+      FWorkerFitness := nil;
       FMixer.Free;
       FPSO.Free;
       FFitness.Free;
       FIO.Free;
-      FPool.Free;
       FMixer := nil;
       FPSO := nil;
       FFitness := nil;
       FIO := nil;
-      FPool := nil;
     end;
   except
     on E: Exception do
