@@ -86,10 +86,11 @@
         "R_min_threshold": 0.00100000004749745,
         "polarization": "sp",
         "delta_theta": 0.100000001490116,
-        "theta_min": 3.0
+        "theta_min": 3.0,
+        "w_purity": 1.0
     },
     "optimizer": {
-        "population": 100,
+        "population": 1000,
         "iterations": 100,
         "tolerance": 9.99999997475243E-7,
         "stagnation_limit": 200,
