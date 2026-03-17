@@ -22,12 +22,13 @@ type
     class procedure SaveConfig(const Config: TUniversalConfig;
       const FileName: string);
 
+    procedure ClearOutputDir(const OutputDir: string);
     procedure OpenLog(const OutputDir: string;
       const TargetNames: array of string);
     procedure LogIteration(Iteration: Integer; FoM: Single;
       const TargetResults: array of TTargetResult;
       const TargetNames: array of string;
-      Diversity: Single; ElapsedSec: Double);
+      Diversity: Single; const BestInfo: string; ElapsedSec: Double);
     procedure CloseLog;
 
     procedure SaveBestStructure(const Config: TUniversalConfig;
@@ -79,10 +80,23 @@ var
   JTargets, JPool: TJSONArray;
   JStructure, JFitness, JOptimizer, JTarget, JRange: TJSONObject;
   Content: string;
+  ParsedValue: TJSONValue;
   i: Integer;
 begin
   Content := TFile.ReadAllText(FileName);
-  JSON := TJSONObject.ParseJSONValue(Content) as TJSONObject;
+  ParsedValue := TJSONObject.ParseJSONValue(Content);
+  if ParsedValue = nil then
+    raise Exception.CreateFmt(
+      'Invalid JSON in config file "%s". Check for missing commas, extra braces, or other syntax errors.',
+      [FileName]);
+  if not (ParsedValue is TJSONObject) then
+  begin
+    ParsedValue.Free;
+    raise Exception.CreateFmt(
+      'Config file "%s" must contain a JSON object.',
+      [FileName]);
+  end;
+  JSON := TJSONObject(ParsedValue);
   try
     // Try "lines" first, fall back to "targets" for backward compatibility
     if JSON.FindValue('lines') <> nil then
@@ -173,12 +187,23 @@ begin
 
     if JStructure.FindValue('density_factor') <> nil then
     begin
-      JRange := JStructure.GetValue<TJSONObject>('density_factor');
-      Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
-      Result.Structure.DensityFactorRange.Max := JRange.GetValue<Double>('max');
+      if JStructure.GetValue('density_factor') is TJSONNumber then
+      begin
+        Result.Structure.DensityFactorFixed := JStructure.GetValue<Double>('density_factor');
+        Result.Structure.DensityFactorRange.Min := Result.Structure.DensityFactorFixed;
+        Result.Structure.DensityFactorRange.Max := Result.Structure.DensityFactorFixed;
+      end
+      else
+      begin
+        JRange := JStructure.GetValue<TJSONObject>('density_factor');
+        Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
+        Result.Structure.DensityFactorRange.Max := JRange.GetValue<Double>('max');
+        Result.Structure.DensityFactorFixed := -1;
+      end;
     end
     else
     begin
+      Result.Structure.DensityFactorFixed := 1.0;
       Result.Structure.DensityFactorRange.Min := 1.0;
       Result.Structure.DensityFactorRange.Max := 1.0;
     end;
@@ -303,10 +328,15 @@ begin
       JStructure.AddPair('sigma', JRange);
     end;
 
-    JRange := TJSONObject.Create;
-    JRange.AddPair('min', TJSONNumber.Create(Config.Structure.DensityFactorRange.Min));
-    JRange.AddPair('max', TJSONNumber.Create(Config.Structure.DensityFactorRange.Max));
-    JStructure.AddPair('density_factor', JRange);
+    if Config.Structure.DensityFactorFixed >= 0 then
+      JStructure.AddPair('density_factor', TJSONNumber.Create(Config.Structure.DensityFactorFixed))
+    else
+    begin
+      JRange := TJSONObject.Create;
+      JRange.AddPair('min', TJSONNumber.Create(Config.Structure.DensityFactorRange.Min));
+      JRange.AddPair('max', TJSONNumber.Create(Config.Structure.DensityFactorRange.Max));
+      JStructure.AddPair('density_factor', JRange);
+    end;
     JSON.AddPair('structure', JStructure);
 
     // Fitness
@@ -358,6 +388,28 @@ begin
   end;
 end;
 
+procedure TUniversalIO.ClearOutputDir(const OutputDir: string);
+var
+  CurvesDir: string;
+begin
+  // Remove previous best_curves
+  CurvesDir := TPath.Combine(OutputDir, 'best_curves');
+  if TDirectory.Exists(CurvesDir) then
+    TDirectory.Delete(CurvesDir, True);
+
+  // Remove previous result files
+  if TFile.Exists(TPath.Combine(OutputDir, 'best_structure.json')) then
+    TFile.Delete(TPath.Combine(OutputDir, 'best_structure.json'));
+  if TFile.Exists(TPath.Combine(OutputDir, 'best_structure_xrc.json')) then
+    TFile.Delete(TPath.Combine(OutputDir, 'best_structure_xrc.json'));
+  if TFile.Exists(TPath.Combine(OutputDir, 'population.json')) then
+    TFile.Delete(TPath.Combine(OutputDir, 'population.json'));
+  if TFile.Exists(TPath.Combine(OutputDir, 'progress.log')) then
+    TFile.Delete(TPath.Combine(OutputDir, 'progress.log'));
+  if TFile.Exists(TPath.Combine(OutputDir, 'checkpoint.json')) then
+    TFile.Delete(TPath.Combine(OutputDir, 'checkpoint.json'));
+end;
+
 procedure TUniversalIO.OpenLog(const OutputDir: string;
   const TargetNames: array of string);
 var
@@ -373,7 +425,7 @@ begin
   Header := Format('%5s  %8s', ['Iter', 'FoM']);
   for i := 0 to High(TargetNames) do
     Header := Header + Format('  %5s', ['R_' + TargetNames[i]]);
-  Header := Header + Format('  %5s  %8s', ['Div', 'Time']);
+  Header := Header + Format('  %5s  %-18s  %8s', ['Div', 'Best', 'Time']);
   WriteLn(FLogFile, Header);
   Flush(FLogFile);
 end;
@@ -381,7 +433,7 @@ end;
 procedure TUniversalIO.LogIteration(Iteration: Integer; FoM: Single;
   const TargetResults: array of TTargetResult;
   const TargetNames: array of string;
-  Diversity: Single; ElapsedSec: Double);
+  Diversity: Single; const BestInfo: string; ElapsedSec: Double);
 var
   i: Integer;
   Line: string;
@@ -392,7 +444,7 @@ begin
     Line := Line + Format('  %5.3f', [TargetResults[i].RPeak]);
   Min := Trunc(ElapsedSec) div 60;
   Sec := Trunc(ElapsedSec) mod 60;
-  Line := Line + Format('  %5.3f  %4d:%02d', [Diversity, Min, Sec]);
+  Line := Line + Format('  %5.3f  %-18s  %4d:%02d', [Diversity, BestInfo, Min, Sec]);
 
   if IsConsole then
     WriteLn(Line);
@@ -877,6 +929,7 @@ var
   JSON, JParticle, JVel: TJSONObject;
   JParticles, JVComp, JVFracs: TJSONArray;
   Content: string;
+  ParsedValue: TJSONValue;
   i, j, k: Integer;
 
   function JSONToGenome(JG: TJSONObject): TGenome;
@@ -910,7 +963,15 @@ var
 
 begin
   Content := TFile.ReadAllText(FileName);
-  JSON := TJSONObject.ParseJSONValue(Content) as TJSONObject;
+  ParsedValue := TJSONObject.ParseJSONValue(Content);
+  if (ParsedValue = nil) or not (ParsedValue is TJSONObject) then
+  begin
+    ParsedValue.Free;
+    raise Exception.CreateFmt(
+      'Invalid JSON in checkpoint file "%s".',
+      [FileName]);
+  end;
+  JSON := TJSONObject(ParsedValue);
   try
     Result.Iteration := JSON.GetValue<Integer>('iteration');
     Result.GBestFoM := JSON.GetValue<Double>('gbest_fom');

@@ -108,7 +108,7 @@ begin
 
   // Print banner
   WriteLn('Universal Mirror Optimizer v1.0');
-  Write('Targets:');
+  Write('Lines:');
   for i := 0 to High(Config.Lines) do
     Write(Format(' %s(%.1fA)', [Config.Lines[i].Name, Config.Lines[i].Lambda]));
   WriteLn;
@@ -136,7 +136,7 @@ begin
   Write(Format('%5s  %8s', ['Iter', 'FoM']));
   for i := 0 to High(Config.Lines) do
     Write(Format('  %5s', ['R_' + Config.Lines[i].Name]));
-  WriteLn(Format('  %5s', ['Div']));
+  WriteLn(Format('  %5s  %-18s  %8s', ['Div', 'Best', 'Time']));
 
   Handler := TConsoleHandler.Create(Config, Verbose);
   try

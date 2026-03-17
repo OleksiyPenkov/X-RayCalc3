@@ -53,6 +53,7 @@ type
     procedure EvaluatePopulation;
     function BuildIterationData(Iteration: Integer;
       const BestResults: TTargetResults; ElapsedSec: Double): TIterationData;
+    function BuildBestInfo(const G: TGenome): string;
   public
     constructor Create(const AConfig: TUniversalConfig);
     destructor Destroy; override;
@@ -116,6 +117,27 @@ begin
     Result.PerElement[i].RPeak := BestResults[i].RPeak;
     Result.PerElement[i].FWHM := BestResults[i].FWHM;
   end;
+end;
+
+function TUniversalOptimizer.BuildBestInfo(const G: TGenome): string;
+var
+  Layer: Integer;
+  Best: Integer;
+  j: Integer;
+  Names: string;
+begin
+  Names := '';
+  for Layer := 0 to LAYERS_PER_PERIOD - 1 do
+  begin
+    Best := 0;
+    for j := 1 to High(FConfig.ElementPool) do
+      if G.Composition[Layer][j] > G.Composition[Layer][Best] then
+        Best := j;
+    if Layer > 0 then
+      Names := Names + '/';
+    Names := Names + FConfig.ElementPool[Best];
+  end;
+  Result := Format('%s d=%.1f', [Names, G.d]);
 end;
 
 procedure TUniversalOptimizer.Run;
@@ -230,6 +252,10 @@ begin
       FMixer.Initialize(ElementNames, TargetLambdas,
         FConfig.Substrate, FConfig.HenkePath);
 
+      // Clear previous results for fresh runs
+      if FConfig.ResumeFrom = '' then
+        FIO.ClearOutputDir(FConfig.OutputDir);
+
       FIO.OpenLog(FConfig.OutputDir, TargetNames);
 
       // Initialize or resume
@@ -252,7 +278,7 @@ begin
 
       FFitness.Evaluate(FPSO.ABest, BestResults);
       FIO.LogIteration(0, -FPSO.ABestFoM, BestResults, TargetNames,
-        FPSO.Diversity, SW.Elapsed.TotalSeconds);
+        FPSO.Diversity, BuildBestInfo(FPSO.ABest), SW.Elapsed.TotalSeconds);
 
       IterData := BuildIterationData(0, BestResults, SW.Elapsed.TotalSeconds);
       if Assigned(FOnIteration) then
@@ -279,7 +305,7 @@ begin
 
         FFitness.Evaluate(FPSO.ABest, BestResults);
         FIO.LogIteration(t + 1, -FPSO.ABestFoM, BestResults, TargetNames,
-          FPSO.Diversity, SW.Elapsed.TotalSeconds);
+          FPSO.Diversity, BuildBestInfo(FPSO.ABest), SW.Elapsed.TotalSeconds);
 
         IterData := BuildIterationData(t + 1, BestResults, SW.Elapsed.TotalSeconds);
         if Assigned(FOnIteration) then
