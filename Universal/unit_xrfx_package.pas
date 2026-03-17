@@ -345,8 +345,53 @@ begin
 end;
 
 function LoadCurveFiles(const CurvesDir: string): TArray<TXRFXCurveData>;
+var
+  FileNames: TStringDynArray;
+  i, j: Integer;
+  Lines: TStringDynArray;
+  Parts: TArray<string>;
+  ThetaList: TList<Double>;
+  ReflList: TList<Double>;
+  FS: TFormatSettings;
 begin
-  raise ENotImplemented.Create('LoadCurveFiles not yet implemented');
+  FS := TFormatSettings.Create;
+  FS.DecimalSeparator := '.';
+
+  if not TDirectory.Exists(CurvesDir) then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+
+  FileNames := TDirectory.GetFiles(CurvesDir, '*.dat');
+  SetLength(Result, Length(FileNames));
+
+  for i := 0 to High(FileNames) do
+  begin
+    Result[i].Element := TPath.GetFileNameWithoutExtension(FileNames[i]);
+    Lines := TFile.ReadAllLines(FileNames[i]);
+
+    ThetaList := TList<Double>.Create;
+    ReflList := TList<Double>.Create;
+    try
+      for j := 0 to High(Lines) do
+      begin
+        if Lines[j].StartsWith('Theta') or (Trim(Lines[j]) = '') then
+          Continue;
+        Parts := Lines[j].Split([#9]);
+        if Length(Parts) >= 2 then
+        begin
+          ThetaList.Add(StrToFloat(Trim(Parts[0]), FS));
+          ReflList.Add(StrToFloat(Trim(Parts[1]), FS));
+        end;
+      end;
+      Result[i].Theta := ThetaList.ToArray;
+      Result[i].Refl := ReflList.ToArray;
+    finally
+      ThetaList.Free;
+      ReflList.Free;
+    end;
+  end;
 end;
 
 function LoadProgressLog(const LogPath: string): TArray<TProgressEntry>;

@@ -484,18 +484,49 @@ end;
 { TTestCurveLoading }
 
 procedure TTestCurveLoading.Test_LoadCurveFiles_ParsesElements;
+var
+  Curves: TArray<TXRFXCurveData>;
+  CurvesDir: string;
 begin
-  Assert.Pass('Stub');
+  CreateSampleResultsDir;
+  CurvesDir := TPath.Combine(TPath.Combine(FTempDir, 'results'), 'best_curves');
+  Curves := LoadCurveFiles(CurvesDir);
+  Assert.AreEqual(2, Length(Curves));
+  Assert.IsTrue((Curves[0].Element = 'Na') or (Curves[0].Element = 'Al'));
 end;
 
 procedure TTestCurveLoading.Test_LoadCurveFiles_ParsesData;
+var
+  Curves: TArray<TXRFXCurveData>;
+  CurvesDir: string;
+  i: Integer;
 begin
-  Assert.Pass('Stub');
+  CreateSampleResultsDir;
+  CurvesDir := TPath.Combine(TPath.Combine(FTempDir, 'results'), 'best_curves');
+  Curves := LoadCurveFiles(CurvesDir);
+  for i := 0 to High(Curves) do
+    if Curves[i].Element = 'Na' then
+    begin
+      Assert.AreEqual(2, Length(Curves[i].Theta));
+      Assert.AreEqual(Double(0.5), Curves[i].Theta[0], 1E-4);
+      Assert.AreEqual(Double(3.14159e-04), Curves[i].Refl[0], 1E-8);
+      Exit;
+    end;
+  Assert.Fail('Na curve not found');
 end;
 
 procedure TTestCurveLoading.Test_LoadCurveFiles_SkipsHeader;
+var
+  Curves: TArray<TXRFXCurveData>;
+  CurvesDir: string;
+  i: Integer;
 begin
-  Assert.Pass('Stub');
+  CreateSampleResultsDir;
+  CurvesDir := TPath.Combine(TPath.Combine(FTempDir, 'results'), 'best_curves');
+  Curves := LoadCurveFiles(CurvesDir);
+  for i := 0 to High(Curves) do
+    Assert.AreEqual(2, Length(Curves[i].Theta),
+      'Curve ' + Curves[i].Element + ' should have 2 data points');
 end;
 
 { TTestProgressLogLoading }
