@@ -256,7 +256,7 @@ begin
       FFitness.Evaluate(FPSO.ABest, BestResults);
       FIO.SaveBestStructure(FConfig, FPSO.ABest, -FPSO.ABestFoM, BestResults,
         FConfig.OutputDir);
-      FIO.SaveXRCStructure(FConfig, FPSO.ABest, FMixer, FConfig.OutputDir);
+      FIO.SaveXRCStructure(FConfig, FPSO.ABest, FMixer, FTemplates, FConfig.OutputDir);
 
       // Compute curves once, use for both file saving and completion event
       SetLength(Curves, Length(FConfig.Targets));

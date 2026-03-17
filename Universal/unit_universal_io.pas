@@ -4,7 +4,8 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.IOUtils, System.Math,
-  unit_universal_types, cmd_unit_types, unit_materials_mix;
+  unit_universal_types, cmd_unit_types, unit_materials_mix,
+  unit_universal_templates;
 
 type
   TUniversalIO = class
@@ -41,6 +42,7 @@ type
 
     procedure SaveXRCStructure(const Config: TUniversalConfig;
       const Best: TGenome; Mixer: TMaterialMixer;
+      const Templates: TTemplateLibrary;
       const OutputDir: string);
 
     procedure SaveCheckpoint(const State: TOptState;
@@ -471,13 +473,15 @@ end;
 
 procedure TUniversalIO.SaveXRCStructure(const Config: TUniversalConfig;
   const Best: TGenome; Mixer: TMaterialMixer;
+  const Templates: TTemplateLibrary;
   const OutputDir: string);
 var
   JStruct, JStack, JLayer, JSub: TJSONObject;
   JStacks, JLayers: TJSONArray;
-  NInt, i, j, DomIdx: Integer;
-  H, EffDensity: Single;
-  MatName: string;
+  NInt, i, j, DomIdx, DomIdx0, DomIdx1, TemplIdx: Integer;
+  H, SubH, EffDensity: Single;
+  MatName, Key: string;
+  Templ: TTemplatePair;
 begin
   NInt := NRound(Best.N);
 
@@ -489,45 +493,96 @@ begin
     JStack.AddPair('N', NInt);
 
     JLayers := TJSONArray.Create;
-    for i := 0 to LAYERS_PER_PERIOD - 1 do
+
+    // Check for template
+    TemplIdx := -1;
+    if Config.Structure.PureElements and (Length(Templates) > 0) then
     begin
-      // Find dominant element
-      DomIdx := 0;
+      DomIdx0 := 0;
       for j := 1 to High(Config.ElementPool) do
-        if Best.Composition[i][j] > Best.Composition[i][DomIdx] then
-          DomIdx := j;
-      MatName := Mixer.GetElementName(DomIdx);
+        if Best.Composition[0][j] > Best.Composition[0][DomIdx0] then
+          DomIdx0 := j;
+      DomIdx1 := 0;
+      for j := 1 to High(Config.ElementPool) do
+        if Best.Composition[1][j] > Best.Composition[1][DomIdx1] then
+          DomIdx1 := j;
+      Key := Mixer.GetElementName(DomIdx0) + '/' + Mixer.GetElementName(DomIdx1);
+      TemplIdx := FindTemplate(Templates, Key);
+    end;
 
-      // Layer thickness
-      if i = 0 then
-        H := Best.d * Best.Gamma
-      else
-        H := Best.d * (1 - Best.Gamma);
+    if TemplIdx >= 0 then
+    begin
+      // Template-expanded layers
+      Templ := Templates[TemplIdx];
+      for i := 0 to High(Templ.Layers) do
+      begin
+        case Templ.Layers[i].ThicknessType of
+          ttGamma: SubH := Best.d * Best.Gamma - Templ.GammaReduction;
+          ttOneMinusGamma: SubH := Best.d * (1 - Best.Gamma) - Templ.OneMinusGammaReduction;
+          ttFixed: SubH := Templ.Layers[i].FixedThickness;
+        end;
+        if SubH < 0 then SubH := 0;
 
-      // Effective density = weighted sum of bulk densities * density factor
-      EffDensity := 0;
-      for j := 0 to High(Config.ElementPool) do
-        EffDensity := EffDensity + Best.Composition[i][j] * Mixer.GetElementDensity(j);
-      EffDensity := EffDensity * Best.DensityFactor[i];
+        JLayer := TJSONObject.Create;
+        JLayer.AddPair('M', Templ.Layers[i].Material);
+        JLayer.AddPair('H', TJSONNumber.Create(RoundTo(SubH, -2)));
+        JLayer.AddPair('HP', False);
+        JLayer.AddPair('Hmin', TJSONNumber.Create(RoundTo(SubH * 0.5, -2)));
+        JLayer.AddPair('Hmax', TJSONNumber.Create(RoundTo(SubH * 1.5, -2)));
+        JLayer.AddPair('ProfileH', '');
+        JLayer.AddPair('s', TJSONNumber.Create(RoundTo(Templ.Layers[i].Sigma, -2)));
+        JLayer.AddPair('SP', False);
+        JLayer.AddPair('Smin', TJSONNumber.Create(RoundTo(Templ.Layers[i].Sigma * 0.5, -2)));
+        JLayer.AddPair('Smax', TJSONNumber.Create(RoundTo(Templ.Layers[i].Sigma * 1.5, -2)));
+        JLayer.AddPair('ProfileS', '');
+        JLayer.AddPair('r', TJSONNumber.Create(RoundTo(Templ.Layers[i].Density, -3)));
+        JLayer.AddPair('RP', False);
+        JLayer.AddPair('Rmin', TJSONNumber.Create(RoundTo(Templ.Layers[i].Density * 0.5, -3)));
+        JLayer.AddPair('Rmax', TJSONNumber.Create(RoundTo(Templ.Layers[i].Density * 1.5, -3)));
+        JLayer.AddPair('ProfileR', '');
+        JLayers.Add(JLayer);
+      end;
+    end
+    else
+    begin
+      // Original 2-layer output
+      for i := 0 to LAYERS_PER_PERIOD - 1 do
+      begin
+        DomIdx := 0;
+        for j := 1 to High(Config.ElementPool) do
+          if Best.Composition[i][j] > Best.Composition[i][DomIdx] then
+            DomIdx := j;
+        MatName := Mixer.GetElementName(DomIdx);
 
-      JLayer := TJSONObject.Create;
-      JLayer.AddPair('M', MatName);
-      JLayer.AddPair('H', TJSONNumber.Create(RoundTo(H, -2)));
-      JLayer.AddPair('HP', False);
-      JLayer.AddPair('Hmin', TJSONNumber.Create(RoundTo(H * 0.5, -2)));
-      JLayer.AddPair('Hmax', TJSONNumber.Create(RoundTo(H * 1.5, -2)));
-      JLayer.AddPair('ProfileH', '');
-      JLayer.AddPair('s', TJSONNumber.Create(RoundTo(Best.Sigma, -2)));
-      JLayer.AddPair('SP', False);
-      JLayer.AddPair('Smin', TJSONNumber.Create(RoundTo(Best.Sigma * 0.5, -2)));
-      JLayer.AddPair('Smax', TJSONNumber.Create(RoundTo(Best.Sigma * 1.5, -2)));
-      JLayer.AddPair('ProfileS', '');
-      JLayer.AddPair('r', TJSONNumber.Create(RoundTo(EffDensity, -3)));
-      JLayer.AddPair('RP', False);
-      JLayer.AddPair('Rmin', TJSONNumber.Create(RoundTo(EffDensity * 0.5, -3)));
-      JLayer.AddPair('Rmax', TJSONNumber.Create(RoundTo(EffDensity * 1.5, -3)));
-      JLayer.AddPair('ProfileR', '');
-      JLayers.Add(JLayer);
+        if i = 0 then
+          H := Best.d * Best.Gamma
+        else
+          H := Best.d * (1 - Best.Gamma);
+
+        EffDensity := 0;
+        for j := 0 to High(Config.ElementPool) do
+          EffDensity := EffDensity + Best.Composition[i][j] * Mixer.GetElementDensity(j);
+        EffDensity := EffDensity * Best.DensityFactor[i];
+
+        JLayer := TJSONObject.Create;
+        JLayer.AddPair('M', MatName);
+        JLayer.AddPair('H', TJSONNumber.Create(RoundTo(H, -2)));
+        JLayer.AddPair('HP', False);
+        JLayer.AddPair('Hmin', TJSONNumber.Create(RoundTo(H * 0.5, -2)));
+        JLayer.AddPair('Hmax', TJSONNumber.Create(RoundTo(H * 1.5, -2)));
+        JLayer.AddPair('ProfileH', '');
+        JLayer.AddPair('s', TJSONNumber.Create(RoundTo(Best.Sigma, -2)));
+        JLayer.AddPair('SP', False);
+        JLayer.AddPair('Smin', TJSONNumber.Create(RoundTo(Best.Sigma * 0.5, -2)));
+        JLayer.AddPair('Smax', TJSONNumber.Create(RoundTo(Best.Sigma * 1.5, -2)));
+        JLayer.AddPair('ProfileS', '');
+        JLayer.AddPair('r', TJSONNumber.Create(RoundTo(EffDensity, -3)));
+        JLayer.AddPair('RP', False);
+        JLayer.AddPair('Rmin', TJSONNumber.Create(RoundTo(EffDensity * 0.5, -3)));
+        JLayer.AddPair('Rmax', TJSONNumber.Create(RoundTo(EffDensity * 1.5, -3)));
+        JLayer.AddPair('ProfileR', '');
+        JLayers.Add(JLayer);
+      end;
     end;
     JStack.AddPair('Layers', JLayers);
     JStacks.Add(JStack);
