@@ -165,13 +165,14 @@ begin
       end;
     end;
 
-    // Compute CapHRange from matching templates
+    // Compute CapHRange and CapVariantCount from matching templates
     var CapMin: Single := MaxSingle;
     var CapMax: Single := 0;
     var HasAnyCap := False;
+    var MaxCapVariants: Integer := 0;
     for var ti := 0 to High(FTemplates) do
     begin
-      if not FTemplates[ti].HasCap then Continue;
+      if Length(FTemplates[ti].Caps) = 0 then Continue;
       var SlashPos := Pos('/', FTemplates[ti].Key);
       if SlashPos <= 0 then Continue;
       var TMat1 := Copy(FTemplates[ti].Key, 1, SlashPos - 1);
@@ -186,21 +187,28 @@ begin
       if M1InPool and M2InPool then
       begin
         HasAnyCap := True;
-        if FTemplates[ti].Cap.ThicknessRange.Min < CapMin then
-          CapMin := FTemplates[ti].Cap.ThicknessRange.Min;
-        if FTemplates[ti].Cap.ThicknessRange.Max > CapMax then
-          CapMax := FTemplates[ti].Cap.ThicknessRange.Max;
+        if Length(FTemplates[ti].Caps) > MaxCapVariants then
+          MaxCapVariants := Length(FTemplates[ti].Caps);
+        for var ci := 0 to High(FTemplates[ti].Caps) do
+        begin
+          if FTemplates[ti].Caps[ci].ThicknessRange.Min < CapMin then
+            CapMin := FTemplates[ti].Caps[ci].ThicknessRange.Min;
+          if FTemplates[ti].Caps[ci].ThicknessRange.Max > CapMax then
+            CapMax := FTemplates[ti].Caps[ci].ThicknessRange.Max;
+        end;
       end;
     end;
     if HasAnyCap then
     begin
       FConfig.Structure.CapHRange.Min := CapMin;
       FConfig.Structure.CapHRange.Max := CapMax;
+      FConfig.Structure.CapVariantCount := MaxCapVariants;
     end
     else
     begin
       FConfig.Structure.CapHRange.Min := 0;
       FConfig.Structure.CapHRange.Max := 0;
+      FConfig.Structure.CapVariantCount := 0;
     end;
 
     // Create engine objects

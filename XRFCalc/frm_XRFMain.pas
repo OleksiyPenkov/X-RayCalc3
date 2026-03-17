@@ -9,7 +9,8 @@ uses
   Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.Grids,
   Vcl.CheckLst,
   VclTee.TeeGDIPlus, VclTee.TeEngine, VclTee.Series, VclTee.Chart,
-  unit_universal_types, unit_universal_optimizer, unit_xrf_thread;
+  unit_universal_types, unit_universal_optimizer, unit_xrf_thread,
+  VCLTee.TeeProcs;
 
 type
   TfrmXRFMain = class(TForm)

@@ -29,6 +29,8 @@ type
     FDFMin, FDFMax, FDFRange: Single;
     FCapHMin, FCapHMax, FCapHRange: Single;
     FHasCap: Boolean;
+    FCapVarMin, FCapVarMax, FCapVarRange: Single;
+    FHasCapVariants: Boolean;
 
     procedure InitRanges;
     procedure NormalizeComposition(var Comp: TCompositionGenes);
@@ -110,6 +112,11 @@ begin
   FCapHMax := FConfig.Structure.CapHRange.Max;
   FCapHRange := FCapHMax - FCapHMin;
   FHasCap := FCapHMax > 0;
+
+  FHasCapVariants := FConfig.Structure.CapVariantCount > 1;
+  FCapVarMin := 0;
+  FCapVarMax := FConfig.Structure.CapVariantCount - 1;
+  FCapVarRange := FCapVarMax - FCapVarMin;
 end;
 
 procedure TUniversalPSO.NormalizeComposition(var Comp: TCompositionGenes);
@@ -183,6 +190,9 @@ begin
   if FHasCap then
     ReflectBound(P.X.CapH, P.V.CapH, FCapHMin, FCapHMax);
 
+  if FHasCapVariants then
+    ReflectBound(P.X.CapVariant, P.V.CapVariant, FCapVarMin, FCapVarMax);
+
   for Role := 0 to LAYERS_PER_PERIOD - 1 do
   begin
     ReflectBound(P.X.DensityFactor[Role], P.V.DensityFactor[Role],
@@ -232,6 +242,11 @@ begin
     else
       FParticles[i].X.CapH := 0;
 
+    if FHasCapVariants then
+      FParticles[i].X.CapVariant := FCapVarMin + Random * FCapVarRange
+    else
+      FParticles[i].X.CapVariant := 0;
+
     // Composition initialization
     if FConfig.Structure.PureElements then
     begin
@@ -270,6 +285,8 @@ begin
     FParticles[i].V.Sigma := (Random - 0.5) * FSigmaRange * 0.2;
     if FHasCap then
       FParticles[i].V.CapH := (Random - 0.5) * FCapHRange * 0.2;
+    if FHasCapVariants then
+      FParticles[i].V.CapVariant := (Random - 0.5) * FCapVarRange * 0.2;
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
     begin
       for j := 0 to FPoolSize - 1 do
@@ -325,6 +342,15 @@ begin
         + C1 * r1 * (FParticles[i].PBest.CapH - FParticles[i].X.CapH)
         + C2 * r2 * (FGBest.CapH - FParticles[i].X.CapH);
       FParticles[i].X.CapH := FParticles[i].X.CapH + FParticles[i].V.CapH;
+    end;
+
+    if FHasCapVariants then
+    begin
+      r1 := Random; r2 := Random;
+      FParticles[i].V.CapVariant := Omega * FParticles[i].V.CapVariant
+        + C1 * r1 * (FParticles[i].PBest.CapVariant - FParticles[i].X.CapVariant)
+        + C2 * r2 * (FGBest.CapVariant - FParticles[i].X.CapVariant);
+      FParticles[i].X.CapVariant := FParticles[i].X.CapVariant + FParticles[i].V.CapVariant;
     end;
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
@@ -419,6 +445,16 @@ begin
         + C1 * r1 * (FParticles[i].PBest.CapH - FParticles[i].X.CapH)
         + C2 * r2 * (FGBest.CapH - FParticles[i].X.CapH);
       FParticles[i].X.CapH := FParticles[i].X.CapH + FParticles[i].V.CapH;
+    end;
+
+    if FHasCapVariants then
+    begin
+      Step := LevyStep;
+      r1 := Random; r2 := Random;
+      FParticles[i].V.CapVariant := Omega * Step * (FParticles[i].X.CapVariant - Target.CapVariant)
+        + C1 * r1 * (FParticles[i].PBest.CapVariant - FParticles[i].X.CapVariant)
+        + C2 * r2 * (FGBest.CapVariant - FParticles[i].X.CapVariant);
+      FParticles[i].X.CapVariant := FParticles[i].X.CapVariant + FParticles[i].V.CapVariant;
     end;
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
@@ -534,6 +570,8 @@ begin
     FParticles[i].X.Sigma := FParticles[i].X.Sigma + (Random - 0.5) * FSigmaRange * 0.2;
     if FHasCap then
       FParticles[i].X.CapH := FParticles[i].X.CapH + (Random - 0.5) * FCapHRange * 0.2;
+    if FHasCapVariants then
+      FParticles[i].X.CapVariant := FParticles[i].X.CapVariant + (Random - 0.5) * FCapVarRange * 0.2;
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
     begin

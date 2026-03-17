@@ -71,13 +71,14 @@ end;
 function TUniversalFitness.BuildLayers(const Genome: TGenome;
   TargetIdx: Integer): TLayers;
 var
-  NInt, TotalLayers, LayerIdx, Period, Role, j, TemplIdx, ElemIdx: Integer;
+  NInt, TotalLayers, LayerIdx, Period, Role, j, TemplIdx, ElemIdx, CapIdx: Integer;
   H1, H2, SubH: Single;
   Eps: TComplex;
   Dens: Single;
   Key: string;
   Templ: TTemplatePair;
-  UseTemplate: Boolean;
+  Cap: TTemplateCap;
+  UseTemplate, HasCap: Boolean;
 begin
   NInt := NRound(Genome.N);
 
@@ -97,9 +98,19 @@ begin
 
   if UseTemplate then
   begin
+    // Select cap variant (if any)
+    HasCap := Length(Templ.Caps) > 0;
+    if HasCap then
+    begin
+      CapIdx := Round(Genome.CapVariant);
+      if CapIdx < 0 then CapIdx := 0;
+      if CapIdx > High(Templ.Caps) then CapIdx := High(Templ.Caps);
+      Cap := Templ.Caps[CapIdx];
+    end;
+
     // Template path: variable layers per period
     TotalLayers := 2 + NInt * Length(Templ.Layers);
-    if Templ.HasCap then
+    if HasCap then
       Inc(TotalLayers);
     SetLength(Result, TotalLayers);
 
@@ -112,14 +123,14 @@ begin
     LayerIdx := 1;
 
     // Cap layer (if present)
-    if Templ.HasCap then
+    if HasCap then
     begin
-      ElemIdx := FMixer.FindElementIndex(Templ.Cap.Material);
-      FMixer.CalcSingleEpsilon(ElemIdx, Templ.Cap.Density, TargetIdx, Eps);
+      ElemIdx := FMixer.FindElementIndex(Cap.Material);
+      FMixer.CalcSingleEpsilon(ElemIdx, Cap.Density, TargetIdx, Eps);
       Result[LayerIdx].e := Eps;
       Result[LayerIdx].H := Genome.CapH;
-      Result[LayerIdx].S := Templ.Cap.Sigma;
-      Result[LayerIdx].Rho := Templ.Cap.Density;
+      Result[LayerIdx].S := Cap.Sigma;
+      Result[LayerIdx].Rho := Cap.Density;
       Inc(LayerIdx);
     end;
 

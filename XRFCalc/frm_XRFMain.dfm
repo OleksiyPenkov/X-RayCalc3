@@ -2,8 +2,8 @@ object frmXRFMain: TfrmXRFMain
   Left = 0
   Top = 0
   Caption = 'XRFCalc - Universal Mirror Optimizer'
-  ClientHeight = 600
-  ClientWidth = 1000
+  ClientHeight = 1006
+  ClientWidth = 1557
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,44 +13,47 @@ object frmXRFMain: TfrmXRFMain
   Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  PixelsPerInch = 96
   TextHeight = 15
   object splMain: TSplitter
-    Left = 280
+    Left = 400
     Top = 0
-    Width = 5
-    Height = 600
+    Height = 1006
+    ExplicitLeft = 280
   end
   object pnlSidebar: TPanel
     Left = 0
     Top = 0
-    Width = 280
-    Height = 600
+    Width = 400
+    Height = 1006
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 0
     object sbConfig: TScrollBox
       Left = 0
       Top = 0
-      Width = 280
-      Height = 560
+      Width = 400
+      Height = 966
       Align = alClient
       BorderStyle = bsNone
       TabOrder = 0
+      ExplicitWidth = 280
+      ExplicitHeight = 560
       object grpTargets: TGroupBox
         Left = 0
         Top = 0
-        Width = 280
+        Width = 383
         Height = 180
         Align = alTop
         Caption = 'Targets'
         TabOrder = 0
+        ExplicitWidth = 263
         object clbTargets: TCheckListBox
-          Left = 0
-          Top = 15
+          Left = 2
+          Top = 17
           Width = 100
-          Height = 165
+          Height = 161
           Align = alLeft
+          ItemHeight = 15
           Items.Strings = (
             'B'
             'C'
@@ -65,33 +68,36 @@ object frmXRFMain: TfrmXRFMain
           TabOrder = 0
         end
         object sgWeights: TStringGrid
-          Left = 100
-          Top = 15
-          Width = 180
-          Height = 165
+          Left = 102
+          Top = 17
+          Width = 279
+          Height = 161
           Align = alClient
           ColCount = 2
           FixedCols = 0
           RowCount = 11
           Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing]
           TabOrder = 1
+          ExplicitWidth = 159
         end
       end
       object grpElements: TGroupBox
         Left = 0
         Top = 180
-        Width = 280
+        Width = 383
         Height = 150
         Align = alTop
         Caption = 'Element Pool'
         TabOrder = 1
+        ExplicitWidth = 263
         object clbElements: TCheckListBox
-          Left = 0
-          Top = 15
-          Width = 280
-          Height = 135
+          Left = 2
+          Top = 17
+          Width = 379
+          Height = 131
           Align = alClient
           Columns = 2
+          ItemHeight = 15
           Items.Strings = (
             'W'
             'Mo'
@@ -110,62 +116,64 @@ object frmXRFMain: TfrmXRFMain
             'Si3N4'
             'WC')
           TabOrder = 0
+          ExplicitWidth = 259
         end
       end
       object grpStructure: TGroupBox
         Left = 0
         Top = 330
-        Width = 280
+        Width = 383
         Height = 150
         Align = alTop
         Caption = 'Structure'
         TabOrder = 2
+        ExplicitWidth = 263
         object lblDMin: TLabel
           Left = 8
           Top = 20
-          Width = 32
+          Width = 31
           Height = 15
           Caption = 'd min'
         end
         object lblDMax: TLabel
           Left = 170
           Top = 20
-          Width = 34
+          Width = 32
           Height = 15
           Caption = 'd max'
         end
         object lblGammaMin: TLabel
           Left = 8
           Top = 46
-          Width = 55
+          Width = 30
           Height = 15
           Caption = #947' min'
         end
         object lblGammaMax: TLabel
           Left = 170
           Top = 46
-          Width = 57
+          Width = 31
           Height = 15
           Caption = #947' max'
         end
         object lblNMin: TLabel
           Left = 8
           Top = 72
-          Width = 34
+          Width = 33
           Height = 15
           Caption = 'N min'
         end
         object lblNMax: TLabel
           Left = 170
           Top = 72
-          Width = 36
+          Width = 34
           Height = 15
           Caption = 'N max'
         end
         object lblSigma: TLabel
           Left = 8
           Top = 98
-          Width = 33
+          Width = 32
           Height = 15
           Caption = 'sigma'
         end
@@ -229,51 +237,52 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpFitness: TGroupBox
         Left = 0
-        Top = 560
-        Width = 280
+        Top = 480
+        Width = 383
         Height = 180
         Align = alTop
         Caption = 'Fitness'
         TabOrder = 3
+        ExplicitWidth = 263
         object lblWR: TLabel
           Left = 8
           Top = 20
-          Width = 22
+          Width = 21
           Height = 15
           Caption = 'w_R'
         end
         object lblWFWHM: TLabel
           Left = 8
           Top = 46
-          Width = 50
+          Width = 51
           Height = 15
           Caption = 'w_FWHM'
         end
         object lblRMinThreshold: TLabel
           Left = 8
           Top = 72
-          Width = 55
+          Width = 52
           Height = 15
           Caption = 'R min thr.'
         end
         object lblThetaMin: TLabel
           Left = 8
           Top = 98
-          Width = 36
+          Width = 31
           Height = 15
           Caption = #952' min'
         end
         object lblDeltaTheta: TLabel
           Left = 8
           Top = 124
-          Width = 19
+          Width = 15
           Height = 15
           Caption = #916#952
         end
         object lblPolarization: TLabel
           Left = 8
           Top = 150
-          Width = 67
+          Width = 62
           Height = 15
           Caption = 'Polarization'
         end
@@ -328,51 +337,52 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpOptimizer: TGroupBox
         Left = 0
-        Top = 740
-        Width = 280
+        Top = 660
+        Width = 383
         Height = 230
         Align = alTop
         Caption = 'Optimizer'
         TabOrder = 4
+        ExplicitWidth = 263
         object lblPopulation: TLabel
           Left = 8
           Top = 20
-          Width = 60
+          Width = 58
           Height = 15
           Caption = 'Population'
         end
         object lblIterations: TLabel
           Left = 8
           Top = 46
-          Width = 52
+          Width = 49
           Height = 15
           Caption = 'Iterations'
         end
         object lblTolerance: TLabel
           Left = 8
           Top = 72
-          Width = 53
+          Width = 51
           Height = 15
           Caption = 'Tolerance'
         end
         object lblStagnationLimit: TLabel
           Left = 8
           Top = 98
-          Width = 82
+          Width = 80
           Height = 15
           Caption = 'Stagnation lim.'
         end
         object lblW1: TLabel
           Left = 8
           Top = 124
-          Width = 16
+          Width = 15
           Height = 15
           Caption = 'w1'
         end
         object lblW2: TLabel
           Left = 8
           Top = 150
-          Width = 16
+          Width = 15
           Height = 15
           Caption = 'w2'
         end
@@ -386,7 +396,7 @@ object frmXRFMain: TfrmXRFMain
         object lblCheckpointEvery: TLabel
           Left = 8
           Top = 202
-          Width = 63
+          Width = 61
           Height = 15
           Caption = 'Checkpoint'
         end
@@ -449,16 +459,17 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpSubstrate: TGroupBox
         Left = 0
-        Top = 970
-        Width = 280
+        Top = 890
+        Width = 383
         Height = 50
         Align = alTop
         Caption = 'Substrate'
         TabOrder = 5
+        ExplicitWidth = 263
         object lblSubstrate: TLabel
           Left = 8
           Top = 22
-          Width = 46
+          Width = 43
           Height = 15
           Caption = 'Material'
         end
@@ -472,25 +483,33 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpPaths: TGroupBox
         Left = 0
-        Top = 1020
-        Width = 280
+        Top = 940
+        Width = 383
         Height = 106
         Align = alTop
         Caption = 'Paths'
         TabOrder = 6
+        ExplicitWidth = 263
         object lblHenkePath: TLabel
           Left = 8
           Top = 22
-          Width = 36
+          Width = 34
           Height = 15
           Caption = 'Henke'
         end
         object lblOutputDir: TLabel
           Left = 8
           Top = 48
-          Width = 40
+          Width = 38
           Height = 15
           Caption = 'Output'
+        end
+        object lblTemplatePath: TLabel
+          Left = 8
+          Top = 74
+          Width = 49
+          Height = 15
+          Caption = 'Template'
         end
         object edHenkePath: TEdit
           Left = 60
@@ -524,13 +543,6 @@ object frmXRFMain: TfrmXRFMain
           TabOrder = 3
           OnClick = btnBrowseOutputClick
         end
-        object lblTemplatePath: TLabel
-          Left = 8
-          Top = 74
-          Width = 52
-          Height = 15
-          Caption = 'Template'
-        end
         object edTemplatePath: TEdit
           Left = 60
           Top = 72
@@ -550,13 +562,14 @@ object frmXRFMain: TfrmXRFMain
       end
       object grpResults: TGroupBox
         Left = 0
-        Top = 1100
-        Width = 280
+        Top = 1046
+        Width = 383
         Height = 200
         Align = alTop
         Caption = 'Results'
         TabOrder = 7
         Visible = False
+        ExplicitWidth = 263
         object sgResults: TStringGrid
           Left = 8
           Top = 18
@@ -564,7 +577,6 @@ object frmXRFMain: TfrmXRFMain
           Height = 120
           ColCount = 3
           FixedCols = 0
-          FixedRows = 1
           TabOrder = 0
         end
         object btnSaveStructure: TButton
@@ -598,16 +610,18 @@ object frmXRFMain: TfrmXRFMain
     end
     object pnlButtons: TPanel
       Left = 0
-      Top = 560
-      Width = 280
+      Top = 966
+      Width = 400
       Height = 40
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
+      ExplicitTop = 560
+      ExplicitWidth = 280
       object lblProgress: TLabel
         Left = 224
         Top = 14
-        Width = 34
+        Width = 32
         Height = 15
         Caption = 'Ready'
       end
@@ -651,75 +665,106 @@ object frmXRFMain: TfrmXRFMain
     end
   end
   object pnlCharts: TPanel
-    Left = 285
+    Left = 403
     Top = 0
-    Width = 715
-    Height = 600
+    Width = 1154
+    Height = 1006
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    object chartConvergence: TChart
-      Left = 0
-      Top = 0
-      Width = 715
-      Height = 200
-      Align = alTop
-      Title.Text.Strings = (
-        'FoM Convergence')
-      View3D = False
-      Legend.Visible = False
-      TabOrder = 0
-      object serFoM: TLineSeries
-        Title = 'FoM'
-      end
-    end
+    ExplicitLeft = 285
+    ExplicitWidth = 715
+    ExplicitHeight = 600
     object splCharts: TSplitter
       Left = 0
       Top = 200
-      Width = 715
+      Width = 1154
       Height = 5
+      Cursor = crVSplit
       Align = alTop
+      ExplicitWidth = 715
+    end
+    object chartConvergence: TChart
+      Left = 0
+      Top = 0
+      Width = 1154
+      Height = 200
+      Legend.Visible = False
+      Title.Text.Strings = (
+        'FoM Convergence')
+      LeftAxis.MaximumOffset = 1
+      View3D = False
+      Align = alTop
+      TabOrder = 0
+      ExplicitWidth = 715
+      DefaultCanvas = 'TGDIPlusCanvas'
+      ColorPaletteIndex = 13
+      object serFoM: TLineSeries
+        Title = 'FoM'
+        Brush.BackColor = clDefault
+        LinePen.Width = 2
+        Pointer.InflateMargins = True
+        Pointer.Style = psRectangle
+        XValues.Name = 'X'
+        XValues.Order = loAscending
+        YValues.Name = 'Y'
+        YValues.Order = loNone
+      end
     end
     object pnlBottomCharts: TPanel
       Left = 0
       Top = 205
-      Width = 715
-      Height = 395
+      Width = 1154
+      Height = 801
       Align = alClient
       BevelOuter = bvNone
-      TabOrder = 2
-      object chartRPeak: TChart
-        Left = 0
-        Top = 0
-        Width = 350
-        Height = 395
-        Align = alLeft
-        Title.Text.Strings = (
-          'Peak Reflectivity')
-        View3D = False
-        Legend.Visible = False
-        TabOrder = 0
-        object serRPeak: TBarSeries
-          Title = 'R_peak'
-        end
-      end
+      TabOrder = 1
+      ExplicitWidth = 715
+      ExplicitHeight = 395
       object splBottom: TSplitter
         Left = 350
         Top = 0
         Width = 5
-        Height = 395
+        Height = 801
+        ExplicitHeight = 395
+      end
+      object chartRPeak: TChart
+        Left = 0
+        Top = 0
+        Width = 350
+        Height = 801
+        Legend.Visible = False
+        Title.Text.Strings = (
+          'Peak Reflectivity')
+        View3D = False
+        Align = alLeft
+        TabOrder = 0
+        ExplicitHeight = 395
+        DefaultCanvas = 'TGDIPlusCanvas'
+        ColorPaletteIndex = 13
+        object serRPeak: TBarSeries
+          Marks.OnTop = True
+          Title = 'R_peak'
+          XValues.Name = 'X'
+          XValues.Order = loAscending
+          YValues.Name = 'Bar'
+          YValues.Order = loNone
+        end
       end
       object chartCurves: TChart
         Left = 355
         Top = 0
-        Width = 360
-        Height = 395
-        Align = alClient
+        Width = 799
+        Height = 801
         Title.Text.Strings = (
           'Reflectivity Curves')
         View3D = False
-        Legend.Visible = True
-        TabOrder = 2
+        Align = alClient
+        TabOrder = 1
+        ExplicitWidth = 360
+        ExplicitHeight = 395
+        DefaultCanvas = 'TGDIPlusCanvas'
+        ColorPaletteIndex = 13
       end
     end
   end

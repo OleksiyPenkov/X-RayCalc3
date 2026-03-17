@@ -81,3 +81,7 @@ When scaling .dfm from HiDPI (192) to standard (96), halve all pixel-based prope
 **Do NOT scale:**
 - ImageList Width/Height (icon bitmap dimensions, not layout)
 - TChart properties (Foot.Font.Height, Legend.*, Axis.*, Ticks.Width) — runtime DPI-aware
+
+## Required Skills
+
+Always invoke the `delphi-development` skill before writing or modifying any code.

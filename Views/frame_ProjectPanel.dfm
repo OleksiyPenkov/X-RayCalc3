@@ -39,6 +39,8 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
       DisabledIndex = 1
       ImageIndex = 0
+      ParentShowHint = False
+      ShowHint = True
     end
     object BtnOpen: TRzToolButton
       Left = 35
@@ -46,6 +48,8 @@ object frmProjectPanel: TfrmProjectPanel
       Width = 39
       DisabledIndex = 3
       ImageIndex = 1
+      ParentShowHint = False
+      ShowHint = True
       ToolStyle = tsDropDown
     end
     object btnReopenProject: TRzToolButton
@@ -53,6 +57,8 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
       DisabledIndex = 23
       ImageIndex = 2
+      ParentShowHint = False
+      ShowHint = True
     end
     object rzspcr2: TRzSpacer
       Left = 105
@@ -63,6 +69,8 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
       DisabledIndex = 5
       ImageIndex = 3
+      ParentShowHint = False
+      ShowHint = True
     end
     object RzSpacer1: TRzSpacer
       Left = 144
@@ -73,6 +81,8 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
       DisabledIndex = 7
       ImageIndex = 4
+      ParentShowHint = False
+      ShowHint = True
     end
   end
   object tlbrProject: TRzToolbar
@@ -81,7 +91,6 @@ object frmProjectPanel: TfrmProjectPanel
     Top = 38
     Width = 233
     Height = 29
-    Hint = 'Delete item'
     Images = vliProject
     TextOptions = ttoCustom
     BorderInner = fsNone
@@ -110,12 +119,16 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
       DisabledIndex = 9
       ImageIndex = 5
+      ParentShowHint = False
+      ShowHint = True
     end
     object BtnExport: TRzToolButton
       Left = 35
       Top = 2
       DisabledIndex = 11
       ImageIndex = 6
+      ParentShowHint = False
+      ShowHint = True
     end
     object BtnCopy: TRzToolButton
       Left = 63
@@ -123,6 +136,8 @@ object frmProjectPanel: TfrmProjectPanel
       Hint = 'Copy model to clipboard'
       DisabledIndex = 13
       ImageIndex = 7
+      ParentShowHint = False
+      ShowHint = True
     end
     object BtnPaste: TRzToolButton
       Left = 91
@@ -130,13 +145,17 @@ object frmProjectPanel: TfrmProjectPanel
       Hint = 'Paste model'
       DisabledIndex = 15
       ImageIndex = 8
+      ParentShowHint = False
+      ShowHint = True
     end
     object BtnEdit: TRzToolButton
       Left = 119
       Top = 2
-      Hint = 'Properites'
+      Hint = 'Properties'
       DisabledIndex = 17
       ImageIndex = 9
+      ParentShowHint = False
+      ShowHint = True
     end
     object RzSpacer4: TRzSpacer
       Left = 147
@@ -148,6 +167,8 @@ object frmProjectPanel: TfrmProjectPanel
       Hint = 'Add extension'
       DisabledIndex = 19
       ImageIndex = 10
+      ParentShowHint = False
+      ShowHint = True
     end
     object RzSpacer5: TRzSpacer
       Left = 186
@@ -159,6 +180,8 @@ object frmProjectPanel: TfrmProjectPanel
       Hint = 'Delete item'
       DisabledIndex = 21
       ImageIndex = 11
+      ParentShowHint = False
+      ShowHint = True
     end
   end
   object RzPanel5: TRzPanel

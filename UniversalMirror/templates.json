@@ -2,25 +2,35 @@
   "Mo/Si": {
     "description": "MoSi(xxxxxx) by Mingfeng",
     "layers": [
-      { "material": "Mo",    "thickness": "gamma",    "sigma": 4.0, "density": 10.2 },
       { "material": "MoSi2", "thickness": 1.0,        "sigma": 3.5, "density": 6.3  },
-      { "material": "Si",    "thickness": "1-gamma",  "sigma": 2.8, "density": 2.33 },
-      { "material": "MoSi2", "thickness": 0.8,        "sigma": 2.4, "density": 6.3  }
+      { "material": "Mo",    "thickness": "gamma",    "sigma": 4.0, "density": 10.2 },
+      { "material": "MoSi2", "thickness": 0.8,        "sigma": 2.4, "density": 6.3  },
+      { "material": "Si",    "thickness": "1-gamma",  "sigma": 2.8, "density": 2.33 }
     ],
-    "cap": {
-      "material": "Si",
-      "sigma": 2.0,
-      "density": 2.33,
-      "thickness": { "min": 10, "max": 60 }
-    }
+    "caps": [
+      {
+        "name": "Si",
+        "material": "Si",
+        "sigma": 2.0,
+        "density": 2.33,
+        "thickness": { "min": 10, "max": 60 }
+      },
+      {
+        "name": "Ru",
+        "material": "Ru",
+        "sigma": 1.5,
+        "density": 12.37,
+        "thickness": { "min": 1, "max": 10 }
+      }
+    ]
   },
   "W/Si": {
     "description": "Ref.",
     "layers": [
+      { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 },
       { "material": "W",     "thickness": "gamma",    "sigma": 0.2, "density": 19.3 },
       { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 },
-      { "material": "Si",    "thickness": "1-gamma",  "sigma": 0.4, "density": 2.33 },
-      { "material": "WSi2",  "thickness": 0.5,        "sigma": 0.3, "density": 9.86 }
+      { "material": "Si",    "thickness": "1-gamma",  "sigma": 0.4, "density": 2.33 }
     ],
     "cap": {
       "material": "Si",

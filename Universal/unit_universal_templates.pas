@@ -127,20 +127,38 @@ begin
 
       ComputeReductions(Result[PairIdx]);
 
-      // Parse optional cap
-      if JPairObj.FindValue('cap') <> nil then
+      // Parse optional cap variants: "caps" array or legacy "cap" object
+      if JPairObj.FindValue('caps') <> nil then
       begin
+        var JCapsArr := JPairObj.GetValue<TJSONArray>('caps');
+        SetLength(Result[PairIdx].Caps, JCapsArr.Count);
+        for var ci := 0 to JCapsArr.Count - 1 do
+        begin
+          var JCap := JCapsArr.Items[ci] as TJSONObject;
+          Result[PairIdx].Caps[ci].Name := JCap.GetValue<string>('name');
+          Result[PairIdx].Caps[ci].Material := JCap.GetValue<string>('material');
+          Result[PairIdx].Caps[ci].Sigma := JCap.GetValue<Double>('sigma');
+          Result[PairIdx].Caps[ci].Density := JCap.GetValue<Double>('density');
+          var JCapRange := JCap.GetValue<TJSONObject>('thickness');
+          Result[PairIdx].Caps[ci].ThicknessRange.Min := JCapRange.GetValue<Double>('min');
+          Result[PairIdx].Caps[ci].ThicknessRange.Max := JCapRange.GetValue<Double>('max');
+        end;
+      end
+      else if JPairObj.FindValue('cap') <> nil then
+      begin
+        // Backward compat: single "cap" becomes 1-element Caps array
         var JCap := JPairObj.GetValue<TJSONObject>('cap');
-        Result[PairIdx].HasCap := True;
-        Result[PairIdx].Cap.Material := JCap.GetValue<string>('material');
-        Result[PairIdx].Cap.Sigma := JCap.GetValue<Double>('sigma');
-        Result[PairIdx].Cap.Density := JCap.GetValue<Double>('density');
+        SetLength(Result[PairIdx].Caps, 1);
+        Result[PairIdx].Caps[0].Material := JCap.GetValue<string>('material');
+        Result[PairIdx].Caps[0].Name := Result[PairIdx].Caps[0].Material;
+        Result[PairIdx].Caps[0].Sigma := JCap.GetValue<Double>('sigma');
+        Result[PairIdx].Caps[0].Density := JCap.GetValue<Double>('density');
         var JCapRange := JCap.GetValue<TJSONObject>('thickness');
-        Result[PairIdx].Cap.ThicknessRange.Min := JCapRange.GetValue<Double>('min');
-        Result[PairIdx].Cap.ThicknessRange.Max := JCapRange.GetValue<Double>('max');
+        Result[PairIdx].Caps[0].ThicknessRange.Min := JCapRange.GetValue<Double>('min');
+        Result[PairIdx].Caps[0].ThicknessRange.Max := JCapRange.GetValue<Double>('max');
       end
       else
-        Result[PairIdx].HasCap := False;
+        SetLength(Result[PairIdx].Caps, 0);
 
       Inc(PairIdx);
     end;
@@ -206,12 +224,12 @@ begin
       end;
     end;
 
-    // Also collect cap material if present
-    if Lib[i].HasCap then
+    // Also collect cap materials from all variants
+    for j := 0 to High(Lib[i].Caps) do
     begin
       Found := False;
       for k := 0 to Count - 1 do
-        if SameText(Result[k], Lib[i].Cap.Material) then
+        if SameText(Result[k], Lib[i].Caps[j].Material) then
         begin
           Found := True;
           Break;
@@ -220,7 +238,7 @@ begin
       begin
         if Count >= Length(Result) then
           SetLength(Result, Length(Result) * 2);
-        Result[Count] := Lib[i].Cap.Material;
+        Result[Count] := Lib[i].Caps[j].Material;
         Inc(Count);
       end;
     end;
