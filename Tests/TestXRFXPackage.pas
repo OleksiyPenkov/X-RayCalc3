@@ -451,18 +451,34 @@ end;
 { TTestXRCStructureLoading }
 
 procedure TTestXRCStructureLoading.Test_LoadXRCStructure_ParsesLayers;
+var
+  S: TXRFXStructure;
 begin
-  Assert.Pass('Stub');
+  S := LoadXRCStructure(CreateSampleXRCStructureFile);
+  Assert.AreEqual(2, Length(S.Layers));
+  Assert.AreEqual('W', S.Layers[0].Material);
+  Assert.AreEqual(Double(15.2), S.Layers[0].Thickness, 1E-6);
+  Assert.AreEqual(Double(3.5), S.Layers[0].Roughness, 1E-6);
+  Assert.AreEqual(Double(19.3), S.Layers[0].Density, 1E-6);
+  Assert.AreEqual('Si', S.Layers[1].Material);
 end;
 
 procedure TTestXRCStructureLoading.Test_LoadXRCStructure_ParsesSubstrate;
+var
+  S: TXRFXStructure;
 begin
-  Assert.Pass('Stub');
+  S := LoadXRCStructure(CreateSampleXRCStructureFile);
+  Assert.AreEqual('SiO2', S.Substrate.Material);
+  Assert.AreEqual(Double(1.0), S.Substrate.Roughness, 1E-6);
+  Assert.AreEqual(Double(2.65), S.Substrate.Density, 1E-6);
 end;
 
 procedure TTestXRCStructureLoading.Test_LoadXRCStructure_ParsesStackN;
+var
+  S: TXRFXStructure;
 begin
-  Assert.Pass('Stub');
+  S := LoadXRCStructure(CreateSampleXRCStructureFile);
+  Assert.AreEqual(20, S.StackN);
 end;
 
 { TTestCurveLoading }

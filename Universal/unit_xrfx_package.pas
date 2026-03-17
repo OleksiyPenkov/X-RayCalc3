@@ -307,8 +307,41 @@ begin
 end;
 
 function LoadXRCStructure(const JsonPath: string): TXRFXStructure;
+var
+  Content: string;
+  JSON, JSubs, JLayer: TJSONObject;
+  JStacks, JLayers: TJSONArray;
+  JStack: TJSONObject;
+  i: Integer;
 begin
-  raise ENotImplemented.Create('LoadXRCStructure not yet implemented');
+  Content := TFile.ReadAllText(JsonPath);
+  JSON := TJSONObject.ParseJSONValue(Content) as TJSONObject;
+  try
+    // Parse first stack (ML = multilayer)
+    JStacks := JSON.GetValue<TJSONArray>('Stacks');
+    JStack := JStacks.Items[0] as TJSONObject;
+    Result.StackN := JStack.GetValue<Integer>('N');
+
+    JLayers := JStack.GetValue<TJSONArray>('Layers');
+    SetLength(Result.Layers, JLayers.Count);
+    for i := 0 to JLayers.Count - 1 do
+    begin
+      JLayer := JLayers.Items[i] as TJSONObject;
+      Result.Layers[i].Material := JLayer.GetValue<string>('M');
+      Result.Layers[i].Thickness := JLayer.GetValue<Double>('H');
+      Result.Layers[i].Roughness := JLayer.GetValue<Double>('s');
+      Result.Layers[i].Density := JLayer.GetValue<Double>('r');
+    end;
+
+    // Substrate
+    JSubs := JSON.GetValue<TJSONObject>('Subs');
+    Result.Substrate.Material := JSubs.GetValue<string>('M');
+    Result.Substrate.Roughness := JSubs.GetValue<Double>('s');
+    Result.Substrate.Density := JSubs.GetValue<Double>('r');
+    Result.Substrate.Thickness := 0;
+  finally
+    JSON.Free;
+  end;
 end;
 
 function LoadCurveFiles(const CurvesDir: string): TArray<TXRFXCurveData>;
