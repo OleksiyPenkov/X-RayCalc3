@@ -240,28 +240,130 @@ end;
 { TTestManifestGeneration }
 
 procedure TTestManifestGeneration.Test_CreateXRFXPackage_ProducesFile;
+var
+  ResultsDir, ConfigFile, OutputPath: string;
+  Config: TUniversalConfig;
+  Genome: TGenome;
 begin
-  Assert.Pass('Stub');
+  ResultsDir := CreateSampleResultsDir;
+  ConfigFile := CreateSampleConfigFile;
+  OutputPath := TPath.Combine(FTempDir, 'output.xrfx');
+
+  Config := Default(TUniversalConfig);
+  Config.Structure.StructureType := 'bilayer';
+  Config.Substrate := 'SiO2';
+  Genome := CreateGenome(2);
+
+  CreateXRFXPackage(Config, Genome, 0, [], ResultsDir, ConfigFile, OutputPath);
+  Assert.IsTrue(TFile.Exists(OutputPath));
 end;
 
 procedure TTestManifestGeneration.Test_CreateXRFXPackage_ContainsManifest;
+var
+  ResultsDir, ConfigFile, OutputPath: string;
+  Config: TUniversalConfig;
+  Genome: TGenome;
+  ZipFile: TZipFile;
 begin
-  Assert.Pass('Stub');
+  ResultsDir := CreateSampleResultsDir;
+  ConfigFile := CreateSampleConfigFile;
+  OutputPath := TPath.Combine(FTempDir, 'output.xrfx');
+
+  Config := Default(TUniversalConfig);
+  Config.Structure.StructureType := 'bilayer';
+  Config.Substrate := 'SiO2';
+  Genome := CreateGenome(2);
+
+  CreateXRFXPackage(Config, Genome, 0, [], ResultsDir, ConfigFile, OutputPath);
+
+  ZipFile := TZipFile.Create;
+  try
+    ZipFile.Open(OutputPath, zmRead);
+    Assert.IsTrue(ZipFile.IndexOf('manifest.json') >= 0);
+    ZipFile.Close;
+  finally
+    ZipFile.Free;
+  end;
 end;
 
 procedure TTestManifestGeneration.Test_CreateXRFXPackage_ContainsConfig;
+var
+  ResultsDir, ConfigFile, OutputPath: string;
+  Config: TUniversalConfig;
+  Genome: TGenome;
+  ZipFile: TZipFile;
 begin
-  Assert.Pass('Stub');
+  ResultsDir := CreateSampleResultsDir;
+  ConfigFile := CreateSampleConfigFile;
+  OutputPath := TPath.Combine(FTempDir, 'output.xrfx');
+
+  Config := Default(TUniversalConfig);
+  Config.Structure.StructureType := 'bilayer';
+  Config.Substrate := 'SiO2';
+  Genome := CreateGenome(2);
+
+  CreateXRFXPackage(Config, Genome, 0, [], ResultsDir, ConfigFile, OutputPath);
+
+  ZipFile := TZipFile.Create;
+  try
+    ZipFile.Open(OutputPath, zmRead);
+    Assert.IsTrue(ZipFile.IndexOf('config.json') >= 0);
+    ZipFile.Close;
+  finally
+    ZipFile.Free;
+  end;
 end;
 
 procedure TTestManifestGeneration.Test_CreateXRFXPackage_ExcludesCheckpoint;
+var
+  ResultsDir, ConfigFile, OutputPath: string;
+  Config: TUniversalConfig;
+  Genome: TGenome;
+  ZipFile: TZipFile;
 begin
-  Assert.Pass('Stub');
+  ResultsDir := CreateSampleResultsDir;
+  ConfigFile := CreateSampleConfigFile;
+  OutputPath := TPath.Combine(FTempDir, 'output.xrfx');
+
+  Config := Default(TUniversalConfig);
+  Config.Structure.StructureType := 'bilayer';
+  Config.Substrate := 'SiO2';
+  Genome := CreateGenome(2);
+
+  CreateXRFXPackage(Config, Genome, 0, [], ResultsDir, ConfigFile, OutputPath);
+
+  ZipFile := TZipFile.Create;
+  try
+    ZipFile.Open(OutputPath, zmRead);
+    Assert.IsTrue(ZipFile.IndexOf('checkpoint.json') < 0);
+    ZipFile.Close;
+  finally
+    ZipFile.Free;
+  end;
 end;
 
 procedure TTestManifestGeneration.Test_CreateXRFXPackage_ManifestHasCorrectVersion;
+var
+  ResultsDir, ConfigFile, OutputPath, ExtractDir: string;
+  Config: TUniversalConfig;
+  Genome: TGenome;
+  M: TXRFXManifest;
 begin
-  Assert.Pass('Stub');
+  ResultsDir := CreateSampleResultsDir;
+  ConfigFile := CreateSampleConfigFile;
+  OutputPath := TPath.Combine(FTempDir, 'output.xrfx');
+  ExtractDir := TPath.Combine(FTempDir, 'extracted');
+
+  Config := Default(TUniversalConfig);
+  Config.Structure.StructureType := 'bilayer';
+  Config.Substrate := 'SiO2';
+  Genome := CreateGenome(2);
+
+  CreateXRFXPackage(Config, Genome, 0, [], ResultsDir, ConfigFile, OutputPath);
+
+  ExtractXRFXPackage(OutputPath, ExtractDir);
+  M := LoadManifest(TPath.Combine(ExtractDir, 'manifest.json'));
+  Assert.AreEqual(XRFX_MANIFEST_VERSION, M.Version);
 end;
 
 { TTestManifestLoading }

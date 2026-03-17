@@ -85,7 +85,86 @@ function  LoadProgressLog(const LogPath: string): TArray<TProgressEntry>;
 
 implementation
 
-// Stubs — implemented in subsequent tasks
+function GenerateManifestJSON(
+  const Config: TUniversalConfig;
+  const BestGenome: TGenome;
+  FoM: Double;
+  const PerElement: TArray<TXRFXElementResult>;
+  const CurveFiles: TArray<string>): string;
+var
+  JSON, JStruct, JOpt, JFiles: TJSONObject;
+  JTargets, JPool, JPerElem, JCurves: TJSONArray;
+  JElem: TJSONObject;
+  i: Integer;
+begin
+  JSON := TJSONObject.Create;
+  try
+    JSON.AddPair('version', TJSONNumber.Create(XRFX_MANIFEST_VERSION));
+    JSON.AddPair('created', FormatDateTime('yyyy-mm-dd"T"hh:nn:ss', Now));
+    JSON.AddPair('generator', 'xrccmd');
+    JSON.AddPair('fom', TJSONNumber.Create(FoM));
+
+    // target_lines
+    JTargets := TJSONArray.Create;
+    for i := 0 to High(Config.Lines) do
+      JTargets.Add(Config.Lines[i].Name);
+    JSON.AddPair('target_lines', JTargets);
+
+    // element_pool
+    JPool := TJSONArray.Create;
+    for i := 0 to High(Config.ElementPool) do
+      JPool.Add(Config.ElementPool[i]);
+    JSON.AddPair('element_pool', JPool);
+
+    JSON.AddPair('substrate', Config.Substrate);
+
+    // structure_summary
+    JStruct := TJSONObject.Create;
+    JStruct.AddPair('type', Config.Structure.StructureType);
+    JStruct.AddPair('d', TJSONNumber.Create(BestGenome.d));
+    JStruct.AddPair('gamma', TJSONNumber.Create(BestGenome.Gamma));
+    JStruct.AddPair('N', TJSONNumber.Create(NRound(BestGenome.N)));
+    JStruct.AddPair('sigma', TJSONNumber.Create(BestGenome.Sigma));
+    JSON.AddPair('structure_summary', JStruct);
+
+    // optimizer
+    JOpt := TJSONObject.Create;
+    JOpt.AddPair('population', TJSONNumber.Create(Config.Optimizer.Population));
+    JOpt.AddPair('iterations', TJSONNumber.Create(Config.Optimizer.Iterations));
+    JOpt.AddPair('stagnation_limit', TJSONNumber.Create(Config.Optimizer.StagnationLimit));
+    JSON.AddPair('optimizer', JOpt);
+
+    // per_element
+    JPerElem := TJSONArray.Create;
+    for i := 0 to High(PerElement) do
+    begin
+      JElem := TJSONObject.Create;
+      JElem.AddPair('line', PerElement[i].Line);
+      JElem.AddPair('peak_R', TJSONNumber.Create(PerElement[i].PeakR));
+      JElem.AddPair('fwhm', TJSONNumber.Create(PerElement[i].FWHM));
+      JPerElem.Add(JElem);
+    end;
+    JSON.AddPair('per_element', JPerElem);
+
+    // files
+    JFiles := TJSONObject.Create;
+    JFiles.AddPair('config', 'config.json');
+    JFiles.AddPair('best_structure', 'best_structure.json');
+    JFiles.AddPair('best_structure_xrc', 'best_structure_xrc.json');
+    JFiles.AddPair('population', 'population.json');
+    JFiles.AddPair('progress', 'progress.log');
+
+    JCurves := TJSONArray.Create;
+    for i := 0 to High(CurveFiles) do
+      JCurves.Add(CurveFiles[i]);
+    JFiles.AddPair('curves', JCurves);
+    JSON.AddPair('files', JFiles);
+
+    Result := JSON.Format(2);
+  finally
+    JSON.Free;
+  end;
+end;
 
 procedure CreateXRFXPackage(
   const Config: TUniversalConfig;
@@ -93,13 +172,64 @@ procedure CreateXRFXPackage(
   FoM: Double;
   const PerElement: TArray<TXRFXElementResult>;
   const ResultsDir, ConfigFilePath, OutputPath: string);
+var
+  ZipFile: TZipFile;
+  Files: TStringDynArray;
+  FilePath, RelPath, CurvesDir: string;
+  CurveFilesList: TArray<string>;
+  ManifestPath, ConfigDest: string;
+  CurveNames: TStringDynArray;
+  i: Integer;
 begin
-  raise ENotImplemented.Create('CreateXRFXPackage not yet implemented');
+  // 1. Copy config JSON into results dir
+  ConfigDest := TPath.Combine(ResultsDir, 'config.json');
+  if TFile.Exists(ConfigFilePath) then
+    TFile.Copy(ConfigFilePath, ConfigDest, True);
+
+  // 2. Discover curve files for manifest
+  CurvesDir := TPath.Combine(ResultsDir, 'best_curves');
+  if TDirectory.Exists(CurvesDir) then
+  begin
+    CurveNames := TDirectory.GetFiles(CurvesDir, '*.dat');
+    SetLength(CurveFilesList, Length(CurveNames));
+    for i := 0 to High(CurveNames) do
+      CurveFilesList[i] := 'best_curves/' + TPath.GetFileName(CurveNames[i]);
+  end;
+
+  // 3. Generate manifest.json
+  ManifestPath := TPath.Combine(ResultsDir, 'manifest.json');
+  TFile.WriteAllText(ManifestPath,
+    GenerateManifestJSON(Config, BestGenome, FoM, PerElement, CurveFilesList));
+
+  // 4. ZIP everything except checkpoint.json
+  ZipFile := TZipFile.Create;
+  try
+    ZipFile.Open(OutputPath, zmWrite);
+
+    Files := TDirectory.GetFiles(ResultsDir, '*', TSearchOption.soAllDirectories);
+    for FilePath in Files do
+    begin
+      if SameText(TPath.GetFileName(FilePath), 'checkpoint.json') then
+        Continue;
+
+      // Build relative path using forward slashes
+      RelPath := FilePath.Substring(Length(IncludeTrailingPathDelimiter(ResultsDir)));
+      RelPath := StringReplace(RelPath, '\', '/', [rfReplaceAll]);
+      ZipFile.Add(FilePath, RelPath);
+    end;
+
+    ZipFile.Close;
+  finally
+    ZipFile.Free;
+  end;
 end;
 
 procedure ExtractXRFXPackage(const XRFXPath, TempDir: string);
 begin
-  raise ENotImplemented.Create('ExtractXRFXPackage not yet implemented');
+  if not TDirectory.Exists(TempDir) then
+    TDirectory.CreateDirectory(TempDir);
+
+  TZipFile.ExtractZipFile(XRFXPath, TempDir);
 end;
 
 function LoadManifest(const ManifestPath: string): TXRFXManifest;
