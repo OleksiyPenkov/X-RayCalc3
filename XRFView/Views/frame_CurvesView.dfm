@@ -23,14 +23,36 @@ object frameCurvesView: TframeCurvesView
     AlignWithMargins = True
     BevelOuter = bvNone
     TabOrder = 1
-    object clbElements: TCheckListBox
+    object chkLogScale: TCheckBox
       Left = 0
       Top = 0
       Width = 147
-      Height = 400
+      Height = 17
+      Align = alTop
+      Caption = 'Log scale'
+      Checked = True
+      State = cbChecked
+      TabOrder = 0
+      OnClick = chkLogScaleClick
+    end
+    object chkTotal: TCheckBox
+      Left = 0
+      Top = 17
+      Width = 147
+      Height = 17
+      Align = alTop
+      Caption = 'Total curve'
+      TabOrder = 1
+      OnClick = chkTotalClick
+    end
+    object clbElements: TCheckListBox
+      Left = 0
+      Top = 34
+      Width = 147
+      Height = 366
       Align = alClient
       ItemHeight = 13
-      TabOrder = 0
+      TabOrder = 2
       OnClickCheck = clbElementsClickCheck
     end
   end

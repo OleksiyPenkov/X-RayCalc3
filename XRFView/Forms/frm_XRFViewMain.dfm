@@ -21,7 +21,9 @@ object frmXRFViewMain: TfrmXRFViewMain
     Top = 0
     Width = 1000
     Height = 29
+    ButtonWidth = 100
     Images = ToolBarImages
+    ShowCaptions = True
     TabOrder = 0
     object btnRefresh: TToolButton
       Left = 0

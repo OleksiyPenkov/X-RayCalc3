@@ -67,6 +67,9 @@ type
     FCompareView: TframeCompareView;
     procedure ProcessFile(const FileName: string);
     procedure ProcessMultipleFiles(const FileNames: TArray<string>);
+    function  GetIniPath: string;
+    procedure LoadSettings;
+    procedure SaveSettings;
   end;
 
 var
@@ -75,7 +78,7 @@ var
 implementation
 
 uses
-  System.Win.Registry, ClipBrd;
+  System.Win.Registry, System.IniFiles, ClipBrd;
 
 {$R *.dfm}
 
@@ -126,7 +129,9 @@ begin
   tabCompare.TabVisible := False;
 
   if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
-    ShellList.Path := ExtractFilePath(ParamStr(1));
+    ShellList.Path := ExtractFilePath(ParamStr(1))
+  else
+    LoadSettings;
 end;
 
 procedure TfrmXRFViewMain.FormDestroy(Sender: TObject);
@@ -136,6 +141,7 @@ end;
 
 procedure TfrmXRFViewMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  SaveSettings;
   Application.Terminate;
 end;
 
@@ -287,6 +293,38 @@ end;
 procedure TfrmXRFViewMain.mnuRegisterExtClick(Sender: TObject);
 begin
   RegisterFileType('xrfx', Application.ExeName);
+end;
+
+function TfrmXRFViewMain.GetIniPath: string;
+begin
+  Result := ChangeFileExt(Application.ExeName, '.ini');
+end;
+
+procedure TfrmXRFViewMain.LoadSettings;
+var
+  Ini: TIniFile;
+  Path: string;
+begin
+  Ini := TIniFile.Create(GetIniPath);
+  try
+    Path := Ini.ReadString('General', 'LastFolder', '');
+    if (Path <> '') and TDirectory.Exists(Path) then
+      ShellList.Path := Path;
+  finally
+    Ini.Free;
+  end;
+end;
+
+procedure TfrmXRFViewMain.SaveSettings;
+var
+  Ini: TIniFile;
+begin
+  Ini := TIniFile.Create(GetIniPath);
+  try
+    Ini.WriteString('General', 'LastFolder', ShellList.Path);
+  finally
+    Ini.Free;
+  end;
 end;
 
 end.
