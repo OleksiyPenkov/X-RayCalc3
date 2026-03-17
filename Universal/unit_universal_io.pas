@@ -182,6 +182,12 @@ begin
       Result.ResumeFrom := ''
     else
       Result.ResumeFrom := JSON.GetValue<string>('resume_from');
+
+    if (JSON.FindValue('template_file') <> nil) and
+       not (JSON.GetValue('template_file') is TJSONNull) then
+      Result.TemplatePath := JSON.GetValue<string>('template_file')
+    else
+      Result.TemplatePath := '';
   finally
     JSON.Free;
   end;
@@ -287,6 +293,11 @@ begin
       JSON.AddPair('resume_from', Config.ResumeFrom)
     else
       JSON.AddPair('resume_from', TJSONNull.Create);
+
+    if Config.TemplatePath <> '' then
+      JSON.AddPair('template_file', Config.TemplatePath)
+    else
+      JSON.AddPair('template_file', TJSONNull.Create);
 
     TFile.WriteAllText(FileName, JSON.Format);
   finally
