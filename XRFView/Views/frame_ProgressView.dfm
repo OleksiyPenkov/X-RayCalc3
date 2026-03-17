@@ -11,6 +11,7 @@ object frameProgressView: TframeProgressView
     Height = 400
     Align = alClient
     AlignWithMargins = True
+    View3D = False
     TabOrder = 0
   end
 end
