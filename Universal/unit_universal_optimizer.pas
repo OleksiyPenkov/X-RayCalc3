@@ -5,7 +5,8 @@ interface
 uses
   System.SysUtils, System.Math, System.Classes, System.Threading,
   cmd_unit_types, unit_universal_types, unit_universal_io,
-  unit_universal_fitness, unit_universal_pso, unit_materials_mix;
+  unit_universal_fitness, unit_universal_pso, unit_materials_mix,
+  unit_universal_templates;
 
 type
   TElementResult = record
@@ -44,6 +45,7 @@ type
     FMixer: TMaterialMixer;
     FPool: TThreadPool;
     FCancelled: Boolean;
+    FTemplates: TTemplateLibrary;
     FOnIteration: TIterationEvent;
     FOnCompleted: TCompletionEvent;
     FOnError: TErrorEvent;
@@ -139,13 +141,37 @@ begin
     for i := 0 to High(FConfig.ElementPool) do
       ElementNames[i] := FConfig.ElementPool[i];
 
+    // Load templates
+    FTemplates := LoadTemplates(FConfig.TemplatePath);
+
+    // Collect interlayer materials and merge with element pool
+    if Length(FTemplates) > 0 then
+    begin
+      var ExtraMats := CollectTemplateMaterials(FTemplates);
+      for var m := 0 to High(ExtraMats) do
+      begin
+        var AlreadyInPool := False;
+        for var e := 0 to High(ElementNames) do
+          if SameText(ElementNames[e], ExtraMats[m]) then
+          begin
+            AlreadyInPool := True;
+            Break;
+          end;
+        if not AlreadyInPool then
+        begin
+          SetLength(ElementNames, Length(ElementNames) + 1);
+          ElementNames[High(ElementNames)] := ExtraMats[m];
+        end;
+      end;
+    end;
+
     // Create engine objects
     FPool := TThreadPool.Create;
     FPool.SetMinWorkerThreads(TThread.ProcessorCount);
     FPool.SetMaxWorkerThreads(TThread.ProcessorCount);
     FMixer := TMaterialMixer.Create;
     FPSO := TUniversalPSO.Create(FConfig);
-    FFitness := TUniversalFitness.Create(FMixer, FConfig);
+    FFitness := TUniversalFitness.Create(FMixer, FConfig, FTemplates);
     FIO := TUniversalIO.Create;
     try
       FMixer.Initialize(ElementNames, TargetLambdas,
