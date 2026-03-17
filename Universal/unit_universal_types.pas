@@ -130,6 +130,7 @@ type
     NRange: TParamRange;
     SigmaFixed: Single;          // fixed roughness value (<=0 means use SigmaRange)
     SigmaRange: TParamRange;
+    DensityFactorFixed: Single;  // fixed density factor (<=0 means use DensityFactorRange)
     DensityFactorRange: TParamRange;
     CapHRange: TParamRange;          // capping layer thickness range (0,0 = no cap)
     CapVariantCount: Integer;        // number of cap variants (0 = no cap)
@@ -157,10 +158,16 @@ type
     CheckpointEvery: Integer;
   end;
 
+  // Excluded material pair (by pool index, symmetric)
+  TExcludedPair = record
+    Idx1, Idx2: Integer;
+  end;
+
   // Full configuration
   TUniversalConfig = record
     Lines: array of TXRFLine;
     ElementPool: array of string;
+    ExcludedPairs: array of TExcludedPair;
     Structure: TStructureConfig;
     Fitness: TFitnessConfig;
     Optimizer: TOptimizerConfig;

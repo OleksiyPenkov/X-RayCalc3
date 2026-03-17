@@ -27,6 +27,7 @@ type
     FSigmaMin, FSigmaMax, FSigmaRange: Single;
     FSigmaFixed: Boolean;
     FDFMin, FDFMax, FDFRange: Single;
+    FDFFixed: Boolean;
     FCapHMin, FCapHMax, FCapHRange: Single;
     FHasCap: Boolean;
     FCapVarMin, FCapVarMax, FCapVarRange: Single;
@@ -38,6 +39,8 @@ type
     procedure EnforceConstraints(var P: TParticle);
     function LevyStep: Single;
     procedure CalcDiversity;
+    function IsExcludedPair(Idx0, Idx1: Integer): Boolean;
+    function DominantElement(const Comp: TCompositionGenes): Integer;
 
   public
     constructor Create(const AConfig: TUniversalConfig);
@@ -107,6 +110,7 @@ begin
   FDFMin := FConfig.Structure.DensityFactorRange.Min;
   FDFMax := FConfig.Structure.DensityFactorRange.Max;
   FDFRange := FDFMax - FDFMin;
+  FDFFixed := FConfig.Structure.DensityFactorFixed >= 0;
 
   FCapHMin := FConfig.Structure.CapHRange.Min;
   FCapHMax := FConfig.Structure.CapHRange.Max;
@@ -195,9 +199,27 @@ begin
 
   for Role := 0 to LAYERS_PER_PERIOD - 1 do
   begin
-    ReflectBound(P.X.DensityFactor[Role], P.V.DensityFactor[Role],
-      FDFMin, FDFMax);
+    if not FDFFixed then
+      ReflectBound(P.X.DensityFactor[Role], P.V.DensityFactor[Role],
+        FDFMin, FDFMax);
     NormalizeComposition(P.X.Composition[Role]);
+  end;
+
+  // Enforce excluded pairs in PureElements mode
+  if FConfig.Structure.PureElements and (Length(FConfig.ExcludedPairs) > 0) then
+  begin
+    var Dom0 := DominantElement(P.X.Composition[0]);
+    var Dom1 := DominantElement(P.X.Composition[1]);
+    if IsExcludedPair(Dom0, Dom1) then
+    begin
+      // Re-randomize Layer 1 to a valid element
+      var NewElem := Random(FPoolSize);
+      while IsExcludedPair(Dom0, NewElem) or (NewElem = Dom0) do
+        NewElem := (NewElem + 1) mod FPoolSize;
+      for var k := 0 to FPoolSize - 1 do
+        P.X.Composition[1][k] := 0;
+      P.X.Composition[1][NewElem] := 1.0;
+    end;
   end;
 end;
 
@@ -256,6 +278,9 @@ begin
       // Ensure different elements for each layer role
       if (Elem0 = Elem1) and (FPoolSize > 1) then
         Elem1 := (Elem1 + 1) mod FPoolSize;
+      // Skip excluded pairs
+      while IsExcludedPair(Elem0, Elem1) or (Elem0 = Elem1) do
+        Elem1 := (Elem1 + 1) mod FPoolSize;
 
       for j := 0 to FPoolSize - 1 do
         FParticles[i].X.Composition[0][j] := 0;
@@ -276,7 +301,10 @@ begin
     end;
 
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
-      FParticles[i].X.DensityFactor[Role] := FDFMin + Random * FDFRange;
+      if FDFFixed then
+        FParticles[i].X.DensityFactor[Role] := FConfig.Structure.DensityFactorFixed
+      else
+        FParticles[i].X.DensityFactor[Role] := FDFMin + Random * FDFRange;
 
     // Initial velocities (10% of range)
     FParticles[i].V.d := (Random - 0.5) * FdRange * 0.2;
@@ -291,7 +319,8 @@ begin
     begin
       for j := 0 to FPoolSize - 1 do
         FParticles[i].V.Composition[Role][j] := (Random - 0.5) * 0.2;
-      FParticles[i].V.DensityFactor[Role] := (Random - 0.5) * FDFRange * 0.2;
+      if not FDFFixed then
+        FParticles[i].V.DensityFactor[Role] := (Random - 0.5) * FDFRange * 0.2;
     end;
   end;
 end;
@@ -369,16 +398,19 @@ begin
           FParticles[i].V.Composition[Role][j];
       end;
 
-      r1 := Random; r2 := Random;
-      FParticles[i].V.DensityFactor[Role] :=
-        Omega * FParticles[i].V.DensityFactor[Role]
-        + C1 * r1 * (FParticles[i].PBest.DensityFactor[Role] -
-                      FParticles[i].X.DensityFactor[Role])
-        + C2 * r2 * (FGBest.DensityFactor[Role] -
-                      FParticles[i].X.DensityFactor[Role]);
-      FParticles[i].X.DensityFactor[Role] :=
-        FParticles[i].X.DensityFactor[Role] +
-        FParticles[i].V.DensityFactor[Role];
+      if not FDFFixed then
+      begin
+        r1 := Random; r2 := Random;
+        FParticles[i].V.DensityFactor[Role] :=
+          Omega * FParticles[i].V.DensityFactor[Role]
+          + C1 * r1 * (FParticles[i].PBest.DensityFactor[Role] -
+                        FParticles[i].X.DensityFactor[Role])
+          + C2 * r2 * (FGBest.DensityFactor[Role] -
+                        FParticles[i].X.DensityFactor[Role]);
+        FParticles[i].X.DensityFactor[Role] :=
+          FParticles[i].X.DensityFactor[Role] +
+          FParticles[i].V.DensityFactor[Role];
+      end;
     end;
 
     EnforceConstraints(FParticles[i]);
@@ -475,18 +507,21 @@ begin
           FParticles[i].V.Composition[Role][j];
       end;
 
-      Step := LevyStep;
-      r1 := Random; r2 := Random;
-      FParticles[i].V.DensityFactor[Role] :=
-        Omega * Step * (FParticles[i].X.DensityFactor[Role] -
-                        Target.DensityFactor[Role])
-        + C1 * r1 * (FParticles[i].PBest.DensityFactor[Role] -
-                      FParticles[i].X.DensityFactor[Role])
-        + C2 * r2 * (FGBest.DensityFactor[Role] -
-                      FParticles[i].X.DensityFactor[Role]);
-      FParticles[i].X.DensityFactor[Role] :=
-        FParticles[i].X.DensityFactor[Role] +
-        FParticles[i].V.DensityFactor[Role];
+      if not FDFFixed then
+      begin
+        Step := LevyStep;
+        r1 := Random; r2 := Random;
+        FParticles[i].V.DensityFactor[Role] :=
+          Omega * Step * (FParticles[i].X.DensityFactor[Role] -
+                          Target.DensityFactor[Role])
+          + C1 * r1 * (FParticles[i].PBest.DensityFactor[Role] -
+                        FParticles[i].X.DensityFactor[Role])
+          + C2 * r2 * (FGBest.DensityFactor[Role] -
+                        FParticles[i].X.DensityFactor[Role]);
+        FParticles[i].X.DensityFactor[Role] :=
+          FParticles[i].X.DensityFactor[Role] +
+          FParticles[i].V.DensityFactor[Role];
+      end;
     end;
 
     EnforceConstraints(FParticles[i]);
@@ -556,6 +591,27 @@ begin
     FDiversity := 0;
 end;
 
+function TUniversalPSO.IsExcludedPair(Idx0, Idx1: Integer): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to High(FConfig.ExcludedPairs) do
+    if ((FConfig.ExcludedPairs[i].Idx1 = Idx0) and (FConfig.ExcludedPairs[i].Idx2 = Idx1)) or
+       ((FConfig.ExcludedPairs[i].Idx1 = Idx1) and (FConfig.ExcludedPairs[i].Idx2 = Idx0)) then
+      Exit(True);
+  Result := False;
+end;
+
+function TUniversalPSO.DominantElement(const Comp: TCompositionGenes): Integer;
+var
+  j: Integer;
+begin
+  Result := 0;
+  for j := 1 to High(Comp) do
+    if Comp[j] > Comp[Result] then
+      Result := j;
+end;
+
 procedure TUniversalPSO.Shake;
 var
   i, j, Role: Integer;
@@ -590,8 +646,9 @@ begin
         NormalizeComposition(FParticles[i].X.Composition[Role]);
       end;
 
-      FParticles[i].X.DensityFactor[Role] :=
-        FParticles[i].X.DensityFactor[Role] + (Random - 0.5) * FDFRange * 0.2;
+      if not FDFFixed then
+        FParticles[i].X.DensityFactor[Role] :=
+          FParticles[i].X.DensityFactor[Role] + (Random - 0.5) * FDFRange * 0.2;
     end;
 
     EnforceConstraints(FParticles[i]);

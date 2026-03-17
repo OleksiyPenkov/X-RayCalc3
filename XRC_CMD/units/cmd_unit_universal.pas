@@ -123,6 +123,14 @@ begin
   for i := 0 to High(Config.ElementPool) do
     Write(' ' + Config.ElementPool[i]);
   WriteLn;
+  if Length(Config.ExcludedPairs) > 0 then
+  begin
+    Write('Excluded:');
+    for i := 0 to High(Config.ExcludedPairs) do
+      Write(' ' + Config.ElementPool[Config.ExcludedPairs[i].Idx1] + '/' +
+            Config.ElementPool[Config.ExcludedPairs[i].Idx2]);
+    WriteLn;
+  end;
   WriteLn(Format('Structure: %s, d=[%.0f..%.0f], N=[%.0f..%.0f]',
     [Config.Structure.StructureType,
      Config.Structure.dRange.Min, Config.Structure.dRange.Max,

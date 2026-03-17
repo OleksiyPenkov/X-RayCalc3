@@ -150,6 +150,36 @@ begin
     for i := 0 to JPool.Count - 1 do
       Result.ElementPool[i] := JPool.Items[i].Value;
 
+    // Parse excluded material pairs
+    SetLength(Result.ExcludedPairs, 0);
+    if JSON.FindValue('excluded_pairs') <> nil then
+    begin
+      var JExcl := JSON.GetValue<TJSONArray>('excluded_pairs');
+      for i := 0 to JExcl.Count - 1 do
+      begin
+        var S := JExcl.Items[i].Value;
+        var SlashPos := Pos('/', S);
+        if SlashPos = 0 then
+          raise Exception.CreateFmt('Invalid excluded pair "%s" — expected "Mat1/Mat2" format.', [S]);
+        var Mat1 := Copy(S, 1, SlashPos - 1);
+        var Mat2 := Copy(S, SlashPos + 1, MaxInt);
+        var Idx1 := -1;
+        var Idx2 := -1;
+        for var k := 0 to High(Result.ElementPool) do
+        begin
+          if SameText(Result.ElementPool[k], Mat1) then Idx1 := k;
+          if SameText(Result.ElementPool[k], Mat2) then Idx2 := k;
+        end;
+        if Idx1 < 0 then
+          raise Exception.CreateFmt('Excluded pair "%s": material "%s" not found in element_pool.', [S, Mat1]);
+        if Idx2 < 0 then
+          raise Exception.CreateFmt('Excluded pair "%s": material "%s" not found in element_pool.', [S, Mat2]);
+        SetLength(Result.ExcludedPairs, Length(Result.ExcludedPairs) + 1);
+        Result.ExcludedPairs[High(Result.ExcludedPairs)].Idx1 := Idx1;
+        Result.ExcludedPairs[High(Result.ExcludedPairs)].Idx2 := Idx2;
+      end;
+    end;
+
     JStructure := JSON.GetValue<TJSONObject>('structure');
     Result.Structure.StructureType := JStructure.GetValue<string>('type');
     Result.Structure.LayersPerPeriod := JStructure.GetValue<Integer>('layers_per_period');
@@ -296,6 +326,16 @@ begin
     for i := 0 to High(Config.ElementPool) do
       JPool.Add(Config.ElementPool[i]);
     JSON.AddPair('element_pool', JPool);
+
+    // Excluded pairs
+    if Length(Config.ExcludedPairs) > 0 then
+    begin
+      var JExcl := TJSONArray.Create;
+      for i := 0 to High(Config.ExcludedPairs) do
+        JExcl.Add(Config.ElementPool[Config.ExcludedPairs[i].Idx1] + '/' +
+                  Config.ElementPool[Config.ExcludedPairs[i].Idx2]);
+      JSON.AddPair('excluded_pairs', JExcl);
+    end;
 
     // Structure
     JStructure := TJSONObject.Create;
