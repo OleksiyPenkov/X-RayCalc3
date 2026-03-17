@@ -502,7 +502,7 @@ object frmXRFMain: TfrmXRFMain
         Left = 0
         Top = 1020
         Width = 280
-        Height = 80
+        Height = 106
         Align = alTop
         Caption = 'Paths'
         TabOrder = 6
@@ -551,6 +551,29 @@ object frmXRFMain: TfrmXRFMain
           Caption = '...'
           TabOrder = 3
           OnClick = btnBrowseOutputClick
+        end
+        object lblTemplatePath: TLabel
+          Left = 8
+          Top = 74
+          Width = 52
+          Height = 15
+          Caption = 'Template'
+        end
+        object edTemplatePath: TEdit
+          Left = 60
+          Top = 72
+          Width = 175
+          Height = 23
+          TabOrder = 4
+        end
+        object btnBrowseTemplate: TButton
+          Left = 240
+          Top = 71
+          Width = 30
+          Height = 25
+          Caption = '...'
+          TabOrder = 5
+          OnClick = btnBrowseTemplateClick
         end
       end
       object grpResults: TGroupBox

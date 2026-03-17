@@ -90,6 +90,9 @@ type
     edOutputDir: TEdit;
     btnBrowseHenke: TButton;
     btnBrowseOutput: TButton;
+    lblTemplatePath: TLabel;
+    edTemplatePath: TEdit;
+    btnBrowseTemplate: TButton;
     // Results (hidden by default)
     grpResults: TGroupBox;
     sgResults: TStringGrid;
@@ -119,6 +122,7 @@ type
     procedure btnSaveConfigClick(Sender: TObject);
     procedure btnBrowseHenkeClick(Sender: TObject);
     procedure btnBrowseOutputClick(Sender: TObject);
+    procedure btnBrowseTemplateClick(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
     procedure btnSaveStructureClick(Sender: TObject);
@@ -194,6 +198,7 @@ begin
   try
     edHenkePath.Text := Ini.ReadString('Paths', 'HenkePath', '');
     edOutputDir.Text := Ini.ReadString('Paths', 'OutputDir', '');
+    edTemplatePath.Text := Ini.ReadString('Paths', 'TemplatePath', '');
   finally
     Ini.Free;
   end;
@@ -207,6 +212,7 @@ begin
   try
     Ini.WriteString('Paths', 'HenkePath', edHenkePath.Text);
     Ini.WriteString('Paths', 'OutputDir', edOutputDir.Text);
+    Ini.WriteString('Paths', 'TemplatePath', edTemplatePath.Text);
   finally
     Ini.Free;
   end;
@@ -299,6 +305,7 @@ begin
   // Paths
   edHenkePath.Text := Config.HenkePath;
   edOutputDir.Text := Config.OutputDir;
+  edTemplatePath.Text := Config.TemplatePath;
 end;
 
 function TfrmXRFMain.CollectConfigFromUI: TUniversalConfig;
@@ -384,6 +391,7 @@ begin
   // Paths
   Result.HenkePath := edHenkePath.Text;
   Result.OutputDir := edOutputDir.Text;
+  Result.TemplatePath := edTemplatePath.Text;
 
   // ResumeFrom not set from UI
   Result.ResumeFrom := '';
@@ -437,6 +445,23 @@ begin
   Dir := edOutputDir.Text;
   if SelectDirectory('Select output directory', '', Dir) then
     edOutputDir.Text := Dir;
+end;
+
+procedure TfrmXRFMain.btnBrowseTemplateClick(Sender: TObject);
+var
+  Dlg: TOpenDialog;
+begin
+  Dlg := TOpenDialog.Create(nil);
+  try
+    Dlg.Filter := 'JSON files (*.json)|*.json|All files (*.*)|*.*';
+    Dlg.Title := 'Select template file';
+    if edTemplatePath.Text <> '' then
+      Dlg.InitialDir := ExtractFilePath(edTemplatePath.Text);
+    if Dlg.Execute then
+      edTemplatePath.Text := Dlg.FileName;
+  finally
+    Dlg.Free;
+  end;
 end;
 
 procedure TfrmXRFMain.SetRunningState(Running: Boolean);
