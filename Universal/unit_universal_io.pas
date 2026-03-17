@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Classes, System.JSON, System.IOUtils, System.Math,
   unit_universal_types, cmd_unit_types, unit_materials_mix,
-  unit_universal_templates;
+  unit_universal_templates, unit_xrf_lines;
 
 type
   TUniversalIO = class
@@ -89,13 +89,46 @@ begin
       JTargets := JSON.GetValue<TJSONArray>('lines')
     else
       JTargets := JSON.GetValue<TJSONArray>('targets');
-    SetLength(Result.Lines, JTargets.Count);
+    SetLength(Result.Lines, 0);
     for i := 0 to JTargets.Count - 1 do
     begin
-      JTarget := JTargets.Items[i] as TJSONObject;
-      Result.Lines[i].Name := JTarget.GetValue<string>('element');
-      Result.Lines[i].Lambda := JTarget.GetValue<Double>('lambda');
-      Result.Lines[i].Weight := JTarget.GetValue<Double>('weight');
+      if JTargets.Items[i] is TJSONString then
+      begin
+        var S := JTargets.Items[i].Value;
+        if Pos('-', S) > 0 then
+        begin
+          var Expanded := ExpandElementRange(S);
+          for var j := 0 to High(Expanded) do
+          begin
+            SetLength(Result.Lines, Length(Result.Lines) + 1);
+            Result.Lines[High(Result.Lines)].Name := Expanded[j];
+            Result.Lines[High(Result.Lines)].Lambda := GetXRFLambda(Expanded[j]);
+            Result.Lines[High(Result.Lines)].Weight := 1.0;
+          end;
+        end
+        else
+        begin
+          SetLength(Result.Lines, Length(Result.Lines) + 1);
+          Result.Lines[High(Result.Lines)].Name := S;
+          Result.Lines[High(Result.Lines)].Lambda := GetXRFLambda(S);
+          Result.Lines[High(Result.Lines)].Weight := 1.0;
+        end;
+      end
+      else if JTargets.Items[i] is TJSONObject then
+      begin
+        JTarget := JTargets.Items[i] as TJSONObject;
+        SetLength(Result.Lines, Length(Result.Lines) + 1);
+        Result.Lines[High(Result.Lines)].Name := JTarget.GetValue<string>('element');
+        if JTarget.FindValue('lambda') <> nil then
+          Result.Lines[High(Result.Lines)].Lambda := JTarget.GetValue<Double>('lambda')
+        else
+          Result.Lines[High(Result.Lines)].Lambda :=
+            GetXRFLambda(Result.Lines[High(Result.Lines)].Name);
+        if JTarget.FindValue('weight') <> nil then
+          Result.Lines[High(Result.Lines)].Weight := JTarget.GetValue<Double>('weight')
+        else
+          Result.Lines[High(Result.Lines)].Weight := 1.0;
+      end;
     end;
 
     JPool := JSON.GetValue<TJSONArray>('element_pool');
