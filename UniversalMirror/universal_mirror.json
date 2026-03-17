@@ -1,45 +1,8 @@
 {
     "lines": [
-        {
-            "element": "B",
-            "lambda": 67.5999984741211,
-            "weight": 1.0
-        },
-        {
-            "element": "C",
-            "lambda": 44.7000007629395,
-            "weight": 1.10000002384186
-        },
-        {
-            "element": "N",
-            "lambda": 31.6000003814697,
-            "weight": 1.0
-        },
-        {
-            "element": "O",
-            "lambda": 23.6000003814697,
-            "weight": 1.0
-        },
-        {
-            "element": "F",
-            "lambda": 18.2999992370605,
-            "weight": 1.0
-        },
-        {
-            "element": "Na",
-            "lambda": 11.8999996185303,
-            "weight": 1.0
-        },
-        {
-            "element": "Mg",
-            "lambda": 9.89000034332275,
-            "weight": 0.899999976158142
-        },
-        {
-            "element": "Al",
-            "lambda": 8.33800029754639,
-            "weight": 0.800000011920929
-        }
+        "B", {"element": "C", "weight": 1.1}, "N-F", "Na",
+        {"element": "Mg", "weight": 0.9},
+        {"element": "Al", "weight": 0.8}
     ],
     "element_pool": [
         "W",
