@@ -4,7 +4,8 @@ interface
 
 uses
   System.SysUtils, System.Math, math_complex,
-  cmd_unit_types, unit_universal_types, unit_materials_mix;
+  cmd_unit_types, unit_universal_types, unit_materials_mix,
+  unit_universal_templates;
 
 type
   TUniversalFitness = class
@@ -13,8 +14,10 @@ type
     FConfig: TUniversalConfig;
     FTargetCount: Integer;
     FPoolSize: Integer;
+    FTemplates: TTemplateLibrary;
 
     function BuildLayers(const Genome: TGenome; TargetIdx: Integer): TLayers;
+    function GetDominantMaterial(const Comp: TCompositionGenes): string;
     function ScanReflectivity(const Layers: TLayers;
       Lambda, ThetaCenter, ThetaHalfRange: Single;
       NPoints: Integer): TDataArray;
@@ -22,7 +25,8 @@ type
     function ExtractFWHM(const Curve: TDataArray; RPeak: Single): Single;
     procedure Convolute(var Curve: TDataArray; Width: Single);
   public
-    constructor Create(AMixer: TMaterialMixer; const AConfig: TUniversalConfig);
+    constructor Create(AMixer: TMaterialMixer; const AConfig: TUniversalConfig;
+      const ATemplates: TTemplateLibrary);
 
     function Evaluate(const Genome: TGenome;
       var Results: TTargetResults): Single;
@@ -42,65 +46,143 @@ const
   PENALTY_DEGENERATE = 1.0;
 
 constructor TUniversalFitness.Create(AMixer: TMaterialMixer;
-  const AConfig: TUniversalConfig);
+  const AConfig: TUniversalConfig; const ATemplates: TTemplateLibrary);
 begin
   inherited Create;
   FMixer := AMixer;
   FConfig := AConfig;
+  FTemplates := ATemplates;
   FTargetCount := Length(AConfig.Targets);
   FPoolSize := Length(AConfig.ElementPool);
+end;
+
+function TUniversalFitness.GetDominantMaterial(
+  const Comp: TCompositionGenes): string;
+var
+  i, DomIdx: Integer;
+begin
+  DomIdx := 0;
+  for i := 1 to High(Comp) do
+    if Comp[i] > Comp[DomIdx] then
+      DomIdx := i;
+  Result := FMixer.GetElementName(DomIdx);
 end;
 
 function TUniversalFitness.BuildLayers(const Genome: TGenome;
   TargetIdx: Integer): TLayers;
 var
-  NInt, TotalLayers, LayerIdx, Period, Role: Integer;
-  H1, H2: Single;
+  NInt, TotalLayers, LayerIdx, Period, Role, j, TemplIdx, ElemIdx: Integer;
+  H1, H2, SubH: Single;
   Eps: TComplex;
   Dens: Single;
+  Key: string;
+  Templ: TTemplatePair;
+  UseTemplate: Boolean;
 begin
   NInt := NRound(Genome.N);
-  TotalLayers := 2 + NInt * LAYERS_PER_PERIOD;
-  SetLength(Result, TotalLayers);
 
-  // Layer 0: vacuum
-  Result[0].e.re := 1.0;
-  Result[0].e.im := 0.0;
-  Result[0].H := 0;
-  Result[0].S := 0;
-
-  // Bilayer thicknesses
-  H1 := Genome.d * Genome.Gamma;
-  H2 := Genome.d * (1 - Genome.Gamma);
-
-  // Periodic layers
-  LayerIdx := 1;
-  for Period := 0 to NInt - 1 do
+  // Determine if template applies
+  UseTemplate := False;
+  if FConfig.Structure.PureElements and (Length(FTemplates) > 0) then
   begin
-    for Role := 0 to LAYERS_PER_PERIOD - 1 do
+    Key := GetDominantMaterial(Genome.Composition[0]) + '/' +
+           GetDominantMaterial(Genome.Composition[1]);
+    TemplIdx := FindTemplate(FTemplates, Key);
+    if TemplIdx >= 0 then
     begin
-      FMixer.CalcMixedEpsilon(
-        Genome.Composition[Role],
-        Genome.DensityFactor[Role],
-        TargetIdx,
-        Eps, Dens
-      );
-      Result[LayerIdx].e := Eps;
-      if Role = 0 then
-        Result[LayerIdx].H := H1
-      else
-        Result[LayerIdx].H := H2;
-      Result[LayerIdx].S := Genome.Sigma;
-      Result[LayerIdx].Rho := Dens;
-      Inc(LayerIdx);
+      Templ := FTemplates[TemplIdx];
+      UseTemplate := True;
     end;
   end;
 
-  // Substrate (last layer)
-  FMixer.CalcSubstrateEpsilon(TargetIdx, Eps);
-  Result[LayerIdx].e := Eps;
-  Result[LayerIdx].H := 1e8;
-  Result[LayerIdx].S := Genome.Sigma;
+  if UseTemplate then
+  begin
+    // Template path: variable layers per period
+    TotalLayers := 2 + NInt * Length(Templ.Layers);
+    SetLength(Result, TotalLayers);
+
+    // Layer 0: vacuum
+    Result[0].e.re := 1.0;
+    Result[0].e.im := 0.0;
+    Result[0].H := 0;
+    Result[0].S := 0;
+
+    LayerIdx := 1;
+    for Period := 0 to NInt - 1 do
+    begin
+      for j := 0 to High(Templ.Layers) do
+      begin
+        // Compute thickness
+        case Templ.Layers[j].ThicknessType of
+          ttGamma:
+            SubH := Genome.d * Genome.Gamma - Templ.GammaReduction;
+          ttOneMinusGamma:
+            SubH := Genome.d * (1 - Genome.Gamma) - Templ.OneMinusGammaReduction;
+          ttFixed:
+            SubH := Templ.Layers[j].FixedThickness;
+        end;
+        if SubH < 0 then SubH := 0;
+
+        // Compute epsilon from template material at fixed density
+        ElemIdx := FMixer.FindElementIndex(Templ.Layers[j].Material);
+        FMixer.CalcSingleEpsilon(ElemIdx, Templ.Layers[j].Density,
+          TargetIdx, Eps);
+
+        Result[LayerIdx].e := Eps;
+        Result[LayerIdx].H := SubH;
+        Result[LayerIdx].S := Templ.Layers[j].Sigma;
+        Result[LayerIdx].Rho := Templ.Layers[j].Density;
+        Inc(LayerIdx);
+      end;
+    end;
+
+    // Substrate
+    FMixer.CalcSubstrateEpsilon(TargetIdx, Eps);
+    Result[LayerIdx].e := Eps;
+    Result[LayerIdx].H := 1e8;
+    Result[LayerIdx].S := Genome.Sigma;
+  end
+  else
+  begin
+    // Original bilayer path (unchanged)
+    TotalLayers := 2 + NInt * LAYERS_PER_PERIOD;
+    SetLength(Result, TotalLayers);
+
+    Result[0].e.re := 1.0;
+    Result[0].e.im := 0.0;
+    Result[0].H := 0;
+    Result[0].S := 0;
+
+    H1 := Genome.d * Genome.Gamma;
+    H2 := Genome.d * (1 - Genome.Gamma);
+
+    LayerIdx := 1;
+    for Period := 0 to NInt - 1 do
+    begin
+      for Role := 0 to LAYERS_PER_PERIOD - 1 do
+      begin
+        FMixer.CalcMixedEpsilon(
+          Genome.Composition[Role],
+          Genome.DensityFactor[Role],
+          TargetIdx,
+          Eps, Dens
+        );
+        Result[LayerIdx].e := Eps;
+        if Role = 0 then
+          Result[LayerIdx].H := H1
+        else
+          Result[LayerIdx].H := H2;
+        Result[LayerIdx].S := Genome.Sigma;
+        Result[LayerIdx].Rho := Dens;
+        Inc(LayerIdx);
+      end;
+    end;
+
+    FMixer.CalcSubstrateEpsilon(TargetIdx, Eps);
+    Result[LayerIdx].e := Eps;
+    Result[LayerIdx].H := 1e8;
+    Result[LayerIdx].S := Genome.Sigma;
+  end;
 end;
 
 function TUniversalFitness.ScanReflectivity(const Layers: TLayers;
@@ -225,10 +307,26 @@ var
   FoM, FWHMRef: Single;
   NInt: Integer;
   Penalty: Single;
+  Key: string;
+  TemplIdx: Integer;
 begin
   FoM := 0;
   Penalty := 0;
   NInt := NRound(Genome.N);
+
+  // Template negative-thickness penalty
+  if FConfig.Structure.PureElements and (Length(FTemplates) > 0) then
+  begin
+    Key := GetDominantMaterial(Genome.Composition[0]) + '/' +
+           GetDominantMaterial(Genome.Composition[1]);
+    TemplIdx := FindTemplate(FTemplates, Key);
+    if TemplIdx >= 0 then
+    begin
+      if (Genome.d * Genome.Gamma - FTemplates[TemplIdx].GammaReduction < 0) or
+         (Genome.d * (1 - Genome.Gamma) - FTemplates[TemplIdx].OneMinusGammaReduction < 0) then
+        Penalty := Penalty + PENALTY_DEGENERATE;
+    end;
+  end;
 
   for i := 0 to FTargetCount - 1 do
   begin
