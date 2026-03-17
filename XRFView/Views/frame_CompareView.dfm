@@ -16,6 +16,8 @@ object frameCompareView: TframeCompareView
     RowCount = 8
     Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing]
     TabOrder = 0
-    ColWidths = [120, 120]
+    ColWidths = (
+      120
+      120)
   end
 end

@@ -54,6 +54,11 @@ object frameStructureView: TframeStructureView
     RowCount = 4
     Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing]
     TabOrder = 1
-    ColWidths = [30, 100, 100, 100, 110]
+    ColWidths = (
+      30
+      100
+      100
+      100
+      110)
   end
 end
