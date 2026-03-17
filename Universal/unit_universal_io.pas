@@ -158,6 +158,11 @@ begin
       Result.Fitness.ThetaMin := JFitness.GetValue<Double>('theta_min')
     else
       Result.Fitness.ThetaMin := 0;
+    if JFitness.FindValue('w_purity') <> nil then
+      Result.Fitness.wPurity := JFitness.GetValue<Double>('w_purity')
+    else
+      Result.Fitness.wPurity := 1.0;  // default: full purity weighting
+
     // Polarization
     if JFitness.FindValue('polarization') <> nil then
     begin
@@ -278,6 +283,7 @@ begin
       JFitness.AddPair('polarization', 'sp');
     JFitness.AddPair('delta_theta', TJSONNumber.Create(Config.Fitness.DeltaTheta));
     JFitness.AddPair('theta_min', TJSONNumber.Create(Config.Fitness.ThetaMin));
+    JFitness.AddPair('w_purity', TJSONNumber.Create(Config.Fitness.wPurity));
     JSON.AddPair('fitness', JFitness);
 
     // Optimizer

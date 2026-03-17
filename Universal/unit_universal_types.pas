@@ -143,6 +143,7 @@ type
     Polarization: TPolarisation;
     DeltaTheta: Single;     // beam divergence FWHM in degrees (0 = ideal)
     ThetaMin: Single;       // minimum Bragg angle in degrees (skip total reflection zone)
+    wPurity: Single;        // [0..1] weight for spectral purity penalty (0 = off)
   end;
 
   // Optimizer configuration from JSON

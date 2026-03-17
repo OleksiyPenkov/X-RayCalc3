@@ -335,13 +335,19 @@ end;
 function TUniversalFitness.Evaluate(const Genome: TGenome;
   var Results: TTargetResults): Single;
 var
-  i: Integer;
-  ThetaBragg, SinArg: Single;
+  i, j: Integer;
+  SinArg: Single;
   FoM, FWHMRef: Single;
   NInt: Integer;
   Penalty: Single;
   Key: string;
   TemplIdx: Integer;
+  ThetaArr: array[0..MAX_TARGETS-1] of Single;
+  RPeakArr: array[0..MAX_TARGETS-1] of Single;
+  FWHMArr: array[0..MAX_TARGETS-1] of Single;
+  ValidArr: array[0..MAX_TARGETS-1] of Boolean;
+  CrossR: array[0..MAX_TARGETS-1, 0..MAX_TARGETS-1] of Single;
+  ContamSum, Purity, REffective: Single;
 begin
   FoM := 0;
   Penalty := 0;
@@ -361,52 +367,100 @@ begin
     end;
   end;
 
+  // --- Phase 1: Pre-compute Bragg angles ---
   for i := 0 to FTargetCount - 1 do
   begin
+    ValidArr[i] := False;
+    ThetaArr[i] := -1;
+    RPeakArr[i] := 0;
+    FWHMArr[i] := 0;
     Results[i].Valid := False;
     Results[i].RPeak := 0;
     Results[i].FWHM := 0;
     Results[i].ThetaBragg := 0;
+    for j := 0 to FTargetCount - 1 do
+      CrossR[i, j] := 0;
 
-    // Check Bragg condition
     SinArg := FConfig.Targets[i].Lambda / (2 * Genome.d);
     if SinArg >= 1.0 then
       Continue;
 
-    ThetaBragg := RadToDeg(ArcSin(SinArg));
-    Results[i].ThetaBragg := ThetaBragg;
+    ThetaArr[i] := RadToDeg(ArcSin(SinArg));
+    Results[i].ThetaBragg := ThetaArr[i];
 
-    // Skip total reflection zone
-    if (FConfig.Fitness.ThetaMin > 0) and (ThetaBragg < FConfig.Fitness.ThetaMin) then
+    if (FConfig.Fitness.ThetaMin > 0) and (ThetaArr[i] < FConfig.Fitness.ThetaMin) then
     begin
       Penalty := Penalty + PENALTY_DARK;
       Continue;
     end;
 
+    ValidArr[i] := True;
     Results[i].Valid := True;
+  end;
 
-    // Build layer array and evaluate
+  // --- Phase 1b: Evaluate each target + compute cross-reflectivities ---
+  for i := 0 to FTargetCount - 1 do
+  begin
+    if not ValidArr[i] then
+      Continue;
+
     BuildLayers(Genome, i);
     ScanReflectivity(FConfig.Targets[i].Lambda,
-      ThetaBragg, SCAN_HALF_RANGE, SCAN_POINTS);
+      ThetaArr[i], SCAN_HALF_RANGE, SCAN_POINTS);
     Convolute(FConfig.Fitness.DeltaTheta);
 
-    Results[i].RPeak := ExtractRPeak;
-    Results[i].FWHM := ExtractFWHM(Results[i].RPeak);
+    RPeakArr[i] := ExtractRPeak;
+    FWHMArr[i] := ExtractFWHM(RPeakArr[i]);
+    Results[i].RPeak := RPeakArr[i];
+    Results[i].FWHM := FWHMArr[i];
 
-    // FWHM_ref = lambda / (N * d * cos(theta_B)) in radians, convert to degrees
+    // While layer stack is built for lambda_i, evaluate at other targets' angles.
+    // CrossR[j, i] = reflectivity of lambda_i at target j's Bragg angle.
+    // lambda_i must be passed (not lambda_j) because FLayersBuf has epsilon for lambda_i.
+    if FConfig.Fitness.wPurity > 0 then
+      for j := 0 to FTargetCount - 1 do
+        if (j <> i) and ValidArr[j] then
+          CrossR[j, i] := RefCalcStandalone(ThetaArr[j], FConfig.Targets[i].Lambda,
+            FLayersBuf, FConfig.Fitness.Polarization, rfError);
+  end;
+
+  // --- Phase 2+3: Compute purity and accumulate FoM ---
+  for i := 0 to FTargetCount - 1 do
+  begin
+    if not ValidArr[i] then
+      Continue;
+
+    // Purity calculation
+    if FConfig.Fitness.wPurity > 0 then
+    begin
+      ContamSum := 0;
+      for j := 0 to FTargetCount - 1 do
+        if j <> i then
+          ContamSum := ContamSum + CrossR[i, j];
+
+      if (RPeakArr[i] > 0) or (ContamSum > 0) then
+        Purity := RPeakArr[i] / (RPeakArr[i] + ContamSum)
+      else
+        Purity := 0;
+
+      REffective := RPeakArr[i] * (1.0 + FConfig.Fitness.wPurity * (Purity - 1.0));
+    end
+    else
+      REffective := RPeakArr[i];
+
+    // FWHM_ref
     FWHMRef := RadToDeg(
-      FConfig.Targets[i].Lambda / (NInt * Genome.d * Cos(DegToRad(ThetaBragg)))
+      FConfig.Targets[i].Lambda / (NInt * Genome.d * Cos(DegToRad(ThetaArr[i])))
     );
     if FWHMRef < 1e-10 then FWHMRef := 1e-10;
 
     FoM := FoM + FConfig.Targets[i].Weight * (
-      FConfig.Fitness.wR * Results[i].RPeak -
-      FConfig.Fitness.wFWHM * Results[i].FWHM / FWHMRef
+      FConfig.Fitness.wR * REffective -
+      FConfig.Fitness.wFWHM * FWHMArr[i] / FWHMRef
     );
 
     // Penalty for dark elements
-    if Results[i].RPeak < FConfig.Fitness.RMinThreshold then
+    if RPeakArr[i] < FConfig.Fitness.RMinThreshold then
       Penalty := Penalty + PENALTY_DARK;
   end;
 

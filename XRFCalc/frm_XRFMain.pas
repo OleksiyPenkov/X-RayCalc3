@@ -1,4 +1,4 @@
-unit frm_XRFMain;
+﻿unit frm_XRFMain;
 
 interface
 
@@ -10,23 +10,35 @@ uses
   Vcl.CheckLst,
   VclTee.TeeGDIPlus, VclTee.TeEngine, VclTee.Series, VclTee.Chart,
   unit_universal_types, unit_universal_optimizer, unit_xrf_thread,
-  VCLTee.TeeProcs;
+  VCLTee.TeeProcs, RzTabs;
 
 type
   TfrmXRFMain = class(TForm)
+    pnlCharts: TPanel;
+    // Dialogs
+    dlgOpen: TOpenDialog;
+    dlgSave: TSaveDialog;
+    dlgSaveStructure: TSaveDialog;
+    dlgOpenXrccmd: TOpenDialog;
+    // Timer
+    tmrProgress: TTimer;
+    // Charts
+    chartConvergence: TChart;
+    serFoM: TLineSeries;
+    pnlBottomCharts: TPanel;
+    chartRPeak: TChart;
+    serRPeak: TBarSeries;
+    splBottom: TSplitter;
+    chartCurves: TChart;
+    RzPageControl1: TRzPageControl;
+    TabSheet1: TRzTabSheet;
     pnlSidebar: TPanel;
     sbConfig: TScrollBox;
-    pnlButtons: TPanel;
-    splMain: TSplitter;
-    pnlCharts: TPanel;
-    // Targets
     grpTargets: TGroupBox;
     clbTargets: TCheckListBox;
     sgWeights: TStringGrid;
-    // Element Pool
     grpElements: TGroupBox;
     clbElements: TCheckListBox;
-    // Structure
     grpStructure: TGroupBox;
     lblDMin: TLabel;
     lblDMax: TLabel;
@@ -43,7 +55,23 @@ type
     edNMax: TEdit;
     edSigma: TEdit;
     cbPureElements: TCheckBox;
-    // Fitness
+    grpSubstrate: TGroupBox;
+    lblSubstrate: TLabel;
+    edSubstrate: TEdit;
+    grpResults: TGroupBox;
+    sgResults: TStringGrid;
+    btnSaveStructure: TButton;
+    btnSaveCurves: TButton;
+    btnExportXRC: TButton;
+    pnlButtons: TPanel;
+    lblProgress: TLabel;
+    btnStart: TButton;
+    btnStop: TButton;
+    btnRunXrccmd: TButton;
+    btnLoadConfig: TButton;
+    btnSaveConfig: TButton;
+    btnLoadResults: TButton;
+    TabSheet2: TRzTabSheet;
     grpFitness: TGroupBox;
     lblWR: TLabel;
     lblWFWHM: TLabel;
@@ -57,7 +85,8 @@ type
     edThetaMin: TEdit;
     edDeltaTheta: TEdit;
     cmbPolarization: TComboBox;
-    // Optimizer
+    lblWPurity: TLabel;
+    edWPurity: TEdit;
     grpOptimizer: TGroupBox;
     lblPopulation: TLabel;
     lblIterations: TLabel;
@@ -75,54 +104,19 @@ type
     edW2: TEdit;
     edJammingMax: TEdit;
     edCheckpointEvery: TEdit;
-    // Substrate
-    grpSubstrate: TGroupBox;
-    lblSubstrate: TLabel;
-    edSubstrate: TEdit;
-    // Paths
     grpPaths: TGroupBox;
     lblHenkePath: TLabel;
     lblOutputDir: TLabel;
+    lblTemplatePath: TLabel;
+    lblXrccmdPath: TLabel;
     edHenkePath: TEdit;
     edOutputDir: TEdit;
     btnBrowseHenke: TButton;
     btnBrowseOutput: TButton;
-    lblTemplatePath: TLabel;
     edTemplatePath: TEdit;
     btnBrowseTemplate: TButton;
-    lblXrccmdPath: TLabel;
     edXrccmdPath: TEdit;
     btnBrowseXrccmd: TButton;
-    // Results (hidden by default)
-    grpResults: TGroupBox;
-    sgResults: TStringGrid;
-    btnSaveStructure: TButton;
-    btnSaveCurves: TButton;
-    btnExportXRC: TButton;
-    // Control buttons
-    btnStart: TButton;
-    btnStop: TButton;
-    btnRunXrccmd: TButton;
-    btnLoadConfig: TButton;
-    btnSaveConfig: TButton;
-    btnLoadResults: TButton;
-    lblProgress: TLabel;
-    // Dialogs
-    dlgOpen: TOpenDialog;
-    dlgSave: TSaveDialog;
-    dlgSaveStructure: TSaveDialog;
-    dlgOpenXrccmd: TOpenDialog;
-    // Timer
-    tmrProgress: TTimer;
-    // Charts
-    chartConvergence: TChart;
-    serFoM: TLineSeries;
-    splCharts: TSplitter;
-    pnlBottomCharts: TPanel;
-    chartRPeak: TChart;
-    serRPeak: TBarSeries;
-    splBottom: TSplitter;
-    chartCurves: TChart;
     procedure btnLoadConfigClick(Sender: TObject);
     procedure btnSaveConfigClick(Sender: TObject);
     procedure btnBrowseHenkeClick(Sender: TObject);
@@ -329,6 +323,8 @@ begin
   else
     cmbPolarization.ItemIndex := 1;
 
+  edWPurity.Text := FormatFloat('0.###', Config.Fitness.wPurity);
+
   // Optimizer
   edPopulation.Text := IntToStr(Config.Optimizer.Population);
   edIterations.Text := IntToStr(Config.Optimizer.Iterations);
@@ -414,6 +410,8 @@ begin
     Result.Fitness.Polarization := cmS
   else
     Result.Fitness.Polarization := cmSP;
+
+  Result.Fitness.wPurity := StrToFloatDef(edWPurity.Text, 1.0, FS);
 
   // Optimizer
   Result.Optimizer.Population := StrToIntDef(edPopulation.Text, 50);
