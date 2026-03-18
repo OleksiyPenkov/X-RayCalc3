@@ -46,6 +46,7 @@ begin
     Series.AddXY(Entries[i].Iteration, Entries[i].FoM);
 
   chrtProgress.AddSeries(Series);
+  chrtProgress.Legend.Visible := False;
   chrtProgress.LeftAxis.Logarithmic := True;
   chrtProgress.BottomAxis.Title.Caption := 'Iteration';
   chrtProgress.LeftAxis.Title.Caption := 'Figure of Merit';
@@ -70,6 +71,7 @@ begin
   FLiveSeries := TLineSeries.Create(chrtProgress);
   FLiveSeries.Title := 'FoM';
   chrtProgress.AddSeries(FLiveSeries);
+  chrtProgress.Legend.Visible := False;
   chrtProgress.LeftAxis.Logarithmic := False;
   chrtProgress.BottomAxis.Title.Caption := 'Iteration';
   chrtProgress.LeftAxis.Title.Caption := 'Figure of Merit';
