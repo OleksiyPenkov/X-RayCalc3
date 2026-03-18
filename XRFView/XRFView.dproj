@@ -117,6 +117,9 @@
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="Units\xrfview_unit_loader.pas"/>
+        <DCCReference Include="Forms\frm_RunConfig.pas">
+            <Form>frmRunConfig</Form>
+        </DCCReference>
         <DCCReference Include="..\Universal\unit_xrfx_package.pas"/>
         <DCCReference Include="..\Universal\unit_universal_types.pas"/>
         <BuildConfiguration Include="Base">
