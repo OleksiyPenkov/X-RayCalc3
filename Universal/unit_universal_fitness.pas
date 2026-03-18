@@ -292,7 +292,7 @@ end;
 procedure TUniversalFitness.Convolute(Width: Single);
 var
   Size, N, i, k, p, NewLen: Integer;
-  Delta, Sum, t1, c, sqrW: Single;
+  Delta, Sum, t1, sqrW, KernelSum: Single;
 begin
   if Width <= 0 then Exit;
 
@@ -301,12 +301,16 @@ begin
 
   Width := Width * 0.849;
   sqrW := Sqr(Width);
-  c := 1 / (Width * Sqrt(Pi / 2));
 
   Delta := (FCurveBuf[Size - 1].t - FCurveBuf[0].t) / Size;
   N := Round(3 * Width / Delta);
   if N < 1 then N := 1;
   if N >= Size div 2 then N := Size div 2 - 1;
+
+  // Compute discrete kernel sum for proper normalization
+  KernelSum := 0;
+  for k := -N to N do
+    KernelSum := KernelSum + Exp(-2 * Sqr(k * Delta) / sqrW);
 
   NewLen := Size - 2 * N;
   if Length(FConvBuf) < NewLen then
@@ -319,11 +323,11 @@ begin
     Sum := 0;
     for k := i - N to i + N do
     begin
-      Sum := Sum + FCurveBuf[k].r * c * Exp(-2 * Sqr(t1) / sqrW) * Delta;
+      Sum := Sum + FCurveBuf[k].r * Exp(-2 * Sqr(t1) / sqrW);
       t1 := t1 + Delta;
     end;
     FConvBuf[p].t := FCurveBuf[i].t;
-    FConvBuf[p].r := Sum;
+    FConvBuf[p].r := Sum / KernelSum;
     Inc(p);
   end;
 
