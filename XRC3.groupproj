@@ -3,10 +3,10 @@
         <ProjectGuid>{9430B3AD-C299-4509-A910-46BC32B0F243}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="XRayCalc3.dproj">
+        <Projects Include="XRayCalc3\XRayCalc3.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="components\XRayCalcVisualControls.dproj">
+        <Projects Include="XRayCalc3\Components\XRayCalcVisualControls.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="XRCXPreview\XRCPreviewHandlerLib.dproj">
@@ -27,22 +27,22 @@
         </BorlandProject>
     </ProjectExtensions>
     <Target Name="XRayCalc3">
-        <MSBuild Projects="XRayCalc3.dproj"/>
+        <MSBuild Projects="XRayCalc3\XRayCalc3.dproj"/>
     </Target>
     <Target Name="XRayCalc3:Clean">
-        <MSBuild Projects="XRayCalc3.dproj" Targets="Clean"/>
+        <MSBuild Projects="XRayCalc3\XRayCalc3.dproj" Targets="Clean"/>
     </Target>
     <Target Name="XRayCalc3:Make">
-        <MSBuild Projects="XRayCalc3.dproj" Targets="Make"/>
+        <MSBuild Projects="XRayCalc3\XRayCalc3.dproj" Targets="Make"/>
     </Target>
     <Target Name="XRayCalcVisualControls">
-        <MSBuild Projects="components\XRayCalcVisualControls.dproj"/>
+        <MSBuild Projects="XRayCalc3\Components\XRayCalcVisualControls.dproj"/>
     </Target>
     <Target Name="XRayCalcVisualControls:Clean">
-        <MSBuild Projects="components\XRayCalcVisualControls.dproj" Targets="Clean"/>
+        <MSBuild Projects="XRayCalc3\Components\XRayCalcVisualControls.dproj" Targets="Clean"/>
     </Target>
     <Target Name="XRayCalcVisualControls:Make">
-        <MSBuild Projects="components\XRayCalcVisualControls.dproj" Targets="Make"/>
+        <MSBuild Projects="XRayCalc3\Components\XRayCalcVisualControls.dproj" Targets="Make"/>
     </Target>
     <Target Name="XRCPreviewHandlerLib">
         <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj"/>
