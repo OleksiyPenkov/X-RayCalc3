@@ -450,6 +450,10 @@ begin
 
     V := Ini.ReadInteger('Splitters', 'ProgressChart', 0);
     if V > 0 then FProgressView.pnlChart.Height := V;
+
+    V := Ini.ReadInteger('Window', 'State', 0);
+    if V = Ord(wsMaximized) then
+      WindowState := wsMaximized;
   finally
     Ini.Free;
   end;
@@ -472,6 +476,7 @@ begin
     Ini.WriteInteger('Splitters', 'Shell', ShellSplitter.Position);
     Ini.WriteInteger('Splitters', 'Metrics', FCurvesView.pnlMetrics.Height);
     Ini.WriteInteger('Splitters', 'ProgressChart', FProgressView.pnlChart.Height);
+    Ini.WriteInteger('Window', 'State', Ord(WindowState));
   finally
     Ini.Free;
   end;
