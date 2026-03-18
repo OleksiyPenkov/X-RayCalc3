@@ -439,6 +439,10 @@ begin
     if (Path <> '') and TDirectory.Exists(Path) then
       FInitialPath := Path;
 
+    V := Ini.ReadInteger('Window', 'State', 0);
+    if V = Ord(wsMaximized) then
+      WindowState := wsMaximized;
+
     V := Ini.ReadInteger('Splitters', 'Main', 0);
     if V > 0 then MainSplitter.Position := V;
 
@@ -450,10 +454,6 @@ begin
 
     V := Ini.ReadInteger('Splitters', 'ProgressChart', 0);
     if V > 0 then FProgressView.pnlChart.Height := V;
-
-    V := Ini.ReadInteger('Window', 'State', 0);
-    if V = Ord(wsMaximized) then
-      WindowState := wsMaximized;
   finally
     Ini.Free;
   end;
