@@ -3,7 +3,6 @@ program XRFView;
 uses
   Vcl.Forms,
   frm_XRFViewMain in 'Forms\frm_XRFViewMain.pas' {frmXRFViewMain},
-  frame_StructureView in 'Views\frame_StructureView.pas' {frameStructureView: TFrame},
   frame_CurvesView in 'Views\frame_CurvesView.pas' {frameCurvesView: TFrame},
   frame_InfoView in 'Views\frame_InfoView.pas' {frameInfoView: TFrame},
   frame_ProgressView in 'Views\frame_ProgressView.pas' {frameProgressView: TFrame},

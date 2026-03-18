@@ -171,27 +171,23 @@ object frmXRFViewMain: TfrmXRFViewMain
       Top = 0
       Width = 696
       Height = 551
-      ActivePage = tabStructure
+      ActivePage = tabCurves
       Align = alClient
       TabOrder = 0
-      object tabStructure: TTabSheet
-        Caption = 'Structure'
-      end
       object tabCurves: TTabSheet
         Caption = 'Curves'
-        ImageIndex = 1
       end
       object tabInfo: TTabSheet
         Caption = 'Info'
-        ImageIndex = 2
+        ImageIndex = 1
       end
       object tabProgress: TTabSheet
         Caption = 'Progress'
-        ImageIndex = 3
+        ImageIndex = 2
       end
       object tabCompare: TTabSheet
         Caption = 'Compare'
-        ImageIndex = 4
+        ImageIndex = 3
         TabVisible = False
       end
     end

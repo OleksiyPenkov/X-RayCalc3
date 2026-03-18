@@ -14,7 +14,7 @@ uses
   Jam.Shell.Controls.BaseShellListView,
   unit_xrfx_package, unit_universal_types,
   xrfview_unit_loader, xrfview_unit_runner,
-  frame_StructureView, frame_CurvesView, frame_InfoView,
+  frame_CurvesView, frame_InfoView,
   frame_ProgressView, frame_CompareView;
 
 type
@@ -45,7 +45,6 @@ type
     JamShellLink1: TJamShellLink;
     JamShellBreadCrumbBar1: TJamShellBreadCrumbBar;
     PageControl1: TPageControl;
-    tabStructure: TTabSheet;
     tabCurves: TTabSheet;
     tabInfo: TTabSheet;
     tabProgress: TTabSheet;
@@ -72,7 +71,6 @@ type
     FRunTimer: TTimer;
     FRunStartTime: TDateTime;
     FInitialPath: string;
-    FStructureView: TframeStructureView;
     FCurvesView: TframeCurvesView;
     FInfoView: TframeInfoView;
     FProgressView: TframeProgressView;
@@ -161,10 +159,6 @@ procedure TfrmXRFViewMain.FormCreate(Sender: TObject);
 begin
   FLoader := TXRFViewLoader.Create;
   LoadToolBarIcons;
-
-  FStructureView := TframeStructureView.Create(Self);
-  FStructureView.Parent := tabStructure;
-  FStructureView.Align := alClient;
 
   FCurvesView := TframeCurvesView.Create(Self);
   FCurvesView.Parent := tabCurves;
@@ -261,9 +255,9 @@ begin
   try
     FLoader.LoadFile(FileName);
 
-    FStructureView.LoadStructure(FLoader.GetResult(0).Structure,
-      FLoader.Manifest.Structure);
     FCurvesView.LoadCurves(FLoader.GetResult(0).Curves);
+    FCurvesView.LoadStructure(FLoader.GetResult(0).Structure,
+      FLoader.Manifest.Structure);
     FInfoView.LoadManifestInfo(FLoader.Manifest);
     FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
 
@@ -284,8 +278,6 @@ begin
   try
     FLoader.LoadMultiple(FileNames);
 
-    FStructureView.LoadStructure(FLoader.GetResult(0).Structure,
-      FLoader.Manifest.Structure);
     FInfoView.LoadManifestInfo(FLoader.Manifest);
     FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
 
