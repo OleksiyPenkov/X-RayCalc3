@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculation Engine — XRFCalc Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="index.html">XRF<span>Calc</span></a>
+  <div class="page-title">Help</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-overview.html">1. Application Overview</a>
+  <a href="02-viewing.html">2. Viewing Results</a>
+  <a href="03-running.html">3. Running Optimizations</a>
+  <a href="04-config.html">4. Configuration Reference</a>
+  <a href="05-reference.html">5. Quick Reference</a>
+  <a href="06-calculation.html">6. Calculation Engine</a>
+    <a href="06-calculation.html#parratt" class="sub">Parratt Recursion</a>
+    <a href="06-calculation.html#henke" class="sub">Henke Database</a>
+    <a href="06-calculation.html#vca" class="sub">Virtual Crystal Approximation</a>
+    <a href="06-calculation.html#lfpso" class="sub">LFPSO Algorithm</a>
+    <a href="06-calculation.html#fom" class="sub">Figure of Merit</a>
+    <a href="06-calculation.html#purity" class="sub">Spectral Purity</a>
+    <a href="06-calculation.html#references" class="sub">References</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">6</span> Calculation Engine</h2>
+<p>XRFCalc uses the same reflectivity engine as the main X-Ray Calc 3 application. This chapter describes the physics and algorithms behind the optimization.</p>
+
+<h3 id="parratt">Parratt Recursive Method</h3>
+<p>Specular X-ray reflectivity is calculated using <strong>Parratt&rsquo;s exact recursive method</strong> based on the Fresnel equations. For a multilayer structure with <em>N</em> layers, the reflectivity is computed by propagating the reflected amplitude from the substrate upward through each interface.</p>
+
+<p>At each interface between layers <em>j</em> and <em>j+1</em>, the Fresnel reflection coefficient is:</p>
+<div class="note">
+  <strong>r<sub>j,j+1</sub> = (k<sub>z,j</sub> &minus; k<sub>z,j+1</sub>) / (k<sub>z,j</sub> + k<sub>z,j+1</sub>)</strong>
+</div>
+<p>where <strong>k<sub>z,j</sub></strong> is the z-component of the wave vector in layer <em>j</em>, determined by the refractive index and incidence angle.</p>
+
+<h4>Interface Roughness</h4>
+<p>Interface roughness is incorporated via a Gaussian distribution using the N&eacute;vot-Croce factor:</p>
+<div class="note">
+  <strong>r&prime;<sub>j,j+1</sub> = r<sub>j,j+1</sub> &times; exp(&minus;2 k<sub>z,j</sub> k<sub>z,j+1</sub> &sigma;<sub>j</sub>&sup2;)</strong>
+</div>
+<p>where &sigma;<sub>j</sub> is the RMS roughness at interface <em>j</em> in &Aring;ngstr&ouml;ms.</p>
+
+<h4>Polarization</h4>
+<p>The optimizer supports two polarization modes:</p>
+<ul>
+  <li><strong>s-polarization</strong> &mdash; electric field perpendicular to the plane of incidence (TE mode)</li>
+  <li><strong>sp-polarization</strong> &mdash; average of s- and p-polarization. Recommended for most applications, especially at soft X-ray wavelengths and larger angles where both components contribute significantly.</li>
+</ul>
+
+<h4>Validation</h4>
+<p>The computational algorithm has been validated against the <em>IMD</em> software (Windt, 1998), with accumulated variances consistently below 0.5%.</p>
+
+<h3 id="henke">Henke Database</h3>
+<p>Refractive indices of materials are computed using the <strong>Henke tables of atomic scattering factors</strong> (Henke <em>et al.</em>, 1993). The database provides the complex atomic scattering factor <em>f</em>&nbsp;=&nbsp;<em>f</em><sub>1</sub>&nbsp;+&nbsp;i<em>f</em><sub>2</sub> for all elements from H to U, covering the photon energy range 10&nbsp;eV to 30&nbsp;keV.</p>
+
+<p>The complex refractive index of a material is:</p>
+<div class="note">
+  <strong>n = 1 &minus; &delta; + i&beta;</strong>
+</div>
+<p>where &delta; and &beta; are calculated from the scattering factors and the material density. The Henke data files (<code>.bin</code>) are stored in the <code>Henke/</code> directory next to the executable.</p>
+
+<h3 id="vca">Virtual Crystal Approximation (VCA)</h3>
+<p>The Universal Mirror optimizer uses the <strong>Virtual Crystal Approximation</strong> to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from the user-defined pool (e.g. W, Si, C). The dielectric constant of the mixed material is computed as a weighted average of the constituents&rsquo; optical constants:</p>
+
+<div class="note">
+  <strong>&epsilon;<sub>mix</sub> = &Sigma;<sub>i</sub> w<sub>i</sub> &epsilon;<sub>i</sub></strong>
+</div>
+
+<p>where <em>w<sub>i</sub></em> are the normalized weight fractions and <em>&epsilon;<sub>i</sub></em> are the dielectric constants of individual elements from the Henke database.</p>
+
+<p>When <code>pure_elements</code> is enabled in the configuration, each layer is forced to use a single material from the pool (the dominant component). This is recommended for most practical applications as it produces physically realizable structures.</p>
+
+<h3 id="lfpso">LFPSO Algorithm</h3>
+<p>The optimizer uses <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO) with the Shake modification &mdash; a population-based global optimization method designed for multimodal search spaces.</p>
+
+<h4>Particle Swarm Optimization</h4>
+<p>A population of candidate solutions (particles) moves through the search space. Each particle maintains:</p>
+<ul>
+  <li><strong>Position</strong> &mdash; the current candidate solution (composition, d, &gamma;, N, &sigma;)</li>
+  <li><strong>Velocity</strong> &mdash; the search direction and step size</li>
+  <li><strong>Personal best</strong> &mdash; the best solution this particle has found</li>
+  <li><strong>Global best</strong> &mdash; the best solution found by any particle</li>
+</ul>
+
+<p>At each iteration, particle velocities are updated based on attraction toward their personal best and the global best, then positions are updated.</p>
+
+<h4>L&eacute;vy Flight</h4>
+<p>L&eacute;vy flights augment PSO with heavy-tailed random walks. The L&eacute;vy distribution produces mostly small steps (local search) with occasional large jumps (global exploration). This combination efficiently explores the search space and helps avoid local minima.</p>
+
+<h4>Shake Mechanism</h4>
+<p>When the optimizer stagnates (no improvement for <code>stagnation_limit</code> iterations), the Shake mechanism re-initializes the population around the current best solution. This helps escape local minima by introducing controlled randomization of positions and velocities.</p>
+
+<h4>Convergence Enhancements</h4>
+<p>The optimizer includes several improvements to the standard LFPSO:</p>
+<table>
+  <tr><th>Enhancement</th><th>Description</th></tr>
+  <tr>
+    <td><strong>Reflective boundaries</strong></td>
+    <td>Particles bounce off search-space walls with 0.5&times; velocity damping instead of being clamped, keeping them active.</td>
+  </tr>
+  <tr>
+    <td><strong>Adaptive L&eacute;vy scale</strong></td>
+    <td>Step size decreases from 0.10 to 0.01 over iterations &mdash; broad exploration early, fine-tuning late.</td>
+  </tr>
+  <tr>
+    <td><strong>Adaptive PSO/L&eacute;vy switching</strong></td>
+    <td>Early iterations favor L&eacute;vy flights (70%) for exploration; later iterations favor PSO (70%) for exploitation. Stagnation temporarily boosts L&eacute;vy probability.</td>
+  </tr>
+  <tr>
+    <td><strong>Random-peer L&eacute;vy targets</strong></td>
+    <td>30% of flights target a random peer particle instead of the global best, creating diverse search directions.</td>
+  </tr>
+  <tr>
+    <td><strong>Diversity-aware shake</strong></td>
+    <td>Shake checks population diversity before triggering. If particles are still spread out (&ge; 1% of ranges), the shake is delayed to let ongoing exploration proceed.</td>
+  </tr>
+</table>
+
+<h4>Multi-Threading</h4>
+<p>Fitness evaluation is parallelized across all available CPU cores. Each particle&rsquo;s reflectivity calculation runs independently, providing near-linear speedup with core count.</p>
+
+<h3 id="fom">Figure of Merit</h3>
+<p>The figure of merit (FoM) combines peak reflectivity and angular bandwidth for all target wavelengths. <strong>Higher FoM is better.</strong></p>
+
+<div class="note">
+  <strong>FoM = &Sigma;<sub>i</sub> [ weight<sub>i</sub> &times; ( w<sub>R</sub> &times; R<sub>eff,i</sub> &minus; w<sub>FWHM</sub> &times; FWHM<sub>i</sub> / FWHM<sub>ref,i</sub> ) ]</strong>
+</div>
+
+<p>where:</p>
+<ul>
+  <li><strong>R<sub>eff,i</sub></strong> &mdash; effective reflectivity for target <em>i</em> (purity-adjusted when <code>w_purity</code> &gt; 0)</li>
+  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1), extracted from a scan around the Bragg angle</li>
+  <li><strong>FWHM<sub>i</sub></strong> &mdash; angular full width at half maximum (degrees) of the Bragg peak</li>
+  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; theoretical minimum FWHM = &lambda; / (N&middot;d&middot;cos&theta;<sub>B</sub>), converted to degrees</li>
+  <li><strong>weight<sub>i</sub></strong> &mdash; per-target weight from the configuration</li>
+  <li><strong>w<sub>R</sub></strong>, <strong>w<sub>FWHM</sub></strong> &mdash; global weights for reflectivity and bandwidth terms</li>
+</ul>
+
+<p>Particles with R<sub>peak</sub> below <code>R_min_threshold</code> for any target receive a heavy penalty (100.0 per dark target) to steer the swarm toward functional solutions.</p>
+
+<h3 id="purity">Spectral Purity</h3>
+<p>When optimizing for multiple wavelengths, higher-order Bragg reflections can cause <strong>cross-contamination</strong> between measurement channels. For example, a mirror tuned to O&nbsp;K&alpha; (23.6&nbsp;&Aring;) at its first-order angle will also reflect &lambda;/2 = 11.8&nbsp;&Aring; via the second order &mdash; nearly coinciding with Na&nbsp;K&alpha; (11.9&nbsp;&Aring;).</p>
+
+<h4>Cross-Reflectivity Matrix</h4>
+<p>For each pair of targets <em>i</em> and <em>j</em>, the optimizer computes:</p>
+<div class="note">
+  <strong>CrossR[j, i] = R(&theta;<sub>j</sub>, &lambda;<sub>i</sub>)</strong>
+</div>
+<p>This is the reflectivity of wavelength &lambda;<sub>i</sub> at the Bragg angle of target <em>j</em>. All Bragg orders are naturally included in the full multilayer calculation.</p>
+
+<h4>Purity and Effective Reflectivity</h4>
+<div class="note">
+  <strong>Purity<sub>j</sub> = R<sub>peak,j</sub> / ( R<sub>peak,j</sub> + &Sigma;<sub>i&ne;j</sub> CrossR[j, i] )</strong>
+</div>
+<div class="note">
+  <strong>R<sub>eff,j</sub> = R<sub>peak,j</sub> &times; ( 1 + w<sub>purity</sub> &times; ( Purity<sub>j</sub> &minus; 1 ) )</strong>
+</div>
+<p>When <code>w_purity = 0</code>, no penalty is applied. When <code>w_purity = 1</code>, R<sub>eff</sub> = R<sub>peak</sub> &times; Purity gives maximum penalization of contaminated channels.</p>
+
+<h4>Physical Factors</h4>
+<ul>
+  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls order suppression. &gamma; = 0.5 eliminates all even-order reflections. Values far from 0.5 produce strong even-order peaks.</li>
+  <li><strong>&sigma; (roughness)</strong> &mdash; attenuates higher orders via the Debye-Waller factor, which decays exponentially with order number.</li>
+</ul>
+
+<div class="tip"><strong>Tip:</strong> For large element pools with many close-spaced wavelengths, use <code>w_purity = 1.0</code> and a population &ge; 500 to give the optimizer enough room to find purity-optimized solutions.</div>
+
+<h3 id="references">References</h3>
+<ol>
+  <li>Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity.</em> J. Appl. Cryst. <strong>57</strong>, 555&ndash;566.</li>
+  <li>Parratt, L. G. (1954). <em>Surface studies of solids by total reflection of X-rays.</em> Phys. Rev. <strong>95</strong>(2), 359&ndash;369.</li>
+  <li>Henke, B. L., Gullikson, E. M. &amp; Davis, J. C. (1993). <em>X-ray interactions: photoabsorption, scattering, transmission, and reflection at E = 50&ndash;30,000 eV, Z = 1&ndash;92.</em> At. Data Nucl. Data Tables <strong>54</strong>(2), 181&ndash;342.</li>
+  <li>Windt, D. L. (1998). <em>IMD &mdash; Software for modeling the optical properties of multilayer films.</em> Comput. Phys. <strong>12</strong>(4), 360&ndash;370.</li>
+  <li>N&eacute;vot, L. &amp; Croce, P. (1980). <em>Caract&eacute;risation des surfaces par r&eacute;flexion rasante de rayons X.</em> Rev. Phys. Appl. <strong>15</strong>(3), 761&ndash;779.</li>
+</ol>
+
+<div class="page-nav">
+  <a href="05-reference.html">&larr; Quick Reference</a>
+  <a href="index.html">Home</a>
+  <span class="spacer"></span>
+</div>
+
+<div class="footer">
+  <p>XRFCalc &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>
