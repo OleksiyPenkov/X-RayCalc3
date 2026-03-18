@@ -24,11 +24,13 @@ object frmXRFViewMain: TfrmXRFViewMain
     ButtonWidth = 100
     Images = ToolBarImages
     ShowCaptions = True
+    ShowHint = True
     TabOrder = 0
     object btnRefresh: TToolButton
       Left = 0
       Top = 0
       Caption = 'Refresh'
+      Hint = 'Refresh file browser'
       ImageIndex = 0
       OnClick = btnRefreshClick
     end
@@ -36,6 +38,7 @@ object frmXRFViewMain: TfrmXRFViewMain
       Left = 100
       Top = 0
       Caption = 'Export Structure'
+      Hint = 'Export best structure to JSON'
       ImageIndex = 1
       OnClick = btnExportStructureClick
     end
@@ -43,6 +46,7 @@ object frmXRFViewMain: TfrmXRFViewMain
       Left = 200
       Top = 0
       Caption = 'Copy Data'
+      Hint = 'Copy curve data to clipboard'
       ImageIndex = 2
       OnClick = btnCopyDataClick
     end
@@ -50,6 +54,7 @@ object frmXRFViewMain: TfrmXRFViewMain
       Left = 300
       Top = 0
       Caption = 'Save Image'
+      Hint = 'Save chart as image'
       ImageIndex = 3
       OnClick = btnSaveImageClick
     end
@@ -61,12 +66,14 @@ object frmXRFViewMain: TfrmXRFViewMain
     object btnNewRun: TToolButton
       Left = 408
       Caption = 'New Run'
+      Hint = 'Configure and start a new optimization run'
       ImageIndex = 4
       OnClick = btnNewRunClick
     end
     object btnEditRun: TToolButton
       Left = 508
       Caption = 'Edit Run'
+      Hint = 'Edit config from selected .xrfx and re-run'
       ImageIndex = 5
       OnClick = btnEditRunClick
     end
@@ -78,6 +85,7 @@ object frmXRFViewMain: TfrmXRFViewMain
     object btnStop: TToolButton
       Left = 616
       Caption = 'Stop'
+      Hint = 'Cancel the running optimization'
       ImageIndex = 6
       Visible = False
       OnClick = btnStopClick
@@ -148,6 +156,7 @@ object frmXRFViewMain: TfrmXRFViewMain
         Width = 300
         Height = 327
         Align = alClient
+        HideSelection = False
         ShellLink = JamShellLink1
         Filter = '*.xrfx'
         MultiSelect = True

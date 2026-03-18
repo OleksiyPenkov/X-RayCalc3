@@ -51,6 +51,7 @@ object frmRunConfig: TfrmRunConfig
       Height = 17
       Caption = 'Show Advanced'
       TabOrder = 3
+      OnClick = chkAdvancedClick
     end
   end
   object ScrollBox: TScrollBox
