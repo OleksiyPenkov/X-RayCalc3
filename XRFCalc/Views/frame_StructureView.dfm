@@ -4,37 +4,37 @@ object frameStructureView: TframeStructureView
   Width = 600
   Height = 400
   TabOrder = 0
-  object pnlSummary: TPanel
+  object pnlSummary: TRzPanel
     Left = 0
     Top = 0
     Width = 600
     Height = 65
     Align = alTop
     AlignWithMargins = True
-    BevelOuter = bvNone
+    BorderOuter = fsNone
     TabOrder = 0
-    object lblType: TLabel
+    object lblType: TRzLabel
       Left = 8
       Top = 4
       Width = 30
       Height = 13
       Caption = 'Type:'
     end
-    object lblPeriod: TLabel
+    object lblPeriod: TRzLabel
       Left = 8
       Top = 20
       Width = 15
       Height = 13
       Caption = 'd ='
     end
-    object lblGamma: TLabel
+    object lblGamma: TRzLabel
       Left = 150
       Top = 20
       Width = 46
       Height = 13
       Caption = 'gamma ='
     end
-    object lblN: TLabel
+    object lblN: TRzLabel
       Left = 300
       Top = 20
       Width = 14

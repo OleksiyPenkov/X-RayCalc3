@@ -1,7 +1,7 @@
-object frmXRFViewMain: TfrmXRFViewMain
+object frmXRFCalcMain: TfrmXRFCalcMain
   Left = 0
   Top = 0
-  Caption = 'XRFView'
+  Caption = 'XRFCalc'
   ClientHeight = 600
   ClientWidth = 1000
   Color = clBtnFace
@@ -21,72 +21,78 @@ object frmXRFViewMain: TfrmXRFViewMain
     Top = 0
     Width = 1000
     Height = 56
-    ButtonHeight = 52
-    ButtonWidth = 100
+    ButtonHeight = 54
+    ButtonWidth = 91
     Images = ToolBarImages
+    ParentShowHint = False
     ShowCaptions = True
     ShowHint = True
     TabOrder = 0
     object btnRefresh: TToolButton
       Left = 0
       Top = 0
-      Caption = 'Refresh'
       Hint = 'Refresh file browser'
+      Caption = 'Refresh'
       ImageIndex = 0
       OnClick = btnRefreshClick
     end
     object btnExportStructure: TToolButton
-      Left = 100
+      Left = 91
       Top = 0
-      Caption = 'Export Structure'
       Hint = 'Export best structure to JSON'
+      Caption = 'Export Structure'
       ImageIndex = 1
       OnClick = btnExportStructureClick
     end
     object btnCopyData: TToolButton
-      Left = 200
+      Left = 182
       Top = 0
-      Caption = 'Copy Data'
       Hint = 'Copy curve data to clipboard'
+      Caption = 'Copy Data'
       ImageIndex = 2
       OnClick = btnCopyDataClick
     end
     object btnSaveImage: TToolButton
-      Left = 300
+      Left = 273
       Top = 0
-      Caption = 'Save Image'
       Hint = 'Save chart as image'
+      Caption = 'Save Image'
       ImageIndex = 3
       OnClick = btnSaveImageClick
     end
     object tbSep1: TToolButton
-      Left = 400
+      Left = 364
+      Top = 0
       Width = 8
       Style = tbsSeparator
     end
     object btnNewRun: TToolButton
-      Left = 408
-      Caption = 'New Run'
+      Left = 372
+      Top = 0
       Hint = 'Configure and start a new optimization run'
+      Caption = 'New Run'
       ImageIndex = 4
       OnClick = btnNewRunClick
     end
     object btnEditRun: TToolButton
-      Left = 508
-      Caption = 'Edit Run'
+      Left = 463
+      Top = 0
       Hint = 'Edit config from selected .xrfx and re-run'
+      Caption = 'Edit Run'
       ImageIndex = 5
       OnClick = btnEditRunClick
     end
     object tbSep2: TToolButton
-      Left = 608
+      Left = 554
+      Top = 0
       Width = 8
       Style = tbsSeparator
     end
     object btnStop: TToolButton
-      Left = 616
-      Caption = 'Stop'
+      Left = 562
+      Top = 0
       Hint = 'Cancel the running optimization'
+      Caption = 'Stop'
       ImageIndex = 6
       Visible = False
       OnClick = btnStopClick
@@ -99,15 +105,16 @@ object frmXRFViewMain: TfrmXRFViewMain
     Height = 524
     Position = 300
     Percent = 30
-    UpperLeft.Color = clBtnFace
-    LowerRight.Color = clBtnFace
+    UpperLeft.Color = 15987699
+    LowerRight.Color = 15987699
     Align = alClient
+    Color = 15987699
     TabOrder = 1
     BarSize = (
       300
       0
       304
-      551)
+      524)
     UpperLeftControls = (
       ShellSplitter)
     LowerRightControls = (
@@ -116,79 +123,111 @@ object frmXRFViewMain: TfrmXRFViewMain
       Left = 0
       Top = 0
       Width = 300
-      Height = 551
+      Height = 524
       Orientation = orVertical
-      Position = 220
+      Position = 209
       Percent = 40
       UsePercent = True
-      UpperLeft.Color = clBtnFace
-      LowerRight.Color = clBtnFace
+      UpperLeft.Color = 15987699
+      LowerRight.Color = 15987699
       Align = alClient
+      Color = 15987699
       TabOrder = 0
       BarSize = (
         0
-        220
+        209
         300
-        224)
+        213)
       UpperLeftControls = (
         JamShellBreadCrumbBar1
         ShellTree)
       LowerRightControls = (
         ShellList)
       object JamShellBreadCrumbBar1: TJamShellBreadCrumbBar
-        Left = 0
-        Top = 0
-        Width = 300
-        Height = 26
-        Align = alTop
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 294
+        Height = 24
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
         ShellLink = JamShellLink1
+        SpecialFolder = SF_DRIVES
+        TabOrder = 0
+        VisiblePanes = []
       end
       object ShellTree: TJamShellTree
-        Left = 0
-        Top = 26
-        Width = 300
-        Height = 194
-        Align = alClient
+        AlignWithMargins = True
+        Left = 3
+        Top = 33
+        Width = 294
+        Height = 173
         ShellLink = JamShellLink1
+        SpecialFolder = SF_DRIVES
+        Filter = '*'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        RowSelect = True
+        Align = alClient
+        TabOrder = 1
       end
       object ShellList: TJamShellList
-        Left = 0
-        Top = 224
-        Width = 300
-        Height = 327
-        Align = alClient
-        HideSelection = False
-        ShellLink = JamShellLink1
-        Filter = '*.xrfx'
-        MultiSelect = True
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 294
+        Height = 305
         ReadOnly = True
-        ViewStyle = vsReport
+        Filter = '*.xrfx'
+        ShellLink = JamShellLink1
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        GridLines = True
+        HideSelection = False
+        IconOptions.AutoArrange = True
+        RowSelect = True
+        TabOrder = 0
         OnSelectItem = ShellListSelectItem
       end
     end
-    object PageControl1: TPageControl
-      Left = 0
-      Top = 0
-      Width = 696
-      Height = 551
+    object PageControl1: TRzPageControl
+      AlignWithMargins = True
+      Left = 3
+      Top = 3
+      Width = 690
+      Height = 518
+      Hint = ''
       ActivePage = tabCurves
       Align = alClient
+      TabIndex = 0
       TabOrder = 0
-      object tabCurves: TTabSheet
+      FixedDimension = 21
+      object tabCurves: TRzTabSheet
+        Color = 15987699
         Caption = 'Curves'
       end
-      object tabInfo: TTabSheet
+      object tabInfo: TRzTabSheet
+        Color = 15987699
         Caption = 'Info'
-        ImageIndex = 1
       end
-      object tabProgress: TTabSheet
+      object tabProgress: TRzTabSheet
+        Color = 15987699
         Caption = 'Progress'
-        ImageIndex = 2
       end
-      object tabCompare: TTabSheet
-        Caption = 'Compare'
-        ImageIndex = 3
+      object tabCompare: TRzTabSheet
+        Color = 15987699
         TabVisible = False
+        Caption = 'Compare'
       end
     end
   end
@@ -201,14 +240,15 @@ object frmXRFViewMain: TfrmXRFViewMain
     BorderOuter = fsNone
     BorderSides = [sdLeft, sdTop, sdRight, sdBottom]
     BorderWidth = 0
+    TabOrder = 2
     object spStatus: TRzStatusPane
       Left = 0
       Top = 0
       Width = 1000
-      Height = 20
       Align = alClient
       AutoSize = True
       Caption = ''
+      ExplicitWidth = 40
     end
   end
   object MainMenu1: TMainMenu
@@ -233,8 +273,8 @@ object frmXRFViewMain: TfrmXRFViewMain
     end
   end
   object ToolBarImages: TImageList
-    Width = 32
     Height = 32
+    Width = 32
     Left = 504
     Top = 280
   end

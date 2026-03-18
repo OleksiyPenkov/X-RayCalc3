@@ -8,15 +8,16 @@ object frmRunConfig: TfrmRunConfig
   Position = poMainFormCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
-  object pnlButtons: TPanel
+  object pnlButtons: TRzPanel
     Left = 0
     Top = 380
     Width = 480
     Height = 40
     Align = alBottom
-    BevelOuter = bvNone
+    AlignWithMargins = True
+    BorderOuter = fsNone
     TabOrder = 0
-    object btnRun: TButton
+    object btnRun: TRzBitBtn
       Left = 210
       Top = 8
       Width = 80
@@ -26,7 +27,7 @@ object frmRunConfig: TfrmRunConfig
       ModalResult = 1
       TabOrder = 0
     end
-    object btnSaveConfig: TButton
+    object btnSaveConfig: TRzBitBtn
       Left = 300
       Top = 8
       Width = 90
@@ -35,7 +36,7 @@ object frmRunConfig: TfrmRunConfig
       TabOrder = 1
       OnClick = btnSaveConfigClick
     end
-    object btnCancel: TButton
+    object btnCancel: TRzBitBtn
       Left = 400
       Top = 8
       Width = 70
@@ -46,24 +47,25 @@ object frmRunConfig: TfrmRunConfig
       TabOrder = 2
     end
   end
-  object PageControl: TPageControl
+  object PageControl: TRzPageControl
     Left = 0
     Top = 0
     Width = 480
     Height = 380
     ActivePage = tabTargets
     Align = alClient
+    AlignWithMargins = True
     TabOrder = 1
-    object tabTargets: TTabSheet
+    object tabTargets: TRzTabSheet
       Caption = 'Targets'
     end
-    object tabStructure: TTabSheet
+    object tabStructure: TRzTabSheet
       Caption = 'Structure'
     end
-    object tabOptimizer: TTabSheet
+    object tabOptimizer: TRzTabSheet
       Caption = 'Optimizer'
     end
-    object tabFitness: TTabSheet
+    object tabFitness: TRzTabSheet
       Caption = 'Fitness'
     end
   end

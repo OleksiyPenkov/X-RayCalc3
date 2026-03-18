@@ -76,7 +76,7 @@ procedure CreateXRFXPackage(
   const PerElement: TArray<TXRFXElementResult>;
   const ResultsDir, ConfigFilePath, OutputPath: string);
 
-// Read side (XRFView)
+// Read side (XRFCalc)
 procedure ExtractXRFXPackage(const XRFXPath, TempDir: string);
 function  LoadManifest(const ManifestPath: string): TXRFXManifest;
 function  LoadXRCStructure(const JsonPath: string): TXRFXStructure;

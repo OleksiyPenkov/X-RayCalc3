@@ -1,4 +1,4 @@
-unit xrfview_unit_loader;
+unit xrfcalc_unit_loader;
 
 interface
 
@@ -17,7 +17,7 @@ type
     Progress: TArray<TProgressEntry>;
   end;
 
-  TXRFViewLoader = class
+  TXRFCalcLoader = class
   private
     FResults: TList<TLoadedResult>;
     FBaseTempDir: string;
@@ -39,17 +39,17 @@ type
 
 implementation
 
-constructor TXRFViewLoader.Create;
+constructor TXRFCalcLoader.Create;
 begin
   inherited;
   FResults := TList<TLoadedResult>.Create;
-  FBaseTempDir := TPath.Combine(TPath.GetTempPath, 'XRFView');
+  FBaseTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc');
   if not TDirectory.Exists(FBaseTempDir) then
     TDirectory.CreateDirectory(FBaseTempDir);
   CleanupStale;
 end;
 
-destructor TXRFViewLoader.Destroy;
+destructor TXRFCalcLoader.Destroy;
 var
   R: TLoadedResult;
 begin
@@ -59,13 +59,13 @@ begin
   inherited;
 end;
 
-procedure TXRFViewLoader.CleanupTemp(const TempDir: string);
+procedure TXRFCalcLoader.CleanupTemp(const TempDir: string);
 begin
   if TDirectory.Exists(TempDir) then
     TDirectory.Delete(TempDir, True);
 end;
 
-procedure TXRFViewLoader.CleanupStale;
+procedure TXRFCalcLoader.CleanupStale;
 var
   Dirs: TStringDynArray;
   Dir: string;
@@ -79,7 +79,7 @@ begin
   end;
 end;
 
-procedure TXRFViewLoader.Clear;
+procedure TXRFCalcLoader.Clear;
 var
   R: TLoadedResult;
 begin
@@ -88,7 +88,7 @@ begin
   FResults.Clear;
 end;
 
-procedure TXRFViewLoader.LoadFile(const FileName: string);
+procedure TXRFCalcLoader.LoadFile(const FileName: string);
 var
   R: TLoadedResult;
   CurvesDir, XRCPath, ProgressPath: string;
@@ -116,7 +116,7 @@ begin
   FResults.Add(R);
 end;
 
-procedure TXRFViewLoader.LoadMultiple(const FileNames: TArray<string>);
+procedure TXRFCalcLoader.LoadMultiple(const FileNames: TArray<string>);
 var
   FN: string;
   R: TLoadedResult;
@@ -146,7 +146,7 @@ begin
   end;
 end;
 
-function TXRFViewLoader.ExtractFile(const ArchiveName, DestPath: string): Boolean;
+function TXRFCalcLoader.ExtractFile(const ArchiveName, DestPath: string): Boolean;
 var
   SrcPath: string;
 begin
@@ -160,17 +160,17 @@ begin
   end;
 end;
 
-function TXRFViewLoader.IsLoaded: Boolean;
+function TXRFCalcLoader.IsLoaded: Boolean;
 begin
   Result := FResults.Count > 0;
 end;
 
-function TXRFViewLoader.ResultCount: Integer;
+function TXRFCalcLoader.ResultCount: Integer;
 begin
   Result := FResults.Count;
 end;
 
-function TXRFViewLoader.GetManifest: TXRFXManifest;
+function TXRFCalcLoader.GetManifest: TXRFXManifest;
 begin
   if FResults.Count > 0 then
     Result := FResults[0].Manifest
@@ -178,7 +178,7 @@ begin
     Result := Default(TXRFXManifest);
 end;
 
-function TXRFViewLoader.GetResult(Index: Integer): TLoadedResult;
+function TXRFCalcLoader.GetResult(Index: Integer): TLoadedResult;
 begin
   Result := FResults[Index];
 end;

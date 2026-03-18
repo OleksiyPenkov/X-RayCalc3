@@ -1,4 +1,4 @@
-unit xrfview_unit_runner;
+unit xrfcalc_unit_runner;
 
 interface
 
@@ -6,7 +6,7 @@ uses
   Winapi.Windows, System.SysUtils, System.Classes;
 
 const
-  TEMP_OUTPUT_DIR = 'xrfview_temp_output';
+  TEMP_OUTPUT_DIR = 'xrfcalc_temp_output';
 
 type
   TRunnerState = (rsIdle, rsRunning, rsCompleted, rsFailed, rsCancelled);
@@ -107,11 +107,11 @@ var
 begin
   ExeDir := ExtractFilePath(Application.ExeName);
 
-  // Production: same directory as XRFView.exe
+  // Production: same directory as XRFCalc.exe
   Result := TPath.Combine(ExeDir, 'xrccmd.exe');
   if TFile.Exists(Result) then Exit;
 
-  // Development: XRFView/_Out/BIN/ -> XRC_CMD/Out/CMDBin/
+  // Development: XRFCalc/_Out/BIN/ -> XRC_CMD/Out/CMDBin/
   DevPath := TPath.GetFullPath(TPath.Combine(ExeDir, '..\..\XRC_CMD\Out\CMDBin\xrccmd.exe'));
   if TFile.Exists(DevPath) then
   begin
@@ -137,7 +137,7 @@ begin
 
   XRCCmdPath := FindXRCCmd;
   if XRCCmdPath = '' then
-    raise Exception.Create('xrccmd.exe not found. Ensure it is built or deployed alongside XRFView.');
+    raise Exception.Create('xrccmd.exe not found. Ensure it is built or deployed alongside XRFCalc.');
 
   FConfigPath := ConfigPath;
   FOutputPath := ChangeFileExt(ConfigPath, '.xrfx');

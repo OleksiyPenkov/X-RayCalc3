@@ -5,21 +5,22 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.IOUtils,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
-  Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.CheckLst, Vcl.Samples.Spin,
+  Vcl.ExtCtrls, Vcl.CheckLst, Vcl.Samples.Spin,
+  RzPanel, RzButton, RzTabs,
   unit_universal_types, unit_universal_io, unit_xrf_lines,
   cmd_unit_types, Vcl.FileCtrl;
 
 type
   TfrmRunConfig = class(TForm)
-    pnlButtons: TPanel;
-    btnRun: TButton;
-    btnSaveConfig: TButton;
-    btnCancel: TButton;
-    PageControl: TPageControl;
-    tabTargets: TTabSheet;
-    tabStructure: TTabSheet;
-    tabOptimizer: TTabSheet;
-    tabFitness: TTabSheet;
+    pnlButtons: TRzPanel;
+    btnRun: TRzBitBtn;
+    btnSaveConfig: TRzBitBtn;
+    btnCancel: TRzBitBtn;
+    PageControl: TRzPageControl;
+    tabTargets: TRzTabSheet;
+    tabStructure: TRzTabSheet;
+    tabOptimizer: TRzTabSheet;
+    tabFitness: TRzTabSheet;
     procedure FormCreate(Sender: TObject);
     procedure btnSaveConfigClick(Sender: TObject);
   private
@@ -46,6 +47,8 @@ type
     edtRMinThreshold: TEdit;
     edtDeltaTheta, edtThetaMin: TEdit;
     cmbPolarization: TComboBox;
+    sedScanPoints: TSpinEdit;
+    edtScanHalfRange: TEdit;
     edtHenkePath: TEdit;
     btnBrowseHenke: TButton;
     // Helpers
@@ -340,6 +343,18 @@ begin
   cmbPolarization.ItemIndex := 0;
   Inc(Row, ROW_HEIGHT + 8);
 
+  sedScanPoints := CreateLabeledSpin(tabFitness, Row, 'Scan points', 0, 10000, 0);
+
+  Lbl := TLabel.Create(Self);
+  Lbl.Parent := tabFitness;
+  Lbl.Left := COL2_LBL; Lbl.Top := Row + 4;
+  Lbl.Caption := 'Scan half-range (deg)';
+  edtScanHalfRange := TEdit.Create(Self);
+  edtScanHalfRange.Parent := tabFitness;
+  edtScanHalfRange.Left := COL2_EDIT; edtScanHalfRange.Top := Row;
+  edtScanHalfRange.Width := 80; edtScanHalfRange.Text := '0';
+  Inc(Row, ROW_HEIGHT + 8);
+
   // Henke path
   grp := TGroupBox.Create(Self);
   grp.Parent := tabFitness;
@@ -514,6 +529,9 @@ begin
   else
     cmbPolarization.ItemIndex := 0;
 
+  sedScanPoints.Value := Config.Fitness.ScanPoints;
+  edtScanHalfRange.Text := FormatFloat('0.#', Config.Fitness.ScanHalfRange);
+
   // Structure advanced
   if Config.Structure.SigmaFixed >= 0 then
     edtSigma.Text := FormatFloat('0.#', Config.Structure.SigmaFixed)
@@ -655,6 +673,8 @@ begin
     Result.Fitness.Polarization := cmS
   else
     Result.Fitness.Polarization := cmSP;
+  Result.Fitness.ScanPoints := sedScanPoints.Value;
+  Result.Fitness.ScanHalfRange := StrToFloatDef(edtScanHalfRange.Text, 0);
 
   // Optimizer
   Result.Optimizer.Population := sedPopulation.Value;

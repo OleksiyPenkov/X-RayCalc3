@@ -254,6 +254,14 @@ begin
       Result.Fitness.wPurity := JFitness.GetValue<Double>('w_purity')
     else
       Result.Fitness.wPurity := 1.0;  // default: full purity weighting
+    if JFitness.FindValue('scan_points') <> nil then
+      Result.Fitness.ScanPoints := JFitness.GetValue<Integer>('scan_points')
+    else
+      Result.Fitness.ScanPoints := 0;
+    if JFitness.FindValue('scan_half_range') <> nil then
+      Result.Fitness.ScanHalfRange := JFitness.GetValue<Double>('scan_half_range')
+    else
+      Result.Fitness.ScanHalfRange := 0;
 
     // Polarization
     if JFitness.FindValue('polarization') <> nil then
@@ -391,6 +399,10 @@ begin
     JFitness.AddPair('delta_theta', TJSONNumber.Create(Config.Fitness.DeltaTheta));
     JFitness.AddPair('theta_min', TJSONNumber.Create(Config.Fitness.ThetaMin));
     JFitness.AddPair('w_purity', TJSONNumber.Create(Config.Fitness.wPurity));
+    if Config.Fitness.ScanPoints > 0 then
+      JFitness.AddPair('scan_points', TJSONNumber.Create(Config.Fitness.ScanPoints));
+    if Config.Fitness.ScanHalfRange > 0 then
+      JFitness.AddPair('scan_half_range', TJSONNumber.Create(Config.Fitness.ScanHalfRange));
     JSON.AddPair('fitness', JFitness);
 
     // Optimizer

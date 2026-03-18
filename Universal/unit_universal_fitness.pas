@@ -19,6 +19,8 @@ type
     FCurveBuf: TDataArray;
     FConvBuf: TDataArray;
     FCurveLen: Integer;
+    FScanPoints: Integer;
+    FScanHalfRange: Single;
 
     procedure BuildLayers(const Genome: TGenome; TargetIdx: Integer);
     function GetDominantMaterial(const Comp: TCompositionGenes): string;
@@ -44,8 +46,8 @@ uses
   unit_universal_refcalc;
 
 const
-  SCAN_POINTS = 200;
-  SCAN_HALF_RANGE = 5.0;
+  DEFAULT_SCAN_POINTS = 200;
+  DEFAULT_SCAN_HALF_RANGE = 5.0;
   PENALTY_DARK = 100.0;
   PENALTY_DEGENERATE = 1.0;
 
@@ -58,8 +60,16 @@ begin
   FTemplates := ATemplates;
   FTargetCount := Length(AConfig.Lines);
   FPoolSize := Length(AConfig.ElementPool);
-  SetLength(FCurveBuf, SCAN_POINTS);
-  SetLength(FConvBuf, SCAN_POINTS);
+  if AConfig.Fitness.ScanPoints > 0 then
+    FScanPoints := AConfig.Fitness.ScanPoints
+  else
+    FScanPoints := DEFAULT_SCAN_POINTS;
+  if AConfig.Fitness.ScanHalfRange > 0 then
+    FScanHalfRange := AConfig.Fitness.ScanHalfRange
+  else
+    FScanHalfRange := DEFAULT_SCAN_HALF_RANGE;
+  SetLength(FCurveBuf, FScanPoints);
+  SetLength(FConvBuf, FScanPoints);
 end;
 
 function TUniversalFitness.GetDominantMaterial(
@@ -410,7 +420,7 @@ begin
 
     BuildLayers(Genome, i);
     ScanReflectivity(FConfig.Lines[i].Lambda,
-      ThetaArr[i], SCAN_HALF_RANGE, SCAN_POINTS);
+      ThetaArr[i], FScanHalfRange, FScanPoints);
     Convolute(FConfig.Fitness.DeltaTheta);
 
     RPeakArr[i] := ExtractRPeak;
@@ -487,7 +497,7 @@ begin
   ThetaBragg := RadToDeg(ArcSin(SinArg));
   BuildLayers(Genome, TargetIdx);
   ScanReflectivity(FConfig.Lines[TargetIdx].Lambda,
-    ThetaBragg, SCAN_HALF_RANGE, SCAN_POINTS);
+    ThetaBragg, FScanHalfRange, FScanPoints);
   Convolute(FConfig.Fitness.DeltaTheta);
   Result := Copy(FCurveBuf, 0, FCurveLen);
 end;

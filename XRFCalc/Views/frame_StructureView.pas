@@ -4,17 +4,18 @@ interface
 
 uses
   System.SysUtils, System.Classes, Vcl.Controls, Vcl.Forms,
-  Vcl.Grids, Vcl.StdCtrls, Vcl.ExtCtrls,
+  Vcl.Grids,
+  RzPanel, RzLabel,
   unit_xrfx_package;
 
 type
   TframeStructureView = class(TFrame)
     grdLayers: TStringGrid;
-    pnlSummary: TPanel;
-    lblPeriod: TLabel;
-    lblGamma: TLabel;
-    lblN: TLabel;
-    lblType: TLabel;
+    pnlSummary: TRzPanel;
+    lblPeriod: TRzLabel;
+    lblGamma: TRzLabel;
+    lblN: TRzLabel;
+    lblType: TRzLabel;
   public
     procedure LoadStructure(const Structure: TXRFXStructure;
       const Summary: TXRFXStructureSummary);

@@ -4,7 +4,7 @@ object frameInfoView: TframeInfoView
   Width = 600
   Height = 400
   TabOrder = 0
-  object mmoInfo: TMemo
+  object mmoInfo: TRzMemo
     Left = 0
     Top = 0
     Width = 600

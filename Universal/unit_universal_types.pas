@@ -145,6 +145,8 @@ type
     DeltaTheta: Single;     // beam divergence FWHM in degrees (0 = ideal)
     ThetaMin: Single;       // minimum Bragg angle in degrees (skip total reflection zone)
     wPurity: Single;        // [0..1] weight for spectral purity penalty (0 = off)
+    ScanPoints: Integer;    // number of points in reflectivity scan (0 = default 200)
+    ScanHalfRange: Single;  // half-range of scan in degrees (0 = default 5.0)
   end;
 
   // Optimizer configuration from JSON

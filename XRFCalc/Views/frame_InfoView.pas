@@ -4,12 +4,12 @@ interface
 
 uses
   System.SysUtils, System.Classes, Vcl.Controls, Vcl.Forms,
-  Vcl.StdCtrls, Vcl.ExtCtrls,
+  RzEdit,
   unit_xrfx_package;
 
 type
   TframeInfoView = class(TFrame)
-    mmoInfo: TMemo;
+    mmoInfo: TRzMemo;
   public
     procedure LoadManifestInfo(const M: TXRFXManifest);
     procedure Clear;

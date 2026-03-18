@@ -1,0 +1,7 @@
+ICON_REFRESH RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\00_Refresh.png"
+ICON_EXPORT RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\01_ExportStructure.png"
+ICON_COPY RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\02_CopyData.png"
+ICON_SAVEIMG RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\03_SaveImage.png"
+ICON_NEWRUN RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\04_NewRun.png"
+ICON_EDITRUN RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\05_EditRun.png"
+ICON_STOP RCDATA "..\\Assets\\ToolIcons\\XRFCalc\\06_Stop.png"
