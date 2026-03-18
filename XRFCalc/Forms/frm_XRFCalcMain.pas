@@ -76,6 +76,7 @@ type
     FRunTimer: TTimer;
     FRunStartTime: TDateTime;
     FInitialPath: string;
+    FInitialFile: string;
     FSavePath: string;
     FUnsaved: Boolean;
     FCurvesView: TframeCurvesView;
@@ -105,28 +106,36 @@ var
 implementation
 
 uses
-  System.Win.Registry, System.IniFiles, ClipBrd, Vcl.Imaging.pngimage,
+  System.Win.Registry, System.IniFiles, Winapi.ShlObj, ClipBrd, Vcl.Imaging.pngimage,
   frm_RunConfig, unit_universal_io;
 
 {$R *.dfm}
 
-procedure RegisterFileType(const Prefix, ExePath: string);
+procedure RegisterFileType(const Ext, Description, ExePath: string);
+var
+  Reg: TRegistry;
 begin
-  with TRegistry.Create do
+  Reg := TRegistry.Create;
   try
-    RootKey := HKEY_CURRENT_USER;
-    OpenKey('Software\Classes\.' + Prefix, True);
-    WriteString('', Prefix + 'file');
-    CloseKey;
-    CreateKey('Software\Classes\' + Prefix + 'file');
-    OpenKey('Software\Classes\' + Prefix + 'file\DefaultIcon', True);
-    WriteString('', ExePath + ',0');
-    CloseKey;
-    OpenKey('Software\Classes\' + Prefix + 'file\shell\open\command', True);
-    WriteString('', '"' + ExePath + '" "%1"');
-    CloseKey;
+    Reg.RootKey := HKEY_CURRENT_USER;
+
+    Reg.OpenKey('Software\Classes\.' + Ext, True);
+    Reg.WriteString('', Ext + 'file');
+    Reg.CloseKey;
+
+    Reg.OpenKey('Software\Classes\' + Ext + 'file', True);
+    Reg.WriteString('', Description);
+    Reg.CloseKey;
+
+    Reg.OpenKey('Software\Classes\' + Ext + 'file\DefaultIcon', True);
+    Reg.WriteString('', ExePath + ',0');
+    Reg.CloseKey;
+
+    Reg.OpenKey('Software\Classes\' + Ext + 'file\shell\open\command', True);
+    Reg.WriteString('', '"' + ExePath + '" "%1"');
+    Reg.CloseKey;
   finally
-    Free;
+    Reg.Free;
   end;
 end;
 
@@ -197,10 +206,12 @@ begin
   FRunTimer.Enabled := False;
   FRunTimer.OnTimer := RunTimerTick;
 
+  LoadSettings;
   if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
-    FInitialPath := ExtractFilePath(ParamStr(1))
-  else
-    LoadSettings;
+  begin
+    FInitialFile := ParamStr(1);
+    FInitialPath := ExtractFilePath(ParamStr(1));
+  end;
 
   if FInitialPath <> '' then
     PostMessage(Handle, WM_USER + 100, 0, 0);
@@ -419,7 +430,9 @@ end;
 
 procedure TfrmXRFCalcMain.mnuRegisterExtClick(Sender: TObject);
 begin
-  RegisterFileType('xrfx', Application.ExeName);
+  RegisterFileType('xrfx', 'XRFCalc Package', Application.ExeName);
+  SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nil, nil);
+  spStatus.Caption := '.xrfx extension registered';
 end;
 
 function TfrmXRFCalcMain.GetIniPath: string;
@@ -463,6 +476,8 @@ procedure TfrmXRFCalcMain.WMDeferredNavigate(var Msg: TMessage);
 begin
   if (FInitialPath <> '') and TDirectory.Exists(FInitialPath) then
     ShellList.Path := FInitialPath;
+  if (FInitialFile <> '') and TFile.Exists(FInitialFile) then
+    ProcessFile(FInitialFile);
 end;
 
 procedure TfrmXRFCalcMain.SaveSettings;
