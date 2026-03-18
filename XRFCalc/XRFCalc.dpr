@@ -10,10 +10,10 @@ uses
   xrfcalc_unit_loader in 'Units\xrfcalc_unit_loader.pas',
   xrfcalc_unit_runner in 'Units\xrfcalc_unit_runner.pas',
   frm_RunConfig in 'Forms\frm_RunConfig.pas' {frmRunConfig},
-  unit_universal_io in '..\Universal\unit_universal_io.pas',
-  unit_xrf_lines in '..\Universal\unit_xrf_lines.pas',
-  unit_xrfx_package in '..\Universal\unit_xrfx_package.pas',
-  unit_universal_types in '..\Universal\unit_universal_types.pas';
+  unit_universal_io in '..\Shared\Universal\unit_universal_io.pas',
+  unit_xrf_lines in '..\Shared\Universal\unit_xrf_lines.pas',
+  unit_xrfx_package in '..\Shared\Universal\unit_xrfx_package.pas',
+  unit_universal_types in '..\Shared\Universal\unit_universal_types.pas';
 
 {$R *.res}
 {$R XRFCalcIcons.RES}

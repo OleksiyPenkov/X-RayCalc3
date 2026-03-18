@@ -47,7 +47,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\Universal;..\XRC_CMD\units;..\math;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\Shared\Universal;..\XRC_CMD\units;..\Shared\Math;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\_Out\DCU64</DCC_DcuOutput>
         <DCC_ExeOutput>.\_Out\BIN</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
@@ -131,10 +131,10 @@
         <DCCReference Include="Forms\frm_RunConfig.pas">
             <Form>frmRunConfig</Form>
         </DCCReference>
-        <DCCReference Include="..\Universal\unit_universal_io.pas"/>
-        <DCCReference Include="..\Universal\unit_xrf_lines.pas"/>
-        <DCCReference Include="..\Universal\unit_xrfx_package.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_types.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_xrf_lines.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_xrfx_package.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_types.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
