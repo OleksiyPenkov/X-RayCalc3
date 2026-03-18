@@ -50,7 +50,7 @@
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-        <DCC_UnitSearchPath>..\math;..\units;..\LFPSO;..\components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(BDS)\source\DunitX;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\..\Shared\Math;..\Units;..\LFPSO;..\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(BDS)\source\DunitX;..\..\Shared\Universal;..\..\XRC_CMD\Units;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <SanitizedProjectName>XRayCalc3Tests</SanitizedProjectName>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
@@ -87,21 +87,21 @@
         <DCCReference Include="TestMathGlobals.pas"/>
         <DCCReference Include="TestUnitTypes.pas"/>
         <DCCReference Include="TestUnitHelpers.pas"/>
-        <DCCReference Include="..\math\math_complex.pas"/>
-        <DCCReference Include="..\math\math_globals.pas"/>
-        <DCCReference Include="..\units\unit_Types.pas"/>
-        <DCCReference Include="..\units\unit_SeriesIO.pas"/>
-        <DCCReference Include="..\units\unit_DataProcessing.pas"/>
-        <DCCReference Include="..\units\unit_FileUtils.pas"/>
-        <DCCReference Include="..\units\unit_helpers.pas"/>
-        <DCCReference Include="..\units\unit_Config.pas"/>
-        <DCCReference Include="..\units\unit_consts.pas"/>
+        <DCCReference Include="..\..\Shared\Math\math_complex.pas"/>
+        <DCCReference Include="..\..\Shared\Math\math_globals.pas"/>
+        <DCCReference Include="..\Units\unit_Types.pas"/>
+        <DCCReference Include="..\Units\unit_SeriesIO.pas"/>
+        <DCCReference Include="..\Units\unit_DataProcessing.pas"/>
+        <DCCReference Include="..\Units\unit_FileUtils.pas"/>
+        <DCCReference Include="..\Units\unit_helpers.pas"/>
+        <DCCReference Include="..\Units\unit_Config.pas"/>
+        <DCCReference Include="..\Units\unit_consts.pas"/>
         <DCCReference Include="TestHenke.pas"/>
         <DCCReference Include="TestCalcPhysics.pas"/>
         <DCCReference Include="TestSeriesIO.pas"/>
-        <DCCReference Include="..\math\unit_ProfileCalc.pas"/>
+        <DCCReference Include="..\..\Shared\Math\unit_ProfileCalc.pas"/>
         <DCCReference Include="TestProfileCalc.pas"/>
-        <DCCReference Include="..\units\unit_SmartLimits.pas"/>
+        <DCCReference Include="..\Units\unit_SmartLimits.pas"/>
         <DCCReference Include="TestSmartLimits.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
