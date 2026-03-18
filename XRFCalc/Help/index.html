@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XRFCalc — Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="index.html">XRF<span>Calc</span></a>
+  <div class="page-title">Help</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search topics..." onkeyup="filterCards(this.value)">
+  </div>
+</nav>
+
+<main class="content" style="margin-left: 0; max-width: 1100px; margin-left: auto; margin-right: auto;">
+
+<h1>XRFCalc &mdash; Help</h1>
+<p class="subtitle">Copyright &copy; 2026 Oleksiy Penkov</p>
+
+<p><strong>XRFCalc</strong> is a focused GUI application for viewing and running Universal Mirror optimization results. It reads <code>.xrfx</code> result files produced by the Universal Mirror Optimizer, displays reflectivity curves and structure overlays, and lets you launch new or modified optimization runs directly from the interface.</p>
+
+<div class="cards" id="cardGrid">
+
+  <a class="card" href="01-overview.html">
+    <div class="card-num">1</div>
+    <div class="card-title">Application Overview</div>
+    <div class="card-desc">Window layout, file browser, toolbar, and tab panels.</div>
+  </a>
+
+  <a class="card" href="02-viewing.html">
+    <div class="card-num">2</div>
+    <div class="card-title">Viewing Results</div>
+    <div class="card-desc">Reflectivity curves, structure overlay, metrics charts, Info and Progress tabs.</div>
+  </a>
+
+  <a class="card" href="03-running.html">
+    <div class="card-num">3</div>
+    <div class="card-title">Running Optimizations</div>
+    <div class="card-desc">New Run, Edit Run, Stop, live monitoring, and saving results.</div>
+  </a>
+
+  <a class="card" href="04-config.html">
+    <div class="card-num">4</div>
+    <div class="card-title">Configuration Reference</div>
+    <div class="card-desc">Complete JSON configuration format: targets, structure, fitness, optimizer.</div>
+  </a>
+
+  <a class="card" href="05-reference.html">
+    <div class="card-num">5</div>
+    <div class="card-title">Quick Reference</div>
+    <div class="card-desc">Keyboard shortcuts, file association, .xrfx format, troubleshooting.</div>
+  </a>
+
+</div>
+
+<div class="footer">
+  <p>XRFCalc &mdash; Oleksiy Penkov</p>
+</div>
+
+</main>
+
+<script src="script.js"></script>
+
+</body>
+</html>

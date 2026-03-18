@@ -28,6 +28,8 @@ type
     mnuView: TMenuItem;
     mnuTools: TMenuItem;
     mnuRegisterExt: TMenuItem;
+    mnuHelp: TMenuItem;
+    mnuHelpContents: TMenuItem;
     StatusBar: TRzStatusBar;
     spStatus: TRzStatusPane;
     ToolBar1: TToolBar;
@@ -67,6 +69,7 @@ type
     procedure mnuSaveAsClick(Sender: TObject);
     procedure mnuExitClick(Sender: TObject);
     procedure mnuRegisterExtClick(Sender: TObject);
+    procedure mnuHelpContentsClick(Sender: TObject);
     procedure btnNewRunClick(Sender: TObject);
     procedure btnEditRunClick(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
@@ -106,7 +109,8 @@ var
 implementation
 
 uses
-  System.Win.Registry, System.IniFiles, Winapi.ShlObj, ClipBrd, Vcl.Imaging.pngimage,
+  System.Win.Registry, System.IniFiles, Winapi.ShlObj, Winapi.ShellAPI,
+  ClipBrd, Vcl.Imaging.pngimage,
   frm_RunConfig, unit_universal_io;
 
 {$R *.dfm}
@@ -433,6 +437,17 @@ begin
   RegisterFileType('xrfx', 'XRFCalc Package', Application.ExeName);
   SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nil, nil);
   spStatus.Caption := '.xrfx extension registered';
+end;
+
+procedure TfrmXRFCalcMain.mnuHelpContentsClick(Sender: TObject);
+var
+  HelpPath: string;
+begin
+  HelpPath := TPath.Combine(ExtractFilePath(Application.ExeName), 'Help\index.html');
+  if TFile.Exists(HelpPath) then
+    ShellExecute(Handle, 'open', PChar(HelpPath), nil, nil, SW_SHOWNORMAL)
+  else
+    spStatus.Caption := 'Help not found: ' + HelpPath;
 end;
 
 function TfrmXRFCalcMain.GetIniPath: string;

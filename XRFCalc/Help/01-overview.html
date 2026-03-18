@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Overview — XRFCalc Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="index.html">XRF<span>Calc</span></a>
+  <div class="page-title">Help</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-overview.html">1. Application Overview</a>
+    <a href="01-overview.html#layout" class="sub">Window Layout</a>
+    <a href="01-overview.html#file-browser" class="sub">File Browser</a>
+    <a href="01-overview.html#toolbar" class="sub">Toolbar</a>
+    <a href="01-overview.html#tabs" class="sub">Tab Panels</a>
+    <a href="01-overview.html#menus" class="sub">Menus</a>
+  <a href="02-viewing.html">2. Viewing Results</a>
+  <a href="03-running.html">3. Running Optimizations</a>
+  <a href="04-config.html">4. Configuration Reference</a>
+  <a href="05-reference.html">5. Quick Reference</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">1</span> Application Overview</h2>
+<p><strong>XRFCalc</strong> is a standalone viewer and runner for Universal Mirror optimization results. It is separate from the main X-Ray Calc 3 application. Its purpose is to browse <code>.xrfx</code> result files, inspect their reflectivity curves and structure parameters, and launch new optimization runs via the <code>xrccmd</code> backend.</p>
+
+<h3 id="layout">Window Layout</h3>
+<p>The main window is divided into two regions separated by a vertical splitter:</p>
+
+<div class="layout-diagram">
++---------------------------+------------------------------------------+
+|  File Browser             |  Results Panel (tabbed)                  |
+|                           |                                          |
+|  [Folder Tree]            |  [ Curves | Info | Progress ]            |
+|                           |                                          |
+|  [File List *.xrfx]       |  (selected tab content fills this area)  |
+|                           |                                          |
++---------------------------+------------------------------------------+
+</div>
+
+<p>Drag the splitter between the two regions to adjust their relative widths. The layout is remembered between sessions.</p>
+
+<h3 id="file-browser">File Browser</h3>
+<p>The left panel is a two-part file browser:</p>
+<ul>
+  <li><strong>Folder tree (top)</strong> &mdash; a shell-integrated folder tree. Navigate to any folder on your system by expanding nodes. The tree shows real Windows shell folders including network drives and special folders.</li>
+  <li><strong>File list (bottom)</strong> &mdash; displays only <code>.xrfx</code> files in the currently selected folder. Click a file to open it in the right panel.</li>
+</ul>
+
+<div class="note"><strong>Opening files from Explorer:</strong> If you have registered the <code>.xrfx</code> file association (Tools &gt; Register .xrfx Extension), double-clicking any <code>.xrfx</code> file in Windows Explorer will open it directly in XRFCalc. See <a href="05-reference.html#file-association">File Association</a>.</div>
+
+<p>The file list updates automatically when you navigate to a different folder. Use the <strong>Refresh</strong> toolbar button to re-scan the current folder if files have been added or removed externally.</p>
+
+<h3 id="toolbar">Toolbar</h3>
+<p>The toolbar at the top of the window provides quick access to the most common actions:</p>
+
+<table>
+  <tr><th>Button</th><th>Action</th><th>Notes</th></tr>
+  <tr><td><strong>Refresh</strong></td><td>Re-scan the current folder</td><td>Updates the file list without changing the selected folder.</td></tr>
+  <tr><td><strong>Export Structure</strong></td><td>Export the mirror structure</td><td>Saves the best-structure definition from the current <code>.xrfx</code> file for use in other tools.</td></tr>
+  <tr><td><strong>Copy Data</strong></td><td>Copy curve data to clipboard</td><td>Copies the currently displayed reflectivity data as tab-separated text, ready to paste into a spreadsheet.</td></tr>
+  <tr><td><strong>Save Image</strong></td><td>Save chart as PNG</td><td>Saves a bitmap snapshot of the active chart (Curves or Progress) to a file.</td></tr>
+  <tr><td><strong>New Run</strong></td><td>Configure and start a new optimization</td><td>Opens the run configuration dialog with default settings.</td></tr>
+  <tr><td><strong>Edit Run</strong></td><td>Modify config from current file and re-run</td><td>Opens the config dialog pre-filled with the settings stored in the current <code>.xrfx</code> file.</td></tr>
+  <tr><td><strong>Stop</strong></td><td>Cancel the running optimization</td><td>Only enabled while an optimization is in progress. Sends a stop signal to <code>xrccmd</code>.</td></tr>
+</table>
+
+<h3 id="tabs">Tab Panels</h3>
+<p>The right panel contains three tabs. Click a tab header to switch between views:</p>
+
+<table>
+  <tr><th>Tab</th><th>Content</th></tr>
+  <tr><td><strong>Curves</strong></td><td>Main results view: reflectivity chart, structure overlay, legend, and metrics bar charts. This is the primary tab for analyzing optimization results.</td></tr>
+  <tr><td><strong>Info</strong></td><td>Text summary of the result file contents: figure of merit, structure parameters, target lines, element pool, optimizer settings, and per-element results.</td></tr>
+  <tr><td><strong>Progress</strong></td><td>Live convergence chart and console log. Active during a running optimization; shows historical data for completed runs loaded from file.</td></tr>
+</table>
+
+<h3 id="menus">Menus</h3>
+
+<h4>File Menu</h4>
+<table>
+  <tr><th>Item</th><th>Shortcut</th><th>Description</th></tr>
+  <tr><td>Save</td><td>Ctrl+S</td><td>Save the current <code>.xrfx</code> file to its existing path. Used to persist results that were generated by a new run (which are initially stored in a temporary location).</td></tr>
+  <tr><td>Save As</td><td>Ctrl+Shift+S</td><td>Save the current <code>.xrfx</code> file to a new location chosen via a file dialog.</td></tr>
+</table>
+
+<h4>Tools Menu</h4>
+<table>
+  <tr><th>Item</th><th>Description</th></tr>
+  <tr><td>Register .xrfx Extension</td><td>Associates the <code>.xrfx</code> file extension with XRFCalc in the Windows registry. After registration, double-clicking a <code>.xrfx</code> file in Explorer opens it in XRFCalc. Requires administrative privileges on some systems.</td></tr>
+</table>
+
+<div class="page-nav">
+  <a href="index.html">&larr; Home</a>
+  <span class="spacer"></span>
+  <a href="02-viewing.html">Viewing Results &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>XRFCalc &mdash; Oleksiy Penkov</p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

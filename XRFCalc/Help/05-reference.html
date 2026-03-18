@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Reference — XRFCalc Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="index.html">XRF<span>Calc</span></a>
+  <div class="page-title">Help</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-overview.html">1. Application Overview</a>
+  <a href="02-viewing.html">2. Viewing Results</a>
+  <a href="03-running.html">3. Running Optimizations</a>
+  <a href="04-config.html">4. Configuration Reference</a>
+  <a href="05-reference.html">5. Quick Reference</a>
+    <a href="05-reference.html#shortcuts" class="sub">Keyboard Shortcuts</a>
+    <a href="05-reference.html#file-association" class="sub">File Association</a>
+    <a href="05-reference.html#xrfx-format" class="sub">.xrfx File Format</a>
+    <a href="05-reference.html#output-files" class="sub">Output Files</a>
+    <a href="05-reference.html#troubleshooting" class="sub">Troubleshooting</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">5</span> Quick Reference</h2>
+
+<h3 id="shortcuts">Keyboard Shortcuts</h3>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><code>Ctrl+S</code></td><td>Save the current result file to its existing path (File &gt; Save).</td></tr>
+  <tr><td><code>Ctrl+Shift+S</code></td><td>Save the current result file to a new location (File &gt; Save As).</td></tr>
+</table>
+
+<div class="note">XRFCalc is primarily a pointer-driven tool. Most operations are performed via toolbar buttons and mouse interaction with the charts and file browser.</div>
+
+<h3 id="file-association">File Association</h3>
+<p>XRFCalc can register itself as the default handler for <code>.xrfx</code> files in Windows. Once registered, double-clicking any <code>.xrfx</code> file in Windows Explorer opens it in XRFCalc.</p>
+
+<p>To register:</p>
+<ol>
+  <li>Open XRFCalc.</li>
+  <li>Click <strong>Tools &gt; Register .xrfx Extension</strong>.</li>
+  <li>If prompted by User Account Control, click Yes to allow the registry change.</li>
+</ol>
+
+<p>To unregister: use Windows Settings &gt; Apps &gt; Default Apps, or manually remove the <code>.xrfx</code> entry from the Windows registry under <code>HKEY_CLASSES_ROOT</code>.</p>
+
+<div class="warning"><strong>Administrative privileges:</strong> Registering a file association writes to <code>HKEY_CLASSES_ROOT</code> which requires administrator rights on most systems. If the operation fails silently, run XRFCalc as administrator (right-click the executable &gt; Run as administrator) and try again.</div>
+
+<h3 id="xrfx-format">.xrfx File Format</h3>
+<p>An <code>.xrfx</code> file is a JSON document that bundles all data from a completed optimization run into a single portable file. It contains:</p>
+
+<table>
+  <tr><th>Section</th><th>Contents</th></tr>
+  <tr><td><code>config</code></td><td>The full JSON configuration used to produce this result (targets, element_pool, structure, fitness, optimizer, top-level fields). Sufficient to reproduce or continue the run.</td></tr>
+  <tr><td><code>result</code></td><td>The best-found solution: FoM, structural parameters (d, gamma, N, sigma), layer compositions, density factors, and per-element metrics (R<sub>peak</sub>, FWHM, &theta;<sub>B</sub>, purity).</td></tr>
+  <tr><td><code>curves</code></td><td>Reflectivity curve data for each target element: arrays of [theta, reflectivity] pairs covering the scan range around each Bragg peak.</td></tr>
+  <tr><td><code>progress</code></td><td>Per-iteration history: FoM, per-element R values, and population diversity. Used to populate the Progress tab convergence chart.</td></tr>
+  <tr><td><code>log</code></td><td>The full console output from <code>xrccmd</code>, displayed verbatim in the Progress tab console.</td></tr>
+</table>
+
+<p><code>.xrfx</code> files are plain UTF-8 JSON and can be opened in any text editor for inspection or scripted post-processing.</p>
+
+<h3 id="output-files">Output Files from xrccmd</h3>
+<p>In addition to the <code>.xrfx</code> file created by XRFCalc, the <code>xrccmd</code> optimizer writes the following files to the configured <code>output_dir</code>:</p>
+
+<table>
+  <tr><th>File</th><th>Description</th></tr>
+  <tr><td><code>best_structure.json</code></td><td>The best mirror structure in XRC3-compatible JSON format. Contains the full genome and a structure definition importable into X-Ray Calc 3.</td></tr>
+  <tr><td><code>best_curves/&lt;Element&gt;.dat</code></td><td>Tab-separated reflectivity curves (angle, reflectivity) for each target. One file per element. Compatible with Origin, gnuplot, and Python/matplotlib.</td></tr>
+  <tr><td><code>population.json</code></td><td>The top 10 solutions ranked by FoM. Useful for exploring design alternatives with different material combinations or period values.</td></tr>
+  <tr><td><code>checkpoint.json</code></td><td>Full optimizer state for resuming an interrupted run. Use the <code>resume_from</code> field in the configuration to continue from this checkpoint.</td></tr>
+  <tr><td><code>progress.log</code></td><td>Plain text log of per-iteration statistics (Iter, FoM, R per element, Div). Matches the console output shown in the Progress tab.</td></tr>
+</table>
+
+<h3 id="troubleshooting">Troubleshooting</h3>
+
+<h4>The file list is empty after navigating to a folder</h4>
+<p>The file list shows only <code>.xrfx</code> files. If the folder contains result files in a different format (e.g. <code>best_structure.json</code> from a raw <code>xrccmd</code> run), they will not appear. Use <strong>Refresh</strong> to force a re-scan if you just created files externally.</p>
+
+<h4>New Run or Edit Run does nothing</h4>
+<p>Verify that <code>xrccmd.exe</code> is present in the same directory as XRFCalc. The optimizer backend must be co-located with the GUI. If it is missing, copy it from the X-Ray Calc 3 installation or build it from source.</p>
+
+<h4>The optimization exits immediately with no output</h4>
+<p>This usually means the configuration JSON is invalid. Check:</p>
+<ul>
+  <li>All required fields are present (<code>targets</code>, <code>element_pool</code>, <code>structure</code>, <code>optimizer</code>).</li>
+  <li>Each element in <code>element_pool</code> has a corresponding <code>.bin</code> file in the Henke directory.</li>
+  <li><code>structure.d.min</code> &gt; &lambda;<sub>max</sub> / 2 (Bragg condition satisfied for all targets).</li>
+  <li>The <code>output_dir</code> path is writable.</li>
+</ul>
+<p>Check the console log in the Progress tab for error messages from <code>xrccmd</code>.</p>
+
+<h4>FoM stays near zero for many iterations</h4>
+<p>The optimizer cannot find structures with meaningful reflectivity. Possible causes:</p>
+<ul>
+  <li><strong>Period range too narrow:</strong> ensure <code>d.max</code> is well above &lambda;/2 for all targets, giving the optimizer room to find valid Bragg conditions.</li>
+  <li><strong>theta_min too high:</strong> if <code>fitness.theta_min</code> is set above the natural Bragg angle for the given d range, all solutions are penalized. Reduce <code>theta_min</code> or increase <code>d.max</code>.</li>
+  <li><strong>Element pool unsuitable:</strong> the selected materials may have very low contrast at the target wavelengths. Try adding elements with known good reflectivity (e.g. W or Mo for soft X-rays).</li>
+  <li><strong>Population too small:</strong> increase <code>population</code> and re-run.</li>
+</ul>
+
+<h4>The Progress chart shows FoM converging but then the run stops early</h4>
+<p>The <code>stagnation_limit</code> has been reached: the global best FoM did not improve for that many consecutive iterations. This is normal behavior indicating convergence. If you believe there is room for improvement, increase <code>stagnation_limit</code> and <code>iterations</code> and resume from the checkpoint.</p>
+
+<h4>Saving fails with a path error</h4>
+<p>Use <strong>File &gt; Save As</strong> to choose an explicit save path. Avoid paths with special characters. Ensure the target directory exists and is not write-protected.</p>
+
+<h4>File association does not work after registering</h4>
+<p>On Windows 10/11, file association changes may require signing out and back in, or may be overridden by another registered application. If the association is not applied, open <strong>Settings &gt; Apps &gt; Default Apps</strong>, scroll to <code>.xrfx</code>, and manually set XRFCalc as the default program.</p>
+
+<div class="page-nav">
+  <a href="04-config.html">&larr; Configuration Reference</a>
+  <span class="spacer"></span>
+  <a href="index.html">Home &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>XRFCalc &mdash; Oleksiy Penkov</p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>

@@ -284,6 +284,14 @@ object frmXRFCalcMain: TfrmXRFCalcMain
         OnClick = mnuRegisterExtClick
       end
     end
+    object mnuHelp: TMenuItem
+      Caption = '&Help'
+      object mnuHelpContents: TMenuItem
+        Caption = '&Contents'
+        ShortCut = 112
+        OnClick = mnuHelpContentsClick
+      end
+    end
   end
   object ToolBarImages: TImageList
     Height = 32

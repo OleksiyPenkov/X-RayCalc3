@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration Reference — XRFCalc Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <a class="logo" href="index.html">XRF<span>Calc</span></a>
+  <div class="page-title">Help</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
+  </div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <h3>Contents</h3>
+  <a href="01-overview.html">1. Application Overview</a>
+  <a href="02-viewing.html">2. Viewing Results</a>
+  <a href="03-running.html">3. Running Optimizations</a>
+  <a href="04-config.html">4. Configuration Reference</a>
+    <a href="04-config.html#targets" class="sub">targets</a>
+    <a href="04-config.html#element-pool" class="sub">element_pool</a>
+    <a href="04-config.html#structure" class="sub">structure</a>
+    <a href="04-config.html#fitness" class="sub">fitness</a>
+    <a href="04-config.html#optimizer" class="sub">optimizer</a>
+    <a href="04-config.html#toplevel" class="sub">Top-Level Fields</a>
+    <a href="04-config.html#full-example" class="sub">Full Example</a>
+  <a href="05-reference.html">5. Quick Reference</a>
+</aside>
+
+<main class="content">
+
+<h2><span class="num">4</span> Configuration Reference</h2>
+<p>The Universal Mirror Optimizer is driven by a JSON configuration file. XRFCalc writes this file for you when you use the run configuration dialog, but you can also create or edit it manually. This chapter documents every field.</p>
+
+<p>The top-level JSON object has six sections: <code>targets</code>, <code>element_pool</code>, <code>structure</code>, <code>fitness</code>, <code>optimizer</code>, and several top-level scalar fields.</p>
+
+<h3 id="targets">targets</h3>
+<p>An array of characteristic X-ray lines to optimize for simultaneously. Each entry specifies one target:</p>
+
+<pre><code>"targets": [
+  {"element": "C",  "lambda": 44.7, "weight": 1.0},
+  {"element": "O",  "lambda": 23.6, "weight": 1.0}
+]</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><code>element</code></td><td>string</td><td>Yes</td><td>Element symbol used for labeling output files and the progress table. Does not need to match a Henke database entry &mdash; it is a label only.</td></tr>
+  <tr><td><code>lambda</code></td><td>number</td><td>Yes</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms. Common values: C K&alpha; = 44.7&nbsp;&Aring;, N K&alpha; = 31.6&nbsp;&Aring;, O K&alpha; = 23.6&nbsp;&Aring;, F K&alpha; = 18.3&nbsp;&Aring;, Na K&alpha; = 11.9&nbsp;&Aring;, Mg K&alpha; = 9.89&nbsp;&Aring;.</td></tr>
+  <tr><td><code>weight</code></td><td>number</td><td>Yes</td><td>Relative weight of this target in the figure of merit. Use equal weights (1.0) for balanced optimization. Increase a weight to prioritize that element's reflectivity at the expense of others.</td></tr>
+</table>
+
+<div class="note"><strong>Number of targets:</strong> The optimizer works with any number of targets (&ge; 1). With a single target it behaves as a conventional single-wavelength optimizer. With many targets (5+), increase the population size to compensate for the larger search space.</div>
+
+<h3 id="element-pool">element_pool</h3>
+<p>An array of element symbols available for layer composition. The optimizer selects materials from this pool when constructing each layer:</p>
+
+<pre><code>"element_pool": ["W", "Si", "C"]</code></pre>
+
+<p>Each element listed must have a corresponding Henke atomic scattering factor file (<code>.bin</code>) in the Henke data directory (set by <code>henke_path</code>). The optimizer assigns composition fractions to each pool element for each layer. When <code>pure_elements</code> is <code>true</code> in the structure section, each layer is forced to use the dominant single element from the pool.</p>
+
+<div class="tip"><strong>Pool size guidance:</strong> Pools of 3&ndash;5 elements work well with a population of 100. Each additional element adds composition dimensions per layer, so larger pools benefit from larger populations (200+). Avoid including elements with nearly identical optical constants at your target wavelengths &mdash; they add search dimensions without meaningful diversity.</div>
+
+<h3 id="structure">structure</h3>
+<p>Defines the mirror topology and the search ranges for structural parameters:</p>
+
+<pre><code>"structure": {
+  "type": "bilayer",
+  "layers_per_period": 2,
+  "pure_elements": true,
+  "d":              {"min": 20, "max": 80},
+  "gamma":          {"min": 0.2, "max": 0.8},
+  "N":              {"min": 20, "max": 100},
+  "sigma":          {"min": 0.5, "max": 3},
+  "density_factor": {"min": 0.7, "max": 1.3}
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>type</code></td><td>string</td><td>Structure topology. Currently only <code>"bilayer"</code> is supported (two layers per period: a reflector and a spacer).</td></tr>
+  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Must be <code>2</code> for bilayer mode.</td></tr>
+  <tr><td><code>pure_elements</code></td><td>boolean</td><td>When <code>true</code>, each layer is forced to use a single material (the element with the highest composition fraction). Recommended for practical applications. When <code>false</code>, layers can be arbitrary mixtures of pool elements via the Virtual Crystal Approximation.</td></tr>
+  <tr><td><code>d</code></td><td>range</td><td>Period thickness search range in &Aring;. The Bragg condition requires d &gt; &lambda;/2 for each target wavelength. Set d<sub>min</sub> above the largest &lambda;/2 in your target list. Example: for C K&alpha; (44.7&nbsp;&Aring;) the minimum is d &gt; 22.4&nbsp;&Aring;.</td></tr>
+  <tr><td><code>gamma</code></td><td>range</td><td>Ratio of Layer 1 thickness to the full period d (0&ndash;1). Layer 1 thickness = d &times; &gamma;; Layer 2 = d &times; (1 &minus; &gamma;). &gamma; also controls higher-order suppression: &gamma; = 0.5 completely eliminates even Bragg orders.</td></tr>
+  <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. Evaluated as an integer (fractional values are rounded). More periods produce sharper, more intense Bragg peaks but tighter angular acceptance.</td></tr>
+  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;, applied uniformly to all interfaces via the Debye-Waller damping factor. Typical thin-film roughness is 0.5&ndash;3&nbsp;&Aring;.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Density multiplier for each layer relative to bulk. 1.0 = bulk density. Values &lt; 1.0 model porous or amorphous films; values &gt; 1.0 model compressive stress. A single range applies to all layers.</td></tr>
+</table>
+
+<div class="note"><strong>Bragg condition check:</strong> For a target at wavelength &lambda;, the Bragg condition is &lambda; = 2d&middot;sin(&theta;<sub>B</sub>). The optimizer automatically penalizes structures where &theta;<sub>B</sub> would fall below <code>fitness.theta_min</code>. Setting <code>d.min</code> appropriately avoids wasting population on infeasible solutions.</div>
+
+<h3 id="fitness">fitness</h3>
+<p>Controls how the figure of merit (FoM) is calculated from the reflectivity curves:</p>
+
+<pre><code>"fitness": {
+  "w_R":             1.0,
+  "w_FWHM":          0.3,
+  "R_min_threshold": 0.0001,
+  "polarization":    "sp",
+  "delta_theta":     0.1,
+  "theta_min":       3.0,
+  "w_purity":        1.0,
+  "scan_points":     200,
+  "scan_half_range": 5.0
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>w_R</code></td><td>number</td><td>1.0</td><td>Weight for peak reflectivity in the FoM formula. Higher values drive the optimizer to maximize R<sub>peak</sub>.</td></tr>
+  <tr><td><code>w_FWHM</code></td><td>number</td><td>0.3</td><td>Weight for the FWHM penalty. Penalizes broad Bragg peaks. Set to 0 to ignore bandwidth entirely and optimize only for peak reflectivity.</td></tr>
+  <tr><td><code>R_min_threshold</code></td><td>number</td><td>0.0001</td><td>Minimum acceptable peak reflectivity. Solutions with R<sub>peak</sub> below this value for any target receive a heavy penalty (100.0 per dark target), steering the swarm away from non-functional structures.</td></tr>
+  <tr><td><code>polarization</code></td><td>string</td><td><code>"sp"</code></td><td>X-ray polarization mode. <code>"sp"</code> averages S and P polarizations (standard for most synchrotron and laboratory sources). The reflectivity calculation uses this mode for all fitness evaluations.</td></tr>
+  <tr><td><code>delta_theta</code></td><td>number</td><td>0.1</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian of this width before extracting R<sub>peak</sub> and FWHM. Set to the actual angular divergence of your measurement setup for physically meaningful results.</td></tr>
+  <tr><td><code>theta_min</code></td><td>number</td><td>3.0</td><td>Minimum acceptable Bragg angle in degrees. Targets whose first-order Bragg angle would fall below this value receive a heavy penalty. Prevents solutions at impractically low grazing angles where the mirror cannot be physically mounted.</td></tr>
+  <tr><td><code>w_purity</code></td><td>number</td><td>1.0</td><td>Spectral purity weight (0&ndash;1). Controls how strongly higher-order contamination between targets is penalized. 0 = no purity penalty; 1 = maximum penalty. See the FoM formula below.</td></tr>
+  <tr><td><code>scan_points</code></td><td>integer</td><td>200</td><td>Number of points in the reflectivity scan around each Bragg peak used for fitness evaluation and stored in output curve files.</td></tr>
+  <tr><td><code>scan_half_range</code></td><td>number</td><td>5.0</td><td>Half-range of the angular scan in degrees. The scan covers [&theta;<sub>B</sub> &minus; half_range, &theta;<sub>B</sub> + half_range]. Increase this if you need to capture wide peaks or side-lobes in the output curves.</td></tr>
+</table>
+
+<h4>Figure of Merit Formula</h4>
+<p>The optimizer maximizes:</p>
+<div class="note">
+  <strong>FoM = &Sigma;<sub>i</sub> [ weight<sub>i</sub> &times; ( w<sub>R</sub> &times; R<sub>eff,i</sub> &minus; w<sub>FWHM</sub> &times; FWHM<sub>i</sub> / FWHM<sub>ref,i</sub> ) ]</strong>
+</div>
+<p>where R<sub>eff,i</sub> = R<sub>peak,i</sub> &times; Purity<sub>i</sub> when <code>w_purity = 1</code>, and R<sub>eff,i</sub> = R<sub>peak,i</sub> when <code>w_purity = 0</code>. FWHM<sub>ref,i</sub> is the theoretical minimum bandwidth for the structure, used to normalize the FWHM penalty across different target wavelengths.</p>
+
+<h4>Spectral Purity</h4>
+<p>When optimizing for multiple wavelengths, higher-order Bragg reflections can contaminate measurement channels. For example, a mirror at the O K&alpha; (23.6&nbsp;&Aring;) Bragg angle also reflects at &lambda;/2 = 11.8&nbsp;&Aring; via the second order, which can overlap with Na K&alpha; (11.9&nbsp;&Aring;).</p>
+
+<p>Purity for target <em>j</em> is defined as:</p>
+<div class="note">
+  <strong>Purity<sub>j</sub> = R<sub>peak,j</sub> / ( R<sub>peak,j</sub> + &Sigma;<sub>i&ne;j</sub> CrossR[j,i] )</strong>
+</div>
+<p>where CrossR[j,i] is the reflectivity of wavelength &lambda;<sub>i</sub> at the Bragg angle of target j. Setting <code>w_purity = 1.0</code> tells the optimizer to actively minimize this contamination.</p>
+
+<div class="tip"><strong>When to use purity:</strong> Enable <code>w_purity = 1.0</code> whenever your target elements have characteristic lines that are near integer multiples of each other (e.g. O at 23.6 and Mg at ~9.9 are not a problem, but O at 23.6 and Na at 11.9 are, since 23.6/2 &approx; 11.8). For single-target runs, purity has no effect and can be left at any value.</div>
+
+<h3 id="optimizer">optimizer</h3>
+<p>LFPSO (L&eacute;vy Flight Particle Swarm Optimization) algorithm parameters:</p>
+
+<pre><code>"optimizer": {
+  "population":       100,
+  "iterations":       500,
+  "tolerance":        1e-8,
+  "stagnation_limit": 50,
+  "w1":               0.4,
+  "w2":               0.5,
+  "jamming_max":      5,
+  "checkpoint_every": 50
+}</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>population</code></td><td>integer</td><td>&mdash;</td><td>Number of particles (candidate solutions). Larger populations explore more broadly but increase computation time per iteration. Recommended: 100 for 3-element pools, 200+ for larger pools or more than 3 targets.</td></tr>
+  <tr><td><code>iterations</code></td><td>integer</td><td>&mdash;</td><td>Maximum number of iterations. The optimizer may stop early if <code>stagnation_limit</code> is reached. For exploratory runs use 100&ndash;200; for production runs use 500&ndash;1000.</td></tr>
+  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>FoM convergence threshold. Not actively used for early stopping in the current implementation; kept for forward compatibility.</td></tr>
+  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Number of iterations without improvement in the global best FoM before the optimizer declares convergence and stops. Set higher (100+) for complex search spaces with many local optima.</td></tr>
+  <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight: the fraction of the previous velocity retained in each update. Lower values reduce momentum and tighten exploitation.</td></tr>
+  <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia decay factor: reduces the effective inertia over iterations, transitioning from global exploration to local exploitation.</td></tr>
+  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Number of iterations without improvement for an individual particle before it is considered jammed and a shake event is considered. Subject to the population diversity check &mdash; shaking is suppressed while the swarm is still diverse.</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a full checkpoint (all particle positions, velocities, and personal bests) every N iterations. Set to 0 to disable periodic checkpoints. A final checkpoint is always saved when the optimizer exits.</td></tr>
+</table>
+
+<div class="tip"><strong>Recommended starting point:</strong> <code>population: 100</code>, <code>iterations: 500</code>, <code>stagnation_limit: 50</code> with default w1/w2 works well for most 2&ndash;3 target problems. Double the population if the FoM varies widely across restarts, indicating the search space is not being covered adequately.</div>
+
+<h3 id="toplevel">Top-Level Fields</h3>
+<p>These scalar fields appear at the top level of the JSON object alongside the section objects:</p>
+
+<pre><code>"substrate":   "Si",
+"henke_path":  null,
+"output_dir":  "./results",
+"resume_from": null,
+"template_file": null</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>substrate</code></td><td>string</td><td>Element symbol of the substrate material. Used as the bottom layer of the mirror structure in reflectivity calculations. Common values: <code>"Si"</code>, <code>"SiO2"</code>, <code>"Glass"</code>. Must have a Henke database entry.</td></tr>
+  <tr><td><code>henke_path</code></td><td>string or null</td><td>Path to the directory containing Henke atomic scattering factor <code>.bin</code> files. <code>null</code> uses the default location next to the <code>xrccmd</code> executable (<code>Henke/</code> subdirectory).</td></tr>
+  <tr><td><code>output_dir</code></td><td>string</td><td>Directory where all output files are written: <code>best_structure.json</code>, curve files in <code>best_curves/</code>, <code>population.json</code>, <code>checkpoint.json</code>, <code>progress.log</code>. Created automatically if it does not exist.</td></tr>
+  <tr><td><code>resume_from</code></td><td>string or null</td><td>Path to a checkpoint file to resume an interrupted run. <code>null</code> starts fresh. When resuming, the <code>population</code> size and <code>element_pool</code> must match the checkpoint. The <code>iterations</code> count can be increased to allow more cycles.</td></tr>
+  <tr><td><code>template_file</code></td><td>string or null</td><td>Optional path to a template configuration file. When set, fields from the template are used as defaults for any fields not explicitly specified in the current configuration. Useful for standardizing fitness and optimizer settings across multiple runs.</td></tr>
+</table>
+
+<h3 id="full-example">Full Example</h3>
+<p>A complete configuration for a dual-target C K&alpha; / O K&alpha; mirror using W/Si/C materials:</p>
+
+<pre><code>{
+  "targets": [
+    {"element": "C", "lambda": 44.7, "weight": 1.0},
+    {"element": "O", "lambda": 23.6, "weight": 1.0}
+  ],
+  "element_pool": ["W", "Si", "C"],
+  "structure": {
+    "type": "bilayer",
+    "layers_per_period": 2,
+    "pure_elements": true,
+    "d":              {"min": 20, "max": 80},
+    "gamma":          {"min": 0.2, "max": 0.8},
+    "N":              {"min": 20, "max": 100},
+    "sigma":          {"min": 0.5, "max": 3},
+    "density_factor": {"min": 0.7, "max": 1.3}
+  },
+  "fitness": {
+    "w_R":             1.0,
+    "w_FWHM":          0.3,
+    "R_min_threshold": 0.0001,
+    "polarization":    "sp",
+    "delta_theta":     0.1,
+    "theta_min":       3.0,
+    "w_purity":        1.0,
+    "scan_points":     200,
+    "scan_half_range": 5.0
+  },
+  "optimizer": {
+    "population":       100,
+    "iterations":       500,
+    "tolerance":        1e-8,
+    "stagnation_limit": 50,
+    "w1":               0.4,
+    "w2":               0.5,
+    "jamming_max":      5,
+    "checkpoint_every": 50
+  },
+  "substrate":     "Si",
+  "henke_path":    null,
+  "output_dir":    "./co_mirror_results",
+  "resume_from":   null,
+  "template_file": null
+}</code></pre>
+
+<div class="page-nav">
+  <a href="03-running.html">&larr; Running Optimizations</a>
+  <span class="spacer"></span>
+  <a href="05-reference.html">Quick Reference &rarr;</a>
+</div>
+
+<div class="footer">
+  <p>XRFCalc &mdash; Oleksiy Penkov</p>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
+<script src="script.js"></script>
+
+</body>
+</html>
