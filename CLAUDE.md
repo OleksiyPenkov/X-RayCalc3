@@ -4,7 +4,7 @@ Delphi VCL application for X-ray reflectivity calculations. RAD Studio 37.0 (Emb
 
 ## Build
 
-Always use `/t:Build` — `/t:Make` does NOT work. "Build all" = Win32 + Win64 Release.
+Always use `/t:Build` — `/t:Make` does NOT work. "Build all" = Win64 Release only.
 
 The common prefix for all MSBuild commands:
 ```
@@ -13,35 +13,41 @@ cmd.exe //c "set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0&& set BDSCOM
 
 | Target | Command (append to prefix) |
 |--------|---------------------------|
-| Win32 Release | `XRayCalc3.dproj /t:Build /p:Config=Release /p:Platform=Win32 /nologo /v:minimal" 2>&1` |
-| Win64 Release | `XRayCalc3.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
-| Tests (build) | `Tests\XRayCalc3Tests.dproj /t:Build /p:Config=Debug /nologo /v:minimal" 2>&1` |
+| XRayCalc3 Win64 | `XRayCalc3\XRayCalc3.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
+| XRC_CMD Win64 | `XRC_CMD\xrccmd.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
+| XRFCalc Win64 | `XRFCalc\XRFCalc.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
+| Tests (build) | `XRayCalc3\Tests\XRayCalc3Tests.dproj /t:Build /p:Config=Debug /nologo /v:minimal" 2>&1` |
 
 **Run tests** (after building):
 ```
-cmd.exe //c "set PATH=C:\Program Files (x86)\Embarcadero\Studio\37.0\bin;%PATH%&& Tests\_Out\BIN\XRayCalc3Tests.exe --exitbehavior:Continue" 2>&1
+cmd.exe //c "set PATH=C:\Program Files (x86)\Embarcadero\Studio\37.0\bin;%PATH%&& XRayCalc3\Tests\_Out\BIN\XRayCalc3Tests.exe --exitbehavior:Continue" 2>&1
 ```
 
-**Group project** (`XRC3.groupproj`) build order: XRayCalc3 → XRayCalcVisualControls → XRCPreviewHandlerLib → xrccmd
+**Group project** (`XRC3.groupproj`) build order: XRayCalc3 → XRayCalcVisualControls → XRCPreviewHandlerLib → xrccmd → XRFCalc
 
 ## Architecture
 
 ```
-Forms/          Main application windows (frm_Main, frm_settings, frm_about, etc.)
-Views/          Reusable UI frames (frame_ChartInfo, frame_ProjectPanel, etc.)
-Units/          Business logic (config, types, helpers, TCalcOrchestrator)
-Math/           Calculation engine, complex math, materials database
-LFPSO/          Particle swarm optimization for curve fitting
-Components/     Custom VCL components + package (tree, grid, layer/stack editors)
-Editors/        Data editor dialogs (profile, Henke table, JSON, normalisation)
-Tests/          DUnitX test suite — 14 test units, Win32 Debug only
-XRC_CMD/        Command-line interface variant
-XRCXPreview/    Windows shell preview handler
-Assets/         Icons, help docs, development plans
-_Installer/     InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
+XRayCalc3/          Main GUI application
+  Forms/            Main application windows (frm_Main, frm_settings, frm_about, etc.)
+  Views/            Reusable UI frames (frame_ChartInfo, frame_ProjectPanel, etc.)
+  Units/            Business logic (config, types, helpers, TCalcOrchestrator)
+  LFPSO/            Particle swarm optimization for curve fitting
+  Components/       Custom VCL components + package (tree, grid, layer/stack editors)
+  Editors/          Data editor dialogs (profile, Henke table, JSON, normalisation)
+  Assets/           Icons, help docs, development plans
+  Tests/            DUnitX test suite — 14 test units, Win32 Debug only
+XRC_CMD/            Command-line interface variant
+XRFCalc/            XRF calculation GUI app
+XRCXPreview/        Windows shell preview handler
+Shared/
+  Math/             Calculation engine, complex math, materials database
+  Universal/        Universal mirror types, IO, templates, XRF lines
+_Out/               Shared build output (BIN/, DCU/, DCU64/)
+_Installer/         InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
 ```
 
-**Output:** `_Out/BIN/` (executables), `_Out/DCU/` + `_Out/DCU64/` (compiled units), `Tests/_Out/BIN/` (test runner)
+**Output:** `_Out/BIN/` (executables), `_Out/DCU/` + `_Out/DCU64/` (compiled units), `XRayCalc3/Tests/_Out/BIN/` (test runner)
 
 ## Key Files & Types
 
