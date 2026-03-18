@@ -443,11 +443,11 @@ begin
     if V = Ord(wsMaximized) then
       WindowState := wsMaximized;
 
-    V := Ini.ReadInteger('Splitters', 'Main', 0);
-    if V > 0 then MainSplitter.Position := V;
+    V := Ini.ReadInteger('Splitters', 'MainPct', 0);
+    if V > 0 then MainSplitter.Percent := V;
 
-    V := Ini.ReadInteger('Splitters', 'Shell', 0);
-    if V > 0 then ShellSplitter.Position := V;
+    V := Ini.ReadInteger('Splitters', 'ShellPct', 0);
+    if V > 0 then ShellSplitter.Percent := V;
 
     V := Ini.ReadInteger('Splitters', 'Metrics', 0);
     if V > 0 then FCurvesView.pnlMetrics.Height := V;
@@ -472,8 +472,8 @@ begin
   Ini := TIniFile.Create(GetIniPath);
   try
     Ini.WriteString('General', 'LastFolder', ShellList.Path);
-    Ini.WriteInteger('Splitters', 'Main', MainSplitter.Position);
-    Ini.WriteInteger('Splitters', 'Shell', ShellSplitter.Position);
+    Ini.WriteInteger('Splitters', 'MainPct', MainSplitter.Percent);
+    Ini.WriteInteger('Splitters', 'ShellPct', ShellSplitter.Percent);
     Ini.WriteInteger('Splitters', 'Metrics', FCurvesView.pnlMetrics.Height);
     Ini.WriteInteger('Splitters', 'ProgressChart', FProgressView.pnlChart.Height);
     Ini.WriteInteger('Window', 'State', Ord(WindowState));
