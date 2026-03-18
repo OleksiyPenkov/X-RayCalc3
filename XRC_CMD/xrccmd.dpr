@@ -18,14 +18,14 @@ uses
   cmd_unit_types in 'Units\cmd_unit_types.pas',
   cmd_unit_load in 'Units\cmd_unit_load.pas',
   cmd_unit_universal in 'Units\cmd_unit_universal.pas',
-  unit_universal_types in '..\Universal\unit_universal_types.pas',
-  unit_universal_fitness in '..\Universal\unit_universal_fitness.pas',
-  unit_universal_pso in '..\Universal\unit_universal_pso.pas',
-  unit_universal_io in '..\Universal\unit_universal_io.pas',
-  unit_universal_optimizer in '..\Universal\unit_universal_optimizer.pas',
-  unit_universal_templates in '..\Universal\unit_universal_templates.pas',
-  unit_xrfx_package in '..\Universal\unit_xrfx_package.pas',
-  unit_materials_mix in '..\Math\unit_materials_mix.pas';
+  unit_universal_types in '..\Shared\Universal\unit_universal_types.pas',
+  unit_universal_fitness in '..\Shared\Universal\unit_universal_fitness.pas',
+  unit_universal_pso in '..\Shared\Universal\unit_universal_pso.pas',
+  unit_universal_io in '..\Shared\Universal\unit_universal_io.pas',
+  unit_universal_optimizer in '..\Shared\Universal\unit_universal_optimizer.pas',
+  unit_universal_templates in '..\Shared\Universal\unit_universal_templates.pas',
+  unit_xrfx_package in '..\Shared\Universal\unit_xrfx_package.pas',
+  unit_materials_mix in '..\Shared\Math\unit_materials_mix.pas';
 
 var
   Value: string;

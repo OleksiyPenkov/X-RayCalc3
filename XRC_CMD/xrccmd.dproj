@@ -59,7 +59,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\math;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;..\Universal;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\Shared\Math;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;..\Shared\Universal;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\Out\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\XRFCalc\_Out\BIN</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
@@ -139,13 +139,13 @@
         <DCCReference Include="Units\cmd_unit_types.pas"/>
         <DCCReference Include="Units\cmd_unit_load.pas"/>
         <DCCReference Include="Units\cmd_unit_universal.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_types.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_fitness.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_pso.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_io.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_optimizer.pas"/>
-        <DCCReference Include="..\Universal\unit_universal_templates.pas"/>
-        <DCCReference Include="..\Math\unit_materials_mix.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_types.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_fitness.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_pso.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_optimizer.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_templates.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_materials_mix.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
