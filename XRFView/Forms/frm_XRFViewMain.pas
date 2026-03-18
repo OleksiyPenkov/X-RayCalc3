@@ -13,7 +13,7 @@ uses
   Jam.Shell.Types, Jam.Shell.Controls.Types,
   Jam.Shell.Controls.BaseShellListView,
   unit_xrfx_package, unit_universal_types,
-  xrfview_unit_loader,
+  xrfview_unit_loader, xrfview_unit_runner,
   frame_StructureView, frame_CurvesView, frame_InfoView,
   frame_ProgressView, frame_CompareView;
 
@@ -33,6 +33,11 @@ type
     btnExportStructure: TToolButton;
     btnCopyData: TToolButton;
     btnSaveImage: TToolButton;
+    tbSep1: TToolButton;
+    btnNewRun: TToolButton;
+    btnEditRun: TToolButton;
+    tbSep2: TToolButton;
+    btnStop: TToolButton;
     MainSplitter: TRzSplitter;
     ShellSplitter: TRzSplitter;
     ShellTree: TJamShellTree;
@@ -58,8 +63,14 @@ type
     procedure btnSaveImageClick(Sender: TObject);
     procedure mnuExitClick(Sender: TObject);
     procedure mnuRegisterExtClick(Sender: TObject);
+    procedure btnNewRunClick(Sender: TObject);
+    procedure btnEditRunClick(Sender: TObject);
+    procedure btnStopClick(Sender: TObject);
   private
     FLoader: TXRFViewLoader;
+    FRunner: TXRCRunner;
+    FRunTimer: TTimer;
+    FRunStartTime: TDateTime;
     FStructureView: TframeStructureView;
     FCurvesView: TframeCurvesView;
     FInfoView: TframeInfoView;
@@ -71,6 +82,13 @@ type
     function  GetIniPath: string;
     procedure LoadSettings;
     procedure SaveSettings;
+    procedure HandleIteration(const Data: TRunnerIterationData);
+    procedure HandleCompleted(const XRFXPath: string);
+    procedure HandleError(const ErrorMsg: string);
+    procedure HandleRawLine(const Line: string);
+    procedure RunTimerTick(Sender: TObject);
+    procedure UpdateRunState;
+    procedure StartRun(const ConfigPath: string);
   end;
 
 var
@@ -79,7 +97,8 @@ var
 implementation
 
 uses
-  System.Win.Registry, System.IniFiles, ClipBrd, Vcl.Imaging.pngimage;
+  System.Win.Registry, System.IniFiles, ClipBrd, Vcl.Imaging.pngimage,
+  frm_RunConfig, unit_universal_io;
 
 {$R *.dfm}
 
@@ -105,8 +124,9 @@ end;
 
 procedure TfrmXRFViewMain.LoadToolBarIcons;
 const
-  ResNames: array[0..3] of string = (
-    'ICON_REFRESH', 'ICON_EXPORT', 'ICON_COPY', 'ICON_SAVEIMG');
+  ResNames: array[0..6] of string = (
+    'ICON_REFRESH', 'ICON_EXPORT', 'ICON_COPY', 'ICON_SAVEIMG',
+    'ICON_NEWRUN', 'ICON_EDITRUN', 'ICON_STOP');
 var
   i: Integer;
   RS: TResourceStream;
@@ -162,6 +182,17 @@ begin
 
   tabCompare.TabVisible := False;
 
+  FRunner := TXRCRunner.Create;
+  FRunner.OnIteration := HandleIteration;
+  FRunner.OnCompleted := HandleCompleted;
+  FRunner.OnError := HandleError;
+  FRunner.OnRawLine := HandleRawLine;
+
+  FRunTimer := TTimer.Create(Self);
+  FRunTimer.Interval := 100;
+  FRunTimer.Enabled := False;
+  FRunTimer.OnTimer := RunTimerTick;
+
   if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
     ShellList.Path := ExtractFilePath(ParamStr(1))
   else
@@ -170,6 +201,9 @@ end;
 
 procedure TfrmXRFViewMain.FormDestroy(Sender: TObject);
 begin
+  if FRunner.State = rsRunning then
+    FRunner.Cancel;
+  FreeAndNil(FRunner);
   FreeAndNil(FLoader);
 end;
 
@@ -359,6 +393,181 @@ begin
   finally
     Ini.Free;
   end;
+end;
+
+{ --- Runner Integration --- }
+
+procedure TfrmXRFViewMain.RunTimerTick(Sender: TObject);
+begin
+  FRunner.Poll;
+end;
+
+procedure TfrmXRFViewMain.HandleIteration(const Data: TRunnerIterationData);
+var
+  Elapsed: TDateTime;
+  Min, Sec: Integer;
+begin
+  FProgressView.AddIteration(Data);
+  Elapsed := Now - FRunStartTime;
+  Min := Trunc(Elapsed * 24 * 60);
+  Sec := Trunc(Elapsed * 24 * 3600) mod 60;
+  spStatus.Caption := Format('Running... Iteration %d | FoM: %.4f | %d:%02d',
+    [Data.Iteration, Data.FoM, Min, Sec]);
+end;
+
+procedure TfrmXRFViewMain.HandleCompleted(const XRFXPath: string);
+var
+  TempOutputDir: string;
+begin
+  FRunTimer.Enabled := False;
+
+  // Delete temp config JSON
+  if TFile.Exists(FRunner.ConfigPath) then
+    TFile.Delete(FRunner.ConfigPath);
+
+  // Clean up temp output_dir
+  TempOutputDir := ExtractFilePath(FRunner.ConfigPath) + TEMP_OUTPUT_DIR;
+  if TDirectory.Exists(TempOutputDir) then
+    TDirectory.Delete(TempOutputDir, True);
+
+  FProgressView.SetStaticMode;
+  UpdateRunState;
+
+  // Reload the new/updated .xrfx
+  if TFile.Exists(XRFXPath) then
+  begin
+    ShellList.FullRefresh;
+    ProcessFile(XRFXPath);
+  end;
+end;
+
+procedure TfrmXRFViewMain.HandleError(const ErrorMsg: string);
+begin
+  FRunTimer.Enabled := False;
+  FProgressView.SetStaticMode;
+  UpdateRunState;
+  spStatus.Caption := 'Error: ' + ErrorMsg;
+end;
+
+procedure TfrmXRFViewMain.HandleRawLine(const Line: string);
+begin
+  FProgressView.AppendLog(Line);
+end;
+
+procedure TfrmXRFViewMain.UpdateRunState;
+var
+  Running: Boolean;
+begin
+  Running := FRunner.State = rsRunning;
+  btnNewRun.Enabled := not Running;
+  btnEditRun.Enabled := not Running;
+  btnStop.Visible := Running;
+end;
+
+procedure TfrmXRFViewMain.StartRun(const ConfigPath: string);
+begin
+  PageControl1.ActivePage := tabProgress;
+  FProgressView.SetLiveMode;
+  FRunStartTime := Now;
+
+  try
+    FRunner.Start(ConfigPath);
+    FRunTimer.Enabled := True;
+    UpdateRunState;
+    spStatus.Caption := 'Starting optimization...';
+  except
+    on E: Exception do
+    begin
+      FProgressView.SetStaticMode;
+      UpdateRunState;
+      spStatus.Caption := 'Error: ' + E.Message;
+    end;
+  end;
+end;
+
+procedure TfrmXRFViewMain.btnNewRunClick(Sender: TObject);
+var
+  Dlg: TfrmRunConfig;
+  Config: TUniversalConfig;
+  ConfigPath, TempOutputDir: string;
+begin
+  Dlg := TfrmRunConfig.Create(Self);
+  try
+    Dlg.SetDefaults;
+    if Dlg.ShowModal = mrOk then
+    begin
+      Config := Dlg.BuildConfig;
+
+      // Set output_dir to a temp subfolder
+      TempOutputDir := TPath.Combine(ShellList.Path, TEMP_OUTPUT_DIR);
+      Config.OutputDir := TempOutputDir;
+
+      // Write config JSON with timestamp name in current folder
+      ConfigPath := TPath.Combine(ShellList.Path,
+        'xrfview_' + FormatDateTime('yyyy-mm-dd_hhnnss', Now) + '.json');
+      TUniversalIO.SaveConfig(Config, ConfigPath);
+
+      StartRun(ConfigPath);
+    end;
+  finally
+    Dlg.Free;
+  end;
+end;
+
+procedure TfrmXRFViewMain.btnEditRunClick(Sender: TObject);
+var
+  SelectedFile, ConfigJsonPath, TempDir: string;
+  Config: TUniversalConfig;
+  Dlg: TfrmRunConfig;
+  ConfigPath, TempOutputDir: string;
+begin
+  if not FLoader.IsLoaded then
+  begin
+    spStatus.Caption := 'Select an .xrfx file first';
+    Exit;
+  end;
+
+  SelectedFile := FLoader.GetResult(0).FileName;
+  TempDir := FLoader.GetResult(0).TempDir;
+  ConfigJsonPath := TPath.Combine(TempDir, 'config.json');
+
+  if not TFile.Exists(ConfigJsonPath) then
+  begin
+    spStatus.Caption := 'No config.json found in this .xrfx package';
+    Exit;
+  end;
+
+  Config := TUniversalIO.LoadConfig(ConfigJsonPath);
+
+  Dlg := TfrmRunConfig.Create(Self);
+  try
+    Dlg.LoadFromConfig(Config);
+    if Dlg.ShowModal = mrOk then
+    begin
+      Config := Dlg.BuildConfig;
+
+      // Set output_dir to a temp subfolder
+      TempOutputDir := TPath.Combine(ExtractFilePath(SelectedFile), TEMP_OUTPUT_DIR);
+      Config.OutputDir := TempOutputDir;
+
+      // Write config JSON with same basename so .xrfx overwrites
+      ConfigPath := ChangeFileExt(SelectedFile, '.json');
+      TUniversalIO.SaveConfig(Config, ConfigPath);
+
+      StartRun(ConfigPath);
+    end;
+  finally
+    Dlg.Free;
+  end;
+end;
+
+procedure TfrmXRFViewMain.btnStopClick(Sender: TObject);
+begin
+  FRunner.Cancel;
+  FRunTimer.Enabled := False;
+  FProgressView.SetStaticMode;
+  UpdateRunState;
+  spStatus.Caption := 'Run cancelled';
 end;
 
 end.

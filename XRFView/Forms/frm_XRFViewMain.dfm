@@ -53,6 +53,35 @@ object frmXRFViewMain: TfrmXRFViewMain
       ImageIndex = 3
       OnClick = btnSaveImageClick
     end
+    object tbSep1: TToolButton
+      Left = 400
+      Width = 8
+      Style = tbsSeparator
+    end
+    object btnNewRun: TToolButton
+      Left = 408
+      Caption = 'New Run'
+      ImageIndex = 4
+      OnClick = btnNewRunClick
+    end
+    object btnEditRun: TToolButton
+      Left = 508
+      Caption = 'Edit Run'
+      ImageIndex = 5
+      OnClick = btnEditRunClick
+    end
+    object tbSep2: TToolButton
+      Left = 608
+      Width = 8
+      Style = tbsSeparator
+    end
+    object btnStop: TToolButton
+      Left = 616
+      Caption = 'Stop'
+      ImageIndex = 6
+      Visible = False
+      OnClick = btnStopClick
+    end
   end
   object MainSplitter: TRzSplitter
     Left = 0
