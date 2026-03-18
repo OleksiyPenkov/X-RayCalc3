@@ -266,20 +266,17 @@ end;
 
 procedure TframeCurvesView.ChartResize(Sender: TObject);
 begin
-  if pnlStructure.Visible then
-    PositionStructurePanel;
   if pnlLegend.Visible then
     PositionLegendPanel;
+  if pnlStructure.Visible then
+    PositionStructurePanel;
 end;
 
 { Floating legend }
 
 procedure TframeCurvesView.RefreshLegend;
-const
-  MAX_LEGEND_HEIGHT = 300;
 var
-  I, Y, Len, TotalH: Integer;
-  Row: TPanel;
+  I, X, Len, TextW: Integer;
   Shp: TShape;
   CB: TCheckBox;
 
@@ -302,46 +299,37 @@ begin
     Exit;
   end;
 
-  Y := 4;
+  chrtCurves.Canvas.Font.Assign(sbLegend.Font);
+  X := 6;
   for I := 0 to chrtCurves.SeriesCount - 1 do
   begin
-    Row := TPanel.Create(sbLegend);
-    Row.Parent := sbLegend;
-    Row.BevelOuter := bvNone;
-    Row.Left := 0;
-    Row.Top := Y;
-    Row.Width := sbLegend.ClientWidth;
-    Row.Height := 20;
-    Row.Anchors := [akLeft, akTop, akRight];
-    Row.Color := clWhite;
-    AddControl(Row);
-
-    Shp := TShape.Create(Row);
-    Shp.Parent := Row;
-    Shp.Left := 4;
-    Shp.Top := 2;
+    Shp := TShape.Create(sbLegend);
+    Shp.Parent := sbLegend;
+    Shp.Left := X;
+    Shp.Top := 5;
     Shp.Width := 14;
     Shp.Height := 14;
     Shp.Brush.Color := chrtCurves.Series[I].Color;
     Shp.Pen.Color := chrtCurves.Series[I].Color;
+    AddControl(Shp);
 
-    CB := TCheckBox.Create(Row);
-    CB.Parent := Row;
-    CB.Left := 22;
-    CB.Top := 1;
-    CB.Width := Row.Width - 26;
+    CB := TCheckBox.Create(sbLegend);
+    CB.Parent := sbLegend;
+    CB.Left := X + 18;
+    CB.Top := 3;
     CB.Caption := chrtCurves.Series[I].Title;
     CB.Checked := chrtCurves.Series[I].Active;
     CB.Tag := NativeInt(chrtCurves.Series[I]);
     CB.OnClick := LegendCheckBoxClick;
+    TextW := chrtCurves.Canvas.TextWidth(CB.Caption);
+    CB.Width := TextW + 22;
+    AddControl(CB);
 
-    Inc(Y, 20);
+    X := X + 18 + CB.Width + 8;
   end;
 
-  TotalH := Y + 6;
-  if TotalH > MAX_LEGEND_HEIGHT then
-    TotalH := MAX_LEGEND_HEIGHT;
-  pnlLegend.Height := TotalH;
+  pnlLegend.Width := X + 2;
+  pnlLegend.Height := 26;
 
   PositionLegendPanel;
   pnlLegend.Visible := True;
@@ -411,26 +399,24 @@ begin
   PositionStructurePanel;
   pnlStructure.Visible := True;
   pnlStructure.BringToFront;
-  if pnlLegend.Visible then
-    PositionLegendPanel;
 end;
 
 procedure TframeCurvesView.PositionStructurePanel;
 begin
   pnlStructure.Parent := chrtCurves;
   pnlStructure.Left := chrtCurves.ClientWidth - pnlStructure.Width
-    - chrtCurves.ClientWidth * 4 div 100;
-  pnlStructure.Top := chrtCurves.ClientHeight * 4 div 100;
+    - chrtCurves.ClientWidth * 2 div 100;
+  if pnlLegend.Visible then
+    pnlStructure.Top := pnlLegend.Top + pnlLegend.Height + 2
+  else
+    pnlStructure.Top := chrtCurves.ClientHeight * 4 div 100;
 end;
 
 procedure TframeCurvesView.PositionLegendPanel;
 begin
   pnlLegend.Parent := chrtCurves;
-  if pnlStructure.Visible then
-    pnlLegend.Left := pnlStructure.Left - pnlLegend.Width - 4
-  else
-    pnlLegend.Left := chrtCurves.ClientWidth - pnlLegend.Width
-      - chrtCurves.ClientWidth * 4 div 100;
+  pnlLegend.Left := chrtCurves.ClientWidth - pnlLegend.Width
+    - chrtCurves.ClientWidth * 2 div 100;
   pnlLegend.Top := chrtCurves.ClientHeight * 4 div 100;
 end;
 
