@@ -59,20 +59,20 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_DcuOutput>.\_Out\DCU</DCC_DcuOutput>
-        <DCC_ExeOutput>.\_Out\BIN</DCC_ExeOutput>
+        <DCC_DcuOutput>..\_Out\DCU</DCC_DcuOutput>
+        <DCC_ExeOutput>..\_Out\BIN</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-        <DCC_UnitSearchPath>math;units;LFPSO;components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\Shared\Math;Units;LFPSO;Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>
         <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
         <SanitizedProjectName>XRayCalc3</SanitizedProjectName>
-        <DCC_DcpOutput>.\_Out\DCP</DCC_DcpOutput>
+        <DCC_DcpOutput>..\_Out\DCP</DCC_DcpOutput>
         <VerInfo_Locale>1058</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
@@ -116,7 +116,7 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
         <DCC_DcpOutput>.</DCC_DcpOutput>
-        <DCC_ExeOutput>.\_Out\BIN</DCC_ExeOutput>
+        <DCC_ExeOutput>..\_Out\BIN</DCC_ExeOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
@@ -157,8 +157,8 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
-        <DCC_DcpOutput>.\_Out\DCP64</DCC_DcpOutput>
-        <DCC_DcuOutput>.\_Out\DCU64</DCC_DcuOutput>
+        <DCC_DcpOutput>..\_Out\DCP64</DCC_DcpOutput>
+        <DCC_DcuOutput>..\_Out\DCU64</DCC_DcuOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Icon_MainIcon>Assets\XRayCalc3_Icon.ico</Icon_MainIcon>
@@ -202,7 +202,7 @@
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="Units\unit_Types.pas"/>
-        <DCCReference Include="Math\math_complex.pas"/>
+        <DCCReference Include="..\Shared\Math\math_complex.pas"/>
         <DCCReference Include="Units\unit_SeriesIO.pas"/>
         <DCCReference Include="Units\unit_DataProcessing.pas"/>
         <DCCReference Include="Units\unit_FileUtils.pas"/>
@@ -215,9 +215,9 @@
         <DCCReference Include="Components\editor_Stack.pas">
             <Form>edtrStack</Form>
         </DCCReference>
-        <DCCReference Include="Math\unit_calc.pas"/>
-        <DCCReference Include="Math\unit_materials.pas"/>
-        <DCCReference Include="Math\math_globals.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_calc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_materials.pas"/>
+        <DCCReference Include="..\Shared\Math\math_globals.pas"/>
         <DCCReference Include="Components\unit_XRCProjectTree.pas"/>
         <DCCReference Include="Components\editor_Layer.pas">
             <Form>edtrLayer</Form>
@@ -261,8 +261,8 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="LFPSO\unit_LFPSO_Poly.pas"/>
-        <DCCReference Include="Math\unit_SavitzkyGolay.pas"/>
-        <DCCReference Include="Math\unit_ProfileCalc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_SavitzkyGolay.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_ProfileCalc.pas"/>
         <DCCReference Include="Forms\frm_Benchmark.pas">
             <Form>frmBenchmark</Form>
             <FormType>dfm</FormType>
@@ -322,14 +322,14 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="5">
-                <DeployFile LocalName="_Out\BIN\XRayCalc3.exe" Configuration="Debug" Class="ProjectOutput"/>
-                <DeployFile LocalName="_Out\BIN\XRayCalc3.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\_Out\BIN\XRayCalc3.exe" Configuration="Debug" Class="ProjectOutput"/>
+                <DeployFile LocalName="..\_Out\BIN\XRayCalc3.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>XRayCalc3.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="_Out\BIN\XRayCalc3.exe" Configuration="Release" Class="ProjectOutput"/>
+                <DeployFile LocalName="..\_Out\BIN\XRayCalc3.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="iOSSimulator">
                         <Operation>1</Operation>
