@@ -20,8 +20,8 @@ object frmXRFViewMain: TfrmXRFViewMain
     Left = 0
     Top = 0
     Width = 1000
-    Height = 42
-    ButtonHeight = 38
+    Height = 56
+    ButtonHeight = 52
     ButtonWidth = 100
     Images = ToolBarImages
     ShowCaptions = True
@@ -94,9 +94,9 @@ object frmXRFViewMain: TfrmXRFViewMain
   end
   object MainSplitter: TRzSplitter
     Left = 0
-    Top = 42
+    Top = 56
     Width = 1000
-    Height = 538
+    Height = 524
     Position = 300
     Percent = 30
     UpperLeft.Color = clBtnFace
