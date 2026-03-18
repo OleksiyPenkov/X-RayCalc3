@@ -71,6 +71,7 @@ type
     FRunner: TXRCRunner;
     FRunTimer: TTimer;
     FRunStartTime: TDateTime;
+    FInitialPath: string;
     FStructureView: TframeStructureView;
     FCurvesView: TframeCurvesView;
     FInfoView: TframeInfoView;
@@ -82,6 +83,7 @@ type
     function  GetIniPath: string;
     procedure LoadSettings;
     procedure SaveSettings;
+    procedure WMDeferredNavigate(var Msg: TMessage); message WM_USER + 100;
     procedure HandleIteration(const Data: TRunnerIterationData);
     procedure HandleCompleted(const XRFXPath: string);
     procedure HandleError(const ErrorMsg: string);
@@ -194,9 +196,12 @@ begin
   FRunTimer.OnTimer := RunTimerTick;
 
   if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
-    ShellList.Path := ExtractFilePath(ParamStr(1))
+    FInitialPath := ExtractFilePath(ParamStr(1))
   else
     LoadSettings;
+
+  if FInitialPath <> '' then
+    PostMessage(Handle, WM_USER + 100, 0, 0);
 end;
 
 procedure TfrmXRFViewMain.FormDestroy(Sender: TObject);
@@ -377,10 +382,16 @@ begin
   try
     Path := Ini.ReadString('General', 'LastFolder', '');
     if (Path <> '') and TDirectory.Exists(Path) then
-      ShellList.Path := Path;
+      FInitialPath := Path;
   finally
     Ini.Free;
   end;
+end;
+
+procedure TfrmXRFViewMain.WMDeferredNavigate(var Msg: TMessage);
+begin
+  if (FInitialPath <> '') and TDirectory.Exists(FInitialPath) then
+    ShellList.Path := FInitialPath;
 end;
 
 procedure TfrmXRFViewMain.SaveSettings;
