@@ -192,6 +192,8 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian of this width before extracting R<sub>peak</sub> and FWHM.</td></tr>
   <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees. Targets whose Bragg angle falls below this value receive a heavy penalty. Prevents solutions at impractically low grazing angles.</td></tr>
   <tr><td><code>w_purity</code></td><td>number</td><td>Weight for the spectral purity penalty (0&ndash;1). Controls how strongly higher-order Bragg peak contamination between targets is penalized. 0 = no purity penalty, 1 = full penalty. Default: 1.0. See <a href="#purity">Spectral Purity</a>.</td></tr>
+  <tr><td><code>scan_points</code></td><td>integer</td><td>Number of points in the reflectivity scan around each Bragg peak. Higher values give finer theta resolution in output curves. Default: 200.</td></tr>
+  <tr><td><code>scan_half_range</code></td><td>number</td><td>Half-range of the reflectivity scan in degrees, centered on the Bragg peak. The scan covers [&theta;<sub>Bragg</sub> &minus; half_range, &theta;<sub>Bragg</sub> + half_range]. Default: 5.0.</td></tr>
 </table>
 
 <h4>Optimizer</h4>

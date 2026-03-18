@@ -13,24 +13,18 @@
         "Al",
         "Si",
         "C",
-        "B",
         "B4C",
         "SiC",
-        "Si3N4",
         "WC"
     ],
     "excluded_pairs": [
         "Si/SiC",
-        "Si/Si3N4",
-        "B/B4C",
         "C/B4C",
         "C/SiC",
         "C/WC",
         "W/WC",
-        "SiC/Si3N4",
         "B4C/SiC",
-        "B4C/Si3N4",
-		"W/Si"
+ 		"W/Si"
     ],
     "structure": {
         "type": "bilayer",
@@ -49,19 +43,21 @@
             "max": 200.0
         },
         "sigma": 3.5,
-        "density_factor": 0.95
+        "density_factor": 1
     },
     "fitness": {
         "w_R": 1.0,
-        "w_FWHM": 0.5,
+        "w_FWHM": 0.1,
         "R_min_threshold": 0.001,
         "polarization": "sp",
-        "delta_theta": 0.1,
-        "theta_min": 5,
-        "w_purity": 0.3
+        "delta_theta": 0.05,
+        "theta_min": 3,
+        "w_purity": 0.3,
+        "scan_points": 1000,
+        "scan_half_range": 5.0
     },
     "optimizer": {
-        "population": 1000,
+        "population": 100,
         "iterations": 100,
         "tolerance": 1E-5,
         "stagnation_limit": 200,

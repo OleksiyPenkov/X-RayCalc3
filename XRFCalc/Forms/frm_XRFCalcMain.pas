@@ -21,6 +21,9 @@ type
   TfrmXRFCalcMain = class(TForm)
     MainMenu1: TMainMenu;
     mnuFile: TMenuItem;
+    mnuSave: TMenuItem;
+    mnuSaveAs: TMenuItem;
+    mnuFileSep1: TMenuItem;
     mnuExit: TMenuItem;
     mnuView: TMenuItem;
     mnuTools: TMenuItem;
@@ -60,6 +63,8 @@ type
     procedure btnExportStructureClick(Sender: TObject);
     procedure btnCopyDataClick(Sender: TObject);
     procedure btnSaveImageClick(Sender: TObject);
+    procedure mnuSaveClick(Sender: TObject);
+    procedure mnuSaveAsClick(Sender: TObject);
     procedure mnuExitClick(Sender: TObject);
     procedure mnuRegisterExtClick(Sender: TObject);
     procedure btnNewRunClick(Sender: TObject);
@@ -71,6 +76,8 @@ type
     FRunTimer: TTimer;
     FRunStartTime: TDateTime;
     FInitialPath: string;
+    FSavePath: string;
+    FUnsaved: Boolean;
     FCurvesView: TframeCurvesView;
     FInfoView: TframeInfoView;
     FProgressView: TframeProgressView;
@@ -87,6 +94,7 @@ type
     procedure HandleError(const ErrorMsg: string);
     procedure HandleRawLine(const Line: string);
     procedure RunTimerTick(Sender: TObject);
+    function  CheckUnsaved: Boolean;
     procedure UpdateRunState;
     procedure StartRun(const ConfigPath: string; MaxIterations: Integer);
   end;
@@ -208,8 +216,12 @@ end;
 
 procedure TfrmXRFCalcMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  if not CheckUnsaved then
+  begin
+    Action := caNone;
+    Exit;
+  end;
   SaveSettings;
-  Application.Terminate;
 end;
 
 procedure TfrmXRFCalcMain.ShellListSelectItem(Sender: TObject;
@@ -238,6 +250,7 @@ begin
   end;
 
   if Length(SelectedFiles) = 0 then Exit;
+  if not CheckUnsaved then Exit;
 
   try
     Screen.Cursor := crHourGlass;
@@ -254,11 +267,14 @@ procedure TfrmXRFCalcMain.ProcessFile(const FileName: string);
 begin
   try
     FLoader.LoadFile(FileName);
+    FSavePath := FileName;
+    FUnsaved := False;
 
     FCurvesView.LoadCurves(FLoader.GetResult(0).Curves);
     FCurvesView.LoadStructure(FLoader.GetResult(0).Structure,
       FLoader.Manifest.Structure);
     FInfoView.LoadManifestInfo(FLoader.Manifest);
+    FCurvesView.LoadMetrics(FLoader.Manifest, FLoader.GetResult(0).Curves);
     FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
 
     tabCompare.TabVisible := False;
@@ -350,6 +366,52 @@ begin
   end;
 end;
 
+procedure TfrmXRFCalcMain.mnuSaveClick(Sender: TObject);
+var
+  SrcPath, DestPath: string;
+begin
+  if not FLoader.IsLoaded then Exit;
+  SrcPath := FLoader.GetResult(0).FileName;
+
+  if FSavePath <> '' then
+    DestPath := FSavePath
+  else
+  begin
+    // No save path yet — default to working directory
+    DestPath := TPath.Combine(ShellList.Path,
+      ExtractFileName(SrcPath));
+  end;
+
+  if not SameText(SrcPath, DestPath) then
+    TFile.Copy(SrcPath, DestPath, True);
+  FSavePath := DestPath;
+  FUnsaved := False;
+  ShellList.FullRefresh;
+  spStatus.Caption := 'Saved: ' + ExtractFileName(DestPath);
+end;
+
+procedure TfrmXRFCalcMain.mnuSaveAsClick(Sender: TObject);
+var
+  SrcPath: string;
+begin
+  if not FLoader.IsLoaded then Exit;
+  SrcPath := FLoader.GetResult(0).FileName;
+
+  dlgSave.DefaultExt := '.xrfx';
+  dlgSave.Filter := 'XRFX package|*.xrfx';
+  dlgSave.InitialDir := ShellList.Path;
+  dlgSave.FileName := ExtractFileName(SrcPath);
+  if dlgSave.Execute then
+  begin
+    if not SameText(SrcPath, dlgSave.FileName) then
+      TFile.Copy(SrcPath, dlgSave.FileName, True);
+    FSavePath := dlgSave.FileName;
+    FUnsaved := False;
+    ShellList.FullRefresh;
+    spStatus.Caption := 'Saved: ' + ExtractFileName(dlgSave.FileName);
+  end;
+end;
+
 procedure TfrmXRFCalcMain.mnuExitClick(Sender: TObject);
 begin
   Close;
@@ -369,12 +431,25 @@ procedure TfrmXRFCalcMain.LoadSettings;
 var
   Ini: TIniFile;
   Path: string;
+  V: Integer;
 begin
   Ini := TIniFile.Create(GetIniPath);
   try
     Path := Ini.ReadString('General', 'LastFolder', '');
     if (Path <> '') and TDirectory.Exists(Path) then
       FInitialPath := Path;
+
+    V := Ini.ReadInteger('Splitters', 'Main', 0);
+    if V > 0 then MainSplitter.Position := V;
+
+    V := Ini.ReadInteger('Splitters', 'Shell', 0);
+    if V > 0 then ShellSplitter.Position := V;
+
+    V := Ini.ReadInteger('Splitters', 'Metrics', 0);
+    if V > 0 then FCurvesView.pnlMetrics.Height := V;
+
+    V := Ini.ReadInteger('Splitters', 'ProgressChart', 0);
+    if V > 0 then FProgressView.pnlChart.Height := V;
   finally
     Ini.Free;
   end;
@@ -393,6 +468,10 @@ begin
   Ini := TIniFile.Create(GetIniPath);
   try
     Ini.WriteString('General', 'LastFolder', ShellList.Path);
+    Ini.WriteInteger('Splitters', 'Main', MainSplitter.Position);
+    Ini.WriteInteger('Splitters', 'Shell', ShellSplitter.Position);
+    Ini.WriteInteger('Splitters', 'Metrics', FCurvesView.pnlMetrics.Height);
+    Ini.WriteInteger('Splitters', 'ProgressChart', FProgressView.pnlChart.Height);
   finally
     Ini.Free;
   end;
@@ -420,35 +499,31 @@ end;
 
 procedure TfrmXRFCalcMain.HandleCompleted(const XRFXPath: string);
 var
-  TempOutputDir: string;
+  OutputDir: string;
 begin
   FRunTimer.Enabled := False;
-
-  // Delete temp config JSON
-  if TFile.Exists(FRunner.ConfigPath) then
-    TFile.Delete(FRunner.ConfigPath);
-
-  // Clean up temp output_dir
-  TempOutputDir := ExtractFilePath(FRunner.ConfigPath) + TEMP_OUTPUT_DIR;
-  if TDirectory.Exists(TempOutputDir) then
-    TDirectory.Delete(TempOutputDir, True);
-
   FProgressView.SetStaticMode;
   UpdateRunState;
 
-  // Reload the new/updated .xrfx (keep live progress chart)
+  // Clean up intermediate output_dir only (keep .xrfx for Save/Save As)
+  OutputDir := TPath.Combine(ExtractFilePath(FRunner.ConfigPath), TEMP_OUTPUT_DIR);
+  if TDirectory.Exists(OutputDir) then
+    TDirectory.Delete(OutputDir, True);
+
+  // Load the .xrfx from temp (keep live progress chart)
   if TFile.Exists(XRFXPath) then
   begin
-    ShellList.FullRefresh;
     try
       FLoader.LoadFile(XRFXPath);
       FCurvesView.LoadCurves(FLoader.GetResult(0).Curves);
       FCurvesView.LoadStructure(FLoader.GetResult(0).Structure,
         FLoader.Manifest.Structure);
       FInfoView.LoadManifestInfo(FLoader.Manifest);
+      FCurvesView.LoadMetrics(FLoader.Manifest, FLoader.GetResult(0).Curves);
       tabCompare.TabVisible := False;
-      spStatus.Caption := Format('FoM: %.6f  |  %s',
-        [FLoader.Manifest.FoM, ExtractFileName(XRFXPath)]);
+      FUnsaved := True;
+      spStatus.Caption := Format('FoM: %.6f  |  Unsaved — use File > Save',
+        [FLoader.Manifest.FoM]);
     except
       on E: Exception do
         spStatus.Caption := 'Error: ' + E.Message;
@@ -467,6 +542,14 @@ end;
 procedure TfrmXRFCalcMain.HandleRawLine(const Line: string);
 begin
   FProgressView.AppendLog(Line);
+end;
+
+function TfrmXRFCalcMain.CheckUnsaved: Boolean;
+begin
+  if not FUnsaved then
+    Exit(True);
+  Result := MessageDlg('Current results have not been saved. Discard them?',
+    mtConfirmation, [mbYes, mbNo], 0) = mrYes;
 end;
 
 procedure TfrmXRFCalcMain.UpdateRunState;
@@ -504,7 +587,7 @@ procedure TfrmXRFCalcMain.btnNewRunClick(Sender: TObject);
 var
   Dlg: TfrmRunConfig;
   Config: TUniversalConfig;
-  ConfigPath, TempOutputDir: string;
+  ConfigPath, RunTempDir: string;
 begin
   Dlg := TfrmRunConfig.Create(Self);
   try
@@ -513,15 +596,16 @@ begin
     begin
       Config := Dlg.BuildConfig;
 
-      // Set output_dir to a temp subfolder
-      TempOutputDir := TPath.Combine(ShellList.Path, TEMP_OUTPUT_DIR);
-      Config.OutputDir := TempOutputDir;
+      // Use system temp for config and output
+      RunTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc\run_' + TGUID.NewGuid.ToString);
+      TDirectory.CreateDirectory(RunTempDir);
+      Config.OutputDir := TPath.Combine(RunTempDir, TEMP_OUTPUT_DIR);
 
-      // Write config JSON with timestamp name in current folder
-      ConfigPath := TPath.Combine(ShellList.Path,
+      ConfigPath := TPath.Combine(RunTempDir,
         'xrfcalc_' + FormatDateTime('yyyy-mm-dd_hhnnss', Now) + '.json');
       TUniversalIO.SaveConfig(Config, ConfigPath);
 
+      FSavePath := '';
       StartRun(ConfigPath, Config.Optimizer.Iterations);
     end;
   finally
@@ -531,10 +615,10 @@ end;
 
 procedure TfrmXRFCalcMain.btnEditRunClick(Sender: TObject);
 var
-  SelectedFile, ConfigJsonPath, TempDir: string;
+  ConfigJsonPath, TempDir, RunTempDir: string;
   Config: TUniversalConfig;
   Dlg: TfrmRunConfig;
-  ConfigPath, TempOutputDir: string;
+  ConfigPath: string;
 begin
   if not FLoader.IsLoaded then
   begin
@@ -542,7 +626,6 @@ begin
     Exit;
   end;
 
-  SelectedFile := FLoader.GetResult(0).FileName;
   TempDir := FLoader.GetResult(0).TempDir;
   ConfigJsonPath := TPath.Combine(TempDir, 'config.json');
 
@@ -561,14 +644,15 @@ begin
     begin
       Config := Dlg.BuildConfig;
 
-      // Set output_dir to a temp subfolder
-      TempOutputDir := TPath.Combine(ExtractFilePath(SelectedFile), TEMP_OUTPUT_DIR);
-      Config.OutputDir := TempOutputDir;
+      // Use system temp for config and output
+      RunTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc\run_' + TGUID.NewGuid.ToString);
+      TDirectory.CreateDirectory(RunTempDir);
+      Config.OutputDir := TPath.Combine(RunTempDir, TEMP_OUTPUT_DIR);
 
-      // Write config JSON with same basename so .xrfx overwrites
-      ConfigPath := ChangeFileExt(SelectedFile, '.json');
+      ConfigPath := TPath.Combine(RunTempDir, 'xrfcalc_run.json');
       TUniversalIO.SaveConfig(Config, ConfigPath);
 
+      // FSavePath stays as the original file — Save will overwrite it
       StartRun(ConfigPath, Config.Optimizer.Iterations);
     end;
   finally

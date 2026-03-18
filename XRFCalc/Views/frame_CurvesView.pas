@@ -22,6 +22,12 @@ type
     chkTotal: TRzCheckBox;
     btnScale: TRzBitBtn;
     cbMinLimit: TRzComboBox;
+    pnlMetrics: TRzPanel;
+    chrtPeakPos: TChart;
+    chrtR: TChart;
+    chrtFWHM: TChart;
+    chrtSNR: TChart;
+    splMetrics: TSplitter;
     chrtCurves: TChart;
     pnlStructure: TRzPanel;
     lblStructureHeader: TRzLabel;
@@ -36,6 +42,7 @@ type
     procedure ChartResize(Sender: TObject);
     procedure grdStructureDrawCell(Sender: TObject; ACol, ARow: Integer;
       Rect: TRect; State: TGridDrawState);
+    procedure pnlMetricsResize(Sender: TObject);
   private
     FTotalSeries: TLineSeries;
     FSubstrateRow: Integer;
@@ -51,6 +58,8 @@ type
       const FileLabel: string);
     procedure LoadStructure(const Structure: TXRFXStructure;
       const Summary: TXRFXStructureSummary);
+    procedure LoadMetrics(const M: TXRFXManifest;
+      const Curves: TArray<TXRFXCurveData>);
     procedure RefreshLegend;
     procedure Clear;
   end;
@@ -467,6 +476,156 @@ begin
     Flags := Flags or DT_LEFT;
 
   DrawText(Grid.Canvas.Handle, PChar(S), Length(S), TextRect, Flags);
+end;
+
+{ Metrics charts }
+
+function FindPeakPosition(const Curve: TXRFXCurveData): Double;
+var
+  i, MaxIdx: Integer;
+  MaxR: Double;
+begin
+  Result := 0;
+  if Length(Curve.Refl) = 0 then Exit;
+  MaxIdx := 0;
+  MaxR := Curve.Refl[0];
+  for i := 1 to High(Curve.Refl) do
+    if Curve.Refl[i] > MaxR then
+    begin
+      MaxR := Curve.Refl[i];
+      MaxIdx := i;
+    end;
+  if MaxIdx <= High(Curve.Theta) then
+    Result := Curve.Theta[MaxIdx];
+end;
+
+function CalcSNR(const Curve: TXRFXCurveData): Double;
+var
+  i, TailStart, PeakIdx: Integer;
+  MaxR, TailSum: Double;
+  TailCount: Integer;
+begin
+  Result := 0;
+  if Length(Curve.Refl) < 10 then Exit;
+
+  PeakIdx := 0;
+  MaxR := Curve.Refl[0];
+  for i := 1 to High(Curve.Refl) do
+    if Curve.Refl[i] > MaxR then
+    begin
+      MaxR := Curve.Refl[i];
+      PeakIdx := i;
+    end;
+
+  TailStart := Length(Curve.Refl) - Length(Curve.Refl) div 5;
+  if TailStart <= PeakIdx then
+    TailStart := PeakIdx + (Length(Curve.Refl) - PeakIdx) div 2;
+  if TailStart >= Length(Curve.Refl) then
+    TailStart := Length(Curve.Refl) - 1;
+
+  TailSum := 0;
+  TailCount := 0;
+  for i := TailStart to High(Curve.Refl) do
+  begin
+    TailSum := TailSum + Curve.Refl[i];
+    Inc(TailCount);
+  end;
+
+  if (TailCount > 0) and (TailSum / TailCount > 1e-15) then
+    Result := MaxR / (TailSum / TailCount);
+end;
+
+function FindCurveForElement(const Curves: TArray<TXRFXCurveData>;
+  const ElementName: string): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to High(Curves) do
+    if SameText(Curves[i].Element, ElementName) then
+      Exit(i);
+  Result := -1;
+end;
+
+procedure AddBarToChart(AChart: TChart; AValue: Double;
+  const ALabel, AFormat: string; AColor: TColor);
+var
+  S: TBarSeries;
+begin
+  if AChart.SeriesCount = 0 then
+  begin
+    S := TBarSeries.Create(AChart);
+    S.Marks.Visible := True;
+    S.Marks.Style := smsValue;
+    S.Marks.Font.Height := -11;
+    S.ColorEachPoint := True;
+    AChart.AddSeries(S);
+  end
+  else
+    S := AChart.Series[0] as TBarSeries;
+
+  S.Add(AValue, ALabel, AColor);
+  S.ValueFormat := AFormat;
+end;
+
+procedure TframeCurvesView.LoadMetrics(const M: TXRFXManifest;
+  const Curves: TArray<TXRFXCurveData>);
+const
+  BarColors: array[0..7] of TColor = (
+    $CC6633, $3399CC, $33CC66, $CC3366,
+    $9966CC, $66CCCC, $CCCC33, $CC9933);
+var
+  i, CurveIdx: Integer;
+  PeakPos, SNR: Double;
+  C: TColor;
+begin
+  chrtPeakPos.FreeAllSeries;
+  chrtR.FreeAllSeries;
+  chrtFWHM.FreeAllSeries;
+  chrtSNR.FreeAllSeries;
+
+  if Length(M.PerElement) = 0 then
+  begin
+    pnlMetrics.Visible := False;
+    splMetrics.Visible := False;
+    Exit;
+  end;
+
+  for i := 0 to High(M.PerElement) do
+  begin
+    PeakPos := 0;
+    SNR := 0;
+    CurveIdx := FindCurveForElement(Curves, M.PerElement[i].Line);
+    if CurveIdx >= 0 then
+    begin
+      PeakPos := FindPeakPosition(Curves[CurveIdx]);
+      SNR := CalcSNR(Curves[CurveIdx]);
+    end;
+
+    C := BarColors[i mod Length(BarColors)];
+
+    AddBarToChart(chrtPeakPos, PeakPos, M.PerElement[i].Line, '##0.0#', C);
+    AddBarToChart(chrtR, M.PerElement[i].PeakR, M.PerElement[i].Line, '#0.0000', C);
+    AddBarToChart(chrtFWHM, M.PerElement[i].FWHM, M.PerElement[i].Line, '#0.000', C);
+    AddBarToChart(chrtSNR, SNR, M.PerElement[i].Line, '#0.0', C);
+  end;
+
+  chrtPeakPos.BottomAxis.Inverted := False;
+  chrtR.BottomAxis.Inverted := False;
+  chrtFWHM.BottomAxis.Inverted := False;
+  chrtSNR.BottomAxis.Inverted := False;
+
+  pnlMetrics.Visible := True;
+  splMetrics.Visible := True;
+end;
+
+procedure TframeCurvesView.pnlMetricsResize(Sender: TObject);
+var
+  W: Integer;
+begin
+  W := pnlMetrics.ClientWidth div 4;
+  chrtPeakPos.Width := W;
+  chrtR.Width := W;
+  chrtFWHM.Width := W;
 end;
 
 end.

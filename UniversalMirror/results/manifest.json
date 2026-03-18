@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "created": "2026-03-18T12:06:20",
+  "generator": "xrccmd",
+  "fom": 1.38318514823914,
+  "target_lines": [
+    "Na",
+    "Mg",
+    "Al",
+    "Si"
+  ],
+  "element_pool": [
+    "W",
+    "Mo",
+    "Co",
+    "Cr",
+    "Ru",
+    "Ni",
+    "Ti",
+    "Al",
+    "Si",
+    "C",
+    "B4C",
+    "SiC",
+    "WC"
+  ],
+  "substrate": "SiO2",
+  "structure_summary": {
+    "type": "bilayer",
+    "d": 68.0793838500977,
+    "gamma": 0.261611491441727,
+    "N": 20,
+    "sigma": 3.5
+  },
+  "optimizer": {
+    "population": 100,
+    "iterations": 100,
+    "stagnation_limit": 200
+  },
+  "per_element": [
+    {
+      "line": "Na",
+      "peak_R": 0.386772483587265,
+      "fwhm": 0.362325191497803
+    },
+    {
+      "line": "Mg",
+      "peak_R": 0.468024909496307,
+      "fwhm": 0.306199550628662
+    },
+    {
+      "line": "Al",
+      "peak_R": 0.545399785041809,
+      "fwhm": 0.269941329956055
+    },
+    {
+      "line": "Si",
+      "peak_R": 0.328412681818008,
+      "fwhm": 0.186920881271362
+    }
+  ],
+  "files": {
+    "config": "config.json",
+    "best_structure": "best_structure.json",
+    "best_structure_xrc": "best_structure_xrc.json",
+    "population": "population.json",
+    "progress": "progress.log",
+    "curves": [
+      "best_curves/Al.dat",
+      "best_curves/Mg.dat",
+      "best_curves/Na.dat",
+      "best_curves/Si.dat"
+    ]
+  }
+}

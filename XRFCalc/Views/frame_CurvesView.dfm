@@ -1,20 +1,20 @@
 object frameCurvesView: TframeCurvesView
   Left = 0
   Top = 0
-  Width = 600
-  Height = 400
+  Width = 800
+  Height = 500
   TabOrder = 0
   object pnlInfo: TRzPanel
     Left = 0
-    Top = 370
-    Width = 600
+    Top = 470
+    Width = 800
     Height = 30
     Align = alBottom
     AlignWithMargins = True
     BorderOuter = fsNone
     TabOrder = 0
     DesignSize = (
-      600
+      800
       30)
     object spThetaLabel: TRzStatusPane
       Left = 4
@@ -53,7 +53,7 @@ object frameCurvesView: TframeCurvesView
       OnClick = chkTotalClick
     end
     object btnScale: TRzBitBtn
-      Left = 450
+      Left = 650
       Top = 2
       Width = 65
       Height = 25
@@ -63,7 +63,7 @@ object frameCurvesView: TframeCurvesView
       OnClick = btnScaleClick
     end
     object cbMinLimit: TRzComboBox
-      Left = 522
+      Left = 722
       Top = 3
       Width = 72
       Height = 21
@@ -80,12 +80,121 @@ object frameCurvesView: TframeCurvesView
         '1E-9')
     end
   end
+  object pnlMetrics: TRzPanel
+    AlignWithMargins = True
+    Left = 3
+    Top = 313
+    Width = 794
+    Height = 154
+    Align = alBottom
+    BorderOuter = fsNone
+    TabOrder = 1
+    Visible = False
+    OnResize = pnlMetricsResize
+    object chrtPeakPos: TChart
+      Left = 0
+      Top = 0
+      Width = 198
+      Height = 154
+      Legend.Visible = False
+      MarginBottom = 1
+      MarginLeft = 2
+      MarginRight = 1
+      MarginTop = 2
+      Title.Text.Strings = (
+        'Peak Position')
+      Title.Font.Height = -12
+      Title.Font.Style = [fsBold]
+      LeftAxis.Title.Caption = 'Degrees'
+      View3D = False
+      Align = alLeft
+      BevelOuter = bvNone
+      TabOrder = 0
+      DefaultCanvas = 'TGDIPlusCanvas'
+      ColorPaletteIndex = 13
+    end
+    object chrtR: TChart
+      Left = 198
+      Top = 0
+      Width = 198
+      Height = 154
+      Legend.Visible = False
+      MarginBottom = 1
+      MarginLeft = 2
+      MarginRight = 1
+      MarginTop = 2
+      Title.Text.Strings = (
+        'R')
+      Title.Font.Height = -12
+      Title.Font.Style = [fsBold]
+      LeftAxis.Title.Caption = 'Reflectivity'
+      View3D = False
+      Align = alLeft
+      BevelOuter = bvNone
+      TabOrder = 1
+      DefaultCanvas = 'TGDIPlusCanvas'
+      ColorPaletteIndex = 13
+    end
+    object chrtFWHM: TChart
+      Left = 396
+      Top = 0
+      Width = 198
+      Height = 154
+      Legend.Visible = False
+      MarginBottom = 1
+      MarginLeft = 2
+      MarginRight = 1
+      MarginTop = 2
+      Title.Text.Strings = (
+        'FWHM')
+      Title.Font.Height = -12
+      Title.Font.Style = [fsBold]
+      LeftAxis.Title.Caption = 'Degrees'
+      View3D = False
+      Align = alLeft
+      BevelOuter = bvNone
+      TabOrder = 2
+      DefaultCanvas = 'TGDIPlusCanvas'
+      ColorPaletteIndex = 13
+    end
+    object chrtSNR: TChart
+      Left = 594
+      Top = 0
+      Width = 200
+      Height = 154
+      Legend.Visible = False
+      MarginBottom = 1
+      MarginLeft = 2
+      MarginRight = 1
+      MarginTop = 2
+      Title.Text.Strings = (
+        'SNR')
+      Title.Font.Height = -12
+      Title.Font.Style = [fsBold]
+      LeftAxis.Title.Caption = 'Ratio'
+      View3D = False
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 3
+      DefaultCanvas = 'TGDIPlusCanvas'
+      ColorPaletteIndex = 13
+    end
+  end
+  object splMetrics: TSplitter
+    Left = 0
+    Top = 309
+    Width = 800
+    Height = 4
+    Cursor = crVSplit
+    Align = alBottom
+    Visible = False
+  end
   object chrtCurves: TChart
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 594
-    Height = 364
+    Width = 794
+    Height = 303
     Cursor = crCross
     Legend.Visible = False
     Legend.ResizeChart = False
@@ -102,7 +211,7 @@ object frameCurvesView: TframeCurvesView
     View3D = False
     Align = alClient
     BevelOuter = bvNone
-    TabOrder = 1
+    TabOrder = 2
     OnMouseMove = ChartMouseMove
     OnResize = ChartResize
     DefaultCanvas = 'TGDIPlusCanvas'

@@ -5,7 +5,7 @@
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Console</AppType>
         <MainSource>xrccmd.dpr</MainSource>
@@ -61,7 +61,7 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_UnitSearchPath>..\math;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;..\Universal;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\Out\DCU</DCC_DcuOutput>
-        <DCC_ExeOutput>.\Out\CMDBin</DCC_ExeOutput>
+        <DCC_ExeOutput>..\XRFCalc\_Out\BIN</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
@@ -106,7 +106,7 @@
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
         <Debugger_RunParams>-s mosi_000001.json -v -o d:\temp\out.dat</Debugger_RunParams>
-        <DCC_ExeOutput>.\Out\CMDBin</DCC_ExeOutput>
+        <DCC_ExeOutput>..\XRFCalc\_Out\BIN</DCC_ExeOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <Debugger_RunParams>-s input_structure.txt -o reflectivity.txt</Debugger_RunParams>
@@ -129,15 +129,23 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="units\cmd_math_globals.pas"/>
-        <DCCReference Include="units\cmd_unit_calc.pas"/>
-        <DCCReference Include="units\cmd_unit_fit_types.pas"/>
-        <DCCReference Include="units\cmd_unit_fitting.pas"/>
-        <DCCReference Include="units\cmd_unit_helpers.pas"/>
-        <DCCReference Include="units\cmd_unit_main.pas"/>
-        <DCCReference Include="units\cmd_unit_materials.pas"/>
-        <DCCReference Include="units\cmd_unit_types.pas"/>
-        <DCCReference Include="units\cmd_unit_load.pas"/>
+        <DCCReference Include="Units\cmd_math_globals.pas"/>
+        <DCCReference Include="Units\cmd_unit_calc.pas"/>
+        <DCCReference Include="Units\cmd_unit_fit_types.pas"/>
+        <DCCReference Include="Units\cmd_unit_fitting.pas"/>
+        <DCCReference Include="Units\cmd_unit_helpers.pas"/>
+        <DCCReference Include="Units\cmd_unit_main.pas"/>
+        <DCCReference Include="Units\cmd_unit_materials.pas"/>
+        <DCCReference Include="Units\cmd_unit_types.pas"/>
+        <DCCReference Include="Units\cmd_unit_load.pas"/>
+        <DCCReference Include="Units\cmd_unit_universal.pas"/>
+        <DCCReference Include="..\Universal\unit_universal_types.pas"/>
+        <DCCReference Include="..\Universal\unit_universal_fitness.pas"/>
+        <DCCReference Include="..\Universal\unit_universal_pso.pas"/>
+        <DCCReference Include="..\Universal\unit_universal_io.pas"/>
+        <DCCReference Include="..\Universal\unit_universal_optimizer.pas"/>
+        <DCCReference Include="..\Universal\unit_universal_templates.pas"/>
+        <DCCReference Include="..\Math\unit_materials_mix.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

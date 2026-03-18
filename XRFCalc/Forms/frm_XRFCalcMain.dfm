@@ -256,6 +256,19 @@ object frmXRFCalcMain: TfrmXRFCalcMain
     Top = 280
     object mnuFile: TMenuItem
       Caption = '&File'
+      object mnuSave: TMenuItem
+        Caption = '&Save'
+        ShortCut = 16467
+        OnClick = mnuSaveClick
+      end
+      object mnuSaveAs: TMenuItem
+        Caption = 'Save &As...'
+        ShortCut = 49235
+        OnClick = mnuSaveAsClick
+      end
+      object mnuFileSep1: TMenuItem
+        Caption = '-'
+      end
       object mnuExit: TMenuItem
         Caption = 'E&xit'
         OnClick = mnuExitClick
