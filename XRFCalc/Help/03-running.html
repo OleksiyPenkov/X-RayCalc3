@@ -22,7 +22,6 @@
   <a href="02-viewing.html">2. Viewing Results</a>
   <a href="03-running.html">3. Running Optimizations</a>
     <a href="03-running.html#new-run" class="sub">New Run</a>
-    <a href="03-running.html#edit-run" class="sub">Edit Run</a>
     <a href="03-running.html#monitoring" class="sub">Live Monitoring</a>
     <a href="03-running.html#stopping" class="sub">Stopping a Run</a>
     <a href="03-running.html#saving" class="sub">Saving Results</a>
@@ -42,30 +41,14 @@
 <main class="content">
 
 <h2><span class="num">3</span> Running Optimizations</h2>
-<p>XRFCalc launches the <code>xrccmd</code> command-line optimizer in the background and streams its output to the Progress tab. You can start a fresh run from scratch, or modify the configuration of an existing result and re-run it.</p>
+<p>XRFCalc launches the <code>xrccmd</code> command-line optimizer in the background and streams its output to the Progress tab. Configure the run using the left-hand configuration panel, then click <strong>New Run</strong> to start.</p>
 
 <h3 id="new-run">New Run</h3>
-<p>Click the <strong>New Run</strong> toolbar button to open the run configuration dialog with default (blank) settings.</p>
+<p>The run configuration is always visible in the left panel, organized into four tabs (see <a href="01-overview.html#run-config">Run Configuration Panel</a>). Adjust the settings, then click the <strong>New Run</strong> toolbar button to start the optimization.</p>
 
-<p>The configuration dialog is organized into sections corresponding to the JSON configuration format:</p>
+<p>XRFCalc writes a temporary JSON configuration file from the current panel settings, injects the global template and XRF lines paths (configured via Tools menu), and launches <code>xrccmd -u config.json</code> in the background. The Progress tab becomes active and begins streaming output.</p>
 
-<ul>
-  <li><strong>Targets</strong> &mdash; add one or more target elements. For each target, enter the element name, characteristic wavelength (&Aring;), and weight.</li>
-  <li><strong>Element Pool</strong> &mdash; select which materials the optimizer may use for layer compositions (e.g. W, Si, C).</li>
-  <li><strong>Structure</strong> &mdash; set the period thickness range, gamma range, number of periods range, roughness range, and density factor range.</li>
-  <li><strong>Fitness</strong> &mdash; configure the figure of merit weights (w_R, w_FWHM), spectral purity weight, angular resolution, and minimum Bragg angle.</li>
-  <li><strong>Optimizer</strong> &mdash; set population size, iteration count, stagnation limit, and checkpoint interval.</li>
-  <li><strong>Output</strong> &mdash; choose the output directory for result files and optionally specify a resume checkpoint.</li>
-</ul>
-
-<p>When you click <strong>OK</strong> in the dialog, XRFCalc writes a temporary JSON configuration file and launches <code>xrccmd -u config.json</code> in the background. The Progress tab becomes active and begins streaming output.</p>
-
-<div class="tip"><strong>Quick start:</strong> For a first run, fill in the Targets and Element Pool sections and leave all other parameters at their defaults. The defaults are sensible starting points for most mirror design problems.</div>
-
-<h3 id="edit-run">Edit Run</h3>
-<p>Click the <strong>Edit Run</strong> toolbar button to re-run the currently loaded <code>.xrfx</code> file with modifications.</p>
-
-<p>XRFCalc reads the configuration stored inside the <code>.xrfx</code> file and pre-fills the configuration dialog with those settings. You can then:</p>
+<p>When you open an existing <code>.xrfx</code> file, the configuration panel is automatically populated with the stored settings. You can modify them and click <strong>New Run</strong> to re-run with adjustments:</p>
 <ul>
   <li>Increase the iteration count to continue refining a good result.</li>
   <li>Widen or narrow parameter search ranges based on what the first run found.</li>
@@ -73,9 +56,9 @@
   <li>Change the element pool to explore different material combinations.</li>
 </ul>
 
-<p>After clicking OK, the run starts just like a New Run. The previous result file is not modified until you explicitly save the new result.</p>
+<div class="tip"><strong>Quick start:</strong> For a first run, select targets and element pool on the Targets tab and leave all other parameters at their defaults. The defaults are sensible starting points for most mirror design problems.</div>
 
-<div class="note"><strong>Resume vs. Edit Run:</strong> Edit Run always starts the optimizer from scratch with the modified configuration. To continue a run from where it left off (using a checkpoint), set the <code>resume_from</code> field in the configuration dialog's Output section to the path of the checkpoint file. See <a href="04-config.html#optimizer">Optimizer settings</a> and <a href="04-config.html#toplevel">Top-Level Fields</a>.</div>
+<div class="note"><strong>Prerequisites:</strong> Before running, ensure that the XRF Lines file and Henke database path are configured. Set the XRF Lines file via <strong>Tools &gt; XRF Lines File...</strong> (a global setting persisted between sessions). The Henke database path is set on the Fitness tab.</div>
 
 <h3 id="monitoring">Live Monitoring</h3>
 <p>While an optimization is running, the <strong>Progress tab</strong> shows live output:</p>
@@ -92,7 +75,7 @@
   </li>
 </ul>
 
-<p>When the run completes, the Curves tab automatically updates to show the new best result, and the Info tab shows the final summary.</p>
+<p>When the run completes, XRFCalc automatically switches to the Curves tab and displays the new best result. The Info tab shows the final summary.</p>
 
 <div class="tip"><strong>Reading diversity:</strong> If diversity reaches near zero early but FoM is still low, the optimizer has converged to a local optimum. Stop the run, widen the search ranges, and start again with a larger population.</div>
 
@@ -111,17 +94,17 @@
   <li><strong>File &gt; Save As</strong> (Ctrl+Shift+S) &mdash; opens a file dialog to choose the save location and file name.</li>
 </ul>
 
-<p>Once saved, the file appears in the file browser when you navigate to the folder containing it. The saved <code>.xrfx</code> file contains the full result: best structure, reflectivity curves, convergence history, and the original configuration &mdash; everything needed to reproduce or continue the run.</p>
+<p>The saved <code>.xrfx</code> file contains the full result: best structure, reflectivity curves, convergence history, and the original configuration &mdash; everything needed to reproduce or continue the run. You can re-open it later with File &gt; Open.</p>
 
 <div class="note"><strong>Output directory files:</strong> The <code>xrccmd</code> optimizer also writes intermediate files (curves, population, checkpoint) to the output directory specified in the configuration. The <code>.xrfx</code> file created by File &gt; Save bundles the most important data into a single portable file.</div>
 
 <h3 id="workflow">Typical Workflow</h3>
 <ol>
-  <li>Click <strong>New Run</strong> and configure targets, element pool, and parameter ranges.</li>
-  <li>Click <strong>OK</strong> and switch to the <strong>Progress tab</strong> to watch convergence.</li>
-  <li>When the run completes (or you Stop it), review the result in the <strong>Curves tab</strong>.</li>
+  <li>Configure targets, element pool, and parameter ranges in the left panel.</li>
+  <li>Click <strong>New Run</strong>. The Progress tab activates to show live convergence.</li>
+  <li>When the run completes (or you Stop it), XRFCalc switches to the <strong>Curves tab</strong> to show the result.</li>
   <li>If the result is promising, use <strong>File &gt; Save As</strong> to save the <code>.xrfx</code> file to your working folder.</li>
-  <li>To refine, click <strong>Edit Run</strong>, increase iterations or adjust ranges, and run again.</li>
+  <li>To refine, adjust the configuration in the left panel (increase iterations, tweak ranges) and click <strong>New Run</strong> again.</li>
   <li>Save the improved result over the previous file (Ctrl+S) or as a new file (Ctrl+Shift+S).</li>
 </ol>
 

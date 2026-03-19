@@ -43,7 +43,7 @@
 <main class="content">
 
 <h2><span class="num">4</span> Configuration Reference</h2>
-<p>The Universal Mirror Optimizer is driven by a JSON configuration file. XRFCalc writes this file for you when you use the run configuration dialog, but you can also create or edit it manually. This chapter documents every field.</p>
+<p>The Universal Mirror Optimizer is driven by a JSON configuration file. XRFCalc writes this file for you when you click New Run (using the settings from the configuration panel), but you can also create or edit it manually. This chapter documents every field.</p>
 
 <p>The top-level JSON object has six sections: <code>targets</code>, <code>element_pool</code>, <code>structure</code>, <code>fitness</code>, <code>optimizer</code>, and several top-level scalar fields.</p>
 
@@ -190,7 +190,7 @@
   <tr><td><code>henke_path</code></td><td>string or null</td><td>Path to the directory containing Henke atomic scattering factor <code>.bin</code> files. <code>null</code> uses the default location next to the <code>xrccmd</code> executable (<code>Henke/</code> subdirectory).</td></tr>
   <tr><td><code>output_dir</code></td><td>string</td><td>Directory where all output files are written: <code>best_structure.json</code>, curve files in <code>best_curves/</code>, <code>population.json</code>, <code>checkpoint.json</code>, <code>progress.log</code>. Created automatically if it does not exist.</td></tr>
   <tr><td><code>resume_from</code></td><td>string or null</td><td>Path to a checkpoint file to resume an interrupted run. <code>null</code> starts fresh. When resuming, the <code>population</code> size and <code>element_pool</code> must match the checkpoint. The <code>iterations</code> count can be increased to allow more cycles.</td></tr>
-  <tr><td><code>template_file</code></td><td>string or null</td><td>Optional path to a template configuration file. When set, fields from the template are used as defaults for any fields not explicitly specified in the current configuration. Useful for standardizing fitness and optimizer settings across multiple runs.</td></tr>
+  <tr><td><code>template_file</code></td><td>string or null</td><td>Optional path to a JSON file defining multilayer structure templates (material pair definitions with thickness ratios). Used to constrain the optimizer to physically meaningful layer combinations. In XRFCalc, this is configured globally via <strong>Tools &gt; Template File...</strong> and injected automatically when starting a run.</td></tr>
 </table>
 
 <h3 id="full-example">Full Example</h3>

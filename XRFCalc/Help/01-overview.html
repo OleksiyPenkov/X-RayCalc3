@@ -20,7 +20,7 @@
   <h3>Contents</h3>
   <a href="01-overview.html">1. Application Overview</a>
     <a href="01-overview.html#layout" class="sub">Window Layout</a>
-    <a href="01-overview.html#file-browser" class="sub">File Browser</a>
+    <a href="01-overview.html#run-config" class="sub">Run Configuration Panel</a>
     <a href="01-overview.html#toolbar" class="sub">Toolbar</a>
     <a href="01-overview.html#tabs" class="sub">Tab Panels</a>
     <a href="01-overview.html#menus" class="sub">Menus</a>
@@ -48,40 +48,41 @@
 
 <div class="layout-diagram">
 +---------------------------+------------------------------------------+
-|  File Browser             |  Results Panel (tabbed)                  |
+|  Run Configuration        |  Results Panel (tabbed)                  |
 |                           |                                          |
-|  [Folder Tree]            |  [ Curves | Info | Progress ]            |
-|                           |                                          |
-|  [File List *.xrfx]       |  (selected tab content fills this area)  |
+|  [Targets | Structure |   |  [ Curves | Info | Progress ]            |
+|   Optimizer | Fitness]    |                                          |
+|                           |  (selected tab content fills this area)  |
 |                           |                                          |
 +---------------------------+------------------------------------------+
 </div>
 
 <p>Drag the splitter between the two regions to adjust their relative widths. The layout is remembered between sessions.</p>
 
-<h3 id="file-browser">File Browser</h3>
-<p>The left panel is a two-part file browser:</p>
+<h3 id="run-config">Run Configuration Panel</h3>
+<p>The left panel contains the run configuration organized into four tabs:</p>
 <ul>
-  <li><strong>Folder tree (top)</strong> &mdash; a shell-integrated folder tree. Navigate to any folder on your system by expanding nodes. The tree shows real Windows shell folders including network drives and special folders.</li>
-  <li><strong>File list (bottom)</strong> &mdash; displays only <code>.xrfx</code> files in the currently selected folder. Click a file to open it in the right panel.</li>
+  <li><strong>Targets</strong> &mdash; select target XRF lines, configure the element pool, and manage excluded material pairs.</li>
+  <li><strong>Structure</strong> &mdash; set period thickness range, gamma range, number of periods, roughness, density factor, substrate, and pure-elements mode.</li>
+  <li><strong>Optimizer</strong> &mdash; configure population size, iterations, stagnation limit, PSO weights, tolerance, jamming, and checkpoint intervals.</li>
+  <li><strong>Fitness</strong> &mdash; set figure-of-merit weights (w_R, w_FWHM, w_purity), polarization mode, angular resolution, scan parameters, and Henke database path.</li>
 </ul>
 
-<div class="note"><strong>Opening files from Explorer:</strong> If you have registered the <code>.xrfx</code> file association (Tools &gt; Register .xrfx Extension), double-clicking any <code>.xrfx</code> file in Windows Explorer will open it directly in XRFCalc. See <a href="05-reference.html#file-association">File Association</a>.</div>
+<p>The configuration panel is always visible. When you load an <code>.xrfx</code> file, its stored configuration is loaded into these tabs. To start a new optimization, adjust the settings and click <strong>New Run</strong> in the toolbar.</p>
 
-<p>The file list updates automatically when you navigate to a different folder. Use the <strong>Refresh</strong> toolbar button to re-scan the current folder if files have been added or removed externally.</p>
+<div class="note"><strong>Opening files:</strong> Use <strong>File &gt; Open</strong> (Ctrl+O) or the <strong>Open</strong> toolbar button to load a <code>.xrfx</code> result file. You can also register the file association (Tools &gt; Register .xrfx Extension) so that double-clicking a <code>.xrfx</code> file in Windows Explorer opens it directly in XRFCalc. See <a href="05-reference.html#file-association">File Association</a>.</div>
 
 <h3 id="toolbar">Toolbar</h3>
 <p>The toolbar at the top of the window provides quick access to the most common actions:</p>
 
 <table>
   <tr><th>Button</th><th>Action</th><th>Notes</th></tr>
-  <tr><td><strong>Refresh</strong></td><td>Re-scan the current folder</td><td>Updates the file list without changing the selected folder.</td></tr>
+  <tr><td><strong>Open</strong></td><td>Open a <code>.xrfx</code> file</td><td>Loads a result file and populates the Curves, Info, and Progress tabs. The run configuration panel is updated with the stored settings.</td></tr>
   <tr><td><strong>Export Structure</strong></td><td>Export the mirror structure</td><td>Saves the best-structure definition from the current <code>.xrfx</code> file for use in other tools.</td></tr>
   <tr><td><strong>Copy Data</strong></td><td>Copy curve data to clipboard</td><td>Copies the currently displayed reflectivity data as tab-separated text, ready to paste into a spreadsheet.</td></tr>
   <tr><td><strong>Save Image</strong></td><td>Save chart as PNG</td><td>Saves a bitmap snapshot of the active chart (Curves or Progress) to a file.</td></tr>
-  <tr><td><strong>New Run</strong></td><td>Configure and start a new optimization</td><td>Opens the run configuration dialog with default settings.</td></tr>
-  <tr><td><strong>Edit Run</strong></td><td>Modify config from current file and re-run</td><td>Opens the config dialog pre-filled with the settings stored in the current <code>.xrfx</code> file.</td></tr>
-  <tr><td><strong>Stop</strong></td><td>Cancel the running optimization</td><td>Only enabled while an optimization is in progress. Sends a stop signal to <code>xrccmd</code>.</td></tr>
+  <tr><td><strong>New Run</strong></td><td>Start a new optimization</td><td>Builds a configuration from the current settings in the left panel and launches <code>xrccmd</code> in the background.</td></tr>
+  <tr><td><strong>Stop</strong></td><td>Cancel the running optimization</td><td>Only visible while an optimization is in progress. Sends a stop signal to <code>xrccmd</code>.</td></tr>
 </table>
 
 <h3 id="tabs">Tab Panels</h3>
@@ -99,14 +100,18 @@
 <h4>File Menu</h4>
 <table>
   <tr><th>Item</th><th>Shortcut</th><th>Description</th></tr>
+  <tr><td>Open</td><td>Ctrl+O</td><td>Open a <code>.xrfx</code> result file. The run configuration panel is updated with the stored settings.</td></tr>
   <tr><td>Save</td><td>Ctrl+S</td><td>Save the current <code>.xrfx</code> file to its existing path. Used to persist results that were generated by a new run (which are initially stored in a temporary location).</td></tr>
   <tr><td>Save As</td><td>Ctrl+Shift+S</td><td>Save the current <code>.xrfx</code> file to a new location chosen via a file dialog.</td></tr>
+  <tr><td>Save Config</td><td>&mdash;</td><td>Export the current run configuration panel settings as a standalone JSON file, for use with <code>xrccmd</code> or for sharing.</td></tr>
 </table>
 
 <h4>Tools Menu</h4>
 <table>
   <tr><th>Item</th><th>Description</th></tr>
-  <tr><td>Register .xrfx Extension</td><td>Associates the <code>.xrfx</code> file extension with XRFCalc in the Windows registry. After registration, double-clicking a <code>.xrfx</code> file in Explorer opens it in XRFCalc. Requires administrative privileges on some systems.</td></tr>
+  <tr><td>Template File...</td><td>Select a template JSON file that defines multilayer structure patterns (material pair definitions with thickness ratios). This is a global application setting, persisted between sessions.</td></tr>
+  <tr><td>XRF Lines File...</td><td>Select the <code>xrf_lines.json</code> file containing characteristic X-ray emission wavelengths. This is a global application setting and must be configured before running optimizations.</td></tr>
+  <tr><td>Register .xrfx Extension</td><td>Associates the <code>.xrfx</code> file extension with XRFCalc in the Windows registry. After registration, double-clicking a <code>.xrfx</code> file in Explorer opens it in XRFCalc.</td></tr>
 </table>
 
 <div class="page-nav">

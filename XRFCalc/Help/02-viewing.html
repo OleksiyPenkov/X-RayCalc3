@@ -43,7 +43,7 @@
 <main class="content">
 
 <h2><span class="num">2</span> Viewing Results</h2>
-<p>When you click a <code>.xrfx</code> file in the file browser, XRFCalc loads and displays its contents across three tabs. The <strong>Curves</strong> tab is the primary analysis view; <strong>Info</strong> gives a text summary; <strong>Progress</strong> shows convergence history.</p>
+<p>When you open a <code>.xrfx</code> file (File &gt; Open or Ctrl+O), XRFCalc loads and displays its contents across three tabs. The <strong>Curves</strong> tab is the primary analysis view; <strong>Info</strong> gives a text summary; <strong>Progress</strong> shows convergence history. The loaded file name is shown in the window title bar.</p>
 
 <h3 id="curves-tab">Curves Tab</h3>
 <p>The Curves tab shows the reflectivity results for the best-found mirror structure. It is divided vertically into two areas:</p>
@@ -131,7 +131,7 @@
   <li><strong>Console log</strong> (bottom) &mdash; the text output from <code>xrccmd</code>, including the per-iteration progress table (Iter, FoM, R per element, Div) and any checkpoint or shake events.</li>
 </ul>
 
-<p>During an active optimization (started via New Run or Edit Run), both the chart and the console update in real time. For a result loaded from a completed <code>.xrfx</code> file, the tab shows the recorded history from that run.</p>
+<p>During an active optimization (started via New Run), both the chart and the console update in real time. When the run completes, XRFCalc automatically switches to the Curves tab to show the result. For a result loaded from a completed <code>.xrfx</code> file, the Progress tab shows the recorded history from that run.</p>
 
 <div class="note"><strong>Console log:</strong> The console log is scrollable. During a long run you can scroll up to review earlier iterations without affecting the live update at the bottom.</div>
 

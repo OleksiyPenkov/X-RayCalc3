@@ -46,11 +46,13 @@
 
 <table>
   <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><code>Ctrl+O</code></td><td>Open a <code>.xrfx</code> result file (File &gt; Open).</td></tr>
   <tr><td><code>Ctrl+S</code></td><td>Save the current result file to its existing path (File &gt; Save).</td></tr>
   <tr><td><code>Ctrl+Shift+S</code></td><td>Save the current result file to a new location (File &gt; Save As).</td></tr>
+  <tr><td><code>F1</code></td><td>Open this help (Help &gt; Contents).</td></tr>
 </table>
 
-<div class="note">XRFCalc is primarily a pointer-driven tool. Most operations are performed via toolbar buttons and mouse interaction with the charts and file browser.</div>
+<div class="note">XRFCalc is primarily a pointer-driven tool. Most operations are performed via toolbar buttons and mouse interaction with the charts and configuration panel.</div>
 
 <h3 id="file-association">File Association</h3>
 <p>XRFCalc can register itself as the default handler for <code>.xrfx</code> files in Windows. Once registered, double-clicking any <code>.xrfx</code> file in Windows Explorer opens it in XRFCalc.</p>
@@ -94,16 +96,14 @@
 
 <h3 id="troubleshooting">Troubleshooting</h3>
 
-<h4>The file list is empty after navigating to a folder</h4>
-<p>The file list shows only <code>.xrfx</code> files. If the folder contains result files in a different format (e.g. <code>best_structure.json</code> from a raw <code>xrccmd</code> run), they will not appear. Use <strong>Refresh</strong> to force a re-scan if you just created files externally.</p>
-
-<h4>New Run or Edit Run does nothing</h4>
+<h4>New Run does nothing</h4>
 <p>Verify that <code>xrccmd.exe</code> is present in the same directory as XRFCalc. The optimizer backend must be co-located with the GUI. If it is missing, copy it from the X-Ray Calc 3 installation or build it from source.</p>
 
 <h4>The optimization exits immediately with no output</h4>
 <p>This usually means the configuration JSON is invalid. Check:</p>
 <ul>
-  <li>All required fields are present (<code>targets</code>, <code>element_pool</code>, <code>structure</code>, <code>optimizer</code>).</li>
+  <li>The XRF Lines file is configured (Tools &gt; XRF Lines File...).</li>
+  <li>All required fields are present (<code>lines</code>, <code>element_pool</code>, <code>structure</code>, <code>optimizer</code>).</li>
   <li>Each element in <code>element_pool</code> has a corresponding <code>.bin</code> file in the Henke directory.</li>
   <li><code>structure.d.min</code> &gt; &lambda;<sub>max</sub> / 2 (Bragg condition satisfied for all targets).</li>
   <li>The <code>output_dir</code> path is writable.</li>
