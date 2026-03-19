@@ -1,7 +1,6 @@
-ICON_REFRESH RCDATA "Assets\\00_Refresh.png"
+ICON_OPEN RCDATA "Assets\\00_Open.png"
 ICON_EXPORT RCDATA "Assets\\01_ExportStructure.png"
 ICON_COPY RCDATA "Assets\\02_CopyData.png"
 ICON_SAVEIMG RCDATA "Assets\\03_SaveImage.png"
 ICON_NEWRUN RCDATA "Assets\\04_NewRun.png"
-ICON_EDITRUN RCDATA "Assets\\05_EditRun.png"
 ICON_STOP RCDATA "Assets\\06_Stop.png"
