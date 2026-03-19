@@ -9,9 +9,6 @@
         <Projects Include="XRayCalc3\Components\XRayCalcVisualControls.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="XRCXPreview\XRCPreviewHandlerLib.dproj">
-            <Dependencies/>
-        </Projects>
         <Projects Include="XRC_CMD\xrccmd.dproj">
             <Dependencies/>
         </Projects>
@@ -44,15 +41,6 @@
     <Target Name="XRayCalcVisualControls:Make">
         <MSBuild Projects="XRayCalc3\Components\XRayCalcVisualControls.dproj" Targets="Make"/>
     </Target>
-    <Target Name="XRCPreviewHandlerLib">
-        <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj"/>
-    </Target>
-    <Target Name="XRCPreviewHandlerLib:Clean">
-        <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj" Targets="Clean"/>
-    </Target>
-    <Target Name="XRCPreviewHandlerLib:Make">
-        <MSBuild Projects="XRCXPreview\XRCPreviewHandlerLib.dproj" Targets="Make"/>
-    </Target>
     <Target Name="xrccmd">
         <MSBuild Projects="XRC_CMD\xrccmd.dproj"/>
     </Target>
@@ -72,13 +60,13 @@
         <MSBuild Projects="XRFCalc\XRFCalc.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;XRCPreviewHandlerLib;xrccmd;XRFCalc"/>
+        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;xrccmd;XRFCalc"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;XRCPreviewHandlerLib:Clean;xrccmd:Clean;XRFCalc:Clean"/>
+        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;xrccmd:Clean;XRFCalc:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;XRCPreviewHandlerLib:Make;xrccmd:Make;XRFCalc:Make"/>
+        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;xrccmd:Make;XRFCalc:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
