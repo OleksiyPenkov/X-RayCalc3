@@ -6,7 +6,6 @@ uses
   frame_CurvesView in 'Views\frame_CurvesView.pas' {frameCurvesView: TFrame},
   frame_InfoView in 'Views\frame_InfoView.pas' {frameInfoView: TFrame},
   frame_ProgressView in 'Views\frame_ProgressView.pas' {frameProgressView: TFrame},
-  frame_CompareView in 'Views\frame_CompareView.pas' {frameCompareView: TFrame},
   xrfcalc_unit_loader in 'Units\xrfcalc_unit_loader.pas',
   xrfcalc_unit_runner in 'Units\xrfcalc_unit_runner.pas',
   frame_RunConfig in 'Views\frame_RunConfig.pas' {frmRunConfig: TFrame},
