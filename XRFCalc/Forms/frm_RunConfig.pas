@@ -4,25 +4,19 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.IOUtils,
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
+  Vcl.Graphics, Vcl.Controls, Vcl.Dialogs, Vcl.StdCtrls,
   Vcl.ExtCtrls, Vcl.CheckLst, Vcl.Samples.Spin,
-  RzPanel, RzButton, RzTabs,
+  RzTabs,
   unit_universal_types, unit_universal_io, unit_xrf_lines,
   cmd_unit_types, Vcl.FileCtrl;
 
 type
-  TfrmRunConfig = class(TForm)
-    pnlButtons: TRzPanel;
-    btnRun: TRzBitBtn;
-    btnSaveConfig: TRzBitBtn;
-    btnCancel: TRzBitBtn;
+  TfrmRunConfig = class(TFrame)
     PageControl: TRzPageControl;
     tabTargets: TRzTabSheet;
     tabStructure: TRzTabSheet;
     tabOptimizer: TRzTabSheet;
     tabFitness: TRzTabSheet;
-    procedure FormCreate(Sender: TObject);
-    procedure btnSaveConfigClick(Sender: TObject);
   private
     // Targets tab
     clbLines: TCheckListBox;
@@ -67,6 +61,7 @@ type
     procedure BrowseTemplateClick(Sender: TObject);
     procedure BrowseHenkeClick(Sender: TObject);
   public
+    procedure AfterConstruction; override;
     procedure SetDefaults;
     procedure LoadFromConfig(const Config: TUniversalConfig);
     function  BuildConfig: TUniversalConfig;
@@ -375,8 +370,9 @@ begin
   btnBrowseHenke.OnClick := BrowseHenkeClick;
 end;
 
-procedure TfrmRunConfig.FormCreate(Sender: TObject);
+procedure TfrmRunConfig.AfterConstruction;
 begin
+  inherited;
   CreateTargetsTab;
   CreateStructureTab;
   CreateOptimizerTab;
@@ -407,25 +403,6 @@ begin
   Dir := edtHenkePath.Text;
   if SelectDirectory('Select Henke Database Folder', '', Dir) then
     edtHenkePath.Text := Dir;
-end;
-
-procedure TfrmRunConfig.btnSaveConfigClick(Sender: TObject);
-var
-  Dlg: TSaveDialog;
-  Config: TUniversalConfig;
-begin
-  Dlg := TSaveDialog.Create(Self);
-  try
-    Dlg.Filter := 'JSON config|*.json';
-    Dlg.DefaultExt := 'json';
-    if Dlg.Execute then
-    begin
-      Config := BuildConfig;
-      TUniversalIO.SaveConfig(Config, Dlg.FileName);
-    end;
-  finally
-    Dlg.Free;
-  end;
 end;
 
 procedure TfrmRunConfig.SetDefaults;
