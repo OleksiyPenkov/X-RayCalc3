@@ -9,7 +9,7 @@ uses
   frame_CompareView in 'Views\frame_CompareView.pas' {frameCompareView: TFrame},
   xrfcalc_unit_loader in 'Units\xrfcalc_unit_loader.pas',
   xrfcalc_unit_runner in 'Units\xrfcalc_unit_runner.pas',
-  frm_RunConfig in 'Forms\frm_RunConfig.pas' {frmRunConfig},
+  frame_RunConfig in 'Views\frame_RunConfig.pas' {frmRunConfig: TFrame},
   unit_universal_io in '..\Shared\Universal\unit_universal_io.pas',
   unit_xrf_lines in '..\Shared\Universal\unit_xrf_lines.pas',
   unit_xrfx_package in '..\Shared\Universal\unit_xrfx_package.pas',

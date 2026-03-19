@@ -1,4 +1,4 @@
-unit frm_RunConfig;
+unit frame_RunConfig;
 
 interface
 
