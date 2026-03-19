@@ -76,11 +76,15 @@
         <DCC_UsePackage>JvNet;RaizeComponentsVcl;vclwinx;DataSnapServer;fmx;emshosting;vclie;DbxCommonDriver;bindengine;IndyIPCommon;VCLRESTComponents;DBXMSSQLDriver;FireDACCommonODBC;emsclient;FireDACCommonDriver;appanalytics;IndyProtocols;vclx;frxe28;IndyIPClient;dbxcds;vcledge;frxTee28;bindcompvclwinx;FmxTeeUI;emsedge;bindcompfmx;DBXFirebirdDriver;JvBands;inetdb;vclribbon;JvAppFrm;ibmonitor;FireDACSqliteDriver;DbxClientDriver;FireDACASADriver;Tee;soapmidas;JclVcl;vclactnband;TeeUI;fmxFireDAC;dbexpress;Jcl;JvManagedThreads;FireDACInfxDriver;DBXMySQLDriver;VclSmp;inet;DataSnapCommon;JvPascalInterpreter;AsyncProDR;vcltouch;fmxase;frx28;JvPluginSystem;DBXOdbcDriver;JvDB;dbrtl;JvTimeFramework;FireDACDBXDriver;FireDACOracleDriver;fmxdae;TeeDB;DSComponents;FireDACMSAccDriver;JvCustom;CustomIPTransport;FireDACMSSQLDriver;JvSystem;AbbreviaVCLD;DataSnapIndy10ServerTransport;JclDeveloperTools;JvControls;DataSnapConnectors;vcldsnap;DBXInterBaseDriver;JvCrypt;FireDACMongoDBDriver;JvJans;JvMM;IndySystem;JvWizards;OmniThreadLibraryRuntime;frxDB28;FireDACTDataDriver;CPortLibDXE8;JvGlobus;vcldb;ibxbindings;SynEditDR;JclContainers;JvPageComps;vclFireDAC;JvCore;bindcomp;FireDACCommon;DataSnapServerMidas;FireDACODBCDriver;emsserverresource;IndyCore;RESTBackendComponents;bindcompdbx;rtl;FireDACMySQLDriver;FireDACADSDriver;RaizeComponentsVclDb;elab_components;RESTComponents;DBXSqliteDriver;vcl;IndyIPServer;dsnapxml;dsnapcon;DataSnapClient;DataSnapProviderClient;adortl;VirtualTreesDR;JvDotNetCtrls;DBXSybaseASEDriver;JvHMI;JvRuntimeDesign;DBXDb2Driver;JvXPCtrls;vclimg;DataSnapFireDAC;emsclientfiredac;FireDACPgDriver;FireDAC;FireDACDSDriver;inetdbxpress;xmlrtl;tethering;JvStdCtrls;ibxpress;JvDlgs;JvDocking;bindcompvcl;dsnap;JvPrintPreview;JvCmp;CloudService;DBXSybaseASADriver;DBXOracleDriver;FireDACDb2Driver;DBXInformixDriver;vclib;fmxobj;bindcompvclsmp;DataSnapNativeClient;FMXTee;DatasnapConnectorsFreePascal;soaprtl;soapserver;FireDACIBDriver;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
         <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>
         <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
+        <DCC_ExeOutput>..\_Out\BIN\</DCC_ExeOutput>
+        <Manifest_File>(None)</Manifest_File>
+        <DCC_BplOutput>..\_Out\DCU\</DCC_BplOutput>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <DCC_DcuOutput>..\Out\DCU</DCC_DcuOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_UsePackage>RaizeComponentsVcl;vclwinx;DataSnapServer;fmx;emshosting;vclie;DbxCommonDriver;bindengine;IndyIPCommon;VCLRESTComponents;DBXMSSQLDriver;FireDACCommonODBC;emsclient;FireDACCommonDriver;appanalytics;IndyProtocols;vclx;IndyIPClient;dbxcds;vcledge;bindcompvclwinx;FmxTeeUI;emsedge;bindcompfmx;DBXFirebirdDriver;inetdb;vclribbon;ibmonitor;FireDACSqliteDriver;DbxClientDriver;FireDACASADriver;Tee;soapmidas;vclactnband;TeeUI;fmxFireDAC;dbexpress;FireDACInfxDriver;DBXMySQLDriver;VclSmp;inet;DataSnapCommon;AsyncProDR;vcltouch;fmxase;DBXOdbcDriver;dbrtl;FireDACDBXDriver;FireDACOracleDriver;fmxdae;TeeDB;FireDACMSAccDriver;CustomIPTransport;FireDACMSSQLDriver;AbbreviaVCLD;DataSnapIndy10ServerTransport;DataSnapConnectors;vcldsnap;DBXInterBaseDriver;FireDACMongoDBDriver;IndySystem;OmniThreadLibraryRuntime;FireDACTDataDriver;vcldb;ibxbindings;SynEditDR;vclFireDAC;bindcomp;FireDACCommon;DataSnapServerMidas;FireDACODBCDriver;emsserverresource;IndyCore;RESTBackendComponents;bindcompdbx;rtl;FireDACMySQLDriver;FireDACADSDriver;RaizeComponentsVclDb;RESTComponents;DBXSqliteDriver;vcl;IndyIPServer;dsnapxml;dsnapcon;DataSnapClient;DataSnapProviderClient;adortl;VirtualTreesDR;DBXSybaseASEDriver;DBXDb2Driver;vclimg;DataSnapFireDAC;emsclientfiredac;FireDACPgDriver;FireDAC;FireDACDSDriver;inetdbxpress;xmlrtl;tethering;ibxpress;bindcompvcl;dsnap;CloudService;DBXSybaseASADriver;DBXOracleDriver;FireDACDb2Driver;DBXInformixDriver;vclib;fmxobj;bindcompvclsmp;DataSnapNativeClient;FMXTee;DatasnapConnectorsFreePascal;soaprtl;soapserver;FireDACIBDriver;$(DCC_UsePackage)</DCC_UsePackage>
@@ -90,6 +94,11 @@
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_ExeOutput>..\_Out\BIN\</DCC_ExeOutput>
+        <DCC_BplOutput>..\_Out\DCU\</DCC_BplOutput>
+        <Manifest_File>(None)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <DCC_DcuOutput>..\Out\DCU</DCC_DcuOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -124,6 +133,9 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <Debugger_HostApplication>-s input_structure.txt -o reflectivity.txt</Debugger_HostApplication>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <Manifest_File>(None)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
@@ -145,6 +157,7 @@
         <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_optimizer.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_templates.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_xrfx_package.pas"/>
         <DCCReference Include="..\Shared\Math\unit_materials_mix.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -167,8 +180,8 @@
                     <Source Name="MainSource">xrccmd.dpr</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k280.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp280.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k370.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp370.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="5">
