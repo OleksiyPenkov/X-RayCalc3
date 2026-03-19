@@ -25,7 +25,8 @@ uses
   unit_universal_optimizer in '..\Shared\Universal\unit_universal_optimizer.pas',
   unit_universal_templates in '..\Shared\Universal\unit_universal_templates.pas',
   unit_xrfx_package in '..\Shared\Universal\unit_xrfx_package.pas',
-  unit_materials_mix in '..\Shared\Math\unit_materials_mix.pas';
+  unit_materials_mix in '..\Shared\Math\unit_materials_mix.pas',
+  unit_xrf_lines in '..\Shared\Universal\unit_xrf_lines.pas';
 
 var
   Value: string;
@@ -37,6 +38,9 @@ begin
     OperationMode := omSingleCalc;
     if ParamCount > 0 then
     begin
+      if FindCmdLineSwitch('l', Value, True, [clstValueNextParam]) then
+        LoadXRFLines(Value);
+
       if FindCmdLineSwitch('s', Value, True, [clstValueNextParam]) then
          InputStructureFileName := Value;
 

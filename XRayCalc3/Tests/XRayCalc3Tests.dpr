@@ -62,6 +62,9 @@ var
   nunitLogger: ITestLogger;
 begin
   try
+    LoadXRFLines(ExpandFileName(ExtractFilePath(ParamStr(0))
+      + '..\..\..\..\Shared\Universal\xrf_lines.json'));
+
     TDUnitX.CheckCommandLine;
     runner := TDUnitX.CreateRunner;
     runner.UseRTTI := True;

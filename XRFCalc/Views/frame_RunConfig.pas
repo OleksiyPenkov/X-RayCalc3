@@ -30,8 +30,6 @@ type
     edtDensityFactor: TEdit;
     edtSubstrate: TEdit;
     chkPureElements: TCheckBox;
-    edtTemplate: TEdit;
-    btnBrowseTemplate: TButton;
     // Optimizer tab
     sedPopulation, sedIterations, sedStagnation: TSpinEdit;
     edtW1, edtW2, edtTolerance: TEdit;
@@ -54,7 +52,6 @@ type
       const ACaption: string; AWidth: Integer = 70): TEdit;
     function CreateLabeledSpin(AParent: TWinControl; ATop: Integer;
       const ACaption: string; AMin, AMax, AValue: Integer): TSpinEdit;
-    procedure BrowseTemplateClick(Sender: TObject);
     procedure BrowseHenkeClick(Sender: TObject);
   public
     procedure AfterConstruction; override;
@@ -122,19 +119,21 @@ var
   grp: TGroupBox;
   Elements: TArray<string>;
   i: Integer;
-  Lbl: TLabel;
 begin
   // XRF Lines
   grp := TGroupBox.Create(Self);
   grp.Parent := tabTargets;
-  grp.Left := 4; grp.Top := 4; grp.Width := 270; grp.Height := 110;
+  grp.Top := 10;
+  grp.Align := alTop;
+  grp.AlignWithMargins := True;
+  grp.Height := 110;
   grp.Caption := 'Target XRF Lines';
 
   clbLines := TCheckListBox.Create(Self);
   clbLines.Parent := grp;
   clbLines.Align := alClient;
   clbLines.AlignWithMargins := True;
-  clbLines.Columns := 3;
+  clbLines.Columns := 4;
   Elements := TArray<string>.Create(
     'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si');
   for i := 0 to High(Elements) do
@@ -143,36 +142,41 @@ begin
   // Element Pool
   grp := TGroupBox.Create(Self);
   grp.Parent := tabTargets;
-  grp.Left := 4; grp.Top := 120; grp.Width := 270; grp.Height := 110;
+  grp.Top := 30;
+  grp.Align := alTop;
+  grp.AlignWithMargins := True;
+  grp.Height := 110;
   grp.Caption := 'Element Pool';
 
   clbPool := TCheckListBox.Create(Self);
   clbPool.Parent := grp;
   clbPool.Align := alClient;
   clbPool.AlignWithMargins := True;
-  clbPool.Columns := 3;
+  clbPool.Columns := 4;
   Elements := TArray<string>.Create('W', 'Mo', 'Cr', 'Si', 'B', 'B4C',
     'Sc', 'C', 'Ni', 'Co', 'La', 'Pt', 'Ru', 'V', 'Ti', 'Nb');
   for i := 0 to High(Elements) do
     clbPool.Items.Add(Elements[i]);
 
   // Excluded Pairs
-  Lbl := TLabel.Create(Self);
-  Lbl.Parent := tabTargets;
-  Lbl.Left := 4; Lbl.Top := 238;
-  Lbl.Caption := 'Excluded pairs (from loaded config):';
+  grp := TGroupBox.Create(Self);
+  grp.Parent := tabTargets;
+  grp.Top := 60;
+  grp.Align := alTop;
+  grp.AlignWithMargins := True;
+  grp.Height := 110;
+  grp.Caption := 'Excluded Pairs';
 
   clbExcludedPairs := TCheckListBox.Create(Self);
-  clbExcludedPairs.Parent := tabTargets;
-  clbExcludedPairs.Left := 4; clbExcludedPairs.Top := 256;
-  clbExcludedPairs.Width := 270; clbExcludedPairs.Height := 88;
+  clbExcludedPairs.Parent := grp;
+  clbExcludedPairs.Align := alClient;
+  clbExcludedPairs.AlignWithMargins := True;
   clbExcludedPairs.Columns := 3;
 end;
 
 procedure TfrmRunConfig.CreateStructureTab;
 var
   Row: Integer;
-  grp: TGroupBox;
 begin
   Row := 10;
   sedDMin := CreateLabeledSpin(tabStructure, Row, 'd min (A)', 10, 500, 30);
@@ -206,24 +210,6 @@ begin
   chkPureElements.Width := 200;
   chkPureElements.Caption := 'Pure elements (no mixing)';
   chkPureElements.Checked := True;
-  Inc(Row, ROW_HEIGHT + 8);
-
-  grp := TGroupBox.Create(Self);
-  grp.Parent := tabStructure;
-  grp.Left := 8; grp.Top := Row; grp.Width := 270; grp.Height := 50;
-  grp.Caption := 'Template File';
-
-  edtTemplate := TEdit.Create(Self);
-  edtTemplate.Parent := grp;
-  edtTemplate.Left := 8; edtTemplate.Top := 20;
-  edtTemplate.Width := 210;
-
-  btnBrowseTemplate := TButton.Create(Self);
-  btnBrowseTemplate.Parent := grp;
-  btnBrowseTemplate.Left := 225; btnBrowseTemplate.Top := 18;
-  btnBrowseTemplate.Width := 35; btnBrowseTemplate.Height := 25;
-  btnBrowseTemplate.Caption := '...';
-  btnBrowseTemplate.OnClick := BrowseTemplateClick;
 end;
 
 procedure TfrmRunConfig.CreateOptimizerTab;
@@ -328,23 +314,6 @@ begin
   CreateFitnessTab;
 end;
 
-procedure TfrmRunConfig.BrowseTemplateClick(Sender: TObject);
-var
-  Dlg: TOpenDialog;
-begin
-  Dlg := TOpenDialog.Create(Self);
-  try
-    Dlg.Filter := 'JSON files|*.json';
-    Dlg.DefaultExt := 'json';
-    if edtTemplate.Text <> '' then
-      Dlg.InitialDir := ExtractFilePath(edtTemplate.Text);
-    if Dlg.Execute then
-      edtTemplate.Text := Dlg.FileName;
-  finally
-    Dlg.Free;
-  end;
-end;
-
 procedure TfrmRunConfig.BrowseHenkeClick(Sender: TObject);
 var
   Dir: string;
@@ -394,8 +363,6 @@ begin
   sedPopulation.Value := 1000;
   sedIterations.Value := 100;
   sedStagnation.Value := 200;
-
-  edtTemplate.Text := '';
 end;
 
 procedure TfrmRunConfig.LoadFromConfig(const Config: TUniversalConfig);
@@ -439,9 +406,6 @@ begin
   sedPopulation.Value := Config.Optimizer.Population;
   sedIterations.Value := Config.Optimizer.Iterations;
   sedStagnation.Value := Config.Optimizer.StagnationLimit;
-
-  // Template
-  edtTemplate.Text := Config.TemplatePath;
 
   // Fitness
   edtWR.Text := FormatFloat('0.###', Config.Fitness.wR);
@@ -615,7 +579,6 @@ begin
   // Top-level
   Result.Substrate := edtSubstrate.Text;
   Result.HenkePath := edtHenkePath.Text;
-  Result.TemplatePath := edtTemplate.Text;
 end;
 
 end.

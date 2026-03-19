@@ -24,6 +24,8 @@ type
     mnuExit: TMenuItem;
     mnuView: TMenuItem;
     mnuTools: TMenuItem;
+    mnuTemplateFile: TMenuItem;
+    mnuXRFLinesFile: TMenuItem;
     mnuRegisterExt: TMenuItem;
     mnuHelp: TMenuItem;
     mnuHelpContents: TMenuItem;
@@ -63,6 +65,8 @@ type
     procedure mnuSaveAsClick(Sender: TObject);
     procedure mnuSaveConfigClick(Sender: TObject);
     procedure mnuExitClick(Sender: TObject);
+    procedure mnuTemplateFileClick(Sender: TObject);
+    procedure mnuXRFLinesFileClick(Sender: TObject);
     procedure mnuRegisterExtClick(Sender: TObject);
     procedure mnuHelpContentsClick(Sender: TObject);
     procedure btnNewRunClick(Sender: TObject);
@@ -72,6 +76,8 @@ type
     FRunner: TXRCRunner;
     FRunTimer: TTimer;
     FRunStartTime: TDateTime;
+    FTemplatePath: string;
+    FXRFLinesPath: string;
     FInitialPath: string;
     FInitialFile: string;
     FSavePath: string;
@@ -104,7 +110,7 @@ implementation
 uses
   System.Win.Registry, System.IniFiles, Winapi.ShlObj, Winapi.ShellAPI,
   ClipBrd, Vcl.Imaging.pngimage,
-  unit_universal_io;
+  unit_universal_io, unit_xrf_lines;
 
 {$R *.dfm}
 
@@ -200,6 +206,10 @@ begin
   FRunTimer.OnTimer := RunTimerTick;
 
   LoadSettings;
+
+  if (FXRFLinesPath <> '') and TFile.Exists(FXRFLinesPath) then
+    LoadXRFLines(FXRFLinesPath);
+
   if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
   begin
     FInitialFile := ParamStr(1);
@@ -242,6 +252,7 @@ begin
     FCurvesView.LoadMetrics(FLoader.Manifest, FLoader.GetResult(0).Curves);
     FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
 
+    Caption := 'XRFCalc ' + #$2014 + ' ' + ExtractFileName(FileName);
     spStatus.Caption := Format('FoM: %.6f  |  %s',
       [FLoader.Manifest.FoM, ExtractFileName(FileName)]);
   except
@@ -342,6 +353,47 @@ begin
   Close;
 end;
 
+procedure TfrmXRFCalcMain.mnuTemplateFileClick(Sender: TObject);
+var
+  Dlg: TOpenDialog;
+begin
+  Dlg := TOpenDialog.Create(Self);
+  try
+    Dlg.Filter := 'JSON files|*.json|All files|*.*';
+    Dlg.DefaultExt := 'json';
+    if FTemplatePath <> '' then
+      Dlg.InitialDir := ExtractFilePath(FTemplatePath);
+    if Dlg.Execute then
+    begin
+      FTemplatePath := Dlg.FileName;
+      spStatus.Caption := 'Template: ' + ExtractFileName(FTemplatePath);
+    end;
+  finally
+    Dlg.Free;
+  end;
+end;
+
+procedure TfrmXRFCalcMain.mnuXRFLinesFileClick(Sender: TObject);
+var
+  Dlg: TOpenDialog;
+begin
+  Dlg := TOpenDialog.Create(Self);
+  try
+    Dlg.Filter := 'JSON files|*.json|All files|*.*';
+    Dlg.DefaultExt := 'json';
+    if FXRFLinesPath <> '' then
+      Dlg.InitialDir := ExtractFilePath(FXRFLinesPath);
+    if Dlg.Execute then
+    begin
+      FXRFLinesPath := Dlg.FileName;
+      LoadXRFLines(FXRFLinesPath);
+      spStatus.Caption := 'XRF Lines: ' + ExtractFileName(FXRFLinesPath);
+    end;
+  finally
+    Dlg.Free;
+  end;
+end;
+
 procedure TfrmXRFCalcMain.mnuRegisterExtClick(Sender: TObject);
 begin
   RegisterFileType('xrfx', 'XRFCalc Package', Application.ExeName);
@@ -376,6 +428,9 @@ begin
     Path := Ini.ReadString('General', 'LastFolder', '');
     if (Path <> '') and TDirectory.Exists(Path) then
       FInitialPath := Path;
+
+    FTemplatePath := Ini.ReadString('General', 'TemplatePath', '');
+    FXRFLinesPath := Ini.ReadString('General', 'XRFLinesPath', '');
 
     V := Ini.ReadInteger('Window', 'State', 0);
     if V = Ord(wsMaximized) then
@@ -413,6 +468,8 @@ begin
       Ini.WriteString('General', 'LastFolder', ExtractFilePath(FSavePath))
     else if FInitialPath <> '' then
       Ini.WriteString('General', 'LastFolder', FInitialPath);
+    Ini.WriteString('General', 'TemplatePath', FTemplatePath);
+    Ini.WriteString('General', 'XRFLinesPath', FXRFLinesPath);
     Ini.WriteInteger('Splitters', 'MainPct', MainSplitter.Percent);
     Ini.WriteInteger('Splitters', 'Metrics', FCurvesView.pnlMetrics.Height);
     Ini.WriteInteger('Splitters', 'ProgressChart', FProgressView.pnlChart.Height);
@@ -466,6 +523,7 @@ begin
       FInfoView.LoadManifestInfo(FLoader.Manifest);
       FCurvesView.LoadMetrics(FLoader.Manifest, FLoader.GetResult(0).Curves);
       FUnsaved := True;
+      PageControl1.ActivePage := tabCurves;
       spStatus.Caption := Format('FoM: %.6f  |  Unsaved — use File > Save',
         [FLoader.Manifest.FoM]);
     except
@@ -532,6 +590,7 @@ var
   ConfigPath, RunTempDir: string;
 begin
   Config := FRunConfig.BuildConfig;
+  Config.TemplatePath := FTemplatePath;
   RunTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc\run_' + TGUID.NewGuid.ToString);
   TDirectory.CreateDirectory(RunTempDir);
   Config.OutputDir := TPath.Combine(RunTempDir, TEMP_OUTPUT_DIR);

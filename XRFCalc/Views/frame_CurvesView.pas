@@ -102,13 +102,13 @@ begin
 
   if SameText(btnScale.Caption, 'Linear') then
   begin
-    // Log mode
-    chrtCurves.LeftAxis.Logarithmic := True;
+    // Log mode — set limits before enabling log to avoid <=0 validation error
     chrtCurves.LeftAxis.Automatic := False;
     chrtCurves.LeftAxis.AutomaticMaximum := False;
     chrtCurves.LeftAxis.AutomaticMinimum := False;
     chrtCurves.LeftAxis.Maximum := 1;
     chrtCurves.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+    chrtCurves.LeftAxis.Logarithmic := True;
   end
   else
   begin
@@ -228,14 +228,14 @@ begin
   end
   else
   begin
-    chrtCurves.LeftAxis.Logarithmic := True;
     btnScale.Caption := 'Linear';
     chrtCurves.LeftAxis.AxisValuesFormat := '0x10E-0';
-    chrtCurves.LeftAxis.Maximum := 1;
-    chrtCurves.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
     chrtCurves.LeftAxis.Automatic := False;
     chrtCurves.LeftAxis.AutomaticMaximum := False;
     chrtCurves.LeftAxis.AutomaticMinimum := False;
+    chrtCurves.LeftAxis.Maximum := 1;
+    chrtCurves.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+    chrtCurves.LeftAxis.Logarithmic := True;
   end;
 end;
 
