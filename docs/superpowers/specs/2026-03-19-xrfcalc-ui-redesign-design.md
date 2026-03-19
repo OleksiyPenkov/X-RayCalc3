@@ -58,6 +58,8 @@ The shell file browser (breadcrumb bar, folder tree, file list) occupies the ent
 - Keep all runtime control creation methods unchanged
 - Keep public API: `SetDefaults`, `LoadFromConfig`, `BuildConfig`
 
+**Initialization:** TFrame does not support `OnCreate`. Move the body of `FormCreate` (which calls `CreateTargetsTab`, `CreateStructureTab`, etc.) into an overridden `procedure AfterConstruction; override;` method. This fires automatically after the frame is fully constructed and parented.
+
 **Layout adjustments for ~300px width:**
 
 The current dialog uses these layout constants:
@@ -162,15 +164,41 @@ begin
   begin
     Config := TUniversalIO.LoadConfig(ConfigJsonPath);
     FRunConfig.LoadFromConfig(Config);
+  end
+  else
+    FRunConfig.SetDefaults;  // Reset to defaults if no config.json in package
+end;
+```
+
+**UpdateRunState:** Remove the `btnEditRun.Enabled` line since the button no longer exists. Only `btnNewRun.Enabled` and `btnStop.Visible` remain.
+
+### 6. Update SaveSettings / LoadSettings
+
+Remove ShellSplitter percent persistence. Keep MainSplitter percent.
+
+**All `ShellList.Path` references must be replaced:**
+- `SaveSettings`: replace `ShellList.Path` with `ExtractFilePath(FSavePath)` for `LastFolder` INI key
+- `mnuSaveClick`: replace `ShellList.Path` with `ExtractFilePath(FSavePath)` for default save path
+- `mnuSaveAsClick`: replace `dlgSave.InitialDir := ShellList.Path` with `dlgSave.InitialDir := ExtractFilePath(FSavePath)`
+- `LoadSettings`: keep loading `LastFolder` from INI — store in `FInitialPath` as before (used for initial `dlgOpen.InitialDir`)
+
+**Remove `ShellListSelectItem`** event handler — `ShellList` no longer exists.
+
+**Update `WMDeferredNavigate`:** Remove `ShellList.Path` assignment. Keep only `FInitialFile` processing:
+```pascal
+procedure TfrmXRFCalcMain.WMDeferredNavigate(var Msg: TMessage);
+begin
+  if (FInitialFile <> '') and TFile.Exists(FInitialFile) then
+  begin
+    ProcessFile(FInitialFile);
+    LoadConfigFromXRFX(FInitialFile);
   end;
 end;
 ```
 
-### 6. Update SaveSettings / LoadSettings
+**Update `btnRefreshClick`:** Remove entirely (button removed).
 
-Remove ShellSplitter percent persistence. Remove `ShellList.Path` persistence. Keep MainSplitter percent.
-
-Replace `ShellList.Path` references in `mnuSaveClick` with `ExtractFilePath(FSavePath)`.
+**Update `LoadToolBarIcons`:** Remove `ICON_REFRESH` and `ICON_EDITRUN` from `ResNames` array. Add `ICON_OPEN`. Update all `ImageIndex` values on toolbar buttons to match the new array order.
 
 ### 7. Save Config Menu Item
 
