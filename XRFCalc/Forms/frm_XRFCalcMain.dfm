@@ -28,16 +28,22 @@ object frmXRFCalcMain: TfrmXRFCalcMain
     ShowCaptions = True
     ShowHint = True
     TabOrder = 0
-    object btnRefresh: TToolButton
+    object btnOpen: TToolButton
       Left = 0
       Top = 0
-      Hint = 'Refresh file browser'
-      Caption = 'Refresh'
+      Hint = 'Open .xrfx file'
+      Caption = 'Open'
       ImageIndex = 0
-      OnClick = btnRefreshClick
+      OnClick = btnOpenClick
+    end
+    object tbSep0: TToolButton
+      Left = 91
+      Top = 0
+      Width = 8
+      Style = tbsSeparator
     end
     object btnExportStructure: TToolButton
-      Left = 91
+      Left = 99
       Top = 0
       Hint = 'Export best structure to JSON'
       Caption = 'Export Structure'
@@ -45,7 +51,7 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       OnClick = btnExportStructureClick
     end
     object btnCopyData: TToolButton
-      Left = 182
+      Left = 190
       Top = 0
       Hint = 'Copy curve data to clipboard'
       Caption = 'Copy Data'
@@ -53,7 +59,7 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       OnClick = btnCopyDataClick
     end
     object btnSaveImage: TToolButton
-      Left = 273
+      Left = 281
       Top = 0
       Hint = 'Save chart as image'
       Caption = 'Save Image'
@@ -61,39 +67,31 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       OnClick = btnSaveImageClick
     end
     object tbSep1: TToolButton
-      Left = 364
+      Left = 372
       Top = 0
       Width = 8
       Style = tbsSeparator
     end
     object btnNewRun: TToolButton
-      Left = 372
+      Left = 380
       Top = 0
       Hint = 'Configure and start a new optimization run'
       Caption = 'New Run'
       ImageIndex = 4
       OnClick = btnNewRunClick
     end
-    object btnEditRun: TToolButton
-      Left = 463
-      Top = 0
-      Hint = 'Edit config from selected .xrfx and re-run'
-      Caption = 'Edit Run'
-      ImageIndex = 5
-      OnClick = btnEditRunClick
-    end
     object tbSep2: TToolButton
-      Left = 554
+      Left = 471
       Top = 0
       Width = 8
       Style = tbsSeparator
     end
     object btnStop: TToolButton
-      Left = 562
+      Left = 479
       Top = 0
       Hint = 'Cancel the running optimization'
       Caption = 'Stop'
-      ImageIndex = 6
+      ImageIndex = 5
       Visible = False
       OnClick = btnStopClick
     end
@@ -115,91 +113,9 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       0
       304
       524)
-    UpperLeftControls = (
-      ShellSplitter)
+    UpperLeftControls = ()
     LowerRightControls = (
       PageControl1)
-    object ShellSplitter: TRzSplitter
-      Left = 0
-      Top = 0
-      Width = 300
-      Height = 524
-      Orientation = orVertical
-      Position = 209
-      Percent = 40
-      UsePercent = True
-      UpperLeft.Color = 15987699
-      LowerRight.Color = 15987699
-      Align = alClient
-      Color = 15987699
-      TabOrder = 0
-      BarSize = (
-        0
-        209
-        300
-        213)
-      UpperLeftControls = (
-        JamShellBreadCrumbBar1
-        ShellTree)
-      LowerRightControls = (
-        ShellList)
-      object JamShellBreadCrumbBar1: TJamShellBreadCrumbBar
-        AlignWithMargins = True
-        Left = 3
-        Top = 3
-        Width = 294
-        Height = 24
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -12
-        Font.Name = 'Segoe UI'
-        Font.Style = []
-        ShellLink = JamShellLink1
-        SpecialFolder = SF_DRIVES
-        TabOrder = 0
-        VisiblePanes = []
-      end
-      object ShellTree: TJamShellTree
-        AlignWithMargins = True
-        Left = 3
-        Top = 33
-        Width = 294
-        Height = 173
-        ShellLink = JamShellLink1
-        SpecialFolder = SF_DRIVES
-        Filter = '*'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -12
-        Font.Name = 'Segoe UI'
-        Font.Style = []
-        RowSelect = True
-        Align = alClient
-        TabOrder = 1
-      end
-      object ShellList: TJamShellList
-        AlignWithMargins = True
-        Left = 3
-        Top = 3
-        Width = 294
-        Height = 305
-        ReadOnly = True
-        Filter = '*.xrfx'
-        ShellLink = JamShellLink1
-        Align = alClient
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -12
-        Font.Name = 'Segoe UI'
-        Font.Style = []
-        GridLines = True
-        HideSelection = False
-        IconOptions.AutoArrange = True
-        RowSelect = True
-        TabOrder = 0
-        OnSelectItem = ShellListSelectItem
-      end
-    end
     object PageControl1: TRzPageControl
       AlignWithMargins = True
       Left = 3
@@ -223,11 +139,6 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       object tabProgress: TRzTabSheet
         Color = 15987699
         Caption = 'Progress'
-      end
-      object tabCompare: TRzTabSheet
-        Color = 15987699
-        TabVisible = False
-        Caption = 'Compare'
       end
     end
   end
@@ -256,6 +167,11 @@ object frmXRFCalcMain: TfrmXRFCalcMain
     Top = 280
     object mnuFile: TMenuItem
       Caption = '&File'
+      object mnuOpen: TMenuItem
+        Caption = '&Open...'
+        ShortCut = 16463
+        OnClick = mnuOpenClick
+      end
       object mnuSave: TMenuItem
         Caption = '&Save'
         ShortCut = 16467
@@ -265,6 +181,10 @@ object frmXRFCalcMain: TfrmXRFCalcMain
         Caption = 'Save &As...'
         ShortCut = 49235
         OnClick = mnuSaveAsClick
+      end
+      object mnuSaveConfig: TMenuItem
+        Caption = 'Save Config...'
+        OnClick = mnuSaveConfigClick
       end
       object mnuFileSep1: TMenuItem
         Caption = '-'
@@ -299,16 +219,19 @@ object frmXRFCalcMain: TfrmXRFCalcMain
     Left = 504
     Top = 280
   end
-  object JamShellLink1: TJamShellLink
-    Left = 552
-    Top = 280
-  end
   object dlgSave: TSaveDialog
     Left = 456
     Top = 328
   end
   object dlgSaveImage: TSavePictureDialog
     Left = 504
+    Top = 328
+  end
+  object dlgOpen: TOpenDialog
+    DefaultExt = 'xrfx'
+    Filter = 'XRFX package|*.xrfx'
+    Title = 'Open XRF Results'
+    Left = 552
     Top = 328
   end
 end
