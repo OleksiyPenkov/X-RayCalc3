@@ -124,6 +124,279 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       Height = 524
       Align = alClient
       TabOrder = 0
+      ExplicitHeight = 524
+      inherited PageControl: TRzPageControl
+        Height = 524
+        ExplicitHeight = 524
+        FixedDimension = 21
+        inherited tabTargets: TRzTabSheet
+          Color = 15987699
+          ExplicitHeight = 499
+          inherited grpLines: TGroupBox
+            Top = 175
+            Height = 155
+            Align = alClient
+            ExplicitLeft = 10
+            ExplicitTop = 3
+            ExplicitWidth = 290
+            inherited lvLines: TListView
+              Left = 5
+              Top = 20
+              Width = 280
+              Height = 104
+              ExplicitLeft = 5
+              ExplicitTop = 20
+              ExplicitWidth = 280
+              ExplicitHeight = 109
+            end
+            inherited pnlLineWeight: TPanel
+              Left = 2
+              Top = 127
+              Width = 286
+              StyleElements = [seFont, seClient, seBorder]
+              ExplicitLeft = 2
+              ExplicitTop = 132
+              ExplicitWidth = 286
+              inherited lblLineWeight: TLabel
+                StyleElements = [seFont, seClient, seBorder]
+              end
+              inherited edtLineWeight: TEdit
+                StyleElements = [seFont, seClient, seBorder]
+              end
+            end
+          end
+          inherited grpPool: TGroupBox
+            Top = 3
+            Height = 166
+            ExplicitTop = 3
+            ExplicitHeight = 166
+            inherited clbPool: TCheckListBox
+              Height = 141
+              ItemHeight = 15
+              StyleElements = [seFont, seClient, seBorder]
+            end
+          end
+          inherited grpExcludedPairs: TGroupBox
+            Top = 336
+            Height = 160
+            Align = alBottom
+            ExplicitTop = 336
+            ExplicitHeight = 160
+            inherited clbExcludedPairs: TCheckListBox
+              Height = 135
+              ItemHeight = 15
+              StyleElements = [seFont, seClient, seBorder]
+            end
+          end
+        end
+        inherited tabStructure: TRzTabSheet
+          Color = 15987699
+          ExplicitLeft = 1
+          ExplicitTop = 22
+          ExplicitWidth = 296
+          ExplicitHeight = 475
+          inherited lblDMin: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblDMax: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblGammaMin: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblGammaMax: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblNMin: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblNMax: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblSigma: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblDensityFactor: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblSubstrate: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited sedDMin: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedDMax: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedGammaMin: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedGammaMax: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedNMin: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedNMax: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited edtSigma: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtDensityFactor: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtSubstrate: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+        end
+        inherited tabOptimizer: TRzTabSheet
+          Color = 15987699
+          ExplicitLeft = 1
+          ExplicitTop = 22
+          ExplicitWidth = 296
+          ExplicitHeight = 475
+          inherited lblPopulation: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblIterations: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblStagnation: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblW1: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblW2: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblTolerance: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblJammingMax: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblCheckpointEvery: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited sedPopulation: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedIterations: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedStagnation: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited edtW1: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtW2: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtTolerance: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited sedJammingMax: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited sedCheckpointEvery: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+        end
+        inherited tabFitness: TRzTabSheet
+          Color = 15987699
+          ExplicitLeft = 1
+          ExplicitTop = 22
+          ExplicitWidth = 296
+          ExplicitHeight = 475
+          inherited lblWR: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblWFWHM: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblWPurity: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblRMinThreshold: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblDeltaTheta: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblThetaMin: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblPolarization: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblScanPoints: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited lblScanHalfRange: TLabel
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtWR: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtWFWHM: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtWPurity: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtRMinThreshold: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtDeltaTheta: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited edtThetaMin: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited cmbPolarization: TComboBox
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 23
+          end
+          inherited sedScanPoints: TSpinEdit
+            Height = 24
+            StyleElements = [seFont, seClient, seBorder]
+            ExplicitHeight = 24
+          end
+          inherited edtScanHalfRange: TEdit
+            StyleElements = [seFont, seClient, seBorder]
+          end
+          inherited grpHenke: TGroupBox
+            inherited edtHenkePath: TEdit
+              StyleElements = [seFont, seClient, seBorder]
+            end
+          end
+        end
+      end
     end
     object PageControl1: TRzPageControl
       AlignWithMargins = True

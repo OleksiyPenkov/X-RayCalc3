@@ -47,6 +47,8 @@ type
     FCancelled: Boolean;
     FTemplates: TTemplateLibrary;
     FWorkerFitness: array of TUniversalFitness;
+    FShakeCheckFoM: Single;     // ABestFoM at last shake/window start
+    FShakeCheckIter: Integer;   // iteration at last shake/window start
     FOnIteration: TIterationEvent;
     FOnCompleted: TCompletionEvent;
     FOnError: TErrorEvent;
@@ -284,6 +286,10 @@ begin
       if Assigned(FOnIteration) then
         FOnIteration(IterData);
 
+      // Initialize stagnation window tracking
+      FShakeCheckFoM := FPSO.ABestFoM;
+      FShakeCheckIter := StartIter;
+
       // Main optimization loop
       for t := StartIter to FConfig.Optimizer.Iterations - 1 do
       begin
@@ -311,11 +317,24 @@ begin
         if Assigned(FOnIteration) then
           FOnIteration(IterData);
 
-        // Stagnation handling
-        if FPSO.JammingCount > FConfig.Optimizer.JammingMax then
+        // Window-based stagnation: compare FoM now vs JammingMax iterations ago
+        if (t - FShakeCheckIter) >= FConfig.Optimizer.JammingMax then
         begin
-          if FPSO.Diversity < 0.01 then
+          // Check if FoM improved by at least 1% over the window
+          if (Abs(FShakeCheckFoM) > 1e-10) and
+             ((FShakeCheckFoM - FPSO.ABestFoM) / Abs(FShakeCheckFoM) > 0.01) then
+          begin
+            // Meaningful progress — reset window
+            FShakeCheckFoM := FPSO.ABestFoM;
+            FShakeCheckIter := t;
+          end
+          else
+          begin
+            // Stagnated — shake and reset window
             FPSO.Shake;
+            FShakeCheckFoM := FPSO.ABestFoM;
+            FShakeCheckIter := t;
+          end;
         end;
 
         // Convergence check

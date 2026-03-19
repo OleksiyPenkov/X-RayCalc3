@@ -485,40 +485,62 @@ begin
     Result := Curve.Theta[MaxIdx];
 end;
 
-function CalcSNR(const Curve: TXRFXCurveData): Double;
+function InterpCurve(const Curve: TXRFXCurveData; Theta: Double): Double;
 var
-  i, TailStart, PeakIdx: Integer;
-  MaxR, TailSum: Double;
-  TailCount: Integer;
+  Lo, Hi, Mid: Integer;
+  X0, X1, Y0, Y1: Double;
+begin
+  Result := 0;
+  if Length(Curve.Theta) = 0 then Exit;
+  if Theta <= Curve.Theta[0] then begin Result := Curve.Refl[0]; Exit; end;
+  if Theta >= Curve.Theta[High(Curve.Theta)] then begin Result := Curve.Refl[High(Curve.Refl)]; Exit; end;
+  Lo := 0;
+  Hi := High(Curve.Theta);
+  while Hi - Lo > 1 do
+  begin
+    Mid := (Lo + Hi) div 2;
+    if Curve.Theta[Mid] <= Theta then Lo := Mid else Hi := Mid;
+  end;
+  X0 := Curve.Theta[Lo]; X1 := Curve.Theta[Hi];
+  Y0 := Curve.Refl[Lo]; Y1 := Curve.Refl[Hi];
+  if Abs(X1 - X0) < 1e-15 then
+    Result := Y0
+  else
+    Result := Y0 + (Y1 - Y0) * (Theta - X0) / (X1 - X0);
+end;
+
+function CalcSNR(const Curve: TXRFXCurveData;
+  const AllCurves: TArray<TXRFXCurveData>; CurveIndex: Integer): Double;
+var
+  i, PeakIdx: Integer;
+  PeakR, PeakTheta, TotalAtPeak, Noise: Double;
 begin
   Result := 0;
   if Length(Curve.Refl) < 10 then Exit;
 
+  // Find peak position on the element's own curve
   PeakIdx := 0;
-  MaxR := Curve.Refl[0];
+  PeakR := Curve.Refl[0];
   for i := 1 to High(Curve.Refl) do
-    if Curve.Refl[i] > MaxR then
+    if Curve.Refl[i] > PeakR then
     begin
-      MaxR := Curve.Refl[i];
+      PeakR := Curve.Refl[i];
       PeakIdx := i;
     end;
+  if PeakR < 1e-15 then Exit;
+  PeakTheta := Curve.Theta[PeakIdx];
 
-  TailStart := Length(Curve.Refl) - Length(Curve.Refl) div 5;
-  if TailStart <= PeakIdx then
-    TailStart := PeakIdx + (Length(Curve.Refl) - PeakIdx) div 2;
-  if TailStart >= Length(Curve.Refl) then
-    TailStart := Length(Curve.Refl) - 1;
+  // Sum all OTHER curves at the peak angle = noise floor
+  TotalAtPeak := 0;
+  for i := 0 to High(AllCurves) do
+    if i <> CurveIndex then
+      TotalAtPeak := TotalAtPeak + InterpCurve(AllCurves[i], PeakTheta);
 
-  TailSum := 0;
-  TailCount := 0;
-  for i := TailStart to High(Curve.Refl) do
-  begin
-    TailSum := TailSum + Curve.Refl[i];
-    Inc(TailCount);
-  end;
+  Noise := TotalAtPeak;
+  if Noise < 1e-15 then
+    Noise := 1e-15;
 
-  if (TailCount > 0) and (TailSum / TailCount > 1e-15) then
-    Result := MaxR / (TailSum / TailCount);
+  Result := PeakR / Noise;
 end;
 
 function FindCurveForElement(const Curves: TArray<TXRFXCurveData>;
@@ -584,7 +606,7 @@ begin
     if CurveIdx >= 0 then
     begin
       PeakPos := FindPeakPosition(Curves[CurveIdx]);
-      SNR := CalcSNR(Curves[CurveIdx]);
+      SNR := CalcSNR(Curves[CurveIdx], Curves, CurveIdx);
     end;
 
     C := BarColors[i mod Length(BarColors)];

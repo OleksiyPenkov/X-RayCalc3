@@ -1,4 +1,4 @@
-unit frm_XRFCalcMain;
+﻿unit frm_XRFCalcMain;
 
 interface
 

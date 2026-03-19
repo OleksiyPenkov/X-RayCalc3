@@ -59,9 +59,7 @@ begin
   // Here we only add verbose-specific messages.
   if FVerbose then
   begin
-    if (Data.JammingCount > FConfig.Optimizer.JammingMax) and
-       (Data.Diversity < 0.01) then
-      WriteLn(Format('  [Shake at iteration %d]', [Data.Iteration]));
+    // Shake logging is handled by the optimizer's window-based detection
 
     if (Data.Iteration > 0) and
        ((Data.Iteration mod FConfig.Optimizer.CheckpointEvery) = 0) then

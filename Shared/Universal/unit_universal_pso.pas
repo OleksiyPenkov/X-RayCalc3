@@ -566,27 +566,115 @@ end;
 
 procedure TUniversalPSO.CalcDiversity;
 var
-  i: Integer;
-  MeanD, Variance: Single;
+  i, j, Role, nParams: Integer;
+  nPop: Integer;
+  MeanVal, Variance, SumVar: Double;
+
+  procedure AddParam(ARange: Single);
+  begin
+    if ARange < 1e-10 then Exit;
+
+    MeanVal := 0;
+    Variance := 0;
+    // (mean and variance computed inline per parameter)
+    Inc(nParams);
+  end;
+
+  procedure MeasureParam(Values: array of Single; ARange: Single);
+  var
+    k: Integer;
+  begin
+    if ARange < 1e-10 then Exit;
+
+    MeanVal := 0;
+    for k := 0 to High(Values) do
+      MeanVal := MeanVal + Values[k];
+    MeanVal := MeanVal / nPop;
+
+    Variance := 0;
+    for k := 0 to High(Values) do
+      Variance := Variance + Sqr(Values[k] - MeanVal);
+    Variance := Variance / nPop;
+
+    SumVar := SumVar + Variance / Sqr(ARange);
+    Inc(nParams);
+  end;
+
+var
+  Vals: array of Single;
 begin
-  if Length(FParticles) = 0 then
+  nPop := Length(FParticles);
+  if nPop < 2 then
   begin
     FDiversity := 0;
     Exit;
   end;
 
-  MeanD := 0;
-  for i := 0 to High(FParticles) do
-    MeanD := MeanD + FParticles[i].X.d;
-  MeanD := MeanD / Length(FParticles);
+  SetLength(Vals, nPop);
+  SumVar := 0;
+  nParams := 0;
 
-  Variance := 0;
-  for i := 0 to High(FParticles) do
-    Variance := Variance + Sqr(FParticles[i].X.d - MeanD);
-  Variance := Variance / Length(FParticles);
+  // d
+  if FdRange > 1e-10 then
+  begin
+    for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.d;
+    MeasureParam(Vals, FdRange);
+  end;
 
-  if FdRange > 0 then
-    FDiversity := Sqrt(Variance) / FdRange
+  // Gamma
+  if FGammaRange > 1e-10 then
+  begin
+    for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.Gamma;
+    MeasureParam(Vals, FGammaRange);
+  end;
+
+  // N
+  if FNRange > 1e-10 then
+  begin
+    for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.N;
+    MeasureParam(Vals, FNRange);
+  end;
+
+  // Sigma
+  if (not FSigmaFixed) and (FSigmaRange > 1e-10) then
+  begin
+    for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.Sigma;
+    MeasureParam(Vals, FSigmaRange);
+  end;
+
+  // CapH
+  if FHasCap and (FCapHRange > 1e-10) then
+  begin
+    for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.CapH;
+    MeasureParam(Vals, FCapHRange);
+  end;
+
+  // CapVariant
+  if FHasCapVariants and (FCapVarRange > 1e-10) then
+  begin
+    for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.CapVariant;
+    MeasureParam(Vals, FCapVarRange);
+  end;
+
+  // DensityFactor per role
+  if not FDFFixed then
+    for Role := 0 to LAYERS_PER_PERIOD - 1 do
+      if FDFRange > 1e-10 then
+      begin
+        for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.DensityFactor[Role];
+        MeasureParam(Vals, FDFRange);
+      end;
+
+  // Composition per role per element
+  for Role := 0 to LAYERS_PER_PERIOD - 1 do
+    for j := 0 to FPoolSize - 1 do
+    begin
+      for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.Composition[Role][j];
+      MeasureParam(Vals, 1.0); // composition range is 0..1
+    end;
+
+  if nParams > 0 then
+    FDiversity := Sqrt(SumVar / nParams)
   else
     FDiversity := 0;
 end;

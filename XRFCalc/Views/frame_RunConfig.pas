@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.IOUtils,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
-  Vcl.ExtCtrls, Vcl.CheckLst, Vcl.Samples.Spin,
+  Vcl.ExtCtrls, Vcl.CheckLst, Vcl.ComCtrls, Vcl.Samples.Spin,
   RzTabs,
   unit_universal_types, unit_universal_io, unit_xrf_lines,
   cmd_unit_types, Vcl.FileCtrl;
@@ -17,42 +17,80 @@ type
     tabStructure: TRzTabSheet;
     tabOptimizer: TRzTabSheet;
     tabFitness: TRzTabSheet;
-  private
     // Targets tab
-    clbLines: TCheckListBox;
+    grpLines: TGroupBox;
+    lvLines: TListView;
+    pnlLineWeight: TPanel;
+    lblLineWeight: TLabel;
+    edtLineWeight: TEdit;
+    grpPool: TGroupBox;
     clbPool: TCheckListBox;
+    grpExcludedPairs: TGroupBox;
     clbExcludedPairs: TCheckListBox;
     // Structure tab
-    sedDMin, sedDMax: TSpinEdit;
-    sedGammaMin, sedGammaMax: TSpinEdit;
-    sedNMin, sedNMax: TSpinEdit;
+    lblDMin: TLabel;
+    lblDMax: TLabel;
+    lblGammaMin: TLabel;
+    lblGammaMax: TLabel;
+    lblNMin: TLabel;
+    lblNMax: TLabel;
+    lblSigma: TLabel;
+    lblDensityFactor: TLabel;
+    lblSubstrate: TLabel;
+    sedDMin: TSpinEdit;
+    sedDMax: TSpinEdit;
+    sedGammaMin: TSpinEdit;
+    sedGammaMax: TSpinEdit;
+    sedNMin: TSpinEdit;
+    sedNMax: TSpinEdit;
     edtSigma: TEdit;
     edtDensityFactor: TEdit;
     edtSubstrate: TEdit;
     chkPureElements: TCheckBox;
     // Optimizer tab
-    sedPopulation, sedIterations, sedStagnation: TSpinEdit;
-    edtW1, edtW2, edtTolerance: TEdit;
-    sedJammingMax, sedCheckpointEvery: TSpinEdit;
+    lblPopulation: TLabel;
+    lblIterations: TLabel;
+    lblStagnation: TLabel;
+    lblW1: TLabel;
+    lblW2: TLabel;
+    lblTolerance: TLabel;
+    lblJammingMax: TLabel;
+    lblCheckpointEvery: TLabel;
+    sedPopulation: TSpinEdit;
+    sedIterations: TSpinEdit;
+    sedStagnation: TSpinEdit;
+    edtW1: TEdit;
+    edtW2: TEdit;
+    edtTolerance: TEdit;
+    sedJammingMax: TSpinEdit;
+    sedCheckpointEvery: TSpinEdit;
     // Fitness tab
-    edtWR, edtWFWHM, edtWPurity: TEdit;
+    lblWR: TLabel;
+    lblWFWHM: TLabel;
+    lblWPurity: TLabel;
+    lblRMinThreshold: TLabel;
+    lblDeltaTheta: TLabel;
+    lblThetaMin: TLabel;
+    lblPolarization: TLabel;
+    lblScanPoints: TLabel;
+    lblScanHalfRange: TLabel;
+    edtWR: TEdit;
+    edtWFWHM: TEdit;
+    edtWPurity: TEdit;
     edtRMinThreshold: TEdit;
-    edtDeltaTheta, edtThetaMin: TEdit;
+    edtDeltaTheta: TEdit;
+    edtThetaMin: TEdit;
     cmbPolarization: TComboBox;
     sedScanPoints: TSpinEdit;
     edtScanHalfRange: TEdit;
+    grpHenke: TGroupBox;
     edtHenkePath: TEdit;
     btnBrowseHenke: TButton;
-    // Helpers
-    procedure CreateTargetsTab;
-    procedure CreateStructureTab;
-    procedure CreateOptimizerTab;
-    procedure CreateFitnessTab;
-    function CreateLabeledEdit(AParent: TWinControl; ATop: Integer;
-      const ACaption: string; AWidth: Integer = 70): TEdit;
-    function CreateLabeledSpin(AParent: TWinControl; ATop: Integer;
-      const ACaption: string; AMin, AMax, AValue: Integer): TSpinEdit;
+    procedure LinesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
+    procedure LineWeightExit(Sender: TObject);
     procedure BrowseHenkeClick(Sender: TObject);
+  private
+    procedure PopulateTargetsData;
   public
     procedure AfterConstruction; override;
     procedure SetDefaults;
@@ -67,251 +105,44 @@ implementation
 uses
   System.Math;
 
-const
-  LBL_WIDTH = 100;
-  EDIT_LEFT = 108;
-  EDIT_WIDTH = 70;
-  ROW_HEIGHT = 26;
-
-{ Helper: TLabel + TEdit pair }
-function TfrmRunConfig.CreateLabeledEdit(AParent: TWinControl; ATop: Integer;
-  const ACaption: string; AWidth: Integer): TEdit;
+procedure TfrmRunConfig.PopulateTargetsData;
 var
-  Lbl: TLabel;
-begin
-  Lbl := TLabel.Create(Self);
-  Lbl.Parent := AParent;
-  Lbl.Left := 8;
-  Lbl.Top := ATop + 4;
-  Lbl.Caption := ACaption;
-
-  Result := TEdit.Create(Self);
-  Result.Parent := AParent;
-  Result.Left := EDIT_LEFT;
-  Result.Top := ATop;
-  Result.Width := AWidth;
-end;
-
-{ Helper: TLabel + TSpinEdit pair }
-function TfrmRunConfig.CreateLabeledSpin(AParent: TWinControl; ATop: Integer;
-  const ACaption: string; AMin, AMax, AValue: Integer): TSpinEdit;
-var
-  Lbl: TLabel;
-begin
-  Lbl := TLabel.Create(Self);
-  Lbl.Parent := AParent;
-  Lbl.Left := 8;
-  Lbl.Top := ATop + 4;
-  Lbl.Caption := ACaption;
-
-  Result := TSpinEdit.Create(Self);
-  Result.Parent := AParent;
-  Result.Left := EDIT_LEFT;
-  Result.Top := ATop;
-  Result.Width := EDIT_WIDTH;
-  Result.MinValue := AMin;
-  Result.MaxValue := AMax;
-  Result.Value := AValue;
-end;
-
-procedure TfrmRunConfig.CreateTargetsTab;
-var
-  grp: TGroupBox;
   Elements: TArray<string>;
+  Item: TListItem;
   i: Integer;
 begin
-  // XRF Lines
-  grp := TGroupBox.Create(Self);
-  grp.Parent := tabTargets;
-  grp.Top := 10;
-  grp.Align := alTop;
-  grp.AlignWithMargins := True;
-  grp.Height := 110;
-  grp.Caption := 'Target XRF Lines';
-
-  clbLines := TCheckListBox.Create(Self);
-  clbLines.Parent := grp;
-  clbLines.Align := alClient;
-  clbLines.AlignWithMargins := True;
-  clbLines.Columns := 4;
   Elements := TArray<string>.Create(
     'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si');
   for i := 0 to High(Elements) do
-    clbLines.Items.Add(Elements[i]);
+  begin
+    Item := lvLines.Items.Add;
+    Item.Caption := Elements[i];
+    Item.SubItems.Add('1.0');
+  end;
 
-  // Element Pool
-  grp := TGroupBox.Create(Self);
-  grp.Parent := tabTargets;
-  grp.Top := 30;
-  grp.Align := alTop;
-  grp.AlignWithMargins := True;
-  grp.Height := 110;
-  grp.Caption := 'Element Pool';
-
-  clbPool := TCheckListBox.Create(Self);
-  clbPool.Parent := grp;
-  clbPool.Align := alClient;
-  clbPool.AlignWithMargins := True;
-  clbPool.Columns := 4;
   Elements := TArray<string>.Create('W', 'Mo', 'Cr', 'Si', 'B', 'B4C',
     'Sc', 'C', 'Ni', 'Co', 'La', 'Pt', 'Ru', 'V', 'Ti', 'Nb');
   for i := 0 to High(Elements) do
     clbPool.Items.Add(Elements[i]);
-
-  // Excluded Pairs
-  grp := TGroupBox.Create(Self);
-  grp.Parent := tabTargets;
-  grp.Top := 60;
-  grp.Align := alTop;
-  grp.AlignWithMargins := True;
-  grp.Height := 110;
-  grp.Caption := 'Excluded Pairs';
-
-  clbExcludedPairs := TCheckListBox.Create(Self);
-  clbExcludedPairs.Parent := grp;
-  clbExcludedPairs.Align := alClient;
-  clbExcludedPairs.AlignWithMargins := True;
-  clbExcludedPairs.Columns := 3;
 end;
 
-procedure TfrmRunConfig.CreateStructureTab;
-var
-  Row: Integer;
+procedure TfrmRunConfig.LinesSelectItem(Sender: TObject; Item: TListItem;
+  Selected: Boolean);
 begin
-  Row := 10;
-  sedDMin := CreateLabeledSpin(tabStructure, Row, 'd min (A)', 10, 500, 30);
-  Inc(Row, ROW_HEIGHT);
-  sedDMax := CreateLabeledSpin(tabStructure, Row, 'd max (A)', 10, 500, 80);
-  Inc(Row, ROW_HEIGHT + 4);
-  sedGammaMin := CreateLabeledSpin(tabStructure, Row, 'Gamma min (x100)', 1, 99, 15);
-  Inc(Row, ROW_HEIGHT);
-  sedGammaMax := CreateLabeledSpin(tabStructure, Row, 'Gamma max (x100)', 1, 99, 70);
-  Inc(Row, ROW_HEIGHT + 4);
-  sedNMin := CreateLabeledSpin(tabStructure, Row, 'N min', 1, 1000, 40);
-  Inc(Row, ROW_HEIGHT);
-  sedNMax := CreateLabeledSpin(tabStructure, Row, 'N max', 1, 1000, 200);
-  Inc(Row, ROW_HEIGHT + 8);
-
-  edtSigma := CreateLabeledEdit(tabStructure, Row, 'Sigma (A)');
-  edtSigma.Text := '3.5';
-  Inc(Row, ROW_HEIGHT);
-
-  edtDensityFactor := CreateLabeledEdit(tabStructure, Row, 'Density factor');
-  edtDensityFactor.Text := '0.95';
-  Inc(Row, ROW_HEIGHT);
-
-  edtSubstrate := CreateLabeledEdit(tabStructure, Row, 'Substrate');
-  edtSubstrate.Text := 'SiO2';
-  Inc(Row, ROW_HEIGHT);
-
-  chkPureElements := TCheckBox.Create(Self);
-  chkPureElements.Parent := tabStructure;
-  chkPureElements.Left := 8; chkPureElements.Top := Row;
-  chkPureElements.Width := 200;
-  chkPureElements.Caption := 'Pure elements (no mixing)';
-  chkPureElements.Checked := True;
+  if Selected and (Item <> nil) and (Item.SubItems.Count > 0) then
+    edtLineWeight.Text := Item.SubItems[0];
 end;
 
-procedure TfrmRunConfig.CreateOptimizerTab;
-var
-  Row: Integer;
+procedure TfrmRunConfig.LineWeightExit(Sender: TObject);
 begin
-  Row := 10;
-  sedPopulation := CreateLabeledSpin(tabOptimizer, Row, 'Population', 10, 10000, 1000);
-  Inc(Row, ROW_HEIGHT);
-  sedIterations := CreateLabeledSpin(tabOptimizer, Row, 'Iterations', 1, 10000, 100);
-  Inc(Row, ROW_HEIGHT);
-  sedStagnation := CreateLabeledSpin(tabOptimizer, Row, 'Stagnation limit', 1, 10000, 200);
-  Inc(Row, ROW_HEIGHT + 8);
-
-  edtW1 := CreateLabeledEdit(tabOptimizer, Row, 'PSO w1');
-  edtW1.Text := '0.4';
-  Inc(Row, ROW_HEIGHT);
-
-  edtW2 := CreateLabeledEdit(tabOptimizer, Row, 'PSO w2');
-  edtW2.Text := '0.5';
-  Inc(Row, ROW_HEIGHT);
-
-  edtTolerance := CreateLabeledEdit(tabOptimizer, Row, 'Tolerance');
-  edtTolerance.Text := '1e-5';
-  Inc(Row, ROW_HEIGHT);
-
-  sedJammingMax := CreateLabeledSpin(tabOptimizer, Row, 'Jamming max', 1, 100, 5);
-  Inc(Row, ROW_HEIGHT);
-  sedCheckpointEvery := CreateLabeledSpin(tabOptimizer, Row, 'Checkpoint every', 1, 10000, 100);
-end;
-
-procedure TfrmRunConfig.CreateFitnessTab;
-var
-  Row: Integer;
-  Lbl: TLabel;
-  grp: TGroupBox;
-begin
-  Row := 10;
-  edtWR := CreateLabeledEdit(tabFitness, Row, 'w_R'); edtWR.Text := '1.0';
-  Inc(Row, ROW_HEIGHT);
-  edtWFWHM := CreateLabeledEdit(tabFitness, Row, 'w_FWHM'); edtWFWHM.Text := '0.1';
-  Inc(Row, ROW_HEIGHT);
-  edtWPurity := CreateLabeledEdit(tabFitness, Row, 'w_purity'); edtWPurity.Text := '1.0';
-  Inc(Row, ROW_HEIGHT);
-  edtRMinThreshold := CreateLabeledEdit(tabFitness, Row, 'R_min threshold');
-  edtRMinThreshold.Text := '0.001';
-  Inc(Row, ROW_HEIGHT + 8);
-
-  edtDeltaTheta := CreateLabeledEdit(tabFitness, Row, 'Delta theta (deg)');
-  edtDeltaTheta.Text := '0';
-  Inc(Row, ROW_HEIGHT);
-
-  edtThetaMin := CreateLabeledEdit(tabFitness, Row, 'Theta min (deg)');
-  edtThetaMin.Text := '0';
-  Inc(Row, ROW_HEIGHT);
-
-  Lbl := TLabel.Create(Self);
-  Lbl.Parent := tabFitness;
-  Lbl.Left := 8; Lbl.Top := Row + 4;
-  Lbl.Caption := 'Polarization';
-  cmbPolarization := TComboBox.Create(Self);
-  cmbPolarization.Parent := tabFitness;
-  cmbPolarization.Left := EDIT_LEFT; cmbPolarization.Top := Row;
-  cmbPolarization.Width := EDIT_WIDTH; cmbPolarization.Style := csDropDownList;
-  cmbPolarization.Items.Add('sp'); cmbPolarization.Items.Add('s');
-  cmbPolarization.ItemIndex := 0;
-  Inc(Row, ROW_HEIGHT + 8);
-
-  sedScanPoints := CreateLabeledSpin(tabFitness, Row, 'Scan points', 0, 10000, 0);
-  Inc(Row, ROW_HEIGHT);
-
-  edtScanHalfRange := CreateLabeledEdit(tabFitness, Row, 'Scan half-range');
-  edtScanHalfRange.Text := '0';
-  Inc(Row, ROW_HEIGHT + 8);
-
-  // Henke path
-  grp := TGroupBox.Create(Self);
-  grp.Parent := tabFitness;
-  grp.Left := 8; grp.Top := Row; grp.Width := 270; grp.Height := 50;
-  grp.Caption := 'Henke Database Path';
-
-  edtHenkePath := TEdit.Create(Self);
-  edtHenkePath.Parent := grp;
-  edtHenkePath.Left := 8; edtHenkePath.Top := 20;
-  edtHenkePath.Width := 210;
-  edtHenkePath.Text := 'D:\DelphiProjects\X-RayCalc\Henke';
-
-  btnBrowseHenke := TButton.Create(Self);
-  btnBrowseHenke.Parent := grp;
-  btnBrowseHenke.Left := 225; btnBrowseHenke.Top := 18;
-  btnBrowseHenke.Width := 35; btnBrowseHenke.Height := 25;
-  btnBrowseHenke.Caption := '...';
-  btnBrowseHenke.OnClick := BrowseHenkeClick;
+  if (lvLines.Selected <> nil) and (lvLines.Selected.SubItems.Count > 0) then
+    lvLines.Selected.SubItems[0] := edtLineWeight.Text;
 end;
 
 procedure TfrmRunConfig.AfterConstruction;
 begin
   inherited;
-  CreateTargetsTab;
-  CreateStructureTab;
-  CreateOptimizerTab;
-  CreateFitnessTab;
+  PopulateTargetsData;
 end;
 
 procedure TfrmRunConfig.BrowseHenkeClick(Sender: TObject);
@@ -331,14 +162,17 @@ var
   S: string;
 begin
   DefaultLines := TArray<string>.Create('Be', 'B', 'C', 'N', 'O', 'F', 'Na', 'Mg', 'Al', 'Si');
-  for i := 0 to clbLines.Count - 1 do
-    clbLines.Checked[i] := False;
-  for i := 0 to clbLines.Count - 1 do
+  for i := 0 to lvLines.Items.Count - 1 do
+  begin
+    lvLines.Items[i].Checked := False;
+    lvLines.Items[i].SubItems[0] := '1.0';
+  end;
+  for i := 0 to lvLines.Items.Count - 1 do
   begin
     for S in DefaultLines do
-      if SameText(clbLines.Items[i], S) then
+      if SameText(lvLines.Items[i].Caption, S) then
       begin
-        clbLines.Checked[i] := True;
+        lvLines.Items[i].Checked := True;
         Break;
       end;
   end;
@@ -371,13 +205,15 @@ var
   PairStr: string;
 begin
   // Lines
-  for i := 0 to clbLines.Count - 1 do
+  for i := 0 to lvLines.Items.Count - 1 do
   begin
-    clbLines.Checked[i] := False;
+    lvLines.Items[i].Checked := False;
+    lvLines.Items[i].SubItems[0] := '1.0';
     for j := 0 to High(Config.Lines) do
-      if SameText(clbLines.Items[i], Config.Lines[j].Name) then
+      if SameText(lvLines.Items[i].Caption, Config.Lines[j].Name) then
       begin
-        clbLines.Checked[i] := True;
+        lvLines.Items[i].Checked := True;
+        lvLines.Items[i].SubItems[0] := FormatFloat('0.###', Config.Lines[j].Weight);
         Break;
       end;
   end;
@@ -478,16 +314,16 @@ begin
 
   // Lines
   Count := 0;
-  for i := 0 to clbLines.Count - 1 do
-    if clbLines.Checked[i] then Inc(Count);
+  for i := 0 to lvLines.Items.Count - 1 do
+    if lvLines.Items[i].Checked then Inc(Count);
   SetLength(Result.Lines, Count);
   Count := 0;
-  for i := 0 to clbLines.Count - 1 do
-    if clbLines.Checked[i] then
+  for i := 0 to lvLines.Items.Count - 1 do
+    if lvLines.Items[i].Checked then
     begin
-      Result.Lines[Count].Name := clbLines.Items[i];
-      Result.Lines[Count].Lambda := GetXRFLambda(clbLines.Items[i]);
-      Result.Lines[Count].Weight := 1.0;
+      Result.Lines[Count].Name := lvLines.Items[i].Caption;
+      Result.Lines[Count].Lambda := GetXRFLambda(lvLines.Items[i].Caption);
+      Result.Lines[Count].Weight := StrToFloatDef(lvLines.Items[i].SubItems[0], 1.0);
       Inc(Count);
     end;
 
