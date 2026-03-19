@@ -9,13 +9,10 @@ uses
   Vcl.ToolWin, Vcl.ExtCtrls, Vcl.ExtDlgs, Vcl.Menus,
   System.ImageList, Vcl.ImgList,
   RzSplit, RzPanel, RzStatus, RzTabs,
-  JamShellBreadCrumbBar, ShellControls, ShellLink,
-  Jam.Shell.Types, Jam.Shell.Controls.Types,
-  Jam.Shell.Controls.BaseShellListView,
   unit_xrfx_package, unit_universal_types,
   xrfcalc_unit_loader, xrfcalc_unit_runner,
   frame_CurvesView, frame_InfoView,
-  frame_ProgressView, frame_CompareView;
+  frame_ProgressView, frame_RunConfig;
 
 type
   TfrmXRFCalcMain = class(TForm)
@@ -34,44 +31,40 @@ type
     spStatus: TRzStatusPane;
     ToolBar1: TToolBar;
     ToolBarImages: TImageList;
-    btnRefresh: TToolButton;
+    btnOpen: TToolButton;
+    tbSep0: TToolButton;
     btnExportStructure: TToolButton;
     btnCopyData: TToolButton;
     btnSaveImage: TToolButton;
     tbSep1: TToolButton;
     btnNewRun: TToolButton;
-    btnEditRun: TToolButton;
     tbSep2: TToolButton;
     btnStop: TToolButton;
     MainSplitter: TRzSplitter;
-    ShellSplitter: TRzSplitter;
-    ShellTree: TJamShellTree;
-    ShellList: TJamShellList;
-    JamShellLink1: TJamShellLink;
-    JamShellBreadCrumbBar1: TJamShellBreadCrumbBar;
     PageControl1: TRzPageControl;
     tabCurves: TRzTabSheet;
     tabInfo: TRzTabSheet;
     tabProgress: TRzTabSheet;
-    tabCompare: TRzTabSheet;
     dlgSave: TSaveDialog;
     dlgSaveImage: TSavePictureDialog;
+    dlgOpen: TOpenDialog;
+    mnuOpen: TMenuItem;
+    mnuSaveConfig: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure ShellListSelectItem(Sender: TObject; Item: TListItem;
-      Selected: Boolean);
-    procedure btnRefreshClick(Sender: TObject);
+    procedure btnOpenClick(Sender: TObject);
     procedure btnExportStructureClick(Sender: TObject);
     procedure btnCopyDataClick(Sender: TObject);
     procedure btnSaveImageClick(Sender: TObject);
+    procedure mnuOpenClick(Sender: TObject);
     procedure mnuSaveClick(Sender: TObject);
     procedure mnuSaveAsClick(Sender: TObject);
+    procedure mnuSaveConfigClick(Sender: TObject);
     procedure mnuExitClick(Sender: TObject);
     procedure mnuRegisterExtClick(Sender: TObject);
     procedure mnuHelpContentsClick(Sender: TObject);
     procedure btnNewRunClick(Sender: TObject);
-    procedure btnEditRunClick(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
   private
     FLoader: TXRFCalcLoader;
@@ -85,9 +78,8 @@ type
     FCurvesView: TframeCurvesView;
     FInfoView: TframeInfoView;
     FProgressView: TframeProgressView;
-    FCompareView: TframeCompareView;
+    FRunConfig: TfrmRunConfig;
     procedure ProcessFile(const FileName: string);
-    procedure ProcessMultipleFiles(const FileNames: TArray<string>);
     procedure LoadToolBarIcons;
     function  GetIniPath: string;
     procedure LoadSettings;
@@ -101,6 +93,7 @@ type
     function  CheckUnsaved: Boolean;
     procedure UpdateRunState;
     procedure StartRun(const ConfigPath: string; MaxIterations: Integer);
+    procedure LoadConfigFromXRFX(const FileName: string);
   end;
 
 var
@@ -111,7 +104,7 @@ implementation
 uses
   System.Win.Registry, System.IniFiles, Winapi.ShlObj, Winapi.ShellAPI,
   ClipBrd, Vcl.Imaging.pngimage,
-  frm_RunConfig, unit_universal_io;
+  unit_universal_io;
 
 {$R *.dfm}
 
@@ -145,9 +138,9 @@ end;
 
 procedure TfrmXRFCalcMain.LoadToolBarIcons;
 const
-  ResNames: array[0..6] of string = (
-    'ICON_REFRESH', 'ICON_EXPORT', 'ICON_COPY', 'ICON_SAVEIMG',
-    'ICON_NEWRUN', 'ICON_EDITRUN', 'ICON_STOP');
+  ResNames: array[0..5] of string = (
+    'ICON_OPEN', 'ICON_EXPORT', 'ICON_COPY', 'ICON_SAVEIMG',
+    'ICON_NEWRUN', 'ICON_STOP');
 var
   i: Integer;
   RS: TResourceStream;
@@ -193,11 +186,10 @@ begin
   FProgressView.Parent := tabProgress;
   FProgressView.Align := alClient;
 
-  FCompareView := TframeCompareView.Create(Self);
-  FCompareView.Parent := tabCompare;
-  FCompareView.Align := alClient;
-
-  tabCompare.TabVisible := False;
+  FRunConfig := TfrmRunConfig.Create(Self);
+  FRunConfig.Parent := MainSplitter.Panes[0];
+  FRunConfig.Align := alClient;
+  FRunConfig.SetDefaults;
 
   FRunner := TXRCRunner.Create;
   FRunner.OnIteration := HandleIteration;
@@ -217,7 +209,7 @@ begin
     FInitialPath := ExtractFilePath(ParamStr(1));
   end;
 
-  if FInitialPath <> '' then
+  if FInitialFile <> '' then
     PostMessage(Handle, WM_USER + 100, 0, 0);
 end;
 
@@ -239,45 +231,6 @@ begin
   SaveSettings;
 end;
 
-procedure TfrmXRFCalcMain.ShellListSelectItem(Sender: TObject;
-  Item: TListItem; Selected: Boolean);
-var
-  FileName: string;
-  SelectedFiles: TArray<string>;
-  i: Integer;
-begin
-  if Item = nil then Exit;
-
-  SetLength(SelectedFiles, 0);
-  for i := 0 to ShellList.Items.Count - 1 do
-  begin
-    if ShellList.Items[i].Selected then
-    begin
-      FileName := IncludeTrailingPathDelimiter(ShellList.Path) +
-        ShellList.Items[i].Caption;
-      if SameText(ExtractFileExt(FileName), XRFX_EXT) and
-         TFile.Exists(FileName) then
-      begin
-        SetLength(SelectedFiles, Length(SelectedFiles) + 1);
-        SelectedFiles[High(SelectedFiles)] := FileName;
-      end;
-    end;
-  end;
-
-  if Length(SelectedFiles) = 0 then Exit;
-  if not CheckUnsaved then Exit;
-
-  try
-    Screen.Cursor := crHourGlass;
-    if Length(SelectedFiles) = 1 then
-      ProcessFile(SelectedFiles[0])
-    else
-      ProcessMultipleFiles(SelectedFiles);
-  finally
-    Screen.Cursor := crDefault;
-  end;
-end;
-
 procedure TfrmXRFCalcMain.ProcessFile(const FileName: string);
 begin
   try
@@ -292,49 +245,12 @@ begin
     FCurvesView.LoadMetrics(FLoader.Manifest, FLoader.GetResult(0).Curves);
     FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
 
-    tabCompare.TabVisible := False;
     spStatus.Caption := Format('FoM: %.6f  |  %s',
       [FLoader.Manifest.FoM, ExtractFileName(FileName)]);
   except
     on E: Exception do
       spStatus.Caption := 'Error: ' + E.Message;
   end;
-end;
-
-procedure TfrmXRFCalcMain.ProcessMultipleFiles(const FileNames: TArray<string>);
-var
-  Manifests: TArray<TXRFXManifest>;
-  i: Integer;
-begin
-  try
-    FLoader.LoadMultiple(FileNames);
-
-    FInfoView.LoadManifestInfo(FLoader.Manifest);
-    FProgressView.LoadProgress(FLoader.GetResult(0).Progress);
-
-    FCurvesView.Clear;
-    for i := 0 to FLoader.ResultCount - 1 do
-      FCurvesView.AddCurves(FLoader.GetResult(i).Curves,
-        ExtractFileName(FLoader.GetResult(i).FileName));
-
-    SetLength(Manifests, FLoader.ResultCount);
-    for i := 0 to FLoader.ResultCount - 1 do
-      Manifests[i] := FLoader.GetResult(i).Manifest;
-
-    FCompareView.LoadComparison(Manifests, FileNames);
-    tabCompare.TabVisible := True;
-
-    spStatus.Caption := Format('%d files compared', [FLoader.ResultCount]);
-  except
-    on E: Exception do
-      spStatus.Caption := 'Error: ' + E.Message;
-  end;
-end;
-
-procedure TfrmXRFCalcMain.btnRefreshClick(Sender: TObject);
-begin
-  ShellTree.FullRefresh;
-  ShellList.FullRefresh;
 end;
 
 procedure TfrmXRFCalcMain.btnExportStructureClick(Sender: TObject);
@@ -392,16 +308,14 @@ begin
     DestPath := FSavePath
   else
   begin
-    // No save path yet — default to working directory
-    DestPath := TPath.Combine(ShellList.Path,
-      ExtractFileName(SrcPath));
+    mnuSaveAsClick(Sender);
+    Exit;
   end;
 
   if not SameText(SrcPath, DestPath) then
     TFile.Copy(SrcPath, DestPath, True);
   FSavePath := DestPath;
   FUnsaved := False;
-  ShellList.FullRefresh;
   spStatus.Caption := 'Saved: ' + ExtractFileName(DestPath);
 end;
 
@@ -414,7 +328,7 @@ begin
 
   dlgSave.DefaultExt := '.xrfx';
   dlgSave.Filter := 'XRFX package|*.xrfx';
-  dlgSave.InitialDir := ShellList.Path;
+  dlgSave.InitialDir := ExtractFilePath(FSavePath);
   dlgSave.FileName := ExtractFileName(SrcPath);
   if dlgSave.Execute then
   begin
@@ -422,7 +336,6 @@ begin
       TFile.Copy(SrcPath, dlgSave.FileName, True);
     FSavePath := dlgSave.FileName;
     FUnsaved := False;
-    ShellList.FullRefresh;
     spStatus.Caption := 'Saved: ' + ExtractFileName(dlgSave.FileName);
   end;
 end;
@@ -474,9 +387,6 @@ begin
     V := Ini.ReadInteger('Splitters', 'MainPct', 0);
     if V > 0 then MainSplitter.Percent := V;
 
-    V := Ini.ReadInteger('Splitters', 'ShellPct', 0);
-    if V > 0 then ShellSplitter.Percent := V;
-
     V := Ini.ReadInteger('Splitters', 'Metrics', 0);
     if V > 0 then FCurvesView.pnlMetrics.Height := V;
 
@@ -489,10 +399,11 @@ end;
 
 procedure TfrmXRFCalcMain.WMDeferredNavigate(var Msg: TMessage);
 begin
-  if (FInitialPath <> '') and TDirectory.Exists(FInitialPath) then
-    ShellList.Path := FInitialPath;
   if (FInitialFile <> '') and TFile.Exists(FInitialFile) then
+  begin
     ProcessFile(FInitialFile);
+    LoadConfigFromXRFX(FInitialFile);
+  end;
 end;
 
 procedure TfrmXRFCalcMain.SaveSettings;
@@ -501,9 +412,11 @@ var
 begin
   Ini := TIniFile.Create(GetIniPath);
   try
-    Ini.WriteString('General', 'LastFolder', ShellList.Path);
+    if FSavePath <> '' then
+      Ini.WriteString('General', 'LastFolder', ExtractFilePath(FSavePath))
+    else if FInitialPath <> '' then
+      Ini.WriteString('General', 'LastFolder', FInitialPath);
     Ini.WriteInteger('Splitters', 'MainPct', MainSplitter.Percent);
-    Ini.WriteInteger('Splitters', 'ShellPct', ShellSplitter.Percent);
     Ini.WriteInteger('Splitters', 'Metrics', FCurvesView.pnlMetrics.Height);
     Ini.WriteInteger('Splitters', 'ProgressChart', FProgressView.pnlChart.Height);
     Ini.WriteInteger('Window', 'State', Ord(WindowState));
@@ -555,7 +468,6 @@ begin
         FLoader.Manifest.Structure);
       FInfoView.LoadManifestInfo(FLoader.Manifest);
       FCurvesView.LoadMetrics(FLoader.Manifest, FLoader.GetResult(0).Curves);
-      tabCompare.TabVisible := False;
       FUnsaved := True;
       spStatus.Caption := Format('FoM: %.6f  |  Unsaved — use File > Save',
         [FLoader.Manifest.FoM]);
@@ -593,7 +505,6 @@ var
 begin
   Running := FRunner.State = rsRunning;
   btnNewRun.Enabled := not Running;
-  btnEditRun.Enabled := not Running;
   btnStop.Visible := Running;
 end;
 
@@ -620,79 +531,71 @@ end;
 
 procedure TfrmXRFCalcMain.btnNewRunClick(Sender: TObject);
 var
-  Dlg: TfrmRunConfig;
   Config: TUniversalConfig;
   ConfigPath, RunTempDir: string;
 begin
-  Dlg := TfrmRunConfig.Create(Self);
+  Config := FRunConfig.BuildConfig;
+  RunTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc\run_' + TGUID.NewGuid.ToString);
+  TDirectory.CreateDirectory(RunTempDir);
+  Config.OutputDir := TPath.Combine(RunTempDir, TEMP_OUTPUT_DIR);
+  ConfigPath := TPath.Combine(RunTempDir,
+    'xrfcalc_' + FormatDateTime('yyyy-mm-dd_hhnnss', Now) + '.json');
+  TUniversalIO.SaveConfig(Config, ConfigPath);
+  FSavePath := '';
+  StartRun(ConfigPath, Config.Optimizer.Iterations);
+end;
+
+procedure TfrmXRFCalcMain.btnOpenClick(Sender: TObject);
+begin
+  if not CheckUnsaved then Exit;
+  if FInitialPath <> '' then
+    dlgOpen.InitialDir := FInitialPath;
+  if dlgOpen.Execute then
+  begin
+    ProcessFile(dlgOpen.FileName);
+    LoadConfigFromXRFX(dlgOpen.FileName);
+    FInitialPath := ExtractFilePath(dlgOpen.FileName);
+  end;
+end;
+
+procedure TfrmXRFCalcMain.mnuOpenClick(Sender: TObject);
+begin
+  btnOpenClick(Sender);
+end;
+
+procedure TfrmXRFCalcMain.mnuSaveConfigClick(Sender: TObject);
+var
+  Dlg: TSaveDialog;
+  Config: TUniversalConfig;
+begin
+  Dlg := TSaveDialog.Create(Self);
   try
-    Dlg.SetDefaults;
-    if Dlg.ShowModal = mrOk then
+    Dlg.Filter := 'JSON config|*.json';
+    Dlg.DefaultExt := 'json';
+    if Dlg.Execute then
     begin
-      Config := Dlg.BuildConfig;
-
-      // Use system temp for config and output
-      RunTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc\run_' + TGUID.NewGuid.ToString);
-      TDirectory.CreateDirectory(RunTempDir);
-      Config.OutputDir := TPath.Combine(RunTempDir, TEMP_OUTPUT_DIR);
-
-      ConfigPath := TPath.Combine(RunTempDir,
-        'xrfcalc_' + FormatDateTime('yyyy-mm-dd_hhnnss', Now) + '.json');
-      TUniversalIO.SaveConfig(Config, ConfigPath);
-
-      FSavePath := '';
-      StartRun(ConfigPath, Config.Optimizer.Iterations);
+      Config := FRunConfig.BuildConfig;
+      TUniversalIO.SaveConfig(Config, Dlg.FileName);
     end;
   finally
     Dlg.Free;
   end;
 end;
 
-procedure TfrmXRFCalcMain.btnEditRunClick(Sender: TObject);
+procedure TfrmXRFCalcMain.LoadConfigFromXRFX(const FileName: string);
 var
-  ConfigJsonPath, TempDir, RunTempDir: string;
+  TempDir, ConfigJsonPath: string;
   Config: TUniversalConfig;
-  Dlg: TfrmRunConfig;
-  ConfigPath: string;
 begin
-  if not FLoader.IsLoaded then
-  begin
-    spStatus.Caption := 'Select an .xrfx file first';
-    Exit;
-  end;
-
   TempDir := FLoader.GetResult(0).TempDir;
   ConfigJsonPath := TPath.Combine(TempDir, 'config.json');
-
-  if not TFile.Exists(ConfigJsonPath) then
+  if TFile.Exists(ConfigJsonPath) then
   begin
-    spStatus.Caption := 'No config.json found in this .xrfx package';
-    Exit;
-  end;
-
-  Config := TUniversalIO.LoadConfig(ConfigJsonPath);
-
-  Dlg := TfrmRunConfig.Create(Self);
-  try
-    Dlg.LoadFromConfig(Config);
-    if Dlg.ShowModal = mrOk then
-    begin
-      Config := Dlg.BuildConfig;
-
-      // Use system temp for config and output
-      RunTempDir := TPath.Combine(TPath.GetTempPath, 'XRFCalc\run_' + TGUID.NewGuid.ToString);
-      TDirectory.CreateDirectory(RunTempDir);
-      Config.OutputDir := TPath.Combine(RunTempDir, TEMP_OUTPUT_DIR);
-
-      ConfigPath := TPath.Combine(RunTempDir, 'xrfcalc_run.json');
-      TUniversalIO.SaveConfig(Config, ConfigPath);
-
-      // FSavePath stays as the original file — Save will overwrite it
-      StartRun(ConfigPath, Config.Optimizer.Iterations);
-    end;
-  finally
-    Dlg.Free;
-  end;
+    Config := TUniversalIO.LoadConfig(ConfigJsonPath);
+    FRunConfig.LoadFromConfig(Config);
+  end
+  else
+    FRunConfig.SetDefaults;
 end;
 
 procedure TfrmXRFCalcMain.btnStopClick(Sender: TObject);
