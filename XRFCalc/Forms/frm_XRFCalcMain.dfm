@@ -113,9 +113,18 @@ object frmXRFCalcMain: TfrmXRFCalcMain
       0
       304
       524)
-    UpperLeftControls = ()
+    UpperLeftControls = (
+      FRunConfig)
     LowerRightControls = (
       PageControl1)
+    inline FRunConfig: TfrmRunConfig
+      Left = 0
+      Top = 0
+      Width = 300
+      Height = 524
+      Align = alClient
+      TabOrder = 0
+    end
     object PageControl1: TRzPageControl
       AlignWithMargins = True
       Left = 3

@@ -41,6 +41,7 @@ type
     tbSep2: TToolButton;
     btnStop: TToolButton;
     MainSplitter: TRzSplitter;
+    FRunConfig: TfrmRunConfig;
     PageControl1: TRzPageControl;
     tabCurves: TRzTabSheet;
     tabInfo: TRzTabSheet;
@@ -78,7 +79,6 @@ type
     FCurvesView: TframeCurvesView;
     FInfoView: TframeInfoView;
     FProgressView: TframeProgressView;
-    FRunConfig: TfrmRunConfig;
     procedure ProcessFile(const FileName: string);
     procedure LoadToolBarIcons;
     function  GetIniPath: string;
@@ -186,9 +186,6 @@ begin
   FProgressView.Parent := tabProgress;
   FProgressView.Align := alClient;
 
-  FRunConfig := TfrmRunConfig.Create(Self);
-  FRunConfig.Parent := MainSplitter;
-  FRunConfig.Align := alClient;
   FRunConfig.SetDefaults;
 
   FRunner := TXRCRunner.Create;
