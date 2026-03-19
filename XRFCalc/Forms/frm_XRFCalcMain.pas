@@ -187,7 +187,7 @@ begin
   FProgressView.Align := alClient;
 
   FRunConfig := TfrmRunConfig.Create(Self);
-  FRunConfig.Parent := MainSplitter.Panes[0];
+  FRunConfig.Parent := MainSplitter;
   FRunConfig.Align := alClient;
   FRunConfig.SetDefaults;
 
