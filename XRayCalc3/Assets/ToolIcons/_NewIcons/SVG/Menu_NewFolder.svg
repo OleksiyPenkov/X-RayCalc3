@@ -1,6 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <path d="M4,8 H13 L15,11 H26 V26 C26,27.1 25.1,28 24,28 H6 C4.9,28 4,27.1 4,26Z" fill="#43A047"/>
-  <circle cx="24" cy="10" r="6" fill="#2E7D32"/>
-  <line x1="24" y1="7" x2="24" y2="13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-  <line x1="21" y1="10" x2="27" y2="10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+    <linearGradient id="tabG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C0D0E2"/>
+      <stop offset="100%" stop-color="#96AABE"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round" filter="url(#sh)">
+    <rect x="4" y="15" width="24" height="17" rx="1.5" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
+    <path d="M4 16v-4.5A1.5 1.5 0 0 1 5.5 10H13l3 5z" fill="url(#tabG)" stroke="#19375F" stroke-width="2"/>
+  </g>
+  <g stroke-linecap="round">
+    <line x1="28" y1="27" x2="38" y2="27" stroke="#3CB4DC" stroke-width="2.5"/>
+    <line x1="33" y1="22" x2="33" y2="32" stroke="#3CB4DC" stroke-width="2.5"/>
+  </g>
 </svg>

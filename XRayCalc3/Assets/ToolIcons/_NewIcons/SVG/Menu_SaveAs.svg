@@ -1,7 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <path d="M6,4 H20 L25,9 V27 C25,28.1 24.1,29 23,29 H7 C5.9,29 5,28.1 5,27 V6 C5,4.9 5.9,4 7,4Z" fill="#1565C0"/>
-  <rect x="10" y="4" width="9" height="8" rx="1" fill="#0D47A1"/>
-  <rect x="9" y="18" width="12" height="6" rx="2" fill="white"/>
-  <path d="M22,17 L26,13 L29,16 L25,20 Z" fill="#F9A825"/>
-  <path d="M26,13 L29,16" stroke="#E65100" stroke-width="1.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+    <linearGradient id="secG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C0D0E2"/>
+      <stop offset="100%" stop-color="#96AABE"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7,4 H24 L30,10 V33 C30,34.1 29.1,35 28,35 H7 C5.9,35 5,34.1 5,33 V6 C5,4.9 5.9,4 7,4Z" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
+    <rect x="11" y="4" width="12" height="9" rx="1" fill="url(#secG)" stroke="#19375F" stroke-width="1.5"/>
+    <rect x="10" y="21" width="16" height="8" rx="2" fill="#3CB4DC" opacity="0.5" stroke="#19375F" stroke-width="1.5"/>
+  </g>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="33 20 37 24 35 26 31 22" fill="#3CB4DC" stroke="#19375F" stroke-width="1.2"/>
+    <polygon points="31 22 35 26 30 28" fill="#3CB4DC" stroke="#19375F" stroke-width="1"/>
+  </g>
 </svg>

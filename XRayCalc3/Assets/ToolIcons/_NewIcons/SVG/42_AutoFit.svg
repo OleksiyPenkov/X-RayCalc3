@@ -1,5 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <path d="M3,25 L9,14 L14,20 L20,5 L28,15" fill="none" stroke="#7B1FA2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M3,27 L9,18 L14,23 L20,9 L28,18" fill="none" stroke="#CE93D8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3,3"/>
-  <text x="23" y="28" font-size="12" font-weight="bold" fill="#6A1B9A" font-family="Arial">A</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="lineG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4,32 L12,18 L18,26 L25,6 L36,20" fill="none" stroke="url(#lineG)" stroke-width="6"/>
+    <path d="M4,32 L12,18 L18,26 L25,6 L36,20" fill="none" stroke="#19375F" stroke-width="2.5"/>
+  </g>
+  <path d="M4,34 L12,22 L18,28 L25,12 L36,23" fill="none" stroke="#3CB4DC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3,2.5"/>
+  <text x="30" y="36" font-size="13" font-weight="bold" fill="#3CB4DC" font-family="Arial">A</text>
 </svg>

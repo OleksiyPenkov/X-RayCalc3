@@ -1,4 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <polygon points="4,4 4,28 16,16" fill="#43A047"/>
-  <polygon points="16,4 16,28 28,16" fill="#43A047"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="20" cy="20" r="16" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
+    <polygon points="10,10 10,30 21,20" fill="#3CB4DC" stroke="#19375F" stroke-width="1.2"/>
+    <polygon points="21,10 21,30 32,20" fill="#3CB4DC" stroke="#19375F" stroke-width="1.2"/>
+  </g>
 </svg>

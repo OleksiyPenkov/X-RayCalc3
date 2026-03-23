@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <rect x="3" y="5" width="20" height="20" rx="3" fill="#D32F2F"/>
-  <circle cx="25" cy="24" r="7" fill="#B71C1C"/>
-  <line x1="21" y1="24" x2="29" y2="24" stroke="white" stroke-width="3" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="5" width="24" height="24" rx="4" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
+  </g>
+  <circle cx="32" cy="32" r="6" fill="#D64545" stroke="#19375F" stroke-width="1.5"/>
+  <line x1="28.5" y1="32" x2="35.5" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
 </svg>

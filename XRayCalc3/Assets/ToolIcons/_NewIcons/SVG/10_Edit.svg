@@ -1,5 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <path d="M5,27 L7,20 L22,5 L27,10 L12,25 Z" fill="#F9A825"/>
-  <path d="M22,5 L27,10 L25,12 L20,7 Z" fill="#E65100"/>
-  <path d="M5,27 L7,20 L9,22 Z" fill="#E65100"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="28 7 32 11 16 27 12 23" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
+    <polygon points="28 7 32 11 30 13 26 9" fill="#A4BAD0" stroke="#19375F" stroke-width="1.5"/>
+    <polygon points="12 23 16 27 8 31" fill="#3CB4DC" stroke="#19375F" stroke-width="1"/>
+  </g>
+  <line x1="4" y1="37" x2="30" y2="37" stroke="#8BA3BE" stroke-width="1.5" stroke-linecap="round"/>
 </svg>

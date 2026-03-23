@@ -1,6 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <line x1="5" y1="28" x2="5" y2="4" stroke="#1565C0" stroke-width="2" stroke-linecap="round"/>
-  <line x1="5" y1="28" x2="29" y2="28" stroke="#1565C0" stroke-width="2" stroke-linecap="round"/>
-  <path d="M8,20 L11,22 L13,16 L15,19 L17,12 L19,17 L22,10 L25,15" fill="none" stroke="#BBDEFB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M8,18 C12,20 16,14 20,12 C24,10 26,12 28,11" fill="none" stroke="#42A5F5" stroke-width="3" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D8E6F2"/>
+      <stop offset="100%" stop-color="#B4C8DC"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="6" y1="35" x2="6" y2="5" stroke="#19375F" stroke-width="2"/>
+    <line x1="6" y1="35" x2="36" y2="35" stroke="#19375F" stroke-width="2"/>
+  </g>
+  <path d="M10,26 L13,28 L15,20 L17,24 L19,14 L21,21 L25,12 L29,18" fill="none" stroke="#8BA3BE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10,24 C14,26 18,18 22,15 C26,12 30,14 34,13" fill="none" stroke="#3CB4DC" stroke-width="2.5" stroke-linecap="round"/>
 </svg>
