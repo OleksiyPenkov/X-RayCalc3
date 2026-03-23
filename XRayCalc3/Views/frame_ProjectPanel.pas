@@ -234,6 +234,214 @@ uses
 const
   GradientLabels: array [0..2] of string = ('H', 'S', 'rho');
 
+{ --- Old XRCX format (v2) support --- }
+
+function ModelBinToJSON(const FileName: string): string;
+{ Parses old X-RayCalc model_*.bin files (VirtualTreeView binary format).
+  Scans for UserChunk (type=4) headers and extracts node data serialized by
+  TreeSaveNode: Text(wstr) + RowType(1 byte) + H/s/r(wstr) + N(4 bytes).
+  In VT's stream, child nodes appear before their parent, so layers precede
+  their owning stack. Returns JSON compatible with TXRCStructure.FromString. }
+
+  function ReadWStr(const Bytes: TBytes; var Pos: Integer): string;
+  var
+    Sz: Cardinal;
+  begin
+    Result := '';
+    if Pos + 4 > Length(Bytes) then Exit;
+    Sz := PCardinal(@Bytes[Pos])^;
+    Inc(Pos, 4);
+    if (Sz < 1) or (Sz > 200) or (Pos + Integer(Sz) > Length(Bytes)) then
+    begin
+      Pos := Length(Bytes);
+      Exit;
+    end;
+    if Bytes[Pos + Integer(Sz) - 1] = 0 then
+      Result := TEncoding.Unicode.GetString(Bytes, Pos, Integer(Sz) - 1);
+    Inc(Pos, Integer(Sz));
+  end;
+
+const
+  UserChunkType = 4;
+  rtStack     = 0;
+  rtLayer     = 1;
+  rtSubstrate = 2;
+type
+  TBinLayer = record
+    Material: string;
+    H, S, R: Single;
+  end;
+  TBinStack = record
+    Title: string;
+    N: Integer;
+    Layers: array of TBinLayer;
+  end;
+var
+  FS: TFileStream;
+  Bytes: TBytes;
+  I, Pos, Len, ChunkType, ChunkSize: Integer;
+  NodeText, NodeH, NodeS, NodeR: string;
+  RowType: Byte;
+  N: Integer;
+  V: Single;
+  PendingLayers: array of TBinLayer;
+  PendingCount, StackCount: Integer;
+  Stacks: array of TBinStack;
+  SubsMaterial: string;
+  SubsS, SubsR: Single;
+  HasSubs: Boolean;
+  J: Integer;
+  JRoot, JSub, JStack, JLayer: TJSONObject;
+  JStacks, JLayers: TJSONArray;
+begin
+  Result := '';
+  if not FileExists(FileName) then Exit;
+
+  FS := TFileStream.Create(FileName, fmOpenRead or fmShareDenyNone);
+  try
+    if FS.Size < 20 then Exit;
+    SetLength(Bytes, FS.Size);
+    FS.ReadBuffer(Bytes[0], FS.Size);
+  finally
+    FS.Free;
+  end;
+
+  Len := Length(Bytes);
+  StackCount := 0;
+  PendingCount := 0;
+  HasSubs := False;
+  SubsS := 0;
+  SubsR := 0;
+
+  I := 0;
+  while I < Len - 12 do
+  begin
+    ChunkType := PInteger(@Bytes[I])^;
+    if ChunkType <> UserChunkType then
+    begin
+      Inc(I);
+      Continue;
+    end;
+    ChunkSize := PInteger(@Bytes[I + 4])^;
+    if (ChunkSize < 10) or (ChunkSize > 500) or (I + 8 + ChunkSize > Len) then
+    begin
+      Inc(I);
+      Continue;
+    end;
+
+    Pos := I + 8;
+
+    NodeText := ReadWStr(Bytes, Pos);
+    if (Pos >= Len) or (NodeText = '') then begin Inc(I); Continue; end;
+
+    RowType := Bytes[Pos];
+    Inc(Pos);
+    if RowType > 2 then begin Inc(I); Continue; end;
+
+    NodeH := ReadWStr(Bytes, Pos);
+    NodeS := ReadWStr(Bytes, Pos);
+    NodeR := ReadWStr(Bytes, Pos);
+
+    if Pos + 4 > Len then begin Inc(I); Continue; end;
+    N := PInteger(@Bytes[Pos])^;
+    Inc(Pos, 4);
+
+    case RowType of
+      rtLayer:
+      begin
+        if not TryStrToFloat(StringReplace(NodeH, ',', '.', []),
+          V, TFormatSettings.Invariant) then
+        begin
+          Inc(I);
+          Continue;
+        end;
+
+        Inc(PendingCount);
+        SetLength(PendingLayers, PendingCount);
+        PendingLayers[PendingCount - 1].Material := NodeText;
+        PendingLayers[PendingCount - 1].H := V;
+        TryStrToFloat(StringReplace(NodeS, ',', '.', []),
+          PendingLayers[PendingCount - 1].S, TFormatSettings.Invariant);
+        TryStrToFloat(StringReplace(NodeR, ',', '.', []),
+          PendingLayers[PendingCount - 1].R, TFormatSettings.Invariant);
+      end;
+
+      rtStack:
+      begin
+        if N > 10000 then begin Inc(I); Continue; end;
+
+        Inc(StackCount);
+        SetLength(Stacks, StackCount);
+        Stacks[StackCount - 1].Title := NodeText;
+        Stacks[StackCount - 1].N := N;
+        SetLength(Stacks[StackCount - 1].Layers, PendingCount);
+        for J := 0 to PendingCount - 1 do
+          Stacks[StackCount - 1].Layers[J] := PendingLayers[J];
+        PendingCount := 0;
+        SetLength(PendingLayers, 0);
+      end;
+
+      rtSubstrate:
+      begin
+        SubsMaterial := NodeText;
+        TryStrToFloat(StringReplace(NodeS, ',', '.', []),
+          SubsS, TFormatSettings.Invariant);
+        TryStrToFloat(StringReplace(NodeR, ',', '.', []),
+          SubsR, TFormatSettings.Invariant);
+        HasSubs := True;
+      end;
+    end;
+
+    I := Pos;
+  end;
+
+  if StackCount = 0 then Exit;
+
+  // Build JSON matching TXRCStructure.FromString format
+  JRoot := TJSONObject.Create;
+  try
+    JStacks := TJSONArray.Create;
+    for I := 0 to StackCount - 1 do
+    begin
+      JStack := TJSONObject.Create;
+      JStack.AddPair('T', Stacks[I].Title);
+      JStack.AddPair('N', Stacks[I].N);
+
+      JLayers := TJSONArray.Create;
+      for J := 0 to High(Stacks[I].Layers) do
+      begin
+        JLayer := TJSONObject.Create;
+        JLayer.AddPair('M', Stacks[I].Layers[J].Material);
+        JLayer.AddPair('H', TJSONNumber.Create(Stacks[I].Layers[J].H));
+        JLayer.AddPair('s', TJSONNumber.Create(Stacks[I].Layers[J].S));
+        JLayer.AddPair('r', TJSONNumber.Create(Stacks[I].Layers[J].R));
+        JLayers.Add(JLayer);
+      end;
+      JStack.AddPair('Layers', JLayers);
+      JStacks.Add(JStack);
+    end;
+
+    JSub := TJSONObject.Create;
+    if HasSubs then
+    begin
+      JSub.AddPair('M', SubsMaterial);
+      JSub.AddPair('s', TJSONNumber.Create(SubsS));
+      JSub.AddPair('r', TJSONNumber.Create(SubsR));
+    end
+    else begin
+      JSub.AddPair('M', 'Si');
+      JSub.AddPair('s', TJSONNumber.Create(5.0));
+      JSub.AddPair('r', TJSONNumber.Create(2.2));
+    end;
+
+    JRoot.AddPair('Stacks', JStacks);
+    JRoot.AddPair('Subs', JSub);
+    Result := JRoot.ToString;
+  finally
+    JRoot.Free;
+  end;
+end;
+
 { TfrmProjectPanel }
 
 destructor TfrmProjectPanel.Destroy;
@@ -522,6 +730,7 @@ procedure TfrmProjectPanel.RecoverProjectTree(const ActiveID: Integer);
 var
   Node, First: PVirtualNode;
   Data: PProjectData;
+  BinFile: string;
 begin
   FProject.LinkedData := nil;
   FProject.Version := FProjectVersion;
@@ -544,6 +753,14 @@ begin
     Data := FProject.GetNodeData(Node);
     if Data.RowType = prItem then
     begin
+      // Old format (v2): model data stored in model_N.bin, not JSON
+      if (Data.Group = gtModel) and (Data.Data = '') then
+      begin
+        BinFile := Format('%smodel_%d.bin', [FProjectDir, Data.ID]);
+        if FileExists(BinFile) then
+          Data.Data := ModelBinToJSON(BinFile);
+      end;
+
       if First = nil then
         First := Node;
 
