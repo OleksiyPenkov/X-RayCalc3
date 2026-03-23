@@ -80,6 +80,7 @@ type
     procedure ClearChiSquare;
     procedure SetPeriod(const D: Single);
     procedure SetScaleCaption(const Caption: string);
+    procedure UpdateAxisFormat;
 
     property MinLimit: Single read GetMinLimit;
     property MinLimitText: string read GetMinLimitText write SetMinLimitText;
@@ -126,19 +127,21 @@ uses
 
 procedure TfrmChartInfo.btnChartScaleClick(Sender: TObject);
 begin
+  Chart.LeftAxis.Logarithmic := not Chart.LeftAxis.Logarithmic;
+  UpdateAxisFormat;
+end;
+
+procedure TfrmChartInfo.UpdateAxisFormat;
+begin
   if Chart.LeftAxis.Logarithmic then
   begin
-    Chart.LeftAxis.Logarithmic := False;
-    SetScaleCaption('Log');
-    if Chart.LeftAxis.Maximum > 0.01 then
-      Chart.LeftAxis.AxisValuesFormat := '0.000'
-    else
-      Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
-  end
-  else begin
     SetScaleCaption('Linear');
-    Chart.LeftAxis.Logarithmic := True;
-    Chart.LeftAxis.AxisValuesFormat := '0x10E-0';
+    Chart.LeftAxis.AxisValuesFormat := '0e-0';
+  end
+  else
+  begin
+    SetScaleCaption('Log');
+    Chart.LeftAxis.AxisValuesFormat := '0.###';
   end;
 end;
 

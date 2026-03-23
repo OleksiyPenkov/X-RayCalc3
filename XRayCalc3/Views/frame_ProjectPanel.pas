@@ -718,6 +718,7 @@ begin
     LinkedID := INF.ReadInteger('STATE', 'LinkedData', -1);
     ActiveID := INF.ReadInteger('STATE', 'ActiveModel', -1);
     FChartInfo.Chart.LeftAxis.Logarithmic := INF.ReadBool('STATE', 'LogScale', True);
+    FChartInfo.UpdateAxisFormat;
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
     FCalcSettings.LoadAdvancedParams(INF, FFitParams);

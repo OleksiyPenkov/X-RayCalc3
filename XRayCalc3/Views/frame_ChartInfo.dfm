@@ -281,6 +281,7 @@ object frmChartInfo: TfrmChartInfo
     LeftAxis.Automatic = False
     LeftAxis.AutomaticMaximum = False
     LeftAxis.AutomaticMinimum = False
+    LeftAxis.AxisValuesFormat = '0e-0'
     LeftAxis.Logarithmic = True
     LeftAxis.Maximum = 1.000000000000000000
     LeftAxis.Minimum = 0.000000100000000000

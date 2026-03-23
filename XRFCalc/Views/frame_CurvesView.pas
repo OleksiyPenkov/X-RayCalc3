@@ -221,15 +221,12 @@ begin
     chrtCurves.LeftAxis.Logarithmic := False;
     btnScale.Caption := 'Log';
     chrtCurves.LeftAxis.Automatic := True;
-    if chrtCurves.LeftAxis.Maximum > 0.01 then
-      chrtCurves.LeftAxis.AxisValuesFormat := '0.000'
-    else
-      chrtCurves.LeftAxis.AxisValuesFormat := '0x10E-0';
+    chrtCurves.LeftAxis.AxisValuesFormat := '0.###';
   end
   else
   begin
     btnScale.Caption := 'Linear';
-    chrtCurves.LeftAxis.AxisValuesFormat := '0x10E-0';
+    chrtCurves.LeftAxis.AxisValuesFormat := '0e-0';
     chrtCurves.LeftAxis.Automatic := False;
     chrtCurves.LeftAxis.AutomaticMaximum := False;
     chrtCurves.LeftAxis.AutomaticMinimum := False;
