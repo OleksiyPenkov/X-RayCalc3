@@ -57,6 +57,7 @@ type
     [Test] procedure Test_LoadXRCStructure_ParsesLayers;
     [Test] procedure Test_LoadXRCStructure_ParsesSubstrate;
     [Test] procedure Test_LoadXRCStructure_ParsesStackN;
+    [Test] procedure Test_LoadXRCStructure_ParsesMultipleStacks;
   end;
 
   [TestFixture]
@@ -473,12 +474,13 @@ var
   S: TXRFXStructure;
 begin
   S := LoadXRCStructure(CreateSampleXRCStructureFile);
-  Assert.AreEqual(2, Length(S.Layers));
-  Assert.AreEqual('W', S.Layers[0].Material);
-  Assert.AreEqual(Double(15.2), S.Layers[0].Thickness, 1E-6);
-  Assert.AreEqual(Double(3.5), S.Layers[0].Roughness, 1E-6);
-  Assert.AreEqual(Double(19.3), S.Layers[0].Density, 1E-6);
-  Assert.AreEqual('Si', S.Layers[1].Material);
+  Assert.AreEqual(1, Length(S.Stacks));
+  Assert.AreEqual(2, Length(S.Stacks[0].Layers));
+  Assert.AreEqual('W', S.Stacks[0].Layers[0].Material);
+  Assert.AreEqual(Double(15.2), S.Stacks[0].Layers[0].Thickness, 1E-6);
+  Assert.AreEqual(Double(3.5), S.Stacks[0].Layers[0].Roughness, 1E-6);
+  Assert.AreEqual(Double(19.3), S.Stacks[0].Layers[0].Density, 1E-6);
+  Assert.AreEqual('Si', S.Stacks[0].Layers[1].Material);
 end;
 
 procedure TTestXRCStructureLoading.Test_LoadXRCStructure_ParsesSubstrate;
@@ -496,7 +498,40 @@ var
   S: TXRFXStructure;
 begin
   S := LoadXRCStructure(CreateSampleXRCStructureFile);
-  Assert.AreEqual(20, S.StackN);
+  Assert.AreEqual('ML', S.Stacks[0].StackType);
+  Assert.AreEqual(20, S.Stacks[0].N);
+end;
+
+procedure TTestXRCStructureLoading.Test_LoadXRCStructure_ParsesMultipleStacks;
+var
+  S: TXRFXStructure;
+  Path: string;
+begin
+  // SL cap (Si) + ML period (W/Si); mirrors xrccmd output with a cap layer.
+  Path := TPath.Combine(FTempDir, 'multi_stack.json');
+  TFile.WriteAllText(Path,
+    '{"Stacks":[' +
+    '{"T":"SL","N":1,"Layers":[' +
+      '{"M":"Si","H":10.44,"s":0.3,"r":2.33}]},' +
+    '{"T":"ML","N":50,"Layers":[' +
+      '{"M":"W","H":11.6,"s":0.2,"r":19.3},' +
+      '{"M":"Si","H":38.45,"s":0.4,"r":2.33}]}' +
+    '],"Subs":{"M":"SiO2","s":0.1,"r":2.65}}');
+
+  S := LoadXRCStructure(Path);
+  Assert.AreEqual(2, Length(S.Stacks));
+
+  Assert.AreEqual('SL', S.Stacks[0].StackType);
+  Assert.AreEqual(1, S.Stacks[0].N);
+  Assert.AreEqual(1, Length(S.Stacks[0].Layers));
+  Assert.AreEqual('Si', S.Stacks[0].Layers[0].Material);
+  Assert.AreEqual(Double(10.44), S.Stacks[0].Layers[0].Thickness, 1E-6);
+
+  Assert.AreEqual('ML', S.Stacks[1].StackType);
+  Assert.AreEqual(50, S.Stacks[1].N);
+  Assert.AreEqual(2, Length(S.Stacks[1].Layers));
+  Assert.AreEqual('W', S.Stacks[1].Layers[0].Material);
+  Assert.AreEqual('Si', S.Stacks[1].Layers[1].Material);
 end;
 
 { TTestCurveLoading }

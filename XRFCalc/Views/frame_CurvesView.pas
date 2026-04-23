@@ -46,7 +46,9 @@ type
   private
     FTotalSeries: TLineSeries;
     FSubstrateRow: Integer;
+    FStackHeaderRows: TArray<Integer>;
     FLegendControls: TArray<TControl>;
+    function IsStackHeaderRow(ARow: Integer): Boolean;
     procedure UpdateTotalCurve;
     procedure PositionStructurePanel;
     procedure PositionLegendPanel;
@@ -348,17 +350,22 @@ end;
 procedure TframeCurvesView.LoadStructure(const Structure: TXRFXStructure;
   const Summary: TXRFXStructureSummary);
 var
-  i, Row, TotalRows, W: Integer;
+  i, j, Row, TotalRows, TotalLayers, W: Integer;
   HeaderText: string;
 begin
   HeaderText := Format('d=%.1f  '#947'=%.3f  N=%d',
     [Summary.D, Summary.Gamma, Summary.N]);
   lblStructureHeader.Caption := HeaderText;
 
-  TotalRows := 1 + Length(Structure.Layers) + 1;
+  TotalLayers := 0;
+  for i := 0 to High(Structure.Stacks) do
+    Inc(TotalLayers, Length(Structure.Stacks[i].Layers));
+
+  TotalRows := 1 + Length(Structure.Stacks) + TotalLayers + 1;
   grdStructure.RowCount := TotalRows;
   grdStructure.ColCount := 4;
   FSubstrateRow := TotalRows - 1;
+  SetLength(FStackHeaderRows, Length(Structure.Stacks));
 
   W := grdStructure.ClientWidth;
   if W < 100 then W := 294;
@@ -373,13 +380,24 @@ begin
   grdStructure.Cells[2, 0] := #963 + ' (' + #197 + ')';
   grdStructure.Cells[3, 0] := #961 + ' (g/cm' + #179 + ')';
 
-  for i := 0 to High(Structure.Layers) do
+  Row := 1;
+  for i := 0 to High(Structure.Stacks) do
   begin
-    Row := i + 1;
-    grdStructure.Cells[0, Row] := Structure.Layers[i].Material;
-    grdStructure.Cells[1, Row] := Format('%.2f', [Structure.Layers[i].Thickness]);
-    grdStructure.Cells[2, Row] := Format('%.2f', [Structure.Layers[i].Roughness]);
-    grdStructure.Cells[3, Row] := Format('%.2f', [Structure.Layers[i].Density]);
+    FStackHeaderRows[i] := Row;
+    grdStructure.Cells[0, Row] := Format('%s x %d',
+      [Structure.Stacks[i].StackType, Structure.Stacks[i].N]);
+    grdStructure.Cells[1, Row] := '';
+    grdStructure.Cells[2, Row] := '';
+    grdStructure.Cells[3, Row] := '';
+    Inc(Row);
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      grdStructure.Cells[0, Row] := Structure.Stacks[i].Layers[j].Material;
+      grdStructure.Cells[1, Row] := Format('%.2f', [Structure.Stacks[i].Layers[j].Thickness]);
+      grdStructure.Cells[2, Row] := Format('%.2f', [Structure.Stacks[i].Layers[j].Roughness]);
+      grdStructure.Cells[3, Row] := Format('%.2f', [Structure.Stacks[i].Layers[j].Density]);
+      Inc(Row);
+    end;
   end;
 
   Row := FSubstrateRow;
@@ -396,6 +414,15 @@ begin
   PositionStructurePanel;
   pnlStructure.Visible := True;
   pnlStructure.BringToFront;
+end;
+
+function TframeCurvesView.IsStackHeaderRow(ARow: Integer): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to High(FStackHeaderRows) do
+    if FStackHeaderRows[i] = ARow then Exit(True);
+  Result := False;
 end;
 
 procedure TframeCurvesView.PositionStructurePanel;
@@ -433,6 +460,11 @@ begin
     Grid.Canvas.Brush.Color := $E0E0E0;
     Grid.Canvas.Font.Style := [fsBold];
   end
+  else if IsStackHeaderRow(ARow) then
+  begin
+    Grid.Canvas.Brush.Color := $F0F0F0;
+    Grid.Canvas.Font.Style := [fsBold];
+  end
   else if ARow = FSubstrateRow then
   begin
     Grid.Canvas.Brush.Color := $F0F0FF;
@@ -453,7 +485,7 @@ begin
   InflateRect(TextRect, -3, -1);
 
   Flags := DT_VCENTER or DT_SINGLELINE or DT_END_ELLIPSIS;
-  if (ACol > 0) and (ARow > 0) then
+  if (ACol > 0) and (ARow > 0) and not IsStackHeaderRow(ARow) then
     Flags := Flags or DT_RIGHT
   else
     Flags := Flags or DT_LEFT;
