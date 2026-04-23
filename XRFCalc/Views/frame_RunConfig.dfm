@@ -220,6 +220,29 @@ object frmRunConfig: TfrmRunConfig
         State = cbChecked
         TabOrder = 9
       end
+      object grpTemplate: TGroupBox
+        Left = 8
+        Top = 285
+        Width = 270
+        Height = 50
+        Caption = 'Template File'
+        TabOrder = 10
+        object edtTemplatePath: TEdit
+          Left = 8
+          Top = 20
+          Width = 210
+          TabOrder = 0
+        end
+        object btnBrowseTemplate: TButton
+          Left = 225
+          Top = 18
+          Width = 35
+          Height = 25
+          Caption = '...'
+          TabOrder = 1
+          OnClick = BrowseTemplateClick
+        end
+      end
     end
     object tabOptimizer: TRzTabSheet
       Caption = 'Optimizer'
@@ -469,6 +492,29 @@ object frmRunConfig: TfrmRunConfig
           Caption = '...'
           TabOrder = 1
           OnClick = BrowseHenkeClick
+        end
+      end
+      object grpXRFLines: TGroupBox
+        Left = 8
+        Top = 324
+        Width = 270
+        Height = 50
+        Caption = 'XRF Lines File'
+        TabOrder = 10
+        object edtXRFLinesPath: TEdit
+          Left = 8
+          Top = 20
+          Width = 210
+          TabOrder = 0
+        end
+        object btnBrowseXRFLines: TButton
+          Left = 225
+          Top = 18
+          Width = 35
+          Height = 25
+          Caption = '...'
+          TabOrder = 1
+          OnClick = BrowseXRFLinesClick
         end
       end
     end

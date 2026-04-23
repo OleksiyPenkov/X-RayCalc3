@@ -481,14 +481,6 @@ object frmXRFCalcMain: TfrmXRFCalcMain
     end
     object mnuTools: TMenuItem
       Caption = '&Tools'
-      object mnuTemplateFile: TMenuItem
-        Caption = 'Template File...'
-        OnClick = mnuTemplateFileClick
-      end
-      object mnuXRFLinesFile: TMenuItem
-        Caption = 'XRF Lines File...'
-        OnClick = mnuXRFLinesFileClick
-      end
       object mnuRegisterExt: TMenuItem
         Caption = 'Register .xrfx extension'
         OnClick = mnuRegisterExtClick

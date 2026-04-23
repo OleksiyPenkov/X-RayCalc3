@@ -4,6 +4,7 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.IOUtils,
+  System.Generics.Collections,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
   Vcl.ExtCtrls, Vcl.CheckLst, Vcl.ComCtrls, Vcl.Samples.Spin,
   RzTabs,
@@ -47,6 +48,9 @@ type
     edtDensityFactor: TEdit;
     edtSubstrate: TEdit;
     chkPureElements: TCheckBox;
+    grpTemplate: TGroupBox;
+    edtTemplatePath: TEdit;
+    btnBrowseTemplate: TButton;
     // Optimizer tab
     lblPopulation: TLabel;
     lblIterations: TLabel;
@@ -86,16 +90,29 @@ type
     grpHenke: TGroupBox;
     edtHenkePath: TEdit;
     btnBrowseHenke: TButton;
+    grpXRFLines: TGroupBox;
+    edtXRFLinesPath: TEdit;
+    btnBrowseXRFLines: TButton;
     procedure LinesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
     procedure LineWeightExit(Sender: TObject);
     procedure BrowseHenkeClick(Sender: TObject);
+    procedure BrowseTemplateClick(Sender: TObject);
+    procedure BrowseXRFLinesClick(Sender: TObject);
   private
     procedure PopulateTargetsData;
+    function  GetTemplatePath: string;
+    procedure SetTemplatePath(const Value: string);
+    function  GetXRFLinesPath: string;
+    procedure SetXRFLinesPath(const Value: string);
+    procedure ApplyXRFLines(const Path: string);
   public
     procedure AfterConstruction; override;
     procedure SetDefaults;
+    procedure PopulateXRFLines;
     procedure LoadFromConfig(const Config: TUniversalConfig);
     function  BuildConfig: TUniversalConfig;
+    property  TemplatePath: string read GetTemplatePath write SetTemplatePath;
+    property  XRFLinesPath: string read GetXRFLinesPath write SetXRFLinesPath;
   end;
 
 implementation
@@ -107,23 +124,62 @@ uses
 
 procedure TfrmRunConfig.PopulateTargetsData;
 var
-  Elements: TArray<string>;
-  Item: TListItem;
+  PoolItems: TArray<string>;
   i: Integer;
 begin
-  Elements := TArray<string>.Create(
-    'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si');
-  for i := 0 to High(Elements) do
-  begin
-    Item := lvLines.Items.Add;
-    Item.Caption := Elements[i];
-    Item.SubItems.Add('1.0');
-  end;
-
-  Elements := TArray<string>.Create('W', 'Mo', 'Cr', 'Si', 'B', 'B4C',
+  // lvLines is populated from the loaded XRF lines JSON (see PopulateXRFLines).
+  // clbPool is a separate list of candidate materials (includes compounds like B4C).
+  PoolItems := TArray<string>.Create('W', 'Mo', 'Cr', 'Si', 'B', 'B4C',
     'Sc', 'C', 'Ni', 'Co', 'La', 'Pt', 'Ru', 'V', 'Ti', 'Nb');
-  for i := 0 to High(Elements) do
-    clbPool.Items.Add(Elements[i]);
+  for i := 0 to High(PoolItems) do
+    clbPool.Items.Add(PoolItems[i]);
+end;
+
+procedure TfrmRunConfig.PopulateXRFLines;
+var
+  Elements: TArray<string>;
+  PriorChecked: TDictionary<string, Boolean>;
+  PriorWeight: TDictionary<string, string>;
+  Item: TListItem;
+  i: Integer;
+  Sym: string;
+  WasChecked: Boolean;
+  PrevWeight: string;
+begin
+  PriorChecked := TDictionary<string, Boolean>.Create;
+  PriorWeight := TDictionary<string, string>.Create;
+  try
+    for i := 0 to lvLines.Items.Count - 1 do
+    begin
+      Sym := lvLines.Items[i].Caption;
+      PriorChecked.AddOrSetValue(Sym, lvLines.Items[i].Checked);
+      if lvLines.Items[i].SubItems.Count > 0 then
+        PriorWeight.AddOrSetValue(Sym, lvLines.Items[i].SubItems[0])
+      else
+        PriorWeight.AddOrSetValue(Sym, '1.0');
+    end;
+
+    lvLines.Items.BeginUpdate;
+    try
+      lvLines.Items.Clear;
+      Elements := GetAllElements;
+      for i := 0 to High(Elements) do
+      begin
+        Item := lvLines.Items.Add;
+        Item.Caption := Elements[i];
+        if not PriorWeight.TryGetValue(Elements[i], PrevWeight) then
+          PrevWeight := '1.0';
+        Item.SubItems.Add(PrevWeight);
+        if PriorChecked.TryGetValue(Elements[i], WasChecked) then
+          Item.Checked := WasChecked;
+      end;
+    finally
+      lvLines.Items.EndUpdate;
+    end;
+  finally
+    PriorChecked.Free;
+    PriorWeight.Free;
+  end;
 end;
 
 procedure TfrmRunConfig.LinesSelectItem(Sender: TObject; Item: TListItem;
@@ -152,6 +208,68 @@ begin
   Dir := edtHenkePath.Text;
   if SelectDirectory('Select Henke Database Folder', '', Dir) then
     edtHenkePath.Text := Dir;
+end;
+
+procedure TfrmRunConfig.BrowseTemplateClick(Sender: TObject);
+var
+  Dlg: TOpenDialog;
+begin
+  Dlg := TOpenDialog.Create(Self);
+  try
+    Dlg.Filter := 'JSON files|*.json|All files|*.*';
+    Dlg.DefaultExt := 'json';
+    if edtTemplatePath.Text <> '' then
+      Dlg.InitialDir := ExtractFilePath(edtTemplatePath.Text);
+    if Dlg.Execute then
+      edtTemplatePath.Text := Dlg.FileName;
+  finally
+    Dlg.Free;
+  end;
+end;
+
+function TfrmRunConfig.GetTemplatePath: string;
+begin
+  Result := edtTemplatePath.Text;
+end;
+
+procedure TfrmRunConfig.SetTemplatePath(const Value: string);
+begin
+  edtTemplatePath.Text := Value;
+end;
+
+procedure TfrmRunConfig.BrowseXRFLinesClick(Sender: TObject);
+var
+  Dlg: TOpenDialog;
+begin
+  Dlg := TOpenDialog.Create(Self);
+  try
+    Dlg.Filter := 'JSON files|*.json|All files|*.*';
+    Dlg.DefaultExt := 'json';
+    if edtXRFLinesPath.Text <> '' then
+      Dlg.InitialDir := ExtractFilePath(edtXRFLinesPath.Text);
+    if Dlg.Execute then
+      XRFLinesPath := Dlg.FileName;
+  finally
+    Dlg.Free;
+  end;
+end;
+
+function TfrmRunConfig.GetXRFLinesPath: string;
+begin
+  Result := edtXRFLinesPath.Text;
+end;
+
+procedure TfrmRunConfig.SetXRFLinesPath(const Value: string);
+begin
+  edtXRFLinesPath.Text := Value;
+  ApplyXRFLines(Value);
+end;
+
+procedure TfrmRunConfig.ApplyXRFLines(const Path: string);
+begin
+  if (Path = '') or not TFile.Exists(Path) then Exit;
+  LoadXRFLines(Path);
+  PopulateXRFLines;
 end;
 
 procedure TfrmRunConfig.SetDefaults;
@@ -415,6 +533,7 @@ begin
   // Top-level
   Result.Substrate := edtSubstrate.Text;
   Result.HenkePath := edtHenkePath.Text;
+  Result.TemplatePath := edtTemplatePath.Text;
 end;
 
 end.
