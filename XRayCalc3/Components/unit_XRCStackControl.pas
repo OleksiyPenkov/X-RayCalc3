@@ -438,6 +438,10 @@ end;
 
 procedure TXRCStack.Select(const LayerID: integer);
 begin
+  // LayerID originates from a posted message and is not range-checked in
+  // Release builds - guard before indexing (FLayers may even be empty).
+  if (LayerID < 0) or (LayerID > High(FLayers)) then Exit;
+
   FLayers[LayerID].Selected := True;
 end;
 
@@ -447,7 +451,7 @@ var
 begin
   FID := Value;
   for I := 0 to High(FLayers) do
-    FLayers[i].UpdateID(I, -1);
+    FLayers[i].UpdateID(FID, -1);
 end;
 
 procedure TXRCStack.SetIncrement(const Value: Single);

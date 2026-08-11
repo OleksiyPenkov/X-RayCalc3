@@ -393,7 +393,7 @@ end;
 
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
-  Count, pos: Integer;
+  Count, pos, i: Integer;
 begin
   FVisibility := Visible;
   Visible := False;
@@ -406,7 +406,15 @@ begin
   Insert(Nil, FStacks, pos);
 
   FStacks[Pos] := TXRCStack.Create(Box, Title, N, FTargetDPI);
-  FStacks[Pos].ID := Pos;
+
+  // Inserting shifts every stack after Pos down by one, so all IDs must be
+  // renumbered - not just the new stack's. Layers cache their StackID and post
+  // it back on click, so a stale ID routes the click to the wrong stack.
+  for I := 0 to High(FStacks) do
+  begin
+    FStacks[i].ID := i;
+    FStacks[i].UpdateLayersID;
+  end;
 
   RealignStacks;
 end;
@@ -518,6 +526,15 @@ end;
 procedure TXRCStructure.SelectLayer(const StackID, LayerID: Integer);
 begin
   ClearSelection;
+
+  // StackID arrives through a posted (asynchronous) message and may be stale by
+  // the time it is dispatched - the structure can change in between.
+  if (StackID < 0) or (StackID > High(FStacks)) then
+  begin
+    FSelectedLayerParent := -1;
+    FSelectedLayer := -1;
+    Exit;
+  end;
 
   if (StackID <> FSelectedLayerParent) and (LayerID <> FSelectedLayer) then
   begin
