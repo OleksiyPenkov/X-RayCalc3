@@ -184,12 +184,14 @@ type
     { Fit/profile support }
     function  GetProfileFunctions: TProfileFunctions;
     function  IsProfileEnabled: Boolean;
+    function  HasFitExtensions: Boolean;
+    procedure ClearFitExtensions;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     procedure UpdateFitGradientExtensions(const P: TProfileFunctions);
     procedure MatchToStructure;
 
     { Utilities }
-    procedure CreateProfileExtension;
+    procedure CreateProfileExtension(const AFromFit: Boolean = False);
     procedure RescaleChart;
     procedure RefreshChartLegend;
     procedure SyncSeriesVisibility(Series: TChartSeries);
@@ -866,7 +868,7 @@ begin
   end;
 end;
 
-procedure TfrmProjectPanel.CreateProfileExtension;
+procedure TfrmProjectPanel.CreateProfileExtension(const AFromFit: Boolean);
 var
   Data: PProjectData;
   Node: PVirtualNode;
@@ -881,6 +883,7 @@ begin
 
     Data.Group := gtModel;
     Data.Enabled := True;
+    Data.FromFit := AFromFit;
     Data.RowType := prExtension;
     Data.Title := 'Table';
     Data.ExtType := etTable;
@@ -1626,6 +1629,60 @@ begin
   end;
 end;
 
+function TfrmProjectPanel.HasFitExtensions: Boolean;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+  Result := False;
+  if FLastModel = nil then Exit;
+
+  Node := FProject.GetFirstChild(FLastModel);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if Data.IsFitExtension then
+    begin
+      Result := True;
+      Break;
+    end;
+    Node := FProject.GetNextSibling(Node);
+  end;
+end;
+
+procedure TfrmProjectPanel.ClearFitExtensions;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  Doomed: TList<PVirtualNode>;
+  i: Integer;
+begin
+  if FLastModel = nil then Exit;
+
+  Doomed := TList<PVirtualNode>.Create;
+  try
+    Node := FProject.GetFirstChild(FLastModel);
+    while Node <> nil do
+    begin
+      Data := FProject.GetNodeData(Node);
+      if Data.IsFitExtension then
+        Doomed.Add(Node);
+      Node := FProject.GetNextSibling(Node);
+    end;
+
+    if Doomed.Count = 0 then Exit;
+
+    // Collect first, delete after: GetNextSibling on a freed node is undefined
+    for i := 0 to Doomed.Count - 1 do
+      FProject.DeleteNode(Doomed[i]);
+  finally
+    Doomed.Free;
+  end;
+
+  FProject.Refresh;
+  MatchToStructure;
+end;
+
 procedure TfrmProjectPanel.CreateFitGradientExtensions(const P: TProfileFunctions);
 var
   Gradient: PVirtualNode;
@@ -1639,6 +1696,7 @@ begin
 
     Data.Group := gtModel;
     Data.Enabled := True;
+    Data.FromFit := True;
     Data.RowType := prExtension;
     Data.Title := GradientTitle(P[i]);
     Data.ExtType := etFunction;
