@@ -99,7 +99,7 @@ cp "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/UserManual.html" "$DEPLOY_DIR/Help/"
 cp "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/style.css"       "$DEPLOY_DIR/Help/"
 cp "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/script.js"       "$DEPLOY_DIR/Help/"
 cp "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/"*.html          "$DEPLOY_DIR/Help/"
-cp "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/images/"*        "$DEPLOY_DIR/Help/images/"
+cp -r "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/images/"*     "$DEPLOY_DIR/Help/images/"
 help_count=$(ls -1 "$DEPLOY_DIR/Help/"*.html 2>/dev/null | wc -l)
 echo "  $help_count HTML files + style.css + script.js + images/"
 
