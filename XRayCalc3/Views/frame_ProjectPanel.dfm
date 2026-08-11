@@ -37,7 +37,6 @@ object frmProjectPanel: TfrmProjectPanel
     object BtnNew: TRzToolButton
       Left = 7
       Top = 2
-      DisabledIndex = 1
       ImageIndex = 0
       ParentShowHint = False
       ShowHint = True
@@ -46,7 +45,6 @@ object frmProjectPanel: TfrmProjectPanel
       Left = 35
       Top = 2
       Width = 39
-      DisabledIndex = 3
       ImageIndex = 1
       ParentShowHint = False
       ShowHint = True
@@ -55,7 +53,6 @@ object frmProjectPanel: TfrmProjectPanel
     object btnReopenProject: TRzToolButton
       Left = 77
       Top = 2
-      DisabledIndex = 23
       ImageIndex = 2
       ParentShowHint = False
       ShowHint = True
@@ -67,7 +64,6 @@ object frmProjectPanel: TfrmProjectPanel
     object BtnSave: TRzToolButton
       Left = 116
       Top = 2
-      DisabledIndex = 5
       ImageIndex = 3
       ParentShowHint = False
       ShowHint = True
@@ -79,7 +75,6 @@ object frmProjectPanel: TfrmProjectPanel
     object BtnPrint: TRzToolButton
       Left = 155
       Top = 2
-      DisabledIndex = 7
       ImageIndex = 4
       ParentShowHint = False
       ShowHint = True
@@ -117,7 +112,6 @@ object frmProjectPanel: TfrmProjectPanel
     object btnAddModel: TRzToolButton
       Left = 7
       Top = 2
-      DisabledIndex = 9
       ImageIndex = 5
       ParentShowHint = False
       ShowHint = True
@@ -125,7 +119,6 @@ object frmProjectPanel: TfrmProjectPanel
     object BtnExport: TRzToolButton
       Left = 35
       Top = 2
-      DisabledIndex = 11
       ImageIndex = 6
       ParentShowHint = False
       ShowHint = True
@@ -134,7 +127,6 @@ object frmProjectPanel: TfrmProjectPanel
       Left = 63
       Top = 2
       Hint = 'Copy model to clipboard'
-      DisabledIndex = 13
       ImageIndex = 7
       ParentShowHint = False
       ShowHint = True
@@ -143,7 +135,6 @@ object frmProjectPanel: TfrmProjectPanel
       Left = 91
       Top = 2
       Hint = 'Paste model'
-      DisabledIndex = 15
       ImageIndex = 8
       ParentShowHint = False
       ShowHint = True
@@ -152,7 +143,6 @@ object frmProjectPanel: TfrmProjectPanel
       Left = 119
       Top = 2
       Hint = 'Properties'
-      DisabledIndex = 17
       ImageIndex = 9
       ParentShowHint = False
       ShowHint = True
@@ -165,7 +155,6 @@ object frmProjectPanel: TfrmProjectPanel
       Left = 158
       Top = 2
       Hint = 'Add extension'
-      DisabledIndex = 19
       ImageIndex = 10
       ParentShowHint = False
       ShowHint = True
@@ -178,7 +167,6 @@ object frmProjectPanel: TfrmProjectPanel
       Left = 197
       Top = 2
       Hint = 'Delete item'
-      DisabledIndex = 21
       ImageIndex = 11
       ParentShowHint = False
       ShowHint = True
