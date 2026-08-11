@@ -1719,24 +1719,22 @@ var
   Data: PProjectData;
   i: Integer;
   Title: string;
-  Found: Boolean;
 begin
   for I := 0 to High(P) do
   begin
     Title := GradientTitle(P[i]);
 
-    Gradient := FLastModel.FirstChild;
-    Found := False;
-    repeat
+    Gradient := FProject.GetFirstChild(FLastModel);
+    while Gradient <> nil do
+    begin
       Data := FProject.GetNodeData(Gradient);
-      if Data.Title = Title then
+      if (Data <> nil) and (Data.Title = Title) then
       begin
         Data.SetPoly(P[i].C);
-        Found := True;
-      end
-      else
-        Gradient := Gradient.NextSibling;
-    until Found or (Gradient <> FLastModel.LastChild);
+        Break;
+      end;
+      Gradient := FProject.GetNextSibling(Gradient);
+    end;
   end;
 
   MatchToStructure;
