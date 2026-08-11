@@ -127,15 +127,25 @@ so no extra handling is needed there.
 
 ## Testing
 
-`HasFitExtensions` and `ClearFitExtensions` are tree-walking logic with no dialog dependency
-and belong in the DUnitX suite. Cases:
+`XRayCalc3Tests.dproj` compiles logic units only — no VCL frames, no VirtualTrees — so
+`HasFitExtensions` and `ClearFitExtensions` cannot be exercised there without dragging
+`frame_ProjectPanel` and its whole dependency chain into the test project. Instead the
+decision itself is extracted into a pure record method that the suite can reach:
 
-- Model with no extensions → `HasFitExtensions` is False.
-- Model with only hand-added extensions → False; `ClearFitExtensions` leaves them intact.
-- Model with a mix → True; `ClearFitExtensions` removes only the marked nodes.
-- Model with several marked gradients → all removed in one pass (guards the
-  delete-while-iterating trap).
+```pascal
+function TProjectData.IsFitExtension: Boolean;
+begin
+  Result := (RowType = prExtension) and FromFit;
+end;
+```
 
-The orchestrator branch is three lines of control flow and is verified by hand in the running
-app: run a poly fit, run it again, confirm the dialog appears and that Keep updates the
-existing gradient nodes rather than duplicating them.
+DUnitX cases in `TestUnitTypes.pas`, alongside the existing `TTestProjectData` fixture:
+
+- `prExtension` with `FromFit = True` → True.
+- `prExtension` with `FromFit = False` → False (hand-added extension).
+- `prItem` with `FromFit = True` → False (row type guard).
+
+The frame methods reduce to tree-walking glue over that predicate, and the orchestrator branch
+is a few lines of control flow. Both are verified by hand in the running app: run a poly fit,
+run it again, confirm the dialog appears, that Clear removes only the fit-generated nodes, and
+that Keep updates the existing gradient nodes rather than duplicating them.
