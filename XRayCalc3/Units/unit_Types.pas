@@ -47,6 +47,7 @@ type
     function IsModel: Boolean;
     function PolyD: TPolyArray;
     procedure SetPoly(var PolyD: TPolyArray);
+    function IsFitExtension: Boolean;
     case RowType: TProjRowType of
       prGroup, prFolder:
         ();
@@ -58,6 +59,7 @@ type
          Visible: boolean);
       prExtension:
          (Enabled: boolean;
+          FromFit: Boolean;    // runtime only - never streamed to the project file
           case ExtType: TExtentionType of
             etFunction:
               (StackID: integer;
@@ -234,6 +236,11 @@ implementation
 function TProjectData.IsModel: Boolean;
 begin
   Result := (Group = gtModel) and (RowType = prItem);
+end;
+
+function TProjectData.IsFitExtension: Boolean;
+begin
+  Result := (RowType = prExtension) and FromFit;
 end;
 
 function TProjectData.PolyD: TPolyArray;

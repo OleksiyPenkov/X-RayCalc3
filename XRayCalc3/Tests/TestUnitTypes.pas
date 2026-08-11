@@ -50,6 +50,9 @@ type
     [Test] procedure Test_IsModel_False_WrongRowType;
     [Test] procedure Test_PolyD_SetPoly_Roundtrip;
     [Test] procedure Test_SetPoly_StoresOrder;
+    [Test] procedure Test_IsFitExtension_True;
+    [Test] procedure Test_IsFitExtension_False_NotFromFit;
+    [Test] procedure Test_IsFitExtension_False_WrongRowType;
   end;
 
   [TestFixture]
@@ -308,6 +311,33 @@ begin
   PD.SetPoly(Src);
 
   Assert.AreEqual(3, PD.PolyCount);
+end;
+
+procedure TTestProjectData.Test_IsFitExtension_True;
+var PD: TProjectData;
+begin
+  PD.RowType := prExtension;
+  PD.FromFit := True;
+  Assert.IsTrue(PD.IsFitExtension);
+end;
+
+procedure TTestProjectData.Test_IsFitExtension_False_NotFromFit;
+var PD: TProjectData;
+begin
+  // A hand-added extension must never be reported as fit-generated
+  PD.RowType := prExtension;
+  PD.FromFit := False;
+  Assert.IsFalse(PD.IsFitExtension);
+end;
+
+procedure TTestProjectData.Test_IsFitExtension_False_WrongRowType;
+var PD: TProjectData;
+begin
+  // FromFit shares storage with the prItem branch of the variant record,
+  // so the RowType guard is what makes the predicate safe
+  PD.RowType := prItem;
+  PD.FromFit := True;
+  Assert.IsFalse(PD.IsFitExtension);
 end;
 
 { TTestFitStructureCopy }
