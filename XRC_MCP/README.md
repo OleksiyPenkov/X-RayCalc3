@@ -8,6 +8,13 @@ Build it with the `XRC_MCP Win64` command in the repository's `CLAUDE.md` build 
 requirements live in `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` and
 `docs/superpowers/specs/2026-09-08-xraca-mcp-server-requirements.md`.
 
+**Win64 build dependency:** `optimize_mirror` runs the universal optimizer through
+OmniThreadLibrary's `Parallel.For`, which hangs for ever under dcc64 unless
+`D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas` carries the
+`Cardinal` → `NativeUInt` fix in `TOmniTaskExecutor.GetMethodAddrAndSignature` (see
+`CLAUDE.md`, Dependencies). The symptom is a job stuck at iteration 0 with an empty
+`results\progress.log`, and a server that will not exit.
+
 `units\gitrev.inc` is **not** in version control: the project's pre-build event regenerates it from
 `git rev-parse --short HEAD` on every build, so `git` must be on `PATH`. Its value is what
 `describe_server` reports as `git_revision`.

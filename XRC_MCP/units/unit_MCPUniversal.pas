@@ -156,9 +156,29 @@ function GenomesDistinct(const A, B: TGenome;
 ///
 /// Cancellation: the optimizer is asked to stop from the progress callback, and
 /// a run that was cut short returns <b>without</b> a result, so the job ends
-/// cancelled with whatever the engine wrote still on disk. The flag can only be
-/// looked at once per iteration - the engine offers no finer hook - so a job
-/// with a large population stops within one iteration, not within a second.
+/// cancelled with whatever the engine wrote still on disk.
+///
+/// How long a cancel takes, exactly, because it bounds server shutdown as well
+/// (TJobManager.Destroy joins the worker with no timeout). The flag is polled
+/// once per iteration, in OnIteration, which is the only place the engine hands
+/// control back; and two stretches of a run cannot be interrupted at all:
+/// <list type="bullet">
+/// <item>the prologue - TMaterialMixer.Initialize plus the first full
+///   evaluation of the population, which happens before iteration 0 is
+///   reported;</item>
+/// <item>the save tail after the loop breaks - the final evaluation, the best
+///   structure, one reflectivity curve per line, the population dump and the
+///   checkpoint.</item>
+/// </list>
+/// So a cancel waits up to one iteration plus the save tail, and one iteration
+/// costs roughly population x lines x scan points x layers. With the engine's
+/// default population of 1000 that is far more than a second; a client that
+/// wants a responsive cancel should keep the population modest.
+///
+/// While a job runs it holds HenkeCwdLock, so an evaluate_lines call made in
+/// the meantime waits for the whole run rather than answering in its own round
+/// trip. That is the price of the engine changing the process working directory
+/// while it reads its tables.
 ///
 /// Raises EMCPError('optimizer_error') when the engine reported an error (it
 /// catches its own exceptions and calls OnError, so the message is picked up
@@ -188,11 +208,13 @@ const
   DEFAULT_TOP_K = 5;
 
   /// Said in the result of every optimize_mirror job: one results folder is
-  /// written per run, not per candidate, so the .xrfx of a lower rank carries
-  /// the winner's curves and progress log. What is rank-specific in it is the
-  /// manifest and the structure.
+  /// written per run, not per candidate. The manifest and the XRC structure
+  /// inside each package are rewritten for the rank being packaged; the curves
+  /// and the progress log are the winner's, because the engine computes them
+  /// once, for the run.
   XRFX_SHARED_RESULTS_NOTE =
-    'results folder is shared; rank-specific data are the manifest and structure';
+    'results folder is shared; the manifest and best_structure_xrc.json inside ' +
+    'each package are rank-specific, curves and progress log are the winner''s';
 
   /// How far EvaluateStructure may land from the figure of merit the optimizer
   /// reported for the same candidate before the result carries a warning.
@@ -1292,12 +1314,13 @@ var
   SubDensity: Single;
   Mixer: TMaterialMixer;
   Fitness: TUniversalFitness;
+  IO: TUniversalIO;
   Idxs: TArray<Integer>;
   Ranks: TArray<TGenome>;
   Res: TTargetResults;
   PerElem: TArray<TXRFXElementResult>;
   ConfigPath, ResultsDir, XRFXPath: string;
-  Result_, JRank, JFiles: TJSONObject;
+  Result_, JRank, JFiles, JConfigUsed: TJSONObject;
   JTopK: TJSONArray;
   FoM: Double;
   BestFoM: Double;
@@ -1355,6 +1378,29 @@ begin
           number on this thread, and RandSeed is process-global, which is why
           only one job runs at a time. }
         RandSeed := Job.Seed;
+        { BUILD DEPENDENCY - READ THIS BEFORE BUILDING FOR Win64.
+
+          Opt.Run evaluates the population through OmniThreadLibrary's
+          Parallel.For. The copy of OTL on the shared library path,
+          D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas,
+          casts code pointers to Cardinal in
+          TOmniTaskExecutor.GetMethodAddrAndSignature - five places: the
+          declaration of headerEnd, and the casts of methodInfoHeader (twice),
+          returnInfo and params, at lines 2558 and 2621-2628 of the stock file.
+          Under dcc64 that truncates a 64-bit pointer, the task pool never
+          answers, and Parallel.For waits for ever. The symptom here is a job
+          that stays at iteration 0 with results\progress.log holding nothing
+          but its header - and because this thread is inside HenkeCwdLock and
+          TJobManager.Destroy joins the worker without a timeout, the whole
+          server then refuses to exit. It is not specific to this server:
+          `xrccmd -u` on a four-particle, one-iteration configuration hangs the
+          same way, and XRFCalc is Win64 and drives the same optimizer.
+
+          The fix is Cardinal -> NativeUInt on those five lines (it is what
+          upstream OTL has). A machine that has it applied keeps the untouched
+          original beside it as OtlTaskControl.pas.xrcmcp-backup. Win32 is not
+          affected, which is why the test suite passes either way. See
+          CLAUDE.md (Dependencies) and XRC_MCP\README.md. }
         Opt.Run;
       finally
         IsConsole := WasConsole;
@@ -1390,7 +1436,10 @@ begin
       so the alternatives are filtered against it here with the same rule. }
     SetLength(Ranks, 1);
     Ranks[0] := State.ABest;
-    Idxs := DistinctTopK(State.Particles, TopK, Names);
+    { A couple more than asked for: the first entry the swarm offers is normally
+      ABest itself, and any other that is not distinct from it is dropped below,
+      so asking for exactly TopK could come back short for no good reason. }
+    Idxs := DistinctTopK(State.Particles, TopK + 2, Names);
     for i := 0 to High(Idxs) do
     begin
       if Length(Ranks) >= TopK then
@@ -1428,52 +1477,72 @@ begin
 
         Fitness := TUniversalFitness.Create(Mixer, C, Templates);
         try
-          for r := 0 to High(Ranks) do
-          begin
-            { Packaging a rank writes a zip; a cancel that arrives here is acted
-              on rather than made to wait for all of them. }
-            if Job.CancelRequested then
+          IO := TUniversalIO.Create;
+          try
+            for r := 0 to High(Ranks) do
             begin
-              Cancelled := True;
-              Break;
-            end;
-
-            SetLength(Res, 0);
-            // Evaluate returns the negated figure of merit: the PSO minimises.
-            FoM := -Fitness.Evaluate(Ranks[r], Res);
-
-            JRank := TJSONObject.Create;
-            JTopK.AddElement(JRank);
-            JRank.AddPair('rank', TJSONNumber.Create(r + 1));
-            JRank.AddPair('fom', JSONArgs.Num(FoM));
-            JRank.AddPair('genome', GenomeToJSON(Ranks[r], Names));
-            JRank.AddPair('structure',
-              GenomeToStructure(Ranks[r], C, Templates, Names, Densities, SubDensity));
-            JRank.AddPair('lines', LinesResultJSON(C.Lines, Res));
-
-            SetLength(PerElem, Length(C.Lines));
-            for i := 0 to High(C.Lines) do
-            begin
-              PerElem[i].Line := C.Lines[i].Name;
-              if i <= High(Res) then
+              { Packaging a rank writes a zip; a cancel that arrives here is acted
+                on rather than made to wait for all of them. }
+              if Job.CancelRequested then
               begin
-                PerElem[i].PeakR := Res[i].RPeak;
-                PerElem[i].FWHM := Res[i].FWHM;
+                Cancelled := True;
+                Break;
+              end;
+
+              SetLength(Res, 0);
+              // Evaluate returns the negated figure of merit: the PSO minimises.
+              FoM := -Fitness.Evaluate(Ranks[r], Res);
+
+              JRank := TJSONObject.Create;
+              JTopK.AddElement(JRank);
+              JRank.AddPair('rank', TJSONNumber.Create(r + 1));
+              JRank.AddPair('fom', JSONArgs.Num(FoM));
+              JRank.AddPair('genome', GenomeToJSON(Ranks[r], Names));
+              JRank.AddPair('structure',
+                GenomeToStructure(Ranks[r], C, Templates, Names, Densities, SubDensity));
+              JRank.AddPair('lines', LinesResultJSON(C.Lines, Res));
+
+              SetLength(PerElem, Length(C.Lines));
+              for i := 0 to High(C.Lines) do
+              begin
+                // Cleared, not overwritten: the array is reused for every rank and
+                // a line without a result would otherwise keep the last rank's.
+                PerElem[i] := Default(TXRFXElementResult);
+                PerElem[i].Line := C.Lines[i].Name;
+                if i <= High(Res) then
+                begin
+                  PerElem[i].PeakR := Res[i].RPeak;
+                  PerElem[i].FWHM := Res[i].FWHM;
+                end;
+              end;
+
+              { CreateXRFXPackage zips the whole results folder, and the structure
+                file in it is whatever the last writer left there - the winner's,
+                as Run wrote it. Rewritten here for the rank about to be packaged,
+                so that XRFCalc shows the stack the manifest describes. Rank 1's
+                is put back after the loop, so the folder on disk stays the
+                winner's. }
+              IO.SaveXRCStructure(C, Ranks[r], Mixer, Templates, ResultsDir);
+
+              XRFXPath := TPath.Combine(Job.Dir, Format('rank_%d%s', [r + 1, XRFX_EXT]));
+              CreateXRFXPackage(C, Ranks[r], FoM, PerElem, ResultsDir, ConfigPath,
+                XRFXPath);
+              JRank.AddPair('xrfx', JobRelPath(XRFXPath));
+              JRank.AddPair('note', XRFX_SHARED_RESULTS_NOTE);
+
+              if r = 0 then
+              begin
+                BestFoM := FoM;
+                JBestStructure := JRank.GetValue('structure') as TJSONObject;
+                Result_.AddPair('best', JRank.Clone as TJSONObject);
               end;
             end;
 
-            XRFXPath := TPath.Combine(Job.Dir, Format('rank_%d%s', [r + 1, XRFX_EXT]));
-            CreateXRFXPackage(C, Ranks[r], FoM, PerElem, ResultsDir, ConfigPath,
-              XRFXPath);
-            JRank.AddPair('xrfx', JobRelPath(XRFXPath));
-            JRank.AddPair('note', XRFX_SHARED_RESULTS_NOTE);
-
-            if r = 0 then
-            begin
-              BestFoM := FoM;
-              JBestStructure := JRank.GetValue('structure') as TJSONObject;
-              Result_.AddPair('best', JRank.Clone as TJSONObject);
-            end;
+            { The folder is the run's own output, so it ends as the winner's
+              even though the packages needed it to change under them. }
+            IO.SaveXRCStructure(C, Ranks[0], Mixer, Templates, ResultsDir);
+          finally
+            IO.Free;
           end;
         finally
           Fitness.Free;
@@ -1484,7 +1553,17 @@ begin
 
       Result_.AddPair('job_id', Job.Id);
       Result_.AddPair('seed', TJSONNumber.Create(Job.Seed));
-      Result_.AddPair('config_used', ConfigToJSON(C));
+      JConfigUsed := ConfigToJSON(C);
+      Result_.AddPair('config_used', JConfigUsed);
+      { ConfigToJSON echoes the template library as the absolute path the engine
+        opened; a client only ever sees work-directory-relative paths, and the
+        top-level template_file already reports one. }
+      if JConfigUsed.FindValue('template_file') <> nil then
+        JConfigUsed.RemovePair('template_file').Free;
+      if C.TemplatePath = '' then
+        JConfigUsed.AddPair('template_file', TJSONNull.Create)
+      else
+        JConfigUsed.AddPair('template_file', JobRelPath(C.TemplatePath));
       if C.TemplatePath = '' then
         Result_.AddPair('template_file', TJSONNull.Create)
       else
@@ -1500,11 +1579,25 @@ begin
       JFiles.AddPair('population', JobRelPath(TPath.Combine(ResultsDir, 'population.json')));
       JFiles.AddPair('config', JobRelPath(ConfigPath));
 
-      if (JBestStructure <> nil) and not Cancelled then
+      if not Cancelled then
       begin
-        Warning := ConsistencyWarning(JBestStructure, C, BestFoM);
+        Warning := '';
+        { The figure of merit reported for rank 1 is a fresh evaluation of
+          ABest, so it must be the number the optimizer itself ended with. If
+          the two ever part company the genome is being scored against a
+          different mixer or a different fitness, and the whole result is
+          suspect - say so rather than let it pass. }
+        if Abs(BestFoM - (-State.ABestFoM)) /
+           Max(Abs(State.ABestFoM), 1E-12) > CONSISTENCY_TOLERANCE then
+          Warning := Format(
+            'Rank 1 re-scores as %.9g but the optimizer finished on %.9g. The ' +
+            'candidate was evaluated against a different mixer or fitness than ' +
+            'the run used; treat every number in this result with suspicion. ',
+            [BestFoM, -State.ABestFoM]);
+        if JBestStructure <> nil then
+          Warning := Warning + ConsistencyWarning(JBestStructure, C, BestFoM);
         if Warning <> '' then
-          Result_.AddPair('consistency_warning', Warning);
+          Result_.AddPair('consistency_warning', Trim(Warning));
       end;
     except
       Result_.Free;

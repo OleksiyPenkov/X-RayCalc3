@@ -201,7 +201,8 @@ function SubmitOptimize(const Params: TJSONObject): TJSONObject;
 var
   Work, Request: TJSONObject;
   Config: TUniversalConfig;
-  Seed, TopK, SavedSeed: Integer;
+  Seed, TopK: Integer;
+  G: TGUID;
   Job: TJob;
 begin
   if Jobs = nil then
@@ -234,14 +235,15 @@ begin
     Seed := JSONArgs.OptInt(Params, 'seed', 0)
   else
   begin
-    { RandSeed is process-global and a job may be running on it right now, so
-      the draw puts back what it found. The window between the three statements
-      is still a window; the only complete cure is a seed source that does not
-      go through Random at all. }
-    SavedSeed := RandSeed;
-    Randomize;
-    Seed := Random(MaxInt);
-    RandSeed := SavedSeed;
+    { From a GUID, not from Randomize/Random: those write System.RandSeed, which
+      is process-global and is exactly what a job running at this moment is
+      drawing from - a seed drawn here would make that job's answer
+      irreproducible. NewJobFolder picks job ids the same way and for the same
+      reason. The sign bit is masked off so the seed reads as a positive number
+      in job.json. }
+    G := TGUID.NewGuid;
+    Seed := Integer((G.D1 xor (Cardinal(G.D2) shl 16) xor Cardinal(G.D3))
+                    and $7FFFFFFF);
   end;
 
   { request.json records the arguments as they arrived, with the seed and top_k
@@ -304,7 +306,15 @@ begin
     'evaluate_lines computes, so a candidate can be re-scored and compared ' +
     'against a design of your own. The seed is echoed and a repeat of the same ' +
     'configuration with the same seed is bit-for-bit reproducible. One job runs ' +
-    'at a time. Angles are theta in degrees, never 2theta; lengths are Angstrom.',
+    'at a time, and evaluate_lines waits while one does: both drive the same ' +
+    'engine, which changes the process working directory while it reads its ' +
+    'tables. Cancellation is not instant - the optimizer offers one point per ' +
+    'iteration at which it can be stopped, and neither its prologue (reading ' +
+    'the tables and evaluating the whole population once) nor the results it ' +
+    'saves after stopping can be interrupted - so cancel_job takes up to one ' +
+    'iteration plus that tail, which grows with population x lines x scan ' +
+    'points. Keep the population modest if you want to be able to change your ' +
+    'mind quickly. Angles are theta in degrees, never 2theta; lengths are Angstrom.',
     Schema,
     function(const P: TJSONObject): TJSONObject
     begin

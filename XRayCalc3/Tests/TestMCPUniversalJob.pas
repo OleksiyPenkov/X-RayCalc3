@@ -41,7 +41,7 @@ type
 implementation
 
 uses
-  System.IOUtils, System.Math, System.Diagnostics,
+  System.IOUtils, System.Math, System.Diagnostics, System.Zip,
   unit_Config,
   unit_universal_types,
   unit_MCPUniversal;
@@ -153,6 +153,63 @@ begin
   Result := Abs(dA - dB) / Abs(dB) > 0.05;
 end;
 
+/// The consistency warning of a result, or '' when there is none.
+function WarningOf(R: TJSONObject): string;
+var
+  V: TJSONValue;
+begin
+  V := R.FindValue('consistency_warning');
+  if V = nil then
+    Result := ''
+  else
+    Result := V.Value;
+end;
+
+/// The period and the repeat count of the stack in a package's
+/// best_structure_xrc.json - what XRFCalc shows when it opens the file. The
+/// period is the sum of the layer thicknesses of the repeating stack.
+procedure PackagedStack(const XRFXPath: string; out Period: Double; out N: Integer);
+var
+  Zip: TZipFile;
+  Bytes: TBytes;
+  J, Stack: TJSONObject;
+  Stacks, Layers: TJSONArray;
+  i, k: Integer;
+  Best: Integer;
+begin
+  Period := 0;
+  N := 0;
+  Zip := TZipFile.Create;
+  try
+    Zip.Open(XRFXPath, zmRead);
+    Zip.Read('best_structure_xrc.json', Bytes);
+    Zip.Close;
+  finally
+    Zip.Free;
+  end;
+  J := TJSONObject.ParseJSONValue(TEncoding.UTF8.GetString(Bytes)) as TJSONObject;
+  Assert.IsNotNull(J, 'best_structure_xrc.json in ' + XRFXPath + ' does not parse');
+  try
+    Stacks := J.GetValue('Stacks') as TJSONArray;
+    // The multilayer is the stack that repeats; a cap or a buffer has N = 1.
+    Best := -1;
+    for i := 0 to Stacks.Count - 1 do
+      if (Stacks.Items[i] as TJSONObject).GetValue<Integer>('N') > N then
+      begin
+        N := (Stacks.Items[i] as TJSONObject).GetValue<Integer>('N');
+        Best := i;
+      end;
+    if Best < 0 then
+      Exit;
+    Stack := Stacks.Items[Best] as TJSONObject;
+    Layers := Stack.GetValue('Layers') as TJSONArray;
+    for k := 0 to Layers.Count - 1 do
+      Period := Period + (Layers.Items[k] as TJSONObject).GetValue<Double>('H');
+  finally
+    J.Free;
+  end;
+end;
+
 /// The candidate object with its file path taken out, so that two runs in two
 /// different job folders can be compared as text.
 function WithoutPaths(Src: TJSONObject): string;
@@ -167,6 +224,17 @@ begin
   finally
     Copy_.Free;
   end;
+end;
+
+/// The whole ranking as text, with the per-entry .xrfx paths taken out: they
+/// carry the job id, which is different for every run by design.
+function RankingWithoutPaths(Arr: TJSONArray): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to Arr.Count - 1 do
+    Result := Result + WithoutPaths(Arr.Items[i] as TJSONObject) + sLineBreak;
 end;
 
 { ----------------------------------------------------------------- fixture -- }
@@ -248,6 +316,9 @@ var
   Dir1, Dir2: string;
   Best1, Best2: TJSONObject;
   TopK: TJSONArray;
+  Rank2, Genome2: TJSONObject;
+  Period: Double;
+  NPeriods: Integer;
   i, j: Integer;
   JobFile: TJSONObject;
 begin
@@ -302,11 +373,44 @@ begin
             Format('top_k entries %d and %d are not distinct by the rule',
               [i + 1, j + 1]));
 
-      { The package of the winner, and the state on disk. }
+      { The whole ranking, not only the winner, is reproducible. }
+      Assert.AreEqual(
+        RankingWithoutPaths(R1.GetValue('top_k') as TJSONArray),
+        RankingWithoutPaths(R2.GetValue('top_k') as TJSONArray),
+        'the same seed must give the same top_k, entry for entry');
+
+      { Nothing may disagree with itself: a consistency_warning means the
+        structure the client is shown does not reproduce the figure of merit it
+        is shown, or that rank 1 re-scores differently from the run. }
+      Assert.IsTrue(R1.FindValue('consistency_warning') = nil,
+        'run 1 reported a consistency warning: ' + WarningOf(R1));
+      Assert.IsTrue(R2.FindValue('consistency_warning') = nil,
+        'run 2 reported a consistency warning: ' + WarningOf(R2));
+
+      { The packages, and the state on disk. }
       Assert.IsTrue(TFile.Exists(TPath.Combine(Dir1, 'rank_1.xrfx')),
         'rank_1.xrfx must be written next to the job files');
       Assert.IsTrue(TFile.Exists(TPath.Combine(Dir1, 'config.json')),
         'the configuration the run used must be kept');
+      for i := 2 to TopK.Count do
+        Assert.IsTrue(
+          TFile.Exists(TPath.Combine(Dir1, Format('rank_%d.xrfx', [i]))),
+          Format('top_k has %d entries, so rank_%d.xrfx must exist',
+            [TopK.Count, i]));
+
+      { Each package must describe the rank it was written for. The results
+        folder is shared, so best_structure_xrc.json is rewritten per rank; if
+        that were skipped, rank 2's package would show the winner's stack. }
+      if TopK.Count >= 2 then
+      begin
+        Rank2 := TopK.Items[1] as TJSONObject;
+        Genome2 := Rank2.GetValue('genome') as TJSONObject;
+        PackagedStack(TPath.Combine(Dir1, 'rank_2.xrfx'), Period, NPeriods);
+        Assert.AreEqual(Genome2.GetValue<Integer>('N'), NPeriods,
+          'rank_2.xrfx must carry rank 2''s repeat count, not the winner''s');
+        Assert.AreEqual(Genome2.GetValue<Double>('d'), Period, 0.05,
+          'rank_2.xrfx must carry rank 2''s period, not the winner''s');
+      end;
 
       JobFile := TJSONObject.ParseJSONValue(
         TFile.ReadAllText(TPath.Combine(Dir1, 'job.json'))) as TJSONObject;
