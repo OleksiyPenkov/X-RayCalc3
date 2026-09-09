@@ -32,6 +32,12 @@ type
     function LoopBody(Iterations: Integer): TJobBody;
     /// <summary>A body that raises EMCPError with this code.</summary>
     function FailingBody(const Code, Msg: string): TJobBody;
+    /// <summary>A body that raises a plain Exception - the kind the manager has
+    /// to turn into an 'internal' failure rather than let out.</summary>
+    function RaisingBody(const Msg: string): TJobBody;
+    /// <summary>A body that replaces its own job folder with a file, so every
+    /// job.json write fails, and then reports progress Iterations times.</summary>
+    function BreakDirBody(Iterations: Integer): TJobBody;
     /// <summary>Polls Job.State until it is Wanted or TimeoutMs elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
     function StateOf(Status: TJSONObject): string;
@@ -53,6 +59,8 @@ type
     [Test] procedure Queue_SeventeenthSubmit_RaisesTooManyJobs;
     [Test] procedure Progress_IsReportedInStatus;
     [Test] procedure NewJobFolder_CreatesUniqueFolder;
+    [Test] procedure UnwritableJobDir_JobStillFinishes_WarnsOnce;
+    [Test] procedure PlainExceptionBody_FailsInternal_QueueSurvives;
   end;
 
 implementation
@@ -108,6 +116,41 @@ begin
     begin
       Sleep(10);
       raise EMCPError.Create(Code, Msg, 'from the test body');
+    end;
+end;
+
+function TTestMCPJobs.RaisingBody(const Msg: string): TJobBody;
+begin
+  Result :=
+    procedure(Job: TJob)
+    begin
+      Sleep(10);
+      raise Exception.Create(Msg);
+    end;
+end;
+
+function TTestMCPJobs.BreakDirBody(Iterations: Integer): TJobBody;
+begin
+  Result :=
+    procedure(Job: TJob)
+    var
+      I: Integer;
+      R: TJSONObject;
+    begin
+      { A file where the folder should be: every write into it fails, which is
+        what a read-only or deleted work directory looks like from here. }
+      TDirectory.Delete(Job.Dir, True);
+      TFile.WriteAllText(Job.Dir, 'not a directory');
+      for I := 1 to Iterations do
+      begin
+        if Job.CancelRequested then
+          Exit;
+        Sleep(10);
+        Job.Progress(I, I * 1.0, 'step ' + IntToStr(I));
+      end;
+      R := TJSONObject.Create;
+      R.AddPair('ok', TJSONBool.Create(True));
+      Job.ResultObj := R;
     end;
 end;
 
@@ -382,6 +425,87 @@ begin
   Assert.IsTrue(TDirectory.Exists(DirB));
   Assert.IsTrue(IdA.StartsWith('calc-'), 'the prefix is kept, got ' + IdA);
   Assert.AreEqual(TPath.Combine(FWD.JobsDir, IdA), DirA);
+end;
+
+procedure TTestMCPJobs.UnwritableJobDir_JobStillFinishes_WarnsOnce;
+var
+  Job: TJob;
+  ErrPath: string;
+  SavedErr: TTextRec;
+  Line, Captured: string;
+  Warnings: Integer;
+  F: TextFile;
+  Res: TJSONObject;
+begin
+  { The warning is written to stderr, so stderr is where it has to be counted.
+    ErrOutput is redirected for the length of the job and put back afterwards.
+    File variables cannot be assigned, and the record holds a pointer into
+    itself, so it is copied out and back into the same storage with Move. }
+  ErrPath := TPath.Combine(FTemp, 'stderr.txt');
+  Move(TTextRec(ErrOutput), SavedErr, SizeOf(TTextRec));
+  AssignFile(ErrOutput, ErrPath);
+  Rewrite(ErrOutput);
+  try
+    Job := FMgr.Submit(jkFit, 1, BreakDirBody(50), nil);   // ~500 ms of progress
+    Assert.IsTrue(WaitForState(Job, jsFinished, 10000),
+      'a job.json that cannot be written must not stop the job');
+  finally
+    CloseFile(ErrOutput);
+    Move(SavedErr, TTextRec(ErrOutput), SizeOf(TTextRec));
+  end;
+
+  // The in-memory status is unaffected by the file having failed.
+  Assert.AreEqual('finished', StateOf(FMgr.Status(Job.Id)));
+  Res := FMgr.ResultOf(Job.Id);
+  try
+    Assert.IsTrue(Res.GetValue<Boolean>('ok'), 'the result is still there');
+  finally
+    Res.Free;
+  end;
+
+  { Warnings are counted by their prefix, not by counting lines: the operating
+    system message quoted in one can itself run to a second line. }
+  Warnings := 0;
+  Captured := '';
+  AssignFile(F, ErrPath);
+  Reset(F);
+  try
+    while not Eof(F) do
+    begin
+      ReadLn(F, Line);
+      Captured := Captured + Line + '|';
+      if Line.StartsWith('XRC_MCP:') then
+        Inc(Warnings);
+    end;
+  finally
+    CloseFile(F);
+  end;
+  Assert.IsTrue(Warnings = 1,
+    Format('exactly one warning per job, got %d in: %s', [Warnings, Captured]));
+end;
+
+procedure TTestMCPJobs.PlainExceptionBody_FailsInternal_QueueSurvives;
+var
+  Bad, Good: TJob;
+begin
+  Bad := FMgr.Submit(jkOptimize, 1, RaisingBody('something the body did not expect'), nil);
+  Assert.IsTrue(WaitForState(Bad, jsFailed, 5000), 'the job must fail');
+  try
+    FMgr.ResultOf(Bad.Id).Free;
+    Assert.Fail('a failed job has no result');
+  except
+    on E: EMCPError do
+    begin
+      Assert.AreEqual('job_failed', E.Code);
+      Assert.IsTrue(Pos('internal', E.Detail) > 0,
+        'an exception that is not an EMCPError is reported as internal, got "' + E.Detail + '"');
+    end;
+  end;
+
+  // The worker is the only one there is: it has to still be there.
+  Good := FMgr.Submit(jkOptimize, 2, LoopBody(2), nil);
+  Assert.IsTrue(WaitForState(Good, jsFinished, 5000),
+    'the queue survives a job that blew up');
 end;
 
 initialization

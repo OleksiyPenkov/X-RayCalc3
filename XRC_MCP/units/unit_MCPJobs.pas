@@ -50,9 +50,18 @@ type
   TJob = class;
 
   /// <summary>The work itself, run on the worker thread. It sets RandSeed from
-  /// Job.Seed first thing, polls Job.CancelRequested often enough to stop
-  /// within a second or two, reports progress with Job.Progress, and leaves the
-  /// answer in Job.ResultObj. Raising EMCPError fails the job with that code.</summary>
+  /// Job.Seed first thing, reports progress with Job.Progress, and leaves the
+  /// answer in Job.ResultObj. Raising EMCPError fails the job with that code;
+  /// any other exception fails it as 'internal'.
+  ///
+  /// Polling Job.CancelRequested is not optional. There is one worker, and
+  /// TJobManager.Destroy - which RunServer calls when the client closes the
+  /// connection - requests cancellation and then joins the worker with no
+  /// timeout. A body that never looks at the flag therefore holds the whole
+  /// server open until it finishes on its own. Check it at least as often as
+  /// once a second, and return without setting a result when it is set: a body
+  /// that returns with a result is recorded as finished even if a cancel
+  /// arrived while it was writing one.</summary>
   TJobBody = reference to procedure(Job: TJob);
 
   TJob = class
@@ -75,6 +84,7 @@ type
     FResultObj: TJSONObject;     // owned
     FErrorObj: TJSONObject;      // owned
     FBody: TJobBody;
+    FSaveWarned: Boolean;        // job.json failed once and has been reported
     function StatusJSONLocked: TJSONObject;
     procedure SaveLocked;
     function GetState: TJobState;
@@ -151,6 +161,11 @@ type
     function TakeNext: TJob;
     /// <summary>Runs one job to completion on the worker thread.</summary>
     procedure RunJob(Job: TJob);
+    /// <summary>Last resort when an exception escapes TakeNext or RunJob: says
+    /// so on stderr, ends the job (if there was one) as failed rather than
+    /// leaving it running for ever, and clears the running slot so the worker
+    /// can carry on with the queue.</summary>
+    procedure AbandonJob(Job: TJob; E: Exception);
     procedure RemoveFromQueueLocked(Job: TJob);
     function UnknownStatus(const Id: string): TJSONObject;
   public
@@ -185,6 +200,12 @@ function JobStateName(S: TJobState): string;
 function JobKindName(K: TJobKind): string;
 function JobKindPrefix(K: TJobKind): string;   // 'opt' | 'fit'
 
+/// <summary>Writes V to Path as UTF-8 without a byte order mark (a BOM in
+/// front of a '{' trips strict JSON parsers), through a temporary file in the
+/// same folder that is renamed over the target, so a reader never sees a half
+/// written file. nil is written as {}. Raises on failure.</summary>
+procedure WriteJSONFile(const Path: string; const V: TJSONValue);
+
 /// <summary>Creates jobs\&lt;prefix&gt;-yyyymmdd-hhnnss-&lt;4 hex&gt;\ under the
 /// work directory and returns its absolute path; JobId is the folder name. The
 /// hex comes from a GUID, not from Random: the id must be unique without
@@ -199,7 +220,7 @@ var
 implementation
 
 uses
-  System.IOUtils, unit_MCPErrors, unit_MCPJournal;
+  Winapi.Windows, System.IOUtils, unit_MCPErrors, unit_MCPJournal;
 
 function JobStateName(S: TJobState): string;
 begin
@@ -257,17 +278,33 @@ begin
   Result := NewJobFolder(WorkDir, Prefix, JobId);
 end;
 
-{ UTF-8 without a byte order mark: TFile.WriteAllText with TEncoding.UTF8
-  writes a preamble and a BOM in front of a '{' trips strict JSON parsers. }
 procedure WriteJSONFile(const Path: string; const V: TJSONValue);
 var
-  S: string;
+  S, Tmp: string;
 begin
   if V = nil then
     S := '{}'
   else
     S := V.ToJSON;
-  TFile.WriteAllBytes(Path, TEncoding.UTF8.GetBytes(S));
+  { Write, then rename over the target. job.json is rewritten every quarter of
+    a second while a fit runs and a client may be reading it at any moment; a
+    plain rewrite would leave it truncated for as long as the write takes, and
+    a write that died half way would leave it truncated for good. MoveFileEx
+    with REPLACE_EXISTING is atomic within a volume, and the temporary sits in
+    the same folder so it always is one. }
+  Tmp := Path + '.tmp';
+  TFile.WriteAllBytes(Tmp, TEncoding.UTF8.GetBytes(S));
+  try
+    if not MoveFileEx(PChar(Tmp), PChar(Path), MOVEFILE_REPLACE_EXISTING) then
+      RaiseLastOSError;
+  except
+    try
+      if TFile.Exists(Tmp) then TFile.Delete(Tmp);
+    except
+      // leaving a stray .tmp behind is not worth masking the real error
+    end;
+    raise;
+  end;
 end;
 
 { ------------------------------------------------------------------ TJob -- }
@@ -324,23 +361,38 @@ begin
   { job.json is diagnostics on disk; a file that cannot be written must not
     take a running fit down with it. }
   try
-    Obj := StatusJSONLocked;
     try
-      if (FState = jsFailed) and (FErrorObj <> nil) then
-        Obj.AddPair('error', FErrorObj.Clone as TJSONValue);
-      if (FState = jsCancelled) and (FResultObj <> nil) then
-        Obj.AddPair('partial', FResultObj.Clone as TJSONValue);
-      WriteJSONFile(TPath.Combine(FDir, 'job.json'), Obj);
-    finally
-      Obj.Free;
+      Obj := StatusJSONLocked;
+      try
+        if (FState = jsFailed) and (FErrorObj <> nil) then
+          Obj.AddPair('error', FErrorObj.Clone as TJSONValue);
+        { Defensive: with the rule in RunJob a body that produced a result ends
+          finished, so a cancelled job normally has none. If one ever does, the
+          work it managed is written here rather than thrown away. }
+        if (FState = jsCancelled) and (FResultObj <> nil) then
+          Obj.AddPair('partial', FResultObj.Clone as TJSONValue);
+        WriteJSONFile(TPath.Combine(FDir, 'job.json'), Obj);
+      finally
+        Obj.Free;
+      end;
+    except
+      on E: Exception do
+        { Once per job, not once per progress report: a directory that cannot
+          be written would otherwise print a line every 250 ms for the length
+          of a fit. }
+        if not FSaveWarned then
+        begin
+          FSaveWarned := True;
+          WriteLn(ErrOutput, 'XRC_MCP: cannot write job.json for ' + FId + ': ' +
+            E.Message + ' (further failures for this job are not reported)');
+          Flush(ErrOutput);
+        end;
     end;
+  finally
+    { The throttle advances whether or not the write worked. Inside the try it
+      would never advance on failure, so every later Progress would retry the
+      write - and each retry holds the job lock while the file system says no. }
     FSinceSave := TStopwatch.StartNew;
-  except
-    on E: Exception do
-    begin
-      WriteLn(ErrOutput, 'XRC_MCP: cannot write job.json for ' + FId + ': ' + E.Message);
-      Flush(ErrOutput);
-    end;
   end;
 end;
 
@@ -591,16 +643,27 @@ begin
   NameThreadForDebugging('XRC_MCP jobs');
   while not Terminated do
   begin
-    Job := FManager.TakeNext;
-    if Job = nil then
-    begin
-      // A timed wait rather than an infinite one: the event is signalled by
-      // both Submit and the destructor, and a bounded wait means a missed
-      // signal costs a quarter of a second, not a hung shutdown.
-      FManager.FWake.WaitFor(250);
-      Continue;
+    Job := nil;
+    { RunJob catches everything the body can raise, so nothing should reach
+      here - but "should" is not a guarantee, and there is exactly one worker:
+      an exception escaping this loop would end the thread and every job
+      submitted afterwards would sit in the queue for ever. The guard is what
+      keeps the queue alive. }
+    try
+      Job := FManager.TakeNext;
+      if Job = nil then
+      begin
+        // A timed wait rather than an infinite one: the event is signalled by
+        // both Submit and the destructor, and a bounded wait means a missed
+        // signal costs a quarter of a second, not a hung shutdown.
+        FManager.FWake.WaitFor(250);
+        Continue;
+      end;
+      FManager.RunJob(Job);
+    except
+      on E: Exception do
+        FManager.AbandonJob(Job, E);
     end;
-    FManager.RunJob(Job);
   end;
 end;
 
@@ -753,20 +816,67 @@ begin
   end;
 end;
 
+procedure TJobManager.AbandonJob(Job: TJob; E: Exception);
+begin
+  try
+    if Job = nil then
+      WriteLn(ErrOutput, 'XRC_MCP: job worker error: ' + E.ClassName + ': ' + E.Message)
+    else
+      WriteLn(ErrOutput, 'XRC_MCP: job worker error on ' + Job.Id + ': ' +
+        E.ClassName + ': ' + E.Message);
+    Flush(ErrOutput);
+  except
+    // a console that cannot be written must not end the worker either
+  end;
+
+  if Job <> nil then
+  begin
+    Job.SetError('internal', E.Message, E.ClassName);
+    Job.FLock.Enter;
+    try
+      { Only when RunJob did not get as far as recording an outcome: a job that
+        already reads finished, failed or cancelled keeps what it has. }
+      if Job.FState = jsRunning then
+      begin
+        Job.FState := jsFailed;
+        Job.FStopwatch.Stop;
+        Job.FFinishedUTC := NowUTCString;
+        Job.SaveLocked;
+      end;
+    finally
+      Job.FLock.Leave;
+    end;
+  end;
+
+  FLock.Enter;
+  try
+    FRunning := nil;
+  finally
+    FLock.Leave;
+  end;
+end;
+
 procedure TJobManager.RunJob(Job: TJob);
 var
   Status: TJSONObject;
   Final: TJobState;
+  Cancelled: Boolean;
 begin
   Final := jsFailed;
   try
     try
       Job.FBody(Job);   // FBody, not the property: a property of a method
                         // reference type cannot be invoked with arguments
-      if Job.CancelRequested then
-        Final := jsCancelled
+      { Cancellation is sampled before the result is looked at, and a body that
+        produced a result wins: it ran to the end, so a cancel that landed in
+        the moment between the result being stored and the body returning must
+        not throw the answer away. A body that stopped early leaves no result
+        and is recorded as cancelled. }
+      Cancelled := Job.CancelRequested;
+      if Job.HasResult or not Cancelled then
+        Final := jsFinished
       else
-        Final := jsFinished;
+        Final := jsCancelled;
     except
       on E: EMCPError do
       begin

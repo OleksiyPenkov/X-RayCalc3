@@ -39,20 +39,6 @@ const
   DEFAULT_INLINE_MAX   = 2000;
   DEFAULT_R_MIN        = 1E-7;
 
-{ UTF-8 without a byte order mark: TEncoding.UTF8.GetBytes leaves the preamble
-  out, where TFile.WriteAllText with the same encoding would write one, and a
-  BOM in front of a '{' trips strict JSON parsers. }
-procedure WriteJSONFile(const Path: string; const V: TJSONValue);
-var
-  S: string;
-begin
-  if V = nil then
-    S := '{}'
-  else
-    S := V.ToJSON;
-  TFile.WriteAllBytes(Path, TEncoding.UTF8.GetBytes(S));
-end;
-
 { --------------------------------------------------------- argument input -- }
 
 /// 's' -> cmS; 'p' and 'sp' -> cmSP. The engine has two modes only: cmSP is
