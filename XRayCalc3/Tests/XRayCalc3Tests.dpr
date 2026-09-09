@@ -51,7 +51,10 @@ uses
   unit_xrf_lines in '..\..\Shared\Universal\unit_xrf_lines.pas',
   unit_xrfx_package in '..\..\Shared\Universal\unit_xrfx_package.pas',
   TestXRFLines in 'TestXRFLines.pas',
-  TestXRFXPackage in 'TestXRFXPackage.pas';
+  TestXRFXPackage in 'TestXRFXPackage.pas',
+  unit_MCPErrors in '..\..\XRC_MCP\units\unit_MCPErrors.pas',
+  unit_MCPSandbox in '..\..\XRC_MCP\units\unit_MCPSandbox.pas',
+  TestMCPSandbox in 'TestMCPSandbox.pas';
 
 {$R *.res}
 

@@ -1,10 +1,21 @@
 unit unit_MCPSandbox;
 
-{ The work directory every tool is confined to. This is the minimal version
-  needed by the transport loop: command-line parsing and the folder layout.
-  Task 2 adds ResolvePath / RelativePath and the hashing helpers. }
+{ The work directory every tool is confined to.
+
+  All tool arguments that name a file are *relative* paths interpreted against
+  the work directory root. ResolvePath turns such a relative path into an
+  absolute one and refuses anything that could escape the sandbox; RelativePath
+  turns an absolute path back into the root-relative form echoed to the client.
+
+  Layout created by EnsureLayout:
+    <root>\projects   .xrcx projects written by the server
+    <root>\jobs       per-job folders (inputs, results, logs)
+    <root>\inbox      read-only drop box for measured data
+    <root>\log        the server journal }
 
 interface
+
+uses System.SysUtils, System.Classes, System.IOUtils;
 
 type
   TWorkDir = class
@@ -17,6 +28,15 @@ type
     /// no protocol session to report a structured error into.</summary>
     class function CreateFromCommandLine: TWorkDir;
     procedure EnsureLayout;   // creates root, projects, jobs, inbox, log
+    /// <summary>Absolute path under Root for a client-supplied relative path.
+    /// Raises EMCPError('invalid_argument') when empty and
+    /// EMCPError('path_outside_workdir') for rooted / drive-qualified / UNC
+    /// paths and for anything containing a '..' segment. When ForWrite is
+    /// True, paths inside the inbox raise EMCPError('inbox_readonly').</summary>
+    function ResolvePath(const Rel: string; ForWrite: Boolean): string;
+    /// <summary>Root-relative form (backslashes) of an absolute path, for
+    /// echoing back to the client. Paths outside Root are returned as-is.</summary>
+    function RelativePath(const Abs: string): string;
     function ProjectsDir: string;
     function JobsDir: string;
     function InboxDir: string;
@@ -24,14 +44,17 @@ type
     property Root: string read FRoot;
   end;
 
+function FileSHA256(const Path: string): string;       // lowercase hex
+function FileSizeOf(const Path: string): Int64;
+function FileModifiedUTC(const Path: string): string;  // ISO-8601, UTC
+function NowUTCString: string;                         // ISO-8601 with millis, UTC
+
 var
   WorkDir: TWorkDir;
 
 implementation
 
-uses
-  System.SysUtils, System.IOUtils,
-  unit_MCPErrors;
+uses System.Hash, System.DateUtils, System.StrUtils, unit_MCPErrors;
 
 { TWorkDir }
 
@@ -40,7 +63,7 @@ begin
   inherited Create;
   if ARoot.Trim.IsEmpty then
     raise EMCPError.Create('invalid_argument', '--workdir must not be empty');
-  if not TPath.IsPathRooted(ARoot) then
+  if not TPath.IsPathRooted(ARoot.Trim) then
     raise EMCPError.Create('invalid_argument', '--workdir must be an absolute path', ARoot);
   FRoot := ExcludeTrailingPathDelimiter(ExpandFileName(ARoot.Trim));
 end;
@@ -50,6 +73,10 @@ var
   I: Integer;
   Param, Value: string;
 begin
+  { Parsed by hand rather than with FindCmdLineSwitch: the registration command
+    passes the GNU-style `--workdir "<path>"`, whose value sits in the next
+    parameter and whose double dash FindCmdLineSwitch does not strip. Both
+    `--workdir <path>` and `--workdir=<path>` are accepted. }
   Value := '';
   for I := 1 to ParamCount do
   begin
@@ -98,6 +125,63 @@ end;
 function TWorkDir.LogDir: string;
 begin
   Result := TPath.Combine(FRoot, 'log');
+end;
+
+function TWorkDir.ResolvePath(const Rel: string; ForWrite: Boolean): string;
+var
+  S, Full, Seg: string;
+begin
+  S := StringReplace(Trim(Rel), '/', '\', [rfReplaceAll]);
+  if S = '' then
+    raise EMCPError.Create('invalid_argument', 'Path argument is empty');
+  if S.StartsWith('\\') or (Pos(':', S) > 0) or S.StartsWith('\') then
+    raise EMCPError.Create('path_outside_workdir',
+      'Only paths relative to the working directory are accepted', Rel);
+  for Seg in S.Split(['\']) do
+    if Seg = '..' then
+      raise EMCPError.Create('path_outside_workdir', '".." is not allowed in paths', Rel);
+  Full := ExpandFileName(TPath.Combine(FRoot, S));
+  if not StartsText(FRoot + '\', Full) then
+    raise EMCPError.Create('path_outside_workdir',
+      'Path resolves outside the working directory', Rel);
+  if ForWrite and (SameText(Full, InboxDir) or StartsText(InboxDir + '\', Full)) then
+    raise EMCPError.Create('inbox_readonly', 'The inbox is never written by the server', Rel);
+  Result := Full;
+end;
+
+function TWorkDir.RelativePath(const Abs: string): string;
+begin
+  if StartsText(FRoot + '\', Abs) then
+    Result := Copy(Abs, Length(FRoot) + 2, MaxInt)
+  else
+    Result := Abs;
+end;
+
+function FileSHA256(const Path: string): string;
+var
+  Stream: TFileStream;
+begin
+  Stream := TFileStream.Create(Path, fmOpenRead or fmShareDenyWrite);
+  try
+    Result := LowerCase(THashSHA2.GetHashString(Stream, THashSHA2.TSHA2Version.SHA256));
+  finally
+    Stream.Free;
+  end;
+end;
+
+function FileSizeOf(const Path: string): Int64;
+begin
+  Result := TFile.GetSize(Path);
+end;
+
+function FileModifiedUTC(const Path: string): string;
+begin
+  Result := FormatDateTime('yyyy-mm-dd"T"hh:nn:ss"Z"', TFile.GetLastWriteTimeUtc(Path));
+end;
+
+function NowUTCString: string;
+begin
+  Result := FormatDateTime('yyyy-mm-dd"T"hh:nn:ss.zzz"Z"', TTimeZone.Local.ToUniversalTime(Now));
 end;
 
 end.
