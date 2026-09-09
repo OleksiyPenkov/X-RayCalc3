@@ -119,6 +119,7 @@ type
 implementation
 
 uses
+  System.Math,
   unit_SeriesIO, unit_DataProcessing;
 
 {$R *.dfm}
@@ -421,7 +422,7 @@ procedure TfrmChartInfo.RefreshLegend(const Items: TArray<TLegendEntry>);
 const
   MAX_LEGEND_HEIGHT = 300;
 var
-  I, Y, Len, TotalH: Integer;
+  I, Y, Len, TotalH, MaxH, RowH, HeaderH: Integer;
   Lbl: TLabel;
   Row: TPanel;
   Shp: TShape;
@@ -443,7 +444,14 @@ begin
     Exit;
   end;
 
-  Y := 4;
+  // Rows are built at runtime, so VCL does not scale them the way it scales
+  // design-time controls - but they do inherit the already-scaled parent font.
+  // Every layout constant below is therefore a 96 DPI value run through
+  // ScaleValue, otherwise the captions get clipped on HiDPI displays.
+  RowH := ScaleValue(22);
+  HeaderH := ScaleValue(18);
+
+  Y := ScaleValue(4);
   LastGroup := gtData; // force first header
 
   for I := 0 to High(Items) do
@@ -453,7 +461,7 @@ begin
     begin
       Lbl := TLabel.Create(sbLegend);
       Lbl.Parent := sbLegend;
-      Lbl.Left := 4;
+      Lbl.Left := ScaleValue(4);
       Lbl.Top := Y;
       Lbl.Font.Style := [fsBold];
       Lbl.Font.Size := 8;
@@ -462,7 +470,8 @@ begin
       else
         Lbl.Caption := 'Data';
       AddControl(Lbl);
-      Inc(Y, 18);
+      // AutoSize'd label may still outgrow the nominal slot at odd scalings
+      Inc(Y, Max(HeaderH, Lbl.Height + ScaleValue(2)));
       LastGroup := Items[I].Group;
     end;
 
@@ -473,7 +482,7 @@ begin
     Row.Left := 0;
     Row.Top := Y;
     Row.Width := sbLegend.ClientWidth;
-    Row.Height := 22;
+    Row.Height := RowH;
     Row.Anchors := [akLeft, akTop, akRight];
     Row.Color := clWhite;
     AddControl(Row);
@@ -481,19 +490,20 @@ begin
     // Color swatch
     Shp := TShape.Create(Row);
     Shp.Parent := Row;
-    Shp.Left := 4;
-    Shp.Top := 3;
-    Shp.Width := 16;
-    Shp.Height := 16;
+    Shp.Left := ScaleValue(4);
+    Shp.Top := ScaleValue(3);
+    Shp.Width := ScaleValue(16);
+    Shp.Height := ScaleValue(16);
     Shp.Brush.Color := Items[I].Color;
     Shp.Pen.Color := Items[I].Color;
 
     // Checkbox
     CB := TCheckBox.Create(Row);
     CB.Parent := Row;
-    CB.Left := 24;
-    CB.Top := 2;
-    CB.Width := Row.Width - 28;
+    CB.Left := ScaleValue(24);
+    CB.Top := ScaleValue(2);
+    CB.Width := Row.Width - ScaleValue(28);
+    CB.Height := RowH - ScaleValue(4);
     CB.Caption := Items[I].Title;
     CB.Checked := Items[I].Visible;
     if Items[I].Linked then
@@ -501,13 +511,14 @@ begin
     CB.Tag := NativeInt(Items[I].Series);
     CB.OnClick := LegendCheckBoxClick;
 
-    Inc(Y, 22);
+    Inc(Y, RowH);
   end;
 
   // Auto-size panel height to content, capped at max
-  TotalH := Y + 6; // 4px top padding + 2px bottom
-  if TotalH > MAX_LEGEND_HEIGHT then
-    TotalH := MAX_LEGEND_HEIGHT;
+  TotalH := Y + ScaleValue(6); // 4px top padding + 2px bottom
+  MaxH := ScaleValue(MAX_LEGEND_HEIGHT);
+  if TotalH > MaxH then
+    TotalH := MaxH;
   pnlLegend.Height := TotalH;
 
   // Position at 2% from top-right corner of chart

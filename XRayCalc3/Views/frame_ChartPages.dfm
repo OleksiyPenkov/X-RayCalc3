@@ -324,7 +324,7 @@ object frmChartPages: TfrmChartPages
         Cursor = crCross
         Border.Color = clDefault
         Border.Visible = True
-        Legend.TopPos = 0
+        Legend.TopPos = 30
         Legend.Visible = True
         Legend.CheckBoxes = True
         MarginBottom = 2

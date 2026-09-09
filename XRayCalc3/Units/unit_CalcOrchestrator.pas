@@ -16,7 +16,8 @@ uses
   Winapi.Messages, Vcl.Forms, Vcl.Dialogs,
   unit_Types, unit_calc, unit_materials, unit_LFPSO_Base, unit_ProfilesManager,
   unit_ChartManager, unit_XRCStructure,
-  frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_ProjectPanel;
+  frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_ProjectPanel,
+  unit_StaleExtDialog;
 
 type
   TEnableControlsEvent = procedure(const Enable: Boolean) of object;
@@ -32,7 +33,7 @@ type
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare, FABestChiSquare: Single;
-    FBenchmarkMode, FFirstUpdate: Boolean;
+    FBenchmarkMode, FFirstUpdate, FKeepExtensions: Boolean;
     FFitDuration: string;
     FHasFitResults: Boolean;
 
@@ -316,7 +317,7 @@ begin
       begin
         Structure.UpdateInterfaceNP(FitStructure);
         if CreateExtension then
-           FProjectPanel.CreateProfileExtension;
+           FProjectPanel.CreateProfileExtension(True);
         Structure.UpdateProfiles(Res);
       end;
     end;
@@ -331,6 +332,14 @@ var
 begin
   if FFitThread <> nil then Exit;
 
+  FKeepExtensions := False;
+  if (not FBenchmarkMode) and FProjectPanel.HasFitExtensions then
+    case ConfirmStaleExtensions of
+      seaCancel: Exit;
+      seaClear:  FProjectPanel.ClearFitExtensions;
+      seaKeep:   FKeepExtensions := True;
+    end;
+
   if not GetFitParams then Exit;
   if not PrepareLFPSO then Exit;
 
@@ -339,7 +348,7 @@ begin
   if Assigned(FOnEnableControls) then
     FOnEnableControls(False);
   FFitStartTime := Now;
-  FFirstUpdate := True;
+  FFirstUpdate := not FKeepExtensions;
   FABestChiSquare := 1e32;
 
   FitThread := TFittingThread.Create(True);
