@@ -26,7 +26,11 @@ uses
   unit_universal_fitness;
 
 const
-  TEST_D = 40.0;
+  // d = 80 A keeps BOTH lines below the Bragg cut-off, so both targets are
+  // evaluated and the cross-reflectivity / purity path is exercised:
+  //   Be  lambda = 114.00 -> SinArg = 114.00 / 160 = 0.7125
+  //   Mg  lambda =   9.89 -> SinArg =   9.89 / 160 = 0.0618
+  TEST_D = 80.0;
   TEST_N = 60;
   TEST_GAMMA = 0.4;
   TEST_SIGMA = 3.0;
@@ -44,7 +48,9 @@ var
   Builder: TLayerSetBuilder;
   Lambdas: array of Single;
   Elements: array of string;
-  i: Integer;
+  CallCount: Integer;
+  CalledIdx: TArray<Integer>;
+  i, j: Integer;
 begin
   HenkePath := TConfig.SystemDir[sdHenke];
   if not TFile.Exists(IncludeTrailingPathDelimiter(HenkePath) + 'W.bin') then
@@ -54,6 +60,8 @@ begin
   end;
 
   // --- Config ---
+  Config := Default(TUniversalConfig);
+
   SetLength(Config.Lines, 2);
   Config.Lines[0].Name := 'Be';
   Config.Lines[0].Lambda := 114.0;
@@ -114,9 +122,10 @@ begin
       SetLength(R1, Length(Config.Lines));
       SetLength(R2, Length(Config.Lines));
 
-      F1 := Fitness.Evaluate(G, R1);
-
       // Builder reproduces the non-template bilayer branch of BuildLayers
+      // and records which targets it was asked to build.
+      CallCount := 0;
+      SetLength(CalledIdx, 0);
       Builder :=
         procedure(TargetIdx: Integer; var Layers: TLayers)
         var
@@ -125,6 +134,10 @@ begin
           Eps: TComplex;
           Dens: Single;
         begin
+          Inc(CallCount);
+          SetLength(CalledIdx, CallCount);
+          CalledIdx[CallCount - 1] := TargetIdx;
+
           SetLength(Layers, 2 + TEST_N * LAYERS_PER_PERIOD);
 
           Layers[0].e.re := 1.0;
@@ -157,7 +170,29 @@ begin
           Layers[LayerIdx].S := TEST_SIGMA;
         end;
 
+      // EvaluateLayers runs FIRST, on a virgin FLayersBuf: a ComputeFoM that
+      // failed to call Builder could not be masked by a stack left behind by
+      // a previous Evaluate.
       F2 := Fitness.EvaluateLayers(Builder, TEST_D, TEST_N, R2);
+
+      Assert.AreEqual(Length(Config.Lines), CallCount,
+        'Builder must be invoked exactly once per target line');
+      for i := 0 to High(CalledIdx) do
+        Assert.IsTrue((CalledIdx[i] >= 0) and (CalledIdx[i] <= High(Config.Lines)),
+          Format('Builder called with out-of-range TargetIdx %d', [CalledIdx[i]]));
+      for i := 0 to High(CalledIdx) do
+        for j := i + 1 to High(CalledIdx) do
+          Assert.AreNotEqual(CalledIdx[i], CalledIdx[j],
+            Format('Builder called twice with the same TargetIdx %d', [CalledIdx[i]]));
+
+      F1 := Fitness.Evaluate(G, R1);
+
+      // Both lines must be below the Bragg cut-off, otherwise the comparison
+      // below (and the purity/cross-reflectivity path) would be vacuous.
+      for i := 0 to High(Config.Lines) do
+        Assert.IsTrue(R1[i].Valid,
+          Format('Line %d must have a Bragg peak for this test to mean anything',
+            [i]));
 
       Assert.AreEqual(Double(F1), Double(F2), 1e-6,
         'EvaluateLayers must match Evaluate for the same layer stack');

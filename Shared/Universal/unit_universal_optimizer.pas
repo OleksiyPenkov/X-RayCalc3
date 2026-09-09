@@ -77,6 +77,12 @@ type
 
     // Valid after Run returns. FPSO/FMixer are freed by Run, so these
     // snapshots (not the engine objects) are what callers must read.
+    // They are filled on the normal completion path (a cancelled run still
+    // reaches it); if Run raised before the final checkpoint they stay at
+    // their zeroed defaults. Test FinalState.Particles <> nil to tell
+    // "Run completed" from "Run never got there" - do NOT rely on
+    // FinalState.Iteration, which is 0 in both the never-ran case and a
+    // legitimately zero-iteration run.
     property FinalState: TOptState read FFinalState;
     property FinalInfo: TFinalInfo read FFinalInfo;
     property FinalTemplates: TTemplateLibrary read FTemplates;

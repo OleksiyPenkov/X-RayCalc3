@@ -45,6 +45,9 @@ type
 
     // Same FoM code as Evaluate, but the layer stack for each target comes
     // from Builder; d and NInt drive the Bragg angles and FWHM_ref.
+    // Contract: Results is grown to the configured target count if the caller
+    // passed a shorter (or empty) array, so it is always safe to index
+    // 0..High(Config.Lines) on return. d must be > 0; NInt is clamped to >= 1.
     function EvaluateLayers(const Builder: TLayerSetBuilder; d: Single;
       NInt: Integer; var Results: TTargetResults): Single;
 
@@ -373,6 +376,12 @@ var
 begin
   FoM := 0;
 
+  // Results is written unchecked below and Release builds have range checking
+  // off, so make sure it is at least FTargetCount long. Existing callers
+  // already size it correctly, for which this is a no-op.
+  if Length(Results) < FTargetCount then
+    SetLength(Results, FTargetCount);
+
   // --- Phase 1: Pre-compute Bragg angles ---
   for i := 0 to FTargetCount - 1 do
   begin
@@ -508,6 +517,12 @@ end;
 function TUniversalFitness.EvaluateLayers(const Builder: TLayerSetBuilder;
   d: Single; NInt: Integer; var Results: TTargetResults): Single;
 begin
+  // Guards for the public explicit-layer entry point only. Evaluate is left
+  // alone: its d and N come from the PSO, already bounded by the config.
+  if d <= 0 then
+    raise Exception.Create('EvaluateLayers: d must be > 0');
+  NInt := Max(1, NInt);
+
   Result := ComputeFoM(Builder, d, NInt, 0, Results);
 end;
 
