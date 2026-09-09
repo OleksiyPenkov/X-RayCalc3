@@ -75,7 +75,9 @@ uses
   TestMCPJobs in 'TestMCPJobs.pas',
   unit_universal_pso in '..\..\Shared\Universal\unit_universal_pso.pas',
   unit_universal_optimizer in '..\..\Shared\Universal\unit_universal_optimizer.pas',
-  TestMCPUniversalJob in 'TestMCPUniversalJob.pas';
+  TestMCPUniversalJob in 'TestMCPUniversalJob.pas',
+  unit_MCPInbox in '..\..\XRC_MCP\units\unit_MCPInbox.pas',
+  TestMCPInbox in 'TestMCPInbox.pas';
 
 {$R *.res}
 

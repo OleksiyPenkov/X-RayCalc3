@@ -68,9 +68,9 @@ const
 
   // Every error code a tool of this server can return, so a client can branch
   // on them without scraping messages.
-  ERROR_CODES: array [0 .. 16] of string = (
+  ERROR_CODES: array [0 .. 17] of string = (
     'invalid_argument', 'invalid_request', 'tool_not_found', 'path_outside_workdir',
-    'inbox_readonly', 'invalid_structure', 'unknown_material', 'not_fittable',
+    'inbox_readonly', 'not_found', 'invalid_structure', 'unknown_material', 'not_fittable',
     'already_exists', 'unsupported_project', 'job_unknown', 'job_not_finished',
     'job_failed', 'job_cancelled', 'too_many_jobs', 'optimizer_error', 'internal');
 

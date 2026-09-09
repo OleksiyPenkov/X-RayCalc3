@@ -151,6 +151,7 @@
         <DCCReference Include="units\unit_MCPUniversal.pas"/>
         <DCCReference Include="units\unit_ToolsReference.pas"/>
         <DCCReference Include="units\unit_ToolsCalc.pas"/>
+        <DCCReference Include="units\unit_MCPInbox.pas"/>
         <DCCReference Include="units\unit_ToolsJobs.pas"/>
         <DCCReference Include="units\unit_ToolsFiles.pas"/>
         <DCCReference Include="units\unit_MCPServer.pas"/>

@@ -43,6 +43,7 @@ uses
   unit_MCPUniversal in 'units\unit_MCPUniversal.pas',
   unit_ToolsReference in 'units\unit_ToolsReference.pas',
   unit_ToolsCalc in 'units\unit_ToolsCalc.pas',
+  unit_MCPInbox in 'units\unit_MCPInbox.pas',
   unit_ToolsJobs in 'units\unit_ToolsJobs.pas',
   unit_ToolsFiles in 'units\unit_ToolsFiles.pas',
   unit_MCPServer in 'units\unit_MCPServer.pas';
