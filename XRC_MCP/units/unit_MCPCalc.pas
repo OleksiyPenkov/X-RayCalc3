@@ -38,13 +38,11 @@ unit unit_MCPCalc;
    4. RunCalc sets Calc.MaxThreads := 1, so TCalc takes its single-threaded
       branch (unit_calc.pas:343) and never reaches Parallel.ForEach.
 
-      This is a workaround, not a preference. The OmniThreadLibrary this tree
-      compiles against (D:\DelphiProjects\_Libraries\OmniThreadLibrary, version
-      1.43b of OtlTaskControl) casts pointers to Cardinal in
-      TOmniTaskExecutor.GetMethodAddrAndSignature - OtlTaskControl.pas lines
-      2621, 2622, 2624 and 2628 - which truncates every address in a Win64
-      process to 32 bits. OTL's thread pool schedules work by sending its
-      manager task a message naming a method (OtlThreadPool.pas:1878,
+      This is a workaround, not a preference. OmniThreadLibrary before 3.08
+      cast pointers to Cardinal in TOmniTaskExecutor.GetMethodAddrAndSignature
+      (OtlTaskControl.pas), which truncates every address in a Win64 process
+      to 32 bits. OTL's thread pool schedules work by sending its manager
+      task a message naming a method (OtlThreadPool.pas,
       otpWorkerTask.Invoke(@TOTPWorker.Schedule, ...)), so the first
       Parallel.ForEach kills the pool manager with an access violation on a
       truncated address and the calling thread then waits on the task counter
@@ -52,24 +50,16 @@ unit unit_MCPCalc;
       Parallel.ForEach reproduces it: it hangs built with dcc64 and completes
       built with dcc32.
 
-      Everything the server does on one thread is unaffected, and a 2000-point
-      scan over 262 layers takes about 80 ms, so calc_reflectivity loses
-      nothing measurable. Fitting will care. The fix belongs in OTL (Cardinal
-      -> NativeUInt on those four lines); it is not made in this unit because
-      that library is outside this repository and is shared with XRayCalc3,
-      xrccmd and XRFCalc, whose Win64 builds have the same defect. **Status
-      2026-09-09:** the fix has in fact been applied to the shared copy
-      (D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas,
-      untouched original kept beside it as OtlTaskControl.pas.xrcmcp-backup),
-      because optimize_mirror's TUniversalOptimizer.Run (Parallel.For, see
-      unit_MCPUniversal.pas RunOptimizeJob) and fit_xrr's LFPSO fit
-      (Parallel.&For, unit_LFPSO_Base.pas) hang without it on Win64; keep or
-      revert is the author's decision (recorded in CLAUDE.md Dependencies).
-      RunCalc's own MaxThreads := 1 workaround above is left in place even so,
+      Status 2026-09-09: the shared clone at
+      D:\DelphiProjects\_Libraries\OmniThreadLibrary is checked out at upstream
+      tag release-3.08, which carries the fix (commit 220e9d03), so the hang
+      is gone for optimize_mirror, fit_xrr, xrccmd -u, XRFCalc and the Win64
+      GUI alike; the build requirement is OTL >= 3.08 (CLAUDE.md,
+      Dependencies). RunCalc's MaxThreads := 1 is left in place even so,
       because TCalc.PrepareWorkers depends on the machine's core count (fact 2
-      above) and nothing about that changed. When OTL's fix is confirmed
-      permanent, delete the MaxThreads assignment in RunCalc and TCalc will
-      use every core again. *)
+      above) and a 2000-point scan over 262 layers takes about 80 ms single-
+      threaded, so calc_reflectivity loses nothing measurable. Delete the
+      assignment in RunCalc if reproducible thread counts stop mattering. *)
 
 interface
 
@@ -261,9 +251,9 @@ begin
     // TCalc.Destroy frees this (unit_calc.pas:324) - do not free it here.
     Calc.Model := BuildLayeredModel(Req.Structure);
 
-    // Single thread on purpose. See note 4 in the unit header: TCalc's parallel
-    // branch deadlocks in a Win64 build with the OmniThreadLibrary this tree
-    // compiles against. 2000 points over 262 layers take ~80 ms this way.
+    // Single thread on purpose. See note 4 in the unit header: reproducible
+    // worker layout regardless of core count, and OTL < 3.08 deadlocked here on
+    // Win64. 2000 points over 262 layers take ~80 ms this way.
     Calc.MaxThreads := 1;
     Calc.Run;
     Result := Copy(Calc.Results);

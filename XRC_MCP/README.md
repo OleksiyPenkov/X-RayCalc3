@@ -10,12 +10,12 @@ requirements live in `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` and
 
 **Win64 build dependency:** `optimize_mirror` runs the universal optimizer through
 OmniThreadLibrary's `Parallel.For`, and `fit_xrr` runs the LFPSO fit through the same
-library's `Parallel.&For` (`unit_LFPSO_Base.pas`), both of which hang for ever under dcc64
-unless `D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas` carries the
-`Cardinal` → `NativeUInt` fix in `TOmniTaskExecutor.GetMethodAddrAndSignature` (see
-`CLAUDE.md`, Dependencies). The same dependency applies to `xrccmd -u`, XRFCalc, and the
-Win64 GUI's own fitting. The symptom is a job stuck at iteration 0 with an empty
-`results\progress.log`, and a server that will not exit.
+library's `Parallel.&For` (`unit_LFPSO_Base.pas`). Both need **OmniThreadLibrary 3.08 or later**
+(the clone at `D:\DelphiProjects\_Libraries\OmniThreadLibrary` is checked out at `release-3.08`).
+Older versions cast code pointers to `Cardinal` in `TOmniTaskExecutor.GetMethodAddrAndSignature`
+and hang for ever under dcc64 (see `CLAUDE.md`, Dependencies). The same dependency applies to
+`xrccmd -u`, XRFCalc, and the Win64 GUI's own fitting. The symptom of an old library is a job
+stuck at iteration 0 with an empty `results\progress.log`, and a server that will not exit.
 
 `units\gitrev.inc` is **not** in version control: the project's pre-build event regenerates it from
 `git rev-parse --short HEAD` on every build, so `git` must be on `PATH`. Its value is what

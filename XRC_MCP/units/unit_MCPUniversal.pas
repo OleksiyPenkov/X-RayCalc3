@@ -1390,26 +1390,20 @@ begin
         { BUILD DEPENDENCY - READ THIS BEFORE BUILDING FOR Win64.
 
           Opt.Run evaluates the population through OmniThreadLibrary's
-          Parallel.For. The copy of OTL on the shared library path,
-          D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas,
-          casts code pointers to Cardinal in
-          TOmniTaskExecutor.GetMethodAddrAndSignature - five places: the
-          declaration of headerEnd, and the casts of methodInfoHeader (twice),
-          returnInfo and params, at lines 2558 and 2621-2628 of the stock file.
-          Under dcc64 that truncates a 64-bit pointer, the task pool never
-          answers, and Parallel.For waits for ever. The symptom here is a job
-          that stays at iteration 0 with results\progress.log holding nothing
-          but its header - and because this thread is inside HenkeCwdLock and
+          Parallel.For. OmniThreadLibrary 3.08 or later is required: earlier
+          versions cast code pointers to Cardinal in
+          TOmniTaskExecutor.GetMethodAddrAndSignature (OtlTaskControl.pas),
+          which under dcc64 truncates a 64-bit pointer, the task pool never
+          answers, and Parallel.For waits for ever. The symptom is a job that
+          stays at iteration 0 with results\progress.log holding nothing but
+          its header - and because this thread is inside HenkeCwdLock and
           TJobManager.Destroy joins the worker without a timeout, the whole
           server then refuses to exit. It is not specific to this server:
-          `xrccmd -u` on a four-particle, one-iteration configuration hangs the
-          same way, and XRFCalc is Win64 and drives the same optimizer.
-
-          The fix is Cardinal -> NativeUInt on those five lines (it is what
-          upstream OTL has). A machine that has it applied keeps the untouched
-          original beside it as OtlTaskControl.pas.xrcmcp-backup. Win32 is not
-          affected, which is why the test suite passes either way. See
-          CLAUDE.md (Dependencies) and XRC_MCP\README.md. }
+          `xrccmd -u`, XRFCalc and the Win64 GUI's LFPSO fit hang the same way.
+          Win32 is not affected, which is why the test suite passes either way.
+          The shared clone (D:\DelphiProjects\_Libraries\OmniThreadLibrary) is
+          checked out at tag release-3.08, which carries upstream's fix
+          (commit 220e9d03). See CLAUDE.md (Dependencies) and XRC_MCP\README.md. }
         Opt.Run;
       finally
         IsConsole := WasConsole;

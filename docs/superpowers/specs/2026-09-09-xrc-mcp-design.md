@@ -171,6 +171,15 @@ server used.
    `unit_LFPSO_Base`, so the OTL question above applies to every Win64 binary that calculates or
    fits.
 
+   **Resolved 2026-09-09 (later the same day):** instead of keeping a hand patch, the clone was
+   moved to upstream tag `release-3.08`, which carries the fix natively (commit 220e9d03 "fixed bad
+   64-bit pointer casts") together with later race and robustness fixes in `OtlTaskControl`/`OtlParallel`.
+   The patch, its `.xrcmcp-backup` and the IDE-generated edits to the `Delphi 12 Athens` package files
+   were discarded (copies kept in the session scratchpad); the Studio 37 packages were rebuilt from
+   `packages\Delphi 13 Florence`; XRayCalc3 (Win64), xrccmd, XRFCalc, XRC_MCP and the test suite were
+   rebuilt against 3.08 and the suite and smoke session re-run. No fork is needed: the requirement is
+   simply OmniThreadLibrary ≥ 3.08.
+
 7. **The substrate, the scale, the background and the resolution cannot be fitted.** None of them is
    in the LFPSO particle vector: `TLFPSO_BASE.FillModel` copies `Subs.P` verbatim into the model,
    and the engine has no scale or background term at all. `fit_xrr` therefore refuses those four
