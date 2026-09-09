@@ -30,7 +30,7 @@ uses
   unit_Types, unit_materials,
   unit_universal_types,
   unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits, unit_MCPStructure, unit_MCPCalc,
-  unit_MCPUniversal;
+  unit_MCPUniversal, unit_MCPJobs;
 
 const
   DEFAULT_THETA_MIN    = 0.05;
@@ -38,38 +38,6 @@ const
   DEFAULT_POINTS       = 2000;
   DEFAULT_INLINE_MAX   = 2000;
   DEFAULT_R_MIN        = 1E-7;
-
-{ ------------------------------------------------------------ job folder -- }
-
-{ Four hex digits from a GUID rather than from Random: the job id must be
-  unique without touching RandSeed, which is process-global and is what makes a
-  seeded fit reproducible (design note section 5). }
-function FourHex: string;
-var
-  G: TGUID;
-begin
-  CreateGUID(G);
-  Result := LowerCase(IntToHex(G.D1 and $FFFF, 4));
-end;
-
-/// Creates jobs\<prefix>-<yyyymmdd-hhnnss>-<4 hex>\ and returns its absolute
-/// path; JobId is the folder name.
-function CreateJobFolder(const Prefix: string; out JobId: string): string;
-var
-  Attempt: Integer;
-begin
-  for Attempt := 1 to 100 do
-  begin
-    JobId := Format('%s-%s-%s', [Prefix, FormatDateTime('yyyymmdd-hhnnss', Now), FourHex]);
-    Result := TPath.Combine(WorkDir.JobsDir, JobId);
-    if not TDirectory.Exists(Result) then
-    begin
-      TDirectory.CreateDirectory(Result);
-      Exit;
-    end;
-  end;
-  raise EMCPError.Create('internal', 'Cannot create a unique job folder', WorkDir.JobsDir);
-end;
 
 { UTF-8 without a byte order mark: TEncoding.UTF8.GetBytes leaves the preamble
   out, where TFile.WriteAllText with the same encoding would write one, and a
@@ -183,7 +151,7 @@ begin
   ThetaC := CriticalAngleDeg(Used, Req.Lambda);
   Peaks := FindBraggPeaks(Curve, Req.Lambda, Req.Info.Period, ThetaC);
 
-  Folder := CreateJobFolder('calc', JobId);
+  Folder := NewJobFolder('calc', JobId);
   CurvePath := TPath.Combine(Folder, 'curve.dat');
   WriteCurveFile(CurvePath, Curve, 'theta_deg', 'R');
 

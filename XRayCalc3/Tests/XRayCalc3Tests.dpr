@@ -69,7 +69,9 @@ uses
   unit_universal_fitness in '..\..\Shared\Universal\unit_universal_fitness.pas',
   TestUniversalFitnessLayers in 'TestUniversalFitnessLayers.pas',
   unit_MCPUniversal in '..\..\XRC_MCP\units\unit_MCPUniversal.pas',
-  TestMCPUniversal in 'TestMCPUniversal.pas';
+  TestMCPUniversal in 'TestMCPUniversal.pas',
+  unit_MCPJobs in '..\..\XRC_MCP\units\unit_MCPJobs.pas',
+  TestMCPJobs in 'TestMCPJobs.pas';
 
 {$R *.res}
 

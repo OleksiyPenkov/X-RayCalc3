@@ -92,7 +92,7 @@ var
 implementation
 
 uses
-  System.Classes, System.Math, System.IOUtils, System.IniFiles,
+  System.Classes, System.Math, System.IOUtils, System.IniFiles, System.SyncObjs,
   System.Generics.Collections, System.Generics.Defaults,
   math_complex, math_globals, unit_Config,
   // ClassicalElectronRadius: unit_materials keeps its copy in the
@@ -127,6 +127,15 @@ var
   // The directory listing and the parsed table headers, built once. FCacheDir
   // is the directory the cache was built for; if the configuration ever
   // pointed somewhere else the cache rebuilds itself.
+  //
+  // Guarded by FCacheLock: a job body looks materials up from the worker thread
+  // while the main loop is answering list_materials, so the build-once and the
+  // reads of FEntries would otherwise race - two threads could both find the
+  // cache invalid and both rebuild it into the same dynamic array. The lock is
+  // held for the whole of every read as well, because a rebuild replaces the
+  // array under a reader's feet. Building it is a few dozen small file reads,
+  // once per server run.
+  FCacheLock: TCriticalSection = nil;
   FCacheDir: string = '';
   FCacheValid: Boolean = False;
   FEntries: TArray<TMaterialEntry>;
@@ -278,7 +287,8 @@ begin
   end;
 end;
 
-procedure BuildCache;
+{ The caller holds FCacheLock. }
+procedure BuildCacheLocked;
 var
   Dir: string;
   Files: TArray<string>;
@@ -323,14 +333,19 @@ begin
   Canonical := '';
   if Material.Trim = '' then
     Exit(False);
-  BuildCache;
-  for I := 0 to High(FEntries) do
-    if SameText(FEntries[I].Name, Material) then
-    begin
-      Canonical := FEntries[I].Name;
-      Exit(True);
-    end;
   Result := False;
+  FCacheLock.Enter;
+  try
+    BuildCacheLocked;
+    for I := 0 to High(FEntries) do
+      if SameText(FEntries[I].Name, Material) then
+      begin
+        Canonical := FEntries[I].Name;
+        Exit(True);
+      end;
+  finally
+    FCacheLock.Leave;
+  end;
 end;
 
 function HenkeExists(const Material: string): Boolean;
@@ -369,16 +384,21 @@ function ListMaterials(const ElementFilter: TArray<string>): TArray<TMaterialEnt
 var
   I, Count: Integer;
 begin
-  BuildCache;
-  SetLength(Result, Length(FEntries));
-  Count := 0;
-  for I := 0 to High(FEntries) do
-    if Keep(FEntries[I]) then
-    begin
-      Result[Count] := FEntries[I];
-      Inc(Count);
-    end;
-  SetLength(Result, Count);
+  FCacheLock.Enter;
+  try
+    BuildCacheLocked;
+    SetLength(Result, Length(FEntries));
+    Count := 0;
+    for I := 0 to High(FEntries) do
+      if Keep(FEntries[I]) then
+      begin
+        Result[Count] := FEntries[I];
+        Inc(Count);
+      end;
+    SetLength(Result, Count);
+  finally
+    FCacheLock.Leave;
+  end;
 end;
 
 { ---------------- optical constants ---------------- }
@@ -498,15 +518,21 @@ function HenkeSummary: TJSONObject;
 var
   Dir, Newest: string;
   Files: TArray<string>;
-  I: Integer;
+  I, TableCount: Integer;
   NewestTime, T: TDateTime;
 begin
   Dir := HenkeDir;
-  BuildCache;
+  FCacheLock.Enter;
+  try
+    BuildCacheLocked;
+    TableCount := Length(FEntries);
+  finally
+    FCacheLock.Leave;
+  end;
   Result := TJSONObject.Create;
   try
     Result.AddPair('path', ExcludeTrailingPathDelimiter(Dir));
-    Result.AddPair('table_count', TJSONNumber.Create(Length(FEntries)));
+    Result.AddPair('table_count', TJSONNumber.Create(TableCount));
 
     Newest := '';
     NewestTime := 0;
@@ -625,5 +651,11 @@ begin
 
   Result := '';
 end;
+
+initialization
+  FCacheLock := TCriticalSection.Create;
+
+finalization
+  FreeAndNil(FCacheLock);
 
 end.
