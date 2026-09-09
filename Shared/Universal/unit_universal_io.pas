@@ -19,6 +19,10 @@ type
     destructor Destroy; override;
 
     class function LoadConfig(const FileName: string): TUniversalConfig;
+    // The whole of LoadConfig except reading and parsing the file. Callers that
+    // already hold the parsed object (the MCP server builds one from tool
+    // arguments) use this and keep ownership of JSON: it is not freed here.
+    class function ConfigFromJSONObject(JSON: TJSONObject): TUniversalConfig;
     class procedure SaveConfig(const Config: TUniversalConfig;
       const FileName: string);
 
@@ -77,11 +81,8 @@ end;
 class function TUniversalIO.LoadConfig(const FileName: string): TUniversalConfig;
 var
   JSON: TJSONObject;
-  JTargets, JPool: TJSONArray;
-  JStructure, JFitness, JOptimizer, JTarget, JRange: TJSONObject;
   Content: string;
   ParsedValue: TJSONValue;
-  i: Integer;
 begin
   Content := TFile.ReadAllText(FileName);
   ParsedValue := TJSONObject.ParseJSONValue(Content);
@@ -98,214 +99,223 @@ begin
   end;
   JSON := TJSONObject(ParsedValue);
   try
-    // Try "lines" first, fall back to "targets" for backward compatibility
-    if JSON.FindValue('lines') <> nil then
-      JTargets := JSON.GetValue<TJSONArray>('lines')
-    else
-      JTargets := JSON.GetValue<TJSONArray>('targets');
-    SetLength(Result.Lines, 0);
-    for i := 0 to JTargets.Count - 1 do
-    begin
-      if JTargets.Items[i] is TJSONString then
-      begin
-        var S := JTargets.Items[i].Value;
-        if Pos('-', S) > 0 then
-        begin
-          var Expanded := ExpandElementRange(S);
-          for var j := 0 to High(Expanded) do
-          begin
-            SetLength(Result.Lines, Length(Result.Lines) + 1);
-            Result.Lines[High(Result.Lines)].Name := Expanded[j];
-            Result.Lines[High(Result.Lines)].Lambda := GetXRFLambda(Expanded[j]);
-            Result.Lines[High(Result.Lines)].Weight := 1.0;
-          end;
-        end
-        else
-        begin
-          SetLength(Result.Lines, Length(Result.Lines) + 1);
-          Result.Lines[High(Result.Lines)].Name := S;
-          Result.Lines[High(Result.Lines)].Lambda := GetXRFLambda(S);
-          Result.Lines[High(Result.Lines)].Weight := 1.0;
-        end;
-      end
-      else if JTargets.Items[i] is TJSONObject then
-      begin
-        JTarget := JTargets.Items[i] as TJSONObject;
-        SetLength(Result.Lines, Length(Result.Lines) + 1);
-        Result.Lines[High(Result.Lines)].Name := JTarget.GetValue<string>('element');
-        if JTarget.FindValue('lambda') <> nil then
-          Result.Lines[High(Result.Lines)].Lambda := JTarget.GetValue<Double>('lambda')
-        else
-          Result.Lines[High(Result.Lines)].Lambda :=
-            GetXRFLambda(Result.Lines[High(Result.Lines)].Name);
-        if JTarget.FindValue('weight') <> nil then
-          Result.Lines[High(Result.Lines)].Weight := JTarget.GetValue<Double>('weight')
-        else
-          Result.Lines[High(Result.Lines)].Weight := 1.0;
-      end;
-    end;
-
-    JPool := JSON.GetValue<TJSONArray>('element_pool');
-    SetLength(Result.ElementPool, JPool.Count);
-    for i := 0 to JPool.Count - 1 do
-      Result.ElementPool[i] := JPool.Items[i].Value;
-
-    // Parse excluded material pairs
-    SetLength(Result.ExcludedPairs, 0);
-    if JSON.FindValue('excluded_pairs') <> nil then
-    begin
-      var JExcl := JSON.GetValue<TJSONArray>('excluded_pairs');
-      for i := 0 to JExcl.Count - 1 do
-      begin
-        var S := JExcl.Items[i].Value;
-        var SlashPos := Pos('/', S);
-        if SlashPos = 0 then
-          raise Exception.CreateFmt('Invalid excluded pair "%s" — expected "Mat1/Mat2" format.', [S]);
-        var Mat1 := Copy(S, 1, SlashPos - 1);
-        var Mat2 := Copy(S, SlashPos + 1, MaxInt);
-        var Idx1 := -1;
-        var Idx2 := -1;
-        for var k := 0 to High(Result.ElementPool) do
-        begin
-          if SameText(Result.ElementPool[k], Mat1) then Idx1 := k;
-          if SameText(Result.ElementPool[k], Mat2) then Idx2 := k;
-        end;
-        if Idx1 < 0 then
-          raise Exception.CreateFmt('Excluded pair "%s": material "%s" not found in element_pool.', [S, Mat1]);
-        if Idx2 < 0 then
-          raise Exception.CreateFmt('Excluded pair "%s": material "%s" not found in element_pool.', [S, Mat2]);
-        SetLength(Result.ExcludedPairs, Length(Result.ExcludedPairs) + 1);
-        Result.ExcludedPairs[High(Result.ExcludedPairs)].Idx1 := Idx1;
-        Result.ExcludedPairs[High(Result.ExcludedPairs)].Idx2 := Idx2;
-      end;
-    end;
-
-    JStructure := JSON.GetValue<TJSONObject>('structure');
-    Result.Structure.StructureType := JStructure.GetValue<string>('type');
-    Result.Structure.LayersPerPeriod := JStructure.GetValue<Integer>('layers_per_period');
-
-    if JStructure.GetValue('pure_elements') <> nil then
-      Result.Structure.PureElements := JStructure.GetValue<Boolean>('pure_elements')
-    else
-      Result.Structure.PureElements := False;
-
-    JRange := JStructure.GetValue<TJSONObject>('d');
-    Result.Structure.dRange.Min := JRange.GetValue<Double>('min');
-    Result.Structure.dRange.Max := JRange.GetValue<Double>('max');
-
-    JRange := JStructure.GetValue<TJSONObject>('gamma');
-    Result.Structure.GammaRange.Min := JRange.GetValue<Double>('min');
-    Result.Structure.GammaRange.Max := JRange.GetValue<Double>('max');
-
-    JRange := JStructure.GetValue<TJSONObject>('N');
-    Result.Structure.NRange.Min := JRange.GetValue<Double>('min');
-    Result.Structure.NRange.Max := JRange.GetValue<Double>('max');
-
-    if JStructure.GetValue('sigma') is TJSONNumber then
-    begin
-      Result.Structure.SigmaFixed := JStructure.GetValue<Double>('sigma');
-      Result.Structure.SigmaRange.Min := Result.Structure.SigmaFixed;
-      Result.Structure.SigmaRange.Max := Result.Structure.SigmaFixed;
-    end
-    else
-    begin
-      JRange := JStructure.GetValue<TJSONObject>('sigma');
-      Result.Structure.SigmaRange.Min := JRange.GetValue<Double>('min');
-      Result.Structure.SigmaRange.Max := JRange.GetValue<Double>('max');
-      Result.Structure.SigmaFixed := -1;
-    end;
-
-    if JStructure.FindValue('density_factor') <> nil then
-    begin
-      if JStructure.GetValue('density_factor') is TJSONNumber then
-      begin
-        Result.Structure.DensityFactorFixed := JStructure.GetValue<Double>('density_factor');
-        Result.Structure.DensityFactorRange.Min := Result.Structure.DensityFactorFixed;
-        Result.Structure.DensityFactorRange.Max := Result.Structure.DensityFactorFixed;
-      end
-      else
-      begin
-        JRange := JStructure.GetValue<TJSONObject>('density_factor');
-        Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
-        Result.Structure.DensityFactorRange.Max := JRange.GetValue<Double>('max');
-        Result.Structure.DensityFactorFixed := -1;
-      end;
-    end
-    else
-    begin
-      Result.Structure.DensityFactorFixed := 1.0;
-      Result.Structure.DensityFactorRange.Min := 1.0;
-      Result.Structure.DensityFactorRange.Max := 1.0;
-    end;
-
-    JFitness := JSON.GetValue<TJSONObject>('fitness');
-    Result.Fitness.wR := JFitness.GetValue<Double>('w_R');
-    Result.Fitness.wFWHM := JFitness.GetValue<Double>('w_FWHM');
-    Result.Fitness.RMinThreshold := JFitness.GetValue<Double>('R_min_threshold');
-    if JFitness.FindValue('delta_theta') <> nil then
-      Result.Fitness.DeltaTheta := JFitness.GetValue<Double>('delta_theta')
-    else
-      Result.Fitness.DeltaTheta := 0;
-    if JFitness.FindValue('theta_min') <> nil then
-      Result.Fitness.ThetaMin := JFitness.GetValue<Double>('theta_min')
-    else
-      Result.Fitness.ThetaMin := 0;
-    if JFitness.FindValue('w_purity') <> nil then
-      Result.Fitness.wPurity := JFitness.GetValue<Double>('w_purity')
-    else
-      Result.Fitness.wPurity := 1.0;  // default: full purity weighting
-    if JFitness.FindValue('scan_points') <> nil then
-      Result.Fitness.ScanPoints := JFitness.GetValue<Integer>('scan_points')
-    else
-      Result.Fitness.ScanPoints := 0;
-    if JFitness.FindValue('scan_half_range') <> nil then
-      Result.Fitness.ScanHalfRange := JFitness.GetValue<Double>('scan_half_range')
-    else
-      Result.Fitness.ScanHalfRange := 0;
-
-    // Polarization
-    if JFitness.FindValue('polarization') <> nil then
-    begin
-      if SameText(JFitness.GetValue<string>('polarization'), 's') then
-        Result.Fitness.Polarization := cmS
-      else
-        Result.Fitness.Polarization := cmSP;
-    end
-    else
-      Result.Fitness.Polarization := cmSP;  // default
-
-    JOptimizer := JSON.GetValue<TJSONObject>('optimizer');
-    Result.Optimizer.Population := JOptimizer.GetValue<Integer>('population');
-    Result.Optimizer.Iterations := JOptimizer.GetValue<Integer>('iterations');
-    Result.Optimizer.Tolerance := JOptimizer.GetValue<Double>('tolerance');
-    Result.Optimizer.StagnationLimit := JOptimizer.GetValue<Integer>('stagnation_limit');
-    Result.Optimizer.w1 := JOptimizer.GetValue<Double>('w1');
-    Result.Optimizer.w2 := JOptimizer.GetValue<Double>('w2');
-    Result.Optimizer.JammingMax := JOptimizer.GetValue<Integer>('jamming_max');
-    Result.Optimizer.CheckpointEvery := JOptimizer.GetValue<Integer>('checkpoint_every');
-
-    Result.Substrate := JSON.GetValue<string>('substrate');
-
-    if JSON.GetValue('henke_path') is TJSONNull then
-      Result.HenkePath := ExtractFilePath(ParamStr(0)) + 'Henke'
-    else
-      Result.HenkePath := JSON.GetValue<string>('henke_path');
-
-    Result.OutputDir := JSON.GetValue<string>('output_dir');
-
-    if JSON.GetValue('resume_from') is TJSONNull then
-      Result.ResumeFrom := ''
-    else
-      Result.ResumeFrom := JSON.GetValue<string>('resume_from');
-
-    if (JSON.FindValue('template_file') <> nil) and
-       not (JSON.GetValue('template_file') is TJSONNull) then
-      Result.TemplatePath := JSON.GetValue<string>('template_file')
-    else
-      Result.TemplatePath := '';
+    Result := ConfigFromJSONObject(JSON);
   finally
     JSON.Free;
   end;
+end;
+
+class function TUniversalIO.ConfigFromJSONObject(JSON: TJSONObject): TUniversalConfig;
+var
+  JTargets, JPool: TJSONArray;
+  JStructure, JFitness, JOptimizer, JTarget, JRange: TJSONObject;
+  i: Integer;
+begin
+  // Try "lines" first, fall back to "targets" for backward compatibility
+  if JSON.FindValue('lines') <> nil then
+    JTargets := JSON.GetValue<TJSONArray>('lines')
+  else
+    JTargets := JSON.GetValue<TJSONArray>('targets');
+  SetLength(Result.Lines, 0);
+  for i := 0 to JTargets.Count - 1 do
+  begin
+    if JTargets.Items[i] is TJSONString then
+    begin
+      var S := JTargets.Items[i].Value;
+      if Pos('-', S) > 0 then
+      begin
+        var Expanded := ExpandElementRange(S);
+        for var j := 0 to High(Expanded) do
+        begin
+          SetLength(Result.Lines, Length(Result.Lines) + 1);
+          Result.Lines[High(Result.Lines)].Name := Expanded[j];
+          Result.Lines[High(Result.Lines)].Lambda := GetXRFLambda(Expanded[j]);
+          Result.Lines[High(Result.Lines)].Weight := 1.0;
+        end;
+      end
+      else
+      begin
+        SetLength(Result.Lines, Length(Result.Lines) + 1);
+        Result.Lines[High(Result.Lines)].Name := S;
+        Result.Lines[High(Result.Lines)].Lambda := GetXRFLambda(S);
+        Result.Lines[High(Result.Lines)].Weight := 1.0;
+      end;
+    end
+    else if JTargets.Items[i] is TJSONObject then
+    begin
+      JTarget := JTargets.Items[i] as TJSONObject;
+      SetLength(Result.Lines, Length(Result.Lines) + 1);
+      Result.Lines[High(Result.Lines)].Name := JTarget.GetValue<string>('element');
+      if JTarget.FindValue('lambda') <> nil then
+        Result.Lines[High(Result.Lines)].Lambda := JTarget.GetValue<Double>('lambda')
+      else
+        Result.Lines[High(Result.Lines)].Lambda :=
+          GetXRFLambda(Result.Lines[High(Result.Lines)].Name);
+      if JTarget.FindValue('weight') <> nil then
+        Result.Lines[High(Result.Lines)].Weight := JTarget.GetValue<Double>('weight')
+      else
+        Result.Lines[High(Result.Lines)].Weight := 1.0;
+    end;
+  end;
+
+  JPool := JSON.GetValue<TJSONArray>('element_pool');
+  SetLength(Result.ElementPool, JPool.Count);
+  for i := 0 to JPool.Count - 1 do
+    Result.ElementPool[i] := JPool.Items[i].Value;
+
+  // Parse excluded material pairs
+  SetLength(Result.ExcludedPairs, 0);
+  if JSON.FindValue('excluded_pairs') <> nil then
+  begin
+    var JExcl := JSON.GetValue<TJSONArray>('excluded_pairs');
+    for i := 0 to JExcl.Count - 1 do
+    begin
+      var S := JExcl.Items[i].Value;
+      var SlashPos := Pos('/', S);
+      if SlashPos = 0 then
+        raise Exception.CreateFmt('Invalid excluded pair "%s" — expected "Mat1/Mat2" format.', [S]);
+      var Mat1 := Copy(S, 1, SlashPos - 1);
+      var Mat2 := Copy(S, SlashPos + 1, MaxInt);
+      var Idx1 := -1;
+      var Idx2 := -1;
+      for var k := 0 to High(Result.ElementPool) do
+      begin
+        if SameText(Result.ElementPool[k], Mat1) then Idx1 := k;
+        if SameText(Result.ElementPool[k], Mat2) then Idx2 := k;
+      end;
+      if Idx1 < 0 then
+        raise Exception.CreateFmt('Excluded pair "%s": material "%s" not found in element_pool.', [S, Mat1]);
+      if Idx2 < 0 then
+        raise Exception.CreateFmt('Excluded pair "%s": material "%s" not found in element_pool.', [S, Mat2]);
+      SetLength(Result.ExcludedPairs, Length(Result.ExcludedPairs) + 1);
+      Result.ExcludedPairs[High(Result.ExcludedPairs)].Idx1 := Idx1;
+      Result.ExcludedPairs[High(Result.ExcludedPairs)].Idx2 := Idx2;
+    end;
+  end;
+
+  JStructure := JSON.GetValue<TJSONObject>('structure');
+  Result.Structure.StructureType := JStructure.GetValue<string>('type');
+  Result.Structure.LayersPerPeriod := JStructure.GetValue<Integer>('layers_per_period');
+
+  if JStructure.GetValue('pure_elements') <> nil then
+    Result.Structure.PureElements := JStructure.GetValue<Boolean>('pure_elements')
+  else
+    Result.Structure.PureElements := False;
+
+  JRange := JStructure.GetValue<TJSONObject>('d');
+  Result.Structure.dRange.Min := JRange.GetValue<Double>('min');
+  Result.Structure.dRange.Max := JRange.GetValue<Double>('max');
+
+  JRange := JStructure.GetValue<TJSONObject>('gamma');
+  Result.Structure.GammaRange.Min := JRange.GetValue<Double>('min');
+  Result.Structure.GammaRange.Max := JRange.GetValue<Double>('max');
+
+  JRange := JStructure.GetValue<TJSONObject>('N');
+  Result.Structure.NRange.Min := JRange.GetValue<Double>('min');
+  Result.Structure.NRange.Max := JRange.GetValue<Double>('max');
+
+  if JStructure.GetValue('sigma') is TJSONNumber then
+  begin
+    Result.Structure.SigmaFixed := JStructure.GetValue<Double>('sigma');
+    Result.Structure.SigmaRange.Min := Result.Structure.SigmaFixed;
+    Result.Structure.SigmaRange.Max := Result.Structure.SigmaFixed;
+  end
+  else
+  begin
+    JRange := JStructure.GetValue<TJSONObject>('sigma');
+    Result.Structure.SigmaRange.Min := JRange.GetValue<Double>('min');
+    Result.Structure.SigmaRange.Max := JRange.GetValue<Double>('max');
+    Result.Structure.SigmaFixed := -1;
+  end;
+
+  if JStructure.FindValue('density_factor') <> nil then
+  begin
+    if JStructure.GetValue('density_factor') is TJSONNumber then
+    begin
+      Result.Structure.DensityFactorFixed := JStructure.GetValue<Double>('density_factor');
+      Result.Structure.DensityFactorRange.Min := Result.Structure.DensityFactorFixed;
+      Result.Structure.DensityFactorRange.Max := Result.Structure.DensityFactorFixed;
+    end
+    else
+    begin
+      JRange := JStructure.GetValue<TJSONObject>('density_factor');
+      Result.Structure.DensityFactorRange.Min := JRange.GetValue<Double>('min');
+      Result.Structure.DensityFactorRange.Max := JRange.GetValue<Double>('max');
+      Result.Structure.DensityFactorFixed := -1;
+    end;
+  end
+  else
+  begin
+    Result.Structure.DensityFactorFixed := 1.0;
+    Result.Structure.DensityFactorRange.Min := 1.0;
+    Result.Structure.DensityFactorRange.Max := 1.0;
+  end;
+
+  JFitness := JSON.GetValue<TJSONObject>('fitness');
+  Result.Fitness.wR := JFitness.GetValue<Double>('w_R');
+  Result.Fitness.wFWHM := JFitness.GetValue<Double>('w_FWHM');
+  Result.Fitness.RMinThreshold := JFitness.GetValue<Double>('R_min_threshold');
+  if JFitness.FindValue('delta_theta') <> nil then
+    Result.Fitness.DeltaTheta := JFitness.GetValue<Double>('delta_theta')
+  else
+    Result.Fitness.DeltaTheta := 0;
+  if JFitness.FindValue('theta_min') <> nil then
+    Result.Fitness.ThetaMin := JFitness.GetValue<Double>('theta_min')
+  else
+    Result.Fitness.ThetaMin := 0;
+  if JFitness.FindValue('w_purity') <> nil then
+    Result.Fitness.wPurity := JFitness.GetValue<Double>('w_purity')
+  else
+    Result.Fitness.wPurity := 1.0;  // default: full purity weighting
+  if JFitness.FindValue('scan_points') <> nil then
+    Result.Fitness.ScanPoints := JFitness.GetValue<Integer>('scan_points')
+  else
+    Result.Fitness.ScanPoints := 0;
+  if JFitness.FindValue('scan_half_range') <> nil then
+    Result.Fitness.ScanHalfRange := JFitness.GetValue<Double>('scan_half_range')
+  else
+    Result.Fitness.ScanHalfRange := 0;
+
+  // Polarization
+  if JFitness.FindValue('polarization') <> nil then
+  begin
+    if SameText(JFitness.GetValue<string>('polarization'), 's') then
+      Result.Fitness.Polarization := cmS
+    else
+      Result.Fitness.Polarization := cmSP;
+  end
+  else
+    Result.Fitness.Polarization := cmSP;  // default
+
+  JOptimizer := JSON.GetValue<TJSONObject>('optimizer');
+  Result.Optimizer.Population := JOptimizer.GetValue<Integer>('population');
+  Result.Optimizer.Iterations := JOptimizer.GetValue<Integer>('iterations');
+  Result.Optimizer.Tolerance := JOptimizer.GetValue<Double>('tolerance');
+  Result.Optimizer.StagnationLimit := JOptimizer.GetValue<Integer>('stagnation_limit');
+  Result.Optimizer.w1 := JOptimizer.GetValue<Double>('w1');
+  Result.Optimizer.w2 := JOptimizer.GetValue<Double>('w2');
+  Result.Optimizer.JammingMax := JOptimizer.GetValue<Integer>('jamming_max');
+  Result.Optimizer.CheckpointEvery := JOptimizer.GetValue<Integer>('checkpoint_every');
+
+  Result.Substrate := JSON.GetValue<string>('substrate');
+
+  if JSON.GetValue('henke_path') is TJSONNull then
+    Result.HenkePath := ExtractFilePath(ParamStr(0)) + 'Henke'
+  else
+    Result.HenkePath := JSON.GetValue<string>('henke_path');
+
+  Result.OutputDir := JSON.GetValue<string>('output_dir');
+
+  if JSON.GetValue('resume_from') is TJSONNull then
+    Result.ResumeFrom := ''
+  else
+    Result.ResumeFrom := JSON.GetValue<string>('resume_from');
+
+  if (JSON.FindValue('template_file') <> nil) and
+     not (JSON.GetValue('template_file') is TJSONNull) then
+    Result.TemplatePath := JSON.GetValue<string>('template_file')
+  else
+    Result.TemplatePath := '';
 end;
 
 class procedure TUniversalIO.SaveConfig(const Config: TUniversalConfig;

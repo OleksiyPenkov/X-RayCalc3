@@ -140,8 +140,12 @@
         <DCCReference Include="..\Shared\Universal\unit_universal_types.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_templates.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_xrf_lines.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_refcalc.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_fitness.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>
         <DCCReference Include="units\unit_MCPMaterials.pas"/>
         <DCCReference Include="units\unit_MCPCalc.pas"/>
+        <DCCReference Include="units\unit_MCPUniversal.pas"/>
         <DCCReference Include="units\unit_ToolsReference.pas"/>
         <DCCReference Include="units\unit_ToolsCalc.pas"/>
         <DCCReference Include="units\unit_ToolsJobs.pas"/>

@@ -1,6 +1,6 @@
 unit unit_ToolsCalc;
 
-(* The calculation tools: calc_reflectivity here, evaluate_lines in task 9.
+(* The calculation tools: calc_reflectivity and evaluate_lines.
 
    calc_reflectivity is synchronous. A theta scan of a few thousand points over
    a few hundred layers takes well under a second on every core of the machine,
@@ -8,7 +8,14 @@ unit unit_ToolsCalc;
    engine, writes curve.dat, structure.json and request.json into it and returns
    the result in the same round trip. The folder is still called a job and still
    carries a job id, so that a curve produced here is referred to the same way
-   as one produced by a fit. *)
+   as one produced by a fit.
+
+   evaluate_lines is synchronous for a different reason: it is a handful of
+   short scans, one per emission line, and it writes nothing. It answers the
+   question the mirror optimizer asks of every candidate - "how good is this
+   multilayer for these lines" - for a structure the client already has, using
+   the optimizer's own figure of merit so that the number is comparable with the
+   one optimize_mirror reports. *)
 
 interface
 
@@ -20,8 +27,10 @@ implementation
 
 uses
   System.SysUtils, System.JSON, System.IOUtils,
-  unit_Types,
-  unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits, unit_MCPStructure, unit_MCPCalc;
+  unit_Types, unit_materials,
+  unit_universal_types,
+  unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits, unit_MCPStructure, unit_MCPCalc,
+  unit_MCPUniversal;
 
 const
   DEFAULT_THETA_MIN    = 0.05;
@@ -216,7 +225,163 @@ begin
   end;
 end;
 
+{ ---------------------------------------------------------- evaluate_lines -- }
+
+function EvaluateLinesResult(const Params: TJSONObject): TJSONObject;
+var
+  Used: TFitStructure;
+  Info: TStructureInfo;
+  Lines: TArray<TXRFLine>;
+  Fit: TFitnessConfig;
+  Res: TTargetResults;
+  FoM: Single;
+  Model: TLayeredModel;
+  JLines: TJSONArray;
+  Line: TJSONObject;
+  i: Integer;
+begin
+  Used := StructureFromJSON(JSONArgs.ReqObj(Params, 'structure'), Info);
+  Lines := LinesFromJSON(JSONArgs.ReqArr(Params, 'lines'));
+  Fit := FitnessConfigFromJSON(JSONArgs.OptObj(Params, 'fitness'), DefaultFitnessConfig);
+
+  FoM := EvaluateStructure(Used, Info, Lines, Fit, Res);
+
+  // The densities the calculation used, for the echoed structure. The universal
+  // engine's mixer and the GUI's TLayeredModel read the same .bin headers, so
+  // the bulk value filled in here is the one EvaluateStructure used.
+  Model := BuildLayeredModel(Used);
+  try
+    Model.Generate(Lines[0].Lambda);
+    FillDefaultDensities(Used, Model);
+  finally
+    Model.Free;
+  end;
+
+  Result := TJSONObject.Create;
+  try
+    Result.AddPair('fom', JSONArgs.Num(FoM));
+
+    JLines := TJSONArray.Create;
+    Result.AddPair('lines', JLines);
+    for i := 0 to High(Lines) do
+    begin
+      Line := TJSONObject.Create;
+      Line.AddPair('name', Lines[i].Name);
+      Line.AddPair('lambda_used', JSONArgs.Num(Lines[i].Lambda));
+      Line.AddPair('weight', JSONArgs.Num(Lines[i].Weight));
+      Line.AddPair('theta_bragg_deg', JSONArgs.Num(Res[i].ThetaBragg));
+      Line.AddPair('r_peak', JSONArgs.Num(Res[i].RPeak));
+      Line.AddPair('fwhm_deg', JSONArgs.Num(Res[i].FWHM));
+      Line.AddPair('valid', TJSONBool.Create(Res[i].Valid));
+      JLines.AddElement(Line);
+    end;
+
+    Result.AddPair('fitness_used', FitnessConfigToJSON(Fit));
+    Result.AddPair('period_A', JSONArgs.Num(Info.Period));
+    Result.AddPair('n_periods', TJSONNumber.Create(Info.N));
+    Result.AddPair('structure_used', StructureToJSON(Used, Info));
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
 { ---------------------------------------------------------- registration -- }
+
+/// One item of the "lines" array: either the full object or a bare element
+/// symbol.
+function LineItemSchema: TJSONObject;
+var
+  Obj, Str: TJSONObject;
+  Arr: TJSONArray;
+begin
+  Obj := SchemaObject(['name']);
+  AddProp(Obj, 'name', 'string',
+    'Name of the line, normally the element symbol ("B", "Si"). With no ' +
+    '"lambda" or "energy" the wavelength is looked up in the XRF line table.');
+  AddProp(Obj, 'lambda', 'number',
+    'Wavelength of the line in Angstrom. Give either this or "energy", not both.');
+  AddProp(Obj, 'energy', 'number',
+    'Photon energy of the line in eV. Give either this or "lambda", not both.');
+  AddProp(Obj, 'weight', 'number',
+    'Relative weight of this line in the figure of merit (default 1).');
+
+  Str := TJSONObject.Create;
+  Str.AddPair('type', 'string');
+  Str.AddPair('description',
+    'An element symbol ("Si"), or a symbol range ("B-Si"), whose characteristic ' +
+    'wavelength comes from the XRF line table. Weight 1.');
+
+  Arr := TJSONArray.Create;
+  Arr.AddElement(Obj);
+  Arr.AddElement(Str);
+  Result := TJSONObject.Create;
+  Result.AddPair('oneOf', Arr);
+end;
+
+function FitnessSchema: TJSONObject;
+begin
+  Result := SchemaObject([]);
+  AddProp(Result, 'w_R', 'number',
+    'Weight of the peak reflectivity in the figure of merit (default 1).');
+  AddProp(Result, 'w_FWHM', 'number',
+    'Weight of the FWHM penalty, in units of the kinematic reference width ' +
+    '(default 0.5).');
+  AddProp(Result, 'R_min_threshold', 'number',
+    'A line whose peak reflectivity falls below this is penalised as dark ' +
+    '(default 0.001).');
+  AddProp(Result, 'w_purity', 'number',
+    'Weight of the spectral purity correction, 0 turns it off (default 1). ' +
+    'Purity is the peak of a line divided by the peak plus the reflectivity of ' +
+    'every other line at that same angle.');
+  AddEnumProp(Result, 'polarization',
+    'Polarization of the incident beam (default "sp"). The engine has no pure-p ' +
+    'path, so "p" is computed as "sp".', ['s', 'p', 'sp']);
+  AddProp(Result, 'delta_theta', 'number',
+    'Beam divergence, the FWHM in degrees of the Gaussian each scan is ' +
+    'convolved with (default 0 = no convolution).');
+  AddProp(Result, 'theta_min', 'number',
+    'Dark-zone threshold in degrees theta (default 0): a line whose Bragg angle ' +
+    'falls below it is reported invalid and penalised. This is NOT where the ' +
+    'scan starts - each line is scanned around its own Bragg angle.');
+  AddProp(Result, 'scan_points', 'integer',
+    'Points in the reflectivity scan around each Bragg angle (default 200).');
+  AddProp(Result, 'scan_half_range', 'number',
+    'Half-width in degrees of the scan around each Bragg angle (default 5).');
+end;
+
+procedure RegisterEvaluateLines(Registry: TToolRegistry);
+var
+  Schema: TJSONObject;
+begin
+  Schema := SchemaObject(['structure', 'lines']);
+  AddRefProp(Schema, 'structure',
+    'The multilayer to evaluate. Stacks are listed from the substrate to the ' +
+    'surface. Exactly one stack must repeat (N greater than 1): its period and ' +
+    'repeat count set the Bragg angles and the reference width.',
+    StructureSchema);
+  AddRefProp(Schema, 'lines',
+    'The emission lines the mirror is meant to serve, at most 16.',
+    ArraySchema(LineItemSchema));
+  AddRefProp(Schema, 'fitness',
+    'Overrides for the figure of merit. Every key is optional and defaults to ' +
+    'the value the mirror optimizer uses.', FitnessSchema);
+  Registry.Register('evaluate_lines',
+    'Scores a multilayer against a set of X-ray emission lines with the mirror ' +
+    'optimizer''s own figure of merit. This is the XRFCalc engine, so the number ' +
+    'returned is directly comparable with the one optimize_mirror reports, and a ' +
+    'structure optimize_mirror proposed scores here exactly as it scored there. ' +
+    'Each line is scanned around its own Bragg angle for the given period, and ' +
+    'the result reports, per line, the Bragg angle, the peak reflectivity and the ' +
+    'angular FWHM, plus the single figure of merit combining them (higher is ' +
+    'better). Every fitness setting actually used is echoed back, including the ' +
+    'scan defaults. Angles are theta in degrees, never 2theta; lengths are Angstrom.',
+    Schema,
+    function(const Params: TJSONObject): TJSONObject
+    begin
+      Result := EvaluateLinesResult(Params);
+    end);
+end;
 
 procedure RegisterCalcTools(Registry: TToolRegistry);
 var
@@ -265,6 +430,8 @@ begin
     begin
       Result := CalcReflectivityResult(Params);
     end);
+
+  RegisterEvaluateLines(Registry);
 end;
 
 end.
