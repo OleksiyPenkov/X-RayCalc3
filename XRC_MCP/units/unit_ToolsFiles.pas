@@ -376,7 +376,9 @@ begin
   AddProp(Schema, 'name', 'string',
     'File name under projects\, without a path. Letters, digits and "_-. ()#" ' +
     'only; ".xrcx" is appended when it is missing. The name is also the title ' +
-    'of the model node inside the project.');
+    'of the model node inside the project - and a name that contains "Data" or ' +
+    '"Models" comes back shortened to just that word, because the GUI rewrites ' +
+    'such titles when it loads a project.');
   Curves := SchemaObject([]);
   AddProp(Curves, 'measurement_id', 'string',
     'Embed this inbox measurement as the project''s data curve, in theta.');
