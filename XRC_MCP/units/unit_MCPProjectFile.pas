@@ -50,11 +50,18 @@ unit unit_MCPProjectFile;
       round trip. Mirrored here rather than worked around: a project written by
       this unit must behave in the GUI exactly like one the GUI wrote.
 
-   Floats in params.dsc are written with TFormatSettings.Invariant. The GUI
-   writes them with the machine locale and parses them with StrToFloat, whose
-   FixDecimaPoint accepts a comma; a machine whose decimal separator is a comma
-   would read an invariant '0.015' as a header line and fall back to the
-   default. That is the same assumption the rest of the server makes. *)
+   Floats in params.dsc are written with TFormatSettings.Invariant. The GUI's own
+   LoadFromINI defaults (TfrmCalcSettings.LoadFromINI, e.g. `INF.ReadString('ANGLE',
+   'lambbda', '1.54043')` and `'width', '0.015'`) are themselves dot-decimal string
+   literals, and the value actually used is parsed out of the edit control's text with
+   bare StrToFloat at calculate time (frame_CalcSettings.pas FillCalcThreadParams,
+   ~:300-304) - no FixDecimaPoint, no comma tolerance. So an invariant dot-decimal
+   params.dsc matches what the GUI itself writes and reads on a dot-decimal machine,
+   and only raises EConvertError on a comma-decimal one, when the project is
+   calculated. (The `.dat` curve files are different: unit_SeriesIO reads them
+   point-by-point through FixDecimaPoint with EConvertError swallowed per point, so a
+   comma-decimal machine silently drops points from a dot-written curve instead of
+   raising - see design note item 9.) *)
 
 interface
 

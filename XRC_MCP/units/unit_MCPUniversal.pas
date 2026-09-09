@@ -176,9 +176,10 @@ function GenomesDistinct(const A, B: TGenome;
 /// wants a responsive cancel should keep the population modest.
 ///
 /// While a job runs it holds HenkeCwdLock, so an evaluate_lines call made in
-/// the meantime waits for the whole run rather than answering in its own round
-/// trip. That is the price of the engine changing the process working directory
-/// while it reads its tables.
+/// the meantime cannot acquire it and fails fast with EMCPError('server_busy')
+/// rather than waiting for the whole run. That is the price of the engine
+/// changing the process working directory while it reads its tables; see
+/// EvaluateStructure's TryEnter on HenkeCwdLock.
 ///
 /// Raises EMCPError('optimizer_error') when the engine reported an error (it
 /// catches its own exceptions and calls OnError, so the message is picked up
@@ -846,7 +847,15 @@ begin
 
     Mixer := TMaterialMixer.Create;
     try
-      HenkeCwdLock.Acquire;
+      // A running job (optimize_mirror) holds this lock for its whole Run, not
+      // just its own Initialize call - see RunOptimizeJob. Blocking here would
+      // make evaluate_lines wait out the job instead of answering in its own
+      // round trip, and would make cancel_job/job_status unreachable until the
+      // job ends. Fail fast instead.
+      if not HenkeCwdLock.TryEnter then
+        raise EMCPError.Create('server_busy',
+          'a job is using the engine; evaluate_lines is unavailable until it finishes',
+          'call job_status to check progress, or cancel_job to stop it');
       try
         Mixer.Initialize(Materials, Lambdas, S.Subs.Material, HenkeDir);
       finally

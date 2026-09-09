@@ -55,11 +55,21 @@ unit unit_MCPCalc;
       Everything the server does on one thread is unaffected, and a 2000-point
       scan over 262 layers takes about 80 ms, so calc_reflectivity loses
       nothing measurable. Fitting will care. The fix belongs in OTL (Cardinal
-      -> NativeUInt on those four lines) and is reported to the author rather
-      than made here: that library is outside this repository and is shared
-      with XRayCalc3, xrccmd and XRFCalc, whose Win64 builds have the same
-      defect. When OTL is fixed, delete the MaxThreads assignment in RunCalc
-      and TCalc will use every core again. *)
+      -> NativeUInt on those four lines); it is not made in this unit because
+      that library is outside this repository and is shared with XRayCalc3,
+      xrccmd and XRFCalc, whose Win64 builds have the same defect. **Status
+      2026-09-09:** the fix has in fact been applied to the shared copy
+      (D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas,
+      untouched original kept beside it as OtlTaskControl.pas.xrcmcp-backup),
+      because optimize_mirror's TUniversalOptimizer.Run (Parallel.For, see
+      unit_MCPUniversal.pas RunOptimizeJob) and fit_xrr's LFPSO fit
+      (Parallel.&For, unit_LFPSO_Base.pas) hang without it on Win64; keep or
+      revert is the author's decision (recorded in CLAUDE.md Dependencies).
+      RunCalc's own MaxThreads := 1 workaround above is left in place even so,
+      because TCalc.PrepareWorkers depends on the machine's core count (fact 2
+      above) and nothing about that changed. When OTL's fix is confirmed
+      permanent, delete the MaxThreads assignment in RunCalc and TCalc will
+      use every core again. *)
 
 interface
 
@@ -114,8 +124,9 @@ function FindBraggPeaks(const Curve: unit_Types.TDataArray;
 function CriticalAngleDeg(const S: TFitStructure; Lambda: Double): Double;
 
 /// <summary>Writes the curve as two tab-separated columns under one header
-/// line. Angles use %.6g, reflectivities %.8e, both with the invariant decimal
-/// point.</summary>
+/// line. Angles use 7 significant digits (ffGeneral, 7, 0, the same style
+/// unit_MCPProjectFile.WriteCurveText uses), reflectivities %.8e, both with
+/// the invariant decimal point.</summary>
 procedure WriteCurveFile(const Path: string; const Curve: unit_Types.TDataArray;
   const XLabel, YLabel: string);
 
@@ -414,7 +425,8 @@ begin
   try
     SB.Append(XLabel).Append(#9).Append(YLabel).Append(sLineBreak);
     for i := 0 to High(Curve) do
-      SB.Append(Format('%.6g'#9'%.8e', [Curve[i].t, Curve[i].r], FS)).Append(sLineBreak);
+      SB.Append(FloatToStrF(Curve[i].t, ffGeneral, 7, 0, FS)).Append(#9)
+        .Append(Format('%.8e', [Curve[i].r], FS)).Append(sLineBreak);
     // GetBytes, not WriteAllText: the shared TEncoding.UTF8 writes a byte order
     // mark, and a data file that starts with one confuses every plain two-column
     // reader that opens it, the GUI's included.

@@ -127,13 +127,18 @@ end;
 
 class function JSONArgs.Num(const V: Double): TJSONNumber;
 var
-  R: Double; Mag: Integer;
+  R: Double; Mag, Digits: Integer;
 begin
   if IsNan(V) or IsInfinite(V) then Exit(TJSONNumber.Create(0));
   if (Frac(V) = 0) and (Abs(V) < 1e15) then Exit(TJSONNumber.Create(Int64(Round(V))));
   if V = 0 then Exit(TJSONNumber.Create(0));
   Mag := Floor(Log10(Abs(V)));
-  R := RoundTo(V, Mag - 5);
+  // RoundTo takes a TRoundToRange (-37..37); a very large or very small V would
+  // otherwise pass an out-of-range digit count.
+  Digits := Mag - 5;
+  if Digits < -37 then Digits := -37
+  else if Digits > 37 then Digits := 37;
+  R := RoundTo(V, Digits);
   Result := TJSONNumber.Create(R);
 end;
 

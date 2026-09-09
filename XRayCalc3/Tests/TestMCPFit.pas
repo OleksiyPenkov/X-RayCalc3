@@ -88,7 +88,8 @@ uses
 
 const
   { The reference sample: a 10-period Ru/C multilayer on Si, the same materials
-    the design note's worked example uses. Layers are listed substrate-first. }
+    the design note's worked example uses. Layers are listed surface-first: layers[0]
+    is nearest the surface, the last entry is nearest the substrate. }
   TRUE_STRUCTURE =
     '{"substrate":{"material":"Si","sigma":3},' +
     '"stacks":[{"N":10,"layers":[' +

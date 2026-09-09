@@ -334,7 +334,10 @@ begin
     'better). Every fitness setting actually used is echoed back, including the ' +
     'scan defaults. The scan grid is bounded (at most 20000 points over a half ' +
     'range of at most 90 degrees) because the call answers in the same round ' +
-    'trip. Angles are theta in degrees, never 2theta; lengths are Angstrom.',
+    'trip. Angles are theta in degrees, never 2theta; lengths are Angstrom. ' +
+    'Refused with server_busy while an optimize_mirror job is running, because ' +
+    'both share the engine''s Henke table reader; poll job_status or use ' +
+    'cancel_job, then retry.',
     Schema,
     function(const Params: TJSONObject): TJSONObject
     begin

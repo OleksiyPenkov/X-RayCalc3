@@ -234,7 +234,12 @@ begin
   end;
 
   if JSONArgs.Has(Params, 'seed') then
-    Seed := JSONArgs.OptInt(Params, 'seed', 0)
+  begin
+    Seed := JSONArgs.OptInt(Params, 'seed', 0);
+    if Seed < 0 then
+      raise EMCPError.Create('invalid_argument', '"seed" must not be negative',
+        IntToStr(Seed));
+  end
   else
   begin
     { From a GUID, not from Randomize/Random: those write System.RandSeed, which
@@ -306,11 +311,15 @@ begin
     'structure, the Bragg angle, peak reflectivity and FWHM of every line, and ' +
     'a rank_<n>.xrfx package that XRFCalc opens; the figure of merit is the one ' +
     'evaluate_lines computes, so a candidate can be re-scored and compared ' +
-    'against a design of your own. The seed is echoed and a repeat of the same ' +
-    'configuration with the same seed is bit-for-bit reproducible. One job runs ' +
-    'at a time, and evaluate_lines waits while one does: both drive the same ' +
-    'engine, which changes the process working directory while it reads its ' +
-    'tables. Cancellation is not instant - the optimizer offers one point per ' +
+    'against a design of your own. The shared results\ folder on disk (progress ' +
+    'log, checkpoint, population) always describes rank 1, the winner; each ' +
+    'rank_<n>.xrfx package, though, is a self-contained zip snapshot taken at the ' +
+    'moment it was written and does not change afterwards. The seed is echoed ' +
+    'and a repeat of the same configuration with the same seed is bit-for-bit ' +
+    'reproducible. One job runs at a time, and evaluate_lines is refused with ' +
+    'server_busy while one does: both drive the same engine, which changes the ' +
+    'process working directory while it reads its tables. Cancellation is not ' +
+    'instant - the optimizer offers one point per ' +
     'iteration at which it can be stopped, and neither its prologue (reading ' +
     'the tables and evaluating the whole population once) nor the results it ' +
     'saves after stopping can be interrupted - so cancel_job takes up to one ' +

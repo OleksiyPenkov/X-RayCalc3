@@ -69,14 +69,15 @@ claude mcp add -s user xraca -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\
 - **FastMath**: `D:\DelphiProjects\X-RayCalc\FastMath\FastMath\`
 - **DUnitX**: `$(BDS)\source\DunitX`
 - **OmniThreadLibrary**: `D:\DelphiProjects\_Libraries\OmniThreadLibrary` (on the IDE library
-  path for Win32 and Win64). **Any Win64 build that runs the universal optimizer — XRC_MCP's
-  `optimize_mirror`, `xrccmd -u`, XRFCalc — needs the `Cardinal` → `NativeUInt` fix in
-  `TOmniTaskExecutor.GetMethodAddrAndSignature` (`OtlTaskControl.pas`, the `headerEnd`
-  declaration and the casts of `methodInfoHeader`, `returnInfo` and `params`; lines 2558 and
-  2621–2628 of the stock file).** Without it `Cardinal` truncates a 64-bit pointer, the task
-  pool never answers and `Parallel.For` hangs for ever — the optimizer stops at iteration 0
-  and the MCP server can no longer shut down. Win32 is unaffected, so the test suite passes
-  either way. Upstream OTL carries the fix.
+  path for Win32 and Win64). **Any Win64 build that runs the universal optimizer or the LFPSO
+  fit — `optimize_mirror`, `fit_xrr`, `xrccmd -u`, XRFCalc, and the Win64 GUI's own fitting —
+  needs the `Cardinal` → `NativeUInt` fix in `TOmniTaskExecutor.GetMethodAddrAndSignature`
+  (`OtlTaskControl.pas`, the `headerEnd` declaration and the casts of `methodInfoHeader`,
+  `returnInfo` and `params`; lines 2558 and 2621–2628 of the stock file).** Without it
+  `Cardinal` truncates a 64-bit pointer, the task pool never answers and `Parallel.&For`/
+  `Parallel.ForEach` hang for ever — the optimizer or fit stops at iteration 0 and the caller
+  (including the MCP server) can no longer shut down. Win32 is unaffected, so the test suite
+  passes either way. Upstream OTL carries the fix.
 - **Third-party**: RaizeComponents, VirtualTrees, Abbrevia, SynEdit
 
 ## Code Conventions

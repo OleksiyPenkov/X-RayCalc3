@@ -39,7 +39,9 @@ const
     'are not supported in v1.';
 
   STRUCTURE_ORDER =
-    'stacks are listed from substrate to surface; cap is the top layer; buffer ' +
+    'stacks are listed from substrate to surface; within a stack, layers are ' +
+    'ordered from the surface downwards - layers[0] is nearest the surface (under ' +
+    'the cap), the last entry is nearest the substrate; cap is the top layer; buffer ' +
     'sits between substrate and the first stack';
 
   FIT_ENGINE = 'GUI LFPSO (TLFPSO_Periodic / TLFPSO_Poly)';
@@ -67,11 +69,11 @@ const
 
   // Every error code a tool of this server can return, so a client can branch
   // on them without scraping messages.
-  ERROR_CODES: array [0 .. 17] of string = (
+  ERROR_CODES: array [0 .. 18] of string = (
     'invalid_argument', 'invalid_request', 'tool_not_found', 'path_outside_workdir',
     'inbox_readonly', 'not_found', 'invalid_structure', 'unknown_material', 'not_fittable',
     'already_exists', 'unsupported_project', 'job_unknown', 'job_not_finished',
-    'job_failed', 'job_cancelled', 'too_many_jobs', 'optimizer_error', 'internal');
+    'job_failed', 'job_cancelled', 'too_many_jobs', 'optimizer_error', 'server_busy', 'internal');
 
 function StringArraySchema: TJSONObject;
 var
@@ -116,6 +118,7 @@ begin
     // which is not the same constant. Both are reported rather than unified.
     Result.AddPair('engine_table_constant',
       InvariantFloat(ENGINE_HC) + ' (math_globals.H, Henke interpolation only)');
+    Result.AddPair('numeric_precision', 'Numeric results are rounded to 6 significant digits.');
   except
     Result.Free;
     raise;

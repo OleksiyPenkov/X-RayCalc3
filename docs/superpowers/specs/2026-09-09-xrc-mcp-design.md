@@ -39,7 +39,10 @@ time (§5), so no other thread is affected; the server itself never depends on t
 ## 3. Structure JSON mapping
 
 The requirements' structure JSON (substrate, stacks from substrate to surface, cap, buffer) maps to
-the GUI's `TFitStructure` / `TXRCStructure` order, which is **surface first**:
+the GUI's `TFitStructure` / `TXRCStructure` order, which is **surface first**. Within a stack the
+`layers` array is itself surface-first (`layers[0]` nearest the surface, under the cap; the last
+entry nearest the substrate) — the opposite of the substrate-first order the stacks themselves are
+listed in.
 
 ```
 XRC stack 0        := cap        (N=1, one layer)            — if present
@@ -128,6 +131,11 @@ server used.
   array with more than 64 numeric elements (or nested such) is replaced by
   `{"_len": n, "_sha256": "<hex of the file the tool wrote>"}` (or `_len` only when there is no
   file). Opened in append mode for each write, never truncated.
+- One exception to "every path is under `--workdir`": building or reading an `.xrcx` needs a real
+  directory for the headless `TXRCProjectTree`, so `unit_MCPProjectFile.NewTempDir` stages it under
+  the system temp path (`xrcmcp_<guid>\`), process-owned, and `DropTempDir` removes it again once
+  the archive is written or read. No client-supplied path ever reaches it - the name is a fresh
+  GUID chosen here, not derived from a tool argument.
 
 ## 8. Open questions for the author (do not guess — sent back)
 
@@ -151,12 +159,17 @@ server used.
    library (backup `OtlTaskControl.pas.xrcmcp-backup`) because `TUniversalOptimizer.Run`
    (`Parallel.For`) hangs forever on Win64 without it, `xrccmd -u` included. `optimize_mirror`
    therefore depends on the patched library; keep or revert is the author's decision (recorded in
-   `CLAUDE.md` Dependencies). On the GUI binary: Task 14 reported that its Win64 regression build
+   `CLAUDE.md` Dependencies). The same dependency reaches `fit_xrr`: `TLFPSO_BASE.Run`
+   (`unit_LFPSO_Base.pas`) evaluates every particle through the same library's `Parallel.&For`, so a
+   Win64 `fit_xrr` job hangs identically without the fix, and so does the Win64 GUI's own Fit button.
+   On the GUI binary: Task 14 reported that its Win64 regression build
    had replaced `_Out\BIN\XRayCalc3.exe` with a Win64 one, but that is not what happened — the
    Win64 Release configuration of `XRayCalc3.dproj` sets `OutputExt = x64.exe`, so the Win64 GUI
    is `_Out\BIN\XRayCalc3.x64.exe` and `_Out\BIN\XRayCalc3.exe` is untouched and still the Win32
    build. Both GUI platforms, xrccmd and XRFCalc reach the same `Parallel.ForEach` in
-   `unit_calc`/`cmd_unit_calc`, so the OTL question above applies to every Win64 binary.
+   `unit_calc`/`cmd_unit_calc`, and the GUI's LFPSO fit reaches the same `Parallel.&For` in
+   `unit_LFPSO_Base`, so the OTL question above applies to every Win64 binary that calculates or
+   fits.
 
 7. **The substrate, the scale, the background and the resolution cannot be fitted.** None of them is
    in the LFPSO particle vector: `TLFPSO_BASE.FillModel` copies `Subs.P` verbatim into the model,
@@ -194,8 +207,13 @@ server used.
     iteration, inside the optimizer's progress callback; the prologue (Henke tables, model build)
     and the packaging tail are not interruptible, so a cancel costs up to one iteration plus the
     tail. The smoke session sees a cancelled `optimize_mirror` settle within about a second.
-    `evaluate_lines` is synchronous and there is one job worker, so an `evaluate_lines` call issued
-    while a job is running waits for its turn.
+    `evaluate_lines` and a running `optimize_mirror` job share `HenkeCwdLock` (the process working
+    directory the Henke reader depends on is process-global), and the job holds it for the whole
+    `Opt.Run`, not just its own table reads. So an `evaluate_lines` call issued while a job is
+    running does not wait for its turn behind a worker queue - it tries `TryEnter` on the lock,
+    finds it held, and fails fast with `server_busy`, naming `job_status` and `cancel_job` in the
+    detail. This also means `cancel_job`/`job_status` themselves stay reachable throughout the job:
+    only `evaluate_lines` is blocked out.
 
 12. **Three v1 restrictions worth confirming.** (a) `optimize_mirror` refuses
     `structure.pure_elements = false`: the §3 structure JSON has no mixing syntax, so a mixed genome

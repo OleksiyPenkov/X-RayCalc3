@@ -1343,8 +1343,11 @@ begin
 
   { A cancel that arrived after the engine's last progress report was never
     offered to the callback, so Runner.CancelSeen is False and the run above
-    finished on its own. Look again before writing an answer: the job manager
-    records a body that leaves a result as finished, whatever its state says. }
+    finished on its own. The job manager records a body that left a result as
+    finished, so look again before writing one: a cancel seen only here still
+    throws the freshly built answer away and lets the job end cancelled,
+    consistent with RunOptimizeJob. The .xrcx and curve files have not been
+    written yet at this point, so nothing is left behind to clean up. }
   if Job.CancelRequested then
     Exit;
 

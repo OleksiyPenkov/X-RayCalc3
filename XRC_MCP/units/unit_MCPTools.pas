@@ -218,7 +218,9 @@ begin
 
   Stack := SchemaObject(['N', 'layers']);
   AddProp(Stack, 'N', 'integer', 'Number of repetitions of this period.');
-  AddRefProp(Stack, 'layers', 'The layers of one period, ordered from the substrate side to the surface.',
+  AddRefProp(Stack, 'layers',
+    'The layers of one period, ordered from the surface downwards: layers[0] is the layer ' +
+    'nearest the surface (under the cap), the last entry is nearest the substrate.',
     ArraySchema(LayerSchema));
   AddRefProp(Result, 'stacks', 'Stacks in order from the substrate to the surface.', ArraySchema(Stack));
 

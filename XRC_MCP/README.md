@@ -9,10 +9,12 @@ requirements live in `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` and
 `docs/superpowers/specs/2026-09-08-xraca-mcp-server-requirements.md`.
 
 **Win64 build dependency:** `optimize_mirror` runs the universal optimizer through
-OmniThreadLibrary's `Parallel.For`, which hangs for ever under dcc64 unless
-`D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas` carries the
+OmniThreadLibrary's `Parallel.For`, and `fit_xrr` runs the LFPSO fit through the same
+library's `Parallel.&For` (`unit_LFPSO_Base.pas`), both of which hang for ever under dcc64
+unless `D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas` carries the
 `Cardinal` → `NativeUInt` fix in `TOmniTaskExecutor.GetMethodAddrAndSignature` (see
-`CLAUDE.md`, Dependencies). The symptom is a job stuck at iteration 0 with an empty
+`CLAUDE.md`, Dependencies). The same dependency applies to `xrccmd -u`, XRFCalc, and the
+Win64 GUI's own fitting. The symptom is a job stuck at iteration 0 with an empty
 `results\progress.log`, and a server that will not exit.
 
 `units\gitrev.inc` is **not** in version control: the project's pre-build event regenerates it from

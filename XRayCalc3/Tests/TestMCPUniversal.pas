@@ -44,12 +44,14 @@ type
     [Test] procedure EvaluateStructure_NoPeriodicStack_Raises;
     [Test] procedure EvaluateStructure_TooManyLines_Raises;
     [Test] procedure EvaluateStructure_RuC_MatchesEvaluateLayersDirect;
+    [Test] procedure EvaluateStructure_HenkeCwdLockHeld_RaisesServerBusy;
   end;
 
 implementation
 
 uses
   System.SysUtils, System.JSON, System.IOUtils, System.Math,
+  System.Classes, System.SyncObjs,
   math_complex,
   unit_Config,
   unit_Types,
@@ -989,6 +991,79 @@ begin
   Assert.AreEqual('invalid_argument', Code,
     Format('more than %d lines must be refused before the engine is entered',
       [MAX_LINES]));
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_HenkeCwdLockHeld_RaisesServerBusy;
+var
+  J: TJSONObject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+  Lines: TArray<TXRFLine>;
+  Res: TTargetResults;
+  Code: string;
+  Holding, Release: TEvent;
+  Holder: TThread;
+begin
+  // A running optimize_mirror job holds HenkeCwdLock for its whole Run (see
+  // RunOptimizeJob), from the job's own worker thread. HenkeCwdLock wraps a
+  // Windows critical section, which is reentrant for the thread that already
+  // holds it - so acquiring it on this test's own thread and then calling
+  // EvaluateStructure here would just re-enter it, not exercise TryEnter's
+  // failure path. The cheap stand-in therefore needs a second thread to hold
+  // the lock while the main thread calls EvaluateStructure.
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables Ru/C/SiO2 not found in ' + HenkePath + ' - test skipped');
+    Exit;
+  end;
+
+  J := ParseObj(RUC_JSON);
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+
+  SetLength(Lines, 1);
+  Lines[0].Name := 'Si';
+  Lines[0].Lambda := LAMBDA_SI;
+  Lines[0].Weight := 1;
+
+  Holding := TEvent.Create(nil, True, False, '');
+  Release := TEvent.Create(nil, True, False, '');
+  try
+    Holder := TThread.CreateAnonymousThread(
+      procedure
+      begin
+        HenkeCwdLock.Acquire;
+        try
+          Holding.SetEvent;
+          Release.WaitFor(INFINITE);
+        finally
+          HenkeCwdLock.Release;
+        end;
+      end);
+    Holder.FreeOnTerminate := False;
+    Holder.Start;
+    try
+      Holding.WaitFor(INFINITE);
+      Code := ErrorCodeOf(
+        procedure
+        begin
+          EvaluateStructure(S, Info, Lines, DefaultFitnessConfig, Res);
+        end);
+    finally
+      Release.SetEvent;
+      Holder.WaitFor;
+      Holder.Free;
+    end;
+  finally
+    Holding.Free;
+    Release.Free;
+  end;
+
+  Assert.AreEqual('server_busy', Code,
+    'evaluate_lines must fail fast, not block, while a job holds the engine lock');
 end;
 
 procedure TTestMCPUniversal.EvaluateStructure_RuC_MatchesEvaluateLayersDirect;
