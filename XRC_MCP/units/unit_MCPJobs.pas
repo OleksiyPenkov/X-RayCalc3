@@ -726,26 +726,31 @@ var
   Job: TJob;
 begin
   Result := nil;
+  { Dequeuing and marking the job running happen in the same critical section:
+    in between, a Cancel would still see a queued job, take it out of a queue it
+    is no longer in and end it - and then this would put it back to running.
+    The body would stop at once (CancelRequested is set) so the job would still
+    end cancelled, but job.json would have shown a cancelled job going back to
+    running. Lock order is manager then job, as everywhere else. }
   FLock.Enter;
   try
     if FTerminating or (FQueue.Count = 0) then
       Exit;
     Job := FQueue.Dequeue;
     FRunning := Job;
+    Job.FLock.Enter;
+    try
+      Job.FState := jsRunning;
+      Job.FStartedUTC := NowUTCString;
+      Job.FStopwatch := TStopwatch.StartNew;
+      Job.SaveLocked;
+    finally
+      Job.FLock.Leave;
+    end;
+    Result := Job;
   finally
     FLock.Leave;
   end;
-
-  Job.FLock.Enter;
-  try
-    Job.FState := jsRunning;
-    Job.FStartedUTC := NowUTCString;
-    Job.FStopwatch := TStopwatch.StartNew;
-    Job.SaveLocked;
-  finally
-    Job.FLock.Leave;
-  end;
-  Result := Job;
 end;
 
 procedure TJobManager.RunJob(Job: TJob);
