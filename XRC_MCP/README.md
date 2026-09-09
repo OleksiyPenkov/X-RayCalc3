@@ -18,3 +18,12 @@ OmniThreadLibrary's `Parallel.For`, which hangs for ever under dcc64 unless
 `units\gitrev.inc` is **not** in version control: the project's pre-build event regenerates it from
 `git rev-parse --short HEAD` on every build, so `git` must be on `PATH`. Its value is what
 `describe_server` reports as `git_revision`.
+
+**Smoke test:** `pwsh -File XRC_MCP\smoke\session.ps1` drives one live stdio session against
+`_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 16 tools (jobs are
+submitted, polled through `job_status` and read with `job_result`; one is stopped with
+`cancel_job`) and checks the Ru/C Bragg-peak angle, seed determinism of `optimize_mirror` and
+`fit_xrr`, the `path_outside_workdir` refusal, that the inbox is byte-identical afterwards, and
+that `log\calls.jsonl` holds exactly one tool line per `tools/call` sent. Exit code 0 means every
+check passed; `-KeepWorkdir` leaves the work directories behind for inspection. It takes a few
+seconds.

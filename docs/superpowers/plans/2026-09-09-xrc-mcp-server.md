@@ -1591,17 +1591,54 @@ Author's acceptance 4: open `fit.xrcx` in XRayCalc3 → the curve and χ² shown
 - Create: `XRC_MCP\smoke\session.ps1` (pipes a full session — every tool once — into the exe against a temp workdir and checks: 16 journal lines, inbox SHA unchanged, `path_outside_workdir` returned for `{"name":"load_project","arguments":{"path":"..\\..\\x.xrcx"}}`)
 - Modify: `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` (record deviations found during implementation), `CLAUDE.md` (registration line from requirements §7), `_Installer/XRayCalc3Setup.iss` — NOT modified (out of scope; note it).
 
-- [ ] **Step 1: Write and run `session.ps1`**; fix anything it finds.
-- [ ] **Step 2: Acceptance checklist in the plan (tick with evidence)**
-  1. `tools/list` names: describe_server, list_materials, optical_constants, list_templates, calc_reflectivity, evaluate_lines, optimize_mirror, job_status, job_result, cancel_job, fit_xrr, list_measurements, get_measurement, save_project, load_project, list_projects — 16 tools; every numeric property description mentions its unit.
-  2. Ru/C curve — Bragg peak at 0.644°, `.xrcx` opens in GUI (author).
-  3. Same seed → same FoM (two runs).
-  4. Same seed → same χ²; `.xrcx` opens (author).
-  5. Outside path refused; inbox SHA unchanged.
-  6. Journal has one line per call.
-  7. Test units present and passing.
-- [ ] **Step 3: Write the open-questions list for the author** into `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` §8 (already drafted; append anything new, e.g. the substrate-not-fittable finding and the XRFCalc seed comparison).
-- [ ] **Step 4: Commit** — `+ XRC_MCP: end-to-end smoke session script; design note updated with implementation findings`
+- [x] **Step 1: Write and run `session.ps1`**; fix anything it finds.
+      `XRC_MCP\smoke\session.ps1` drives one live stdio session (16 tools, 32 `tools/call`
+      requests including job polls) against a temp work directory and exits 0. Run of
+      2026-09-09 against `_Out\BIN\XRC_MCP.exe` git `9d6fcee`: `PASS`, 4 s wall clock.
+      It found no server defect — no server code was changed for it.
+- [x] **Step 2: Acceptance checklist in the plan (tick with evidence)**
+  1. [x] `tools/list` names: describe_server, list_materials, optical_constants, list_templates, calc_reflectivity, evaluate_lines, optimize_mirror, job_status, job_result, cancel_job, fit_xrr, list_measurements, get_measurement, save_project, load_project, list_projects — 16 tools; every numeric property description mentions its unit.
+     *Evidence:* `session.ps1` asserts the set: `[1/16] tools/list : 16 tools, all expected
+     names present` (no missing, no extra). Units: a sweep of every `"type":"number"` property
+     in the schemas leaves 29 without a unit word, and all 29 are either dimensionless
+     (weights `w_R`/`w_FWHM`/`w_purity`/`weight`, PSO `w1`/`w2`/`k_chi`/`k_vmax`, `tolerance`,
+     `r_min` and `R_min_threshold`, which are reflectivities) or take the unit from the
+     object that encloses them (`structure.d/gamma/N` `.min`/`.max` under "Period thickness in
+     Angstrom", `bounds[].max` beside a `min` that says "in Angstrom or g/cm^3").
+  2. [x] Ru/C curve — first Bragg peak at 0.687° (refraction-corrected; the Bragg-law estimate 0.644° is not what the engine gives), `.xrcx` opens in GUI (author).
+     *Evidence:* `calc_reflectivity`, λ 1.5406 Å, 0.1–4°, 2000 points → first peak
+     **0.685293°**, R 0.842592, θ_c 0.477043°; on a 40000-point grid the same peak is
+     **0.685795°**, so 0.6858° is the engine's value and the grid, not the physics, accounts
+     for the difference. Both are inside the 0.687° ± 0.01 the script asserts. GUI-open check
+     reported by Task 14/15 implementers; author to confirm.
+  3. [x] Same seed → same FoM (two runs).
+     *Evidence:* two `optimize_mirror` jobs, seed 12345, lines Al+Si, pool W/Si/B4C/Sc/C/Mo,
+     population 20 × 3 iterations → **fom = 0.180236** both times, same genome
+     (d = 33.9438 Å, γ = 0.214677, N = 49). Task 11 saw the same on its larger configuration
+     (fom −1.3279 twice).
+  4. [x] Same seed → same χ²; `.xrcx` opens (author).
+     *Evidence:* two `fit_xrr` jobs, seed 7, start model Ru 13.5 / C 55.0 against
+     `inbox\S1\xrr.dat`, population 20 × 5 iterations, tolerance 1e-9 so the whole budget is
+     used → **χ² = 0.000187058** both times (start χ² 5.85037, 5 iterations run) and a
+     byte-identical `fitted_structure`. `fit.xrcx` written for both. GUI-open check reported
+     by Task 14/15 implementers; author to confirm.
+  5. [x] Outside path refused; inbox SHA unchanged.
+     *Evidence:* `load_project {"path":"..\\..\\x.xrcx"}` → `isError`, code
+     **`path_outside_workdir`**. `inbox\S1` SHA-256 before and after the session:
+     `xrr.dat 76091C3F…4B1`, `meta.json E5BBFCAA…93D` — identical.
+  6. [x] Journal has one line per call.
+     *Evidence:* `log\calls.jsonl` holds **32 lines carrying a `tool` key for the 32
+     `tools/call` requests sent**, plus 5 `event: job` lifecycle lines (37 total), and all 16
+     tool names appear. The script asserts the tool-line count against its own request counter.
+  7. [x] Test units present and passing.
+     *Evidence:* 12 MCP test units (`TestMCPCalc`, `…Fit`, `…Inbox`, `…Jobs`, `…Journal`,
+     `…Materials`, `…ProjectFile`, `…Sandbox`, `…Structure`, `…Units`, `…Universal`,
+     `…UniversalJob`) in `XRayCalc3\Tests\`. Win32 Debug run of 2026-09-09:
+     **494 found, 494 passed, 0 failed, 0 errored, 0 leaked.**
+- [x] **Step 3: Write the open-questions list for the author** into `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` §8 (already drafted; append anything new, e.g. the substrate-not-fittable finding and the XRFCalc seed comparison).
+      §8 items 7–13 added; item 6's stale "`_Out\BIN\XRayCalc3.exe` is a Win32 binary" sentence
+      corrected. `_Installer\XRayCalc3Setup.iss` deliberately not modified (noted in §8.14).
+- [x] **Step 4: Commit** — `+ XRC_MCP: end-to-end smoke session script; design note updated with implementation findings`
 
 ---
 

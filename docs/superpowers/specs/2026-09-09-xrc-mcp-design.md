@@ -141,3 +141,78 @@ server used.
 5. Energy conversion: the server converts `energy` with 12398.42 (§2.4); the engines interpolate
    Henke tables at `E = 12398.6/λ` internally (`math_globals.H`). Both constants are reported in
    `describe_server.units`; nothing in the engines is changed.
+6. OmniThreadLibrary in the shared library path (`D:\DelphiProjects\_Libraries\OmniThreadLibrary\OtlTaskControl.pas`
+   lines 2621–2628) casts code pointers to `Cardinal`; under dcc64 `Parallel.ForEach` (used by
+   `TCalc.RunThetaThreads`) crashes the pool manager with an access violation and the caller waits
+   forever. The server therefore runs `TCalc` single-threaded (`MaxThreads := 1`, ~74 ms per
+   2000-point scan). The fix is `Cardinal` → `NativeUInt` on those four lines (upstream OTL has it);
+   it is the author's call because the file is outside this repository and shared by the GUI,
+   xrccmd and XRFCalc. **Status 2026-09-09:** the Task 11 implementer applied exactly this fix to the
+   library (backup `OtlTaskControl.pas.xrcmcp-backup`) because `TUniversalOptimizer.Run`
+   (`Parallel.For`) hangs forever on Win64 without it, `xrccmd -u` included. `optimize_mirror`
+   therefore depends on the patched library; keep or revert is the author's decision (recorded in
+   `CLAUDE.md` Dependencies). On the GUI binary: Task 14 reported that its Win64 regression build
+   had replaced `_Out\BIN\XRayCalc3.exe` with a Win64 one, but that is not what happened — the
+   Win64 Release configuration of `XRayCalc3.dproj` sets `OutputExt = x64.exe`, so the Win64 GUI
+   is `_Out\BIN\XRayCalc3.x64.exe` and `_Out\BIN\XRayCalc3.exe` is untouched and still the Win32
+   build. Both GUI platforms, xrccmd and XRFCalc reach the same `Parallel.ForEach` in
+   `unit_calc`/`cmd_unit_calc`, so the OTL question above applies to every Win64 binary.
+
+7. **The substrate, the scale, the background and the resolution cannot be fitted.** None of them is
+   in the LFPSO particle vector: `TLFPSO_BASE.FillModel` copies `Subs.P` verbatim into the model,
+   and the engine has no scale or background term at all. `fit_xrr` therefore refuses those four
+   `target` values with `not_fittable` rather than accepting them and quietly holding them still.
+   Every fit result carries `scale 1.0`, `background 0.0` and a note saying so. If the author wants
+   them fitted, the engine has to change, not the server.
+
+8. **`.xrcx` is written through the real `TXRCProjectTree`, and that costs a `MainThreadID` swap.**
+   The tree is a VCL control; building it headless reaches `CheckSynchronize`, which raises on any
+   thread other than the one `System.MainThreadID` names. `unit_MCPProjectFile.TTreeScope` takes a
+   process-wide lock and sets `MainThreadID` to the writing thread for the length of
+   Create/SaveToFile/Free. It is safe only because this process has no message loop and never calls
+   `TThread.Synchronize` or `Queue`, so the queue it drains is always empty; the day either becomes
+   untrue the swap turns into a live deadlock. Please bless this, or ask for the Appendix A byte
+   writer instead. Related GUI fix made along the way:
+   `unit_XRCProjectTree.ProjectLoadNode` did not zero-terminate its string buffer (commit `6a9bf8c`,
+   behaviour-preserving).
+
+9. **Curve files inside `.xrcx` now carry 7 significant digits.** The GUI's own `SeriesToText`
+   writes θ with 3 decimals; on a 0.0025° grid that is 40 % of a step, and a fit reloaded into the
+   GUI re-scored at χ² 6.5e-3 where the job had reported 6e-5, because the intensities belong to
+   the unrounded angles. Both columns are now written at 7 significant digits — everything a
+   `Single` holds — and the GUI reads them without complaint. Not changed, and pre-existing: the
+   GUI's `SeriesFromText` parses with the thread locale, so on a comma-decimal machine it drops
+   points from any file written with a '.' decimal mark.
+
+10. **`TLFPSO_Poly.GetPolynomes` mis-indexes multi-stack profiles.** It advances its base index by
+    `Stacks[i].N` instead of by the layer count of the stack, so the coefficients it hands back are
+    only correct when exactly one stack repeats. Rather than patch the shared engine, `fit_xrr`
+    enforces the condition: `profile: true` requires exactly one stack with `N > 1` and is refused
+    otherwise. The engine bug is still there for the GUI.
+
+11. **Cancellation granularity.** `optimize_mirror` and `fit_xrr` observe a cancel once per
+    iteration, inside the optimizer's progress callback; the prologue (Henke tables, model build)
+    and the packaging tail are not interruptible, so a cancel costs up to one iteration plus the
+    tail. The smoke session sees a cancelled `optimize_mirror` settle within about a second.
+    `evaluate_lines` is synchronous and there is one job worker, so an `evaluate_lines` call issued
+    while a job is running waits for its turn.
+
+12. **Three v1 restrictions worth confirming.** (a) `optimize_mirror` refuses
+    `structure.pure_elements = false`: the §3 structure JSON has no mixing syntax, so a mixed genome
+    could not be written back as a structure that reproduces its own FoM. (b) `calc_reflectivity`
+    runs its `TCalc` with `MaxThreads = 1` (see item 6). (c) `save_project` and `fit_xrr` store the
+    densities the engine actually used, which for the substrate is always the Henke bulk value —
+    the engine ignores a user-supplied substrate density.
+
+13. **XRFCalc seed comparison: not done, and not doable as things stand.** Task 11 verified
+    determinism server-side only — two `optimize_mirror` runs of the same configuration with the
+    same seed agree in every reported digit, and the reported FoM matches what `evaluate_lines`
+    computes for the reported structure. It did **not** compare against XRFCalc. Its report states
+    why: XRFCalc and `xrccmd` have no seed switch, so they cannot be asked to reproduce a server
+    run. The server's number for the Task 11 configuration with seed 12345 is
+    `fom = -1.32790446281433` (Sc/B4C, d = 33.9807167053223 Å, γ = 0.397049427032471, N = 56); to
+    compare, XRFCalc/xrccmd need `RandSeed := <seed>` immediately before `TUniversalOptimizer.Run`.
+
+14. **`_Installer\XRayCalc3Setup.iss` was not modified.** Shipping `XRC_MCP.exe` in the installer is
+    out of scope for this plan; the server is registered from wherever it is built (see the
+    `claude mcp add` line in `CLAUDE.md`). Say the word and the InnoSetup script gets a Files entry.

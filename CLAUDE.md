@@ -42,6 +42,7 @@ XRC_CMD/            Command-line interface variant
 XRFCalc/            XRF calculation GUI app
 XRCXPreview/        Windows shell preview handler
 XRC_MCP/            MCP server for LLM agents; spec in docs/superpowers/specs/2026-09-09-xrc-mcp-design.md
+                    smoke/session.ps1 drives all 16 tools end to end (exit 0 = pass)
 Shared/
   Math/             Calculation engine, complex math, materials database
   Universal/        Universal mirror types, IO, templates, XRF lines
@@ -49,7 +50,12 @@ _Out/               Shared build output (BIN/, DCU/, DCU64/)
 _Installer/         InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
 ```
 
-**Output:** `_Out/BIN/` (executables), `_Out/DCU/` + `_Out/DCU64/` (compiled units), `XRayCalc3/Tests/_Out/BIN/` (test runner)
+**Output:** `_Out/BIN/` (executables), `_Out/DCU/` + `_Out/DCU64/` (compiled units), `XRayCalc3/Tests/_Out/BIN/` (test runner). The Win64 GUI is `XRayCalc3.x64.exe` (`OutputExt`); `XRayCalc3.exe` is the Win32 build.
+
+**Register the MCP server** with Claude Code (one experiment directory per registration):
+```
+claude mcp add -s user xraca -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_Out\BIN\XRC_MCP.exe" --workdir "<experiment directory>"
+```
 
 ## Key Files & Types
 
