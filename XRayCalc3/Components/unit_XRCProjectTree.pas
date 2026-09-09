@@ -314,7 +314,14 @@ var
     Stream.Read(size, SizeOf(size));
     if Size > 1 then
     begin
-      StrBuffer := AllocMem(size);
+      { ProjectSaveNode writes ByteLength(s) + 1 bytes: the characters plus the
+        LOW byte of the terminating #0 only. Reading that into a buffer of
+        exactly that size leaves no complete WideChar #0 at the end, so the
+        PChar -> string conversion below runs past the buffer and appends
+        whatever the heap holds there. Two extra zero bytes (AllocMem zeroes
+        the block) terminate it properly. Nothing in the file format changes -
+        this is the reader alone. }
+      StrBuffer := AllocMem(size + 2);
       Stream.Read(StrBuffer^, size);
       Result := (StrBuffer);
       FreeMem(StrBuffer);
