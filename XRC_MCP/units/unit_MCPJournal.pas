@@ -36,8 +36,10 @@ type
     /// and are left untouched; pass ErrorObj = nil for a successful call and
     /// ResultObj = nil for a failed one.</summary>
     procedure LogCall(const Tool: string; const Args, ResultObj, ErrorObj: TJSONObject; ElapsedMs: Int64);
-    /// <summary>Appends one event record {"ts","event":Kind,...Data}. Used for
-    /// job transitions. Data is not owned.</summary>
+    /// <summary>Appends one event record {"ts","event":Kind,"data":{...}}.
+    /// Data is nested under "data" rather than spliced in, so a "ts" or
+    /// "event" key inside it cannot collide with the record's own. Used for
+    /// job transitions. Data is not owned; nil is written as {}.</summary>
     procedure LogEvent(const Kind: string; const Data: TJSONObject);
     property Path: string read FPath;
   end;
@@ -52,8 +54,8 @@ var
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.IOUtils, System.Generics.Collections,
-  unit_MCPSandbox;
+  Winapi.Windows, System.SysUtils, System.Classes, System.IOUtils,
+  System.Generics.Collections, unit_MCPSandbox;
 
 { Absolute path of the file named by a "file" or "path" string pair of Parent,
   or '' when there is no such pair or it does not name an existing file.
@@ -177,22 +179,32 @@ end;
 
 procedure TJournal.WriteLine(const Obj: TJSONObject);
 var
-  Stream: TFileStream;
+  H: THandle;
+  Stream: THandleStream;
   Bytes: TBytes;
 begin
   Bytes := TEncoding.UTF8.GetBytes(Obj.ToJSON + #10);
+  // FLock serialises this process only: the design assumes one server process
+  // per work directory. OPEN_ALWAYS opens the file when it exists and creates
+  // it when it does not, and never truncates either way - there is no
+  // exists-then-create window in which a second writer could lose lines.
   FLock.Enter;
   try
-    if TFile.Exists(FPath) then
-      Stream := TFileStream.Create(FPath, fmOpenWrite or fmShareDenyNone)
-    else
-      Stream := TFileStream.Create(FPath, fmCreate or fmShareDenyNone);
+    H := CreateFile(PChar(FPath), GENERIC_WRITE, FILE_SHARE_READ or FILE_SHARE_WRITE,
+      nil, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    if H = INVALID_HANDLE_VALUE then
+      RaiseLastOSError;
     try
-      Stream.Seek(Int64(0), soEnd);   // append; the journal is never truncated
-      if Length(Bytes) > 0 then
-        Stream.WriteBuffer(Bytes[0], Length(Bytes));
+      Stream := THandleStream.Create(H);
+      try
+        Stream.Seek(Int64(0), soEnd);   // append; the journal is never truncated
+        if Length(Bytes) > 0 then
+          Stream.WriteBuffer(Bytes[0], Length(Bytes));
+      finally
+        Stream.Free;
+      end;
     finally
-      Stream.Free;
+      CloseHandle(H);
     end;
   finally
     FLock.Leave;
@@ -240,17 +252,18 @@ end;
 procedure TJournal.LogEvent(const Kind: string; const Data: TJSONObject);
 var
   Line: TJSONObject;
-  I: Integer;
 begin
   try
     Line := TJSONObject.Create;
     try
       Line.AddPair('ts', NowUTCString);
       Line.AddPair('event', Kind);
+      { Nested, not spliced: Data is the caller's payload and may legitimately
+        carry its own 'ts' or 'event' key. }
       if Data <> nil then
-        for I := 0 to Data.Count - 1 do
-          Line.AddPair(Data.Pairs[I].JsonString.Value,
-            CompactValue(Data.Pairs[I].JsonValue, Data));
+        Line.AddPair('data', CompactForJournal(Data))
+      else
+        Line.AddPair('data', TJSONObject.Create);
       WriteLine(Line);
     finally
       Line.Free;
