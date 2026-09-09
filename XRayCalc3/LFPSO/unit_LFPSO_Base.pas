@@ -41,7 +41,9 @@ type
 
   { Called on the fitting thread instead of posting WM_CHI_UPDATE, when
     TLFPSO_BASE.OnProgress is assigned. The callee owns Msg.LayeredModel and
-    must free it; it is nil for a step (Full = False) update. }
+    must free it; it is nil for a step (Full = False) update. The engine cannot
+    tell whether the callee freed it, so the callee must free it even when it
+    raises - the engine only disposes the message record itself. }
   TFitProgressEvent = procedure(const Msg: TUpdateFitProgressMsg) of object;
 
   TLayerIndexes = array [1..3] of SmallInt;
@@ -155,8 +157,12 @@ type
       property Params: TFitParams write SetParams;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
       property Polynomes:TProfileFunctions read GetPolynomes;
+      { Assigned: called on the fitting thread in place of PostMessage. The
+        callee owns Msg.LayeredModel and must free it, raise or not. }
       property OnProgress: TFitProgressEvent read FOnProgress write FOnProgress;
       property Seed: Integer read FSeed write FSeed;
+      { Plain fields written by the fitting thread with no interlocking: read
+        them only after Run has returned. }
       property BestChiSquare: single read FAbsoluteBestChiSqr;
       property BestCurve: TDataArray read FBestCurve;
 
@@ -817,8 +823,11 @@ begin
 
   if Assigned(FOnProgress) then
   begin
-    FOnProgress(msg_prm^);      // the callee owns msg_prm.LayeredModel
-    Dispose(msg_prm);
+    try
+      FOnProgress(msg_prm^);    // the callee owns msg_prm.LayeredModel
+    finally
+      Dispose(msg_prm);         // the record is ours even if the callee raises
+    end;
   end
   else
     PostMessage(
@@ -850,8 +859,11 @@ begin
 
   if Assigned(FOnProgress) then
   begin
-    FOnProgress(msg_prm^);
-    Dispose(msg_prm);
+    try
+      FOnProgress(msg_prm^);
+    finally
+      Dispose(msg_prm);
+    end;
   end
   else
     PostMessage(

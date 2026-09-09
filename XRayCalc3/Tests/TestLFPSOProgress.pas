@@ -17,16 +17,22 @@ interface
 
 uses
   DUnitX.TestFramework,
+  System.SysUtils,
   unit_Types,
   unit_materials,
   unit_LFPSO_Base,
   unit_LFPSO_Periodic;
 
 type
+  { Raised from the progress callback to prove that a callee that blows up
+    still leaves nothing behind. }
+  ETestProgressAbort = class(Exception);
+
   [TestFixture]
   TTestLFPSOProgress = class
   private
     FSavedHenkeDir: string;
+    FRaiseOnProgress: Boolean;   // make HandleProgress raise once it has freed
     FFullCount: Integer;         // Full = True  callbacks seen
     FStepCount: Integer;         // Full = False callbacks seen
     FFullWithModel: Integer;     // of those, how many carried a model
@@ -48,13 +54,15 @@ type
     [Test] procedure Test_Seed_DefaultIsMinusOne;
     [Test] procedure Test_OnProgress_IsCalledWithAFullModel;
     [Test] procedure Test_Seed_SameSeedGivesSameBestChiSquare;
+    [Test] procedure Test_Seed_DifferentSeedsGiveDifferentAnswers;
+    [Test] procedure Test_OnProgress_ThatRaises_LeaksNothing;
     [Test] procedure Test_BestCurve_IsNotEmptyAfterARun;
   end;
 
 implementation
 
 uses
-  System.SysUtils, System.IOUtils,
+  System.IOUtils,
   unit_Config,
   unit_calc;
 
@@ -72,7 +80,8 @@ const
   INIT_H1 = 38.0;  INIT_S1 = 2.5;  INIT_R1 = 2.60;
   INIT_H2 = 22.0;  INIT_S2 = 2.5;  INIT_R2 = 9.50;
 
-  TEST_SEED = 7;
+  TEST_SEED  = 7;
+  OTHER_SEED = 99;
 
 { ---------------- helpers ---------------- }
 
@@ -119,6 +128,7 @@ begin
   FStepCount := 0;
   FFullWithModel := 0;
   FStepWithModel := 0;
+  FRaiseOnProgress := False;
 end;
 
 procedure TTestLFPSOProgress.TearDown;
@@ -152,6 +162,9 @@ begin
       Inc(FStepWithModel);
   end;
   Msg.LayeredModel.Free;   // the callee owns it; Free copes with nil
+
+  if FRaiseOnProgress then
+    raise ETestProgressAbort.Create('the callee blew up after freeing the model');
 end;
 
 function TTestLFPSOProgress.MakeCalcParams: TCalcThreadParams;
@@ -324,6 +337,51 @@ begin
 
   Assert.AreEqual(Single(Chi1), Single(Chi2), Single(0),
     Format('the same seed must give the same answer: %.10g vs %.10g', [Chi1, Chi2]));
+end;
+
+{ The reproducibility test above would pass just as well on an engine that
+  ignored the seed entirely, so pin down the other half: a different seed must
+  take the swarm somewhere else. }
+procedure TTestLFPSOProgress.Test_Seed_DifferentSeedsGiveDifferentAnswers;
+var
+  Chi1, Chi2: Single;
+  Curve1, Curve2: TDataArray;
+begin
+  if not TablesReady then
+    Assert.Pass('Henke tables for Si and Mo are not installed: ' + HENKE_DB_PATH);
+
+  RunFit(TEST_SEED, False, Chi1, Curve1);
+  RunFit(OTHER_SEED, False, Chi2, Curve2);
+
+  Assert.AreNotEqual(Single(Chi1), Single(Chi2), Single(0),
+    Format('two seeds must not give the same answer: %.10g vs %.10g', [Chi1, Chi2]));
+end;
+
+{ The engine disposes the message record in a finally, so an exception out of
+  the callee unwinds Run without stranding it. The callee frees the model before
+  it raises, as the contract demands, so the suite must still end at 0 leaked. }
+procedure TTestLFPSOProgress.Test_OnProgress_ThatRaises_LeaksNothing;
+var
+  BestChi: Single;
+  BestCurve: TDataArray;
+  Raised: Boolean;
+begin
+  if not TablesReady then
+    Assert.Pass('Henke tables for Si and Mo are not installed: ' + HENKE_DB_PATH);
+
+  FRaiseOnProgress := True;
+  Raised := False;
+  try
+    RunFit(TEST_SEED, True, BestChi, BestCurve);
+  except
+    on ETestProgressAbort do
+      Raised := True;
+  end;
+
+  Assert.IsTrue(Raised, 'the exception must come out of Run, not be swallowed');
+  Assert.AreEqual(1, FFullCount,
+    'the very first update is a Full one, and it must have aborted the run');
+  Assert.AreEqual(1, FFullWithModel, 'that update carried a model to free');
 end;
 
 procedure TTestLFPSOProgress.Test_BestCurve_IsNotEmptyAfterARun;
