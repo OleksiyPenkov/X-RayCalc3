@@ -71,7 +71,10 @@ uses
   unit_MCPUniversal in '..\..\XRC_MCP\units\unit_MCPUniversal.pas',
   TestMCPUniversal in 'TestMCPUniversal.pas',
   unit_MCPJobs in '..\..\XRC_MCP\units\unit_MCPJobs.pas',
-  TestMCPJobs in 'TestMCPJobs.pas';
+  TestMCPJobs in 'TestMCPJobs.pas',
+  unit_universal_pso in '..\..\Shared\Universal\unit_universal_pso.pas',
+  unit_universal_optimizer in '..\..\Shared\Universal\unit_universal_optimizer.pas',
+  TestMCPUniversalJob in 'TestMCPUniversalJob.pas';
 
 {$R *.res}
 

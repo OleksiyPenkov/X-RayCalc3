@@ -22,7 +22,7 @@ uses
   System.SysUtils, System.JSON,
   unit_universal_types, unit_universal_templates,
   unit_MCPVersion, unit_MCPErrors, unit_MCPUnits, unit_MCPSandbox,
-  unit_MCPMaterials;
+  unit_MCPMaterials, unit_MCPUniversal;
 
 const
   // Reported by describe_server.limits. The values are the requirements'
@@ -58,7 +58,10 @@ const
     'The engine has no scale, background or resolution parameters either; asking for ' +
     'any of them is refused with error not_fittable.';
 
-  FIT_TOP_K_RULE = 'see optimize_mirror description';
+  { The one rule, kept in the unit that applies it: DistinctTopK is what
+    optimize_mirror ranks its candidates with, and describe_server must not
+    describe a different one. }
+  FIT_TOP_K_RULE = TOP_K_RULE;
 
   ENGINE_DESCRIPTION =
     'X-Ray Calc 3 (Shared/Math, XRayCalc3/LFPSO, Shared/Universal) compiled into this binary';

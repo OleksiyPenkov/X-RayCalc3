@@ -37,7 +37,7 @@ uses
   System.SysUtils, System.JSON, System.SyncObjs,
   unit_Types,
   unit_universal_types, unit_universal_templates,
-  unit_MCPStructure;
+  unit_MCPJobs, unit_MCPStructure;
 
 var
   /// <summary>Serialises TMaterialMixer.Initialize, which changes the process
@@ -138,6 +138,33 @@ function GenomeToStructure(const G: TGenome; const C: TUniversalConfig;
 function DistinctTopK(const Particles: TParticleArray; K: Integer;
   const ElementNames: TArray<string>): TArray<Integer>;
 
+/// <summary>The pairwise half of the top-k rule: True when A and B are far
+/// enough apart to be worth reporting side by side. DistinctTopK applies it
+/// within the swarm; it is exported because the candidate that always takes
+/// rank 1 - the optimizer's all-time best, which is not an entry of the final
+/// swarm array - has to be measured against the swarm's own with the same
+/// yardstick.</summary>
+function GenomesDistinct(const A, B: TGenome;
+  const ElementNames: TArray<string>): Boolean;
+
+/// <summary>The optimize_mirror job body (design note section 5). Seeds
+/// System.RandSeed from Job.Seed, runs TUniversalOptimizer over Config with the
+/// job folder as its output directory, and leaves in Job.ResultObj the best
+/// candidate, the distinct top-k alternatives, the files the run wrote and the
+/// configuration it used. One .xrfx package per rank is written next to them as
+/// rank_&lt;r&gt;.xrfx.
+///
+/// Cancellation: the optimizer is asked to stop from the progress callback, and
+/// a run that was cut short returns <b>without</b> a result, so the job ends
+/// cancelled with whatever the engine wrote still on disk. The flag can only be
+/// looked at once per iteration - the engine offers no finer hook - so a job
+/// with a large population stops within one iteration, not within a second.
+///
+/// Raises EMCPError('optimizer_error') when the engine reported an error (it
+/// catches its own exceptions and calls OnError, so the message is picked up
+/// after Run returns) and when Run ended without a final state.</summary>
+procedure RunOptimizeJob(Job: TJob; const Config: TUniversalConfig; TopK: Integer);
+
 const
   /// The rule DistinctTopK applies, for describe_server and the optimize_mirror
   /// tool description.
@@ -155,15 +182,32 @@ const
   /// distinct.
   TOPK_GAMMA_TOLERANCE = 0.05;
 
+  /// The largest top_k a client may ask optimize_mirror for.
+  MAX_TOP_K = 20;
+  /// The default when it asks for none.
+  DEFAULT_TOP_K = 5;
+
+  /// Said in the result of every optimize_mirror job: one results folder is
+  /// written per run, not per candidate, so the .xrfx of a lower rank carries
+  /// the winner's curves and progress log. What is rank-specific in it is the
+  /// manifest and the structure.
+  XRFX_SHARED_RESULTS_NOTE =
+    'results folder is shared; rank-specific data are the manifest and structure';
+
+  /// How far EvaluateStructure may land from the figure of merit the optimizer
+  /// reported for the same candidate before the result carries a warning.
+  CONSISTENCY_TOLERANCE = 1E-4;
+
 implementation
 
 uses
-  System.Math, System.Generics.Collections,
+  System.Math, System.IOUtils, System.Generics.Collections,
   System.Generics.Defaults,
   math_complex,
   cmd_unit_types,
   unit_materials, unit_materials_mix,
-  unit_universal_fitness, unit_universal_io, unit_xrf_lines,
+  unit_universal_fitness, unit_universal_io, unit_universal_optimizer,
+  unit_xrf_lines, unit_xrfx_package,
   unit_MCPErrors, unit_MCPMaterials, unit_MCPSandbox, unit_MCPUnits;
 
 const
@@ -1092,6 +1136,391 @@ begin
   end;
 
   Result := Accepted;
+end;
+
+{ ------------------------------------------------------- the optimize job -- }
+
+type
+  /// The optimizer's event sink for one run. It lives on the worker thread for
+  /// as long as Run does; every event fires on that same thread, so no
+  /// synchronisation is needed beyond what TJob already does for itself.
+  TOptimizeRunner = class
+  private
+    FJob: TJob;
+    FOptimizer: TUniversalOptimizer;
+    FNames: TArray<string>;
+    FLastIteration: Integer;
+    FErrorMsg: string;
+    FHasError: Boolean;
+    FCancelSeen: Boolean;
+  public
+    constructor Create(AJob: TJob; const ANames: TArray<string>);
+    procedure HandleIteration(const Data: TIterationData);
+    procedure HandleError(const AMessage: string);
+    property Optimizer: TUniversalOptimizer read FOptimizer write FOptimizer;
+    /// The last iteration number the engine reported, which is how many
+    /// iterations actually ran: TOptState.Iteration is stamped with the
+    /// configured budget whether the loop reached it or not.
+    property LastIteration: Integer read FLastIteration;
+    property ErrorMsg: string read FErrorMsg;
+    property HasError: Boolean read FHasError;
+    /// True when the progress callback saw the cancellation flag and asked the
+    /// engine to stop, so the run was cut short and must not report a result.
+    property CancelSeen: Boolean read FCancelSeen;
+  end;
+
+constructor TOptimizeRunner.Create(AJob: TJob; const ANames: TArray<string>);
+begin
+  inherited Create;
+  FJob := AJob;
+  FNames := ANames;
+  FLastIteration := 0;
+end;
+
+procedure TOptimizeRunner.HandleIteration(const Data: TIterationData);
+begin
+  FLastIteration := Data.Iteration;
+  FJob.Progress(Data.Iteration, Data.FoM,
+    Format('%s d=%.1f gamma=%.3f N=%d',
+      [GenomeKey(Data.BestGenome, FNames), Data.BestGenome.d,
+       Data.BestGenome.Gamma, NRound(Data.BestGenome.N)]));
+  { The only place the engine hands control back, so the only place the
+    cancellation flag can be looked at. }
+  if FJob.CancelRequested then
+  begin
+    FCancelSeen := True;
+    if FOptimizer <> nil then
+      FOptimizer.Cancel;
+  end;
+end;
+
+procedure TOptimizeRunner.HandleError(const AMessage: string);
+begin
+  { Run catches its own exceptions and calls this from inside its except block,
+    then returns normally. The message is kept and turned into an EMCPError by
+    the caller, after Run has come back. Only the first is kept: a second one
+    would be a consequence of the first. }
+  if not FHasError then
+  begin
+    FHasError := True;
+    FErrorMsg := AMessage;
+  end;
+end;
+
+/// The path a client sees: relative to the work directory when it is under it.
+function JobRelPath(const Abs: string): string;
+begin
+  if WorkDir <> nil then
+    Result := WorkDir.RelativePath(Abs)
+  else
+    Result := Abs;
+end;
+
+/// {name, lambda, theta_bragg_deg, r_peak, fwhm_deg, valid} per line, the same
+/// shape evaluate_lines reports. Caller frees.
+function LinesResultJSON(const Lines: array of TXRFLine;
+  const Res: TTargetResults): TJSONArray;
+var
+  i: Integer;
+  JLine: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  try
+    for i := 0 to High(Lines) do
+    begin
+      JLine := TJSONObject.Create;
+      JLine.AddPair('name', Lines[i].Name);
+      JLine.AddPair('lambda', JSONArgs.Num(Lines[i].Lambda));
+      if i <= High(Res) then
+      begin
+        JLine.AddPair('theta_bragg_deg', JSONArgs.Num(Res[i].ThetaBragg));
+        JLine.AddPair('r_peak', JSONArgs.Num(Res[i].RPeak));
+        JLine.AddPair('fwhm_deg', JSONArgs.Num(Res[i].FWHM));
+        JLine.AddPair('valid', TJSONBool.Create(Res[i].Valid));
+      end;
+      Result.AddElement(JLine);
+    end;
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
+/// EvaluateStructure over the structure of rank 1, compared with the figure of
+/// merit the optimizer reported for the same candidate. '' when they agree.
+/// The check is the answer to "does the structure I am shown reproduce the
+/// number I am shown", and it is never fatal: a warning is more useful than a
+/// failed job.
+function ConsistencyWarning(const JStructure: TJSONObject;
+  const C: TUniversalConfig; ReportedFoM: Double): string;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+  Res: TTargetResults;
+  Check: Single;
+  Scale: Double;
+begin
+  Result := '';
+  try
+    S := StructureFromJSON(JStructure, Info);
+    Check := EvaluateStructure(S, Info, C.Lines, C.Fitness, Res);
+  except
+    on E: Exception do
+      Exit(Format('The reported structure could not be re-scored: %s', [E.Message]));
+  end;
+  Scale := Abs(ReportedFoM);
+  if Scale < 1E-12 then
+    Scale := 1;
+  if Abs(Check - ReportedFoM) / Scale > CONSISTENCY_TOLERANCE then
+    Result := Format(
+      'The structure reported for rank 1 scores %.9g when it is fed back ' +
+      'through evaluate_lines, but the optimizer reported %.9g for the genome ' +
+      'it came from. Trust the genome; the structure is a report of it.',
+      [Check, ReportedFoM]);
+end;
+
+procedure RunOptimizeJob(Job: TJob; const Config: TUniversalConfig; TopK: Integer);
+var
+  C: TUniversalConfig;
+  Runner: TOptimizeRunner;
+  Opt: TUniversalOptimizer;
+  State: TOptState;
+  Templates: TTemplateLibrary;
+  Names: TArray<string>;
+  Densities: TArray<Single>;
+  Lambdas: TArray<Single>;
+  SubDensity: Single;
+  Mixer: TMaterialMixer;
+  Fitness: TUniversalFitness;
+  Idxs: TArray<Integer>;
+  Ranks: TArray<TGenome>;
+  Res: TTargetResults;
+  PerElem: TArray<TXRFXElementResult>;
+  ConfigPath, ResultsDir, XRFXPath: string;
+  Result_, JRank, JFiles: TJSONObject;
+  JTopK: TJSONArray;
+  FoM: Double;
+  BestFoM: Double;
+  JBestStructure: TJSONObject;
+  Warning: string;
+  WasConsole, Cancelled: Boolean;
+  i, r: Integer;
+begin
+  if Job = nil then
+    raise EMCPError.Create('internal', 'The optimize job body was called without a job');
+  if TopK < 1 then
+    TopK := 1;
+  if TopK > MAX_TOP_K then
+    TopK := MAX_TOP_K;
+
+  C := Config;
+  ResultsDir := TPath.Combine(Job.Dir, 'results');
+  C.OutputDir := ResultsDir;
+  TDirectory.CreateDirectory(ResultsDir);
+
+  // The configuration exactly as the run will use it, next to the results the
+  // run writes. CreateXRFXPackage copies this file into the package.
+  ConfigPath := TPath.Combine(Job.Dir, 'config.json');
+  TUniversalIO.SaveConfig(C, ConfigPath);
+
+  Job.MaxIterations := C.Optimizer.Iterations;
+
+  SetLength(Names, Length(C.ElementPool));
+  for i := 0 to High(C.ElementPool) do
+    Names[i] := C.ElementPool[i];
+
+  Runner := TOptimizeRunner.Create(Job, Names);
+  try
+    Opt := TUniversalOptimizer.Create(C);
+    try
+      Runner.Optimizer := Opt;
+      Opt.OnIteration := Runner.HandleIteration;
+      Opt.OnError := Runner.HandleError;
+
+      { TMaterialMixer.Initialize changes the process working directory while it
+        reads, so the whole run is made under the lock. The only other holder is
+        evaluate_lines, which takes it for the length of one Initialize. }
+      HenkeCwdLock.Acquire;
+      { TUniversalIO.LogIteration writes its progress line to standard output
+        when the process has a console - which this one does, and standard
+        output is the JSON-RPC transport. Nothing in the engine can be told not
+        to, so IsConsole is cleared for the length of the run. It is read
+        nowhere in the write path of the protocol (WriteLn(Output, ...) does not
+        consult it), only by code that decides between a console message and a
+        dialog. }
+      WasConsole := IsConsole;
+      try
+        IsConsole := False;
+        { The seed, immediately before Run: TUniversalPSO draws every random
+          number on this thread, and RandSeed is process-global, which is why
+          only one job runs at a time. }
+        RandSeed := Job.Seed;
+        Opt.Run;
+      finally
+        IsConsole := WasConsole;
+        HenkeCwdLock.Release;
+      end;
+
+      if Runner.HasError then
+        raise EMCPError.Create('optimizer_error', Runner.ErrorMsg,
+          JobRelPath(ConfigPath));
+
+      { A run that was asked to stop leaves no result: the job ends cancelled
+        and what the engine wrote stays in the job folder. A cancel that landed
+        after the last progress report was never acted on, so that run finished
+        and keeps its answer. }
+      if Runner.CancelSeen then
+        Exit;
+
+      State := Opt.FinalState;
+      if State.Particles = nil then
+        raise EMCPError.Create('optimizer_error',
+          'The optimizer returned without a final state');
+
+      Templates := Opt.FinalTemplates;
+      Names := Opt.FinalInfo.ElementNames;
+      Densities := Opt.FinalInfo.ElementDensities;
+      SubDensity := Opt.FinalInfo.SubstrateDensity;
+    finally
+      Opt.Free;
+    end;
+
+    { Rank 1 is the optimizer's all-time best, which is not necessarily an entry
+      of the final swarm array; DistinctTopK ranks the swarm and cannot see it,
+      so the alternatives are filtered against it here with the same rule. }
+    SetLength(Ranks, 1);
+    Ranks[0] := State.ABest;
+    Idxs := DistinctTopK(State.Particles, TopK, Names);
+    for i := 0 to High(Idxs) do
+    begin
+      if Length(Ranks) >= TopK then
+        Break;
+      if GenomesDistinct(State.Particles[Idxs[i]].PBest, State.ABest, Names) then
+      begin
+        SetLength(Ranks, Length(Ranks) + 1);
+        Ranks[High(Ranks)] := State.Particles[Idxs[i]].PBest;
+      end;
+    end;
+
+    SetLength(Lambdas, Length(C.Lines));
+    for i := 0 to High(C.Lines) do
+      Lambdas[i] := C.Lines[i].Lambda;
+
+    Cancelled := False;
+    Result_ := TJSONObject.Create;
+    try
+      JTopK := TJSONArray.Create;
+      Result_.AddPair('top_k', JTopK);
+      BestFoM := 0;
+      JBestStructure := nil;
+
+      { One mixer and one fitness for every rank: they are the run's own, rebuilt
+        from the element list and the templates the run ended with, so a genome
+        scores here exactly what it scored inside Run. }
+      Mixer := TMaterialMixer.Create;
+      try
+        HenkeCwdLock.Acquire;
+        try
+          Mixer.Initialize(Names, Lambdas, C.Substrate, C.HenkePath);
+        finally
+          HenkeCwdLock.Release;
+        end;
+
+        Fitness := TUniversalFitness.Create(Mixer, C, Templates);
+        try
+          for r := 0 to High(Ranks) do
+          begin
+            { Packaging a rank writes a zip; a cancel that arrives here is acted
+              on rather than made to wait for all of them. }
+            if Job.CancelRequested then
+            begin
+              Cancelled := True;
+              Break;
+            end;
+
+            SetLength(Res, 0);
+            // Evaluate returns the negated figure of merit: the PSO minimises.
+            FoM := -Fitness.Evaluate(Ranks[r], Res);
+
+            JRank := TJSONObject.Create;
+            JTopK.AddElement(JRank);
+            JRank.AddPair('rank', TJSONNumber.Create(r + 1));
+            JRank.AddPair('fom', JSONArgs.Num(FoM));
+            JRank.AddPair('genome', GenomeToJSON(Ranks[r], Names));
+            JRank.AddPair('structure',
+              GenomeToStructure(Ranks[r], C, Templates, Names, Densities, SubDensity));
+            JRank.AddPair('lines', LinesResultJSON(C.Lines, Res));
+
+            SetLength(PerElem, Length(C.Lines));
+            for i := 0 to High(C.Lines) do
+            begin
+              PerElem[i].Line := C.Lines[i].Name;
+              if i <= High(Res) then
+              begin
+                PerElem[i].PeakR := Res[i].RPeak;
+                PerElem[i].FWHM := Res[i].FWHM;
+              end;
+            end;
+
+            XRFXPath := TPath.Combine(Job.Dir, Format('rank_%d%s', [r + 1, XRFX_EXT]));
+            CreateXRFXPackage(C, Ranks[r], FoM, PerElem, ResultsDir, ConfigPath,
+              XRFXPath);
+            JRank.AddPair('xrfx', JobRelPath(XRFXPath));
+            JRank.AddPair('note', XRFX_SHARED_RESULTS_NOTE);
+
+            if r = 0 then
+            begin
+              BestFoM := FoM;
+              JBestStructure := JRank.GetValue('structure') as TJSONObject;
+              Result_.AddPair('best', JRank.Clone as TJSONObject);
+            end;
+          end;
+        finally
+          Fitness.Free;
+        end;
+      finally
+        Mixer.Free;
+      end;
+
+      Result_.AddPair('job_id', Job.Id);
+      Result_.AddPair('seed', TJSONNumber.Create(Job.Seed));
+      Result_.AddPair('config_used', ConfigToJSON(C));
+      if C.TemplatePath = '' then
+        Result_.AddPair('template_file', TJSONNull.Create)
+      else
+        Result_.AddPair('template_file', JobRelPath(C.TemplatePath));
+      Result_.AddPair('iterations_run', TJSONNumber.Create(Runner.LastIteration));
+      Result_.AddPair('elapsed_s', JSONArgs.Num(Job.ElapsedMs / 1000));
+      Result_.AddPair('top_k_rule', TOP_K_RULE);
+
+      JFiles := TJSONObject.Create;
+      Result_.AddPair('files', JFiles);
+      JFiles.AddPair('progress_log', JobRelPath(TPath.Combine(ResultsDir, 'progress.log')));
+      JFiles.AddPair('checkpoint', JobRelPath(TPath.Combine(ResultsDir, 'checkpoint.json')));
+      JFiles.AddPair('population', JobRelPath(TPath.Combine(ResultsDir, 'population.json')));
+      JFiles.AddPair('config', JobRelPath(ConfigPath));
+
+      if (JBestStructure <> nil) and not Cancelled then
+      begin
+        Warning := ConsistencyWarning(JBestStructure, C, BestFoM);
+        if Warning <> '' then
+          Result_.AddPair('consistency_warning', Warning);
+      end;
+    except
+      Result_.Free;
+      raise;
+    end;
+
+    { The job manager records a body that left a result as finished, so a run
+      that was cut short throws its half-built answer away and lets the job end
+      cancelled. The files it wrote are still in the job folder. }
+    if Cancelled then
+      Result_.Free
+    else
+      Job.ResultObj := Result_;
+  finally
+    Runner.Free;
+  end;
 end;
 
 initialization
