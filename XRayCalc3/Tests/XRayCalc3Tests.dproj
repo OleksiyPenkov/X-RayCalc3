@@ -1,4 +1,4 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
         <ProjectVersion>20.3</ProjectVersion>
@@ -110,6 +110,8 @@
         <DCCReference Include="TestMCPJournal.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPUnits.pas"/>
         <DCCReference Include="TestMCPUnits.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPStructure.pas"/>
+        <DCCReference Include="TestMCPStructure.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

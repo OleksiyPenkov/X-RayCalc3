@@ -58,7 +58,9 @@ uses
   unit_MCPJournal in '..\..\XRC_MCP\units\unit_MCPJournal.pas',
   TestMCPJournal in 'TestMCPJournal.pas',
   unit_MCPUnits in '..\..\XRC_MCP\units\unit_MCPUnits.pas',
-  TestMCPUnits in 'TestMCPUnits.pas';
+  TestMCPUnits in 'TestMCPUnits.pas',
+  unit_MCPStructure in '..\..\XRC_MCP\units\unit_MCPStructure.pas',
+  TestMCPStructure in 'TestMCPStructure.pas';
 
 {$R *.res}
 

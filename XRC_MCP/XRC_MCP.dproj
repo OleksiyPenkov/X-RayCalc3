@@ -126,6 +126,13 @@
         <DCCReference Include="units\unit_MCPUnits.pas"/>
         <DCCReference Include="units\unit_MCPJournal.pas"/>
         <DCCReference Include="units\unit_MCPJobs.pas"/>
+        <DCCReference Include="..\Shared\Math\math_complex.pas"/>
+        <DCCReference Include="..\Shared\Math\math_globals.pas"/>
+        <DCCReference Include="..\XRayCalc3\Units\unit_Types.pas"/>
+        <DCCReference Include="..\XRayCalc3\Units\unit_consts.pas"/>
+        <DCCReference Include="..\XRayCalc3\Units\unit_Config.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_materials.pas"/>
+        <DCCReference Include="units\unit_MCPStructure.pas"/>
         <DCCReference Include="units\unit_ToolsReference.pas"/>
         <DCCReference Include="units\unit_ToolsCalc.pas"/>
         <DCCReference Include="units\unit_ToolsJobs.pas"/>
