@@ -114,6 +114,8 @@
         <DCCReference Include="TestMCPStructure.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPMaterials.pas"/>
         <DCCReference Include="TestMCPMaterials.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPCalc.pas"/>
+        <DCCReference Include="TestMCPCalc.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

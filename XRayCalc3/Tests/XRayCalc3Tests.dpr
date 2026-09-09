@@ -62,7 +62,9 @@ uses
   unit_MCPStructure in '..\..\XRC_MCP\units\unit_MCPStructure.pas',
   TestMCPStructure in 'TestMCPStructure.pas',
   unit_MCPMaterials in '..\..\XRC_MCP\units\unit_MCPMaterials.pas',
-  TestMCPMaterials in 'TestMCPMaterials.pas';
+  TestMCPMaterials in 'TestMCPMaterials.pas',
+  unit_MCPCalc in '..\..\XRC_MCP\units\unit_MCPCalc.pas',
+  TestMCPCalc in 'TestMCPCalc.pas';
 
 {$R *.res}
 
