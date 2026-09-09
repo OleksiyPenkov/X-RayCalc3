@@ -23,6 +23,13 @@ type
     [Test] procedure XRCData_HasAllSixteenLayerKeys;
     [Test] procedure BuildLayeredModel_LayerCount;
     [Test] procedure BuildLayeredModel_TopLayerIsCap;
+    // fix round 1
+    [Test] procedure FromJSON_HugeN_Raises;
+    [Test] procedure FromJSON_NonFiniteN_Raises;
+    [Test] procedure XRCData_MultiLayerCapStaysAStack;
+    [Test] procedure ToJSON_BadCapIndex_RaisesInternal;
+    [Test] procedure FillDefaultDensities_SubstrateAlwaysBulk;
+    [Test] procedure ValidateMaterials_EmptyNameIsReported;
   end;
 
 implementation
@@ -37,6 +44,13 @@ const
   TWO_STACK_JSON = '{"substrate":{"material":"Si","sigma":2.0},' +
     '"stacks":[{"N":10,"layers":[{"material":"W","thickness":10.0}]},' +
     '{"N":5,"layers":[{"material":"Mo","thickness":20.0}]}]}';
+
+  // an XRC data string whose first stack is titled 'Cap' but is a real stack:
+  // three repeats of two layers. It must not be flattened into a JSON "cap".
+  FAT_CAP_XRC = '{"Stacks":[{"T":"Cap","N":3,"Layers":[' +
+    '{"M":"Ru","H":10.0,"s":3.0,"r":12.4},' +
+    '{"M":"C","H":20.0,"s":3.0,"r":2.2}]}],' +
+    '"Subs":{"M":"Si","s":2.0,"r":0.0}}';
 
 function TTestMCPStructure.Parse(const S: string): TJSONObject;
 begin
@@ -366,6 +380,166 @@ begin
   finally
     M.Free;
   end;
+end;
+
+{ ---------------------------------------------------------- fix round 1 -- }
+
+procedure TTestMCPStructure.FromJSON_HugeN_Raises;
+var
+  J: TJSONObject;
+begin
+  // Length(Layers) * N would overflow Integer and wrap back under MAX_LAYERS
+  J := Parse('{"substrate":{"material":"Si"},"stacks":[{"N":1500000000,' +
+    '"layers":[{"material":"W","thickness":10.0},{"material":"Si","thickness":10.0}]}]}');
+  try
+    try
+      var S: TFitStructure;
+      var Info: TStructureInfo;
+      S := StructureFromJSON(J, Info);
+      Assert.Fail('an N of 1.5e9 must be refused, not wrapped');
+    except
+      on E: EMCPError do
+        Assert.AreEqual('invalid_structure', E.Code);
+    end;
+  finally
+    J.Free;
+  end;
+end;
+
+procedure TTestMCPStructure.FromJSON_NonFiniteN_Raises;
+var
+  J: TJSONObject;
+begin
+  // Round() of 1e30 raises EInvalidOp; the client must see a structured error
+  J := Parse('{"substrate":{"material":"Si"},"stacks":[{"N":1e30,' +
+    '"layers":[{"material":"W","thickness":10.0}]}]}');
+  try
+    try
+      var S: TFitStructure;
+      var Info: TStructureInfo;
+      S := StructureFromJSON(J, Info);
+      Assert.Fail('an N of 1e30 must be refused');
+    except
+      on E: EMCPError do
+      begin
+        Assert.AreEqual('invalid_structure', E.Code);
+        Assert.IsTrue(Pos('N', E.Detail) > 0, 'Detail names the offending path, got "' + E.Detail + '"');
+      end;
+    end;
+  finally
+    J.Free;
+  end;
+end;
+
+procedure TTestMCPStructure.XRCData_MultiLayerCapStaysAStack;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+  JOut: TJSONObject;
+  JStacks: TJSONArray;
+begin
+  S := StructureFromXRCData(FAT_CAP_XRC, Info);
+
+  Assert.AreEqual(1, Length(S.Stacks));
+  Assert.AreEqual(3, S.Stacks[0].N);
+  Assert.AreEqual(2, Length(S.Stacks[0].Layers));
+  Assert.AreEqual(-1, Info.CapIndex, 'a repeated multi-layer stack is not a cap');
+  Assert.IsFalse(Info.HasCap, 'HasCap');
+  Assert.AreEqual(1, Length(Info.StackMap), 'it stays an ordinary stack');
+  Assert.AreEqual(0, Info.StackMap[0]);
+
+  JOut := StructureToJSON(S, Info);
+  try
+    Assert.IsNull(JOut.FindValue('cap'), 'no "cap" key');
+    JStacks := JOut.FindValue('stacks') as TJSONArray;
+    Assert.AreEqual(1, JStacks.Count);
+    Assert.AreEqual(3, JOut.GetValue<Integer>('stacks[0].N'));
+    Assert.AreEqual(2, (JStacks.Items[0] as TJSONObject).GetValue<TJSONArray>('layers').Count,
+      'both layers survive the round trip');
+    Assert.AreEqual('Ru', JOut.GetValue<string>('stacks[0].layers[0].material'));
+    Assert.AreEqual('C', JOut.GetValue<string>('stacks[0].layers[1].material'));
+  finally
+    JOut.Free;
+  end;
+end;
+
+procedure TTestMCPStructure.ToJSON_BadCapIndex_RaisesInternal;
+var
+  S: TFitStructure;
+  Info, Bad: TStructureInfo;
+begin
+  S := StructureFromXRCData(FAT_CAP_XRC, Info);
+  Bad := Info;
+  Bad.CapIndex := 0;   // point at the three-repeat, two-layer stack
+  Bad.HasCap := True;
+  try
+    var J: TJSONObject := StructureToJSON(S, Bad);
+    J.Free;
+    Assert.Fail('a cap index pointing at a multi-layer stack must be refused, not silently truncated');
+  except
+    on E: EMCPError do
+      Assert.AreEqual('internal', E.Code);
+  end;
+end;
+
+procedure TTestMCPStructure.FillDefaultDensities_SubstrateAlwaysBulk;
+var
+  J: TJSONObject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+  M: TLayeredModel;
+  Mats: TMaterials;
+begin
+  J := Parse(RUC_JSON);   // substrate SiO2 with an explicit density of 2.2
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+  // the C layer of the ML stack asks for the bulk value
+  S.Stacks[1].Layers[1].P[3].V := 0;
+
+  M := TLayeredModel.Create;
+  try
+    // stand in for what Generate/ReadHenke would have filled in, so the test
+    // needs no Henke tables
+    SetLength(Mats, 3);
+    Mats[0].Name := 'SiO2'; Mats[0].ro := 2.65;
+    Mats[1].Name := 'Ru';   Mats[1].ro := 12.41;
+    Mats[2].Name := 'C';    Mats[2].ro := 2.26;
+    M.Materials := Mats;
+
+    FillDefaultDensities(S, M);
+  finally
+    M.Free;
+  end;
+
+  // the engine ignores a supplied substrate density, so the echo must be bulk
+  Assert.AreEqual(2.65, Double(S.Subs.P[3].V), 1E-4,
+    'the substrate density is always the bulk value the engine used');
+  // a layer that asked for bulk gets it
+  Assert.AreEqual(2.26, Double(S.Stacks[1].Layers[1].P[3].V), 1E-4);
+  // a layer that supplied one keeps it
+  Assert.AreEqual(12.4, Double(S.Stacks[1].Layers[0].P[3].V), 1E-4);
+  Assert.AreEqual(12.4, Double(S.Stacks[0].Layers[0].P[3].V), 1E-4, 'cap keeps its density');
+end;
+
+procedure TTestMCPStructure.ValidateMaterials_EmptyNameIsReported;
+var
+  J: TJSONObject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+begin
+  J := Parse(RUC_JSON);
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+  S.Stacks[0].Layers[0].Material := '';
+
+  // '' would be indistinguishable from "every material is known"
+  Assert.AreEqual('<empty>', ValidateMaterials(S));
 end;
 
 initialization

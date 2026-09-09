@@ -36,6 +36,11 @@ const
   /// The engine allocates one TCalcLayer per expanded layer and per thread.
   MAX_LAYERS = 20000;
 
+  /// What ValidateMaterials reports for a layer whose material name is blank.
+  /// A blank name is not a valid Henke table name, and returning it verbatim
+  /// would be indistinguishable from "everything is fine".
+  UNNAMED_MATERIAL = '<empty>';
+
   HDR_CAP    = 'Cap';
   HDR_ML     = 'ML';
   HDR_BUFFER = 'Buffer';
@@ -78,11 +83,17 @@ function StructureFromXRCData(const Data: string; out Info: TStructureInfo): TFi
 function BuildLayeredModel(const S: TFitStructure): TLayeredModel;
 
 /// <summary>After Model.Generate, copy the Henke bulk density back into every
-/// layer that asked for it (r = 0), so the server can echo the value used.</summary>
+/// layer that asked for it (r = 0), so the server can echo the value used.
+/// The substrate density is overwritten <b>always</b>, not only when 0: the GUI
+/// engine ignores a user-supplied substrate density. TLayeredModel.PrepareLayers
+/// builds the substrate permittivity from the material's bulk density and never
+/// reads the substrate layer's ro, so the bulk value is the value used.</summary>
 procedure FillDefaultDensities(var S: TFitStructure; Model: TLayeredModel);
 
 /// <summary>'' when every material has a Henke table, otherwise the name of the
-/// first one that has not (TConfig.SystemDir[sdHenke] + Name + '.bin').</summary>
+/// first one that has not (TConfig.SystemDir[sdHenke] + Name + '.bin').
+/// A layer with no material name at all reports UNNAMED_MATERIAL, so that an
+/// empty name is never mistaken for a clean result.</summary>
 function ValidateMaterials(const S: TFitStructure): string;
 
 implementation
@@ -161,6 +172,21 @@ begin
   Result := TJSONNumber(V).AsDouble;
 end;
 
+/// The repeat count of a stack. Range-checked as a Double before Round, because
+/// Round of a value outside the Integer range raises EInvalidOp, and that is not
+/// the structured error a client should get for "N": 1e30.
+function ReadStackN(const JStack: TJSONObject; const Path: string): Integer;
+var
+  D: Double;
+begin
+  D := NumAt(JStack, 'N', Path, False, 1);
+  if IsNan(D) or IsInfinite(D) or (D < 1) or (D > MAX_LAYERS) then
+    StructErr(Format('"N" must be a whole number between 1 and %d', [MAX_LAYERS]), Path);
+  Result := Round(D);
+  if (Result < 1) or (Result > MAX_LAYERS) then
+    StructErr(Format('"N" must be a whole number between 1 and %d', [MAX_LAYERS]), Path);
+end;
+
 /// One JSON layer object -> one TLayerData, fully validated.
 procedure ReadLayer(const JL: TJSONObject; const Path: string;
   const StackID, LayerID: Integer; var L: TLayerData);
@@ -227,7 +253,10 @@ procedure FinishStructure(var S: TFitStructure; var Info: TStructureInfo);
 var
   i, j: Integer;
   D: Single;
-  Total: Integer;
+  Total: Int64;   // Int64 on purpose: Length * N overflows Integer long before
+                  // it reaches MAX_LAYERS, and Release builds have no overflow
+                  // checking, so an Integer accumulator can wrap back under the
+                  // limit and wave a 3-billion-layer structure through
 begin
   Total := 0;
   Info.PeriodicStackIndex := -1;
@@ -236,6 +265,13 @@ begin
 
   for i := 0 to High(S.Stacks) do
   begin
+    // guard the multiplication before making it, not after
+    if S.Stacks[i].N < 1 then
+      StructErr('"N" must be 1 or more', Format('stacks[%d].N', [i]));
+    if S.Stacks[i].N > MAX_LAYERS then
+      StructErr(Format('"N" must not exceed %d', [MAX_LAYERS]),
+        Format('stacks[%d].N', [i]));
+
     D := 0;
     if S.Stacks[i].N > 1 then
       for j := 0 to High(S.Stacks[i].Layers) do
@@ -249,7 +285,9 @@ begin
       Info.N := S.Stacks[i].N;
     end;
 
-    Total := Total + Length(S.Stacks[i].Layers) * S.Stacks[i].N;
+    Total := Total + Int64(Length(S.Stacks[i].Layers)) * Int64(S.Stacks[i].N);
+    if Total > MAX_LAYERS then
+      Break;
   end;
 
   if Total > MAX_LAYERS then
@@ -304,9 +342,7 @@ begin
     JStack := TJSONObject(JStacks.Items[k]);
 
     Result.Stacks[Idx].ID := Idx;
-    Result.Stacks[Idx].N := Round(NumAt(JStack, 'N', Path + '.N', False, 1));
-    if Result.Stacks[Idx].N < 1 then
-      StructErr('"N" must be 1 or more', Path + '.N');
+    Result.Stacks[Idx].N := ReadStackN(JStack, Path + '.N');
 
     JLayers := ArrAt(JStack, 'layers', Path + '.layers', True);
     SetLength(Result.Stacks[Idx].Layers, JLayers.Count);
@@ -374,12 +410,30 @@ begin
   Result.AddPair('density', JSONArgs.Num(L.P[3].V));
 end;
 
+/// The JSON has no room for a multi-layer or repeated cap or buffer: it is one
+/// layer object. Rather than quietly emit the first layer and lose the rest,
+/// refuse an Info that points at a stack the JSON shape cannot hold.
+procedure CheckSingleLayerStack(const S: TFitStructure; const Idx: Integer;
+  const What: string);
+begin
+  if Idx < 0 then
+    Exit;
+  if (Idx > High(S.Stacks)) or (S.Stacks[Idx].N <> 1) or
+     (Length(S.Stacks[Idx].Layers) <> 1) then
+    raise EMCPError.Create('internal',
+      Format('The %s stack must have N = 1 and exactly one layer to be reported as "%s"',
+        [What, What]), Format('stacks[%d]', [Idx]));
+end;
+
 function StructureToJSON(const S: TFitStructure; const Info: TStructureInfo): TJSONObject;
 var
   JStacks, JLayers: TJSONArray;
   JStack, JSubs: TJSONObject;
   k, i, Idx: Integer;
 begin
+  CheckSingleLayerStack(S, Info.CapIndex, 'cap');
+  CheckSingleLayerStack(S, Info.BufferIndex, 'buffer');
+
   Result := TJSONObject.Create;
   try
     JSubs := TJSONObject.Create;
@@ -405,12 +459,11 @@ begin
     end;
     Result.AddPair('stacks', JStacks);
 
-    if (Info.CapIndex >= 0) and (Info.CapIndex <= High(S.Stacks)) and
-       (Length(S.Stacks[Info.CapIndex].Layers) > 0) then
+    // CheckSingleLayerStack above has already established the shape
+    if Info.CapIndex >= 0 then
       Result.AddPair('cap', LayerToJSON(S.Stacks[Info.CapIndex].Layers[0]));
 
-    if (Info.BufferIndex >= 0) and (Info.BufferIndex <= High(S.Stacks)) and
-       (Length(S.Stacks[Info.BufferIndex].Layers) > 0) then
+    if Info.BufferIndex >= 0 then
       Result.AddPair('buffer', LayerToJSON(S.Stacks[Info.BufferIndex].Layers[0]));
   except
     Result.Free;
@@ -587,16 +640,22 @@ begin
     JRoot.Free;
   end;
 
-  // Cap and buffer are recognised by the headers StructureToXRCData writes.
+  // Cap and buffer are recognised by the headers StructureToXRCData writes -
+  // but the title alone is not enough. The JSON "cap" / "buffer" is a single
+  // layer object, so a stack titled 'Cap' that carries several layers or repeats
+  // (N > 1) cannot be reported that way without losing content. Such a stack
+  // stays an ordinary stack in StackMap and keeps all of its layers.
   First := 0;
   Last := High(Result.Stacks);
-  if (Last >= 0) and SameText(Result.Stacks[0].Header, HDR_CAP) then
+  if (Last >= 0) and SameText(Result.Stacks[0].Header, HDR_CAP) and
+     (Result.Stacks[0].N = 1) and (Length(Result.Stacks[0].Layers) = 1) then
   begin
     Info.HasCap := True;
     Info.CapIndex := 0;
     First := 1;
   end;
-  if (Last >= First) and SameText(Result.Stacks[Last].Header, HDR_BUFFER) then
+  if (Last >= First) and SameText(Result.Stacks[Last].Header, HDR_BUFFER) and
+     (Result.Stacks[Last].N = 1) and (Length(Result.Stacks[Last].Layers) = 1) then
   begin
     Info.HasBuffer := True;
     Info.BufferIndex := Last;
@@ -686,9 +745,13 @@ begin
         if BulkOf(S.Stacks[i].Layers[j].Material, Ro) then
           S.Stacks[i].Layers[j].P[3].V := Ro;
 
-  if S.Subs.P[3].V = 0 then
-    if BulkOf(S.Subs.Material, Ro) then
-      S.Subs.P[3].V := Ro;
+  // The substrate is not a "when 0" case. TLayeredModel.PrepareLayers computes
+  // the substrate permittivity from FMaterials[..].ro unconditionally and never
+  // looks at FLayers[High].ro, so a substrate density the client supplied was
+  // not used by the calculation. Echoing it back would be a lie; echo the bulk
+  // value the engine actually used.
+  if BulkOf(S.Subs.Material, Ro) then
+    S.Subs.P[3].V := Ro;
 end;
 
 function ValidateMaterials(const S: TFitStructure): string;
@@ -700,6 +763,15 @@ var
     Result := (Name <> '') and TFile.Exists(Dir + Name + '.bin');
   end;
 
+  // never '' for a failure: '' is the "all materials are known" answer
+  function Report(const Name: string): string;
+  begin
+    if Name = '' then
+      Result := UNNAMED_MATERIAL
+    else
+      Result := Name;
+  end;
+
 var
   i, j: Integer;
 begin
@@ -709,10 +781,10 @@ begin
   for i := 0 to High(S.Stacks) do
     for j := 0 to High(S.Stacks[i].Layers) do
       if not Known(S.Stacks[i].Layers[j].Material) then
-        Exit(S.Stacks[i].Layers[j].Material);
+        Exit(Report(S.Stacks[i].Layers[j].Material));
 
   if not Known(S.Subs.Material) then
-    Exit(S.Subs.Material);
+    Exit(Report(S.Subs.Material));
 end;
 
 end.
