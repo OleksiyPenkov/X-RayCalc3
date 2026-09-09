@@ -8,6 +8,10 @@ uses
   unit_universal_templates;
 
 type
+  // Fills the layer stack for the given target wavelength index.
+  TLayerSetBuilder = reference to procedure(TargetIdx: Integer;
+    var Layers: TLayers);
+
   TUniversalFitness = class
   private
     FMixer: TMaterialMixer;
@@ -30,12 +34,19 @@ type
     function ExtractRPeak: Single;
     function ExtractFWHM(RPeak: Single): Single;
     procedure Convolute(Width: Single);
+    function ComputeFoM(const Build: TLayerSetBuilder; d: Single;
+      NInt: Integer; Penalty: Single; var Results: TTargetResults): Single;
   public
     constructor Create(AMixer: TMaterialMixer; const AConfig: TUniversalConfig;
       const ATemplates: TTemplateLibrary);
 
     function Evaluate(const Genome: TGenome;
       var Results: TTargetResults): Single;
+
+    // Same FoM code as Evaluate, but the layer stack for each target comes
+    // from Builder; d and NInt drive the Bragg angles and FWHM_ref.
+    function EvaluateLayers(const Builder: TLayerSetBuilder; d: Single;
+      NInt: Integer; var Results: TTargetResults): Single;
 
     function GetCurve(const Genome: TGenome; TargetIdx: Integer): TDataArray;
   end;
@@ -346,16 +357,13 @@ begin
   FCurveLen := NewLen;
 end;
 
-function TUniversalFitness.Evaluate(const Genome: TGenome;
+function TUniversalFitness.ComputeFoM(const Build: TLayerSetBuilder;
+  d: Single; NInt: Integer; Penalty: Single;
   var Results: TTargetResults): Single;
 var
   i, j: Integer;
   SinArg: Single;
   FoM, FWHMRef: Single;
-  NInt: Integer;
-  Penalty: Single;
-  Key: string;
-  TemplIdx: Integer;
   ThetaArr: array[0..MAX_LINES-1] of Single;
   RPeakArr: array[0..MAX_LINES-1] of Single;
   FWHMArr: array[0..MAX_LINES-1] of Single;
@@ -364,22 +372,6 @@ var
   ContamSum, Purity, REffective: Single;
 begin
   FoM := 0;
-  Penalty := 0;
-  NInt := NRound(Genome.N);
-
-  // Template negative-thickness penalty
-  if FConfig.Structure.PureElements and (Length(FTemplates) > 0) then
-  begin
-    Key := GetDominantMaterial(Genome.Composition[0]) + '/' +
-           GetDominantMaterial(Genome.Composition[1]);
-    TemplIdx := FindTemplate(FTemplates, Key);
-    if TemplIdx >= 0 then
-    begin
-      if (Genome.d * Genome.Gamma - FTemplates[TemplIdx].GammaReduction < 0) or
-         (Genome.d * (1 - Genome.Gamma) - FTemplates[TemplIdx].OneMinusGammaReduction < 0) then
-        Penalty := Penalty + PENALTY_DEGENERATE;
-    end;
-  end;
 
   // --- Phase 1: Pre-compute Bragg angles ---
   for i := 0 to FTargetCount - 1 do
@@ -395,7 +387,7 @@ begin
     for j := 0 to FTargetCount - 1 do
       CrossR[i, j] := 0;
 
-    SinArg := FConfig.Lines[i].Lambda / (2 * Genome.d);
+    SinArg := FConfig.Lines[i].Lambda / (2 * d);
     if SinArg >= 1.0 then
       Continue;
 
@@ -418,7 +410,7 @@ begin
     if not ValidArr[i] then
       Continue;
 
-    BuildLayers(Genome, i);
+    Build(i, FLayersBuf);
     ScanReflectivity(FConfig.Lines[i].Lambda,
       ThetaArr[i], FScanHalfRange, FScanPoints);
     Convolute(FConfig.Fitness.DeltaTheta);
@@ -464,7 +456,7 @@ begin
 
     // FWHM_ref
     FWHMRef := RadToDeg(
-      FConfig.Lines[i].Lambda / (NInt * Genome.d * Cos(DegToRad(ThetaArr[i])))
+      FConfig.Lines[i].Lambda / (NInt * d * Cos(DegToRad(ThetaArr[i])))
     );
     if FWHMRef < 1e-10 then FWHMRef := 1e-10;
 
@@ -480,6 +472,43 @@ begin
 
   // Return negated FoM (PSO minimizes, we want to maximize FoM)
   Result := -(FoM - Penalty);
+end;
+
+function TUniversalFitness.Evaluate(const Genome: TGenome;
+  var Results: TTargetResults): Single;
+var
+  Penalty: Single;
+  Key: string;
+  TemplIdx: Integer;
+begin
+  Penalty := 0;
+
+  // Template negative-thickness penalty
+  if FConfig.Structure.PureElements and (Length(FTemplates) > 0) then
+  begin
+    Key := GetDominantMaterial(Genome.Composition[0]) + '/' +
+           GetDominantMaterial(Genome.Composition[1]);
+    TemplIdx := FindTemplate(FTemplates, Key);
+    if TemplIdx >= 0 then
+    begin
+      if (Genome.d * Genome.Gamma - FTemplates[TemplIdx].GammaReduction < 0) or
+         (Genome.d * (1 - Genome.Gamma) - FTemplates[TemplIdx].OneMinusGammaReduction < 0) then
+        Penalty := Penalty + PENALTY_DEGENERATE;
+    end;
+  end;
+
+  Result := ComputeFoM(
+    procedure(TargetIdx: Integer; var L: TLayers)
+    begin
+      BuildLayers(Genome, TargetIdx);
+    end,
+    Genome.d, NRound(Genome.N), Penalty, Results);
+end;
+
+function TUniversalFitness.EvaluateLayers(const Builder: TLayerSetBuilder;
+  d: Single; NInt: Integer; var Results: TTargetResults): Single;
+begin
+  Result := ComputeFoM(Builder, d, NInt, 0, Results);
 end;
 
 function TUniversalFitness.GetCurve(const Genome: TGenome;

@@ -32,6 +32,13 @@ type
     Refl: TArray<Double>;
   end;
 
+  // Snapshot of mixer-derived data captured before the mixer is freed in Run
+  TFinalInfo = record
+    ElementNames: TArray<string>;
+    ElementDensities: TArray<Single>;
+    SubstrateDensity: Single;
+  end;
+
   TIterationEvent = procedure(const Data: TIterationData) of object;
   TCompletionEvent = procedure(const Data: TIterationData;
     const Curves: TArray<TCurveData>) of object;
@@ -49,6 +56,8 @@ type
     FWorkerFitness: array of TUniversalFitness;
     FShakeCheckFoM: Single;     // ABestFoM at last shake/window start
     FShakeCheckIter: Integer;   // iteration at last shake/window start
+    FFinalState: TOptState;     // PSO state captured at the end of Run
+    FFinalInfo: TFinalInfo;     // mixer data captured before the mixer is freed
     FOnIteration: TIterationEvent;
     FOnCompleted: TCompletionEvent;
     FOnError: TErrorEvent;
@@ -56,6 +65,7 @@ type
     function BuildIterationData(Iteration: Integer;
       const BestResults: TTargetResults; ElapsedSec: Double): TIterationData;
     function BuildBestInfo(const G: TGenome): string;
+    procedure CaptureFinalInfo;
   public
     constructor Create(const AConfig: TUniversalConfig);
     destructor Destroy; override;
@@ -64,6 +74,12 @@ type
     property OnIteration: TIterationEvent read FOnIteration write FOnIteration;
     property OnCompleted: TCompletionEvent read FOnCompleted write FOnCompleted;
     property OnError: TErrorEvent read FOnError write FOnError;
+
+    // Valid after Run returns. FPSO/FMixer are freed by Run, so these
+    // snapshots (not the engine objects) are what callers must read.
+    property FinalState: TOptState read FFinalState;
+    property FinalInfo: TFinalInfo read FFinalInfo;
+    property FinalTemplates: TTemplateLibrary read FTemplates;
   end;
 
 implementation
@@ -140,6 +156,23 @@ begin
     Names := Names + FConfig.ElementPool[Best];
   end;
   Result := Format('%s d=%.1f', [Names, G.d]);
+end;
+
+procedure TUniversalOptimizer.CaptureFinalInfo;
+var
+  i: Integer;
+begin
+  FFinalInfo := Default(TFinalInfo);
+  if FMixer = nil then
+    Exit;
+  SetLength(FFinalInfo.ElementNames, FMixer.ElementCount);
+  SetLength(FFinalInfo.ElementDensities, FMixer.ElementCount);
+  for i := 0 to FMixer.ElementCount - 1 do
+  begin
+    FFinalInfo.ElementNames[i] := FMixer.GetElementName(i);
+    FFinalInfo.ElementDensities[i] := FMixer.GetElementDensity(i);
+  end;
+  FFinalInfo.SubstrateDensity := FMixer.GetSubstrateDensity;
 end;
 
 procedure TUniversalOptimizer.Run;
@@ -378,6 +411,11 @@ begin
       State := FPSO.GetState;
       State.Iteration := FConfig.Optimizer.Iterations;
       FIO.SaveCheckpoint(State, FConfig, FConfig.OutputDir);
+
+      // Capture what callers need after Run: FPSO and FMixer are freed below.
+      // State is FPSO.GetState with Iteration already stamped (as checkpointed).
+      FFinalState := State;
+      CaptureFinalInfo;
 
       FIO.CloseLog;
 

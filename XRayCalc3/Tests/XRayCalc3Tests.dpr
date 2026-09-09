@@ -64,7 +64,10 @@ uses
   unit_MCPMaterials in '..\..\XRC_MCP\units\unit_MCPMaterials.pas',
   TestMCPMaterials in 'TestMCPMaterials.pas',
   unit_MCPCalc in '..\..\XRC_MCP\units\unit_MCPCalc.pas',
-  TestMCPCalc in 'TestMCPCalc.pas';
+  TestMCPCalc in 'TestMCPCalc.pas',
+  unit_universal_refcalc in '..\..\Shared\Universal\unit_universal_refcalc.pas',
+  unit_universal_fitness in '..\..\Shared\Universal\unit_universal_fitness.pas',
+  TestUniversalFitnessLayers in 'TestUniversalFitnessLayers.pas';
 
 {$R *.res}
 
