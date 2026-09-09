@@ -41,10 +41,13 @@ type
     [Test] procedure ParseCurve_CommaDecimal;
     [Test] procedure ParseCurve_ZeroIntensity_ReplacedByMinPositive;
     [Test] procedure ParseCurve_SkipsNonNumericLines;
+    [Test] procedure ParseCurve_NegativeTheta_RowSkipped_NegativeIntensityKept;
     [Test] procedure ReadMeta_Parses_Lambda_ThetaUnit;
     [Test] procedure ReadMeta_Energy_ConvertedToLambda;
     [Test] procedure ReadMeta_Absent_ThetaUnitAssumed;
     [Test] procedure ReadMeta_Malformed_RaisesInvalidArgument;
+    [Test] procedure ReadMeta_LambdaAndEnergy_LambdaWins;
+    [Test] procedure ReadMeta_NonNumericLambda_RaisesInvalidArgument;
     [Test] procedure LoadMeasurement_2Theta_Converted;
     [Test] procedure LoadMeasurement_BadId_Raises;
     [Test] procedure LoadMeasurement_Missing_RaisesNotFound;
@@ -52,7 +55,13 @@ type
     [Test] procedure Decimate_KeepsEnds;
     [Test] procedure ListMeasurements_ListsSpecimensAndFilters;
     [Test] procedure ListMeasurements_LooseFilesIgnored;
+    [Test] procedure ListMeasurements_BadMeta_DegradesToMetaError;
+    [Test] procedure ListMeasurements_BadMetaLambda_DegradesToMetaError;
+    [Test] procedure ListMeasurements_BadThetaUnit_DegradesToMetaError;
     [Test] procedure GetMeasurementJSON_HasTheShapeTheClientExpects;
+    [Test] procedure GetMeasurementJSON_MaxPointsBelowTwo_RaisesInvalidArgument;
+    [Test] procedure GetMeasurementJSON_MaxPointsTwo_ReturnsBothEnds;
+    [Test] procedure GetMeasurementJSON_BadMetaSpecimen_StillRaises;
     [Test] procedure Inbox_SHA256_Unchanged_AfterListAndGet;
   end;
 
@@ -206,6 +215,29 @@ begin
   Assert.AreEqual('not a number here', Header[1]);
 end;
 
+procedure TTestMCPInbox.ParseCurve_NegativeTheta_RowSkipped_NegativeIntensityKept;
+var
+  SL: TStringList;
+  Curve: TDataArray;
+  Header: TArray<string>;
+begin
+  { SeriesFromText tests the first character of BOTH columns with IsNumber, so a
+    negative angle is a comment there. That rule is kept for the angle; only the
+    intensity is allowed a sign, because a negative intensity is data to floor. }
+  SL := LinesOf('-0.5'#9'1.0E-3'#13#10'0.1'#9'1.0E-2'#13#10'0.5'#9'-1.0E-3');
+  try
+    Assert.AreEqual(2, ParseCurveText(SL, Curve, Header), 'the negative angle row is skipped');
+  finally
+    SL.Free;
+  end;
+  Assert.AreEqual(1, Length(Header), 'the negative angle row is kept as header');
+  Assert.AreEqual('-0.5'#9'1.0E-3', Header[0]);
+  Assert.AreEqual(Double(0.1), Double(Curve[0].t), 1E-6);
+  Assert.AreEqual(Double(0.5), Double(Curve[1].t), 1E-6);
+  Assert.AreEqual(Double(1.0E-2), Double(Curve[1].r), 1E-9,
+    'the negative intensity is replaced by the running minimum');
+end;
+
 { ----------------------------------------------------------------- ReadMeta -- }
 
 procedure TTestMCPInbox.ReadMeta_Parses_Lambda_ThetaUnit;
@@ -272,6 +304,37 @@ begin
     begin
       ReadMeta(Dir, Meta);
     end, EMCPError, 'meta.json is not valid JSON');
+end;
+
+procedure TTestMCPInbox.ReadMeta_LambdaAndEnergy_LambdaWins;
+var
+  Meta: TInboxMeta;
+begin
+  WriteInboxFile('S1', 'meta.json', '{"lambda": 1.5406, "energy": 8047.8}');
+  Assert.IsTrue(ReadMeta(TPath.Combine(TPath.Combine(FTemp, 'inbox'), 'S1'), Meta));
+  try
+    Assert.AreEqual(Double(1.5406), Meta.Lambda, 1E-9, '"lambda" wins, "energy" is ignored');
+  finally
+    Meta.Raw.Free;
+  end;
+end;
+
+procedure TTestMCPInbox.ReadMeta_NonNumericLambda_RaisesInvalidArgument;
+var
+  Dir, Code: string;
+  Meta: TInboxMeta;
+begin
+  WriteInboxFile('S1', 'meta.json', '{"lambda": "1.5406"}');
+  Dir := TPath.Combine(TPath.Combine(FTemp, 'inbox'), 'S1');
+  Code := '';
+  try
+    ReadMeta(Dir, Meta);
+    Meta.Raw.Free;
+  except
+    on E: EMCPError do
+      Code := E.Code;
+  end;
+  Assert.AreEqual('invalid_argument', Code);
 end;
 
 { ---------------------------------------------------------- LoadMeasurement -- }
@@ -446,6 +509,72 @@ begin
   Assert.AreEqual(1, LooseFileCount, 'the stray file is counted, not listed');
 end;
 
+procedure TTestMCPInbox.ListMeasurements_BadMeta_DegradesToMetaError;
+var
+  Arr: TJSONArray;
+  Good, Bad: TJSONObject;
+  I: Integer;
+begin
+  WriteInboxFile('GOOD', 'c.dat', '0.1 1.0E-1');
+  WriteInboxFile('GOOD', 'meta.json', '{"lambda": 1.5406}');
+  WriteInboxFile('BAD', 'c.dat', '0.1 1.0E-1');
+  WriteInboxFile('BAD', 'meta.json', '{ this is not json');
+
+  Arr := ListMeasurements('');
+  try
+    Assert.AreEqual(2, Arr.Count, 'one bad meta.json does not hide the other specimen');
+    Good := nil;
+    Bad := nil;
+    for I := 0 to Arr.Count - 1 do
+      if (Arr.Items[I] as TJSONObject).GetValue<string>('specimen') = 'GOOD' then
+        Good := Arr.Items[I] as TJSONObject
+      else
+        Bad := Arr.Items[I] as TJSONObject;
+
+    Assert.IsTrue(Good.GetValue('meta') is TJSONObject, 'the good specimen keeps its meta');
+    Assert.IsNull(Good.GetValue('meta_error'), 'and carries no error');
+    Assert.IsTrue(Bad.GetValue('meta') is TJSONNull, 'the bad specimen reports no meta');
+    Assert.AreEqual('meta.json is not valid JSON', Bad.GetValue<string>('meta_error'));
+    Assert.AreEqual(1, (Bad.GetValue('files') as TJSONArray).Count, 'its files are still listed');
+  finally
+    Arr.Free;
+  end;
+end;
+
+procedure TTestMCPInbox.ListMeasurements_BadMetaLambda_DegradesToMetaError;
+var
+  Arr: TJSONArray;
+  Obj: TJSONObject;
+begin
+  WriteInboxFile('BAD', 'c.dat', '0.1 1.0E-1');
+  WriteInboxFile('BAD', 'meta.json', '{"lambda": -1}');
+  Arr := ListMeasurements('');
+  try
+    Obj := Arr.Items[0] as TJSONObject;
+    Assert.IsTrue(Obj.GetValue('meta') is TJSONNull);
+    Assert.IsNotNull(Obj.GetValue('meta_error'));
+  finally
+    Arr.Free;
+  end;
+end;
+
+procedure TTestMCPInbox.ListMeasurements_BadThetaUnit_DegradesToMetaError;
+var
+  Arr: TJSONArray;
+  Obj: TJSONObject;
+begin
+  WriteInboxFile('BAD', 'c.dat', '0.1 1.0E-1');
+  WriteInboxFile('BAD', 'meta.json', '{"theta_unit": "2-theta"}');
+  Arr := ListMeasurements('');
+  try
+    Obj := Arr.Items[0] as TJSONObject;
+    Assert.IsTrue(Obj.GetValue('meta') is TJSONNull);
+    Assert.IsNotNull(Obj.GetValue('meta_error'));
+  finally
+    Arr.Free;
+  end;
+end;
+
 { ------------------------------------------------------- get_measurement JSON -- }
 
 procedure TTestMCPInbox.GetMeasurementJSON_HasTheShapeTheClientExpects;
@@ -475,6 +604,78 @@ begin
   end;
 end;
 
+procedure TTestMCPInbox.GetMeasurementJSON_MaxPointsBelowTwo_RaisesInvalidArgument;
+var
+  Code: string;
+begin
+  WriteInboxFile('S1', 'c.dat', '0.10'#9'1.0E-1'#13#10'0.20'#9'1.0E-2');
+  Code := '';
+  try
+    GetMeasurementJSON('S1/c.dat', 1).Free;
+  except
+    on E: EMCPError do
+      Code := E.Code;
+  end;
+  Assert.AreEqual('invalid_argument', Code, 'max_points 1 cannot hold both ends');
+
+  Code := '';
+  try
+    GetMeasurementJSON('S1/c.dat', 0).Free;
+  except
+    on E: EMCPError do
+      Code := E.Code;
+  end;
+  Assert.AreEqual('invalid_argument', Code, 'the no-decimation sentinel stays internal');
+end;
+
+procedure TTestMCPInbox.GetMeasurementJSON_MaxPointsTwo_ReturnsBothEnds;
+var
+  SL: TStringList;
+  I: Integer;
+  Obj: TJSONObject;
+  Curve: TJSONArray;
+begin
+  SL := TStringList.Create;
+  try
+    for I := 0 to 99 do
+      SL.Add(Format('%d.%.2d'#9'1.0E-2', [I div 100, I mod 100]));
+    WriteInboxFile('S1', 'c.dat', SL.Text);
+  finally
+    SL.Free;
+  end;
+
+  Obj := GetMeasurementJSON('S1/c.dat', 2);
+  try
+    Assert.AreEqual(100, Obj.GetValue<Integer>('points'));
+    Assert.AreEqual(2, Obj.GetValue<Integer>('points_returned'));
+    Curve := Obj.GetValue('curve') as TJSONArray;
+    Assert.AreEqual(2, Curve.Count);
+    Assert.AreEqual(Double(0.0),
+      ((Curve.Items[0] as TJSONArray).Items[0] as TJSONNumber).AsDouble, 1E-6, 'first kept');
+    Assert.AreEqual(Double(0.99),
+      ((Curve.Items[1] as TJSONArray).Items[0] as TJSONNumber).AsDouble, 1E-6, 'last kept');
+  finally
+    Obj.Free;
+  end;
+end;
+
+procedure TTestMCPInbox.GetMeasurementJSON_BadMetaSpecimen_StillRaises;
+var
+  Code: string;
+begin
+  WriteInboxFile('BAD', 'c.dat', '0.1 1.0E-1');
+  WriteInboxFile('BAD', 'meta.json', '{ this is not json');
+  Code := '';
+  try
+    GetMeasurementJSON('BAD/c.dat', 2000).Free;
+  except
+    on E: EMCPError do
+      Code := E.Code;
+  end;
+  Assert.AreEqual('invalid_argument', Code,
+    'list_measurements degrades, get_measurement does not');
+end;
+
 { ------------------------------------------------------------ inbox is read-only -- }
 
 procedure TTestMCPInbox.Inbox_SHA256_Unchanged_AfterListAndGet;
@@ -494,7 +695,7 @@ begin
     Arr.Free;
     Obj := GetMeasurementJSON('S1/c.dat', 2000);
     Obj.Free;
-    Obj := GetMeasurementJSON('S2/d.xy', 1);
+    Obj := GetMeasurementJSON('S2/d.xy', 2);
     Obj.Free;
 
     After := InboxHashes;

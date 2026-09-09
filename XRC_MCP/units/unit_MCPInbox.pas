@@ -6,9 +6,11 @@ unit unit_MCPInbox;
    person at the instrument) drops measured curves into inbox\<specimen>\, and
    the two tools here list what is there and hand a parsed curve back. The
    sandbox enforces the read-only part - ResolvePath(..., ForWrite=True) refuses
-   anything under inbox\ - and every file here is opened fmOpenRead with
-   fmShareDenyNone, so a running acquisition program can keep its own handle on
-   the file while we read it.
+   anything under inbox\ - and no handle here is ever opened for writing. The
+   curve and meta.json are read fmOpenRead + fmShareDenyNone, so a running
+   acquisition program can keep its own handle on the file while we read it; the
+   SHA-256 in the listing comes from the sandbox's FileSHA256, which opens
+   fmOpenRead + fmShareDenyWrite.
 
    The parser mirrors the GUI's unit_SeriesIO.SeriesFromText, so that a curve
    read through this server is the same curve the GUI would draw from the same
@@ -22,9 +24,12 @@ unit unit_MCPInbox;
        and, once a line without one has pushed it to a space, never goes back;
        here whichever of the two the line actually contains is used.
      - whitespace around a line and around either column is tolerated.
-     - a signed number is a number. SeriesFromText tests the first character
-       with IsNumber, so a leading '-' or '+' makes the line a comment; here the
-       conversion itself decides, which is what lets the rule below apply.
+     - the intensity may carry a sign. SeriesFromText tests the first character
+       of both columns with IsNumber, so a leading '-' makes the whole line a
+       comment; here only the intensity column is allowed the sign, which is
+       what lets the rule below apply. The angle column keeps the GUI's rule to
+       the letter - it has to start with a digit - so a negative theta is
+       skipped here exactly as the GUI skips it.
      - a negative intensity is replaced by the running minimum, as a zero is.
        SeriesFromText replaces only an exact zero (and could never see a
        negative anyway), and no log plot and no fit can use one.
@@ -34,13 +39,21 @@ unit unit_MCPInbox;
    the decimal separator afterwards.
 
    meta.json, if a specimen folder has one, carries the wavelength (as "lambda"
-   in Angstrom or "energy" in eV), the date, the instrument and "theta_unit".
+   in Angstrom or "energy" in eV - "lambda" wins and "energy" is ignored when a
+   file gives both), the date, the instrument and "theta_unit".
    That last one is the important one: a diffractometer usually records 2theta,
    and a curve handed to the engine has to be theta. When it says "2theta" every
    angle is halved on the way out and the result says so; when it is missing,
    theta is assumed and the result says that too, so a client is never left
    guessing which of the two it got. Every other key in meta.json is passed
-   through untouched. *)
+   through untouched.
+
+   A meta.json that cannot be read is fatal to get_measurement - the client
+   asked for that curve and would otherwise get a wavelength or an angle unit
+   the file does not actually claim - but not to list_measurements, which is how
+   the client finds out what is in the inbox in the first place. There the
+   specimen is still listed, with "meta": null and a "meta_error" saying what is
+   wrong with it. *)
 
 interface
 
@@ -88,8 +101,10 @@ function ParseCurveText(const Lines: TStrings; out Curve: unit_Types.TDataArray;
   out Header: TArray<string>): Integer;
 
 /// <summary>Reads Dir\meta.json. False (and a Meta with Present=False, Raw=nil
-/// and the assumed 'theta') when there is none. Raises
-/// EMCPError('invalid_argument') when the file is not a JSON object.</summary>
+/// and the assumed 'theta') when there is none. "lambda" wins over "energy"
+/// when a file gives both. Raises EMCPError('invalid_argument') when the file is
+/// not a JSON object, when "lambda" is not a positive number or when
+/// "theta_unit" is neither "theta" nor "2theta".</summary>
 function ReadMeta(const Dir: string; out Meta: TInboxMeta): Boolean;
 
 /// <summary>Reads '<specimen>/<file>' from the inbox. MaxPoints &lt;= 0 returns
@@ -114,7 +129,9 @@ function LooseFileCount: Integer;
 /// <summary>The list_measurements result. Caller frees.</summary>
 function ListMeasurementsJSON(const SpecimenFilter: string): TJSONObject;
 
-/// <summary>The get_measurement result. Caller frees.</summary>
+/// <summary>The get_measurement result. MaxPoints is the tool's argument and
+/// has to be at least 2; the LoadMeasurement sentinel 0 (no decimation at all)
+/// is internal and is refused here. Caller frees.</summary>
 function GetMeasurementJSON(const Id: string; MaxPoints: Integer): TJSONObject;
 
 implementation
@@ -169,11 +186,18 @@ end;
 
 { ------------------------------------------------------------ ParseCurveText -- }
 
-/// <summary>A cheap "this could be a number" test that keeps comment lines out
-/// of the conversion. TryStrToFloat has the last word.</summary>
-function StartsNumeric(const S: string): Boolean;
+/// <summary>The angle column, by SeriesFromText's rule to the letter: it has to
+/// start with a digit, so '-0.5' is a comment and not an angle.</summary>
+function StartsAngle(const S: string): Boolean;
 begin
-  Result := (S <> '') and (S[1].IsNumber or CharInSet(S[1], ['-', '+', '.']));
+  Result := (S <> '') and S[1].IsNumber;
+end;
+
+/// <summary>The intensity column, which may carry a sign - a negative intensity
+/// is data to be floored, not a comment. TryStrToFloat has the last word.</summary>
+function StartsIntensity(const S: string): Boolean;
+begin
+  Result := (S <> '') and (S[1].IsNumber or CharInSet(S[1], ['-', '+']));
 end;
 
 function ParseCurveText(const Lines: TStrings; out Curve: unit_Types.TDataArray;
@@ -220,7 +244,7 @@ begin
     begin
       S1 := Trim(Copy(S, 1, P - 1));            // TryStrToFloat accepts no padding
       S2 := Trim(Copy(S, P + 1, MaxInt));
-      if StartsNumeric(S1) and StartsNumeric(S2) then
+      if StartsAngle(S1) and StartsIntensity(S2) then
       begin
         FixDecimalPoint(S1);
         FixDecimalPoint(S2);
@@ -504,10 +528,22 @@ begin
         FileObj.AddPair('modified_utc', FileModifiedUTC(F));
       end;
 
-      if ReadMeta(Dir, Meta) then
-        Obj.AddPair('meta', Meta.Raw)     // ownership moves into the result
-      else
-        Obj.AddPair('meta', TJSONNull.Create);
+      { A meta.json this specimen cannot parse must not cost the client the
+        listing of every other specimen: it is reported on the specimen it
+        belongs to and the call succeeds. get_measurement on a file in that
+        folder still raises - there the metadata is part of the answer. }
+      try
+        if ReadMeta(Dir, Meta) then
+          Obj.AddPair('meta', Meta.Raw)   // ownership moves into the result
+        else
+          Obj.AddPair('meta', TJSONNull.Create);
+      except
+        on E: EMCPError do
+        begin
+          Obj.AddPair('meta', TJSONNull.Create);
+          Obj.AddPair('meta_error', E.Message);
+        end;
+      end;
     end;
   except
     Result.Free;
@@ -571,6 +607,10 @@ var
   M: TMeasurement;
   Range: TJSONArray;
 begin
+  if MaxPoints < 2 then
+    raise EMCPError.Create('invalid_argument',
+      '"max_points" must be at least 2, so that both ends of the curve fit',
+      IntToStr(MaxPoints));
   M := LoadMeasurement(Id, MaxPoints);
   try
     Result := TJSONObject.Create;

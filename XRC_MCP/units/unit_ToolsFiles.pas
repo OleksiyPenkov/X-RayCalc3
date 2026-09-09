@@ -34,8 +34,11 @@ begin
     '"<specimen>/<file>" - the measurement_id get_measurement and fit_xrr take. ' +
     'For every file the name, id, size, SHA-256 and last-modified time are ' +
     'reported, together with the contents of the specimen''s meta.json when it ' +
-    'has one. Files lying loose in inbox\ rather than in a specimen folder have ' +
-    'no id and are only counted, as "loose_files". Nothing here is ever written.',
+    'has one. A specimen whose meta.json cannot be read is still listed, with ' +
+    '"meta": null and a "meta_error" saying what is wrong with it, so that one ' +
+    'bad file never hides the rest of the inbox. Files lying loose in inbox\ ' +
+    'rather than in a specimen folder have no id and are only counted, as ' +
+    '"loose_files". Nothing here is ever written.',
     Schema,
     function(const Params: TJSONObject): TJSONObject
     begin
@@ -48,8 +51,8 @@ begin
     'reports it. The file extension must be .dat, .txt or .xy.');
   AddProp(Schema, 'max_points', 'integer',
     'Decimate the curve to at most this many points before returning it ' +
-    '(default 2000). The first and the last point are always kept; "points" is ' +
-    'the number in the file and "points_returned" the number returned.');
+    '(default 2000; minimum 2; first and last points are always kept). ' +
+    '"points" is the number in the file and "points_returned" the number returned.');
   Registry.Register('get_measurement',
     'Reads one measured curve from the inbox and returns it as [theta, intensity] ' +
     'pairs. The file is parsed the way the X-Ray Calc 3 GUI parses it: two ' +
