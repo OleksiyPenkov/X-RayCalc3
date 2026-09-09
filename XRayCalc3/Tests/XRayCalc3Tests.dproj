@@ -126,6 +126,7 @@
         <DCCReference Include="..\..\Shared\Universal\unit_universal_pso.pas"/>
         <DCCReference Include="..\..\Shared\Universal\unit_universal_optimizer.pas"/>
         <DCCReference Include="TestMCPUniversalJob.pas"/>
+        <DCCReference Include="TestLFPSOProgress.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

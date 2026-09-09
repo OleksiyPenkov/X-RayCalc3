@@ -39,6 +39,11 @@ type
     CFact         : single;
   end;
 
+  { Called on the fitting thread instead of posting WM_CHI_UPDATE, when
+    TLFPSO_BASE.OnProgress is assigned. The callee owns Msg.LayeredModel and
+    must free it; it is nil for a step (Full = False) update. }
+  TFitProgressEvent = procedure(const Msg: TUpdateFitProgressMsg) of object;
+
   TLayerIndexes = array [1..3] of SmallInt;
   TIndexes  = array of TLayerIndexes;
 
@@ -91,6 +96,7 @@ type
       FTMax: integer;
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
+      FBestCurve: TDataArray;   // curve of the absolute best solution
       FLimit: single;
       FTerminated: Integer;  // 0 = running, 1 = terminated (interlocked for thread safety)
       FMovAvg: TDataArray;
@@ -132,6 +138,9 @@ type
       function Rand(const dx: Single): single;
       function GetPolynomes: TProfileFunctions; virtual;
     private
+     FOnProgress: TFitProgressEvent;
+     FSeed: Integer;              // -1 = Randomize (GUI default)
+
      procedure Shake(const t: integer; var  SuccessCount, ReInitCount: integer; Vmax0, Ksxr0: single);
      procedure SendUpdateStep(const Step: integer);
     public
@@ -146,6 +155,10 @@ type
       property Params: TFitParams write SetParams;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
       property Polynomes:TProfileFunctions read GetPolynomes;
+      property OnProgress: TFitProgressEvent read FOnProgress write FOnProgress;
+      property Seed: Integer read FSeed write FSeed;
+      property BestChiSquare: single read FAbsoluteBestChiSqr;
+      property BestCurve: TDataArray read FBestCurve;
 
       procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
@@ -252,6 +265,7 @@ end;
 constructor TLFPSO_BASE.Create;
 begin
   inherited ;
+  FSeed := -1;
 end;
 
 procedure ClearArray(var A: TPopulation); inline;
@@ -575,6 +589,7 @@ begin
     if FGlobalBestChiSqr < FAbsoluteBestChiSqr  then
     begin
       FAbsoluteBestChiSqr := FGlobalBestChiSqr;
+      FBestCurve := Copy(FResultingCurve);
       abest := CopySolution(gbest);
       abest_val := FGlobalBestChiSqr;
       UpdateStructure(gbest);
@@ -644,7 +659,10 @@ var
   SuccessCount: integer;
   num, den: double;
 begin
-  Randomize;
+  if FSeed < 0 then
+    Randomize
+  else
+    RandSeed := FSeed;
 
   // Precompute Levy walk sigma_u (constant for beta=1.5)
   num := gamma(1 + levy_beta) * FastSin(pi * levy_beta / 2);
@@ -668,6 +686,7 @@ begin
   SuccessCount := 0;
   FGlobalBestChiSqr:= 1e12;
   FAbsoluteBestChiSqr := 1e12;
+  SetLength(FBestCurve, 0);
   FCalcParams := CalcConditions;
   SetLength(FMaterials, 0);
 
@@ -796,12 +815,18 @@ begin
   msg_prm.LevyScale    := FLevyScale;
   msg_prm.CFact        := CFactor;
 
-  PostMessage(
-    Application.MainFormHandle,
-    WM_CHI_UPDATE,
-    LPARAM(msg_prm),
-    0
-  );
+  if Assigned(FOnProgress) then
+  begin
+    FOnProgress(msg_prm^);      // the callee owns msg_prm.LayeredModel
+    Dispose(msg_prm);
+  end
+  else
+    PostMessage(
+      Application.MainFormHandle,
+      WM_CHI_UPDATE,
+      LPARAM(msg_prm),
+      0
+    );
 end;
 
 procedure TLFPSO_BASE.SendUpdateStep(const Step: integer);
@@ -816,18 +841,25 @@ begin
   msg_prm.WasShaken := FWasShaken;
   msg_prm.Step := Step;
   msg_prm.Curve := nil;
+  msg_prm.LayeredModel := nil;  // New() leaves unmanaged fields undefined
   msg_prm.Diversity    := FDiversity;
   msg_prm.MeanVelocity := FMeanVelocity;
   msg_prm.JammingCount := FJammingCount;
   msg_prm.LevyScale    := FLevyScale;
   msg_prm.CFact        := CFactor;
 
-  PostMessage(
-    Application.MainFormHandle,
-    WM_CHI_UPDATE,
-    LPARAM(msg_prm),
-    0
-  );
+  if Assigned(FOnProgress) then
+  begin
+    FOnProgress(msg_prm^);
+    Dispose(msg_prm);
+  end
+  else
+    PostMessage(
+      Application.MainFormHandle,
+      WM_CHI_UPDATE,
+      LPARAM(msg_prm),
+      0
+    );
 end;
 
 procedure TLFPSO_BASE.SetDomain(const Count, Order: integer; var X: TPopulation);

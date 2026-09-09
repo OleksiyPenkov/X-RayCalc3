@@ -37,6 +37,7 @@ uses
   unit_LFPSO_Irregular in '..\LFPSO\unit_LFPSO_Irregular.pas',
   TestLFPSOPeriodic in 'TestLFPSOPeriodic.pas',
   TestLFPSOIrregular in 'TestLFPSOIrregular.pas',
+  TestLFPSOProgress in 'TestLFPSOProgress.pas',
   unit_ProfileCalc in '..\..\Shared\Math\unit_ProfileCalc.pas',
   TestProfileCalc in 'TestProfileCalc.pas',
   unit_SmartLimits in '..\Units\unit_SmartLimits.pas',
