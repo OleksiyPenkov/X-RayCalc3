@@ -16,6 +16,7 @@ cmd.exe //c "set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0&& set BDSCOM
 | XRayCalc3 Win64 | `XRayCalc3\XRayCalc3.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
 | XRC_CMD Win64 | `XRC_CMD\xrccmd.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
 | XRFCalc Win64 | `XRFCalc\XRFCalc.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
+| XRC_MCP Win64 | `XRC_MCP\XRC_MCP.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
 | Tests (build) | `XRayCalc3\Tests\XRayCalc3Tests.dproj /t:Build /p:Config=Debug /nologo /v:minimal" 2>&1` |
 
 **Run tests** (after building):
@@ -23,7 +24,7 @@ cmd.exe //c "set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0&& set BDSCOM
 cmd.exe //c "set PATH=C:\Program Files (x86)\Embarcadero\Studio\37.0\bin;%PATH%&& XRayCalc3\Tests\_Out\BIN\XRayCalc3Tests.exe --exitbehavior:Continue" 2>&1
 ```
 
-**Group project** (`XRC3.groupproj`) build order: XRayCalc3 → XRayCalcVisualControls → XRCPreviewHandlerLib → xrccmd → XRFCalc
+**Group project** (`XRC3.groupproj`) build order: XRayCalc3 → XRayCalcVisualControls → XRCPreviewHandlerLib → xrccmd → XRFCalc → XRC_MCP
 
 ## Architecture
 
@@ -40,6 +41,7 @@ XRayCalc3/          Main GUI application
 XRC_CMD/            Command-line interface variant
 XRFCalc/            XRF calculation GUI app
 XRCXPreview/        Windows shell preview handler
+XRC_MCP/            MCP server for LLM agents; spec in docs/superpowers/specs/2026-09-09-xrc-mcp-design.md
 Shared/
   Math/             Calculation engine, complex math, materials database
   Universal/        Universal mirror types, IO, templates, XRF lines

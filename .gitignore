@@ -28,3 +28,6 @@ _Out
 /_Installer/SetupOutput
 .superpowers/
 16x16
+/XRC_MCP/Out
+/XRC_MCP/XRC_MCP.res
+XRC_MCP/units/gitrev.inc
