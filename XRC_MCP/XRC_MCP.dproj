@@ -133,6 +133,13 @@
         <DCCReference Include="..\XRayCalc3\Units\unit_Config.pas"/>
         <DCCReference Include="..\Shared\Math\unit_materials.pas"/>
         <DCCReference Include="units\unit_MCPStructure.pas"/>
+        <DCCReference Include="..\XRC_CMD\Units\cmd_unit_types.pas"/>
+        <DCCReference Include="..\XRC_CMD\Units\cmd_math_globals.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_materials_mix.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_types.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_templates.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_xrf_lines.pas"/>
+        <DCCReference Include="units\unit_MCPMaterials.pas"/>
         <DCCReference Include="units\unit_ToolsReference.pas"/>
         <DCCReference Include="units\unit_ToolsCalc.pas"/>
         <DCCReference Include="units\unit_ToolsJobs.pas"/>
