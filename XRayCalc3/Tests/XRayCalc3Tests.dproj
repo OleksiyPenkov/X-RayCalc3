@@ -108,6 +108,8 @@
         <DCCReference Include="TestMCPSandbox.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPJournal.pas"/>
         <DCCReference Include="TestMCPJournal.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPUnits.pas"/>
+        <DCCReference Include="TestMCPUnits.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

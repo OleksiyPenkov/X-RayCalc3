@@ -56,7 +56,9 @@ uses
   unit_MCPSandbox in '..\..\XRC_MCP\units\unit_MCPSandbox.pas',
   TestMCPSandbox in 'TestMCPSandbox.pas',
   unit_MCPJournal in '..\..\XRC_MCP\units\unit_MCPJournal.pas',
-  TestMCPJournal in 'TestMCPJournal.pas';
+  TestMCPJournal in 'TestMCPJournal.pas',
+  unit_MCPUnits in '..\..\XRC_MCP\units\unit_MCPUnits.pas',
+  TestMCPUnits in 'TestMCPUnits.pas';
 
 {$R *.res}
 

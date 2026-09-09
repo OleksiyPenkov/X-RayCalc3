@@ -13,6 +13,7 @@ uses
   unit_MCPErrors in 'units\unit_MCPErrors.pas',
   unit_MCPVersion in 'units\unit_MCPVersion.pas',
   unit_MCPSandbox in 'units\unit_MCPSandbox.pas',
+  unit_MCPUnits in 'units\unit_MCPUnits.pas',
   unit_MCPJournal in 'units\unit_MCPJournal.pas',
   unit_MCPJobs in 'units\unit_MCPJobs.pas',
   unit_ToolsReference in 'units\unit_ToolsReference.pas',

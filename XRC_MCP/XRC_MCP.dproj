@@ -123,6 +123,7 @@
         <DCCReference Include="units\unit_MCPErrors.pas"/>
         <DCCReference Include="units\unit_MCPVersion.pas"/>
         <DCCReference Include="units\unit_MCPSandbox.pas"/>
+        <DCCReference Include="units\unit_MCPUnits.pas"/>
         <DCCReference Include="units\unit_MCPJournal.pas"/>
         <DCCReference Include="units\unit_MCPJobs.pas"/>
         <DCCReference Include="units\unit_ToolsReference.pas"/>
