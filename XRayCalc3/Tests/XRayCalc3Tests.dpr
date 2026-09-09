@@ -82,7 +82,9 @@ uses
   unit_MCPProjectFile in '..\..\XRC_MCP\units\unit_MCPProjectFile.pas',
   unit_MCPTools in '..\..\XRC_MCP\units\unit_MCPTools.pas',
   unit_ToolsFiles in '..\..\XRC_MCP\units\unit_ToolsFiles.pas',
-  TestMCPProjectFile in 'TestMCPProjectFile.pas';
+  TestMCPProjectFile in 'TestMCPProjectFile.pas',
+  unit_MCPFit in '..\..\XRC_MCP\units\unit_MCPFit.pas',
+  TestMCPFit in 'TestMCPFit.pas';
 
 {$R *.res}
 

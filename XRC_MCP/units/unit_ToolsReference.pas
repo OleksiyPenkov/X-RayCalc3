@@ -22,7 +22,7 @@ uses
   System.SysUtils, System.JSON,
   unit_universal_types, unit_universal_templates,
   unit_MCPVersion, unit_MCPErrors, unit_MCPUnits, unit_MCPSandbox,
-  unit_MCPMaterials, unit_MCPUniversal;
+  unit_MCPMaterials, unit_MCPUniversal, unit_MCPFit;
 
 const
   // Reported by describe_server.limits. The values are the requirements'
@@ -44,10 +44,9 @@ const
 
   FIT_ENGINE = 'GUI LFPSO (TLFPSO_Periodic / TLFPSO_Poly)';
 
-  FIT_CHI2 =
-    '1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 R_calc)^2 * w_point * w_theta) ' +
-    'over points [tail..n-tail); w_point = I/movavg(I) when > 3 (point_weight=true); ' +
-    'w_theta from theta_weight 0..5 as in the GUI';
+  { The definition lives in the unit that computes it, so describe_server and
+    every fit_xrr result can never describe two different chi-squareds. }
+  FIT_CHI2 = FIT_CHI2_DEFINITION;
 
   FIT_FREE_PARAMETERS =
     'layer thickness/sigma/density only. The GUI engine keeps the substrate fixed ' +

@@ -145,6 +145,7 @@ implementation
 
 uses
   System.IOUtils, System.IniFiles, System.Zip, System.Character,
+  System.SyncObjs,
   Vcl.Graphics,
   VirtualTrees,
   unit_consts, unit_XRCProjectTree, unit_MCPErrors, unit_MCPStructure;
@@ -520,92 +521,146 @@ begin
     S.Stacks[Ext.StackID].Layers[Ext.LayerID].Material]);
 end;
 
+{ ------------------------------------------------------ the headless tree -- }
+
+(* TXRCProjectTree is a VCL control, and VirtualTrees says in so many words that
+   parts of it "must only be called from UI thread": building one walks through
+   TBaseVirtualTree code that reaches System.Classes.CheckSynchronize, which
+   raises EThread on every thread except the one System.MainThreadID names.
+   fit_xrr writes its .xrcx from the job worker, so that is exactly what
+   happened - the fit finished and then died in TXRCProjectTree.Create with
+   "CheckSynchronize called from thread $..., which is NOT the main thread".
+
+   This process has no UI thread. XRC_MCP calls Application.Initialize so that
+   VCL components can exist, but it never creates a window, never runs a message
+   loop, and nothing in it ever calls TThread.Synchronize or TThread.Queue - so
+   the queue CheckSynchronize drains is always empty and draining it is a no-op
+   wherever it happens. What the tree needs is therefore not the main thread but
+   *a* thread that no other tree is being built on.
+
+   TreeScope provides that: it takes a lock, so only one headless tree exists at
+   a time, and for as long as the lock is held it names the current thread as
+   the main one. Both are restored in a finally. The window is a few
+   milliseconds around one Create/SaveToFile/Free, and the only readers of
+   MainThreadID in this process are the RTL's "am I on the UI thread" tests,
+   which are answered more usefully by "yes" than by a raise. *)
+type
+  TTreeScope = record
+  private
+    FSavedMainThread: TThreadID;
+  public
+    procedure Enter;
+    procedure Leave;
+  end;
+
+var
+  TreeLock: TCriticalSection;
+
+procedure TTreeScope.Enter;
+begin
+  TreeLock.Acquire;
+  FSavedMainThread := MainThreadID;
+  MainThreadID := TThread.CurrentThread.ThreadID;
+end;
+
+procedure TTreeScope.Leave;
+begin
+  MainThreadID := FSavedMainThread;
+  TreeLock.Release;
+end;
+
 procedure WriteTree(const FileName: string; const P: TXRCXProject);
 var
+  Scope: TTreeScope;
   Tree: TXRCProjectTree;
   GroupNode, ModelNode, Node: PVirtualNode;
   PD: PProjectData;
   i, j: Integer;
   Coeffs: TPolyArray;
 begin
-  Tree := TXRCProjectTree.Create(nil, 96);
+  Scope.Enter;
   try
-    Tree.NodeDataSize := SizeOf(TProjectData);
+    Tree := TXRCProjectTree.Create(nil, 96);
+    try
+      Tree.NodeDataSize := SizeOf(TProjectData);
 
-    { Models group. RecoverProjectTree takes GetFirst as the models root and its
-      next sibling as the data root, so the order of the two groups is part of
-      the format. }
-    GroupNode := Tree.AddChild(nil, nil);
-    PD := Tree.GetNodeData(GroupNode);
-    PD.Title := 'Models';
-    PD.Description := '';
-    PD.Data := '';
-    PD.Group := gtModel;
-    PD.RowType := prGroup;
-
-    ModelNode := Tree.AddChild(GroupNode, nil);
-    PD := Tree.GetNodeData(ModelNode);
-    PD.Title := P.ModelTitle;
-    PD.Description := P.Note;
-    PD.Data := P.XRCData;
-    PD.Group := gtModel;
-    PD.RowType := prItem;
-    // prItem branch only - see quirk 1 in the unit header
-    PD.ID := XRCX_MODEL_ID;
-    PD.CurveID := 0;
-    PD.Color := clRed;
-    PD.Active := True;
-    PD.Visible := True;
-
-    for i := 0 to High(P.Extensions) do
-    begin
-      Node := Tree.AddChild(ModelNode, nil);
-      PD := Tree.GetNodeData(Node);
-      PD.Title := GradientTitle(P.Extensions[i], P.XRCData);
+      { Models group. RecoverProjectTree takes GetFirst as the models root and its
+        next sibling as the data root, so the order of the two groups is part of
+        the format. }
+      GroupNode := Tree.AddChild(nil, nil);
+      PD := Tree.GetNodeData(GroupNode);
+      PD.Title := 'Models';
       PD.Description := '';
       PD.Data := '';
       PD.Group := gtModel;
-      PD.RowType := prExtension;
-      // prExtension branch only
-      PD.Enabled := True;
-      PD.ExtType := etFunction;
-      PD.StackID := P.Extensions[i].StackID;
-      PD.LayerID := P.Extensions[i].LayerID;
-      PD.Form := ffPoly;
-      PD.Subj := P.Extensions[i].Subj;
-      SetLength(Coeffs, Length(P.Extensions[i].Coeffs));
-      for j := 0 to High(Coeffs) do
-        Coeffs[j] := P.Extensions[i].Coeffs[j];
-      PD.SetPoly(Coeffs);
-    end;
+      PD.RowType := prGroup;
 
-    GroupNode := Tree.AddChild(nil, nil);
-    PD := Tree.GetNodeData(GroupNode);
-    PD.Title := 'Data';
-    PD.Description := '';
-    PD.Data := '';
-    PD.Group := gtData;
-    PD.RowType := prGroup;
+      ModelNode := Tree.AddChild(GroupNode, nil);
+      PD := Tree.GetNodeData(ModelNode);
+      PD.Title := P.ModelTitle;
+      PD.Description := P.Note;
+      PD.Data := P.XRCData;
+      PD.Group := gtModel;
+      PD.RowType := prItem;
+      // prItem branch only - see quirk 1 in the unit header
+      PD.ID := XRCX_MODEL_ID;
+      PD.CurveID := 0;
+      PD.Color := clRed;
+      PD.Active := True;
+      PD.Visible := True;
 
-    if P.DataTitle <> '' then
-    begin
-      Node := Tree.AddChild(GroupNode, nil);
-      PD := Tree.GetNodeData(Node);
-      PD.Title := P.DataTitle;
+      for i := 0 to High(P.Extensions) do
+      begin
+        Node := Tree.AddChild(ModelNode, nil);
+        PD := Tree.GetNodeData(Node);
+        PD.Title := GradientTitle(P.Extensions[i], P.XRCData);
+        PD.Description := '';
+        PD.Data := '';
+        PD.Group := gtModel;
+        PD.RowType := prExtension;
+        // prExtension branch only
+        PD.Enabled := True;
+        PD.ExtType := etFunction;
+        PD.StackID := P.Extensions[i].StackID;
+        PD.LayerID := P.Extensions[i].LayerID;
+        PD.Form := ffPoly;
+        PD.Subj := P.Extensions[i].Subj;
+        SetLength(Coeffs, Length(P.Extensions[i].Coeffs));
+        for j := 0 to High(Coeffs) do
+          Coeffs[j] := P.Extensions[i].Coeffs[j];
+        PD.SetPoly(Coeffs);
+      end;
+
+      GroupNode := Tree.AddChild(nil, nil);
+      PD := Tree.GetNodeData(GroupNode);
+      PD.Title := 'Data';
       PD.Description := '';
       PD.Data := '';
       PD.Group := gtData;
-      PD.RowType := prItem;
-      PD.ID := XRCX_DATA_ID;
-      PD.CurveID := 0;
-      PD.Color := clBlue;
-      PD.Active := True;
-      PD.Visible := True;
-    end;
+      PD.RowType := prGroup;
 
-    Tree.SaveToFile(FileName);
+      if P.DataTitle <> '' then
+      begin
+        Node := Tree.AddChild(GroupNode, nil);
+        PD := Tree.GetNodeData(Node);
+        PD.Title := P.DataTitle;
+        PD.Description := '';
+        PD.Data := '';
+        PD.Group := gtData;
+        PD.RowType := prItem;
+        PD.ID := XRCX_DATA_ID;
+        PD.CurveID := 0;
+        PD.Color := clBlue;
+        PD.Active := True;
+        PD.Visible := True;
+      end;
+
+      Tree.SaveToFile(FileName);
+    finally
+      Tree.Free;
+    end;
   finally
-    Tree.Free;
+    Scope.Leave;
   end;
 end;
 
@@ -614,6 +669,7 @@ end;
 procedure ReadTree(const FileName: string; var P: TXRCXProject;
   ActiveModel, LinkedData: Integer; out DataID: Integer);
 var
+  Scope: TTreeScope;
   Tree: TXRCProjectTree;
   Node, Child, Chosen, ChosenData: PVirtualNode;
   FirstModel, MatchModel, FirstData, MatchData: PVirtualNode;
@@ -628,81 +684,86 @@ begin
   FirstData := nil;
   MatchData := nil;
 
-  Tree := TXRCProjectTree.Create(nil, 96);
+  Scope.Enter;
   try
-    Tree.NodeDataSize := SizeOf(TProjectData);
-    Tree.Version := P.Version;      // ProjectLoadNode switches on it - set first
-    Tree.LoadFromFile(FileName);
+    Tree := TXRCProjectTree.Create(nil, 96);
+    try
+      Tree.NodeDataSize := SizeOf(TProjectData);
+      Tree.Version := P.Version;      // ProjectLoadNode switches on it - set first
+      Tree.LoadFromFile(FileName);
 
-    { RecoverProjectTree takes the model named by [STATE] ActiveModel and falls
-      back to the first one; RecoverDataCurves does the same with LinkedData. }
-    Node := Tree.GetFirst;
-    while Node <> nil do
-    begin
-      PD := Tree.GetNodeData(Node);
-      if PD.RowType = prItem then
-        if PD.Group = gtModel then
-        begin
-          if FirstModel = nil then
-            FirstModel := Node;
-          if (MatchModel = nil) and (PD.ID = ActiveModel) then
-            MatchModel := Node;
-        end
-        else
-        begin
-          if FirstData = nil then
-            FirstData := Node;
-          if (MatchData = nil) and (PD.ID = LinkedData) then
-            MatchData := Node;
-        end;
-      Node := Tree.GetNext(Node);
-    end;
-
-    if MatchModel <> nil then Chosen := MatchModel else Chosen := FirstModel;
-    if MatchData <> nil then ChosenData := MatchData else ChosenData := FirstData;
-
-    if Chosen = nil then
-      raise EMCPError.Create('unsupported_project',
-        'the project has no model node', TPath.GetFileName(FileName));
-
-    PD := Tree.GetNodeData(Chosen);
-    P.ModelTitle := PD.Title;
-    P.Note := PD.Description;
-    P.XRCData := PD.Data;
-
-    if P.XRCData = '' then
-      raise EMCPError.Create('unsupported_project',
-        'model stored in legacy binary format; open and re-save in XRayCalc3',
-        Format('model_%d.bin', [PD.ID]));
-
-    SetLength(P.Extensions, 0);
-    Child := Tree.GetFirstChild(Chosen);
-    while Child <> nil do
-    begin
-      PD := Tree.GetNodeData(Child);
-      if (PD.RowType = prExtension) and (PD.ExtType = etFunction) then
+      { RecoverProjectTree takes the model named by [STATE] ActiveModel and falls
+        back to the first one; RecoverDataCurves does the same with LinkedData. }
+      Node := Tree.GetFirst;
+      while Node <> nil do
       begin
-        Ext := Default(TXRCXProfileExt);
-        Ext.StackID := PD.StackID;
-        Ext.LayerID := PD.LayerID;
-        Ext.Subj := PD.Subj;
-        Poly := PD.PolyD;
-        SetLength(Ext.Coeffs, Length(Poly));
-        for i := 0 to High(Poly) do
-          Ext.Coeffs[i] := Poly[i];
-        P.Extensions := P.Extensions + [Ext];
+        PD := Tree.GetNodeData(Node);
+        if PD.RowType = prItem then
+          if PD.Group = gtModel then
+          begin
+            if FirstModel = nil then
+              FirstModel := Node;
+            if (MatchModel = nil) and (PD.ID = ActiveModel) then
+              MatchModel := Node;
+          end
+          else
+          begin
+            if FirstData = nil then
+              FirstData := Node;
+            if (MatchData = nil) and (PD.ID = LinkedData) then
+              MatchData := Node;
+          end;
+        Node := Tree.GetNext(Node);
       end;
-      Child := Tree.GetNextSibling(Child);
-    end;
 
-    if ChosenData <> nil then
-    begin
-      PD := Tree.GetNodeData(ChosenData);
-      P.DataTitle := PD.Title;
-      DataID := PD.ID;
+      if MatchModel <> nil then Chosen := MatchModel else Chosen := FirstModel;
+      if MatchData <> nil then ChosenData := MatchData else ChosenData := FirstData;
+
+      if Chosen = nil then
+        raise EMCPError.Create('unsupported_project',
+          'the project has no model node', TPath.GetFileName(FileName));
+
+      PD := Tree.GetNodeData(Chosen);
+      P.ModelTitle := PD.Title;
+      P.Note := PD.Description;
+      P.XRCData := PD.Data;
+
+      if P.XRCData = '' then
+        raise EMCPError.Create('unsupported_project',
+          'model stored in legacy binary format; open and re-save in XRayCalc3',
+          Format('model_%d.bin', [PD.ID]));
+
+      SetLength(P.Extensions, 0);
+      Child := Tree.GetFirstChild(Chosen);
+      while Child <> nil do
+      begin
+        PD := Tree.GetNodeData(Child);
+        if (PD.RowType = prExtension) and (PD.ExtType = etFunction) then
+        begin
+          Ext := Default(TXRCXProfileExt);
+          Ext.StackID := PD.StackID;
+          Ext.LayerID := PD.LayerID;
+          Ext.Subj := PD.Subj;
+          Poly := PD.PolyD;
+          SetLength(Ext.Coeffs, Length(Poly));
+          for i := 0 to High(Poly) do
+            Ext.Coeffs[i] := Poly[i];
+          P.Extensions := P.Extensions + [Ext];
+        end;
+        Child := Tree.GetNextSibling(Child);
+      end;
+
+      if ChosenData <> nil then
+      begin
+        PD := Tree.GetNodeData(ChosenData);
+        P.DataTitle := PD.Title;
+        DataID := PD.ID;
+      end;
+    finally
+      Tree.Free;
     end;
   finally
-    Tree.Free;
+    Scope.Leave;
   end;
 end;
 
@@ -782,5 +843,11 @@ begin
     DropTempDir(Dir);
   end;
 end;
+
+initialization
+  TreeLock := TCriticalSection.Create;
+
+finalization
+  TreeLock.Free;
 
 end.

@@ -133,6 +133,8 @@
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPTools.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_ToolsFiles.pas"/>
         <DCCReference Include="TestMCPProjectFile.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPFit.pas"/>
+        <DCCReference Include="TestMCPFit.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

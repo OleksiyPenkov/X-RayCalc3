@@ -1,7 +1,8 @@
 unit unit_ToolsJobs;
 
-(* The job tools: optimize_mirror, which submits one, and job_status,
-   job_result and cancel_job, which drive every job whatever submitted it.
+(* The job tools: optimize_mirror and fit_xrr, which submit one, and
+   job_status, job_result and cancel_job, which drive every job whatever
+   submitted it.
 
    A submitting tool returns a job id and nothing else; the client then polls it
    here. Keeping the polling tools next to the submission means the contract
@@ -14,10 +15,11 @@ unit unit_ToolsJobs;
    failed call to interpret. job_result is the exception - there the client is
    asking for data that does not exist, and an error is the honest answer.
 
-   optimize_mirror validates its whole configuration synchronously - a
-   configuration that cannot be read is an error on the submitting call, not a
-   job that fails a minute later - and hands the parsed record to the body. The
-   body itself is RunOptimizeJob in unit_MCPUniversal, where the engine lives. *)
+   Both submitting tools validate their whole request synchronously - an
+   argument that cannot be read is an error on the submitting call, not a job
+   that fails a minute later - and hand the parsed record to the body. The
+   bodies themselves live next to their engines: RunOptimizeJob in
+   unit_MCPUniversal, RunFitJob in unit_MCPFit. *)
 
 interface
 
@@ -30,7 +32,7 @@ implementation
 uses
   System.SysUtils, System.JSON,
   unit_universal_types,
-  unit_MCPErrors, unit_MCPJobs, unit_MCPUniversal;
+  unit_MCPErrors, unit_MCPJobs, unit_MCPUniversal, unit_MCPFit;
 
 function JobIdSchema: TJSONObject;
 begin
@@ -322,11 +324,294 @@ begin
     end);
 end;
 
+{ ---------------------------------------------------------------- fit_xrr -- }
+
+function FitCurveItemSchema: TJSONObject;
+var
+  Num: TJSONObject;
+begin
+  Num := TJSONObject.Create;
+  Num.AddPair('type', 'number');
+  Result := ArraySchema(Num);
+  Result.AddPair('minItems', TJSONNumber.Create(2));
+  Result.AddPair('maxItems', TJSONNumber.Create(2));
+end;
+
+function FitThetaRangeSchema: TJSONObject;
+begin
+  Result := SchemaObject([]);
+  AddProp(Result, 'min', 'number',
+    'Lowest theta in degrees to fit (default: the first measured point).');
+  AddProp(Result, 'max', 'number',
+    'Highest theta in degrees to fit (default: the last measured point).');
+end;
+
+function FitFreeItemSchema: TJSONObject;
+var
+  Names: TJSONObject;
+begin
+  Result := SchemaObject(['parameters']);
+  AddEnumProp(Result, 'target',
+    'What the entry addresses. Only "layer" can be fitted; the others are ' +
+    'listed so that asking for them is answered with "not_fittable" rather ' +
+    'than silently ignored.',
+    ['layer', 'substrate', 'scale', 'background', 'resolution']);
+  AddProp(Result, 'stack', 'integer',
+    'Index in "stacks", counted from the substrate up; or the string "cap" or ' +
+    '"buffer" to address those layers.');
+  AddProp(Result, 'layer', 'integer',
+    'Index of the layer inside that stack, in the order "layers" lists them. ' +
+    'Optional (and 0) for "cap" and "buffer".');
+
+  Names := TJSONObject.Create;
+  Names.AddPair('type', 'string');
+  AddRefProp(Result, 'parameters',
+    'Which of "thickness", "sigma" and "density" of that layer take part in ' +
+    'the fit.', ArraySchema(Names));
+end;
+
+function FitBoundItemSchema: TJSONObject;
+begin
+  Result := SchemaObject(['parameter', 'min', 'max']);
+  AddEnumProp(Result, 'target',
+    'Only "layer" has bounds; anything else is refused with "not_fittable".',
+    ['layer', 'substrate', 'scale', 'background', 'resolution']);
+  AddProp(Result, 'stack', 'integer',
+    'Index in "stacks" from the substrate up, or "cap" or "buffer".');
+  AddProp(Result, 'layer', 'integer', 'Index of the layer inside that stack.');
+  AddEnumProp(Result, 'parameter',
+    'The parameter this bound applies to. It must be one the same layer lists ' +
+    'in "free": a bound on a fixed parameter would have no effect and is an error.',
+    ['thickness', 'sigma', 'density']);
+  AddProp(Result, 'min', 'number',
+    'Lower end of the search range, in Angstrom or g/cm^3. A thickness bound ' +
+    'must be greater than zero; a sigma or density bound is clamped at zero.');
+  AddProp(Result, 'max', 'number', 'Upper end of the search range.');
+end;
+
+function FitOptimizerSchema: TJSONObject;
+begin
+  Result := SchemaObject([]);
+  AddProp(Result, 'population', 'integer',
+    Format('Particles in the swarm (default %d). Cost per iteration is linear ' +
+      'in it, and so is how long a cancel takes.', [DEF_POPULATION]));
+  AddProp(Result, 'iterations', 'integer',
+    Format('Iteration budget (default %d). The run also stops early when the ' +
+      'chi-squared falls below "tolerance".', [DEF_ITERATIONS]));
+  AddProp(Result, 'tolerance', 'number',
+    Format('Stop as soon as the chi-squared is below this (default %g).',
+      [DEF_TOLERANCE]));
+  AddProp(Result, 'shake', 'boolean',
+    'Re-seed the swarm when it jams (default true).');
+  AddProp(Result, 'range_seed', 'boolean',
+    'Draw the whole starting swarm uniformly from the bounds (default true). ' +
+    'False keeps the start model as particle 0 and scatters the rest around it.');
+  AddProp(Result, 'jamming_max', 'integer',
+    Format('Iterations without improvement before the shake test fires (default %d).',
+      [DEF_JAMMING_MAX]));
+  AddProp(Result, 'reinit_max', 'integer',
+    Format('Shakes before the swarm is put back on the all-time best (default %d).',
+      [DEF_REINIT_MAX]));
+  AddProp(Result, 'k_chi', 'number',
+    Format('Factor the global best chi-squared is relaxed by on a shake (default %g).',
+      [DEF_K_CHI]));
+  AddProp(Result, 'k_vmax', 'number',
+    Format('Factor the velocity limit and the seed spread grow by on a shake ' +
+      '(default %g).', [DEF_K_VMAX]));
+  AddProp(Result, 'w1', 'number',
+    Format('Lower end of the PSO inertia weight (default %g); ignored while ' +
+      '"use_constriction" is true.', [DEF_W1]));
+  AddProp(Result, 'w2', 'number',
+    Format('Span of the PSO inertia weight above w1 (default %g).', [DEF_W2]));
+  AddProp(Result, 'vmax', 'number',
+    Format('Velocity limit as a fraction of each parameter''s range (default %g).',
+      [DEF_VMAX]));
+  AddProp(Result, 'adapt_velocity', 'boolean',
+    'Shrink the acceleration factors over the run (default false).');
+  AddProp(Result, 'use_constriction', 'boolean',
+    'Use the Clerc-Kennedy constriction factor instead of the inertia weight ' +
+    '(default true).');
+  AddProp(Result, 'ksxr', 'number',
+    Format('Spread of the swarm around the start model, as a fraction of each ' +
+      'range (default %g). Only used when "range_seed" is false.', [DEF_KSXR]));
+  AddProp(Result, 'poly_factor', 'integer',
+    Format('Divisor applied to the range of each successive polynomial ' +
+      'coefficient in a "profile" fit (default %d).', [DEF_POLY_FACTOR]));
+  AddProp(Result, 'poly_order', 'integer',
+    Format('Order of the per-period polynomial in a "profile" fit (default %d).',
+      [DEF_POLY_ORDER]));
+end;
+
+function FitChi2Schema: TJSONObject;
+begin
+  Result := SchemaObject([]);
+  AddProp(Result, 'theta_weight', 'integer',
+    'Angular weight of the chi-squared, 0 to 5 as in the GUI (default 0 = ' +
+    'none). 1 weights by theta^2, 2 by theta, 3 by sqrt(theta), 4 by ' +
+    '1/theta^2, 5 by 1/sqrt(theta).');
+  AddProp(Result, 'point_weight', 'boolean',
+    'Weight a point up when its intensity stands more than three times above ' +
+    'the moving average, so that Bragg peaks count for more than the ' +
+    'background (default true).');
+  AddProp(Result, 'movavg_window', 'number',
+    Format('Window of that moving average, as a fraction of the number of ' +
+      'points (default %g).', [DEF_MOVAVG]));
+end;
+
+/// Submits one fit. The whole request is parsed and validated here - the
+/// measurement is read, the structure is built and the bounds are resolved - so
+/// that a client learns about a bad argument on this call rather than from a
+/// job that fails a minute later.
+function SubmitFit(const Params: TJSONObject): TJSONObject;
+var
+  Req: TFitRequest;
+  Request: TJSONObject;
+  Seed: Integer;
+  G: TGUID;
+  Job: TJob;
+begin
+  if Jobs = nil then
+    raise EMCPError.Create('internal', 'The job manager is not running');
+
+  Req := ParseFitRequest(Params);
+
+  if JSONArgs.Has(Params, 'seed') then
+  begin
+    Seed := JSONArgs.OptInt(Params, 'seed', 0);
+    if Seed < 0 then
+      raise EMCPError.Create('invalid_argument', '"seed" must not be negative',
+        IntToStr(Seed));
+  end
+  else
+  begin
+    { From a GUID, not from Randomize/Random: those write System.RandSeed, which
+      is process-global and is exactly what a job running at this moment is
+      drawing from. SubmitOptimize draws its seed the same way and for the same
+      reason. }
+    G := TGUID.NewGuid;
+    Seed := Integer((G.D1 xor (Cardinal(G.D2) shl 16) xor Cardinal(G.D3))
+                    and $7FFFFFFF);
+  end;
+
+  { request.json records the arguments as they arrived, with the seed the
+    server resolved, so a run can be repeated from the file alone. }
+  Request := Params.Clone as TJSONObject;
+  try
+    if Request.FindValue('seed') <> nil then
+      Request.RemovePair('seed').Free;
+    Request.AddPair('seed', TJSONNumber.Create(Seed));
+
+    Job := Jobs.Submit(jkFit, Seed,
+      procedure(AJob: TJob)
+      begin
+        RunFitJob(AJob, Req);
+      end,
+      Request);
+  finally
+    Request.Free;
+  end;
+
+  Result := Job.StatusJSON;
+end;
+
+procedure RegisterFitTool(Registry: TToolRegistry);
+var
+  Schema: TJSONObject;
+begin
+  Schema := SchemaObject(['structure', 'free']);
+  AddRefProp(Schema, 'structure',
+    'The start model. Lengths are Angstrom, densities g/cm^3; stacks are ' +
+    'listed from the substrate to the surface.', StructureSchema);
+  AddProp(Schema, 'measurement_id', 'string',
+    'A curve in the inbox, as "<specimen>/<file>". Give this or "curve", not ' +
+    'both. The wavelength then defaults to the "lambda" in that specimen''s ' +
+    'meta.json.');
+  AddRefProp(Schema, 'curve',
+    'The measured curve inline, as [[theta_deg, intensity], ...], ordered by ' +
+    'increasing theta. Intensities must be positive: the chi-squared is ' +
+    'computed on their logarithm. Requires "lambda" or "energy".',
+    ArraySchema(FitCurveItemSchema));
+  AddProp(Schema, 'lambda', 'number',
+    'Wavelength in Angstrom. Required with "curve"; with "measurement_id" it ' +
+    'overrides the meta.json value.');
+  AddProp(Schema, 'energy', 'number',
+    'Photon energy in eV, instead of "lambda".');
+  AddRefProp(Schema, 'theta_range',
+    'The part of the measured curve to fit, in degrees theta (never 2theta). ' +
+    'Defaults to the whole curve.', FitThetaRangeSchema);
+  AddProp(Schema, 'resolution', 'number',
+    Format('Instrumental resolution as the FWHM in degrees theta of the ' +
+      'Gaussian the calculated curve is convolved with (default %g). It is ' +
+      'held fixed - the engine cannot fit it.', [DEF_RESOLUTION]));
+  AddRefProp(Schema, 'free',
+    'Which layer parameters take part in the fit. Everything not listed here ' +
+    'is held at its start value.', ArraySchema(FitFreeItemSchema));
+  AddRefProp(Schema, 'bounds',
+    Format('Search range of a free parameter. A free parameter with no bound ' +
+      'gets the start value plus and minus %d%%; sigma and density are ' +
+      'clamped at zero. A parameter that starts at 0 has no such default ' +
+      'range and needs an explicit bound.', [Round(DEF_FREE_DEVIATION * 100)]),
+    ArraySchema(FitBoundItemSchema));
+  AddRefProp(Schema, 'optimizer',
+    'The particle swarm itself. Every key is optional and defaults to the ' +
+    'value the GUI uses.', FitOptimizerSchema);
+  AddRefProp(Schema, 'chi2',
+    'How the residual is weighted. describe_server.fit.chi2 gives the formula.',
+    FitChi2Schema);
+  AddProp(Schema, 'profile', 'boolean',
+    'Fit a polynomial profile of each parameter over the periods of the ' +
+    'repeating stack (TLFPSO_Poly) instead of one value per layer (default ' +
+    'false). It needs exactly one stack with N > 1, and reports the ' +
+    'coefficients in "profiles" and the per-period thicknesses in ' +
+    '"fitted_structure".');
+  AddEnumProp(Schema, 'polarization',
+    'Polarization of the incident beam (default "sp"). The engine has no ' +
+    'pure-p path, so "p" is computed as "sp" and the result echoes "sp".',
+    ['s', 'p', 'sp']);
+  AddProp(Schema, 'seed', 'integer',
+    'Random seed. Two runs of the same request with the same seed give the ' +
+    'same answer to the last digit. Omit it and the server draws one and ' +
+    'reports it, so a run can always be repeated.');
+  AddProp(Schema, 'r_min', 'number',
+    Format('Floor the calculated reflectivity is clamped to (default %g). It ' +
+      'is also the chart minimum stored in the .xrcx.', [DEF_R_MIN]));
+  AddProp(Schema, 'points_inline_max', 'integer',
+    Format('Longest curve returned inline in the result (default %d). Longer ' +
+      'ones come back as null and are read from the files instead.',
+      [DEF_INLINE_MAX]));
+
+  Registry.Register('fit_xrr',
+    'Fits a layer model to a measured reflectivity curve with the GUI''s ' +
+    'LFPSO, minimising the same chi-squared X-Ray Calc 3 displays. This is a ' +
+    'long-running job: the call returns a job_id at once, job_status reports ' +
+    'the iteration and the best chi-squared as it goes, cancel_job stops it ' +
+    'and job_result returns the answer. The result holds the fitted structure, ' +
+    'the chi-squared of the start model and of the fit, the measured, ' +
+    'calculated and residual curves, and a fit.xrcx that X-Ray Calc 3 opens ' +
+    'with the model, the curves and the fit settings in place. Only layer ' +
+    'thickness, sigma and density can be fitted: the substrate is not in the ' +
+    'engine''s particle vector and there are no scale, background or ' +
+    'resolution parameters, so asking for those is refused with ' +
+    '"not_fittable". A repeating stack keeps the period of the start model - ' +
+    'the engine rescales its layers after every move - so fitting the ' +
+    'thicknesses of such a stack fits the ratio between them, not the period ' +
+    'itself. Cancellation is not instant: the engine offers one point per ' +
+    'iteration at which it can be stopped, so cancel_job takes up to one ' +
+    'iteration, which grows with population x points x layers. Angles are ' +
+    'theta in degrees, never 2theta; lengths are Angstrom.',
+    Schema,
+    function(const P: TJSONObject): TJSONObject
+    begin
+      Result := SubmitFit(P);
+    end);
+end;
+
 { ------------------------------------------------------------ the polling -- }
 
 procedure RegisterJobTools(Registry: TToolRegistry);
 begin
   RegisterOptimizeTool(Registry);
+  RegisterFitTool(Registry);
 
   Registry.Register('job_status',
     'Reports the state of a submitted job without waiting for it. The state is ' +
