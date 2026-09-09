@@ -32,16 +32,22 @@ type
     [Test] procedure CurveToJSON_AtTheLimit_IsInline;
     [Test] procedure WriteCurveFile_HeaderAndColumns;
 
+    { the convolution guard - no Henke tables needed, it fires before the engine }
+    [Test] procedure Convolution_CoarseGrid_Raises;
+    [Test] procedure Convolution_NarrowRange_Raises;
+    [Test] procedure Convolution_NoDivergence_CoarseGridIsFine;
+
     { engine }
     [Test] procedure CriticalAngle_Ru_CuKAlpha;
     [Test] procedure RunCalc_RuC_FirstBraggPeak;
+    [Test] procedure RunCalc_Convolved_KeepsPointCountAndLowersPeak;
   end;
 
 implementation
 
 uses
   System.SysUtils, System.Math, System.JSON, System.IOUtils, System.Classes,
-  unit_Types, unit_MCPCalc, unit_MCPStructure, unit_MCPMaterials;
+  unit_Types, unit_MCPCalc, unit_MCPStructure, unit_MCPMaterials, unit_MCPErrors;
 
 const
   CU_K_ALPHA = 1.5406;              // Angstrom
@@ -115,10 +121,11 @@ var
 begin
   Peaks := FindBraggPeaks(SyntheticCurve, CU_K_ALPHA, SYN_PERIOD, 0.3);
   Assert.AreEqual(3, Length(Peaks));
-  // The half-maximum crossings are interpolated between grid points, so the
-  // width comes back to about a tenth of a step; 0.002 deg is generous.
+  // A Gaussian is close to straight where it crosses half its maximum, so
+  // interpolating between grid points recovers the width to far better than one
+  // step (0.00098 deg here): 5e-4 deg is half a step and still passes.
   for i := 0 to High(Peaks) do
-    Assert.AreEqual(Double(SYN_FWHM), Peaks[i].FWHM, 0.002,
+    Assert.AreEqual(Double(SYN_FWHM), Peaks[i].FWHM, 5E-4,
       Format('FWHM of order %d', [Peaks[i].Order]));
 end;
 
@@ -188,6 +195,13 @@ begin
     Assert.AreEqual(2, Point.Count, 'each point is a [theta, R] pair');
     Assert.AreEqual(Double(0.5), (Point.Items[0] as TJSONNumber).AsDouble, 1E-6);
     Assert.AreEqual(Double(0.5), (Point.Items[1] as TJSONNumber).AsDouble, 1E-6);
+    // Point 0 has theta = R = 0.5, so it cannot tell the columns apart; point 1
+    // can (theta 0.75, R 1/3) and pins the order.
+    Point := Arr.Items[1] as TJSONArray;
+    Assert.AreEqual(Double(0.75), (Point.Items[0] as TJSONNumber).AsDouble, 1E-6,
+      'theta comes first');
+    Assert.AreEqual(Double(1 / 3), (Point.Items[1] as TJSONNumber).AsDouble, 1E-5,
+      'R comes second');
   finally
     Arr.Free;
   end;
@@ -230,6 +244,12 @@ begin
     Assert.AreEqual(2, Length(Cols), 'two tab separated columns');
     Assert.AreEqual(Double(0.5), StrToFloat(Cols[0], TFormatSettings.Invariant), 1E-6);
     Assert.AreEqual(Double(0.5), StrToFloat(Cols[1], TFormatSettings.Invariant), 1E-6);
+    // The first row cannot tell the columns apart (both 0.5); the second can.
+    Cols := Lines[2].Split([#9]);
+    Assert.AreEqual(Double(0.75), StrToFloat(Cols[0], TFormatSettings.Invariant), 1E-6,
+      'theta is the first column');
+    Assert.AreEqual(Double(1 / 3), StrToFloat(Cols[1], TFormatSettings.Invariant), 1E-6,
+      'R is the second column');
   finally
     Lines.Free;
     if TFile.Exists(Path) then
@@ -248,6 +268,126 @@ const
     '"stacks":[{"N":30,"layers":[' +
     '{"material":"Ru","thickness":14.7275},' +
     '{"material":"C","thickness":53.7725}]}]}';
+
+{ A request for the structure above, with the grid the caller wants. Parsing the
+  structure reads no Henke table, and the convolution guard runs before TCalc is
+  created, so the three guard tests below need nothing installed. }
+function RuCRequest(ThetaMin, ThetaMax: Double; Points: Integer;
+  DeltaTheta: Double): TCalcRequest;
+var
+  J: TJSONObject;
+begin
+  Result := Default(TCalcRequest);
+  J := TJSONObject.ParseJSONValue(RUC_JSON) as TJSONObject;
+  try
+    Result.Structure := StructureFromJSON(J, Result.Info);
+  finally
+    J.Free;
+  end;
+  Result.Lambda := CU_K_ALPHA;
+  Result.ThetaMin := ThetaMin;
+  Result.ThetaMax := ThetaMax;
+  Result.Points := Points;
+  Result.DeltaTheta := DeltaTheta;
+  Result.Polarization := cmSP;
+  Result.RMin := 1E-7;
+end;
+
+{ The largest reflectivity between T1 and T2 degrees. }
+function MaxRIn(const Curve: TDataArray; T1, T2: Double): Double;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to High(Curve) do
+    if (Curve[i].t >= T1) and (Curve[i].t <= T2) and (Curve[i].r > Result) then
+      Result := Curve[i].r;
+end;
+
+procedure TTestMCPCalc.Convolution_CoarseGrid_Raises;
+var
+  Req: TCalcRequest;
+  Used: TFitStructure;
+begin
+  { 5 degrees over 20 points is a step of 0.25 deg, so the engine's
+    Round(0.1/delta) is 0 and its "make it odd" line turns that into -1:
+    TCalc.Convolute would reach SetLength(FConvWeights, -1) and raise
+    ERangeError, which the tool layer could only report as "internal". }
+  Req := RuCRequest(0.0, 5.0, 20, 0.05);
+  try
+    RunCalc(Req, Used);
+    Assert.Fail('a 0.25 deg step must not reach the engine convolution');
+  except
+    on E: EMCPError do
+      Assert.AreEqual('invalid_argument', E.Code, 'error code for a coarse grid');
+  end;
+end;
+
+procedure TTestMCPCalc.Convolution_NarrowRange_Raises;
+var
+  Req: TCalcRequest;
+  Used: TFitStructure;
+begin
+  { The other end: 0.15 deg over 2000 points is so fine that the fixed
+    +/-0.1 deg window is 2667 points wide - wider than the scan. }
+  Req := RuCRequest(0.5, 0.65, 2000, 0.02);
+  try
+    RunCalc(Req, Used);
+    Assert.Fail('a window wider than the scan must not reach the engine');
+  except
+    on E: EMCPError do
+      Assert.AreEqual('invalid_argument', E.Code, 'error code for a narrow range');
+  end;
+end;
+
+procedure TTestMCPCalc.Convolution_NoDivergence_CoarseGridIsFine;
+var
+  Req: TCalcRequest;
+  Used: TFitStructure;
+begin
+  { The same coarse grid without divergence: TCalc.Convolute returns at once for
+    a zero width, so the guard must not fire. Nothing else here needs a table,
+    but the run itself does. }
+  if not (HenkeAvailable('Ru') and HenkeAvailable('C') and HenkeAvailable('SiO2')) then
+    Assert.Pass('Henke tables for Ru, C and SiO2 are not installed: ' + HenkeDir);
+  Req := RuCRequest(0.1, 5.0, 20, 0);
+  Assert.AreEqual(20, Length(RunCalc(Req, Used)),
+    'a coarse grid is fine when delta_theta is 0');
+end;
+
+procedure TTestMCPCalc.RunCalc_Convolved_KeepsPointCountAndLowersPeak;
+var
+  Plain, Convolved: TDataArray;
+  Used: TFitStructure;
+  PlainPeak, ConvolvedPeak: Double;
+begin
+  if not (HenkeAvailable('Ru') and HenkeAvailable('C') and HenkeAvailable('SiO2')) then
+    Assert.Pass('Henke tables for Ru, C and SiO2 are not installed: ' + HenkeDir);
+
+  Plain := RunCalc(RuCRequest(0.1, 4.0, 2000, 0), Used);
+  // 0.05 deg divergence against a first order about 0.054 deg wide: a fine grid,
+  // so the guard must not fire, and the peak must come back visibly lower.
+  Convolved := RunCalc(RuCRequest(0.1, 4.0, 2000, 0.05), Used);
+
+  Assert.AreEqual(2000, Length(Plain), 'unconvolved point count');
+  Assert.AreEqual(Length(Plain), Length(Convolved),
+    'convolution must not change the number of points');
+  Assert.AreEqual(Double(Plain[0].t), Double(Convolved[0].t), 1E-6, 'same first angle');
+  Assert.AreEqual(Double(Plain[High(Plain)].t), Double(Convolved[High(Convolved)].t),
+    1E-6, 'same last angle');
+
+  // The first order sits near 0.687 deg; look at it in both curves.
+  PlainPeak := MaxRIn(Plain, 0.6, 0.8);
+  ConvolvedPeak := MaxRIn(Convolved, 0.6, 0.8);
+  Assert.IsTrue(PlainPeak > 0.3,
+    Format('the unconvolved first order should be strong, got %.4f', [PlainPeak]));
+  Assert.IsTrue(ConvolvedPeak < PlainPeak,
+    Format('convolution must lower the peak: %.4f convolved vs %.4f plain',
+      [ConvolvedPeak, PlainPeak]));
+  Assert.IsTrue(ConvolvedPeak > 0.3 * PlainPeak,
+    Format('convolution must not erase the peak: %.4f convolved vs %.4f plain',
+      [ConvolvedPeak, PlainPeak]));
+end;
 
 procedure TTestMCPCalc.CriticalAngle_Ru_CuKAlpha;
 var

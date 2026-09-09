@@ -131,14 +131,42 @@ uses
   unit_materials, unit_calc,
   unit_MCPErrors, unit_MCPMaterials;
 
-{ The engine's convolution needs room: Convolute builds a window of 2N+1 points
-  spanning +/-0.1 degree, copies the untouched head with Restore(0, N-1) and
-  smooths the tail with MVA(Size-N, Size-1, MVAWindow), which reads back
-  MVAWindow points. Too few points over too wide a range makes those ranges
-  overlap or run off the front of the array. Refuse that up front with an
-  argument error naming the fix, rather than letting the engine index out of
-  bounds. }
+{ Both ends of the convolution have to fit, and TCalc.Convolute (unit_calc.pas:
+  548-602) checks neither.
+
+  It derives its half-window from the grid it was handed:
+
+      delta := (FResult[Size-1].t - FResult[0].t) / Size;   // Size, not Size-1
+      N     := Round(0.1 / delta);
+      if frac(N / 2) = 0 then N := N - 1;                   // force N odd
+      SetLength(FConvWeights, 2*N + 1);
+
+  ThetaGrid puts the first point at ThetaMin and the last at ThetaMax, so that
+  delta is exactly (ThetaMax - ThetaMin) / Points and N is reproduced here
+  exactly.
+
+  Too coarse a grid. Round(0.1/delta) is 0 for delta > 0.2 degree, and the
+  "make it odd" line then turns that 0 into -1, so the engine reaches
+  SetLength(FConvWeights, -1) and dies with an ERangeError that the tool layer
+  can only report as an internal error. N = 0 cannot survive that line either,
+  so the smallest usable half-window is 1: reject anything below it.
+
+  Too fine a grid, or too few points. The convolved region is
+  [N, Size-N-1]; Restore(0, N-1) fills the head and
+  MVA(Size-N, Size-1, MVAWindow) the tail, and MVA reads MVAWindow points back
+  from its first index, so it walks off the front of FResult unless
+  N + MVAWindow <= Size. The bound used here, 2*N + MVAWindow + 2 < Points, is
+  stricter than that: it also keeps the convolved region non-empty, so the
+  answer is a convolution rather than a head and a tail glued together.
+
+  Both cases are argument errors, and both are fixed the same way - more points,
+  or a narrower range, either of which shrinks delta and raises N. }
 procedure CheckConvolutionFits(const Req: TCalcRequest);
+const
+  TOO_FEW =
+    'Too few points for a convolved scan: the beam-divergence convolution ' +
+    'needs a window of +/-0.1 degree, which does not fit this grid. ' +
+    'Increase "points" or narrow the theta range.';
 var
   Delta: Double;
   N: Integer;
@@ -151,12 +179,16 @@ begin
   N := Round(0.1 / Delta);
   if Frac(N / 2) = 0 then
     Dec(N);                        // the engine forces an odd half-window
+  if N < 1 then
+    raise EMCPError.Create('invalid_argument', TOO_FEW,
+      Format('points=%d, theta range=%.4g deg, step=%.4g deg: the engine would ' +
+        'build a convolution window of %d points',
+        [Req.Points, Req.ThetaMax - Req.ThetaMin, Delta, 2 * N + 1]));
   if 2 * N + CALC_MVA_WINDOW + 2 >= Req.Points then
-    raise EMCPError.Create('invalid_argument',
-      'Too few points for a convolved scan: the beam-divergence convolution ' +
-      'needs a window of +/-0.1 degree, which is wider than half the scan. ' +
-      'Increase "points" or narrow the theta range.',
-      Format('points=%d, theta range=%.4g deg', [Req.Points, Req.ThetaMax - Req.ThetaMin]));
+    raise EMCPError.Create('invalid_argument', TOO_FEW,
+      Format('points=%d, theta range=%.4g deg, step=%.4g deg: the convolution ' +
+        'window is %d of the %d points',
+        [Req.Points, Req.ThetaMax - Req.ThetaMin, Delta, 2 * N + 1, Req.Points]));
 end;
 
 { The angle grid the engine is asked to compute on: Points values from ThetaMin
