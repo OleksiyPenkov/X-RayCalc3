@@ -54,7 +54,9 @@ uses
   TestXRFXPackage in 'TestXRFXPackage.pas',
   unit_MCPErrors in '..\..\XRC_MCP\units\unit_MCPErrors.pas',
   unit_MCPSandbox in '..\..\XRC_MCP\units\unit_MCPSandbox.pas',
-  TestMCPSandbox in 'TestMCPSandbox.pas';
+  TestMCPSandbox in 'TestMCPSandbox.pas',
+  unit_MCPJournal in '..\..\XRC_MCP\units\unit_MCPJournal.pas',
+  TestMCPJournal in 'TestMCPJournal.pas';
 
 {$R *.res}
 
