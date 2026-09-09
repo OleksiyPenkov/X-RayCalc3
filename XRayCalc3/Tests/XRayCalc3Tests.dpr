@@ -77,7 +77,12 @@ uses
   unit_universal_optimizer in '..\..\Shared\Universal\unit_universal_optimizer.pas',
   TestMCPUniversalJob in 'TestMCPUniversalJob.pas',
   unit_MCPInbox in '..\..\XRC_MCP\units\unit_MCPInbox.pas',
-  TestMCPInbox in 'TestMCPInbox.pas';
+  TestMCPInbox in 'TestMCPInbox.pas',
+  unit_XRCProjectTree in '..\Components\unit_XRCProjectTree.pas',
+  unit_MCPProjectFile in '..\..\XRC_MCP\units\unit_MCPProjectFile.pas',
+  unit_MCPTools in '..\..\XRC_MCP\units\unit_MCPTools.pas',
+  unit_ToolsFiles in '..\..\XRC_MCP\units\unit_ToolsFiles.pas',
+  TestMCPProjectFile in 'TestMCPProjectFile.pas';
 
 {$R *.res}
 

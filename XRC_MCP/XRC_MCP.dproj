@@ -59,7 +59,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\Shared\Math;..\Shared\Universal;..\XRC_CMD\Units;..\XRayCalc3\Units;..\XRayCalc3\LFPSO;..\XRayCalc3\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\Shared\Math;..\Shared\Universal;..\XRC_CMD\Units;..\XRayCalc3\Units;..\XRayCalc3\LFPSO;..\XRayCalc3\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;C:\Users\Admin\Documents\Embarcadero\Studio\37.0\CatalogRepository\VirtualTreeview_by_JamSoftware-13\8.3\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\Out\DCU</DCC_DcuOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
@@ -152,6 +152,8 @@
         <DCCReference Include="units\unit_ToolsReference.pas"/>
         <DCCReference Include="units\unit_ToolsCalc.pas"/>
         <DCCReference Include="units\unit_MCPInbox.pas"/>
+        <DCCReference Include="..\XRayCalc3\Components\unit_XRCProjectTree.pas"/>
+        <DCCReference Include="units\unit_MCPProjectFile.pas"/>
         <DCCReference Include="units\unit_ToolsJobs.pas"/>
         <DCCReference Include="units\unit_ToolsFiles.pas"/>
         <DCCReference Include="units\unit_MCPServer.pas"/>

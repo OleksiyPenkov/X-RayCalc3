@@ -50,7 +50,7 @@
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-        <DCC_UnitSearchPath>..\..\Shared\Math;..\Units;..\LFPSO;..\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(BDS)\source\DunitX;..\..\Shared\Universal;..\..\XRC_CMD\Units;..\..\XRC_MCP\units;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\..\Shared\Math;..\Units;..\LFPSO;..\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(BDS)\source\DunitX;..\..\Shared\Universal;..\..\XRC_CMD\Units;..\..\XRC_MCP\units;C:\Users\Admin\Documents\Embarcadero\Studio\37.0\CatalogRepository\VirtualTreeview_by_JamSoftware-13\8.3\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <SanitizedProjectName>XRayCalc3Tests</SanitizedProjectName>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
@@ -128,6 +128,11 @@
         <DCCReference Include="TestMCPUniversalJob.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPInbox.pas"/>
         <DCCReference Include="TestMCPInbox.pas"/>
+        <DCCReference Include="..\Components\unit_XRCProjectTree.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPProjectFile.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPTools.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_ToolsFiles.pas"/>
+        <DCCReference Include="TestMCPProjectFile.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
