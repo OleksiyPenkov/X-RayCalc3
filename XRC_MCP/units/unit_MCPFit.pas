@@ -47,8 +47,12 @@ const
     constant rather than restating it, so the two can never drift apart. }
   FIT_CHI2_DEFINITION =
     '1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 R_calc)^2 * w_point * w_theta) ' +
-    'over points [tail..n-tail); w_point = I/movavg(I) when > 3 (point_weight=true); ' +
-    'w_theta from theta_weight 0..5 as in the GUI';
+    'over the points i = tail .. n-2-tail of the n measured points, skipping any ' +
+    'with R_calc = 0; tail is the half-width in points of the resolution ' +
+    'convolution (0 when resolution = 0); w_point = I/movavg(I) where that ratio ' +
+    'exceeds 3 and 1 otherwise (point_weight=true); w_theta from theta_weight ' +
+    '0..5 as in the GUI. This is TCalc.CalcChiSquare, the number X-Ray Calc 3 ' +
+    'displays.';
 
   { Said in every result: the two parameters a client coming from another
     refinement program looks for first, and does not have here. }
@@ -558,13 +562,22 @@ end;
 
 /// Checks one explicit bound pair and stores it. Thickness must stay positive
 /// (the engine builds a layer from it); sigma and density are clamped at zero.
+///
+/// The clamp happens first and the range is checked afterwards, on the values
+/// that will actually be used. The other order lets a negative pair through:
+/// min -5, max -1 passes "max greater than min" and then clamps to 0 .. -1,
+/// and min -5, max 0 clamps to an empty 0 .. 0 - a parameter the client
+/// believes is free that the engine holds still, which for a density is the
+/// "use the Henke bulk value" sentinel and so does not even show up as an
+/// obviously wrong number.
 procedure SetExplicitBounds(var Ref: TFitParamRef; AMin, AMax: Double;
   const Path: string);
+var
+  Clamped: Boolean;
+  AsGiven: Double;
 begin
-  if AMax <= AMin then
-    raise EMCPError.Create('invalid_argument',
-      Format('%s: "max" must be greater than "min"', [Path]),
-      Format('min %.6g, max %.6g', [AMin, AMax], FitFmt));
+  AsGiven := AMin;
+  Clamped := False;
   if Ref.P = 1 then
   begin
     if AMin <= 0 then
@@ -573,7 +586,22 @@ begin
         FloatToStr(AMin, FitFmt));
   end
   else if AMin < 0 then
+  begin
     AMin := 0;
+    Clamped := True;
+  end;
+
+  if AMax <= AMin then
+    if Clamped then
+      raise EMCPError.Create('invalid_argument',
+        Format('%s: "%s" cannot be negative, so the range is empty once "min" ' +
+               'is clamped to zero', [Path, PARAM_NAMES[Ref.P]]),
+        Format('min %.6g (clamped to 0), max %.6g', [AsGiven, AMax], FitFmt))
+    else
+      raise EMCPError.Create('invalid_argument',
+        Format('%s: "max" must be greater than "min"', [Path]),
+        Format('min %.6g, max %.6g', [AMin, AMax], FitFmt));
+
   Ref.Min := AMin;
   Ref.Max := AMax;
 end;
@@ -863,13 +891,27 @@ function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
 var
   Calc: TCalc;
 begin
-  Calc := TCalc.Create;
+  { Model is ours until TCalc owns it, and TCalc.Create can raise. }
+  try
+    Calc := TCalc.Create;
+  except
+    Model.Free;
+    raise;
+  end;
   try
     Calc.Params    := FitCalcParams(Req);
     Calc.ExpValues := Req.Data;
     Calc.MovAvg    := MovAvgCurve;
     Calc.Limit     := Req.RMin;
-    Calc.Model     := Model;          // TCalc.Destroy frees it
+    { One thread, as unit_MCPCalc.RunCalc and the LFPSO's own workers do. This
+      scan is a single pass over the measured points - the fit does the same
+      work once per particle per iteration - so there is nothing to gain, and
+      TCalc's multi-threaded branch goes through Parallel.ForEach, which needs
+      the Win64 OmniThreadLibrary fix documented in CLAUDE.md and in the header
+      of unit_MCPCalc. Without it the chi-squared of the start model would be
+      the first thing a fit does and the first thing to hang. }
+    Calc.MaxThreads := 1;
+    Calc.Model     := Model;          // TCalc.Destroy frees it from here on
     Calc.Run;
     Chi2 := Calc.CalcChiSquare(Req.Fit.ThetaWeight);
     Result := Copy(Calc.Results);
@@ -1278,20 +1320,33 @@ begin
       Runner.Free;
     end;
 
-    { Read off the expanded model while it is still ours: a gradient fit puts
-      the per-period thicknesses nowhere else. A plain periodic fit repeats one
-      thickness per period and has no profile to report. }
-    if Req.Profile then
-      Profiles := CollectThicknessProfiles(Model);
+    { Model is ours until ScanOnData hands it to a TCalc. }
+    try
+      { Read off the expanded model while it is still ours: a gradient fit puts
+        the per-period thicknesses nowhere else. A plain periodic fit repeats
+        one thickness per period and has no profile to report. }
+      if Req.Profile then
+        Profiles := CollectThicknessProfiles(Model);
+    except
+      Model.Free;
+      raise;
+    end;
 
     { The curve on the measured angles for the model the fit ended on. It is
       recomputed rather than taken from BestCurve so that the chi-squared beside
-      it comes from the structure the result reports. ScanOnData hands the model
-      to a TCalc, which frees it, so Model must not be touched afterwards. }
+      it comes from the structure the result reports. ScanOnData takes the
+      model, raise or not, so Model must not be touched afterwards. }
     CalcCurve := ScanOnData(Req, Model, MovAvgCurve, Chi2Recalc);
   finally
     L.Free;
   end;
+
+  { A cancel that arrived after the engine's last progress report was never
+    offered to the callback, so Runner.CancelSeen is False and the run above
+    finished on its own. Look again before writing an answer: the job manager
+    records a body that leaves a result as finished, whatever its state says. }
+  if Job.CancelRequested then
+    Exit;
 
   { The densities the engine used, in both structures the result reports and in
     the .xrcx: a layer that asked for the Henke bulk value is stored with the

@@ -41,9 +41,14 @@ type
     /// <summary>[[theta, I], ...] of the reference structure, as fit_xrr takes
     /// it inline.</summary>
     function SyntheticCurveJSON: string;
+    /// <summary>Submits one fit on an existing manager and returns the job.</summary>
+    function SubmitOn(Mgr: TJobManager; Seed, Population, Iterations: Integer;
+      const CurveJSON: string): TJob;
     /// <summary>One complete fit through a manager of its own. The result is
     /// the caller's to free; nil when the job did not finish.</summary>
     function RunFit(Seed: Integer; const CurveJSON: string): TJSONObject;
+    /// <summary>Polls until the job reaches Wanted, ends in some other final
+    /// state, or the timeout elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
   public
     [Setup] procedure Setup;
@@ -53,6 +58,8 @@ type
     [Test] procedure Free_LeavesEveryOtherParameterFixed;
     [Test] procedure Bounds_Explicit_ReplaceTheDefault;
     [Test] procedure Bounds_NegativeMin_ClampedToZeroForSigmaAndDensity;
+    [Test] procedure Bounds_BothNegative_Refused;
+    [Test] procedure Bounds_NegativeMinAndZeroMax_Refused;
     [Test] procedure Bounds_ThicknessMinNotPositive_Refused;
     [Test] procedure Bounds_OfAParameterThatIsNotFree_Refused;
     [Test] procedure Free_ParameterStartingAtZero_NeedsExplicitBounds;
@@ -70,6 +77,7 @@ type
 
     [Test] procedure Fit_OnItsOwnCurve_BeatsTheStartModel;
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
+    [Test] procedure Fit_Cancelled_StopsAndLeavesNoResult;
   end;
 
 implementation
@@ -125,6 +133,11 @@ const
   FIT_TOLERANCE = 1E-9;      // low enough that the run never stops early
   FIT_POPULATION = 12;
   FIT_ITERATIONS = 8;
+  { The cancel test's budget: big enough that the run cannot possibly finish
+    while the test is watching, so that reaching "cancelled" can only be the
+    cancel. It costs one iteration of wall clock, not five hundred. }
+  CANCEL_POPULATION = 200;
+  CANCEL_ITERATIONS = 500;
   CURVE_POINTS = 200;
   CURVE_THETA_MIN = 0.3;
   CURVE_THETA_MAX = 3.0;
@@ -249,17 +262,37 @@ begin
   begin
     if Job.State = Wanted then
       Exit(True);
+    { A job that has ended in some other way is never going to reach Wanted, so
+      say so at once: a broken fit should fail the suite in a second rather than
+      hold it for the whole timeout. }
+    if (Job.State in [jsFinished, jsFailed, jsCancelled]) and (Job.State <> Wanted) then
+      Exit(False);
     Sleep(20);
   end;
   Result := Job.State = Wanted;
 end;
 
-function TTestMCPFit.RunFit(Seed: Integer; const CurveJSON: string): TJSONObject;
+/// Why a job ended the way it did, for an assertion message.
+function JobErrorText(Job: TJob): string;
+var
+  E: TJSONObject;
+begin
+  E := Job.CloneError;
+  try
+    if E = nil then
+      Result := '(no error recorded)'
+    else
+      Result := E.ToJSON;
+  finally
+    E.Free;
+  end;
+end;
+
+function TTestMCPFit.SubmitOn(Mgr: TJobManager; Seed, Population,
+  Iterations: Integer; const CurveJSON: string): TJob;
 var
   Args: string;
   Req: TFitRequest;
-  Mgr: TJobManager;
-  Job: TJob;
   Request: TJSONObject;
 begin
   Args := Format(
@@ -268,28 +301,36 @@ begin
     '{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]}],' +
     '"optimizer":{"population":%d,"iterations":%d,"tolerance":%g},' +
     '"resolution":0,"points_inline_max":0}',
-    [START_STRUCTURE, CurveJSON, CU_K_ALPHA,
-     FIT_POPULATION, FIT_ITERATIONS, FIT_TOLERANCE], TFormatSettings.Invariant);
+    [START_STRUCTURE, CurveJSON, CU_K_ALPHA, Population, Iterations,
+     FIT_TOLERANCE], TFormatSettings.Invariant);
 
   Req := Parse(Args);
 
+  Request := TJSONObject.Create;
+  try
+    Request.AddPair('seed', TJSONNumber.Create(Seed));
+    Result := Mgr.Submit(jkFit, Seed,
+      procedure(AJob: TJob)
+      begin
+        RunFitJob(AJob, Req);
+      end,
+      Request);
+  finally
+    Request.Free;
+  end;
+end;
+
+function TTestMCPFit.RunFit(Seed: Integer; const CurveJSON: string): TJSONObject;
+var
+  Mgr: TJobManager;
+  Job: TJob;
+begin
   Mgr := TJobManager.Create(WorkDir);
   try
-    Request := TJSONObject.Create;
-    try
-      Request.AddPair('seed', TJSONNumber.Create(Seed));
-      Job := Mgr.Submit(jkFit, Seed,
-        procedure(AJob: TJob)
-        begin
-          RunFitJob(AJob, Req);
-        end,
-        Request);
-    finally
-      Request.Free;
-    end;
-
-    Assert.IsTrue(WaitForState(Job, jsFinished, 180000),
-      'the fit did not finish: ' + JobStateName(Job.State));
+    Job := SubmitOn(Mgr, Seed, FIT_POPULATION, FIT_ITERATIONS, CurveJSON);
+    if not WaitForState(Job, jsFinished, 180000) then
+      Assert.Fail(Format('the fit ended as "%s": %s',
+        [JobStateName(Job.State), JobErrorText(Job)]));
     Result := Job.CloneResult;
   finally
     Mgr.Free;
@@ -413,6 +454,52 @@ begin
   RangeOf(Req, 0, 1, 3, Lo, Hi);
   Assert.AreEqual(0.0, Lo, 0.0, 'density min is clamped at zero');
   Assert.AreEqual(14.0, Hi, 1E-6, 'density max');
+end;
+
+procedure TTestMCPFit.Bounds_BothNegative_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { min -5, max -1 satisfies "max greater than min" as written, and the clamp
+    would then turn it into 0 .. -1 - an inverted range nobody asked for. }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["density"]}],' +
+    '"bounds":[{"target":"layer","stack":0,"layer":1,"parameter":"density",' +
+    '"min":-5,"max":-1}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Bounds_NegativeMinAndZeroMax_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { min -5, max 0 clamps to 0 .. 0: an empty range, so a parameter the client
+    believes is free that the engine holds still - and for a density 0 is the
+    "use the Henke bulk value" sentinel, so it would not even look wrong. }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["density"]}],' +
+    '"bounds":[{"target":"layer","stack":0,"layer":1,"parameter":"density",' +
+    '"min":-5,"max":0}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+
+  { the same for sigma, where 0 is a legitimate value and the empty range is the
+    only thing wrong with it }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["sigma"]}],' +
+    '"bounds":[{"target":"layer","stack":0,"layer":1,"parameter":"sigma",' +
+    '"min":-2,"max":0}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
 end;
 
 procedure TTestMCPFit.Bounds_ThicknessMinNotPositive_Refused;
@@ -766,6 +853,57 @@ begin
     end;
   finally
     A.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Fit_Cancelled_StopsAndLeavesNoResult;
+var
+  Mgr: TJobManager;
+  Job: TJob;
+  Status: TJSONObject;
+  SW: TStopwatch;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Mgr := TJobManager.Create(WorkDir);
+  try
+    { A budget far larger than the test is willing to wait for, so that the run
+      can only end because it was asked to. }
+    Job := SubmitOn(Mgr, 7, CANCEL_POPULATION, CANCEL_ITERATIONS,
+                    SyntheticCurveJSON);
+
+    { Cancel once the engine is really inside Run - the first progress report
+      comes after the whole population has been evaluated - so that this
+      exercises the callback path rather than the queue. }
+    SW := TStopwatch.StartNew;
+    while (SW.ElapsedMilliseconds < 60000) and
+          not ((Job.State = jsRunning) and (Job.LastMessage <> '')) do
+    begin
+      if Job.State in [jsFinished, jsFailed, jsCancelled] then
+        Break;
+      Sleep(20);
+    end;
+    Assert.AreEqual(JobStateName(jsRunning), JobStateName(Job.State),
+      'the fit should still be running when it is cancelled: ' + JobErrorText(Job));
+
+    Status := Mgr.Cancel(Job.Id);
+    try
+      Assert.IsNotNull(Status, 'cancel_job answers with a status');
+    finally
+      Status.Free;
+    end;
+
+    Assert.IsTrue(WaitForState(Job, jsCancelled, 60000),
+      Format('the fit did not stop; it is "%s"', [JobStateName(Job.State)]));
+    Assert.IsFalse(Job.HasResult, 'a cancelled fit must leave no result');
+    Assert.IsTrue(Job.Iteration < CANCEL_ITERATIONS,
+      'the run was cut short, not finished');
+  finally
+    Mgr.Free;
   end;
 end;
 

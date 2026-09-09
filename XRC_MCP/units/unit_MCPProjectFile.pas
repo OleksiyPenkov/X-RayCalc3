@@ -240,9 +240,19 @@ begin
     SL.Add(ColX + #9 + ColY);
     SL.Add(UnitX + #9);          // SeriesToText passes an empty y unit
     SL.Add('');
+    { Seven significant digits in both columns: everything a Single carries, and
+      what SeriesFromText - plain StrToFloat into a Single - reads back without
+      loss. The GUI's own SeriesToText writes the angle with three decimals
+      (ffFixed, 5, 3) and the intensity with five significant digits, which is
+      coarser than the data it is storing: on a scan with a 0.0025 degree step,
+      0.001 degree rounding is 40% of a step, and a project reloaded into the
+      GUI then re-scores with a chi-squared two orders above the one the fit
+      reported, because the intensities belong to the unrounded angles while the
+      model is recomputed at the rounded ones. The file stays readable by every
+      reader of the format; it just no longer throws precision away. }
     for i := 0 to High(C) do
-      SL.Add(FloatToStrF(C[i].t, ffFixed, 5, 3, Fmt) + #9 +
-             FloatToStrF(C[i].r, ffExponent, 5, 4, Fmt));
+      SL.Add(FloatToStrF(C[i].t, ffGeneral, 7, 0, Fmt) + #9 +
+             FloatToStrF(C[i].r, ffExponent, 7, 4, Fmt));
     SL.SaveToFile(Path);
   finally
     SL.Free;
@@ -543,7 +553,17 @@ end;
    the main one. Both are restored in a finally. The window is a few
    milliseconds around one Create/SaveToFile/Free, and the only readers of
    MainThreadID in this process are the RTL's "am I on the UI thread" tests,
-   which are answered more usefully by "yes" than by a raise. *)
+   which are answered more usefully by "yes" than by a raise.
+
+   INVARIANT, and the thing to check before changing XRC_MCP.dpr: this holds
+   only while the process has no message loop and nothing in it calls
+   TThread.Synchronize or TThread.Queue. Give the server a real main thread that
+   pumps messages, or a thread that synchronises onto it, and the swap turns
+   into a live deadlock - the caller waiting for a queue only the (now
+   mis-named) main thread would drain, and the real main thread's own
+   CheckSynchronize raising because it is no longer the one MainThreadID names.
+   If that day comes, write project.dsc without the VCL control instead
+   (the plan's Appendix A byte writer). *)
 type
   TTreeScope = record
   private
@@ -559,8 +579,17 @@ var
 procedure TTreeScope.Enter;
 begin
   TreeLock.Acquire;
-  FSavedMainThread := MainThreadID;
-  MainThreadID := TThread.CurrentThread.ThreadID;
+  try
+    FSavedMainThread := MainThreadID;
+    MainThreadID := TThread.CurrentThread.ThreadID;
+  except
+    { Nothing between Acquire and here is expected to raise, but a lock that is
+      never released would wedge every later save_project and fit_xrr, so the
+      one statement that can (TThread.CurrentThread, which allocates on a first
+      call from a thread the RTL has not seen) does not get to. }
+    TreeLock.Release;
+    raise;
+  end;
 end;
 
 procedure TTreeScope.Leave;
