@@ -105,11 +105,24 @@ function GenomeToJSON(const G: TGenome; const ElementNames: TArray<string>): TJS
 /// TUniversalFitness.BuildLayers: the template path emits the cap as "cap" and
 /// one stack of the template's sublayers, the plain path emits one stack of two
 /// layers d*gamma and d*(1-gamma) of the dominant element at the composition's
-/// effective density. Densities are the ones the mixer used, so the structure
-/// returned is the structure whose FoM was reported.
-/// A degenerate genome (a template sublayer whose gamma reduction eats the whole
-/// period) yields a layer of thickness 0, exactly as BuildLayers computes it;
-/// such a genome carries the engine's degeneracy penalty and is never a winner.
+/// effective density. Densities are the ones the mixer used.
+/// The structure returned reproduces the FoM that was reported for the genome
+/// <b>only when the run used pure elements</b>: the plain path names the
+/// dominant element of each role, and the structure JSON has no syntax for a
+/// mixed composition (see describe_server.material_syntax). ConfigFromJSON
+/// therefore refuses structure.pure_elements = false in v1, which is what keeps
+/// this function's output faithful.
+/// Two corners where the emitted structure is deliberately not layer-identical
+/// to BuildLayers:
+/// - a degenerate genome (a template sublayer whose gamma reduction eats the
+///   whole period) yields a layer of thickness 0, exactly as BuildLayers
+///   computes it; such a genome carries the engine's degeneracy penalty and is
+///   never a winner;
+/// - a template cap of zero thickness (CapH = 0) is omitted entirely, because a
+///   zero-thickness layer is not a layer and would not survive a round trip
+///   through the structure reader, whereas BuildLayers still emits it. Feeding
+///   such a structure back to evaluate_lines can therefore give a slightly
+///   different FoM. Only a cap of exactly zero thickness is affected.
 /// Caller frees.</summary>
 function GenomeToStructure(const G: TGenome; const C: TUniversalConfig;
   const Templates: TTemplateLibrary; const ElementNames: TArray<string>;
@@ -145,7 +158,7 @@ const
 implementation
 
 uses
-  System.Math, System.IOUtils, System.Generics.Collections,
+  System.Math, System.Generics.Collections,
   System.Generics.Defaults,
   math_complex,
   cmd_unit_types,
@@ -157,6 +170,14 @@ const
   // TUniversalFitness substitutes these when the configuration says 0.
   DEFAULT_SCAN_POINTS     = 200;
   DEFAULT_SCAN_HALF_RANGE = 5.0;
+
+  // evaluate_lines answers in the same round trip and the optimizer scans once
+  // per line per particle per iteration, so the scan grid is bounded. 20000
+  // points is two orders of magnitude finer than the engine's default and far
+  // finer than any Bragg peak these mirrors have; a scan wider than 90 degrees
+  // in theta covers the whole reflection half-space.
+  MAX_SCAN_POINTS     = 20000;
+  MAX_SCAN_HALF_RANGE = 90.0;
 
   THETA_MIN_NOTE =
     'Optimizer dark-zone threshold, not the scan start: a line whose Bragg ' +
@@ -295,6 +316,32 @@ begin
     Result := 'sp';
 end;
 
+/// Every bound the fitness settings have to respect, wherever they came from -
+/// a tool's "fitness" overrides or a whole configuration parsed by the engine.
+procedure ValidateFitness(const F: TFitnessConfig);
+begin
+  if F.RMinThreshold < 0 then
+    raise EMCPError.Create('invalid_argument', '"R_min_threshold" must not be negative');
+  if F.DeltaTheta < 0 then
+    raise EMCPError.Create('invalid_argument', '"delta_theta" must not be negative');
+  if F.ThetaMin < 0 then
+    raise EMCPError.Create('invalid_argument', '"theta_min" must not be negative');
+  if F.ScanPoints < 0 then
+    raise EMCPError.Create('invalid_argument', '"scan_points" must not be negative');
+  // The scan needs enough points for a peak and its two half-maximum crossings.
+  if (F.ScanPoints > 0) and (F.ScanPoints < 3) then
+    raise EMCPError.Create('invalid_argument', '"scan_points" must be at least 3');
+  if F.ScanPoints > MAX_SCAN_POINTS then
+    raise EMCPError.Create('invalid_argument',
+      Format('"scan_points" must not exceed %d', [MAX_SCAN_POINTS]),
+      IntToStr(F.ScanPoints));
+  if F.ScanHalfRange < 0 then
+    raise EMCPError.Create('invalid_argument', '"scan_half_range" must not be negative');
+  if F.ScanHalfRange > MAX_SCAN_HALF_RANGE then
+    raise EMCPError.Create('invalid_argument',
+      Format('"scan_half_range" must not exceed %g degrees', [Double(MAX_SCAN_HALF_RANGE)]));
+end;
+
 function FitnessConfigFromJSON(const J: TJSONObject;
   const Base: TFitnessConfig): TFitnessConfig;
 begin
@@ -313,19 +360,7 @@ begin
   if JSONArgs.Has(J, 'polarization') then
     Result.Polarization := ParsePolarizationValue(JSONArgs.ReqStr(J, 'polarization'));
 
-  if Result.RMinThreshold < 0 then
-    raise EMCPError.Create('invalid_argument', '"R_min_threshold" must not be negative');
-  if Result.DeltaTheta < 0 then
-    raise EMCPError.Create('invalid_argument', '"delta_theta" must not be negative');
-  if Result.ThetaMin < 0 then
-    raise EMCPError.Create('invalid_argument', '"theta_min" must not be negative');
-  if Result.ScanPoints < 0 then
-    raise EMCPError.Create('invalid_argument', '"scan_points" must not be negative');
-  // The scan needs enough points for a peak and its two half-maximum crossings.
-  if (Result.ScanPoints > 0) and (Result.ScanPoints < 3) then
-    raise EMCPError.Create('invalid_argument', '"scan_points" must be at least 3');
-  if Result.ScanHalfRange < 0 then
-    raise EMCPError.Create('invalid_argument', '"scan_half_range" must not be negative');
+  ValidateFitness(Result);
 end;
 
 function FitnessConfigToJSON(const F: TFitnessConfig): TJSONObject;
@@ -438,20 +473,21 @@ begin
   DefaultPair(O, 'checkpoint_every', TJSONNumber.Create(100));
 end;
 
-/// The template library a configuration should run against. A client that names
-/// one gets that file (relative names are resolved inside the sandbox); a client
-/// that names none gets the library the server was started with.
+/// The template library a configuration should run against. A name the client
+/// supplied is always resolved through the sandbox, so an absolute, a
+/// drive-qualified, a UNC or a '..' path is refused with path_outside_workdir -
+/// a template file is a file the client chooses, and every client-chosen path
+/// in this server lives under the work directory. Naming none is not a path at
+/// all: it selects the library the server itself was started with, which is a
+/// server-side setting.
 function ResolveConfigTemplatePath(const Given: string): string;
 begin
-  Result := Trim(Given);
-  if Result = '' then
+  if Trim(Given) = '' then
     Exit(TemplatesFile);
-  if TFile.Exists(Result) then
-    Exit;
-  if not TPath.IsRelativePath(Result) then
-    Exit;
-  if WorkDir <> nil then
-    Result := WorkDir.ResolvePath(Result, False);
+  if WorkDir = nil then
+    raise EMCPError.Create('internal',
+      'There is no working directory, so "template_file" cannot be resolved');
+  Result := WorkDir.ResolvePath(Given, False);
 end;
 
 function ConfigFromJSON(const J: TJSONObject; const OutputDir: string): TUniversalConfig;
@@ -459,7 +495,8 @@ var
   N: TJSONObject;
   Lines: TArray<TXRFLine>;
   Arr: TJSONArray;
-  Obj: TJSONObject;
+  Obj, JStructure: TJSONObject;
+  V: TJSONValue;
   Given: string;
   i: Integer;
 begin
@@ -473,10 +510,14 @@ begin
   try
     // Lines. The engine's parser wants {element, lambda, weight}; the server
     // accepts rather more than that, so the array is rewritten here.
-    if N.FindValue('lines') <> nil then
-      Arr := JSONArgs.OptArr(N, 'lines')
-    else
-      Arr := JSONArgs.OptArr(N, 'targets');
+    V := N.FindValue('lines');
+    if V = nil then
+      V := N.FindValue('targets');
+    // "Missing" and "not an array" are different mistakes; LinesFromJSON only
+    // ever sees nil, so the difference is drawn here.
+    if (V <> nil) and not (V is TJSONArray) then
+      raise EMCPError.Create('invalid_argument', '"lines" must be an array');
+    Arr := TJSONArray(V);
     Lines := LinesFromJSON(Arr);
     if N.FindValue('lines') <> nil then
       N.RemovePair('lines').Free;
@@ -503,7 +544,18 @@ begin
     if JSONArgs.OptStr(N, 'substrate', '').Trim = '' then
       raise EMCPError.Create('invalid_argument', 'Missing "substrate"');
 
-    FillStructureDefaults(SectionOf(N, 'structure'));
+    JStructure := SectionOf(N, 'structure');
+    // v1 optimises over pure elements only. With mixed compositions the
+    // optimizer's genome cannot be written back as a structure - the structure
+    // JSON names one material per layer and has no mixing syntax - so a
+    // reported candidate would not reproduce its own figure of merit. Refusing
+    // it here is better than reporting a structure that is not the one scored.
+    V := JStructure.FindValue('pure_elements');
+    if (V is TJSONBool) and not TJSONBool(V).AsBoolean then
+      raise EMCPError.Create('invalid_argument',
+        'structure.pure_elements must be true in v1: mixed compositions cannot ' +
+        'be expressed in the structure JSON (see describe_server.material_syntax)');
+    FillStructureDefaults(JStructure);
     FillFitnessDefaults(SectionOf(N, 'fitness'));
     FillOptimizerDefaults(SectionOf(N, 'optimizer'));
 
@@ -533,6 +585,9 @@ begin
   finally
     N.Free;
   end;
+
+  // The engine parsed the fitness section; the server's bounds still apply.
+  ValidateFitness(Result.Fitness);
 
   Result.HenkePath := HenkeDir;
   Result.OutputDir := OutputDir;
@@ -669,6 +724,14 @@ begin
 
   if Length(Lines) = 0 then
     raise EMCPError.Create('invalid_argument', '"lines" must hold at least one line');
+  // ComputeFoM keeps its per-line arrays on the stack, dimensioned MAX_LINES,
+  // and Release builds have range checking off: a longer list would be written
+  // past the end of them. LinesFromJSON already refuses one, but this is the
+  // engine's own precondition and belongs on the engine's own entry point.
+  if Length(Lines) > MAX_LINES then
+    raise EMCPError.Create('invalid_argument',
+      Format('At most %d lines can be evaluated at once', [MAX_LINES]),
+      IntToStr(Length(Lines)));
   if Info.PeriodicStackIndex < 0 then
     raise EMCPError.Create('invalid_structure',
       'The figure of merit needs a periodic stack: no stack has N greater than 1',

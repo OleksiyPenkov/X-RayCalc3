@@ -26,17 +26,23 @@ type
     [Test] procedure ConfigFromJSON_KeepsWhatTheClientGave;
     [Test] procedure ConfigFromJSON_MissingElementPool_Raises;
     [Test] procedure ConfigFromJSON_MissingSubstrate_Raises;
+    [Test] procedure ConfigFromJSON_PureElementsFalse_Raises;
+    [Test] procedure ConfigFromJSON_LinesNotAnArray_SaysSo;
+    [Test] procedure ConfigFromJSON_AbsoluteTemplateFile_IsOutsideTheWorkdir;
+    [Test] procedure ConfigFromJSON_RelativeTemplateFile_ResolvesInTheWorkdir;
 
     // --- fitness overrides ---
     [Test] procedure FitnessConfigFromJSON_NoOverrides_IsTheBase;
     [Test] procedure FitnessConfigFromJSON_AppliesEveryKey;
     [Test] procedure FitnessConfigFromJSON_PIsComputedAsSP;
     [Test] procedure FitnessConfigFromJSON_BadPolarization_Raises;
+    [Test] procedure FitnessConfigFromJSON_ScanGridIsBounded;
     [Test] procedure FitnessConfigToJSON_ReportsTheScanDefaults;
     [Test] procedure FitnessConfigToJSON_ScanDefaults_AreTheEnginesOwn;
 
     // --- the engine ---
     [Test] procedure EvaluateStructure_NoPeriodicStack_Raises;
+    [Test] procedure EvaluateStructure_TooManyLines_Raises;
     [Test] procedure EvaluateStructure_RuC_MatchesEvaluateLayersDirect;
   end;
 
@@ -53,6 +59,7 @@ uses
   unit_universal_fitness,
   unit_xrf_lines,
   unit_MCPErrors,
+  unit_MCPSandbox,
   unit_MCPStructure,
   unit_MCPUniversal;
 
@@ -470,7 +477,7 @@ var
 begin
   J := ParseObj('{"lines":[{"name":"B","lambda":67.6,"weight":2.5}],' +
                 '"element_pool":["Ru","C"],"substrate":"Si",' +
-                '"structure":{"pure_elements":false,"d":{"min":10,"max":20},"sigma":1.5},' +
+                '"structure":{"d":{"min":10,"max":20},"sigma":1.5},' +
                 '"fitness":{"w_R":3,"polarization":"s"},' +
                 '"optimizer":{"population":37,"iterations":9}}');
   try
@@ -483,7 +490,8 @@ begin
   Assert.AreEqual(9, C.Optimizer.Iterations);
   Assert.AreEqual(200, C.Optimizer.StagnationLimit, 'the rest of the section still defaults');
 
-  Assert.IsFalse(C.Structure.PureElements);
+  Assert.IsTrue(C.Structure.PureElements,
+    'pure_elements stays true; v1 refuses an explicit false');
   Assert.AreEqual(Double(10), Double(C.Structure.dRange.Min), 1E-6);
   Assert.AreEqual(Double(20), Double(C.Structure.dRange.Max), 1E-6);
   Assert.AreEqual(Double(1.5), Double(C.Structure.SigmaFixed), 1E-6);
@@ -527,6 +535,155 @@ begin
   finally
     J.Free;
   end;
+end;
+
+/// The code of the EMCPError Body raises, or '' when it raises nothing. Fails
+/// the test when the exception is of some other class.
+function ErrorCodeOf(const Body: TProc): string;
+begin
+  Result := '';
+  try
+    Body();
+  except
+    on E: EMCPError do
+      Exit(E.Code);
+    on E: Exception do
+      Assert.Fail('Expected EMCPError, got ' + E.ClassName + ': ' + E.Message);
+  end;
+end;
+
+procedure TTestMCPUniversal.ConfigFromJSON_PureElementsFalse_Raises;
+var
+  J: TJSONObject;
+  Code: string;
+begin
+  // v1 optimises pure elements only: a mixed composition cannot be written back
+  // as a structure, so a candidate would not reproduce its own figure of merit.
+  J := ParseObj('{"lines":["B"],"element_pool":["Ru","C"],"substrate":"Si",' +
+                '"structure":{"pure_elements":false}}');
+  try
+    Code := ErrorCodeOf(
+      procedure
+      begin
+        ConfigFromJSON(J, 'C:\out');
+      end);
+  finally
+    J.Free;
+  end;
+  Assert.AreEqual('invalid_argument', Code);
+end;
+
+procedure TTestMCPUniversal.ConfigFromJSON_LinesNotAnArray_SaysSo;
+var
+  J: TJSONObject;
+  Msg: string;
+begin
+  J := ParseObj('{"lines":"B","element_pool":["Ru","C"],"substrate":"Si"}');
+  try
+    Msg := '';
+    try
+      ConfigFromJSON(J, 'C:\out');
+    except
+      on E: EMCPError do
+        Msg := E.Message;
+    end;
+  finally
+    J.Free;
+  end;
+  Assert.IsTrue(Msg.Contains('must be an array'),
+    'a "lines" that is not an array must not be reported as a missing one, got: ' + Msg);
+end;
+
+/// A work directory the sandbox tests resolve against, installed as the global
+/// one for the duration of Body and removed again afterwards.
+procedure WithWorkDir(const Body: TProc);
+var
+  Saved: TWorkDir;
+  Temp: string;
+begin
+  Temp := TPath.Combine(TPath.GetTempPath, 'xrcmcp_t9_' + TGUID.NewGuid.ToString);
+  TDirectory.CreateDirectory(Temp);
+  Saved := WorkDir;
+  WorkDir := TWorkDir.Create(Temp);
+  try
+    Body();
+  finally
+    WorkDir.Free;
+    WorkDir := Saved;
+    try
+      TDirectory.Delete(Temp, True);
+    except
+      // a leftover temp folder must not turn into a test failure
+    end;
+  end;
+end;
+
+procedure TTestMCPUniversal.ConfigFromJSON_AbsoluteTemplateFile_IsOutsideTheWorkdir;
+var
+  Code: string;
+begin
+  // "template_file" is a path the client chose, so it lives under the work
+  // directory like every other client path - an absolute one is refused even
+  // when it exists on this machine.
+  WithWorkDir(
+    procedure
+    var
+      J: TJSONObject;
+    begin
+      J := ParseObj('{"lines":["B"],"element_pool":["Ru","C"],"substrate":"Si",' +
+                    '"template_file":"C:\\Windows\\win.ini"}');
+      try
+        Code := ErrorCodeOf(
+          procedure
+          begin
+            ConfigFromJSON(J, 'C:\out');
+          end);
+      finally
+        J.Free;
+      end;
+    end);
+  Assert.AreEqual('path_outside_workdir', Code);
+
+  WithWorkDir(
+    procedure
+    var
+      J: TJSONObject;
+    begin
+      J := ParseObj('{"lines":["B"],"element_pool":["Ru","C"],"substrate":"Si",' +
+                    '"template_file":"..\\escape.json"}');
+      try
+        Code := ErrorCodeOf(
+          procedure
+          begin
+            ConfigFromJSON(J, 'C:\out');
+          end);
+      finally
+        J.Free;
+      end;
+    end);
+  Assert.AreEqual('path_outside_workdir', Code, '".." must not escape either');
+end;
+
+procedure TTestMCPUniversal.ConfigFromJSON_RelativeTemplateFile_ResolvesInTheWorkdir;
+begin
+  WithWorkDir(
+    procedure
+    var
+      J: TJSONObject;
+      C: TUniversalConfig;
+    begin
+      J := ParseObj('{"lines":["B"],"element_pool":["Ru","C"],"substrate":"Si",' +
+                    '"template_file":"templates/mine.json"}');
+      try
+        C := ConfigFromJSON(J, 'C:\out');
+      finally
+        J.Free;
+      end;
+      Assert.AreEqual(
+        IncludeTrailingPathDelimiter(WorkDir.Root) + 'templates\mine.json',
+        C.TemplatePath,
+        'a relative template file resolves under the work directory root');
+    end);
 end;
 
 { ---------------------------------------------------------- fitness overrides -- }
@@ -608,6 +765,50 @@ begin
   finally
     J.Free;
   end;
+end;
+
+procedure TTestMCPUniversal.FitnessConfigFromJSON_ScanGridIsBounded;
+
+  function CodeFor(const Overrides: string): string;
+  var
+    J: TJSONObject;
+  begin
+    J := ParseObj(Overrides);
+    try
+      Result := ErrorCodeOf(
+        procedure
+        begin
+          FitnessConfigFromJSON(J, DefaultFitnessConfig);
+        end);
+    finally
+      J.Free;
+    end;
+  end;
+
+var
+  J: TJSONObject;
+  F: TFitnessConfig;
+begin
+  // evaluate_lines answers in the same round trip, so the scan grid a client
+  // can ask for is bounded at both ends.
+  Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":500000000}'),
+    'an unbounded scan would hang a synchronous call');
+  Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":20001}'));
+  Assert.AreEqual('invalid_argument', CodeFor('{"scan_half_range":90.5}'));
+  Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":2}'),
+    'a scan too coarse to hold a peak and its two half-maximum crossings');
+  Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":-1}'));
+  Assert.AreEqual('invalid_argument', CodeFor('{"scan_half_range":-1}'));
+
+  // The limits themselves are accepted.
+  J := ParseObj('{"scan_points":20000,"scan_half_range":90}');
+  try
+    F := FitnessConfigFromJSON(J, DefaultFitnessConfig);
+  finally
+    J.Free;
+  end;
+  Assert.AreEqual(20000, F.ScanPoints);
+  Assert.AreEqual(Double(90), Double(F.ScanHalfRange), 1E-9);
 end;
 
 procedure TTestMCPUniversal.FitnessConfigToJSON_ReportsTheScanDefaults;
@@ -750,6 +951,44 @@ begin
       EvaluateStructure(S, Info, Lines, DefaultFitnessConfig, Res);
     end, EMCPError,
     'A structure with no repeating stack has no period, so it has no figure of merit');
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_TooManyLines_Raises;
+var
+  J: TJSONObject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+  Lines: TArray<TXRFLine>;
+  Res: TTargetResults;
+  Code: string;
+  i: Integer;
+begin
+  // ComputeFoM keeps its per-line arrays on the stack, dimensioned MAX_LINES,
+  // and Release builds have range checking off, so the refusal has to be at the
+  // entry point rather than in the engine.
+  J := ParseObj(RUC_JSON);
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+
+  SetLength(Lines, MAX_LINES + 1);
+  for i := 0 to High(Lines) do
+  begin
+    Lines[i].Name := 'Si';
+    Lines[i].Lambda := LAMBDA_SI;
+    Lines[i].Weight := 1;
+  end;
+
+  Code := ErrorCodeOf(
+    procedure
+    begin
+      EvaluateStructure(S, Info, Lines, DefaultFitnessConfig, Res);
+    end);
+  Assert.AreEqual('invalid_argument', Code,
+    Format('more than %d lines must be refused before the engine is entered',
+      [MAX_LINES]));
 end;
 
 procedure TTestMCPUniversal.EvaluateStructure_RuC_MatchesEvaluateLayersDirect;

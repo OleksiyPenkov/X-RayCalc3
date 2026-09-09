@@ -345,9 +345,12 @@ begin
     'falls below it is reported invalid and penalised. This is NOT where the ' +
     'scan starts - each line is scanned around its own Bragg angle.');
   AddProp(Result, 'scan_points', 'integer',
-    'Points in the reflectivity scan around each Bragg angle (default 200).');
+    'Points in the reflectivity scan around each Bragg angle (default 200, ' +
+    'minimum 3, maximum 20000). The call is synchronous and every line is ' +
+    'scanned over the whole layer stack, so the grid is bounded.');
   AddProp(Result, 'scan_half_range', 'number',
-    'Half-width in degrees of the scan around each Bragg angle (default 5).');
+    'Half-width in degrees of the scan around each Bragg angle (default 5, ' +
+    'maximum 90).');
 end;
 
 procedure RegisterEvaluateLines(Registry: TToolRegistry);
@@ -375,7 +378,9 @@ begin
     'the result reports, per line, the Bragg angle, the peak reflectivity and the ' +
     'angular FWHM, plus the single figure of merit combining them (higher is ' +
     'better). Every fitness setting actually used is echoed back, including the ' +
-    'scan defaults. Angles are theta in degrees, never 2theta; lengths are Angstrom.',
+    'scan defaults. The scan grid is bounded (at most 20000 points over a half ' +
+    'range of at most 90 degrees) because the call answers in the same round ' +
+    'trip. Angles are theta in degrees, never 2theta; lengths are Angstrom.',
     Schema,
     function(const Params: TJSONObject): TJSONObject
     begin
