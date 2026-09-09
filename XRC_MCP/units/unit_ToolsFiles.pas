@@ -95,9 +95,38 @@ const
 
   NAME_EXTRA_CHARS = ['_', '-', '.', ' ', '(', ')', '#'];
 
+  { Windows reserved device names: invalid as a file name with or without an
+    extension, and regardless of case. The check is against the part of the
+    name before its first '.', which is how Windows itself decides. }
+  RESERVED_DEVICE_NAMES: array [0 .. 21] of string = (
+    'CON', 'PRN', 'AUX', 'NUL',
+    'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+    'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9');
+
+/// True when S is one of the Windows reserved device names, comparing only
+/// the part of S before its first '.' (so 'CON', 'con.xrcx' and
+/// 'CON.foo.xrcx' are all reserved, but 'CONsole' is not).
+function IsReservedDeviceName(const S: string): Boolean;
+var
+  Base, R: string;
+  P: Integer;
+begin
+  P := Pos('.', S);
+  if P > 0 then
+    Base := Copy(S, 1, P - 1)
+  else
+    Base := S;
+  Result := False;
+  for R in RESERVED_DEVICE_NAMES do
+    if SameText(Base, R) then
+      Exit(True);
+end;
+
 /// The project name without its extension. Accepts [A-Za-z0-9_\-. ()#]+ and
 /// nothing else, so no argument can name a directory, walk out of projects\ or
-/// carry a character Windows refuses.
+/// carry a character Windows refuses. Also refuses a Windows reserved device
+/// name (CON, PRN, AUX, NUL, COM1-9, LPT1-9) and a name whose base part ends
+/// in '.' or a space, both of which Windows silently mangles.
 function ValidateProjectName(const Raw: string): string;
 var
   S: string;
@@ -112,8 +141,14 @@ begin
         'A project name may hold only letters, digits and "_-. ()#"', Raw);
   if SameText(TPath.GetExtension(S), PROJECT_EXT) then
     S := Copy(S, 1, Length(S) - Length(PROJECT_EXT));
+  if (S <> '') and CharInSet(S[Length(S)], ['.', ' ']) then
+    raise EMCPError.Create('invalid_argument',
+      'A project name may not end in "." or a space', Raw);
   if Trim(S) = '' then
     raise EMCPError.Create('invalid_argument', '"name" must not be empty', Raw);
+  if IsReservedDeviceName(S) then
+    raise EMCPError.Create('invalid_argument',
+      Format('"%s" is a Windows reserved device name', [S]), Raw);
   Result := S;
 end;
 
@@ -291,22 +326,28 @@ begin
     Result.AddPair('note', Proj.Note);
     Result.AddPair('structure', StructureToJSON(S, Info));
 
+    { Every child JSON value is attached to its parent immediately after it is
+      created, before anything that could raise (a float conversion, a file
+      read) runs on it. That way the whole tree is owned by Result at every
+      point, and "Result.Free; raise;" below can never leak a node that was
+      built but not yet linked in. }
     Profiles := TJSONArray.Create;
+    Result.AddPair('profiles', Profiles);
     for i := 0 to High(Proj.Extensions) do
     begin
       Prof := TJSONObject.Create;
+      Profiles.AddElement(Prof);
       Prof.AddPair('stack', TJSONNumber.Create(Proj.Extensions[i].StackID));
       Prof.AddPair('layer', TJSONNumber.Create(Proj.Extensions[i].LayerID));
       Prof.AddPair('parameter', ParameterName(Proj.Extensions[i].Subj));
       Coeffs := TJSONArray.Create;
+      Prof.AddPair('coefficients', Coeffs);
       for j := 0 to High(Proj.Extensions[i].Coeffs) do
         Coeffs.AddElement(JSONArgs.Num(Proj.Extensions[i].Coeffs[j]));
-      Prof.AddPair('coefficients', Coeffs);
-      Profiles.AddElement(Prof);
     end;
-    Result.AddPair('profiles', Profiles);
 
     CalcParams := TJSONObject.Create;
+    Result.AddPair('calc_params', CalcParams);
     CalcParams.AddPair('lambda', JSONArgs.Num(Proj.Params.Lambda));
     CalcParams.AddPair('theta_start', JSONArgs.Num(Proj.Params.ThetaStart));
     CalcParams.AddPair('theta_end', JSONArgs.Num(Proj.Params.ThetaEnd));
@@ -316,16 +357,15 @@ begin
       CalcParams.AddPair('polarisation', 's')
     else
       CalcParams.AddPair('polarisation', 'sp');
-    Result.AddPair('calc_params', CalcParams);
 
     Curves := TJSONObject.Create;
+    Result.AddPair('curves', Curves);
     Curves.AddPair('calc_points', TJSONNumber.Create(Length(Proj.CalcCurve)));
     Curves.AddPair('data_points', TJSONNumber.Create(Length(Proj.DataCurve)));
     if Proj.DataTitle = '' then
       Curves.AddPair('data_title', TJSONNull.Create)
     else
       Curves.AddPair('data_title', Proj.DataTitle);
-    Result.AddPair('curves', Curves);
 
     Result.AddPair('sha256', FileSHA256(Full));
   except
@@ -352,13 +392,17 @@ begin
     TArray.Sort<string>(Files);
     for FileName in Files do
     begin
+      // Obj is attached to Arr (and so to Result) immediately after creation,
+      // before FileSHA256/FileModifiedUTC - which can raise on a file that
+      // disappears or locks up mid-listing - run on it, so the exception
+      // path below never leaks a half-built entry.
       Obj := TJSONObject.Create;
+      Arr.AddElement(Obj);
       Obj.AddPair('name', TPath.GetFileNameWithoutExtension(FileName));
       Obj.AddPair('file', WorkDir.RelativePath(FileName));
       Obj.AddPair('size', TJSONNumber.Create(FileSizeOf(FileName)));
       Obj.AddPair('sha256', FileSHA256(FileName));
       Obj.AddPair('modified_utc', FileModifiedUTC(FileName));
-      Arr.AddElement(Obj);
     end;
   except
     Result.Free;
@@ -381,7 +425,10 @@ begin
     'such titles when it loads a project.');
   Curves := SchemaObject([]);
   AddProp(Curves, 'measurement_id', 'string',
-    'Embed this inbox measurement as the project''s data curve, in theta.');
+    'Embed this inbox measurement as the project''s data curve, in theta. The ' +
+    'measurement_id becomes the title of the data node inside the project - ' +
+    'and one that contains "Data" or "Models" comes back shortened to just ' +
+    'that word, because the GUI rewrites such titles when it loads a project.');
   AddProp(Curves, 'job_id', 'string',
     'Embed the measured curve of a finished fit_xrr job.');
   AddRefProp(Schema, 'curves',

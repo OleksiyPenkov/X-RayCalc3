@@ -126,9 +126,10 @@ function DataCurveName(ID: Integer): string;
 procedure WriteXRCX(const Path: string; const P: TXRCXProject);
 
 /// <summary>Reads an .xrcx written by this unit or by the GUI. Raises
-/// EMCPError('unsupported_project') for a project whose model structure is not
-/// in the file (v2 projects keep it in a separate model_N.bin) and
-/// EMCPError('invalid_argument') when the archive has no project.dsc.</summary>
+/// EMCPError('invalid_argument') when Path is not a readable zip archive, and
+/// EMCPError('unsupported_project') when the archive has no project.dsc or
+/// when the project's model structure is not in it (v2 projects keep it in a
+/// separate model_N.bin).</summary>
 function ReadXRCX(const Path: string): TXRCXProject;
 
 /// <summary>The unit_SeriesIO text format: two header lines, a blank line, then
@@ -230,17 +231,17 @@ procedure WriteCurveText(const Path: string; const C: unit_Types.TDataArray;
 var
   SL: TStringList;
   i: Integer;
-  FS: TFormatSettings;
+  Fmt: TFormatSettings;
 begin
-  FS := Inv;
+  Fmt := Inv;
   SL := TStringList.Create;
   try
     SL.Add(ColX + #9 + ColY);
     SL.Add(UnitX + #9);          // SeriesToText passes an empty y unit
     SL.Add('');
     for i := 0 to High(C) do
-      SL.Add(FloatToStrF(C[i].t, ffFixed, 5, 3, FS) + #9 +
-             FloatToStrF(C[i].r, ffExponent, 5, 4, FS));
+      SL.Add(FloatToStrF(C[i].t, ffFixed, 5, 3, Fmt) + #9 +
+             FloatToStrF(C[i].r, ffExponent, 5, 4, Fmt));
     SL.SaveToFile(Path);
   finally
     SL.Free;
@@ -709,7 +710,7 @@ end;
 
 procedure WriteXRCX(const Path: string; const P: TXRCXProject);
 var
-  Dir: string;
+  Dir, TmpPath: string;
 begin
   Dir := NewTempDir;
   try
@@ -721,11 +722,27 @@ begin
       WriteCurveText(TPath.Combine(Dir, DataCurveName(XRCX_DATA_ID)), P.DataCurve,
         'Theta', 'Intensity', 'deg');
 
+    { Zip to a temporary file next to Path first, on the overwrite path a
+      failure while zipping (disk full, a virus scanner holding a handle, the
+      file open in the GUI) must leave the existing project in place rather
+      than deleting it before the replacement exists. Only once the archive
+      is complete do we drop the old file and move the new one over it. }
+    TmpPath := Path + '.tmp';
+    if TFile.Exists(TmpPath) then
+      TFile.Delete(TmpPath);
+    try
+      // Flat entry names: every member sits directly in Dir, and
+      // ZipDirectoryContents strips the root path from each one.
+      TZipFile.ZipDirectoryContents(TmpPath, Dir);
+    except
+      if TFile.Exists(TmpPath) then
+        TFile.Delete(TmpPath);
+      raise;
+    end;
+
     if TFile.Exists(Path) then
       TFile.Delete(Path);
-    // Flat entry names: every member sits directly in Dir, and
-    // ZipDirectoryContents strips the root path from each one.
-    TZipFile.ZipDirectoryContents(Path, Dir);
+    TFile.Move(TmpPath, Path);
   finally
     DropTempDir(Dir);
   end;

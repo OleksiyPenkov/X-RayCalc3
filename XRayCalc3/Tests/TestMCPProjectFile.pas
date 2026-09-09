@@ -53,12 +53,14 @@ type
     [Test] procedure HeadlessTree_SaveLoad_RoundTrip;
     [Test] procedure WriteXRCX_ContainsExpectedEntries;
     [Test] procedure WriteXRCX_ParamsVersion7_ThetaNot2Theta;
+    [Test] procedure WriteXRCX_Overwrite_IsAtomicAndLeavesNoTmpFile;
     [Test] procedure ReadXRCX_RoundTrip_Structure;
     [Test] procedure ReadXRCX_RoundTrip_Extension;
     [Test] procedure ReadXRCX_SampleFromELNPlugins;
     [Test] procedure ListProjects_ReportsEveryProject;
     [Test] procedure SaveProject_ExistingFile_WithoutOverwrite_Refused;
     [Test] procedure SaveProject_NameWithPathSeparator_Refused;
+    [Test] procedure SaveProject_ReservedDeviceName_Refused;
   end;
 
 implementation
@@ -321,6 +323,32 @@ begin
   end;
 end;
 
+procedure TTestMCPProjectFile.WriteXRCX_Overwrite_IsAtomicAndLeavesNoTmpFile;
+var
+  Path: string;
+  First, Second, Read_: TXRCXProject;
+begin
+  Path := TPath.Combine(FTemp, 'overwrite.xrcx');
+
+  First := SampleProject;
+  First.ModelTitle := 'first version';
+  WriteXRCX(Path, First);
+  Assert.IsTrue(TFile.Exists(Path), 'the first write did not create the file');
+
+  Second := SampleProject;
+  Second.ModelTitle := 'second version';
+  Second.CalcCurve := Ramp(3, 0.2, 1.1);
+  WriteXRCX(Path, Second);
+
+  Assert.IsTrue(TFile.Exists(Path), 'the overwrite did not leave the file behind');
+  Assert.IsFalse(TFile.Exists(Path + '.tmp'), 'a .tmp file was left behind');
+
+  Read_ := ReadXRCX(Path);
+  Assert.AreEqual('second version', Read_.ModelTitle,
+    'the overwritten content must be the new content and must be readable');
+  Assert.AreEqual(3, Length(Read_.CalcCurve), 'the overwritten calc curve');
+end;
+
 { ------------------------------------------------------------- the reader -- }
 
 procedure TTestMCPProjectFile.ReadXRCX_RoundTrip_Structure;
@@ -486,6 +514,32 @@ begin
     end;
     Res.Free;
     Assert.AreEqual('invalid_argument', Code, 'a name may not carry a path');
+  finally
+    Args.Free;
+  end;
+end;
+
+procedure TTestMCPProjectFile.SaveProject_ReservedDeviceName_Refused;
+var
+  Args: TJSONObject;
+  Res: TJSONObject;
+  Code: string;
+begin
+  Args := TJSONObject.Create;
+  try
+    Args.AddPair('structure', TJSONObject.ParseJSONValue(RUC_JSON) as TJSONObject);
+    Args.AddPair('name', 'CON');
+    Code := '';
+    Res := nil;
+    try
+      Res := CallTool('save_project', Args);
+    except
+      on E: EMCPError do
+        Code := E.Code;
+    end;
+    Res.Free;
+    Assert.AreEqual('invalid_argument', Code,
+      'a Windows reserved device name must be refused');
   finally
     Args.Free;
   end;
