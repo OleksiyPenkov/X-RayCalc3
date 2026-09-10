@@ -384,7 +384,10 @@ begin
     'same structure. Returns the curve inline (when short enough) and always as a ' +
     'two-column file under jobs\<job_id>\curve.dat, together with the Bragg peaks ' +
     '(order, position, peak reflectivity and FWHM), the total-reflection critical ' +
-    'angle, the period and repeat count of the multilayer stack, and the structure ' +
+    'angle (sqrt(2<delta>), <delta> the thickness-weighted mean over the top 500 A ' +
+    'of the structure, substrate included where the film is thinner - the plateau ' +
+    'edge of the film, not of its top layer), the period and repeat count of the ' +
+    'multilayer stack, and the structure ' +
     'with every omitted density filled in with the Henke bulk value that was used. ' +
     'Angles are theta in degrees, never 2theta; lengths are Angstrom.',
     Schema,

@@ -24,6 +24,7 @@ type
     [Test] procedure FindBraggPeaks_SyntheticGaussians_FWHM;
     [Test] procedure FindBraggPeaks_NoPeriod_UsesRunningIndex;
     [Test] procedure FindBraggPeaks_BelowCriticalAngle_Ignored;
+    [Test] procedure FindBraggPeaks_FractionalOrder_Ignored;
     [Test] procedure FindBraggPeaks_FlatCurve_FindsNothing;
 
     { CurveToJSON / WriteCurveFile }
@@ -39,6 +40,7 @@ type
 
     { engine }
     [Test] procedure CriticalAngle_Ru_CuKAlpha;
+    [Test] procedure CriticalAngle_ThinFilm_IsDominatedByTheSubstrate;
     [Test] procedure RunCalc_RuC_FirstBraggPeak;
     [Test] procedure RunCalc_Convolved_KeepsPointCountAndLowersPeak;
   end;
@@ -151,6 +153,32 @@ begin
   Assert.AreEqual(2, Length(Peaks), 'the first order is inside the guard band');
   Assert.AreEqual(2, Peaks[0].Order);
   Assert.AreEqual(3, Peaks[1].Order);
+end;
+
+procedure TTestMCPCalc.FindBraggPeaks_FractionalOrder_Ignored;
+var
+  Curve: TDataArray;
+  Peaks: TArray<TPeak>;
+  i: Integer;
+  TFringe, Sigma: Double;
+begin
+  { A strong maximum where 2 d sin(theta) / lambda = 0.57 - a Kiessig fringe
+    just past the plateau edge, the kind a 10-period Ru/C stack shows at
+    0.37 degrees. It rounds to order 1, and with the "stronger one wins" rule
+    it used to replace the real first-order peak. A Bragg peak sits within
+    +/-0.25 of an integer order; anything further off is not one. }
+  TFringe := RadToDeg(ArcSin(0.57 * CU_K_ALPHA / (2 * SYN_PERIOD)));
+  Sigma := SYN_FWHM / (2 * Sqrt(2 * Ln(2)));
+  Curve := SyntheticCurve;
+  for i := 0 to High(Curve) do
+    Curve[i].r := Curve[i].r + 0.8 * Exp(-Sqr(Curve[i].t - TFringe) / (2 * Sqr(Sigma)));
+
+  Peaks := FindBraggPeaks(Curve, CU_K_ALPHA, SYN_PERIOD, 0.2);
+  Assert.AreEqual(3, Length(Peaks), 'the fringe is not a Bragg peak');
+  Assert.AreEqual(1, Peaks[0].Order);
+  Assert.AreEqual(Double(0.7), Peaks[0].Theta, 0.005,
+    'the first order is the real one, not the stronger fringe');
+  Assert.AreEqual(Double(0.6), Peaks[0].R, 0.01, 'first order height');
 end;
 
 procedure TTestMCPCalc.FindBraggPeaks_FlatCurve_FindsNothing;
@@ -394,7 +422,7 @@ var
   J: TJSONObject;
   S: TFitStructure;
   Info: TStructureInfo;
-  ThetaC: Double;
+  ThetaC, Expected, FRu, DU, DRu, DC, B: Double;
 begin
   if not (HenkeAvailable('Ru') and HenkeAvailable('C') and HenkeAvailable('SiO2')) then
     Assert.Pass('Henke tables for Ru, C and SiO2 are not installed: ' + HenkeDir);
@@ -406,10 +434,54 @@ begin
     J.Free;
   end;
 
-  // The topmost layer is Ru at bulk density; its critical angle at Cu K-alpha
-  // is a little under half a degree.
+  { The plateau edge of a multilayer is set by the mean delta of the film the
+    beam penetrates, not by its top layer: sqrt(2 <delta>) with <delta> the
+    thickness-weighted mean over the top 500 A. Here that is 7.3 Ru/C periods,
+    so almost exactly the period average of Ru and C - about 0.29 degrees,
+    against the 0.478 degrees of bare Ru that the top-layer rule gives. }
+  Assert.IsTrue(OpticalConstants('Ru', CU_K_ALPHA, 0, DU, DRu, B), 'Ru constants');
+  Assert.IsTrue(OpticalConstants('C', CU_K_ALPHA, 0, DU, DC, B), 'C constants');
+  FRu := 14.7275 / (14.7275 + 53.7725);
+  Expected := RadToDeg(Sqrt(2 * (FRu * DRu + (1 - FRu) * DC)));
+
   ThetaC := CriticalAngleDeg(S, CU_K_ALPHA);
-  Assert.AreEqual(Double(0.478), ThetaC, 0.02, 'critical angle of Ru at 1.5406 A');
+  Assert.AreEqual(Expected, ThetaC, 0.01,
+    'critical angle of the Ru/C film at 1.5406 A is the period-averaged one');
+  Assert.IsTrue(ThetaC < 0.4,
+    Format('%.4g: the top Ru layer alone (0.478) is not the plateau edge', [ThetaC]));
+end;
+
+procedure TTestMCPCalc.CriticalAngle_ThinFilm_IsDominatedByTheSubstrate;
+const
+  THIN_FILM =
+    '{"substrate":{"material":"Ru"},' +
+    '"stacks":[{"N":1,"layers":[{"material":"C","thickness":20}]}]}';
+var
+  J: TJSONObject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+  ThetaC, Expected, DU, DRu, DC, B: Double;
+begin
+  if not (HenkeAvailable('Ru') and HenkeAvailable('C')) then
+    Assert.Pass('Henke tables for Ru and C are not installed: ' + HenkeDir);
+
+  J := TJSONObject.ParseJSONValue(THIN_FILM) as TJSONObject;
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+
+  { 20 A of carbon on ruthenium: the 500 A window is 480 A of substrate, so
+    the estimate sits close to ruthenium's own edge, not carbon's. }
+  Assert.IsTrue(OpticalConstants('Ru', CU_K_ALPHA, 0, DU, DRu, B), 'Ru constants');
+  Assert.IsTrue(OpticalConstants('C', CU_K_ALPHA, 0, DU, DC, B), 'C constants');
+  Expected := RadToDeg(Sqrt(2 * (20 * DC + 480 * DRu) / 500));
+
+  ThetaC := CriticalAngleDeg(S, CU_K_ALPHA);
+  Assert.AreEqual(Expected, ThetaC, 0.005, 'thin film: substrate-weighted estimate');
+  Assert.IsTrue(ThetaC > RadToDeg(Sqrt(2 * DC)) + 0.1,
+    Format('%.4g must be well above bare carbon''s edge', [ThetaC]));
 end;
 
 procedure TTestMCPCalc.RunCalc_RuC_FirstBraggPeak;

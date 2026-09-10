@@ -43,10 +43,14 @@ type
     function SyntheticCurveJSON: string;
     /// <summary>Submits one fit on an existing manager and returns the job.</summary>
     function SubmitOn(Mgr: TJobManager; Seed, Population, Iterations: Integer;
-      const CurveJSON: string): TJob;
+      const CurveJSON: string; const FreeJSON: string = '';
+      const Extra: string = ''; const StructureJSON: string = ''): TJob;
     /// <summary>One complete fit through a manager of its own. The result is
     /// the caller's to free; nil when the job did not finish.</summary>
-    function RunFit(Seed: Integer; const CurveJSON: string): TJSONObject;
+    function RunFit(Seed: Integer; const CurveJSON: string;
+      const FreeJSON: string = ''; const Extra: string = '';
+      Population: Integer = 0; Iterations: Integer = 0;
+      const StructureJSON: string = ''): TJSONObject;
     /// <summary>Polls until the job reaches Wanted, ends in some other final
     /// state, or the timeout elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
@@ -74,6 +78,20 @@ type
     [Test] procedure ThetaRange_RestrictsTheCurve;
     [Test] procedure Resolution_TooCoarseAGrid_Refused;
     [Test] procedure Profile_WithoutARepeatingStack_Refused;
+    [Test] procedure Free_OmittedDensity_StartsAtBulkInsideItsBounds;
+    [Test] procedure Free_OmittedDensity_NoBounds_DefaultsAroundBulk;
+    [Test] procedure Bounds_StartOutsideExplicitBounds_Refused;
+    [Test] procedure ProfileFit_FreeOmittedDensity_Moves;
+    [Test] procedure Period_Free_DefaultBoundsAroundStart;
+    [Test] procedure Period_Bounds_Explicit;
+    [Test] procedure Period_Free_OnCapOrBuffer_Refused;
+    [Test] procedure Period_Free_WithAllThicknessesFixed_Refused;
+    [Test] procedure Period_Free_InProfileMode_Refused;
+    [Test] procedure Period_StartOutsideBounds_Refused;
+    [Test] procedure Scale_MultipliesTheMeasuredCurve;
+    [Test] procedure Scale_NotPositive_Refused;
+    [Test] procedure Fit_FreePeriod_MovesThePeriod;
+    [Test] procedure Fit_Scale_IsEchoed;
 
     [Test] procedure Fit_OnItsOwnCurve_BeatsTheStartModel;
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
@@ -105,6 +123,21 @@ const
     '{"material":"C","thickness":55.5,"sigma":3},' +
     '{"material":"Ru","thickness":13.0,"sigma":3}]}]}';
 
+  { The same stack with the wrong period: 60 A against the true 68.5 A. The
+    periodic engine holds the period unless "period" is freed, so this start
+    can only reach the answer when it is. }
+  START_WRONG_PERIOD =
+    '{"substrate":{"material":"Si","sigma":3},' +
+    '"stacks":[{"N":10,"layers":[' +
+    '{"material":"C","thickness":47.5,"sigma":3},' +
+    '{"material":"Ru","thickness":12.5,"sigma":3}]}]}';
+
+  { thicknesses of both layers plus the period of the stack }
+  PERIOD_FREE =
+    '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
+    '{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]},' +
+    '{"target":"period","stack":0}]';
+
   { One stack, a cap and a buffer, for the addressing tests. }
   CAP_BUFFER_STRUCTURE =
     '{"substrate":{"material":"Si","sigma":3},' +
@@ -134,6 +167,12 @@ const
   FIT_TOLERANCE = 1E-9;      // low enough that the run never stops early
   FIT_POPULATION = 12;
   FIT_ITERATIONS = 8;
+  { The polynomial engine perturbs every coefficient, so most of its early
+    particles are worse than a uniform start; it needs a larger swarm than the
+    periodic engine before anything beats the start model (probe of
+    2026-09-10: 12 x 8 stays at chi2_start, 30 x 15 reaches a fifth of it). }
+  PROFILE_POPULATION = 30;
+  PROFILE_ITERATIONS = 15;
   { The cancel test's budget: big enough that the run cannot possibly finish
     while the test is watching, so that reaching "cancelled" can only be the
     cancel. It costs one iteration of wall clock, not five hundred. }
@@ -290,20 +329,30 @@ begin
 end;
 
 function TTestMCPFit.SubmitOn(Mgr: TJobManager; Seed, Population,
-  Iterations: Integer; const CurveJSON: string): TJob;
+  Iterations: Integer; const CurveJSON, FreeJSON, Extra, StructureJSON: string): TJob;
+const
+  DEFAULT_FREE =
+    '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
+    '{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]}]';
 var
-  Args: string;
+  Args, FreeList, Start: string;
   Req: TFitRequest;
   Request: TJSONObject;
 begin
+  FreeList := FreeJSON;
+  if FreeList = '' then
+    FreeList := DEFAULT_FREE;
+  Start := StructureJSON;
+  if Start = '' then
+    Start := START_STRUCTURE;
+
+  { Extra is spliced in verbatim, so it starts with a comma: ',"profile":true' }
   Args := Format(
-    '{"structure":%s,"curve":%s,"lambda":%.6f,' +
-    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
-    '{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]}],' +
+    '{"structure":%s,"curve":%s,"lambda":%.6f,"free":%s,' +
     '"optimizer":{"population":%d,"iterations":%d,"tolerance":%g},' +
-    '"resolution":0,"points_inline_max":0}',
-    [START_STRUCTURE, CurveJSON, CU_K_ALPHA, Population, Iterations,
-     FIT_TOLERANCE], TFormatSettings.Invariant);
+    '"resolution":0,"points_inline_max":0%s}',
+    [Start, CurveJSON, CU_K_ALPHA, FreeList, Population, Iterations,
+     FIT_TOLERANCE, Extra], TFormatSettings.Invariant);
 
   Req := Parse(Args);
 
@@ -321,14 +370,21 @@ begin
   end;
 end;
 
-function TTestMCPFit.RunFit(Seed: Integer; const CurveJSON: string): TJSONObject;
+function TTestMCPFit.RunFit(Seed: Integer; const CurveJSON, FreeJSON,
+  Extra: string; Population, Iterations: Integer;
+  const StructureJSON: string): TJSONObject;
 var
   Mgr: TJobManager;
   Job: TJob;
 begin
+  if Population <= 0 then
+    Population := FIT_POPULATION;
+  if Iterations <= 0 then
+    Iterations := FIT_ITERATIONS;
   Mgr := TJobManager.Create(WorkDir);
   try
-    Job := SubmitOn(Mgr, Seed, FIT_POPULATION, FIT_ITERATIONS, CurveJSON);
+    Job := SubmitOn(Mgr, Seed, Population, Iterations, CurveJSON, FreeJSON, Extra,
+      StructureJSON);
     if not WaitForState(Job, jsFinished, 180000) then
       Assert.Fail(Format('the fit ended as "%s": %s',
         [JobStateName(Job.State), JobErrorText(Job)]));
@@ -781,6 +837,362 @@ begin
 end;
 
 { ------------------------------------------------------------- the fit -- }
+
+procedure TTestMCPFit.Free_OmittedDensity_StartsAtBulkInsideItsBounds;
+var
+  Req: TFitRequest;
+  V, AMin, AMax: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { START_STRUCTURE gives no densities, which means "the bulk value" to the
+    engine. A free density must then START at that bulk value, inside its
+    bounds - not at the 0 the JSON left behind. TLFPSO_Poly seeds the swarm
+    around the start value and clamps it to the bounds, so a start of 0 under
+    a lower bound of 8 pins every particle at 8 while particle 0 keeps bulk,
+    and the fit never moves (paper-2 session, jobs fit-20260910-08*). }
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["density"]}],' +
+    '"bounds":[{"target":"layer","stack":0,"layer":1,"parameter":"density",' +
+    '"min":8,"max":12.5}]}', [START_STRUCTURE, DUMMY_CURVE]));
+
+  V := Req.Structure.Stacks[0].Layers[1].P[3].V;       // Ru
+  RangeOf(Req, 0, 1, 3, AMin, AMax);
+  Assert.IsTrue(V > 8,
+    Format('the start density must be the Ru bulk value, not %.3g', [V]));
+  Assert.IsTrue((V >= AMin) and (V <= AMax),
+    Format('start density %.3g must lie inside [%.3g, %.3g]', [V, AMin, AMax]));
+  Assert.AreEqual(Double(8), AMin, 1E-9, 'explicit lower bound kept');
+  Assert.AreEqual(Double(12.5), AMax, 1E-9, 'explicit upper bound kept');
+
+  { the layer that was not freed carries its bulk density too, held fixed }
+  Assert.IsTrue(Req.Structure.Stacks[0].Layers[0].P[3].V > 0,
+    'C gets its bulk density as well');
+  Assert.AreEqual(Req.Structure.Stacks[0].Layers[0].P[3].V,
+    Req.Structure.Stacks[0].Layers[0].P[3].min, 1E-9, 'a fixed density has min = V');
+  Assert.AreEqual(Req.Structure.Stacks[0].Layers[0].P[3].V,
+    Req.Structure.Stacks[0].Layers[0].P[3].max, 1E-9, 'a fixed density has max = V');
+end;
+
+procedure TTestMCPFit.Free_OmittedDensity_NoBounds_DefaultsAroundBulk;
+var
+  Req: TFitRequest;
+  V, AMin, AMax: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { With the bulk value as the start, the usual +/-30% default applies; an
+    omitted density is not "a parameter starting at zero". }
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["density"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+
+  V := Req.Structure.Stacks[0].Layers[1].P[3].V;
+  RangeOf(Req, 0, 1, 3, AMin, AMax);
+  Assert.IsTrue(V > 0, 'the start density is the bulk value');
+  Assert.AreEqual(V * 0.7, AMin, V * 1E-6, 'default lower bound is 70% of bulk');
+  Assert.AreEqual(V * 1.3, AMax, V * 1E-6, 'default upper bound is 130% of bulk');
+end;
+
+procedure TTestMCPFit.Bounds_StartOutsideExplicitBounds_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { Ru starts at 13.0 A; bounds of 30..40 exclude it. The engines seed the
+    swarm around the start value and clamp to the bounds, so such a request
+    would fit from the bound, not from the model the client gave - refuse it. }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]}],' +
+    '"bounds":[{"target":"layer","stack":0,"layer":1,"parameter":"thickness",' +
+    '"min":30,"max":40}]}', [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.ProfileFit_FreeOmittedDensity_Moves;
+var
+  Res: TJSONObject;
+  Chi2, Chi2Start, Rho: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { The paper-2 session's case: profile fit, the Ru density free with explicit
+    bounds and no start density in the structure. Before the fix chi2 stayed
+    at chi2_start for any population, order or seed. }
+  Res := RunFit(7, SyntheticCurveJSON,
+    '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
+    '{"target":"layer","stack":0,"layer":1,"parameters":["thickness","density"]}]',
+    ',"profile":true,"bounds":[{"target":"layer","stack":0,"layer":1,' +
+    '"parameter":"density","min":8,"max":12.5}]',
+    PROFILE_POPULATION, PROFILE_ITERATIONS);
+  try
+    Assert.IsNotNull(Res, 'the job produced no result');
+    Assert.AreEqual('TLFPSO_Poly', Res.GetValue<string>('engine'));
+    Chi2 := Res.GetValue<Double>('chi2');
+    Chi2Start := Res.GetValue<Double>('chi2_start');
+    Assert.IsTrue(Chi2 < Chi2Start,
+      Format('a profile fit with a free, omitted density must move: chi2 %.6g ' +
+             'against chi2_start %.6g', [Chi2, Chi2Start]));
+
+    Rho := Res.GetValue<Double>('fitted_structure.stacks[0].layers[1].density');
+    Assert.IsTrue((Rho >= 8) and (Rho <= 12.5),
+      Format('the fitted Ru density %.4g must lie inside its bounds', [Rho]));
+    Assert.IsTrue(Res.GetValue<Double>('start_structure.stacks[0].layers[1].density') > 8,
+      'the start structure reports the bulk density the fit started from');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Period_Free_DefaultBoundsAroundStart;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"free":%s}',
+    [START_STRUCTURE, DUMMY_CURVE, PERIOD_FREE]));
+  Assert.AreEqual(1, Length(Req.PeriodRefs), 'one period freed');
+  Assert.AreEqual(0, Req.PeriodRefs[0].StackJSON);
+  Assert.AreEqual(Double(68.5), Req.PeriodRefs[0].StartD, 1E-6, 'start period = C + Ru');
+  Assert.AreEqual(Double(68.5 * 0.7), Req.PeriodRefs[0].Min, 1E-6, 'default -30%');
+  Assert.AreEqual(Double(68.5 * 1.3), Req.PeriodRefs[0].Max, 1E-6, 'default +30%');
+  Assert.AreEqual(2, Length(Req.FreeParams), 'the period is not a layer parameter');
+end;
+
+procedure TTestMCPFit.Period_Bounds_Explicit;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { "parameter":"period" is accepted (and optional) on a period bound }
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"free":%s,' +
+    '"bounds":[{"target":"period","stack":0,"parameter":"period","min":60,"max":75}]}',
+    [START_STRUCTURE, DUMMY_CURVE, PERIOD_FREE]));
+  Assert.AreEqual(Double(60), Req.PeriodRefs[0].Min, 1E-9);
+  Assert.AreEqual(Double(75), Req.PeriodRefs[0].Max, 1E-9);
+
+  { a period bound on a stack whose period is not free is an error }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}],' +
+    '"bounds":[{"target":"period","stack":0,"min":60,"max":75}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Period_Free_OnCapOrBuffer_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { a cap has no period; neither has a stack with N = 1 }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":"cap","parameters":["thickness"]},' +
+    '{"target":"period","stack":"cap"}]}', [CAP_BUFFER_STRUCTURE, DUMMY_CURVE])));
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
+    '{"target":"period","stack":0}]}',
+    ['{"substrate":{"material":"Si"},"stacks":[{"N":1,"layers":[' +
+     '{"material":"C","thickness":50},{"material":"Ru","thickness":20}]}]}',
+     DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Period_Free_WithAllThicknessesFixed_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { the period is the sum of the layer thicknesses: with every thickness of
+    the stack held, nothing could move it }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["sigma"]},' +
+    '{"target":"period","stack":0}]}', [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Period_Free_InProfileMode_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { TLFPSO_Poly never holds the period - it floats within the thickness
+    bounds - so a period target has nothing to act on there }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"profile":true,' +
+    '"free":%s}', [START_STRUCTURE, DUMMY_CURVE, PERIOD_FREE])));
+end;
+
+procedure TTestMCPFit.Period_StartOutsideBounds_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"free":%s,' +
+    '"bounds":[{"target":"period","stack":0,"min":70,"max":80}]}',
+    [START_STRUCTURE, DUMMY_CURVE, PERIOD_FREE])));
+end;
+
+procedure TTestMCPFit.Scale_MultipliesTheMeasuredCurve;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"scale":2.5,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+  Assert.AreEqual(Double(2.5), Req.Scale, 1E-12, 'scale is kept');
+  Assert.AreEqual(Double(2.5), Double(Req.Data[0].r), 1E-6, 'first intensity 1 x 2.5');
+  Assert.AreEqual(Double(2.25), Double(Req.Data[1].r), 1E-6, 'second intensity 0.9 x 2.5');
+  Assert.AreEqual(Double(0.5), Double(Req.Data[0].t), 1E-9, 'angles untouched');
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+  Assert.AreEqual(Double(1), Req.Scale, 1E-12, 'default scale is 1');
+end;
+
+procedure TTestMCPFit.Scale_NotPositive_Refused;
+const
+  FMT = '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"scale":%s,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}';
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(FMT, [START_STRUCTURE, DUMMY_CURVE, '0'])));
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(FMT, [START_STRUCTURE, DUMMY_CURVE, '-1'])));
+end;
+
+procedure TTestMCPFit.Fit_FreePeriod_MovesThePeriod;
+var
+  Res: TJSONObject;
+  Chi2, Chi2Start, Fitted: Double;
+  Modes: TJSONArray;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { with the period held, a start of 60 A stays at 60 A exactly }
+  Res := RunFit(7, SyntheticCurveJSON, '', '', 0, 0, START_WRONG_PERIOD);
+  try
+    Fitted := Res.GetValue<Double>('fitted_structure.stacks[0].layers[0].thickness') +
+              Res.GetValue<Double>('fitted_structure.stacks[0].layers[1].thickness');
+    Assert.AreEqual(Double(60), Fitted, 1E-3, 'the held period does not move');
+    Modes := Res.GetValue('period_mode') as TJSONArray;
+    Assert.AreEqual(1, Modes.Count, 'one repeating stack');
+    Assert.AreEqual('held', Res.GetValue<string>('period_mode[0].mode'));
+    Assert.AreEqual(0, Res.GetValue<Integer>('period_mode[0].stack'));
+    Assert.AreEqual(Double(60), Res.GetValue<Double>('period_mode[0].start_A'), 1E-3);
+    Assert.AreEqual(Double(60), Res.GetValue<Double>('period_mode[0].fitted_A'), 1E-3);
+  finally
+    Res.Free;
+  end;
+
+  { with the period free it moves towards the true 68.5 A }
+  Res := RunFit(7, SyntheticCurveJSON, PERIOD_FREE,
+    ',"bounds":[{"target":"period","stack":0,"min":50,"max":80}]',
+    PROFILE_POPULATION, PROFILE_ITERATIONS, START_WRONG_PERIOD);
+  try
+    Chi2 := Res.GetValue<Double>('chi2');
+    Chi2Start := Res.GetValue<Double>('chi2_start');
+    Assert.IsTrue(Chi2 < Chi2Start, 'the fit improves on the start');
+    Fitted := Res.GetValue<Double>('fitted_structure.stacks[0].layers[0].thickness') +
+              Res.GetValue<Double>('fitted_structure.stacks[0].layers[1].thickness');
+    Assert.IsTrue(Abs(Fitted - 60) > 0.5,
+      Format('the period moved away from 60 A (fitted %.3f)', [Fitted]));
+    Assert.IsTrue(Abs(Fitted - 68.5) < Abs(60 - 68.5),
+      Format('the period moved towards 68.5 A (fitted %.3f)', [Fitted]));
+    Assert.IsTrue((Fitted >= 50) and (Fitted <= 80), 'inside its bounds');
+
+    Assert.AreEqual('free', Res.GetValue<string>('period_mode[0].mode'));
+    Assert.AreEqual(Double(60), Res.GetValue<Double>('period_mode[0].start_A'), 1E-3);
+    Assert.AreEqual(Fitted, Res.GetValue<Double>('period_mode[0].fitted_A'), 1E-3);
+    Assert.AreEqual(Double(50), Res.GetValue<Double>('period_mode[0].min'), 1E-9);
+    Assert.AreEqual(Double(80), Res.GetValue<Double>('period_mode[0].max'), 1E-9);
+    Assert.AreEqual(3, (Res.GetValue('bounds_used') as TJSONArray).Count,
+      'two thicknesses and the period are reported');
+    Assert.AreEqual('period', Res.GetValue<string>('bounds_used[2].target'));
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Fit_Scale_IsEchoed;
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON, '', ',"scale":2');
+  try
+    Assert.AreEqual(Double(2), Res.GetValue<Double>('scale'), 1E-9, 'scale echoed');
+    Assert.IsTrue(Res.GetValue<string>('note') <> '', 'the note explains the fixed factor');
+    Assert.IsTrue(TFile.Exists(TPath.Combine(FTemp,
+      Res.GetValue<string>('files.measured'))), 'measured.dat written');
+  finally
+    Res.Free;
+  end;
+end;
 
 procedure TTestMCPFit.Fit_OnItsOwnCurve_BeatsTheStartModel;
 var

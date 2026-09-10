@@ -18,6 +18,12 @@ uses
 type
 
   TLFPSO_Periodic = class (TLFPSO_BASE)
+    private
+      { Per-stack period range, indexed like FStructure.Stacks. An entry with
+        Max <= Min (the default) holds the stack at its start period, which is
+        what the GUI always does; SetPeriodRange opens it. }
+      FPeriodMin: TArray<Double>;
+      FPeriodMax: TArray<Double>;
     protected
       procedure UpdateLFPSO(const t: integer); override;
       procedure RangeSeed; override;
@@ -27,7 +33,12 @@ type
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
     public
-      //
+      /// <summary>Lets the period of stack StackIndex move inside [AMin, AMax]
+      /// instead of being held at its start value: NormalizeD then rescales
+      /// the stack's layers only when their sum leaves that range, to the
+      /// nearer bound. AMax &lt;= AMin restores the hold. Call after Structure
+      /// is set; the GUI never calls it, so its fits are unchanged.</summary>
+      procedure SetPeriodRange(StackIndex: Integer; AMin, AMax: Double);
   end;
 
 implementation
@@ -95,11 +106,24 @@ begin
   end;
 end;
 
-procedure TLFPSO_Periodic.NormalizeD; // keep D for every periodic stack constant
+procedure TLFPSO_Periodic.SetPeriodRange(StackIndex: Integer; AMin, AMax: Double);
+begin
+  if StackIndex < 0 then
+    Exit;
+  if StackIndex >= Length(FPeriodMin) then
+  begin
+    SetLength(FPeriodMin, StackIndex + 1);   // new entries are 0/0: held
+    SetLength(FPeriodMax, StackIndex + 1);
+  end;
+  FPeriodMin[StackIndex] := AMin;
+  FPeriodMax[StackIndex] := AMax;
+end;
+
+procedure TLFPSO_Periodic.NormalizeD; // keep D of every periodic stack constant, or inside its range
 var
   i, j: integer;
   Index, Last: integer;
-  Dreal, f: double;
+  Dreal, Target, f: double;
 begin
   Index := 0;
 
@@ -116,9 +140,27 @@ begin
     for j := Index to Last do
       Dreal := Dreal + X[ParticleIndex][j][1][0];
 
-    f := (FStructure.Stacks[i].D - Dreal)/Dreal;
+    if (i < Length(FPeriodMin)) and (FPeriodMax[i] > FPeriodMin[i]) then
+    begin
+      // a free period: touch the layers only when their sum leaves the range
+      if Dreal < FPeriodMin[i] then
+        Target := FPeriodMin[i]
+      else if Dreal > FPeriodMax[i] then
+        Target := FPeriodMax[i]
+      else
+      begin
+        Index := Last + 1;
+        Continue;
+      end;
+    end
+    else
+      Target := FStructure.Stacks[i].D;
+
+    f := (Target - Dreal)/Dreal;
     for j := Index to Last do
       X[ParticleIndex][j][1][0] := X[ParticleIndex][j][1][0] * (1 + f);
+
+    Index := Last + 1;
   end;
 end;
 

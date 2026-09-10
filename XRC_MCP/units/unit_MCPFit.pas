@@ -20,15 +20,26 @@ unit unit_MCPFit;
      FStructure.Subs.P verbatim, and Set_Init_X is called for stack layers only,
      so substrate sigma and density cannot be fitted. Nor can scale, background
      or resolution: the engine has no such parameters. Asking for any of them is
-     refused with not_fittable.
+     refused with not_fittable. "scale" is instead a fixed multiplier the client
+     applies to the measured intensities (ApplyScale), echoed and stored.
    - A parameter is "fixed" by giving it an empty range. Xrange = max - min = 0
      makes Rand(0) return 0 in XSeed and RangeSeed, and CheckLimits clamps to
      [Xmin, Xmax], so the value never moves. Free parameters get a real range,
-     everything else keeps min = max = V as StructureFromJSON left it.
+     everything else keeps min = max = V as StructureFromJSON left it. Both
+     engines seed the swarm AROUND the start value and clamp to the bounds, so
+     a start outside its bounds would be fitted from the bound - and in a
+     profile fit never beaten, because the reference particle keeps the start.
+     Hence two rules: an omitted density (the 0 sentinel) is replaced by the
+     bulk value before "free" and "bounds" are read (FillEngineDensities), and
+     a start value outside its bounds is refused (CheckStartInsideBounds).
    - TLFPSO_Periodic.NormalizeD rescales the layers of every periodic stack after
-     each move so that the period stays exactly what the start model had. Fitting
-     the thicknesses of a periodic stack therefore fits the ratio, not the
-     period; say so in the tool description rather than let a client discover it.
+     each move so that the period stays exactly what the start model had, unless
+     SetPeriodRange opened that stack's period ("target":"period" in "free"):
+     then the layers are rescaled only when their sum leaves the range. Fitting
+     the thicknesses of a periodic stack without freeing its period therefore
+     fits the ratio, not the period. TLFPSO_Poly never holds the period at all
+     (it has no NormalizeD), so a profile fit lets it float within the thickness
+     bounds and the result reports "floating".
 
    Cancellation is observed once per iteration, in the OnProgress callback: the
    engine offers no other point at which it can be stopped. A cancelled run
@@ -57,7 +68,10 @@ const
   { Said in every result: the two parameters a client coming from another
     refinement program looks for first, and does not have here. }
   FIT_NO_SCALE_NOTE =
-    'scale and background are not fitted by the GUI engine (v1)';
+    'scale is a fixed multiplier the client chose ("scale" argument), applied ' +
+    'to the measured intensities before the fit and stored with them in ' +
+    'measured.dat and fit.xrcx; the GUI engine (v1) fits neither scale nor ' +
+    'background';
 
   // Argument defaults, all of them the brief's.
   DEF_RESOLUTION   = 0.015;    // theta FWHM, degrees
@@ -102,6 +116,16 @@ type
     Min, Max: Double;
   end;
 
+  /// <summary>One repeating stack whose period is free: the engine lets the
+  /// sum of its layer thicknesses move inside [Min, Max] instead of holding
+  /// it at StartD.</summary>
+  TPeriodRef = record
+    StackJSON: Integer;     // index in the JSON "stacks" array
+    GUIStack: Integer;      // index in TFitStructure.Stacks
+    StartD: Double;         // the start model's period, Angstrom
+    Min, Max: Double;
+  end;
+
   /// <summary>Everything one fit_xrr call asks for, fully validated. The job
   /// body needs no JSON and no work directory lookups.</summary>
   TFitRequest = record
@@ -121,6 +145,8 @@ type
     PointWeight: Boolean;
     Profile: Boolean;                   // TLFPSO_Poly rather than TLFPSO_Periodic
     InlineMax: Integer;
+    Scale: Double;                      // fixed multiplier already applied to Data
+    PeriodRefs: TArray<TPeriodRef>;     // repeating stacks whose period is free
   end;
 
 /// <summary>Parses and validates one fit_xrr argument object. Raises
@@ -151,10 +177,11 @@ const
   { free/bounds targets that name a parameter the GUI engine does not have. Each
     is refused with not_fittable rather than ignored. }
   NOT_FITTABLE_NOTE =
-    'The GUI engine v1 fits layer thickness, sigma and density only. The '  +
-    'substrate is not in the particle vector (TLFPSO_BASE.FillModel copies ' +
-    'Subs.P verbatim) and the engine has no scale, background or resolution ' +
-    'parameter - resolution is the fixed convolution width.';
+    'The GUI engine v1 fits layer thickness, sigma and density, and the '    +
+    'period of a repeating stack. The substrate is not in the particle '     +
+    'vector (TLFPSO_BASE.FillModel copies Subs.P verbatim) and the engine '  +
+    'has no scale, background or resolution parameter - resolution is the '  +
+    'fixed convolution width and "scale" a fixed multiplier of the data.';
 
   { How far chi2_recalc may sit from the chi-squared the engine finished on
     before the result says so. They are the same calculation on the same model,
@@ -294,6 +321,8 @@ end;
 /// The measured curve and the wavelength that goes with it. Fills
 /// MeasurementId, DataTitle, Data and Lambda; the range restriction is applied
 /// by the caller, which knows theta_range.
+procedure FillEngineDensities(var S: TFitStructure; Lambda: Double); forward;
+
 procedure ReadMeasuredCurve(const Params: TJSONObject; var Req: TFitRequest);
 var
   M: TMeasurement;
@@ -334,6 +363,24 @@ begin
     Req.Data := CurveFromJSON(JSONArgs.ReqArr(Params, 'curve'));
     Req.Lambda := GetLambdaArg(Params);      // required with an inline curve
   end;
+end;
+
+/// "scale": a fixed multiplier the client applies to the measured intensities
+/// before the fit - the wiki's "normalise to the total-reflection plateau" -
+/// default 1. It is not fitted; the scaled curve is what the chi-squared, the
+/// files and the .xrcx see, so the GUI shows the same data.
+procedure ApplyScale(const Params: TJSONObject; var Req: TFitRequest);
+var
+  i: Integer;
+begin
+  Req.Scale := JSONArgs.OptFloat(Params, 'scale', 1.0);
+  if Req.Scale <= 0 then
+    raise EMCPError.Create('invalid_argument',
+      '"scale" must be greater than zero: it multiplies the measured intensities',
+      FloatToStr(Req.Scale, TFormatSettings.Invariant));
+  if Req.Scale <> 1.0 then
+    for i := 0 to High(Req.Data) do
+      Req.Data[i].r := Req.Data[i].r * Req.Scale;
 end;
 
 /// theta_range {min, max}, defaulting to the range of the data, applied to the
@@ -475,16 +522,66 @@ end;
 
 /// The "free" array: which layer parameters take part in the fit. Order is
 /// preserved so that bounds_used reads back in the order it was written.
+/// One "period" entry of "free": the stack must be addressed by index and
+/// repeat (N > 1). Profile fits are refused because TLFPSO_Poly never holds
+/// the period - it floats within the thickness bounds - so there is nothing
+/// for the target to act on. The default range is the start period +/-30%.
+procedure ParsePeriodTarget(const JEntry: TJSONObject; const S: TFitStructure;
+  const Info: TStructureInfo; Profile: Boolean; const Path: string;
+  var Refs: TArray<TPeriodRef>);
+var
+  Probe: TFitParamRef;
+  Ref: TPeriodRef;
+  j, n: Integer;
+begin
+  if Profile then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: "period" cannot be freed in a profile fit. TLFPSO_Poly does ' +
+             'not hold the period at all - it floats within the thickness ' +
+             'bounds - so bound the thicknesses instead', [Path]));
+
+  Probe := Default(TFitParamRef);
+  ResolveStack(JEntry, Info, Path, Probe);
+  if Probe.StackLabel <> '' then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: the %s has no period; "period" needs a repeating stack ' +
+             'addressed by its index', [Path, Probe.StackLabel]));
+  if S.Stacks[Probe.GUIStack].N <= 1 then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: stack %d has N = 1 and therefore no period to fit',
+             [Path, Probe.StackJSON]));
+  for n := 0 to High(Refs) do
+    if Refs[n].GUIStack = Probe.GUIStack then
+      raise EMCPError.Create('invalid_argument',
+        Format('%s: the period of stack %d is already free', [Path, Probe.StackJSON]));
+
+  Ref := Default(TPeriodRef);
+  Ref.StackJSON := Probe.StackJSON;
+  Ref.GUIStack := Probe.GUIStack;
+  Ref.StartD := 0;
+  for j := 0 to High(S.Stacks[Probe.GUIStack].Layers) do
+    Ref.StartD := Ref.StartD + S.Stacks[Probe.GUIStack].Layers[j].P[1].V;
+  if Ref.StartD <= 0 then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: stack %d has no thickness to scale', [Path, Probe.StackJSON]));
+  Ref.Min := Ref.StartD * (1 - DEF_FREE_DEVIATION);
+  Ref.Max := Ref.StartD * (1 + DEF_FREE_DEVIATION);
+  Refs := Refs + [Ref];
+end;
+
 function ParseFree(const Params: TJSONObject; const S: TFitStructure;
-  const Info: TStructureInfo): TArray<TFitParamRef>;
+  const Info: TStructureInfo; Profile: Boolean;
+  out PeriodRefs: TArray<TPeriodRef>): TArray<TFitParamRef>;
 var
   A, JParams: TJSONArray;
   JEntry: TJSONObject;
   i, k, p, n: Integer;
   Target, Path: string;
   Ref: TFitParamRef;
+  HasThickness: Boolean;
 begin
   SetLength(Result, 0);
+  SetLength(PeriodRefs, 0);
   A := JSONArgs.OptArr(Params, 'free');
   if A = nil then
     raise EMCPError.Create('invalid_argument',
@@ -501,9 +598,14 @@ begin
     if (Target = 'substrate') or (Target = 'scale') or (Target = 'background') or
        (Target = 'resolution') then
       RefuseTarget(Target, Path);
+    if Target = 'period' then
+    begin
+      ParsePeriodTarget(JEntry, S, Info, Profile, Path, PeriodRefs);
+      Continue;
+    end;
     if Target <> 'layer' then
       raise EMCPError.Create('invalid_argument',
-        Format('%s: "target" must be "layer"', [Path]), Target);
+        Format('%s: "target" must be "layer" or "period"', [Path]), Target);
 
     Ref := Default(TFitParamRef);
     ResolveStack(JEntry, Info, Path, Ref);
@@ -538,14 +640,30 @@ begin
 
   if Length(Result) = 0 then
     raise EMCPError.Create('invalid_argument',
-      '"free" must list at least one parameter to fit');
+      '"free" must list at least one layer parameter to fit');
+
+  { The period is the sum of the stack's layer thicknesses: the engine moves
+    it by moving them, so a stack with every thickness held could not follow. }
+  for n := 0 to High(PeriodRefs) do
+  begin
+    HasThickness := False;
+    for i := 0 to High(Result) do
+      if (Result[i].GUIStack = PeriodRefs[n].GUIStack) and (Result[i].P = 1) then
+        HasThickness := True;
+    if not HasThickness then
+      raise EMCPError.Create('invalid_argument',
+        Format('"period" of stack %d is free but none of its layer thicknesses ' +
+               'is: free at least one "thickness" in that stack, or the period ' +
+               'could not move', [PeriodRefs[n].StackJSON]));
+  end;
 end;
 
 /// The default range of a free parameter: the start value plus and minus
 /// DEF_FREE_DEVIATION of it, with sigma and density held at or above zero. A
-/// start value of zero has no such range - sigma 0 or the "use the bulk
-/// density" sentinel - so it is refused rather than turned into a fixed
-/// parameter the client believes is free.
+/// start value of zero has no such range - a sigma of 0; an omitted density
+/// has already been replaced by the bulk value by the time this runs - so it
+/// is refused rather than turned into a fixed parameter the client believes
+/// is free.
 procedure DefaultBounds(const V: Single; P: Integer; const Where: string;
   out AMin, AMax: Double);
 begin
@@ -608,8 +726,53 @@ end;
 
 /// The "bounds" array, matched against the free parameters. A bound that names
 /// a parameter which is not free would silently do nothing, so it is an error.
+/// A period bound: {"target":"period","stack":k,"min":..,"max":..}, with an
+/// optional "parameter":"period". The stack's period must be free.
+procedure ParsePeriodBound(const JEntry: TJSONObject; const Info: TStructureInfo;
+  const Path: string; var PeriodRefs: TArray<TPeriodRef>);
+var
+  Probe: TFitParamRef;
+  n, Hit: Integer;
+  AMin, AMax: Double;
+  ParamName: string;
+begin
+  ParamName := LowerCase(Trim(JSONArgs.OptStr(JEntry, 'parameter', 'period')));
+  if ParamName <> 'period' then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: a "period" bound takes no "parameter" other than "period"',
+             [Path]), ParamName);
+
+  Probe := Default(TFitParamRef);
+  ResolveStack(JEntry, Info, Path, Probe);
+  if Probe.StackLabel <> '' then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: the %s has no period', [Path, Probe.StackLabel]));
+
+  Hit := -1;
+  for n := 0 to High(PeriodRefs) do
+    if PeriodRefs[n].GUIStack = Probe.GUIStack then
+      Hit := n;
+  if Hit < 0 then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s bounds the period of stack %d, which is not in "free"; a ' +
+             'bound on a held period would have no effect',
+             [Path, Probe.StackJSON]));
+
+  AMin := JSONArgs.ReqFloat(JEntry, 'min');
+  AMax := JSONArgs.ReqFloat(JEntry, 'max');
+  if AMin <= 0 then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: a period bound must be greater than zero', [Path]));
+  if AMax <= AMin then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: "max" must be greater than "min"', [Path]));
+  PeriodRefs[Hit].Min := AMin;
+  PeriodRefs[Hit].Max := AMax;
+end;
+
 procedure ParseBounds(const Params: TJSONObject; const S: TFitStructure;
-  const Info: TStructureInfo; var Refs: TArray<TFitParamRef>);
+  const Info: TStructureInfo; var Refs: TArray<TFitParamRef>;
+  var PeriodRefs: TArray<TPeriodRef>);
 var
   A: TJSONArray;
   JEntry: TJSONObject;
@@ -633,9 +796,14 @@ begin
       if (Target = 'substrate') or (Target = 'scale') or (Target = 'background') or
          (Target = 'resolution') then
         RefuseTarget(Target, Path);
+      if Target = 'period' then
+      begin
+        ParsePeriodBound(JEntry, Info, Path, PeriodRefs);
+        Continue;
+      end;
       if Target <> 'layer' then
         raise EMCPError.Create('invalid_argument',
-          Format('%s: "target" must be "layer"', [Path]), Target);
+          Format('%s: "target" must be "layer" or "period"', [Path]), Target);
 
       Probe := Default(TFitParamRef);
       ResolveStack(JEntry, Info, Path, Probe);
@@ -664,6 +832,49 @@ begin
       DefaultBounds(S.Stacks[Refs[n].GUIStack].Layers[Refs[n].GUILayer].P[Refs[n].P].V,
         Refs[n].P, Format('free parameter "%s"', [PARAM_NAMES[Refs[n].P]]),
         Refs[n].Min, Refs[n].Max);
+end;
+
+/// A free parameter must start inside its range. Both engines seed the swarm
+/// around the start value and clamp to the bounds (TLFPSO_Periodic.XSeed,
+/// TLFPSO_Poly.CheckLimitsP), so a start outside them would be fitted from
+/// the nearest bound, not from the model the client gave - and in a profile
+/// fit the reference particle keeps the out-of-range start, so nothing ever
+/// beats it. Refuse it instead.
+procedure CheckStartInsideBounds(const S: TFitStructure;
+  const Refs: TArray<TFitParamRef>; const PeriodRefs: TArray<TPeriodRef>);
+var
+  n: Integer;
+  V: Double;
+  Where: string;
+begin
+  for n := 0 to High(PeriodRefs) do
+    if (PeriodRefs[n].StartD < PeriodRefs[n].Min) or
+       (PeriodRefs[n].StartD > PeriodRefs[n].Max) then
+      raise EMCPError.Create('invalid_argument',
+        Format('the start period %.6g A of stack %d lies outside its bounds ' +
+               '[%.6g, %.6g]: move the start model or widen the bounds',
+               [PeriodRefs[n].StartD, PeriodRefs[n].StackJSON,
+                PeriodRefs[n].Min, PeriodRefs[n].Max]), 'period');
+
+  for n := 0 to High(Refs) do
+  begin
+    V := S.Stacks[Refs[n].GUIStack].Layers[Refs[n].GUILayer].P[Refs[n].P].V;
+    if (V < Refs[n].Min) or (V > Refs[n].Max) then
+    begin
+      if Refs[n].StackLabel <> '' then
+        Where := Refs[n].StackLabel
+      else
+        Where := Format('stack %d, layer %d', [Refs[n].StackJSON, Refs[n].LayerJSON]);
+      raise EMCPError.Create('invalid_argument',
+        Format('the start value %.6g of "%s" (%s) lies outside its bounds ' +
+               '[%.6g, %.6g]. The engine seeds the swarm around the start ' +
+               'value and clamps it to the bounds, so it would fit from the ' +
+               'bound and not from the model given: move the start value or ' +
+               'widen the bounds',
+               [V, PARAM_NAMES[Refs[n].P], Where, Refs[n].Min, Refs[n].Max]),
+        PARAM_NAMES[Refs[n].P]);
+    end;
+  end;
 end;
 
 /// Opens the range of every free parameter. Everything else keeps the
@@ -774,6 +985,17 @@ begin
 
   ReadMeasuredCurve(Params, Result);
   ApplyThetaRange(Params, Result);
+  ApplyScale(Params, Result);
+
+  { Every omitted density becomes the bulk value the engine would use for it,
+    before "free" and "bounds" are read: the engines seed the swarm around the
+    start value and clamp it to the bounds, so a free density that started at
+    the 0 sentinel under a lower bound of, say, 8 would pin every particle at
+    8 while particle 0 kept the bulk value - a fit that never moves. With the
+    bulk value in place a free density gets its +/-30% default like any other
+    parameter, and start_structure reports what the fit started from. }
+  FillEngineDensities(Result.Structure, Result.Lambda);
+
 
   Result.Resolution := JSONArgs.OptFloat(Params, 'resolution', DEF_RESOLUTION);
   if Result.Resolution < 0 then
@@ -796,8 +1018,11 @@ begin
   if Result.Profile then
     CheckProfileIsPossible(Result.Structure);
 
-  Result.FreeParams := ParseFree(Params, Result.Structure, Result.Info);
-  ParseBounds(Params, Result.Structure, Result.Info, Result.FreeParams);
+  Result.FreeParams := ParseFree(Params, Result.Structure, Result.Info,
+                                 Result.Profile, Result.PeriodRefs);
+  ParseBounds(Params, Result.Structure, Result.Info, Result.FreeParams,
+              Result.PeriodRefs);
+  CheckStartInsideBounds(Result.Structure, Result.FreeParams, Result.PeriodRefs);
   ApplyBounds(Result.Structure, Result.FreeParams);
 
   Result.Fit := ParseFitParams(Params);
@@ -990,7 +1215,7 @@ type
   end;
 
 function BoundsUsedJSON(const Refs: TArray<TFitParamRef>;
-  const Info: TStructureInfo): TJSONArray;
+  const PeriodRefs: TArray<TPeriodRef>; const Info: TStructureInfo): TJSONArray;
 var
   n: Integer;
   Obj: TJSONObject;
@@ -1007,6 +1232,80 @@ begin
       Obj.AddPair('parameter', PARAM_NAMES[Refs[n].P]);
       Obj.AddPair('min', JSONArgs.Num(Refs[n].Min));
       Obj.AddPair('max', JSONArgs.Num(Refs[n].Max));
+    end;
+    for n := 0 to High(PeriodRefs) do
+    begin
+      Obj := TJSONObject.Create;
+      Result.AddElement(Obj);
+      Obj.AddPair('target', 'period');
+      Obj.AddPair('stack', TJSONNumber.Create(PeriodRefs[n].StackJSON));
+      Obj.AddPair('parameter', 'period');
+      Obj.AddPair('min', JSONArgs.Num(PeriodRefs[n].Min));
+      Obj.AddPair('max', JSONArgs.Num(PeriodRefs[n].Max));
+    end;
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
+/// The sum of the layer thicknesses of one stack.
+function StackPeriod(const S: TFitStructure; GUIStack: Integer): Double;
+var
+  j: Integer;
+begin
+  Result := 0;
+  for j := 0 to High(S.Stacks[GUIStack].Layers) do
+    Result := Result + S.Stacks[GUIStack].Layers[j].P[1].V;
+end;
+
+/// One entry per repeating stack, in JSON order: how its period was treated -
+/// "held" at the start value (the periodic engine's default), "free" inside
+/// the bounds given, or "floating" (a profile fit, where TLFPSO_Poly never
+/// constrains it) - with the start and fitted periods in Angstrom.
+function PeriodModeJSON(const Req: TFitRequest; const Fitted: TFitStructure): TJSONArray;
+var
+  k, n, GUIStack: Integer;
+  Obj: TJSONObject;
+  Mode: string;
+  Ref: TPeriodRef;
+  IsFree: Boolean;
+begin
+  Result := TJSONArray.Create;
+  try
+    for k := 0 to High(Req.Info.StackMap) do
+    begin
+      GUIStack := Req.Info.StackMap[k];
+      if Req.Structure.Stacks[GUIStack].N <= 1 then
+        Continue;
+
+      IsFree := False;
+      Ref := Default(TPeriodRef);
+      for n := 0 to High(Req.PeriodRefs) do
+        if Req.PeriodRefs[n].GUIStack = GUIStack then
+        begin
+          IsFree := True;
+          Ref := Req.PeriodRefs[n];
+        end;
+
+      if Req.Profile then
+        Mode := 'floating'
+      else if IsFree then
+        Mode := 'free'
+      else
+        Mode := 'held';
+
+      Obj := TJSONObject.Create;
+      Result.AddElement(Obj);
+      Obj.AddPair('stack', TJSONNumber.Create(k));
+      Obj.AddPair('mode', Mode);
+      Obj.AddPair('start_A', JSONArgs.Num(StackPeriod(Req.Structure, GUIStack)));
+      Obj.AddPair('fitted_A', JSONArgs.Num(StackPeriod(Fitted, GUIStack)));
+      if IsFree then
+      begin
+        Obj.AddPair('min', JSONArgs.Num(Ref.Min));
+        Obj.AddPair('max', JSONArgs.Num(Ref.Max));
+      end;
     end;
   except
     Result.Free;
@@ -1224,7 +1523,10 @@ begin
   P := Default(TXRCXProject);
   P.Params     := FitXRCXParams(Req);
   P.ModelTitle := Title;
-  P.Note       := Format('fit_xrr on %s', [Req.DataTitle]);
+  if Req.Scale = 1.0 then
+    P.Note := Format('fit_xrr on %s', [Req.DataTitle])
+  else
+    P.Note := Format('fit_xrr on %s, intensities x %g', [Req.DataTitle, Req.Scale]);
   P.XRCData    := StructureToXRCData(Fitted, Req.Info);
   P.Extensions := FitExtensions(Poly);
   P.CalcCurve  := CalcCurve;
@@ -1237,6 +1539,7 @@ end;
 
 procedure RunFitJob(Job: TJob; const Req: TFitRequest);
 var
+  PIdx: Integer;
   Runner: TFitRunner;
   L: TLFPSO_BASE;
   FS, StartFS, Fitted: TFitStructure;
@@ -1298,6 +1601,12 @@ begin
       L.ExpValues  := Req.Data;
       L.MovAvg     := MovAvgCurve;
       L.Structure  := FS;
+      { A free period: the periodic engine rescales the stack's layers only
+        when their sum leaves the range instead of after every move. }
+      if L is TLFPSO_Periodic then
+        for PIdx := 0 to High(Req.PeriodRefs) do
+          TLFPSO_Periodic(L).SetPeriodRange(Req.PeriodRefs[PIdx].GUIStack,
+            Req.PeriodRefs[PIdx].Min, Req.PeriodRefs[PIdx].Max);
       L.OnProgress := Runner.HandleProgress;
 
       { Synchronously on this worker thread. Run drives its own Parallel.For and
@@ -1383,7 +1692,8 @@ begin
     Res.AddPair('start_structure', StructureToJSON(StartFS, Req.Info));
     Res.AddPair('fitted_structure',
       FittedStructureJSON(Fitted, Req.Info, Profiles));
-    Res.AddPair('bounds_used', BoundsUsedJSON(Req.FreeParams, Req.Info));
+    Res.AddPair('bounds_used', BoundsUsedJSON(Req.FreeParams, Req.PeriodRefs, Req.Info));
+    Res.AddPair('period_mode', PeriodModeJSON(Req, Fitted));
     Res.AddPair('profiles', ProfilesJSON(Poly, Req.Info, Req.FreeParams));
 
     JFiles := TJSONObject.Create;
@@ -1397,7 +1707,7 @@ begin
     Res.AddPair('calculated', CurveOrNull(CalcCurve, Req.InlineMax));
     Res.AddPair('residual', CurveOrNull(Residual, Req.InlineMax));
 
-    Res.AddPair('scale', JSONArgs.Num(1.0));
+    Res.AddPair('scale', JSONArgs.Num(Req.Scale));
     Res.AddPair('background', JSONArgs.Num(0.0));
     Res.AddPair('note', FIT_NO_SCALE_NOTE);
 

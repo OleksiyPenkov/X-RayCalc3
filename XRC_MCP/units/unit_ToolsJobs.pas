@@ -359,42 +359,53 @@ function FitFreeItemSchema: TJSONObject;
 var
   Names: TJSONObject;
 begin
-  Result := SchemaObject(['parameters']);
+  Result := SchemaObject([]);
   AddEnumProp(Result, 'target',
-    'What the entry addresses. Only "layer" can be fitted; the others are ' +
-    'listed so that asking for them is answered with "not_fittable" rather ' +
-    'than silently ignored.',
-    ['layer', 'substrate', 'scale', 'background', 'resolution']);
+    'What the entry addresses (default "layer"). "layer" frees the listed ' +
+    'parameters of one layer. "period" frees the period of a repeating stack ' +
+    '(its index in "stacks"; no "layer" or "parameters"): the engine then ' +
+    'lets the sum of that stack''s thicknesses move inside the period bounds ' +
+    'instead of rescaling the layers back to the start period after every ' +
+    'move - at least one thickness of the stack must be free as well. The ' +
+    'other targets are listed so that asking for them is answered with ' +
+    '"not_fittable" rather than silently ignored.',
+    ['layer', 'period', 'substrate', 'scale', 'background', 'resolution']);
   AddProp(Result, 'stack', 'integer',
     'Index in "stacks", counted from the substrate up; or the string "cap" or ' +
-    '"buffer" to address those layers.');
+    '"buffer" to address those layers ("period" takes an index only).');
   AddProp(Result, 'layer', 'integer',
     'Index of the layer inside that stack, in the order "layers" lists them. ' +
-    'Optional (and 0) for "cap" and "buffer".');
+    'Optional (and 0) for "cap" and "buffer"; not used with "period".');
 
   Names := TJSONObject.Create;
   Names.AddPair('type', 'string');
   AddRefProp(Result, 'parameters',
     'Which of "thickness", "sigma" and "density" of that layer take part in ' +
-    'the fit.', ArraySchema(Names));
+    'the fit (required for "layer"). Freeing the thicknesses of a repeating ' +
+    'stack without freeing its period fits the ratio between them at a fixed ' +
+    'period.', ArraySchema(Names));
 end;
 
 function FitBoundItemSchema: TJSONObject;
 begin
-  Result := SchemaObject(['parameter', 'min', 'max']);
+  Result := SchemaObject(['min', 'max']);
   AddEnumProp(Result, 'target',
-    'Only "layer" has bounds; anything else is refused with "not_fittable".',
-    ['layer', 'substrate', 'scale', 'background', 'resolution']);
+    '"layer" (default) bounds one layer parameter; "period" bounds the period ' +
+    'of a repeating stack whose period is in "free" (Angstrom, "parameter" ' +
+    'optional). Anything else is refused with "not_fittable".',
+    ['layer', 'period', 'substrate', 'scale', 'background', 'resolution']);
   AddProp(Result, 'stack', 'integer',
     'Index in "stacks" from the substrate up, or "cap" or "buffer".');
   AddProp(Result, 'layer', 'integer', 'Index of the layer inside that stack.');
   AddEnumProp(Result, 'parameter',
-    'The parameter this bound applies to. It must be one the same layer lists ' +
-    'in "free": a bound on a fixed parameter would have no effect and is an error.',
-    ['thickness', 'sigma', 'density']);
+    'The parameter this bound applies to (required for "layer"). It must be ' +
+    'one the same layer lists in "free": a bound on a fixed parameter would ' +
+    'have no effect and is an error.',
+    ['thickness', 'sigma', 'density', 'period']);
   AddProp(Result, 'min', 'number',
-    'Lower end of the search range, in Angstrom or g/cm^3. A thickness bound ' +
-    'must be greater than zero; a sigma or density bound is clamped at zero.');
+    'Lower end of the search range, in Angstrom or g/cm^3. A thickness or ' +
+    'period bound must be greater than zero; a sigma or density bound is ' +
+    'clamped at zero. The start value must lie inside the range.');
   AddProp(Result, 'max', 'number', 'Upper end of the search range.');
 end;
 
@@ -546,8 +557,14 @@ begin
   AddProp(Schema, 'energy', 'number',
     'Photon energy in eV, instead of "lambda".');
   AddRefProp(Schema, 'theta_range',
-    'The part of the measured curve to fit, in degrees theta (never 2theta). ' +
-    'Defaults to the whole curve.', FitThetaRangeSchema);
+    'The part of the measured curve to fit (the wiki''s "trim"), in degrees ' +
+    'theta (never 2theta). Defaults to the whole curve.', FitThetaRangeSchema);
+  AddProp(Schema, 'scale', 'number',
+    'Fixed multiplier applied to the measured intensities before the fit - ' +
+    'the wiki''s "normalise to the total-reflection plateau" step, chosen by ' +
+    'the caller (default 1). It is not fitted; the result echoes it, and ' +
+    'measured.dat and fit.xrcx hold the scaled curve so that X-Ray Calc 3 ' +
+    'shows the same data.');
   AddProp(Schema, 'resolution', 'number',
     Format('Instrumental resolution as the FWHM in degrees theta of the ' +
       'Gaussian the calculated curve is convolved with (default %g). It is ' +
@@ -556,10 +573,12 @@ begin
     'Which layer parameters take part in the fit. Everything not listed here ' +
     'is held at its start value.', ArraySchema(FitFreeItemSchema));
   AddRefProp(Schema, 'bounds',
-    Format('Search range of a free parameter. A free parameter with no bound ' +
+    Format('Search range of a free parameter or period. One with no bound ' +
       'gets the start value plus and minus %d%%; sigma and density are ' +
       'clamped at zero. A parameter that starts at 0 has no such default ' +
-      'range and needs an explicit bound.', [Round(DEF_FREE_DEVIATION * 100)]),
+      'range and needs an explicit bound (an omitted density starts at the ' +
+      'bulk value, not at 0). The start value must lie inside the range: the ' +
+      'engine seeds the swarm around it.', [Round(DEF_FREE_DEVIATION * 100)]),
     ArraySchema(FitBoundItemSchema));
   AddRefProp(Schema, 'optimizer',
     'The particle swarm itself. Every key is optional and defaults to the ' +
@@ -597,14 +616,20 @@ begin
     'and job_result returns the answer. The result holds the fitted structure, ' +
     'the chi-squared of the start model and of the fit, the measured, ' +
     'calculated and residual curves, and a fit.xrcx that X-Ray Calc 3 opens ' +
-    'with the model, the curves and the fit settings in place. Only layer ' +
-    'thickness, sigma and density can be fitted: the substrate is not in the ' +
-    'engine''s particle vector and there are no scale, background or ' +
-    'resolution parameters, so asking for those is refused with ' +
-    '"not_fittable". A repeating stack keeps the period of the start model - ' +
-    'the engine rescales its layers after every move - so fitting the ' +
-    'thicknesses of such a stack fits the ratio between them, not the period ' +
-    'itself. Cancellation is not instant: the engine offers one point per ' +
+    'with the model, the curves and the fit settings in place. Layer ' +
+    'thickness, sigma and density, and the period of a repeating stack, can ' +
+    'be fitted: the substrate is not in the engine''s particle vector and ' +
+    'there are no scale, background or resolution parameters, so asking for ' +
+    'those is refused with "not_fittable" ("scale" is accepted as a fixed ' +
+    'multiplier of the data instead). By default a repeating stack keeps the ' +
+    'period of the start model - the engine rescales its layers after every ' +
+    'move - so fitting the thicknesses of such a stack fits the ratio between ' +
+    'them at a fixed period; free the period ("target":"period" in "free", ' +
+    'bounds in Angstrom) to fit d itself, for example from the Bragg peaks ' +
+    'calc_reflectivity reports. The result says in "period_mode" how each ' +
+    'repeating stack was treated (held, free, or floating in a profile fit, ' +
+    'where the polynomial engine never holds the period). ' +
+    'Cancellation is not instant: the engine offers one point per ' +
     'iteration at which it can be stopped, so cancel_job takes up to one ' +
     'iteration, which grows with population x points x layers. Angles are ' +
     'theta in degrees, never 2theta; lengths are Angstrom.',

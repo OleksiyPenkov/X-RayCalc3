@@ -243,3 +243,45 @@ server used.
 14. **`_Installer\XRayCalc3Setup.iss` was not modified.** Shipping `XRC_MCP.exe` in the installer is
     out of scope for this plan; the server is registered from wherever it is built (see the
     `claude mcp add` line in `CLAUDE.md`). Say the word and the InnoSetup script gets a Files entry.
+
+15. **Profile fits stalled when a free density had no start value (fixed 2026-09-10).** The
+    paper-2 session's `fit_xrr` with `profile: true`, a free density and the density omitted from
+    the structure never moved: chi2 stayed at chi2_start, the density polynomial came back all
+    zeros. Root cause, reproduced against the pre-fix build: an omitted density is the 0 sentinel
+    ("use bulk") and was handed to the engine as the start value while the bounds said 8-12.5.
+    `TLFPSO_Poly.XSeed` seeds every particle around the start and `CheckLimitsP` clamps to the
+    bounds, so the whole swarm sat at 8 while particle 0 kept the bulk 12.4 - nothing ever beat
+    it. The periodic engine survives the same input only because `NormalizeD`/reflection scatter
+    the swarm. Fix, server side and engine untouched: `ParseFitRequest` fills every omitted
+    density with the Henke bulk value before `free`/`bounds` are read (`start_structure` now
+    reports it), and a start value outside its bounds - period included - is refused with
+    `invalid_argument` rather than fitted from the bound. The profile engine also needs a larger
+    swarm than the periodic one before anything beats a uniform start (12 x 8 did not move on the
+    synthetic Ru/C curve, 30 x 15 reached a fifth of chi2_start); the tests use 30 x 15 for it.
+16. **`critical_angle_deg` is now the film's edge, not the top layer's.** The old definition took
+    sqrt(2 delta) of the topmost layer, which for a Ru/C mirror under a thin C cap gave 0.166
+    degrees against a plateau edge near 0.3. It is now sqrt(2 <delta>) with <delta> the
+    thickness-weighted mean over the top 500 A of the structure (every stack with all its periods,
+    the substrate filling whatever the film leaves): 0.30 degrees for the smoke Ru/C stack, 0.29
+    for the test one. With the guard band that low, the Bragg-peak finder had to learn to reject
+    Kiessig fringes and the plateau edge: a maximum whose 2d sin(theta)/lambda sits more than 0.25
+    from an integer is not a Bragg peak (a 10-period Ru/C stack shows a strong one at 0.37 degrees
+    that rounds to order 1 and, under the "stronger one wins" rule, used to replace the real first
+    order; the pre-fix build reported it too, its top-layer theta_c being 0.22).
+17. **Free period (author's request of 2026-09-10).** `free` takes `{"target":"period","stack":k}`
+    and `bounds` `{"target":"period","stack":k,"min","max"}` (Angstrom, `"parameter":"period"`
+    optional; default the start period +/-30 %). `TLFPSO_Periodic` gained `SetPeriodRange` (a
+    per-stack range; `NormalizeD` rescales the stack's layers only when their sum leaves it, to
+    the nearer bound; the default holds as before, so the GUI is unchanged). At least one
+    thickness of the stack must be free, the stack must repeat, cap/buffer are refused, and a
+    profile fit refuses the target because `TLFPSO_Poly` never holds the period. The result's
+    `period_mode` reports every repeating stack as `held`, `free` (with the bounds) or `floating`
+    with `start_A` and `fitted_A`; `bounds_used` carries the period bound. The `.xrcx` needs
+    nothing extra: the fitted thicknesses are the period.
+18. **Fixed `scale` (author's request of 2026-09-10).** `fit_xrr` accepts `"scale"` (default 1,
+    > 0), multiplies the measured intensities by it before anything looks at them - chi2_start,
+    the fit, `measured.dat`, `fit.xrcx` - and echoes it; the .xrcx note records the factor. It is
+    a fixed input, not a fit parameter; `"target":"scale"` in `free` is still `not_fittable`.
+19. **Vocabulary for the agent's brief.** The tool descriptions now use the wiki's words where
+    they apply: `theta_range` is the "trim", `scale` the "normalise to the total-reflection
+    plateau" step, a thickness fit at a held period fits the "ratio", and `period` is d.

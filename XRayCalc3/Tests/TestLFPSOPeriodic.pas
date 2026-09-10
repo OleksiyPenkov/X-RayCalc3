@@ -53,6 +53,8 @@ type
     { NormalizeD }
     [Test] procedure Test_NormalizeD_PreservesPeriod;
     [Test] procedure Test_NormalizeD_SkipsNonPeriodicStack;
+    [Test] procedure Test_SetPeriodRange_LetsDMoveWithinBounds;
+    [Test] procedure Test_SetPeriodRange_ClampsToTheBounds;
 
     { InitVelocity }
     [Test] procedure Test_InitVelocity_SetsVmaxFromXrange;
@@ -243,6 +245,47 @@ begin
   // After normalization, sum should equal D_before = 50
   D_after := FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0];
   Assert.AreEqual(D_before, D_after, 1E-3, 'Sum of H should equal period D');
+end;
+
+procedure TTestLFPSOPeriodic.Test_SetPeriodRange_LetsDMoveWithinBounds;
+var
+  S: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  S := MakePeriodicStructure;
+  FPSO.TestSetStructure(S);             // D = 50
+  FPSO.SetPeriodRange(0, 45.0, 60.0);
+
+  // sum 55, inside the range: NormalizeD leaves both thicknesses alone
+  FPSO.GetX[1][0][1][0] := 25.0;
+  FPSO.GetX[1][1][1][0] := 30.0;
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Single(25.0), FPSO.GetX[1][0][1][0], 1E-4, 'H0 untouched inside the range');
+  Assert.AreEqual(Single(30.0), FPSO.GetX[1][1][1][0], 1E-4, 'H1 untouched inside the range');
+end;
+
+procedure TTestLFPSOPeriodic.Test_SetPeriodRange_ClampsToTheBounds;
+var
+  S: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  S := MakePeriodicStructure;
+  FPSO.TestSetStructure(S);             // D = 50
+  FPSO.SetPeriodRange(0, 45.0, 60.0);
+
+  // sum 75, above the range: rescaled to 60, the ratio kept (40:35)
+  FPSO.GetX[1][0][1][0] := 40.0;
+  FPSO.GetX[1][1][1][0] := 35.0;
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Double(60.0), Double(FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0]), 1E-3, 'clamped to the upper bound');
+  Assert.AreEqual(Double(40.0 / 35.0), Double(FPSO.GetX[1][0][1][0] / FPSO.GetX[1][1][1][0]), 1E-4, 'ratio kept');
+
+  // sum 30, below the range: rescaled to 45
+  FPSO.GetX[1][0][1][0] := 10.0;
+  FPSO.GetX[1][1][1][0] := 20.0;
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Double(45.0), Double(FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0]), 1E-3, 'clamped to the lower bound');
+  Assert.AreEqual(Single(15.0), FPSO.GetX[1][0][1][0], 1E-3, 'H0 scaled by 1.5');
 end;
 
 procedure TTestLFPSOPeriodic.Test_NormalizeD_SkipsNonPeriodicStack;

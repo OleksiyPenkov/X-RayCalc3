@@ -86,6 +86,14 @@ const
   /// Ceiling on Points, the same number describe_server reports as
   /// limits.max_points.
   MAX_CALC_POINTS = 100000;
+
+  /// Depth over which CriticalAngleDeg averages delta, in Angstrom: about what
+  /// the evanescent wave samples at the plateau edge.
+  CRITICAL_ANGLE_DEPTH = 500;
+
+  /// How far 2 d sin(theta) / lambda may sit from an integer for a maximum to
+  /// count as a Bragg peak (FindBraggPeaks).
+  BRAGG_ORDER_TOLERANCE = 0.25;
   /// The engine convolves over a fixed +/-0.1 degree window and smooths the
   /// last MVAWindow points; see CheckConvolutionFits.
   CALC_MVA_WINDOW = 10;
@@ -101,15 +109,22 @@ function RunCalc(const Req: TCalcRequest; out DensitiesUsed: TFitStructure): uni
 /// the smallest value within +/-max(3, n div 200) points. FWHM is the distance
 /// between the linearly interpolated half-maximum crossings on either side, 0
 /// when the curve does not fall to half the peak on both sides. Order is
-/// round(2 d sin(theta) / lambda) when Period > 0 and the running index from 1
-/// otherwise; orders below 1 are dropped and a repeated order keeps the
-/// stronger peak.</summary>
+/// round(2 d sin(theta) / lambda) when Period > 0 - a maximum whose
+/// 2 d sin(theta) / lambda sits more than 0.25 from an integer is a Kiessig
+/// fringe or the plateau edge, not a Bragg peak, and is dropped - and the
+/// running index from 1 otherwise; orders below 1 are dropped and a repeated
+/// order keeps the stronger peak.</summary>
 function FindBraggPeaks(const Curve: unit_Types.TDataArray;
   Lambda, Period: Double; ThetaC: Double): TArray<TPeak>;
 
-/// <summary>The total-reflection critical angle sqrt(2 delta) in degrees, taken
-/// from the topmost layer of the structure - the substrate when no stack holds
-/// a layer. 0 when the material has no Henke table or delta is not positive.
+/// <summary>The total-reflection critical angle in degrees, estimated as
+/// sqrt(2 <delta>) with <delta> the thickness-weighted mean of delta over the
+/// top CRITICAL_ANGLE_DEPTH Angstrom of the structure - every stack with all
+/// its periods, the substrate filling whatever the film leaves of that depth.
+/// The plateau edge of a multilayer is set by the film the beam penetrates,
+/// not by its top layer: a thin low-density cap on a Ru/C mirror would
+/// otherwise report a fraction of the real edge. Layers without a Henke table
+/// or with delta &lt;= 0 carry no weight; 0 when nothing carries weight.
 /// </summary>
 function CriticalAngleDeg(const S: TFitStructure; Lambda: Double): Double;
 
@@ -269,7 +284,7 @@ function FindBraggPeaks(const Curve: unit_Types.TDataArray;
   Lambda, Period: Double; ThetaC: Double): TArray<TPeak>;
 var
   N, W, i, j, Lo, Hi, Count, Running, Ord_, K, Dup: Integer;
-  MinLocal, Half, TL, TR: Double;
+  MinLocal, Half, TL, TR, MOrder: Double;
   HasL, HasR: Boolean;
   Pk: TPeak;
 begin
@@ -300,7 +315,17 @@ begin
       Continue;
 
     if Period > 0 then
-      Ord_ := Round(2 * Period * Sin(DegToRad(Curve[i].t)) / Lambda)
+    begin
+      { A Bragg peak sits within BRAGG_ORDER_TOLERANCE of an integer order
+        (refraction pulls the first order to about 1.07). A maximum further off
+        is a Kiessig fringe or the plateau edge: a 10-period Ru/C stack shows
+        one at 0.37 degrees that rounds to order 1 and, being strong, would
+        replace the real first-order peak under the "stronger one wins" rule. }
+      MOrder := 2 * Period * Sin(DegToRad(Curve[i].t)) / Lambda;
+      Ord_ := Round(MOrder);
+      if Abs(MOrder - Ord_) > BRAGG_ORDER_TOLERANCE then
+        Continue;
+    end
     else
     begin
       Inc(Running);
@@ -371,36 +396,53 @@ end;
 
 function CriticalAngleDeg(const S: TFitStructure; Lambda: Double): Double;
 var
-  i: Integer;
-  Material: string;
-  Density, DensityUsed, Delta, Beta: Double;
+  i, j, Rep: Integer;
+  Remaining, Weight, Sum: Double;
+
+  procedure Add(const Material: string; Density, Thickness: Double);
+  var
+    DensityUsed, Delta, Beta: Double;
+  begin
+    if (Remaining <= 0) or (Thickness <= 0) then
+      Exit;
+    if Thickness > Remaining then
+      Thickness := Remaining;
+    if OpticalConstants(Material, Lambda, Density, DensityUsed, Delta, Beta)
+       and (Delta > 0) then
+    begin
+      Sum := Sum + Delta * Thickness;
+      Weight := Weight + Thickness;
+    end;
+    Remaining := Remaining - Thickness;
+  end;
+
 begin
   Result := 0;
   if Lambda <= 0 then
     Exit;
 
-  { The topmost physical layer is the first layer of the first stack:
-    BuildLayeredModel appends stack 0 directly under the vacuum. }
-  Material := '';
-  Density := 0;
-  for i := 0 to High(S.Stacks) do
-    if Length(S.Stacks[i].Layers) > 0 then
-    begin
-      Material := S.Stacks[i].Layers[0].Material;
-      Density := S.Stacks[i].Layers[0].P[3].V;
-      Break;
-    end;
-  if Material = '' then
-  begin
-    Material := S.Subs.Material;
-    Density := S.Subs.P[3].V;
-  end;
+  Remaining := CRITICAL_ANGLE_DEPTH;
+  Sum := 0;
+  Weight := 0;
 
-  if not OpticalConstants(Material, Lambda, Density, DensityUsed, Delta, Beta) then
+  { TFitStructure is surface-first: Stacks[0] sits directly under the vacuum,
+    and BuildLayeredModel lays every stack down N times in this order. }
+  for i := 0 to High(S.Stacks) do
+    for Rep := 1 to Max(1, S.Stacks[i].N) do
+    begin
+      if Remaining <= 0 then
+        Break;
+      for j := 0 to High(S.Stacks[i].Layers) do
+        Add(S.Stacks[i].Layers[j].Material, S.Stacks[i].Layers[j].P[3].V,
+            S.Stacks[i].Layers[j].P[1].V);
+    end;
+
+  if Remaining > 0 then
+    Add(S.Subs.Material, S.Subs.P[3].V, Remaining);
+
+  if Weight <= 0 then
     Exit;
-  if Delta <= 0 then
-    Exit;
-  Result := RadToDeg(Sqrt(2 * Delta));
+  Result := RadToDeg(Sqrt(2 * Sum / Weight));
 end;
 
 procedure WriteCurveFile(const Path: string; const Curve: unit_Types.TDataArray;
