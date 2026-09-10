@@ -545,41 +545,57 @@ end;
 procedure TfrmChartInfo.TrimData;
 var
   t1, t2: single;
-  index: integer;
+  iFirst, iLast, LastIndex: integer;
   DataSeries: TFastLineSeries;
 
-  function FindIndex(const val: single): integer;
+  // First point with X >= val, or Count when every point is below val.
+  function FirstAtOrAbove(const val: single): integer;
+  var
+    i: integer;
+  begin
+    Result := DataSeries.XValues.Count;
+    for i := 0 to DataSeries.XValues.Count - 1 do
+      if DataSeries.XValues[i] >= val then
+        Exit(i);
+  end;
+
+  // Last point with X <= val, or -1 when every point is above val.
+  function LastAtOrBelow(const val: single): integer;
   var
     i: integer;
   begin
     Result := -1;
-    for I := 0 to DataSeries.XValues.Count - 1 do
-      if DataSeries.XValues[i] >= val then
-      begin
-        Result := i;
-        Break;
-      end;
+    for i := DataSeries.XValues.Count - 1 downto 0 do
+      if DataSeries.XValues[i] <= val then
+        Exit(i);
   end;
 
 begin
   DataSeries := FGetActiveDataSeries;
+  if not Assigned(DataSeries) or (DataSeries.XValues.Count = 0) then
+    Exit;
+
   FCalcSettings.GetAxisRange(t1, t2);
 
-  index := FindIndex(t1);
-  if index > 1 then
-  begin
-    DataSeries.BeginUpdate;
-    DataSeries.Delete(0, Index);
+  iFirst := FirstAtOrAbove(t1);
+  iLast := LastAtOrBelow(t2);
+  // No point falls inside [t1, t2] - leave the data alone rather than wipe it.
+  if iFirst > iLast then
+    Exit;
+
+  LastIndex := DataSeries.XValues.Count - 1;
+
+  DataSeries.BeginUpdate;
+  try
+    // Trim the right tail first so that iFirst/iLast stay valid.
+    if iLast < LastIndex then
+      DataSeries.Delete(iLast + 1, LastIndex - iLast);
+    if iFirst > 0 then
+      DataSeries.Delete(0, iFirst);
+  finally
     DataSeries.EndUpdate;
   end;
 
-  index := FindIndex(t2);
-  if index > 1 then
-  begin
-    DataSeries.BeginUpdate;
-    DataSeries.Delete(index, DataSeries.XValues.Count - Index - 1);
-    DataSeries.EndUpdate;
-  end;
   if Assigned(FOnSaveActiveData) then
     FOnSaveActiveData(Self);
 end;
