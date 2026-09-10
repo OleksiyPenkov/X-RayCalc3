@@ -2,13 +2,12 @@
 ; Run deploy.sh first to stage files into deploy/
 
 #define MyAppName "X-Ray Calc 3"
-#define MyAppVersion "3.7.0"
+#define MyAppVersion "3.8.0"
 #define MyAppPublisher "Oleksiy Penkov"
 #define MyAppExeName32 "XRayCalc3.exe"
 #define MyAppExeName64 "XRayCalc3.x64.exe"
 #define MyAppAssocExt ".xrcx"
 #define MyAppAssocName "X-Ray Calc Project"
-#define PreviewHandlerCLSID "{{B4B97522-5D4C-4B68-A498-E4C800F1B523}"
 
 [Setup]
 AppId={{A7D3E2F1-8B4C-4E5A-9F6D-1C2B3A4E5F60}
@@ -38,7 +37,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; --- Both executables (x32 is faster, x64 handles large models) ---
 Source: "deploy\Win64\XRayCalc3.x64.exe";          DestDir: "{app}"; Flags: ignoreversion
 Source: "deploy\Win32\XRayCalc3.exe";               DestDir: "{app}"; Flags: ignoreversion
-Source: "deploy\Win64\XRCPreviewHandlerLib.dll";    DestDir: "{app}"; Flags: ignoreversion regserver 64bit
 
 ; --- Shared data files ---
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
