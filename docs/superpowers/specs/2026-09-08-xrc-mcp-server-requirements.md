@@ -1,4 +1,4 @@
-# XRACA MCP server — requirements
+# XRC MCP server — requirements
 
 _Issued 2026-09-08 by the paper-2 planning session (LLM-driven X-ray optics laboratory,
 `D:\MultilayerLab\Papers\Agentic-Deposition-Control\docs\superpowers\specs\2026-09-08-llm-xray-optics-lab-design.md`).
@@ -186,7 +186,7 @@ writes into `inbox\`.
 The paper session registers the server per experiment with
 
 ```
-claude mcp add -s user xraca -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_Out\BIN\XRC_MCP.exe" --workdir "<experiment directory>"
+claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_Out\BIN\XRC_MCP.exe" --workdir "<experiment directory>"
 ```
 
 and starts the agent session from a `run-*.cmd` that carries only this server and the

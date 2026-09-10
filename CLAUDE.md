@@ -54,7 +54,7 @@ _Installer/         InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
 
 **Register the MCP server** with Claude Code (one experiment directory per registration):
 ```
-claude mcp add -s user xraca -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_Out\BIN\XRC_MCP.exe" --workdir "<experiment directory>"
+claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_Out\BIN\XRC_MCP.exe" --workdir "<experiment directory>"
 ```
 
 ## Key Files & Types

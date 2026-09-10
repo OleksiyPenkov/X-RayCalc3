@@ -246,7 +246,7 @@ Say ''
 Start-Server $Exe $work
 
 $init = Send-Rpc 'initialize' @{}
-if ($init.result.serverInfo.name -ne 'xraca') { Fail "serverInfo.name is '$($init.result.serverInfo.name)', expected 'xraca'" }
+if ($init.result.serverInfo.name -ne 'xrc') { Fail "serverInfo.name is '$($init.result.serverInfo.name)', expected 'xrc'" }
 Send-Rpc 'notifications/initialized' $null -Notification | Out-Null
 
 $list  = Send-Rpc 'tools/list' $null

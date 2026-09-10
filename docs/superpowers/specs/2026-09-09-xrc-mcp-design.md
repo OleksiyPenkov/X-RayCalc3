@@ -1,6 +1,6 @@
 # XRC_MCP — design decisions
 
-_Implements `2026-09-08-xraca-mcp-server-requirements.md` (the "requirements"). This note records
+_Implements `2026-09-08-xrc-mcp-server-requirements.md` (the "requirements"). This note records
 the choices the requirements leave to the implementer, and the reasons. The plan is
 `docs/superpowers/plans/2026-09-09-xrc-mcp-server.md`._
 

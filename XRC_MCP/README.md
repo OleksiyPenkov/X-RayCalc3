@@ -6,7 +6,7 @@ calculation engine to LLM agents over a JSON-RPC 2.0 stdio loop. It is started w
 
 Build it with the `XRC_MCP Win64` command in the repository's `CLAUDE.md` build table. Design and
 requirements live in `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` and
-`docs/superpowers/specs/2026-09-08-xraca-mcp-server-requirements.md`.
+`docs/superpowers/specs/2026-09-08-xrc-mcp-server-requirements.md`.
 
 **Win64 build dependency:** `optimize_mirror` runs the universal optimizer through
 OmniThreadLibrary's `Parallel.For`, and `fit_xrr` runs the LFPSO fit through the same

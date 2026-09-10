@@ -8,7 +8,7 @@
 
 **Tech Stack:** Delphi (RAD Studio 37.0), Win64 Release console app, System.JSON, System.Zip, System.Hash, OmniThreadLibrary (inside the engines), VirtualTreeView (project tree), DUnitX (tests, Win32 Debug).
 
-**Spec:** `docs/superpowers/specs/2026-09-08-xraca-mcp-server-requirements.md` (requirements) and `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` (design decisions — read both; the design note settles engine choice, structure mapping, job model, `.xrcx` writing).
+**Spec:** `docs/superpowers/specs/2026-09-08-xrc-mcp-server-requirements.md` (requirements) and `docs/superpowers/specs/2026-09-09-xrc-mcp-design.md` (design decisions — read both; the design note settles engine choice, structure mapping, job model, `.xrcx` writing).
 
 ## Global Constraints
 
@@ -32,7 +32,7 @@
 | File | Responsibility |
 |---|---|
 | `XRC_MCP\XRC_MCP.dpr`, `XRC_MCP\XRC_MCP.dproj` | Console program; `{$APPTYPE CONSOLE}`; lists every unit with `in` paths like `xrccmd.dpr`; `Application.Initialize` (needed by `TConfig` and VCL classes used headless) |
-| `XRC_MCP\units\unit_MCPProtocol.pas` | Copied verbatim from `D:\APS\ELN\ELN3\ELN.MCPServer\unit_MCPProtocol.pas`; server name `xraca` |
+| `XRC_MCP\units\unit_MCPProtocol.pas` | Copied verbatim from `D:\APS\ELN\ELN3\ELN.MCPServer\unit_MCPProtocol.pas`; server name `xrc` |
 | `XRC_MCP\units\unit_MCPTools.pas` | Tool registry: `TToolHandler`, `TToolDef`, `TToolRegistry` (no user/scope/plugin context) |
 | `XRC_MCP\units\unit_MCPErrors.pas` | `EMCPError` (code, message, detail) and `MCPErrorJSON` |
 | `XRC_MCP\units\unit_MCPSandbox.pas` | `TWorkDir`: layout, `ResolvePath`, `EnsureLayout`, `FileSHA256`, command-line parsing |
@@ -77,7 +77,7 @@ Shared JSON helper functions (`GetOptStr`, `GetOptFloat`, `GetOptInt`, `GetOptBo
 - [ ] **Step 1: Copy the protocol unit**
 
 Copy `D:\APS\ELN\ELN3\ELN.MCPServer\unit_MCPProtocol.pas` to `XRC_MCP\units\unit_MCPProtocol.pas` unchanged except:
-- `ServerInfo.AddPair('name', 'xraca');`
+- `ServerInfo.AddPair('name', 'xrc');`
 - move `ServerVersionString` into `unit_MCPVersion.pas` and use it from there.
 
 - [ ] **Step 2: Write `unit_MCPVersion.pas`**
@@ -543,7 +543,7 @@ end.
 
 - [ ] **Step 7: Write the dproj**
 
-Copy `XRC_CMD\xrccmd.dproj`, then edit: new `ProjectGuid` (generate with PowerShell `[guid]::NewGuid()`), `MainSource` `XRC_MCP.dpr`, `ProjectName` `XRC_MCP`, `SanitizedProjectName` `XRC_MCP`; Base `DCC_UnitSearchPath` = `..\Shared\Math;..\Shared\Universal;..\XRC_CMD\Units;..\XRayCalc3\Units;..\XRayCalc3\LFPSO;..\XRayCalc3\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)`; `DCC_DcuOutput` = `.\Out\DCU`; both platform groups `DCC_ExeOutput` = `..\_Out\BIN\`; replace the `DCCReference` item group with one entry per unit in the dpr; delete the `Deployment` block; keep `VerInfo_Keys` with `FileVersion=1.0.0.0`, `FileDescription=XRACA MCP server`; add `<PreBuildEvent>` from Step 2. Add `Out` to `.gitignore` if not already covered (`/XRC_MCP/Out`).
+Copy `XRC_CMD\xrccmd.dproj`, then edit: new `ProjectGuid` (generate with PowerShell `[guid]::NewGuid()`), `MainSource` `XRC_MCP.dpr`, `ProjectName` `XRC_MCP`, `SanitizedProjectName` `XRC_MCP`; Base `DCC_UnitSearchPath` = `..\Shared\Math;..\Shared\Universal;..\XRC_CMD\Units;..\XRayCalc3\Units;..\XRayCalc3\LFPSO;..\XRayCalc3\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)`; `DCC_DcuOutput` = `.\Out\DCU`; both platform groups `DCC_ExeOutput` = `..\_Out\BIN\`; replace the `DCCReference` item group with one entry per unit in the dpr; delete the `Deployment` block; keep `VerInfo_Keys` with `FileVersion=1.0.0.0`, `FileDescription=XRC MCP server`; add `<PreBuildEvent>` from Step 2. Add `Out` to `.gitignore` if not already covered (`/XRC_MCP/Out`).
 
 - [ ] **Step 8: Register in the group project and CLAUDE.md**
 
@@ -559,7 +559,7 @@ New-Item -ItemType Directory -Force "$env:TEMP\xrcmcp_smoke" | Out-Null
 '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' + "`n" + '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' + "`n" + '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"describe_server","arguments":{}}}' |
   & "_Out\BIN\XRC_MCP.exe" --workdir "$env:TEMP\xrcmcp_smoke"
 ```
-Expected: three JSON lines on stdout; line 1 contains `"serverInfo":{"name":"xraca"`; line 3 contains `server_version`. Running with no `--workdir` prints `Fatal: --workdir <path> is required` on stderr and exit code 1.
+Expected: three JSON lines on stdout; line 1 contains `"serverInfo":{"name":"xrc"`; line 3 contains `server_version`. Running with no `--workdir` prints `Fatal: --workdir <path> is required` on stderr and exit code 1.
 
 - [ ] **Step 10: Commit**
 
@@ -1065,7 +1065,7 @@ function HenkeSummary: TJSONObject;   // {path, table_count, newest_file_utc, so
 
 ```json
 {
- "server": {"name":"xraca","version":<ServerVersionString>,"git_revision":<GitRevision>,"engine":"X-Ray Calc 3 (Shared/Math, XRayCalc3/LFPSO, Shared/Universal) compiled into this binary","xraycalc3_exe_version":<EngineVersionString>},
+ "server": {"name":"xrc","version":<ServerVersionString>,"git_revision":<GitRevision>,"engine":"X-Ray Calc 3 (Shared/Math, XRayCalc3/LFPSO, Shared/Universal) compiled into this binary","xraycalc3_exe_version":<EngineVersionString>},
  "henke": {"path":..,"table_count":..,"newest_file_utc":..,"source_note":"X-Ray Calc .bin conversions of CXRO Henke f1/f2 tables; provenance not embedded — see open question 4"},
  "xrf_lines_file": <path>, "templates_file": <path or null>,
  "units": {"length":"angstrom","density":"g/cm3","angle":"degrees, theta (grazing incidence, NOT 2theta)","energy":"eV, lambda = 12398.42 / E","engine_table_constant":"12398.6 (math_globals.H, Henke interpolation only)"},

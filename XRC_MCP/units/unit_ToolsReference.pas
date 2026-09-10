@@ -95,7 +95,7 @@ function ServerSection: TJSONObject;
 begin
   Result := TJSONObject.Create;
   try
-    Result.AddPair('name', 'xraca');
+    Result.AddPair('name', 'xrc');
     Result.AddPair('version', ServerVersionString);
     Result.AddPair('git_revision', GitRevision);
     Result.AddPair('engine', ENGINE_DESCRIPTION);

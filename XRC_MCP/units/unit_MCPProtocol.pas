@@ -232,7 +232,7 @@ begin
   Capabilities.AddPair('tools', ToolsCap);
 
   ServerInfo := TJSONObject.Create;
-  ServerInfo.AddPair('name', 'xraca');
+  ServerInfo.AddPair('name', 'xrc');
   ServerInfo.AddPair('version', ServerVersionString);
 
   ResultObj := TJSONObject.Create;

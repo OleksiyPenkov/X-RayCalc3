@@ -74,7 +74,7 @@
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
         <VerInfo_Release>0</VerInfo_Release>
         <VerInfo_Build>0</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=;FileDescription=XRACA MCP server;FileVersion=1.0.0.0;InternalName=XRC_MCP;LegalCopyright=;LegalTrademarks=;OriginalFilename=XRC_MCP.exe;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=XRC_MCP;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=XRC MCP server;FileVersion=1.0.0.0;InternalName=XRC_MCP;LegalCopyright=;LegalTrademarks=;OriginalFilename=XRC_MCP.exe;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=XRC_MCP;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <PreBuildEvent>cmd /c @for /f %%i in ('git -C "$(MSBuildProjectDirectory)\.." rev-parse --short HEAD') do @echo const GIT_REV = '%%i';&gt; "$(MSBuildProjectDirectory)\units\gitrev.inc"</PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
