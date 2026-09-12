@@ -70,7 +70,7 @@ type
     Valid: Boolean;        // false if lambda/2d > 1 (no Bragg peak)
     // What the peak search actually did, per line (TUniversalFitness.MeasureLine):
     ThetaPeak: Single;    // refraction-corrected centre of the scan, degrees
-    ScanHalf: Single;     // half-range scanned about ThetaPeak, degrees
+    ScanHalf: Single;     // half-range added either side of the angle pair, deg
     ScanStep: Single;     // grid step of that scan, degrees
     ScanPointsUsed: Integer; // points the peak was searched over
   end;

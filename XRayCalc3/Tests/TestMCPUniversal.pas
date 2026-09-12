@@ -53,6 +53,8 @@ type
     [Test] procedure EvaluateStructure_MoB4C_MorePeriodsScoreHigher;
     [Test] procedure EvaluateStructure_WB4CReference_ScoresTheDesign;
     [Test] procedure EvaluateStructure_ReportsTheScanGridPerLine;
+    [Test] procedure EvaluateStructure_BLine_IsTheMainPeakAtEveryN;
+    [Test] procedure EvaluateStructure_NarrowClientWindow_FindsTheBroadPeak;
   end;
 
 implementation
@@ -447,7 +449,7 @@ begin
 
   // fitness
   Assert.AreEqual(Double(1.0), Double(C.Fitness.wR), 1E-6);
-  Assert.AreEqual(Double(0.5), Double(C.Fitness.wFWHM), 1E-6);
+  Assert.AreEqual(Double(0.25), Double(C.Fitness.wFWHM), 1E-6);
   Assert.AreEqual(Double(0.001), Double(C.Fitness.RMinThreshold), 1E-9);
   Assert.AreEqual(Double(1.0), Double(C.Fitness.wPurity), 1E-6);
   Assert.IsTrue(C.Fitness.Polarization = cmd_unit_types.cmSP, 'polarization defaults to sp');
@@ -508,7 +510,7 @@ begin
   Assert.AreEqual(Double(0.15), Double(C.Structure.GammaRange.Min), 1E-6, 'gamma still defaults');
 
   Assert.AreEqual(Double(3), Double(C.Fitness.wR), 1E-6);
-  Assert.AreEqual(Double(0.5), Double(C.Fitness.wFWHM), 1E-6, 'w_FWHM still defaults');
+  Assert.AreEqual(Double(0.25), Double(C.Fitness.wFWHM), 1E-6, 'w_FWHM still defaults');
   Assert.IsTrue(C.Fitness.Polarization = cmd_unit_types.cmS);
 
   Assert.AreEqual(Double(67.6), Double(C.Lines[0].Lambda), 1E-4);
@@ -1539,9 +1541,16 @@ begin
       Format('line %d: %d points exceeds the cap', [i, Res[i].ScanPointsUsed]));
     Assert.IsTrue(Res[i].ScanStep > 0,
       Format('line %d: a scanned line must report its step', [i]));
+    // The window is the half-range either side of BOTH the kinematic and the
+    // refraction-corrected angle, so its span is 2 * half plus the shift
+    // between them.
     Assert.IsTrue(Res[i].ScanStep * Res[i].ScanPointsUsed <=
-                  2 * Res[i].ScanHalf + Res[i].ScanStep,
-      Format('line %d: the grid must fit inside the reported window', [i]));
+                  2 * Res[i].ScanHalf + Abs(Res[i].ThetaPeak - Res[i].ThetaBragg)
+                  + Res[i].ScanStep,
+      Format('line %d: the grid must fit inside the reported window ' +
+        '(step %.5f x %d points against half %.4f and a shift of %.4f)',
+        [i, Res[i].ScanStep, Res[i].ScanPointsUsed, Res[i].ScanHalf,
+         Res[i].ThetaPeak - Res[i].ThetaBragg]));
     Assert.IsTrue(Res[i].ThetaPeak >= Res[i].ThetaBragg,
       Format('line %d: refraction shifts the peak up, never down', [i]));
 
@@ -1551,6 +1560,80 @@ begin
       Format('line %d: fwhm %.5f is not resolved by a step of %.5f',
         [i, Res[i].FWHM, Res[i].ScanStep]));
   end;
+end;
+
+{ The B K-alpha line is the hard case for the peak rule: at 67.6 A its Bragg
+  angle is steep (64 deg for the agent design, 30 deg for the reference), its
+  peak is degrees wide, and refraction near the B K edge shifts it by more than
+  a degree. Taking the local maximum NEAREST the expected angle picked a
+  sidelobe at N = 100 and 200, and a window centred on an over-estimated
+  refraction shift lost the peak entirely. The peak is therefore the HIGHEST
+  interior local maximum of a window that spans both the kinematic and the
+  refraction-corrected angle: the plateau tail is monotonic and has no interior
+  maximum, so it still cannot win, and a sidelobe is by definition lower than
+  the main peak. Values measured on the engine at 12d22dc with the rule
+  corrected. }
+
+procedure TTestMCPUniversal.EvaluateStructure_BLine_IsTheMainPeakAtEveryN;
+
+  procedure CheckB(const StructJSON, What: string; Expected: Single);
+  var
+    Res: TTargetResults;
+    Info: TStructureInfo;
+  begin
+    ScoreNineLines(StructJSON, DefaultFitnessConfig, Res, Info);
+    Assert.IsTrue(Res[0].RPeak > 0,
+      Format('%s: B must not be dark%s', [What, LineTable(Res)]));
+    Assert.AreEqual(Double(Expected), Double(Res[0].RPeak), 0.1 * Expected,
+      Format('%s: B r_peak must be the main peak, about %.3f%s',
+        [What, Expected, LineTable(Res)]));
+  end;
+
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  // A sidelobe scored 0.017 with a 3.4-3.6 degree width for both of these.
+  CheckB(Format(MOB4C_JSON, [100]), 'Mo/B4C N=100', 0.253);
+  CheckB(Format(MOB4C_JSON, [200]), 'Mo/B4C N=200', 0.351);
+
+  // This one went dark: the main peak fell outside a window centred on the
+  // refraction-corrected angle alone.
+  CheckB(Format(WB4C_JSON, [200]), 'W/B4C reference N=200', 0.220);
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_NarrowClientWindow_FindsTheBroadPeak;
+var
+  Res: TTargetResults;
+  Info: TStructureInfo;
+  Fit: TFitnessConfig;
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  // Half a degree either side of a peak several degrees wide: the window sits
+  // entirely on the peak's flank and holds no interior maximum at all. As long
+  // as the plateau did not clip the scan, the honest answer is the best point
+  // in the window, not "dark".
+  Fit := DefaultFitnessConfig;
+  Fit.ScanHalfRange := 0.5;
+
+  ScoreNineLines(Format(MOB4C_JSON, [50]), Fit, Res, Info);
+
+  Assert.IsTrue(Res[0].RPeak > 0,
+    Format('a narrow client window must not make a broad peak dark%s',
+      [LineTable(Res)]));
+  Assert.AreEqual(Double(0.120), Double(Res[0].RPeak), 0.012,
+    Format('B r_peak in a 0.5 degree window must be about 0.120%s',
+      [LineTable(Res)]));
 end;
 
 initialization

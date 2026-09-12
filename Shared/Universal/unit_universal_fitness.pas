@@ -36,13 +36,16 @@ type
     // Where to look for the peak of one line, and how finely.
     procedure PeakWindow(Lambda, ThetaBragg, d: Single; NInt: Integer;
       out ThetaPeak, ThetaC, Half, FWHMRefKin: Single);
-    function WindowStart(ThetaPeak, ThetaC, Half: Single): Single;
     function GridPoints(Span, FWHMRefKin: Single): Integer;
     procedure ScanWindow(Lambda, ThetaStart, ThetaEnd: Single; NPoints: Integer);
-    // Index of the local maximum nearest ThetaPeak, -1 when the window holds
-    // none. NOT the global maximum: with the plateau excluded the global
-    // maximum of a window can still be its own rising edge.
-    function NearestLocalMax(ThetaPeak: Single): Integer;
+    // Index of the HIGHEST interior local maximum, -1 when the window holds
+    // none. Interior excludes both endpoints, which is what keeps the
+    // total-reflection plateau out: its tail is monotonic, so however high it
+    // runs it has no interior maximum to offer. Highest rather than nearest
+    // because the refraction shift of a steep line is not known well enough to
+    // pick between a main peak and a sidelobe by proximity.
+    function HighestLocalMax: Integer;
+    function WindowMax: Integer;
     function ExtractFWHM(PeakIdx: Integer; out Clipped: Boolean): Single;
     // Scans one line and fills R.RPeak, R.FWHM and the R.Theta*/R.Scan* facts.
     // FLayersBuf must already hold the stack built for this line.
@@ -319,15 +322,6 @@ begin
     Half := FScanHalfRange;
 end;
 
-function TUniversalFitness.WindowStart(ThetaPeak, ThetaC, Half: Single): Single;
-begin
-  // Never start inside the total-reflection plateau: below about theta_c every
-  // structure reflects nearly everything, and that shoulder used to be taken
-  // for the Bragg peak of the short-wavelength lines.
-  Result := Max(FConfig.Fitness.ThetaMin + 0.1,
-                Max(PLATEAU_MARGIN * ThetaC, ThetaPeak - Half));
-end;
-
 function TUniversalFitness.GridPoints(Span, FWHMRefKin: Single): Integer;
 var
   MaxStep: Single;
@@ -365,24 +359,26 @@ begin
   end;
 end;
 
-function TUniversalFitness.NearestLocalMax(ThetaPeak: Single): Integer;
+function TUniversalFitness.HighestLocalMax: Integer;
 var
   i: Integer;
-  Dist, BestDist: Single;
 begin
   Result := -1;
-  BestDist := 0;
   for i := 1 to FCurveLen - 2 do
     if (FCurveBuf[i].r >= FCurveBuf[i - 1].r) and
        (FCurveBuf[i].r > FCurveBuf[i + 1].r) then
-    begin
-      Dist := Abs(FCurveBuf[i].t - ThetaPeak);
-      if (Result < 0) or (Dist < BestDist) then
-      begin
+      if (Result < 0) or (FCurveBuf[i].r > FCurveBuf[Result].r) then
         Result := i;
-        BestDist := Dist;
-      end;
-    end;
+end;
+
+function TUniversalFitness.WindowMax: Integer;
+var
+  i: Integer;
+begin
+  Result := -1;
+  for i := 0 to FCurveLen - 1 do
+    if (Result < 0) or (FCurveBuf[i].r > FCurveBuf[Result].r) then
+      Result := i;
 end;
 
 function TUniversalFitness.ExtractFWHM(PeakIdx: Integer;
@@ -434,9 +430,10 @@ end;
 procedure TUniversalFitness.MeasureLine(Lambda, ThetaBragg, d: Single;
   NInt: Integer; var R: TTargetResult);
 var
-  ThetaPeak, ThetaC, Half, FWHMRefKin, StartT, EndT: Single;
+  ThetaPeak, ThetaC, Half, FWHMRefKin: Single;
+  PlateauStart, WinLow, WinHigh, StartT, EndT: Single;
   PeakIdx, NPoints, Attempt: Integer;
-  Clipped: Boolean;
+  Clipped, PlateauClipped: Boolean;
 begin
   R.RPeak := 0;
   R.FWHM := 0;
@@ -445,16 +442,27 @@ begin
 
   PeakWindow(Lambda, ThetaBragg, d, NInt, ThetaPeak, ThetaC, Half, FWHMRefKin);
   R.ThetaPeak := ThetaPeak;
+  PlateauStart := Max(FConfig.Fitness.ThetaMin + 0.1, PLATEAU_MARGIN * ThetaC);
 
   for Attempt := 0 to 1 do
   begin
     R.ScanHalf := Half;
-    StartT := WindowStart(ThetaPeak, ThetaC, Half);
-    EndT := ThetaPeak + Half;
+
+    // The window spans BOTH the kinematic angle and the refraction-corrected
+    // one. The shift between them is computed from an average delta, and near
+    // an absorption edge - B K at 188 eV, say - that average is a poor guide to
+    // where the peak really lands. Covering both ends costs a fraction of a
+    // degree and stops an over- or under-estimated shift from losing the peak.
+    WinLow := Min(ThetaBragg, ThetaPeak) - Half;
+    WinHigh := Max(ThetaBragg, ThetaPeak) + Half;
+
+    StartT := Max(PlateauStart, WinLow);
+    EndT := WinHigh;
     // The plateau reaches past this line's peak: there is nothing to measure
     // above the critical angle, so the line is dark.
     if StartT >= EndT then
       Exit;
+    PlateauClipped := PlateauStart > WinLow;
 
     NPoints := GridPoints(EndT - StartT, FWHMRefKin);
     ScanWindow(Lambda, StartT, EndT, NPoints);
@@ -464,13 +472,22 @@ begin
     if FCurveLen > 1 then
       R.ScanStep := FCurveBuf[1].t - FCurveBuf[0].t;
 
-    PeakIdx := NearestLocalMax(ThetaPeak);
-    // No maximum inside the window at all: the line has no peak here.
+    PeakIdx := HighestLocalMax;
     if PeakIdx < 0 then
     begin
-      R.RPeak := 0;
-      R.FWHM := 0;
-      Exit;
+      // Nothing but a slope. A window the client made narrower than the peak it
+      // sits on is the common case, and the best point in it is a fair
+      // measurement; but a window whose start the plateau moved is a different
+      // story, because then the highest point may be the plateau itself. Dark.
+      if PlateauClipped then
+      begin
+        R.RPeak := 0;
+        R.FWHM := 0;
+        Exit;
+      end;
+      PeakIdx := WindowMax;
+      if PeakIdx < 0 then
+        Exit;
     end;
 
     R.RPeak := FCurveBuf[PeakIdx].r;
@@ -722,8 +739,9 @@ begin
   // The curve a client plots is the window the FoM scored, not a different one.
   PeakWindow(Lambda, ThetaBragg, Genome.d, NInt,
     ThetaPeak, ThetaC, Half, FWHMRefKin);
-  StartT := WindowStart(ThetaPeak, ThetaC, Half);
-  EndT := ThetaPeak + Half;
+  StartT := Max(Max(FConfig.Fitness.ThetaMin + 0.1, PLATEAU_MARGIN * ThetaC),
+                Min(ThetaBragg, ThetaPeak) - Half);
+  EndT := Max(ThetaBragg, ThetaPeak) + Half;
   if StartT >= EndT then
   begin
     SetLength(Result, 0);

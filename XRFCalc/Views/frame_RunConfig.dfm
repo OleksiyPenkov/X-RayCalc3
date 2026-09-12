@@ -417,7 +417,7 @@ object frmRunConfig: TfrmRunConfig
         Top = 36
         Width = 70
         TabOrder = 1
-        Text = '0.1'
+        Text = '0.25'
       end
       object sedNRef: TSpinEdit
         Left = 222

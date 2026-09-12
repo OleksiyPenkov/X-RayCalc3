@@ -142,7 +142,12 @@ begin
     'Weight of the peak reflectivity in the figure of merit (default 1).');
   AddProp(Result, 'w_FWHM', 'number',
     'Weight of the FWHM penalty, in units of the kinematic reference width ' +
-    '(default 0.5).');
+    'of n_ref periods (default 0.25).');
+  AddProp(Result, 'n_ref', 'integer',
+    'Periods in the reference width the FWHM penalty is measured in: ' +
+    'lambda / (n_ref d cos theta), default 50. Deliberately independent of the ' +
+    'N being optimized - a reference tied to N grows the penalty with N while ' +
+    'the real peak width saturates, which drove runs to three or four periods.');
   AddProp(Result, 'R_min_threshold', 'number',
     'A line whose peak reflectivity falls below this is penalised as dark ' +
     '(default 0.001).');
@@ -158,12 +163,16 @@ begin
     'Dark-zone threshold in degrees theta (default 0): a line whose Bragg angle ' +
     'falls below it is penalised. This is NOT where a scan starts.');
   AddProp(Result, 'scan_points', 'integer',
-    'Points in the reflectivity scan around each Bragg angle (default 200, ' +
-    'maximum 20000). Every particle of every iteration is scanned this finely, ' +
-    'so this is the single biggest lever on how long a run takes.');
+    'Floor on the points in the reflectivity scan of each line (default 200, ' +
+    'maximum 20000). A line whose peak is narrow is scanned more finely, up to ' +
+    'a tenth of its kinematic width per step; in practice every line lands at ' +
+    '80 to 200 points, so the cost per particle is about what this says.');
   AddProp(Result, 'scan_half_range', 'number',
-    'Half-width in degrees of the scan around each Bragg angle (default 5, ' +
-    'maximum 90).');
+    'Fixed half-width in degrees of the scan around each line (maximum 90). ' +
+    'Omit it - the default - to let each line be scanned over ' +
+    'max(0.5 deg, 4 kinematic widths) either side, spanning both its kinematic ' +
+    'and its refraction-corrected angle and starting above the ' +
+    'total-reflection plateau.');
 end;
 
 function OptimizeOptimizerSchema: TJSONObject;

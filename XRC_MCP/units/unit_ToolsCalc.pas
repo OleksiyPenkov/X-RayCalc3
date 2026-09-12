@@ -309,7 +309,9 @@ begin
     'Weight of the peak reflectivity in the figure of merit (default 1).');
   AddProp(Result, 'w_FWHM', 'number',
     'Weight of the FWHM penalty, in units of the kinematic reference width ' +
-    '(default 0.5).');
+    'of n_ref periods (default 0.25). The width of a real peak saturates at the ' +
+    'extinction-limited one, so a strongly absorbing line can exceed its ' +
+    'reference width however many periods the mirror has.');
   AddProp(Result, 'n_ref', 'integer',
     'Periods in the reference width the FWHM penalty is measured in: ' +
     'lambda / (n_ref d cos theta), default 50. It is deliberately independent ' +
