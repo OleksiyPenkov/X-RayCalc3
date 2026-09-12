@@ -40,6 +40,12 @@ const
   WINDOW_FWHM_FACTOR      = 4;
   PLATEAU_MARGIN          = 1.15;
   WIDEN_HALF_LIMIT_DEG    = 5.0;
+
+  // A candidate maximum is the line's own peak only if it is the first order:
+  // m = 2 d sin(theta) / lambda, with the refraction-corrected sine, within
+  // this much of 1. It matters only for a window a client made wide enough to
+  // reach a neighbouring order; the adaptive window is far narrower than that.
+  ORDER_ONE_TOLERANCE = 0.5;
   LAYERS_PER_PERIOD = 2; // bilayer v1.0
 
 type

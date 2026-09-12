@@ -35,16 +35,18 @@ type
     function StackDeltaAvg: Single;
     // Where to look for the peak of one line, and how finely.
     procedure PeakWindow(Lambda, ThetaBragg, d: Single; NInt: Integer;
-      out ThetaPeak, ThetaC, Half, FWHMRefKin: Single);
+      out ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg: Single);
     function GridPoints(Span, FWHMRefKin: Single): Integer;
     procedure ScanWindow(Lambda, ThetaStart, ThetaEnd: Single; NPoints: Integer);
-    // Index of the HIGHEST interior local maximum, -1 when the window holds
-    // none. Interior excludes both endpoints, which is what keeps the
-    // total-reflection plateau out: its tail is monotonic, so however high it
-    // runs it has no interior maximum to offer. Highest rather than nearest
+    // Index of the HIGHEST interior first-order local maximum, -1 when the
+    // window holds none. Interior excludes both endpoints, which is what keeps
+    // the total-reflection plateau out: its tail is monotonic, so however high
+    // it runs it has no interior maximum to offer. Highest rather than nearest
     // because the refraction shift of a steep line is not known well enough to
-    // pick between a main peak and a sidelobe by proximity.
-    function HighestLocalMax: Integer;
+    // pick between a main peak and a sidelobe by proximity. First-order because
+    // a window a client made wide enough can also hold the line's own second
+    // order, which is not what "the peak of this line" means.
+    function HighestFirstOrderMax(Lambda, d, DeltaAvg: Single): Integer;
     function WindowMax: Integer;
     function ExtractFWHM(PeakIdx: Integer; out Clipped: Boolean): Single;
     // Scans one line and fills R.RPeak, R.FWHM and the R.Theta*/R.Scan* facts.
@@ -296,9 +298,9 @@ begin
 end;
 
 procedure TUniversalFitness.PeakWindow(Lambda, ThetaBragg, d: Single;
-  NInt: Integer; out ThetaPeak, ThetaC, Half, FWHMRefKin: Single);
+  NInt: Integer; out ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg: Single);
 var
-  DeltaAvg, SinSqr: Single;
+  SinSqr: Single;
 begin
   DeltaAvg := StackDeltaAvg;
   ThetaC := RadToDeg(Sqrt(2 * DeltaAvg));
@@ -359,16 +361,33 @@ begin
   end;
 end;
 
-function TUniversalFitness.HighestLocalMax: Integer;
+function TUniversalFitness.HighestFirstOrderMax(
+  Lambda, d, DeltaAvg: Single): Integer;
 var
   i: Integer;
+  SinSqr, Order: Single;
 begin
   Result := -1;
+  if (Lambda <= 0) or (d <= 0) then
+    Exit;
+
   for i := 1 to FCurveLen - 2 do
-    if (FCurveBuf[i].r >= FCurveBuf[i - 1].r) and
-       (FCurveBuf[i].r > FCurveBuf[i + 1].r) then
-      if (Result < 0) or (FCurveBuf[i].r > FCurveBuf[Result].r) then
-        Result := i;
+  begin
+    if not ((FCurveBuf[i].r >= FCurveBuf[i - 1].r) and
+            (FCurveBuf[i].r > FCurveBuf[i + 1].r)) then
+      Continue;
+
+    // The corrected Bragg condition read backwards: which order is this?
+    SinSqr := Sqr(Sin(DegToRad(FCurveBuf[i].t))) - 2 * DeltaAvg;
+    if SinSqr < 0 then
+      SinSqr := 0;
+    Order := 2 * d * Sqrt(SinSqr) / Lambda;
+    if Abs(Order - 1) >= ORDER_ONE_TOLERANCE then
+      Continue;
+
+    if (Result < 0) or (FCurveBuf[i].r > FCurveBuf[Result].r) then
+      Result := i;
+  end;
 end;
 
 function TUniversalFitness.WindowMax: Integer;
@@ -430,7 +449,7 @@ end;
 procedure TUniversalFitness.MeasureLine(Lambda, ThetaBragg, d: Single;
   NInt: Integer; var R: TTargetResult);
 var
-  ThetaPeak, ThetaC, Half, FWHMRefKin: Single;
+  ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg: Single;
   PlateauStart, WinLow, WinHigh, StartT, EndT: Single;
   PeakIdx, NPoints, Attempt: Integer;
   Clipped, PlateauClipped: Boolean;
@@ -440,7 +459,8 @@ begin
   R.ScanStep := 0;
   R.ScanPointsUsed := 0;
 
-  PeakWindow(Lambda, ThetaBragg, d, NInt, ThetaPeak, ThetaC, Half, FWHMRefKin);
+  PeakWindow(Lambda, ThetaBragg, d, NInt,
+    ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg);
   R.ThetaPeak := ThetaPeak;
   PlateauStart := Max(FConfig.Fitness.ThetaMin + 0.1, PLATEAU_MARGIN * ThetaC);
 
@@ -472,13 +492,14 @@ begin
     if FCurveLen > 1 then
       R.ScanStep := FCurveBuf[1].t - FCurveBuf[0].t;
 
-    PeakIdx := HighestLocalMax;
+    PeakIdx := HighestFirstOrderMax(Lambda, d, DeltaAvg);
     if PeakIdx < 0 then
     begin
-      // Nothing but a slope. A window the client made narrower than the peak it
-      // sits on is the common case, and the best point in it is a fair
-      // measurement; but a window whose start the plateau moved is a different
-      // story, because then the highest point may be the plateau itself. Dark.
+      // No first-order maximum inside the window. A window the client made
+      // narrower than the peak it sits on is the common case, and the best
+      // point in it is a fair measurement; but a window whose start the plateau
+      // moved is a different story, because then the highest point may be the
+      // plateau itself. Dark.
       if PlateauClipped then
       begin
         R.RPeak := 0;
@@ -721,7 +742,7 @@ function TUniversalFitness.GetCurve(const Genome: TGenome;
   TargetIdx: Integer): TDataArray;
 var
   ThetaBragg, SinArg, Lambda: Single;
-  ThetaPeak, ThetaC, Half, FWHMRefKin, StartT, EndT: Single;
+  ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg, StartT, EndT: Single;
   NInt: Integer;
 begin
   SinArg := FConfig.Lines[TargetIdx].Lambda / (2 * Genome.d);
@@ -738,7 +759,7 @@ begin
 
   // The curve a client plots is the window the FoM scored, not a different one.
   PeakWindow(Lambda, ThetaBragg, Genome.d, NInt,
-    ThetaPeak, ThetaC, Half, FWHMRefKin);
+    ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg);
   StartT := Max(Max(FConfig.Fitness.ThetaMin + 0.1, PLATEAU_MARGIN * ThetaC),
                 Min(ThetaBragg, ThetaPeak) - Half);
   EndT := Max(ThetaBragg, ThetaPeak) + Half;

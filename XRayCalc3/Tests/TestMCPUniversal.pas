@@ -55,6 +55,7 @@ type
     [Test] procedure EvaluateStructure_ReportsTheScanGridPerLine;
     [Test] procedure EvaluateStructure_BLine_IsTheMainPeakAtEveryN;
     [Test] procedure EvaluateStructure_NarrowClientWindow_FindsTheBroadPeak;
+    [Test] procedure EvaluateStructure_WideClientWindow_KeepsTheFirstOrder;
   end;
 
 implementation
@@ -1633,6 +1634,33 @@ begin
       [LineTable(Res)]));
   Assert.AreEqual(Double(0.120), Double(Res[0].RPeak), 0.012,
     Format('B r_peak in a 0.5 degree window must be about 0.120%s',
+      [LineTable(Res)]));
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_WideClientWindow_KeepsTheFirstOrder;
+var
+  Res: TTargetResults;
+  Info: TStructureInfo;
+  Fit: TFitnessConfig;
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  // Five degrees either side of Si's 3.0 degree Bragg angle puts its SECOND
+  // order, near 6.5 degrees, inside the window. The peak of a line is its first
+  // order: a candidate maximum is kept only when 2 d sin(theta) / lambda, with
+  // the refraction-corrected sine, is within half an order of 1.
+  Fit := DefaultFitnessConfig;
+  Fit.ScanHalfRange := 5.0;
+
+  ScoreNineLines(Format(MOB4C_JSON, [50]), Fit, Res, Info);
+
+  Assert.AreEqual(Double(0.425), Double(Res[IDX_SI].RPeak), 0.0425,
+    Format('Si must be scored on its first order, about 0.425%s',
       [LineTable(Res)]));
 end;
 
