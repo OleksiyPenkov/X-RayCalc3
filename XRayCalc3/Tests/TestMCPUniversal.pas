@@ -57,6 +57,7 @@ type
     [Test] procedure EvaluateStructure_NarrowClientWindow_FindsTheBroadPeak;
     [Test] procedure EvaluateStructure_WideClientWindow_KeepsTheFirstOrder;
     [Test] procedure EvaluateStructure_DimLines_AreDarkAtTheShippedThreshold;
+    [Test] procedure EvaluateStructure_MatchesTheClassicEngine_AtEveryRoughness;
   end;
 
 implementation
@@ -75,6 +76,7 @@ uses
   unit_MCPErrors,
   unit_MCPSandbox,
   unit_MCPStructure,
+  unit_MCPCalc,
   unit_MCPUniversal;
 
 const
@@ -1433,16 +1435,17 @@ begin
   Assert.IsTrue(Res[IDX_SI].Valid, 'Si must have a Bragg peak for this period');
 
   // On the plateau Si scored 0.948 with a width of 0.87 degrees.
-  Assert.IsTrue((Res[IDX_SI].RPeak >= 0.14) and (Res[IDX_SI].RPeak <= 0.19),
-    Format('Si r_peak must be its Bragg peak (0.14..0.19), not the ' +
-      'total-reflection plateau; got %.4f', [Res[IDX_SI].RPeak]));
+  Assert.IsTrue((Res[IDX_SI].RPeak >= 0.18) and (Res[IDX_SI].RPeak <= 0.23),
+    Format('Si r_peak must be its Bragg peak (0.18..0.23), not the ' +
+      'total-reflection plateau; got %.4f%s',
+      [Res[IDX_SI].RPeak, LineTable(Res)]));
   Assert.IsTrue(Res[IDX_SI].FWHM < 0.4,
-    Format('Si fwhm must be the Bragg width, below 0.4 degrees; got %.4f',
-      [Res[IDX_SI].FWHM]));
+    Format('Si fwhm must be the Bragg width, below 0.4 degrees; got %.4f%s',
+      [Res[IDX_SI].FWHM, LineTable(Res)]));
 
-  Assert.IsTrue((Res[IDX_AL].RPeak >= 0.13) and (Res[IDX_AL].RPeak <= 0.19),
-    Format('Al r_peak must be its Bragg peak (0.13..0.19); got %.4f',
-      [Res[IDX_AL].RPeak]));
+  Assert.IsTrue((Res[IDX_AL].RPeak >= 0.17) and (Res[IDX_AL].RPeak <= 0.23),
+    Format('Al r_peak must be its Bragg peak (0.17..0.23); got %.4f%s',
+      [Res[IDX_AL].RPeak, LineTable(Res)]));
 end;
 
 procedure TTestMCPUniversal.EvaluateStructure_MoB4C_MorePeriodsScoreHigher;
@@ -1613,12 +1616,12 @@ begin
   end;
 
   // A sidelobe scored 0.017 with a 3.4-3.6 degree width for both of these.
-  CheckB(Format(MOB4C_JSON, [100]), 'Mo/B4C N=100', 0.253);
-  CheckB(Format(MOB4C_JSON, [200]), 'Mo/B4C N=200', 0.351);
+  CheckB(Format(MOB4C_JSON, [100]), 'Mo/B4C N=100', 0.299);
+  CheckB(Format(MOB4C_JSON, [200]), 'Mo/B4C N=200', 0.403);
 
   // This one went dark: the main peak fell outside a window centred on the
   // refraction-corrected angle alone.
-  CheckB(Format(WB4C_JSON, [200]), 'W/B4C reference N=200', 0.220);
+  CheckB(Format(WB4C_JSON, [200]), 'W/B4C reference N=200', 0.228);
 end;
 
 procedure TTestMCPUniversal.EvaluateStructure_NarrowClientWindow_FindsTheBroadPeak;
@@ -1646,8 +1649,8 @@ begin
   Assert.IsTrue(Res[0].RPeak > 0,
     Format('a narrow client window must not make a broad peak dark%s',
       [LineTable(Res)]));
-  Assert.AreEqual(Double(0.120), Double(Res[0].RPeak), 0.012,
-    Format('B r_peak in a 0.5 degree window must be about 0.120%s',
+  Assert.AreEqual(Double(0.146), Double(Res[0].RPeak), 0.0146,
+    Format('B r_peak in a 0.5 degree window must be about 0.146%s',
       [LineTable(Res)]));
 end;
 
@@ -1673,8 +1676,8 @@ begin
 
   ScoreNineLines(Format(MOB4C_JSON, [50]), Fit, Res, Info);
 
-  Assert.AreEqual(Double(0.425), Double(Res[IDX_SI].RPeak), 0.0425,
-    Format('Si must be scored on its first order, about 0.425%s',
+  Assert.AreEqual(Double(0.494), Double(Res[IDX_SI].RPeak), 0.0494,
+    Format('Si must be scored on its first order, about 0.494%s',
       [LineTable(Res)]));
 end;
 
@@ -1754,6 +1757,123 @@ begin
   Assert.IsTrue((FoMRef < -100) and (FoMRef > -200),
     Format('the reference carries exactly one dark penalty by default; got %.4f',
       [FoMRef]));
+end;
+
+{ The two reflectivity routines of this program must agree. unit_calc.pas is the
+  reference - the laboratory has fitted measured curves with it for years, and
+  fit_xrr uses it - and unit_universal_refcalc.pas is what the figure of merit
+  scores with. They shared every formula except the error-function roughness
+  factor, where the classic engine applies exp(-0.50299 sigma^2 s^2), the
+  Nevot-Croce factor for s = 2 k_z, and the universal one applied
+  exp(-sigma^2 s^2): twice the exponent, which is every interface behaving as
+  though it were sqrt(2) times rougher than specified. At sigma 0 the two agreed
+  to 0.2 %; at the roughnesses this laboratory actually deposits they differed by
+  a quarter. }
+
+procedure TTestMCPUniversal.EvaluateStructure_MatchesTheClassicEngine_AtEveryRoughness;
+const
+  // Co/C, the experiment's design family. One roughness is substituted
+  // everywhere: integers only, so the JSON cannot pick up a locale comma.
+  COC_JSON =
+    '{"substrate":{"material":"SiO2","density":2.65,"sigma":%0:d},' +
+    '"stacks":[{"N":150,"layers":[' +
+      '{"material":"C","thickness":31.92,"sigma":%0:d,"density":1.90},' +
+      '{"material":"Co","thickness":10.08,"sigma":%0:d,"density":8.79}]}],' +
+    '"cap":{"material":"C","thickness":12.0,"sigma":%0:d,"density":1.90}}';
+
+  // Lines to compare, as indices into the nine-line list, and how close the two
+  // engines must come. 0.5 % where roughness plays no part, 2 % where it does:
+  // the remaining difference is FastExp against exp and the peak of a scanned
+  // grid against the peak of another.
+  IDX_B = 0;
+  TOL_SMOOTH = 0.005;
+  TOL_ROUGH  = 0.02;
+
+  procedure CompareAt(Sigma: Integer; Tolerance: Double);
+  var
+    StructJSON: string;
+    Res: TTargetResults;
+    Info: TStructureInfo;
+    Lines: TArray<TXRFLine>;
+    Req: TCalcRequest;
+    Used: TFitStructure;
+    Curve: unit_Types.TDataArray;
+    J: TJSONObject;
+    Classic, Universal, Diff: Double;
+    Probe: array[0..2] of Integer;
+    k, i: Integer;
+  begin
+    StructJSON := Format(COC_JSON, [Sigma]);
+    ScoreNineLines(StructJSON, DefaultFitnessConfig, Res, Info);
+    Lines := NineLines;
+
+    Probe[0] := IDX_B;
+    Probe[1] := IDX_NA;
+    Probe[2] := IDX_SI;
+
+    for k := 0 to 2 do
+    begin
+      i := Probe[k];
+      Assert.IsTrue(Res[i].Valid and (Res[i].RPeak > 0),
+        Format('sigma %d: %s must have a peak for the comparison to mean ' +
+          'anything%s', [Sigma, Lines[i].Name, LineTable(Res)]));
+
+      // The same peak, scanned by the classic engine on a much finer grid than
+      // the fitness uses, with no convolution.
+      Req := Default(TCalcRequest);
+      J := ParseObj(StructJSON);
+      try
+        Req.Structure := StructureFromJSON(J, Req.Info);
+      finally
+        J.Free;
+      end;
+      Req.Lambda := Lines[i].Lambda;
+      // The same interval the fitness searched, so neither engine is given a
+      // window the other did not have, and on a far finer grid than its own.
+      Req.ThetaMin := Max(0.05, Res[i].ThetaPeak - Res[i].ScanHalf);
+      Req.ThetaMax := Res[i].ThetaPeak + Res[i].ScanHalf;
+      Req.Points := 10 * Res[i].ScanPointsUsed;
+      Req.DeltaTheta := 0;
+      Req.Polarization := unit_Types.cmSP;   // TCalcRequest takes the GUI enum
+      Req.RMin := 1E-9;
+
+      Curve := RunCalc(Req, Used);
+      Assert.IsTrue(Length(Curve) > 0, 'the classic engine returned no curve');
+
+      Classic := 0;
+      for var n := 0 to High(Curve) do
+        if Curve[n].r > Classic then
+          Classic := Curve[n].r;
+
+      Universal := Res[i].RPeak;
+      Diff := Abs(Classic - Universal) / Max(Classic, Universal);
+      Assert.IsTrue(Diff <= Tolerance,
+        Format('sigma %d, %s: the two engines must agree. ' +
+          'evaluate_lines %.5f against calc_reflectivity %.5f, %.2f %% apart ' +
+          '(tolerance %.2f %%)',
+          [Sigma, Lines[i].Name, Universal, Classic, 100 * Diff,
+           100 * Tolerance]));
+    end;
+  end;
+
+begin
+  if not (TFile.Exists(HenkePath + 'Co.bin') and
+          TFile.Exists(HenkePath + 'C.bin') and
+          TFile.Exists(HenkePath + 'SiO2.bin')) then
+  begin
+    Assert.Pass('Henke tables Co/C/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  // The control: with no roughness the factor is 1 in both engines, so this
+  // passes whatever the exponent is, and it is what proves the rest of the two
+  // routines agree.
+  CompareAt(0, TOL_SMOOTH);
+
+  // What the laboratory deposits. These failed by 13 to 25 % before the fix.
+  CompareAt(3, TOL_ROUGH);
+  CompareAt(5, TOL_ROUGH);
 end;
 
 initialization
