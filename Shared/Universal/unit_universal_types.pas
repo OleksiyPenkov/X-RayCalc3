@@ -17,6 +17,12 @@ const
   // four periods. 0 in a configuration means "use this".
   DEFAULT_N_REF = 50;
 
+  // A line reflecting less than this is scored as dark and carries
+  // PENALTY_DARK: a channel of under a couple of per cent is not a channel. It
+  // stays a per-call parameter - this is only what a caller gets for saying
+  // nothing - and every front end reads it from here.
+  DEFAULT_R_MIN_THRESHOLD = 0.02;
+
   // What a configuration of 0 means: 200 points per line, and a window chosen
   // per line rather than a fixed half-range (DEFAULT_SCAN_HALF_RANGE is what a
   // fixed window falls back to, and the widest an adaptive one is widened to).

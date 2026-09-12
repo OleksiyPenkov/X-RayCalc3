@@ -68,7 +68,7 @@ var
   HenkeCwdLock: TCriticalSection;
 
 /// <summary>The fitness settings a tool starts from when the client gives none:
-/// w_R 1, w_FWHM 0.25, R_min_threshold 0.001, unpolarised, no divergence, no
+/// w_R 1, w_FWHM 0.25, R_min_threshold 0.02, unpolarised, no divergence, no
 /// dark zone, full purity weighting, engine default scan.</summary>
 function DefaultFitnessConfig: TFitnessConfig;
 
@@ -302,7 +302,7 @@ begin
   Result := Default(TFitnessConfig);
   Result.wR := 1.0;
   Result.wFWHM := 0.25;
-  Result.RMinThreshold := 0.001;
+  Result.RMinThreshold := DEFAULT_R_MIN_THRESHOLD;
   Result.Polarization := cmd_unit_types.cmSP;
   Result.DeltaTheta := 0;
   Result.ThetaMin := 0;
@@ -586,7 +586,7 @@ begin
   DefaultPair(O, 'w_R', NumPair(1.0));
   DefaultPair(O, 'w_FWHM', NumPair(0.25));
   DefaultPair(O, 'n_ref', TJSONNumber.Create(DEFAULT_N_REF));
-  DefaultPair(O, 'R_min_threshold', NumPair(0.001));
+  DefaultPair(O, 'R_min_threshold', NumPair(DEFAULT_R_MIN_THRESHOLD));
   DefaultPair(O, 'polarization', TJSONString.Create('sp'));
   DefaultPair(O, 'w_purity', NumPair(1.0));
 end;

@@ -519,7 +519,8 @@ begin
   Result.Fitness.wFWHM := StrToFloatDef(edtWFWHM.Text, 0.25);
   Result.Fitness.NRef := sedNRef.Value;
   Result.Fitness.wPurity := StrToFloatDef(edtWPurity.Text, 1.0);
-  Result.Fitness.RMinThreshold := StrToFloatDef(edtRMinThreshold.Text, 0.001);
+  Result.Fitness.RMinThreshold := StrToFloatDef(edtRMinThreshold.Text,
+    DEFAULT_R_MIN_THRESHOLD);
   Result.Fitness.DeltaTheta := StrToFloatDef(edtDeltaTheta.Text, 0);
   Result.Fitness.ThetaMin := StrToFloatDef(edtThetaMin.Text, 0);
   if cmbPolarization.ItemIndex = 1 then

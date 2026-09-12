@@ -320,7 +320,9 @@ begin
     'penalises exactly the designs that reflect best.');
   AddProp(Result, 'R_min_threshold', 'number',
     'A line whose peak reflectivity falls below this is penalised as dark ' +
-    '(default 0.001).');
+    '(default 0.02). A channel reflecting less than a couple of per cent is of ' +
+    'no use, so the default treats it as absent rather than weak; the penalty ' +
+    'is 100 per dark line and is not tunable.');
   AddProp(Result, 'w_purity', 'number',
     'Weight of the spectral purity correction, 0 turns it off (default 1). ' +
     'Purity is the peak of a line divided by the peak plus the reflectivity of ' +

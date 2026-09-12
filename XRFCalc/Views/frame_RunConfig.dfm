@@ -440,7 +440,7 @@ object frmRunConfig: TfrmRunConfig
         Top = 88
         Width = 70
         TabOrder = 4
-        Text = '0.001'
+        Text = '0.02'
       end
       object edtDeltaTheta: TEdit
         Left = 108

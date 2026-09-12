@@ -150,7 +150,8 @@ begin
     'the real peak width saturates, which drove runs to three or four periods.');
   AddProp(Result, 'R_min_threshold', 'number',
     'A line whose peak reflectivity falls below this is penalised as dark ' +
-    '(default 0.001).');
+    '(default 0.02). Raising it rules out designs that leave a line almost ' +
+    'unreflected; the penalty is 100 per dark line and is not tunable.');
   AddProp(Result, 'w_purity', 'number',
     'Weight of the spectral purity correction, 0 turns it off (default 1).');
   AddEnumProp(Result, 'polarization',

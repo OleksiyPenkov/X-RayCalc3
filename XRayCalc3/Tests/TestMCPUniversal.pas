@@ -56,6 +56,7 @@ type
     [Test] procedure EvaluateStructure_BLine_IsTheMainPeakAtEveryN;
     [Test] procedure EvaluateStructure_NarrowClientWindow_FindsTheBroadPeak;
     [Test] procedure EvaluateStructure_WideClientWindow_KeepsTheFirstOrder;
+    [Test] procedure EvaluateStructure_DimLines_AreDarkAtTheShippedThreshold;
   end;
 
 implementation
@@ -451,7 +452,7 @@ begin
   // fitness
   Assert.AreEqual(Double(1.0), Double(C.Fitness.wR), 1E-6);
   Assert.AreEqual(Double(0.25), Double(C.Fitness.wFWHM), 1E-6);
-  Assert.AreEqual(Double(0.001), Double(C.Fitness.RMinThreshold), 1E-9);
+  Assert.AreEqual(Double(0.02), Double(C.Fitness.RMinThreshold), 1E-9);
   Assert.AreEqual(Double(1.0), Double(C.Fitness.wPurity), 1E-6);
   Assert.IsTrue(C.Fitness.Polarization = cmd_unit_types.cmSP, 'polarization defaults to sp');
 
@@ -849,6 +850,8 @@ begin
 
     Assert.AreEqual(DEFAULT_N_REF, J.GetValue<Integer>('n_ref'),
       'the width reference defaults to DEFAULT_N_REF periods');
+    Assert.AreEqual(Double(0.02), J.GetValue<Double>('R_min_threshold'), 1E-9,
+      'a line below 2 % is dark by default');
 
     Assert.AreEqual('sp', J.GetValue<string>('polarization'));
     Assert.IsTrue(J.GetValue<string>('theta_min_note').Contains('dark-zone'),
@@ -860,11 +863,13 @@ begin
   F.ScanPoints := 321;
   F.ScanHalfRange := 1.25;
   F.NRef := 20;
+  F.RMinThreshold := 0.005;
   J := FitnessConfigToJSON(F);
   try
     Assert.AreEqual(321, J.GetValue<Integer>('scan_points'));
     Assert.AreEqual(Double(1.25), J.GetValue<Double>('scan_half_range'), 1E-9);
     Assert.AreEqual(20, J.GetValue<Integer>('n_ref'));
+    Assert.AreEqual(Double(0.005), J.GetValue<Double>('R_min_threshold'), 1E-9);
   finally
     J.Free;
   end;
@@ -1445,6 +1450,7 @@ var
   Res20, Res50: TTargetResults;
   Info20, Info50: TStructureInfo;
   FoM20, FoM50: Single;
+  Fit: TFitnessConfig;
 begin
   if not FoMTablesPresent then
   begin
@@ -1453,10 +1459,13 @@ begin
     Exit;
   end;
 
-  FoM20 := ScoreNineLines(Format(MOB4C_JSON, [20]), DefaultFitnessConfig,
-    Res20, Info20);
-  FoM50 := ScoreNineLines(Format(MOB4C_JSON, [50]), DefaultFitnessConfig,
-    Res50, Info50);
+  // No dark penalty here: this test weighs reflectivity against width, and the
+  // shipped threshold would swamp both with a multiple of PENALTY_DARK.
+  Fit := DefaultFitnessConfig;
+  Fit.RMinThreshold := 0;
+
+  FoM20 := ScoreNineLines(Format(MOB4C_JSON, [20]), Fit, Res20, Info20);
+  FoM50 := ScoreNineLines(Format(MOB4C_JSON, [50]), Fit, Res50, Info50);
 
   // More periods reflect more: the B K-alpha peak of this design rises from
   // 0.008 at N = 10 to 0.35 at N = 200. With FWHM_ref tied to N the FoM fell
@@ -1475,6 +1484,7 @@ var
   Res, Res20: TTargetResults;
   Info, Info20: TStructureInfo;
   FoM, FoM20: Single;
+  Fit: TFitnessConfig;
 begin
   if not FoMTablesPresent then
   begin
@@ -1483,7 +1493,12 @@ begin
     Exit;
   end;
 
-  FoM := ScoreNineLines(Format(WB4C_JSON, [50]), DefaultFitnessConfig, Res, Info);
+  // As above: the C line of this design is dim enough to be dark at the shipped
+  // threshold, and one PENALTY_DARK would hide everything this test measures.
+  Fit := DefaultFitnessConfig;
+  Fit.RMinThreshold := 0;
+
+  FoM := ScoreNineLines(Format(WB4C_JSON, [50]), Fit, Res, Info);
 
   Assert.AreEqual(50, Info.N, 'the reference design repeats 50 times');
   Assert.IsTrue((Info.Period > 67.0) and (Info.Period < 67.2),
@@ -1503,8 +1518,7 @@ begin
   // and n_ref, which are the author's to set. What must hold for any sane pair
   // of those is that the reference design beats its own shorter version and is
   // nowhere near the -16.7 the plateau used to score it.
-  FoM20 := ScoreNineLines(Format(WB4C_JSON, [20]), DefaultFitnessConfig,
-    Res20, Info20);
+  FoM20 := ScoreNineLines(Format(WB4C_JSON, [20]), Fit, Res20, Info20);
   Assert.IsTrue(FoM > FoM20,
     Format('N=50 must score better than N=20; got %.4f against %.4f%s',
       [FoM, FoM20, LineTable(Res)]));
@@ -1662,6 +1676,84 @@ begin
   Assert.AreEqual(Double(0.425), Double(Res[IDX_SI].RPeak), 0.0425,
     Format('Si must be scored on its first order, about 0.425%s',
       [LineTable(Res)]));
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_DimLines_AreDarkAtTheShippedThreshold;
+var
+  Res, Res20, Res50: TTargetResults;
+  Info, Info20, Info50: TStructureInfo;
+  FoM20, FoM50, FoMRef: Single;
+
+  // How many lines the engine scored below the dark threshold.
+  function DarkCount(const R: TTargetResults; Threshold: Single): Integer;
+  var
+    i: Integer;
+  begin
+    Result := 0;
+    for i := 0 to High(R) do
+      if R[i].Valid and (R[i].RPeak < Threshold) then
+        Inc(Result);
+  end;
+
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  // A line reflecting less than the shipped 2 % is not a usable channel: it
+  // counts as dark and carries PENALTY_DARK, which is 100 and is not tunable.
+  // The reflectivities themselves are untouched by the threshold - only the
+  // penalty, and so the figure of merit, move.
+  Assert.AreEqual(Double(0.02), Double(DefaultFitnessConfig.RMinThreshold), 1E-9,
+    'the shipped dark threshold is 2 %');
+
+  FoM20 := ScoreNineLines(Format(MOB4C_JSON, [20]), DefaultFitnessConfig,
+    Res20, Info20);
+  // C is the one dim line of this design at N = 20: about 0.005. B sits just
+  // above the threshold at about 0.026, so it is NOT dark, and every other line
+  // is well above it.
+  Assert.IsTrue(Res20[1].RPeak < 0.02,
+    Format('C at N=20 must be under the threshold%s', [LineTable(Res20)]));
+  Assert.IsTrue(Res20[0].RPeak > 0.02,
+    Format('B at N=20 sits above the threshold and must not be dark%s',
+      [LineTable(Res20)]));
+  Assert.AreEqual(1, DarkCount(Res20, 0.02),
+    Format('exactly one line of this design is dark at N=20%s',
+      [LineTable(Res20)]));
+  Assert.IsTrue(FoM20 < -100,
+    Format('a dark line costs PENALTY_DARK; got %.4f', [FoM20]));
+  Assert.IsTrue(FoM20 > -200,
+    Format('and only one line is dark, so only one penalty; got %.4f', [FoM20]));
+
+  // At N = 50 the same line is still dim while B has climbed far clear of the
+  // threshold, so the design scores better while carrying the same one penalty.
+  FoM50 := ScoreNineLines(Format(MOB4C_JSON, [50]), DefaultFitnessConfig,
+    Res50, Info50);
+  Assert.IsTrue(Res50[0].RPeak > 4 * Res20[0].RPeak,
+    Format('B must grow strongly with N: %.5f at N=20, %.5f at N=50',
+      [Res20[0].RPeak, Res50[0].RPeak]));
+  Assert.IsTrue(Res50[1].RPeak < 0.02,
+    Format('C at N=50 is still under the threshold%s', [LineTable(Res50)]));
+  Assert.AreEqual(1, DarkCount(Res50, 0.02),
+    Format('still exactly one dark line at N=50%s', [LineTable(Res50)]));
+  Assert.IsTrue(FoM50 > FoM20,
+    Format('N=50 must still score better than N=20; %.4f against %.4f',
+      [FoM50, FoM20]));
+
+  // The author's reference design takes one as well, for its C line. That is
+  // the author's choice of threshold, not a defect in the design.
+  FoMRef := ScoreNineLines(Format(WB4C_JSON, [50]), DefaultFitnessConfig,
+    Res, Info);
+  Assert.IsTrue(Res[1].RPeak < 0.02,
+    Format('C of the reference design is under the threshold%s', [LineTable(Res)]));
+  Assert.AreEqual(1, DarkCount(Res, 0.02),
+    Format('the reference design has exactly one dark line%s', [LineTable(Res)]));
+  Assert.IsTrue((FoMRef < -100) and (FoMRef > -200),
+    Format('the reference carries exactly one dark penalty by default; got %.4f',
+      [FoMRef]));
 end;
 
 initialization
