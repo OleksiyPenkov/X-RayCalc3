@@ -25,14 +25,29 @@ type
     FCurveLen: Integer;
     FScanPoints: Integer;
     FScanHalfRange: Single;
+    FAdaptiveWindow: Boolean;
+    FNRef: Integer;
 
     procedure BuildLayers(const Genome: TGenome; TargetIdx: Integer);
     function GetDominantMaterial(const Comp: TCompositionGenes): string;
-    procedure ScanReflectivity(
-      Lambda, ThetaCenter, ThetaHalfRange: Single;
-      NPoints: Integer);
-    function ExtractRPeak: Single;
-    function ExtractFWHM(RPeak: Single): Single;
+    // Thickness-weighted delta of everything in FLayersBuf above the
+    // substrate - the effective medium whose critical angle bounds the scan.
+    function StackDeltaAvg: Single;
+    // Where to look for the peak of one line, and how finely.
+    procedure PeakWindow(Lambda, ThetaBragg, d: Single; NInt: Integer;
+      out ThetaPeak, ThetaC, Half, FWHMRefKin: Single);
+    function WindowStart(ThetaPeak, ThetaC, Half: Single): Single;
+    function GridPoints(Span, FWHMRefKin: Single): Integer;
+    procedure ScanWindow(Lambda, ThetaStart, ThetaEnd: Single; NPoints: Integer);
+    // Index of the local maximum nearest ThetaPeak, -1 when the window holds
+    // none. NOT the global maximum: with the plateau excluded the global
+    // maximum of a window can still be its own rising edge.
+    function NearestLocalMax(ThetaPeak: Single): Integer;
+    function ExtractFWHM(PeakIdx: Integer; out Clipped: Boolean): Single;
+    // Scans one line and fills R.RPeak, R.FWHM and the R.Theta*/R.Scan* facts.
+    // FLayersBuf must already hold the stack built for this line.
+    procedure MeasureLine(Lambda, ThetaBragg, d: Single; NInt: Integer;
+      var R: TTargetResult);
     procedure Convolute(Width: Single);
     function ComputeFoM(const Build: TLayerSetBuilder; d: Single;
       NInt: Integer; Penalty: Single; var Results: TTargetResults): Single;
@@ -60,8 +75,8 @@ uses
   unit_universal_refcalc;
 
 const
-  DEFAULT_SCAN_POINTS = 200;
-  DEFAULT_SCAN_HALF_RANGE = 5.0;
+  // DEFAULT_SCAN_POINTS, DEFAULT_SCAN_HALF_RANGE and the rest of the scan rule
+  // live in unit_universal_types: the MCP adapter echoes the same numbers.
   PENALTY_DARK = 100.0;
   PENALTY_DEGENERATE = 1.0;
 
@@ -78,10 +93,17 @@ begin
     FScanPoints := AConfig.Fitness.ScanPoints
   else
     FScanPoints := DEFAULT_SCAN_POINTS;
-  if AConfig.Fitness.ScanHalfRange > 0 then
-    FScanHalfRange := AConfig.Fitness.ScanHalfRange
+  // A client-set half-range stays a fixed half-range; 0 means the window is
+  // chosen per line from the kinematic width (see PeakWindow).
+  FAdaptiveWindow := AConfig.Fitness.ScanHalfRange <= 0;
+  if FAdaptiveWindow then
+    FScanHalfRange := DEFAULT_SCAN_HALF_RANGE
   else
-    FScanHalfRange := DEFAULT_SCAN_HALF_RANGE;
+    FScanHalfRange := AConfig.Fitness.ScanHalfRange;
+  if AConfig.Fitness.NRef > 0 then
+    FNRef := AConfig.Fitness.NRef
+  else
+    FNRef := DEFAULT_N_REF;
   SetLength(FCurveBuf, FScanPoints);
   SetLength(FConvBuf, FScanPoints);
 end;
@@ -241,76 +263,225 @@ begin
   end;
 end;
 
-procedure TUniversalFitness.ScanReflectivity(
-  Lambda, ThetaCenter, ThetaHalfRange: Single;
+function TUniversalFitness.StackDeltaAvg: Single;
+var
+  i, Last: Integer;
+  Delta, Sum, Weight: Double;
+begin
+  Result := 0;
+  Last := High(FLayersBuf);
+  // Index 0 is the vacuum and Last the half-infinite substrate: neither is part
+  // of the mirror, and the substrate's 1e8 thickness would swamp the average.
+  if Last < 2 then Exit;
+
+  Sum := 0;
+  Weight := 0;
+  for i := 1 to Last - 1 do
+  begin
+    if FLayersBuf[i].H <= 0 then
+      Continue;
+    // CalcSingleEpsilon builds e.re = 1 - 2 delta, so delta = (1 - e.re) / 2.
+    Delta := (1 - FLayersBuf[i].e.re) / 2;
+    if Delta <= 0 then
+      Continue;
+    Sum := Sum + Delta * FLayersBuf[i].H;
+    Weight := Weight + FLayersBuf[i].H;
+  end;
+
+  if Weight > 0 then
+    Result := Sum / Weight;
+end;
+
+procedure TUniversalFitness.PeakWindow(Lambda, ThetaBragg, d: Single;
+  NInt: Integer; out ThetaPeak, ThetaC, Half, FWHMRefKin: Single);
+var
+  DeltaAvg, SinSqr: Single;
+begin
+  DeltaAvg := StackDeltaAvg;
+  ThetaC := RadToDeg(Sqrt(2 * DeltaAvg));
+
+  // Refraction pushes the real maximum above the kinematic angle:
+  // sin^2(theta') = sin^2(theta_B) + 2 delta. The shift is a quarter of a
+  // degree for a Ru/C mirror at Si K-alpha and more for a metal-rich stack, so
+  // a window half a degree wide about the kinematic angle would clip the peak.
+  SinSqr := Sqr(Sin(DegToRad(ThetaBragg))) + 2 * DeltaAvg;
+  if SinSqr >= 1.0 then
+    ThetaPeak := 90.0
+  else
+    ThetaPeak := RadToDeg(ArcSin(Sqrt(SinSqr)));
+
+  // The kinematic width AT the peak: the unit the window is measured in.
+  FWHMRefKin := RadToDeg(Lambda / (NInt * d * Cos(DegToRad(ThetaPeak))));
+
+  if FAdaptiveWindow then
+    Half := Max(ADAPTIVE_HALF_FLOOR_DEG, WINDOW_FWHM_FACTOR * FWHMRefKin)
+  else
+    Half := FScanHalfRange;
+end;
+
+function TUniversalFitness.WindowStart(ThetaPeak, ThetaC, Half: Single): Single;
+begin
+  // Never start inside the total-reflection plateau: below about theta_c every
+  // structure reflects nearly everything, and that shoulder used to be taken
+  // for the Bragg peak of the short-wavelength lines.
+  Result := Max(FConfig.Fitness.ThetaMin + 0.1,
+                Max(PLATEAU_MARGIN * ThetaC, ThetaPeak - Half));
+end;
+
+function TUniversalFitness.GridPoints(Span, FWHMRefKin: Single): Integer;
+var
+  MaxStep: Single;
+begin
+  Result := FScanPoints;
+  if (Span <= 0) or (FWHMRefKin <= 0) then
+    Exit;
+  // The grid has to resolve the width, not merely find the peak: the configured
+  // scan_points is a floor, never a ceiling.
+  MaxStep := FWHMRefKin / POINTS_PER_FWHM_REF;
+  if MaxStep > 0 then
+    Result := Max(Result, Ceil(Span / MaxStep));
+  if Result > SCAN_POINTS_MAX then
+    Result := SCAN_POINTS_MAX;
+end;
+
+procedure TUniversalFitness.ScanWindow(Lambda, ThetaStart, ThetaEnd: Single;
   NPoints: Integer);
 var
-  StartT, EndT, Step: Single;
+  Step: Single;
   i: Integer;
 begin
-  StartT := Max(FConfig.Fitness.ThetaMin + 0.1, ThetaCenter - ThetaHalfRange);
-  EndT := ThetaCenter + ThetaHalfRange;
-  Step := (EndT - StartT) / NPoints;
+  if NPoints < 2 then
+    NPoints := 2;
+  Step := (ThetaEnd - ThetaStart) / NPoints;
   if Length(FCurveBuf) < NPoints then
     SetLength(FCurveBuf, NPoints);
   FCurveLen := NPoints;
   // No Copy needed: RefCalcStandalone fully recomputes K/RF/R from e/H/S
   for i := 0 to NPoints - 1 do
   begin
-    FCurveBuf[i].t := StartT + i * Step;
+    FCurveBuf[i].t := ThetaStart + i * Step;
     FCurveBuf[i].r := RefCalcStandalone(FCurveBuf[i].t, Lambda, FLayersBuf,
       FConfig.Fitness.Polarization, rfError);
   end;
 end;
 
-function TUniversalFitness.ExtractRPeak: Single;
+function TUniversalFitness.NearestLocalMax(ThetaPeak: Single): Integer;
 var
   i: Integer;
+  Dist, BestDist: Single;
 begin
-  Result := 0;
-  for i := 0 to FCurveLen - 1 do
-    if FCurveBuf[i].r > Result then
-      Result := FCurveBuf[i].r;
+  Result := -1;
+  BestDist := 0;
+  for i := 1 to FCurveLen - 2 do
+    if (FCurveBuf[i].r >= FCurveBuf[i - 1].r) and
+       (FCurveBuf[i].r > FCurveBuf[i + 1].r) then
+    begin
+      Dist := Abs(FCurveBuf[i].t - ThetaPeak);
+      if (Result < 0) or (Dist < BestDist) then
+      begin
+        Result := i;
+        BestDist := Dist;
+      end;
+    end;
 end;
 
-function TUniversalFitness.ExtractFWHM(RPeak: Single): Single;
+function TUniversalFitness.ExtractFWHM(PeakIdx: Integer;
+  out Clipped: Boolean): Single;
 var
   HalfMax: Single;
-  PeakIdx, i: Integer;
+  i: Integer;
   ThetaLeft, ThetaRight, Frac: Single;
+  FoundLeft, FoundRight: Boolean;
 begin
   Result := 0;
-  if RPeak <= 0 then Exit;
+  Clipped := False;
+  if (PeakIdx < 0) or (PeakIdx > FCurveLen - 1) then Exit;
+  if FCurveBuf[PeakIdx].r <= 0 then Exit;
 
-  HalfMax := RPeak / 2;
-
-  // Find peak index
-  PeakIdx := 0;
-  for i := 1 to FCurveLen - 1 do
-    if FCurveBuf[i].r > FCurveBuf[PeakIdx].r then
-      PeakIdx := i;
+  HalfMax := FCurveBuf[PeakIdx].r / 2;
 
   // Walk left from peak to find half-max crossing
+  FoundLeft := False;
   ThetaLeft := FCurveBuf[0].t;
   for i := PeakIdx downto 1 do
     if FCurveBuf[i-1].r <= HalfMax then
     begin
       Frac := (HalfMax - FCurveBuf[i-1].r) / (FCurveBuf[i].r - FCurveBuf[i-1].r);
       ThetaLeft := FCurveBuf[i-1].t + Frac * (FCurveBuf[i].t - FCurveBuf[i-1].t);
+      FoundLeft := True;
       Break;
     end;
 
   // Walk right from peak to find half-max crossing
+  FoundRight := False;
   ThetaRight := FCurveBuf[FCurveLen - 1].t;
   for i := PeakIdx to FCurveLen - 2 do
     if FCurveBuf[i+1].r <= HalfMax then
     begin
       Frac := (HalfMax - FCurveBuf[i+1].r) / (FCurveBuf[i].r - FCurveBuf[i+1].r);
       ThetaRight := FCurveBuf[i+1].t + Frac * (FCurveBuf[i].t - FCurveBuf[i+1].t);
+      FoundRight := True;
       Break;
     end;
 
+  // A peak that does not come down to half its height inside the window has no
+  // width yet, only a lower bound: the caller measures it again over a wider
+  // window rather than report the distance to the window edge.
+  Clipped := not (FoundLeft and FoundRight);
   Result := ThetaRight - ThetaLeft;
+end;
+
+procedure TUniversalFitness.MeasureLine(Lambda, ThetaBragg, d: Single;
+  NInt: Integer; var R: TTargetResult);
+var
+  ThetaPeak, ThetaC, Half, FWHMRefKin, StartT, EndT: Single;
+  PeakIdx, NPoints, Attempt: Integer;
+  Clipped: Boolean;
+begin
+  R.RPeak := 0;
+  R.FWHM := 0;
+  R.ScanStep := 0;
+  R.ScanPointsUsed := 0;
+
+  PeakWindow(Lambda, ThetaBragg, d, NInt, ThetaPeak, ThetaC, Half, FWHMRefKin);
+  R.ThetaPeak := ThetaPeak;
+
+  for Attempt := 0 to 1 do
+  begin
+    R.ScanHalf := Half;
+    StartT := WindowStart(ThetaPeak, ThetaC, Half);
+    EndT := ThetaPeak + Half;
+    // The plateau reaches past this line's peak: there is nothing to measure
+    // above the critical angle, so the line is dark.
+    if StartT >= EndT then
+      Exit;
+
+    NPoints := GridPoints(EndT - StartT, FWHMRefKin);
+    ScanWindow(Lambda, StartT, EndT, NPoints);
+    Convolute(FConfig.Fitness.DeltaTheta);
+
+    R.ScanPointsUsed := FCurveLen;
+    if FCurveLen > 1 then
+      R.ScanStep := FCurveBuf[1].t - FCurveBuf[0].t;
+
+    PeakIdx := NearestLocalMax(ThetaPeak);
+    // No maximum inside the window at all: the line has no peak here.
+    if PeakIdx < 0 then
+    begin
+      R.RPeak := 0;
+      R.FWHM := 0;
+      Exit;
+    end;
+
+    R.RPeak := FCurveBuf[PeakIdx].r;
+    R.FWHM := ExtractFWHM(PeakIdx, Clipped);
+
+    // Widen once, and only a window this class chose itself: a client-set
+    // scan_half_range is a deliberate window and is left as it is.
+    if not (Clipped and FAdaptiveWindow and (Attempt = 0)) then
+      Exit;
+    Half := Min(WIDEN_HALF_LIMIT_DEG, Half * 2);
+  end;
 end;
 
 procedure TUniversalFitness.Convolute(Width: Single);
@@ -393,6 +564,10 @@ begin
     Results[i].RPeak := 0;
     Results[i].FWHM := 0;
     Results[i].ThetaBragg := 0;
+    Results[i].ThetaPeak := 0;
+    Results[i].ScanHalf := 0;
+    Results[i].ScanStep := 0;
+    Results[i].ScanPointsUsed := 0;
     for j := 0 to FTargetCount - 1 do
       CrossR[i, j] := 0;
 
@@ -420,14 +595,10 @@ begin
       Continue;
 
     Build(i, FLayersBuf);
-    ScanReflectivity(FConfig.Lines[i].Lambda,
-      ThetaArr[i], FScanHalfRange, FScanPoints);
-    Convolute(FConfig.Fitness.DeltaTheta);
+    MeasureLine(FConfig.Lines[i].Lambda, ThetaArr[i], d, NInt, Results[i]);
 
-    RPeakArr[i] := ExtractRPeak;
-    FWHMArr[i] := ExtractFWHM(RPeakArr[i]);
-    Results[i].RPeak := RPeakArr[i];
-    Results[i].FWHM := FWHMArr[i];
+    RPeakArr[i] := Results[i].RPeak;
+    FWHMArr[i] := Results[i].FWHM;
 
     // While layer stack is built for lambda_i, evaluate at other targets' angles.
     // CrossR[j, i] = reflectivity of lambda_i at target j's Bragg angle.
@@ -463,9 +634,12 @@ begin
     else
       REffective := RPeakArr[i];
 
-    // FWHM_ref
+    // FWHM_ref: the kinematic width of a FIXED number of periods. Tying it to
+    // the structure's own N made the penalty grow as N while the real width
+    // saturates at the extinction-limited one, so adding periods - which only
+    // ever raises the reflectivity - scored worse.
     FWHMRef := RadToDeg(
-      FConfig.Lines[i].Lambda / (NInt * d * Cos(DegToRad(ThetaArr[i])))
+      FConfig.Lines[i].Lambda / (FNRef * d * Cos(DegToRad(ThetaArr[i])))
     );
     if FWHMRef < 1e-10 then FWHMRef := 1e-10;
 
@@ -529,7 +703,9 @@ end;
 function TUniversalFitness.GetCurve(const Genome: TGenome;
   TargetIdx: Integer): TDataArray;
 var
-  ThetaBragg, SinArg: Single;
+  ThetaBragg, SinArg, Lambda: Single;
+  ThetaPeak, ThetaC, Half, FWHMRefKin, StartT, EndT: Single;
+  NInt: Integer;
 begin
   SinArg := FConfig.Lines[TargetIdx].Lambda / (2 * Genome.d);
   if SinArg >= 1.0 then
@@ -539,9 +715,22 @@ begin
   end;
 
   ThetaBragg := RadToDeg(ArcSin(SinArg));
+  Lambda := FConfig.Lines[TargetIdx].Lambda;
+  NInt := Max(1, NRound(Genome.N));
   BuildLayers(Genome, TargetIdx);
-  ScanReflectivity(FConfig.Lines[TargetIdx].Lambda,
-    ThetaBragg, FScanHalfRange, FScanPoints);
+
+  // The curve a client plots is the window the FoM scored, not a different one.
+  PeakWindow(Lambda, ThetaBragg, Genome.d, NInt,
+    ThetaPeak, ThetaC, Half, FWHMRefKin);
+  StartT := WindowStart(ThetaPeak, ThetaC, Half);
+  EndT := ThetaPeak + Half;
+  if StartT >= EndT then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+
+  ScanWindow(Lambda, StartT, EndT, GridPoints(EndT - StartT, FWHMRefKin));
   Convolute(FConfig.Fitness.DeltaTheta);
   Result := Copy(FCurveBuf, 0, FCurveLen);
 end;

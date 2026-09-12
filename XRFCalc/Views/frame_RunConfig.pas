@@ -71,6 +71,7 @@ type
     // Fitness tab
     lblWR: TLabel;
     lblWFWHM: TLabel;
+    lblNRef: TLabel;
     lblWPurity: TLabel;
     lblRMinThreshold: TLabel;
     lblDeltaTheta: TLabel;
@@ -80,6 +81,7 @@ type
     lblScanHalfRange: TLabel;
     edtWR: TEdit;
     edtWFWHM: TEdit;
+    sedNRef: TSpinEdit;
     edtWPurity: TEdit;
     edtRMinThreshold: TEdit;
     edtDeltaTheta: TEdit;
@@ -364,6 +366,12 @@ begin
   // Fitness
   edtWR.Text := FormatFloat('0.###', Config.Fitness.wR);
   edtWFWHM.Text := FormatFloat('0.###', Config.Fitness.wFWHM);
+  // The width penalty is measured in the kinematic width of n_ref periods, not
+  // of this structure's own N.
+  if Config.Fitness.NRef > 0 then
+    sedNRef.Value := Config.Fitness.NRef
+  else
+    sedNRef.Value := DEFAULT_N_REF;
   edtWPurity.Text := FormatFloat('0.###', Config.Fitness.wPurity);
   edtRMinThreshold.Text := FormatFloat('0.######', Config.Fitness.RMinThreshold);
   edtDeltaTheta.Text := FormatFloat('0.###', Config.Fitness.DeltaTheta);
@@ -509,6 +517,7 @@ begin
   // Fitness
   Result.Fitness.wR := StrToFloatDef(edtWR.Text, 1.0);
   Result.Fitness.wFWHM := StrToFloatDef(edtWFWHM.Text, 0.1);
+  Result.Fitness.NRef := sedNRef.Value;
   Result.Fitness.wPurity := StrToFloatDef(edtWPurity.Text, 1.0);
   Result.Fitness.RMinThreshold := StrToFloatDef(edtRMinThreshold.Text, 0.001);
   Result.Fitness.DeltaTheta := StrToFloatDef(edtDeltaTheta.Text, 0);

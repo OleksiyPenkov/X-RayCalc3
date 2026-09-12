@@ -275,6 +275,10 @@ begin
     Result.Fitness.ScanHalfRange := JFitness.GetValue<Double>('scan_half_range')
   else
     Result.Fitness.ScanHalfRange := 0;
+  if JFitness.FindValue('n_ref') <> nil then
+    Result.Fitness.NRef := JFitness.GetValue<Integer>('n_ref')
+  else
+    Result.Fitness.NRef := DEFAULT_N_REF;
 
   // Polarization
   if JFitness.FindValue('polarization') <> nil then
@@ -413,6 +417,8 @@ begin
       JFitness.AddPair('scan_points', TJSONNumber.Create(Config.Fitness.ScanPoints));
     if Config.Fitness.ScanHalfRange > 0 then
       JFitness.AddPair('scan_half_range', TJSONNumber.Create(Config.Fitness.ScanHalfRange));
+    if Config.Fitness.NRef > 0 then
+      JFitness.AddPair('n_ref', TJSONNumber.Create(Config.Fitness.NRef));
     JSON.AddPair('fitness', JFitness);
 
     // Optimizer

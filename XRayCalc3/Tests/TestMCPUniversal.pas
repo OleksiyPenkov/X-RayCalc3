@@ -37,14 +37,22 @@ type
     [Test] procedure FitnessConfigFromJSON_PIsComputedAsSP;
     [Test] procedure FitnessConfigFromJSON_BadPolarization_Raises;
     [Test] procedure FitnessConfigFromJSON_ScanGridIsBounded;
-    [Test] procedure FitnessConfigToJSON_ReportsTheScanDefaults;
-    [Test] procedure FitnessConfigToJSON_ScanDefaults_AreTheEnginesOwn;
+    [Test] procedure FitnessConfigToJSON_ReportsTheScanRuleAndNRef;
+    [Test] procedure FitnessConfigToJSON_ScanEcho_MatchesWhatTheEngineScans;
+    [Test] procedure FitnessConfigFromJSON_AppliesNRef;
+    [Test] procedure FitnessConfigFromJSON_NonPositiveNRef_Raises;
 
     // --- the engine ---
     [Test] procedure EvaluateStructure_NoPeriodicStack_Raises;
     [Test] procedure EvaluateStructure_TooManyLines_Raises;
     [Test] procedure EvaluateStructure_RuC_MatchesEvaluateLayersDirect;
     [Test] procedure EvaluateStructure_HenkeCwdLockHeld_RaisesServerBusy;
+
+    // --- the peak finder and the width reference (FoM defect, 2026-09-12) ---
+    [Test] procedure EvaluateStructure_MoB4C_ShortLinesScoreTheBraggPeak;
+    [Test] procedure EvaluateStructure_MoB4C_MorePeriodsScoreHigher;
+    [Test] procedure EvaluateStructure_WB4CReference_ScoresTheDesign;
+    [Test] procedure EvaluateStructure_ReportsTheScanGridPerLine;
   end;
 
 implementation
@@ -720,7 +728,7 @@ var
 begin
   J := ParseObj('{"w_R":2,"w_FWHM":0.25,"R_min_threshold":0.01,"w_purity":0,' +
                 '"polarization":"s","delta_theta":0.02,"theta_min":1.5,' +
-                '"scan_points":400,"scan_half_range":2.5}');
+                '"scan_points":400,"scan_half_range":2.5,"n_ref":13}');
   try
     F := FitnessConfigFromJSON(J, DefaultFitnessConfig);
   finally
@@ -736,6 +744,7 @@ begin
   Assert.AreEqual(Double(1.5), Double(F.ThetaMin), 1E-6);
   Assert.AreEqual(400, F.ScanPoints);
   Assert.AreEqual(Double(2.5), Double(F.ScanHalfRange), 1E-6);
+  Assert.AreEqual(13, F.NRef);
 end;
 
 procedure TTestMCPUniversal.FitnessConfigFromJSON_PIsComputedAsSP;
@@ -813,17 +822,31 @@ begin
   Assert.AreEqual(Double(90), Double(F.ScanHalfRange), 1E-9);
 end;
 
-procedure TTestMCPUniversal.FitnessConfigToJSON_ReportsTheScanDefaults;
+procedure TTestMCPUniversal.FitnessConfigToJSON_ReportsTheScanRuleAndNRef;
 var
   F: TFitnessConfig;
   J: TJSONObject;
 begin
-  F := DefaultFitnessConfig;      // ScanPoints and ScanHalfRange are 0 = "engine default"
+  F := DefaultFitnessConfig;      // ScanPoints, ScanHalfRange and NRef are 0
   J := FitnessConfigToJSON(F);
   try
     Assert.AreEqual(200, J.GetValue<Integer>('scan_points'),
       'fitness_used must report the 200 the fitness class substitutes, not 0');
-    Assert.AreEqual(Double(5.0), J.GetValue<Double>('scan_half_range'), 1E-9);
+
+    // The scan window of an unset configuration is chosen per line, so there is
+    // no single half-range to report: the echo carries the rule, each line
+    // carries what the rule came to.
+    Assert.AreEqual(Double(0), J.GetValue<Double>('scan_half_range'), 1E-9,
+      'an unset scan_half_range is adaptive and must not be echoed as a fixed 5 degrees');
+    Assert.IsTrue(J.GetValue<string>('scan_half_range_note').Contains('adaptive'),
+      'the echo must say that an unset half-range is adaptive');
+    Assert.AreEqual(POINTS_PER_FWHM_REF,
+      J.GetValue<Integer>('scan_points_per_fwhm_ref'));
+    Assert.AreEqual(SCAN_POINTS_MAX, J.GetValue<Integer>('scan_points_max'));
+
+    Assert.AreEqual(DEFAULT_N_REF, J.GetValue<Integer>('n_ref'),
+      'the width reference defaults to DEFAULT_N_REF periods');
+
     Assert.AreEqual('sp', J.GetValue<string>('polarization'));
     Assert.IsTrue(J.GetValue<string>('theta_min_note').Contains('dark-zone'),
       'theta_min must be labelled as the dark-zone threshold, not the scan start');
@@ -833,16 +856,18 @@ begin
 
   F.ScanPoints := 321;
   F.ScanHalfRange := 1.25;
+  F.NRef := 20;
   J := FitnessConfigToJSON(F);
   try
     Assert.AreEqual(321, J.GetValue<Integer>('scan_points'));
     Assert.AreEqual(Double(1.25), J.GetValue<Double>('scan_half_range'), 1E-9);
+    Assert.AreEqual(20, J.GetValue<Integer>('n_ref'));
   finally
     J.Free;
   end;
 end;
 
-procedure TTestMCPUniversal.FitnessConfigToJSON_ScanDefaults_AreTheEnginesOwn;
+procedure TTestMCPUniversal.FitnessConfigToJSON_ScanEcho_MatchesWhatTheEngineScans;
 var
   Config: TUniversalConfig;
   Mixer: TMaterialMixer;
@@ -851,18 +876,16 @@ var
   Elements: TArray<string>;
   Lambdas: TArray<Single>;
   Curve: cmd_unit_types.TDataArray;
+  Res: TTargetResults;
   G: TGenome;
   J: TJSONObject;
-  Theta, Start, Step, HalfRange: Double;
-  EchoedPoints: Integer;
-  EchoedHalfRange: Double;
+  Step: Double;
+  EchoedFloor: Integer;
 begin
-  // TUniversalFitness keeps its two scan defaults in its implementation
-  // section, so fitness_used has to carry its own copy of them. This is the
-  // test that keeps the copy honest: the numbers reported for a configuration
-  // that asks for neither must be the numbers the fitness class actually scans
-  // with. If the engine's defaults move, this fails rather than the server
-  // quietly reporting a scan that never happened.
+  // TUniversalFitness computes with the scan-rule constants of
+  // unit_universal_types and fitness_used reports those same constants. This is
+  // the test that keeps the echo honest: what the engine really scanned for one
+  // line has to match what the echo and that line's own facts say it scanned.
   if not HenkeTablesPresent then
   begin
     Assert.Pass('Henke tables Ru/C/SiO2 not found in ' + HenkePath + ' - test skipped');
@@ -871,8 +894,7 @@ begin
 
   J := FitnessConfigToJSON(DefaultFitnessConfig);
   try
-    EchoedPoints := J.GetValue<Integer>('scan_points');
-    EchoedHalfRange := J.GetValue<Double>('scan_half_range');
+    EchoedFloor := J.GetValue<Integer>('scan_points');
   finally
     J.Free;
   end;
@@ -890,7 +912,7 @@ begin
   Config.ElementPool[0] := 'Ru';
   Config.ElementPool[1] := 'C';
   Config.Substrate := 'SiO2';
-  Config.Fitness := DefaultFitnessConfig;   // ScanPoints and ScanHalfRange are 0
+  Config.Fitness := DefaultFitnessConfig;   // the adaptive window
   Config.Structure.PureElements := False;
   SetLength(Templates, 0);
 
@@ -901,6 +923,8 @@ begin
     Mixer.Initialize(Elements, Lambdas, 'SiO2', HenkePath);
     Fitness := TUniversalFitness.Create(Mixer, Config, Templates);
     try
+      SetLength(Res, 1);
+      Fitness.Evaluate(G, Res);
       Curve := Fitness.GetCurve(G, 0);
     finally
       Fitness.Free;
@@ -909,21 +933,75 @@ begin
     Mixer.Free;
   end;
 
-  Assert.AreEqual(EchoedPoints, Length(Curve),
-    'fitness_used.scan_points must be the number of points the engine scanned');
+  Assert.IsTrue(Length(Curve) > 2, 'the engine must return a curve');
 
-  // ScanReflectivity runs from Max(theta_min + 0.1, theta - halfRange) to
-  // theta + halfRange in ScanPoints steps, so the half range is what the step
-  // and the start imply.
-  Theta := RadToDeg(ArcSin(LAMBDA_SI / (2 * 68.5)));
-  Start := Curve[0].t;
+  // The curve a client plots is the window the FoM scored.
+  Assert.AreEqual(Res[0].ScanPointsUsed, Length(Curve),
+    'GetCurve must scan the same grid the figure of merit scored');
   Step := Curve[1].t - Curve[0].t;
-  HalfRange := Start + Step * Length(Curve) - Theta;
-  Assert.AreEqual(EchoedHalfRange, HalfRange, 1E-4,
-    'fitness_used.scan_half_range must be the half range the engine scanned');
+  Assert.AreEqual(Double(Res[0].ScanStep), Step, 1E-6,
+    'the reported step must be the step of the curve');
+
+  // The configured scan_points is a floor, and the window is the adaptive one.
+  Assert.IsTrue(Res[0].ScanPointsUsed >= EchoedFloor,
+    Format('scan_points is a floor: %d points scanned against a floor of %d',
+      [Res[0].ScanPointsUsed, EchoedFloor]));
+  Assert.IsTrue(Res[0].ScanHalf < DEFAULT_SCAN_HALF_RANGE,
+    Format('the adaptive window must be narrower than the old fixed 5 degrees; ' +
+      'got %.4f', [Res[0].ScanHalf]));
+
+  // The scan ends at the refraction-corrected peak plus the half-range, and
+  // refraction puts that peak above the kinematic Bragg angle.
+  Assert.IsTrue(Res[0].ThetaPeak > Res[0].ThetaBragg,
+    Format('refraction must shift the peak above the kinematic angle %.4f; got %.4f',
+      [Res[0].ThetaBragg, Res[0].ThetaPeak]));
+  Assert.AreEqual(Double(Res[0].ThetaPeak + Res[0].ScanHalf),
+    Double(Curve[High(Curve)].t), 2 * Step,
+    'the scan must end at the peak plus the reported half-range');
 end;
 
-{ ------------------------------------------------------------------- engine -- }
+procedure TTestMCPUniversal.FitnessConfigFromJSON_AppliesNRef;
+var
+  J: TJSONObject;
+  F: TFitnessConfig;
+begin
+  J := ParseObj('{"n_ref":20}');
+  try
+    F := FitnessConfigFromJSON(J, DefaultFitnessConfig);
+  finally
+    J.Free;
+  end;
+  Assert.AreEqual(20, F.NRef, 'n_ref must be taken from the client');
+
+  F := FitnessConfigFromJSON(nil, DefaultFitnessConfig);
+  Assert.AreEqual(DEFAULT_N_REF, F.NRef,
+    'an absent n_ref must resolve to DEFAULT_N_REF');
+end;
+
+procedure TTestMCPUniversal.FitnessConfigFromJSON_NonPositiveNRef_Raises;
+
+  function CodeFor(const Overrides: string): string;
+  var
+    J: TJSONObject;
+  begin
+    J := ParseObj(Overrides);
+    try
+      Result := ErrorCodeOf(
+        procedure
+        begin
+          FitnessConfigFromJSON(J, DefaultFitnessConfig);
+        end);
+    finally
+      J.Free;
+    end;
+  end;
+
+begin
+  Assert.AreEqual('invalid_argument', CodeFor('{"n_ref":0}'),
+    'n_ref = 0 is not a number of periods');
+  Assert.AreEqual('invalid_argument', CodeFor('{"n_ref":-3}'),
+    'a negative n_ref is not a number of periods');
+end;
 
 procedure TTestMCPUniversal.EvaluateStructure_NoPeriodicStack_Raises;
 var
@@ -1228,6 +1306,251 @@ begin
   // The Si Bragg angle is the textbook one for this period.
   Assert.AreEqual(RadToDeg(ArcSin(LAMBDA_SI / (2 * Info.Period))),
     Double(ResAdapter[1].ThetaBragg), 1E-4);
+end;
+
+{ ------------------------------- the peak finder and the width reference -- }
+
+{ The figure of merit had two defects, both measured on the 3.8.0.850 server:
+
+  - the scan window reached into the total-reflection plateau and the peak was
+    the GLOBAL maximum of that window, so for a long period the short-wavelength
+    lines (Na-Si) were scored R ~ 0.98 with a 1-2 degree "width" - the plateau,
+    not their Bragg peak;
+  - FWHM_ref was lambda / (N d cos theta), which shrinks as 1/N while the real
+    peak width saturates at the extinction-limited width, so the width penalty
+    grew proportionally to N and the optimizer was driven to N = 3..4.
+
+  These three tests pin the physics the fix has to deliver. }
+
+const
+  // The agent's Mo/B4C design, layers top-down as evaluate_lines takes them.
+  // The Na-Si lines sit close enough to this period's plateau edge that a
+  // +/-5 degree window around their Bragg angle reaches into it.
+  MOB4C_JSON =
+    '{"substrate":{"material":"SiO2","density":2.65,"sigma":3.0},' +
+    '"stacks":[{"N":%d,"layers":[' +
+      '{"material":"B4C","thickness":25.5,"sigma":3.0,"density":2.37},' +
+      '{"material":"Mo","thickness":12.0,"sigma":3.0,"density":10.22}]}],' +
+    '"cap":{"material":"B4C","thickness":10.0,"sigma":3.0,"density":2.37}}';
+
+  // The author's reference design: four sublayers, d = 67.14 A, N = 50.
+  WB4C_JSON =
+    '{"substrate":{"material":"SiO2","density":2.65,"sigma":0.1},' +
+    '"stacks":[{"N":%d,"layers":[' +
+      '{"material":"WC","thickness":1.95,"sigma":2.0,"density":6.51},' +
+      '{"material":"W","thickness":3.18,"sigma":5.27,"density":19.24},' +
+      '{"material":"WC","thickness":4.94,"sigma":9.82,"density":11.82},' +
+      '{"material":"B4C","thickness":57.07,"sigma":2.66,"density":2.39}]}]}';
+
+  // The nine lines of the investigation, bare symbols, in this order.
+  NINE_LINES_JSON = '["B","C","N","O","F","Na","Mg","Al","Si"]';
+  IDX_NA = 5;
+  IDX_AL = 7;
+  IDX_SI = 8;
+
+function FoMTablesPresent: Boolean;
+begin
+  Result := TFile.Exists(HenkePath + 'Mo.bin') and
+            TFile.Exists(HenkePath + 'B4C.bin') and
+            TFile.Exists(HenkePath + 'WC.bin') and
+            TFile.Exists(HenkePath + 'W.bin') and
+            TFile.Exists(HenkePath + 'SiO2.bin');
+end;
+
+/// The nine lines, resolved from bare symbols the way evaluate_lines resolves
+/// them.
+function NineLines: TArray<TXRFLine>;
+var
+  A: TJSONArray;
+begin
+  A := TJSONObject.ParseJSONValue(NINE_LINES_JSON) as TJSONArray;
+  Assert.IsNotNull(A, 'the nine-line list does not parse');
+  try
+    Result := LinesFromJSON(A);
+  finally
+    A.Free;
+  end;
+end;
+
+/// One evaluate_lines call without the tool layer: the structure as JSON, the
+/// nine lines, the fitness configuration, and the FoM the client would see
+/// (higher is better - EvaluateStructure un-negates the engine's value).
+function ScoreNineLines(const StructJSON: string; const Fit: TFitnessConfig;
+  out Res: TTargetResults; out Info: TStructureInfo): Single;
+var
+  J: TJSONObject;
+  S: TFitStructure;
+begin
+  J := ParseObj(StructJSON);
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+  Result := EvaluateStructure(S, Info, NineLines, Fit, Res);
+end;
+
+/// Every line of one evaluation, for the message of a failing acceptance
+/// number: the angles, the peak, the width and the grid it was measured on.
+function LineTable(const Res: TTargetResults): string;
+var
+  Lines: TArray<TXRFLine>;
+  i: Integer;
+begin
+  Lines := NineLines;
+  Result := '';
+  for i := 0 to High(Res) do
+    Result := Result + sLineBreak +
+      Format('    %-3s lambda %7.3f  theta_B %7.4f  theta_peak %7.4f  ' +
+             'R %8.5f  fwhm %8.5f  step %8.5f  points %5d  valid %s',
+        [Lines[i].Name, Lines[i].Lambda, Res[i].ThetaBragg, Res[i].ThetaPeak,
+         Res[i].RPeak, Res[i].FWHM, Res[i].ScanStep, Res[i].ScanPointsUsed,
+         BoolToStr(Res[i].Valid, True)]);
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_MoB4C_ShortLinesScoreTheBraggPeak;
+var
+  Res: TTargetResults;
+  Info: TStructureInfo;
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  ScoreNineLines(Format(MOB4C_JSON, [20]), DefaultFitnessConfig, Res, Info);
+
+  Assert.IsTrue(Res[IDX_SI].Valid, 'Si must have a Bragg peak for this period');
+
+  // On the plateau Si scored 0.948 with a width of 0.87 degrees.
+  Assert.IsTrue((Res[IDX_SI].RPeak >= 0.14) and (Res[IDX_SI].RPeak <= 0.19),
+    Format('Si r_peak must be its Bragg peak (0.14..0.19), not the ' +
+      'total-reflection plateau; got %.4f', [Res[IDX_SI].RPeak]));
+  Assert.IsTrue(Res[IDX_SI].FWHM < 0.4,
+    Format('Si fwhm must be the Bragg width, below 0.4 degrees; got %.4f',
+      [Res[IDX_SI].FWHM]));
+
+  Assert.IsTrue((Res[IDX_AL].RPeak >= 0.13) and (Res[IDX_AL].RPeak <= 0.19),
+    Format('Al r_peak must be its Bragg peak (0.13..0.19); got %.4f',
+      [Res[IDX_AL].RPeak]));
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_MoB4C_MorePeriodsScoreHigher;
+var
+  Res20, Res50: TTargetResults;
+  Info20, Info50: TStructureInfo;
+  FoM20, FoM50: Single;
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  FoM20 := ScoreNineLines(Format(MOB4C_JSON, [20]), DefaultFitnessConfig,
+    Res20, Info20);
+  FoM50 := ScoreNineLines(Format(MOB4C_JSON, [50]), DefaultFitnessConfig,
+    Res50, Info50);
+
+  // More periods reflect more: the B K-alpha peak of this design rises from
+  // 0.008 at N = 10 to 0.35 at N = 200. With FWHM_ref tied to N the FoM fell
+  // instead (-1.17 at N = 20 against -2.64 at N = 50), which is what drove the
+  // optimizer to three-period structures.
+  Assert.IsTrue(Res50[0].RPeak > Res20[0].RPeak,
+    Format('the B peak must grow with N: %.5f at N=20 against %.5f at N=50',
+      [Res20[0].RPeak, Res50[0].RPeak]));
+  Assert.IsTrue(FoM50 > FoM20,
+    Format('N=50 must score better than N=20; got %.4f against %.4f',
+      [FoM50, FoM20]));
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_WB4CReference_ScoresTheDesign;
+var
+  Res, Res20: TTargetResults;
+  Info, Info20: TStructureInfo;
+  FoM, FoM20: Single;
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  FoM := ScoreNineLines(Format(WB4C_JSON, [50]), DefaultFitnessConfig, Res, Info);
+
+  Assert.AreEqual(50, Info.N, 'the reference design repeats 50 times');
+  Assert.IsTrue((Info.Period > 67.0) and (Info.Period < 67.2),
+    Format('the reference period is 67.14 A; got %.3f', [Info.Period]));
+
+  Assert.IsTrue((Res[IDX_NA].RPeak >= 0.35) and (Res[IDX_NA].RPeak <= 0.48),
+    Format('Na r_peak must be 0.35..0.48; got %.4f%s',
+      [Res[IDX_NA].RPeak, LineTable(Res)]));
+  Assert.IsTrue(Res[IDX_SI].FWHM < 0.15,
+    Format('Si fwhm must be below 0.15 degrees; got %.4f%s',
+      [Res[IDX_SI].FWHM, LineTable(Res)]));
+
+  // The score itself is judged relatively. The remaining cost of this design is
+  // the width penalty on its long-wavelength lines, whose real peaks are
+  // extinction-broadened to 1.0-1.6 times the kinematic width of DEFAULT_N_REF
+  // periods - physics, not a defect - so the absolute number depends on w_FWHM
+  // and n_ref, which are the author's to set. What must hold for any sane pair
+  // of those is that the reference design beats its own shorter version and is
+  // nowhere near the -16.7 the plateau used to score it.
+  FoM20 := ScoreNineLines(Format(WB4C_JSON, [20]), DefaultFitnessConfig,
+    Res20, Info20);
+  Assert.IsTrue(FoM > FoM20,
+    Format('N=50 must score better than N=20; got %.4f against %.4f%s',
+      [FoM, FoM20, LineTable(Res)]));
+  Assert.IsTrue(FoM > -16.7,
+    Format('the plateau scored this design -16.7; got %.4f%s',
+      [FoM, LineTable(Res)]));
+end;
+
+procedure TTestMCPUniversal.EvaluateStructure_ReportsTheScanGridPerLine;
+var
+  Res: TTargetResults;
+  Info: TStructureInfo;
+  i: Integer;
+begin
+  if not FoMTablesPresent then
+  begin
+    Assert.Pass('Henke tables Mo/B4C/WC/W/SiO2 not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+
+  ScoreNineLines(Format(WB4C_JSON, [50]), DefaultFitnessConfig, Res, Info);
+
+  for i := 0 to High(Res) do
+  begin
+    if not Res[i].Valid then
+      Continue;
+    if Res[i].RPeak <= 0 then
+      Continue;   // a dark line measured nothing, and says so
+
+    Assert.IsTrue(Res[i].ScanPointsUsed >= DEFAULT_SCAN_POINTS,
+      Format('line %d: scan_points is a floor, got %d points',
+        [i, Res[i].ScanPointsUsed]));
+    Assert.IsTrue(Res[i].ScanPointsUsed <= SCAN_POINTS_MAX,
+      Format('line %d: %d points exceeds the cap', [i, Res[i].ScanPointsUsed]));
+    Assert.IsTrue(Res[i].ScanStep > 0,
+      Format('line %d: a scanned line must report its step', [i]));
+    Assert.IsTrue(Res[i].ScanStep * Res[i].ScanPointsUsed <=
+                  2 * Res[i].ScanHalf + Res[i].ScanStep,
+      Format('line %d: the grid must fit inside the reported window', [i]));
+    Assert.IsTrue(Res[i].ThetaPeak >= Res[i].ThetaBragg,
+      Format('line %d: refraction shifts the peak up, never down', [i]));
+
+    // The point of the grid rule: the width is measured over many steps, not
+    // read off two or three of them.
+    Assert.IsTrue(Res[i].FWHM > 2 * Res[i].ScanStep,
+      Format('line %d: fwhm %.5f is not resolved by a step of %.5f',
+        [i, Res[i].FWHM, Res[i].ScanStep]));
+  end;
 end;
 
 initialization

@@ -365,6 +365,11 @@ object frmRunConfig: TfrmRunConfig
         Top = 40
         Caption = 'w_FWHM'
       end
+      object lblNRef: TLabel
+        Left = 186
+        Top = 40
+        Caption = 'n_ref'
+      end
       object lblWPurity: TLabel
         Left = 8
         Top = 66
@@ -414,32 +419,41 @@ object frmRunConfig: TfrmRunConfig
         TabOrder = 1
         Text = '0.1'
       end
+      object sedNRef: TSpinEdit
+        Left = 222
+        Top = 36
+        Width = 56
+        MaxValue = 10000
+        MinValue = 1
+        TabOrder = 2
+        Value = 50
+      end
       object edtWPurity: TEdit
         Left = 108
         Top = 62
         Width = 70
-        TabOrder = 2
+        TabOrder = 3
         Text = '1.0'
       end
       object edtRMinThreshold: TEdit
         Left = 108
         Top = 88
         Width = 70
-        TabOrder = 3
+        TabOrder = 4
         Text = '0.001'
       end
       object edtDeltaTheta: TEdit
         Left = 108
         Top = 122
         Width = 70
-        TabOrder = 4
+        TabOrder = 5
         Text = '0'
       end
       object edtThetaMin: TEdit
         Left = 108
         Top = 148
         Width = 70
-        TabOrder = 5
+        TabOrder = 6
         Text = '0'
       end
       object cmbPolarization: TComboBox
@@ -448,7 +462,7 @@ object frmRunConfig: TfrmRunConfig
         Width = 70
         Style = csDropDownList
         ItemIndex = 0
-        TabOrder = 6
+        TabOrder = 7
         Text = 'sp'
         Items.Strings = (
           'sp'
@@ -460,14 +474,14 @@ object frmRunConfig: TfrmRunConfig
         Width = 70
         MaxValue = 10000
         MinValue = 0
-        TabOrder = 7
+        TabOrder = 8
         Value = 0
       end
       object edtScanHalfRange: TEdit
         Left = 108
         Top = 234
         Width = 70
-        TabOrder = 8
+        TabOrder = 9
         Text = '0'
       end
       object grpHenke: TGroupBox
@@ -476,7 +490,7 @@ object frmRunConfig: TfrmRunConfig
         Width = 270
         Height = 50
         Caption = 'Henke Database Path'
-        TabOrder = 9
+        TabOrder = 10
         object edtHenkePath: TEdit
           Left = 8
           Top = 20
@@ -500,7 +514,7 @@ object frmRunConfig: TfrmRunConfig
         Width = 270
         Height = 50
         Caption = 'XRF Lines File'
-        TabOrder = 10
+        TabOrder = 11
         object edtXRFLinesPath: TEdit
           Left = 8
           Top = 20

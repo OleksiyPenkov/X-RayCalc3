@@ -246,8 +246,15 @@ begin
       Line.AddPair('lambda_used', JSONArgs.Num(Lines[i].Lambda));
       Line.AddPair('weight', JSONArgs.Num(Lines[i].Weight));
       Line.AddPair('theta_bragg_deg', JSONArgs.Num(Res[i].ThetaBragg));
+      // Where the peak really is, and the window and grid it was measured on:
+      // the scan is centred on the refraction-corrected angle, starts above the
+      // total-reflection plateau, and is fine enough to resolve the width.
+      Line.AddPair('theta_peak_deg', JSONArgs.Num(Res[i].ThetaPeak));
       Line.AddPair('r_peak', JSONArgs.Num(Res[i].RPeak));
       Line.AddPair('fwhm_deg', JSONArgs.Num(Res[i].FWHM));
+      Line.AddPair('scan_half_deg', JSONArgs.Num(Res[i].ScanHalf));
+      Line.AddPair('scan_step_deg', JSONArgs.Num(Res[i].ScanStep));
+      Line.AddPair('scan_points_used', TJSONNumber.Create(Res[i].ScanPointsUsed));
       Line.AddPair('valid', TJSONBool.Create(Res[i].Valid));
       JLines.AddElement(Line);
     end;
@@ -303,6 +310,12 @@ begin
   AddProp(Result, 'w_FWHM', 'number',
     'Weight of the FWHM penalty, in units of the kinematic reference width ' +
     '(default 0.5).');
+  AddProp(Result, 'n_ref', 'integer',
+    'Periods in the reference width the FWHM penalty is measured in: ' +
+    'lambda / (n_ref d cos theta), default 50. It is deliberately independent ' +
+    'of the structure''s own number of periods - a reference tied to N makes ' +
+    'the penalty grow with N while the real peak width saturates, which ' +
+    'penalises exactly the designs that reflect best.');
   AddProp(Result, 'R_min_threshold', 'number',
     'A line whose peak reflectivity falls below this is penalised as dark ' +
     '(default 0.001).');
@@ -321,12 +334,19 @@ begin
     'falls below it is reported invalid and penalised. This is NOT where the ' +
     'scan starts - each line is scanned around its own Bragg angle.');
   AddProp(Result, 'scan_points', 'integer',
-    'Points in the reflectivity scan around each Bragg angle (default 200, ' +
-    'minimum 3, maximum 20000). The call is synchronous and every line is ' +
-    'scanned over the whole layer stack, so the grid is bounded.');
+    'Floor on the points in the reflectivity scan of each line (default 200, ' +
+    'minimum 3, maximum 20000). A line is scanned more finely when that is ' +
+    'what it takes to resolve its width - at most a tenth of its kinematic ' +
+    'width per step - so this bounds the scan from below, not above. Each ' +
+    'line reports the grid it was given.');
   AddProp(Result, 'scan_half_range', 'number',
-    'Half-width in degrees of the scan around each Bragg angle (default 5, ' +
-    'maximum 90).');
+    'Fixed half-width in degrees of the scan around each line''s ' +
+    'refraction-corrected peak (maximum 90). Omit it - the default - to let ' +
+    'each line be scanned over max(0.5 deg, 4 kinematic widths), which is ' +
+    'what keeps a narrow peak off a coarse grid and a wide one unclipped. ' +
+    'Either way the scan starts above the total-reflection plateau and the ' +
+    'peak taken is the local maximum nearest the expected angle, never the ' +
+    'plateau itself.');
 end;
 
 procedure RegisterEvaluateLines(Registry: TToolRegistry);

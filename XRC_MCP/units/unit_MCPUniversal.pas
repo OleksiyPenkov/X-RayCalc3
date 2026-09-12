@@ -241,7 +241,15 @@ const
 
   /// How far EvaluateStructure may land from the figure of merit the optimizer
   /// reported for the same candidate before the result carries a warning.
-  CONSISTENCY_TOLERANCE = 1E-4;
+  /// Relative. A reported structure carries its layer densities as JSON
+  /// numbers, and the genome's own mixed epsilons are not bit-identical to the
+  /// ones rebuilt from them; since the scan window of each line is derived from
+  /// the stack's optical constants (TUniversalFitness.PeakWindow), that
+  /// difference also shifts the grid the peak is sampled on by a fraction of a
+  /// step. Measured on the Ru/C regression fixture: 2.5E-4. This bound is still
+  /// three orders of magnitude below anything physically meaningful, and the
+  /// warning is about a report disagreeing with itself, not about the fit.
+  CONSISTENCY_TOLERANCE = 1E-3;
 
 implementation
 
@@ -256,17 +264,32 @@ uses
   unit_MCPErrors, unit_MCPMaterials, unit_MCPSandbox, unit_MCPUnits;
 
 const
-  // TUniversalFitness substitutes these when the configuration says 0.
-  DEFAULT_SCAN_POINTS     = 200;
-  DEFAULT_SCAN_HALF_RANGE = 5.0;
+  // DEFAULT_SCAN_POINTS and the rest of the scan rule are the engine's own, from
+  // unit_universal_types, so this unit cannot drift from what it reports.
 
   // evaluate_lines answers in the same round trip and the optimizer scans once
   // per line per particle per iteration, so the scan grid is bounded. 20000
   // points is two orders of magnitude finer than the engine's default and far
   // finer than any Bragg peak these mirrors have; a scan wider than 90 degrees
   // in theta covers the whole reflection half-space.
-  MAX_SCAN_POINTS     = 20000;
+  MAX_SCAN_POINTS     = SCAN_POINTS_MAX;
   MAX_SCAN_HALF_RANGE = 90.0;
+
+  SCAN_POINTS_NOTE =
+    'A floor, not the grid: every line is scanned with at least this many ' +
+    'points, and with more whenever its step would otherwise be coarser than ' +
+    'its kinematic peak width divided by scan_points_per_fwhm_ref, up to ' +
+    'scan_points_max. Each line reports the grid it got.';
+
+  SCAN_HALF_ADAPTIVE_NOTE =
+    '0 = adaptive: each line is scanned over max(0.5 deg, 4 kinematic widths) ' +
+    'either side of its refraction-corrected peak, never starting inside the ' +
+    'total-reflection plateau. See scan_half_deg in each line result.';
+
+  SCAN_HALF_FIXED_NOTE =
+    'A fixed half-range about each line''s refraction-corrected peak. The scan ' +
+    'still never starts inside the total-reflection plateau, so a line whose ' +
+    'peak sits close to it is scanned over less than this.';
 
   THETA_MIN_NOTE =
     'Optimizer dark-zone threshold, not the scan start: a line whose Bragg ' +
@@ -285,7 +308,8 @@ begin
   Result.ThetaMin := 0;
   Result.wPurity := 1.0;
   Result.ScanPoints := 0;      // 0 = the engine's DEFAULT_SCAN_POINTS
-  Result.ScanHalfRange := 0;   // 0 = the engine's DEFAULT_SCAN_HALF_RANGE
+  Result.ScanHalfRange := 0;   // 0 = the engine's adaptive window
+  Result.NRef := DEFAULT_N_REF;
 end;
 
 { ------------------------------------------------------------------ lines -- }
@@ -426,6 +450,10 @@ begin
       IntToStr(F.ScanPoints));
   if F.ScanHalfRange < 0 then
     raise EMCPError.Create('invalid_argument', '"scan_half_range" must not be negative');
+  if F.NRef <= 0 then
+    raise EMCPError.Create('invalid_argument',
+      '"n_ref" is a number of periods and must be greater than zero',
+      IntToStr(F.NRef));
   if F.ScanHalfRange > MAX_SCAN_HALF_RANGE then
     raise EMCPError.Create('invalid_argument',
       Format('"scan_half_range" must not exceed %g degrees', [Double(MAX_SCAN_HALF_RANGE)]));
@@ -446,6 +474,7 @@ begin
   Result.wPurity := JSONArgs.OptFloat(J, 'w_purity', Result.wPurity);
   Result.ScanPoints := JSONArgs.OptInt(J, 'scan_points', Result.ScanPoints);
   Result.ScanHalfRange := JSONArgs.OptFloat(J, 'scan_half_range', Result.ScanHalfRange);
+  Result.NRef := JSONArgs.OptInt(J, 'n_ref', Result.NRef);
   if JSONArgs.Has(J, 'polarization') then
     Result.Polarization := ParsePolarizationValue(JSONArgs.ReqStr(J, 'polarization'));
 
@@ -454,18 +483,17 @@ end;
 
 function FitnessConfigToJSON(const F: TFitnessConfig): TJSONObject;
 var
-  Points: Integer;
-  HalfRange: Double;
+  Points, NRef: Integer;
 begin
   // What TUniversalFitness.Create resolved them to, not what was asked for.
   if F.ScanPoints > 0 then
     Points := F.ScanPoints
   else
     Points := DEFAULT_SCAN_POINTS;
-  if F.ScanHalfRange > 0 then
-    HalfRange := F.ScanHalfRange
+  if F.NRef > 0 then
+    NRef := F.NRef
   else
-    HalfRange := DEFAULT_SCAN_HALF_RANGE;
+    NRef := DEFAULT_N_REF;
 
   Result := TJSONObject.Create;
   try
@@ -477,8 +505,20 @@ begin
     Result.AddPair('delta_theta', JSONArgs.Num(F.DeltaTheta));
     Result.AddPair('theta_min', JSONArgs.Num(F.ThetaMin));
     Result.AddPair('theta_min_note', THETA_MIN_NOTE);
+    Result.AddPair('n_ref', TJSONNumber.Create(NRef));
+    // The grid is per line, so what belongs here is the rule. What it came to
+    // for each line is in that line's own scan_step_deg / scan_points_used /
+    // scan_half_deg.
     Result.AddPair('scan_points', TJSONNumber.Create(Points));
-    Result.AddPair('scan_half_range', JSONArgs.Num(HalfRange));
+    Result.AddPair('scan_points_note', SCAN_POINTS_NOTE);
+    Result.AddPair('scan_points_per_fwhm_ref',
+      TJSONNumber.Create(POINTS_PER_FWHM_REF));
+    Result.AddPair('scan_points_max', TJSONNumber.Create(SCAN_POINTS_MAX));
+    Result.AddPair('scan_half_range', JSONArgs.Num(F.ScanHalfRange));
+    if F.ScanHalfRange > 0 then
+      Result.AddPair('scan_half_range_note', SCAN_HALF_FIXED_NOTE)
+    else
+      Result.AddPair('scan_half_range_note', SCAN_HALF_ADAPTIVE_NOTE);
   except
     Result.Free;
     raise;

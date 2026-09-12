@@ -9,6 +9,37 @@ uses
 const
   MAX_POOL_ELEMENTS = 16;
   MAX_LINES = 16;
+
+  // The FoM's width reference uses a FIXED number of periods, not the N of the
+  // structure: lambda / (N d cos theta) shrinks as 1/N while the real peak
+  // width saturates at the extinction-limited one, so a reference tied to N
+  // makes the width penalty grow with N and drives the optimizer to three or
+  // four periods. 0 in a configuration means "use this".
+  DEFAULT_N_REF = 50;
+
+  // What a configuration of 0 means: 200 points per line, and a window chosen
+  // per line rather than a fixed half-range (DEFAULT_SCAN_HALF_RANGE is what a
+  // fixed window falls back to, and the widest an adaptive one is widened to).
+  DEFAULT_SCAN_POINTS     = 200;
+  DEFAULT_SCAN_HALF_RANGE = 5.0;
+
+  // The scan grid of one line: the configured scan_points is a floor, the step
+  // is never coarser than the kinematic reference width over
+  // POINTS_PER_FWHM_REF, and SCAN_POINTS_MAX caps what that asks for.
+  POINTS_PER_FWHM_REF = 10;
+  SCAN_POINTS_MAX     = 20000;
+
+  // The adaptive scan window, used when the configuration leaves
+  // scan_half_range at 0. Half the window is WINDOW_FWHM_FACTOR kinematic
+  // widths but never less than ADAPTIVE_HALF_FLOOR_DEG; the scan never starts
+  // below PLATEAU_MARGIN times the critical angle of the stack, which is what
+  // keeps the total-reflection plateau out of the peak search; and a peak that
+  // does not fall to half its height inside the window is measured once more
+  // over a window of at most WIDEN_HALF_LIMIT_DEG.
+  ADAPTIVE_HALF_FLOOR_DEG = 0.5;
+  WINDOW_FWHM_FACTOR      = 4;
+  PLATEAU_MARGIN          = 1.15;
+  WIDEN_HALF_LIMIT_DEG    = 5.0;
   LAYERS_PER_PERIOD = 2; // bilayer v1.0
 
 type
@@ -35,8 +66,13 @@ type
   TTargetResult = record
     RPeak: Single;        // peak reflectivity (0..1)
     FWHM: Single;         // angular FWHM in degrees
-    ThetaBragg: Single;   // Bragg angle in degrees
+    ThetaBragg: Single;   // kinematic Bragg angle in degrees, asin(lambda/2d)
     Valid: Boolean;        // false if lambda/2d > 1 (no Bragg peak)
+    // What the peak search actually did, per line (TUniversalFitness.MeasureLine):
+    ThetaPeak: Single;    // refraction-corrected centre of the scan, degrees
+    ScanHalf: Single;     // half-range scanned about ThetaPeak, degrees
+    ScanStep: Single;     // grid step of that scan, degrees
+    ScanPointsUsed: Integer; // points the peak was searched over
   end;
 
   TTargetResults = array of TTargetResult;
@@ -146,7 +182,8 @@ type
     ThetaMin: Single;       // minimum Bragg angle in degrees (skip total reflection zone)
     wPurity: Single;        // [0..1] weight for spectral purity penalty (0 = off)
     ScanPoints: Integer;    // number of points in reflectivity scan (0 = default 200)
-    ScanHalfRange: Single;  // half-range of scan in degrees (0 = default 5.0)
+    ScanHalfRange: Single;  // fixed scan half-range in degrees (0 = adaptive)
+    NRef: Integer;          // periods in the FWHM reference (0 = DEFAULT_N_REF)
   end;
 
   // Optimizer configuration from JSON
