@@ -184,12 +184,19 @@ begin
   end;
 end;
 
-/// The data curve named by the tool's "curves" argument, in theta.
-procedure LoadRequestedCurve(const Curves: TJSONObject; var Proj: TXRCXProject);
+/// The data curve named by the tool's "curves" argument, in theta. For a job
+/// curve, Proj.Params is also replaced by the parameter block of the job's own
+/// fit.xrcx (the engine that ran, its iterations and population, the chi-squared
+/// weighting, the resolution width and the range), and FromJob says so; before
+/// 2026-09-16 a project saved from a periodic fit carried the GUI defaults
+/// instead and opened in X-Ray Calc 3 as an irregular fit of 100 x 1000.
+procedure LoadRequestedCurve(const Curves: TJSONObject; var Proj: TXRCXProject;
+  out FromJob: Boolean);
 var
-  MeasId, JobId, JobFile: string;
+  MeasId, JobId, JobFile, JobXRCX: string;
   M: TMeasurement;
 begin
+  FromJob := False;
   if Curves = nil then
     Exit;
   MeasId := Trim(JSONArgs.OptStr(Curves, 'measurement_id', ''));
@@ -219,7 +226,28 @@ begin
         'job curves are embedded by fit_xrr', JobId);
     Proj.DataCurve := ReadCurveText(JobFile);
     Proj.DataTitle := JobId;
+    { fit.xrcx is written when the fit finishes; a job still running has only
+      its measured curve and the project keeps the defaults. }
+    JobXRCX := WorkDir.ResolvePath(TPath.Combine(TPath.Combine('jobs', JobId), 'fit.xrcx'), False);
+    if TFile.Exists(JobXRCX) then
+    begin
+      Proj.Params := ReadXRCX(JobXRCX).Params;
+      FromJob := True;
+    end;
   end;
+end;
+
+/// [FIT] Mode for a project that does not come from a fit job: 1 (periodic)
+/// when the structure has a repeating stack, else 0 (irregular) - what the
+/// GUI's own fit dialog would pick for it.
+function FitModeFor(const S: TFitStructure): Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to High(S.Stacks) do
+    if S.Stacks[i].N > 1 then
+      Exit(1);
 end;
 
 function SaveProjectResult(const Params: TJSONObject): TJSONObject;
@@ -228,6 +256,7 @@ var
   Used: TFitStructure;
   Proj: TXRCXProject;
   Bad, Name, FileName: string;
+  FromJob: Boolean;
 begin
   Proj := Default(TXRCXProject);
   Proj.Params := DefaultCalcParams;
@@ -251,13 +280,34 @@ begin
       Format('No Henke table for material "%s"', [Bad]),
       'list_materials enumerates the names this server knows');
 
-  Req.Lambda := GetLambdaArg(Params, 'lambda', 'energy', True, DEFAULT_LAMBDA);
-  Req.ThetaMin := JSONArgs.OptFloat(Params, 'theta_min', DEFAULT_THETA_MIN);
-  Req.ThetaMax := JSONArgs.OptFloat(Params, 'theta_max', DEFAULT_THETA_MAX);
-  Req.DeltaTheta := JSONArgs.OptFloat(Params, 'delta_theta', 0);
-  Req.Points := JSONArgs.OptInt(Params, 'points', DEFAULT_POINTS);
-  Req.RMin := DEFAULT_R_MIN;
-  Req.Polarization := cmS;             // params.dsc says [PARAMS] Polarisation=0
+  { The curve first: a job curve brings the job's parameter block with it,
+    which is then the default for everything the client does not say. }
+  LoadRequestedCurve(JSONArgs.OptObj(Params, 'curves'), Proj, FromJob);
+
+  if FromJob then
+  begin
+    Req.Lambda := GetLambdaArg(Params, 'lambda', 'energy', True, Proj.Params.Lambda);
+    Req.ThetaMin := JSONArgs.OptFloat(Params, 'theta_min', Proj.Params.ThetaStart);
+    Req.ThetaMax := JSONArgs.OptFloat(Params, 'theta_max', Proj.Params.ThetaEnd);
+    Req.DeltaTheta := JSONArgs.OptFloat(Params, 'delta_theta', Proj.Params.Width);
+    Req.Points := JSONArgs.OptInt(Params, 'points', Proj.Params.Points);
+    Req.RMin := Proj.Params.MinLimit;
+    if Proj.Params.Polarisation = 0 then
+      Req.Polarization := cmS
+    else
+      Req.Polarization := cmSP;
+  end
+  else
+  begin
+    Req.Lambda := GetLambdaArg(Params, 'lambda', 'energy', True, DEFAULT_LAMBDA);
+    Req.ThetaMin := JSONArgs.OptFloat(Params, 'theta_min', DEFAULT_THETA_MIN);
+    Req.ThetaMax := JSONArgs.OptFloat(Params, 'theta_max', DEFAULT_THETA_MAX);
+    Req.DeltaTheta := JSONArgs.OptFloat(Params, 'delta_theta', 0);
+    Req.Points := JSONArgs.OptInt(Params, 'points', DEFAULT_POINTS);
+    Req.RMin := DEFAULT_R_MIN;
+    Req.Polarization := cmS;           // params.dsc says [PARAMS] Polarisation=0
+    Proj.Params.FitMode := FitModeFor(Req.Structure);
+  end;
 
   if Req.ThetaMin < 0 then
     raise EMCPError.Create('invalid_argument', '"theta_min" must not be negative');
@@ -273,8 +323,6 @@ begin
   if Req.DeltaTheta < 0 then
     raise EMCPError.Create('invalid_argument', '"delta_theta" must not be negative');
 
-  LoadRequestedCurve(JSONArgs.OptObj(Params, 'curves'), Proj);
-
   Proj.CalcCurve := RunCalc(Req, Used);
 
   Proj.ModelTitle := Name;
@@ -288,7 +336,10 @@ begin
   Proj.Params.ThetaEnd     := Req.ThetaMax;
   Proj.Params.Width        := Req.DeltaTheta;
   Proj.Params.Points       := Req.Points;
-  Proj.Params.Polarisation := 0;
+  if Req.Polarization = cmS then
+    Proj.Params.Polarisation := 0
+  else
+    Proj.Params.Polarisation := 1;
   Proj.Params.MinLimit     := Req.RMin;
 
   WriteXRCX(FileName, Proj);
@@ -452,7 +503,12 @@ begin
     'and one that contains "Data" or "Models" comes back shortened to just ' +
     'that word, because the GUI rewrites such titles when it loads a project.');
   AddProp(Curves, 'job_id', 'string',
-    'Embed the measured curve of a finished fit_xrr job.');
+    'Embed the measured curve of a finished fit_xrr job. The project then ' +
+    'also takes the job''s own fit settings and calculation parameters (the ' +
+    'engine mode, iterations, population, chi-squared weighting, resolution ' +
+    'width, wavelength and angular range), so it opens in the GUI as that ' +
+    'fit; "theta_min", "theta_max", "points", "delta_theta" and "lambda" ' +
+    'given explicitly still win.');
   AddRefProp(Schema, 'curves',
     'Optional measured curve to store beside the calculated one, as a data ' +
     'node the GUI plots. Give either "measurement_id" or "job_id", not both.',
@@ -482,7 +538,9 @@ begin
     'measured curve is stored as a linked data node, so that opening the file ' +
     'shows the same curve the server computed. Angles are written as theta ' +
     '(the file sets 2teta=0), the parameter block is a version 7 params.dsc ' +
-    'with the GUI''s own keys and defaults, and the densities stored are the ' +
+    'with the GUI''s own keys and defaults (fit mode periodic when the ' +
+    'structure has a repeating stack, irregular otherwise; or the fit ' +
+    'settings of the job named in "curves"), and the densities stored are the ' +
     'ones the engine used rather than the ones asked for: a layer whose ' +
     'density was omitted gets the Henke bulk value, and the substrate always ' +
     'does, because the engine builds the substrate from its bulk density and ' +

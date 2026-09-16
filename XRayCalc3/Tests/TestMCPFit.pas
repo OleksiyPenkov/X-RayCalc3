@@ -107,12 +107,14 @@ type
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
     [Test] procedure Fit_Cancelled_StopsAndLeavesNoResult;
     [Test] procedure Fit_P2_02_FreePeriod_StaysInsideBounds;
+    [Test] procedure SaveProject_FromFitJob_CarriesTheJobsFitSettings;
   end;
 
 implementation
 
 uses
   System.IOUtils, System.Classes, System.Diagnostics, System.Math,
+  System.Zip, System.IniFiles, unit_MCPTools, unit_ToolsFiles,
   unit_Config, unit_MCPErrors, unit_MCPCalc;
 
 const
@@ -1534,6 +1536,97 @@ begin
     end;
   end;
   Assert.AreEqual('', Report, 'fitted values outside bounds_used:'#13#10 + Report);
+end;
+
+{ A project saved from a finished periodic fit must open in the GUI as that fit:
+  the same [FIT], [LFPSO], [PARAMS] and [ANGLE] the job's own fit.xrcx carries,
+  not the server's defaults (Mode 0 irregular, 100 x 1000), which is how the
+  paper-2 fits were read as "not periodic" on 2026-09-16. }
+procedure TTestMCPFit.SaveProject_FromFitJob_CarriesTheJobsFitSettings;
+
+  function ParamsOf(const XRCXPath: string): TMemIniFile;
+  var
+    Dir: string;
+  begin
+    Dir := TPath.Combine(FTemp, 'x_' + Copy(TGUID.NewGuid.ToString, 2, 8));
+    TDirectory.CreateDirectory(Dir);
+    TZipFile.ExtractZipFile(XRCXPath, Dir);
+    Result := TMemIniFile.Create(TPath.Combine(Dir, 'params.dsc'));
+  end;
+
+  procedure SameSection(Saved, JobFile: TMemIniFile; const Section: string);
+  var
+    Keys: TStringList;
+    i: Integer;
+  begin
+    Keys := TStringList.Create;
+    try
+      JobFile.ReadSection(Section, Keys);
+      Assert.IsTrue(Keys.Count > 0, '[' + Section + '] is in the job''s fit.xrcx');
+      for i := 0 to Keys.Count - 1 do
+        Assert.AreEqual(JobFile.ReadString(Section, Keys[i], '<absent>'),
+                        Saved.ReadString(Section, Keys[i], '<absent>'),
+          Format('[%s] %s of the saved project must equal the job''s', [Section, Keys[i]]));
+    finally
+      Keys.Free;
+    end;
+  end;
+
+var
+  Res, Args, Saved: TJSONObject;
+  JobId, JobXRCX, ProjectFile: string;
+  Reg: TToolRegistry;
+  A, B: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON, '', ',"chi2":{"theta_weight":2}');
+  try
+    JobId := Res.GetValue<string>('job_id');
+    JobXRCX := TPath.Combine(WorkDir.Root, Res.GetValue<string>('files.xrcx'));
+  finally
+    Res.Free;
+  end;
+
+  Args := TJSONObject.ParseJSONValue(Format(
+    '{"structure":%s,"name":"saved_fit","curves":{"job_id":"%s"}}',
+    [START_STRUCTURE, JobId])) as TJSONObject;
+  try
+    Reg := TToolRegistry.Create;
+    try
+      RegisterFileTools(Reg);
+      Saved := Reg.Execute('save_project', Args);
+      try
+        ProjectFile := TPath.Combine(WorkDir.Root, Saved.GetValue<string>('file'));
+      finally
+        Saved.Free;
+      end;
+    finally
+      Reg.Free;
+    end;
+  finally
+    Args.Free;
+  end;
+
+  A := ParamsOf(ProjectFile);
+  try
+    B := ParamsOf(JobXRCX);
+    try
+      Assert.AreEqual(1, B.ReadInteger('FIT', 'Mode', -1), 'the job ran the periodic engine');
+      SameSection(A, B, 'FIT');
+      SameSection(A, B, 'LFPSO');
+      SameSection(A, B, 'PARAMS');
+      SameSection(A, B, 'ANGLE');
+    finally
+      B.Free;
+    end;
+  finally
+    A.Free;
+  end;
 end;
 
 initialization

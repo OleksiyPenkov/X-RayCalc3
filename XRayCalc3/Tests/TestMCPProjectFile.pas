@@ -28,7 +28,7 @@ uses
   VirtualTrees, VirtualTrees.Types,
   unit_Types, unit_XRCProjectTree,
   unit_MCPSandbox, unit_MCPErrors, unit_MCPTools, unit_MCPStructure,
-  unit_MCPProjectFile, unit_ToolsFiles;
+  unit_MCPProjectFile, unit_ToolsFiles, unit_Config;
 
 type
   [TestFixture]
@@ -46,6 +46,19 @@ type
     /// <summary>Runs one registered file tool. The caller owns Args and the
     /// result.</summary>
     function CallTool(const Name: string; Args: TJSONObject): TJSONObject;
+    /// <summary>A finished fit_xrr job folder, jobs\JobId with measured.dat
+    /// and a fit.xrcx carrying Params, as RunFitJob leaves it.</summary>
+    procedure MakeJobFolder(const JobId: string; const Params: TXRCXCalcParams);
+    /// <summary>The fit settings a periodic fit_xrr job would have written,
+    /// every value away from the GUI default.</summary>
+    function JobParams: TXRCXCalcParams;
+    /// <summary>save_project with RUC_JSON and the given extra arguments
+    /// spliced in (',"curves":{...}'); returns the written file's path.</summary>
+    function SaveRuc(const Name, Extra: string): string;
+    /// <summary>params.dsc of an .xrcx, extracted; the caller frees it.</summary>
+    function ParamsOf(const XRCXPath: string): TMemIniFile;
+    /// <summary>Asserts that every key of Section reads the same in both.</summary>
+    procedure AssertSameSection(A, B: TMemIniFile; const Section, What: string);
   public
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
@@ -61,6 +74,10 @@ type
     [Test] procedure SaveProject_ExistingFile_WithoutOverwrite_Refused;
     [Test] procedure SaveProject_NameWithPathSeparator_Refused;
     [Test] procedure SaveProject_ReservedDeviceName_Refused;
+    [Test] procedure SaveProject_FromJob_UsesTheJobsFitSettings;
+    [Test] procedure SaveProject_FromJob_ExplicitRangeAndPointsKeepPrecedence;
+    [Test] procedure SaveProject_InboxCurve_PeriodicStructure_WritesMode1;
+    [Test] procedure SaveProject_NoCurve_SingleLayers_WritesMode0;
   end;
 
 implementation
@@ -73,6 +90,27 @@ const
     '{"material":"C","thickness":53.8,"sigma":3.0,"density":2.2}]}]}';
 
   ELN_SAMPLE = 'D:\APS\ELN\ELN3Plugins\TestFiles\Hard.xrcx';
+
+  { Two single layers, no repeating stack: an irregular structure. }
+  IRREGULAR_JSON = '{"substrate":{"material":"SiO2","density":2.2,"sigma":3.0},' +
+    '"stacks":[{"N":1,"layers":[{"material":"Ru","thickness":30,"sigma":3.0,"density":12.4}]},' +
+    '{"N":1,"layers":[{"material":"C","thickness":50,"sigma":3.0,"density":2.2}]}]}';
+
+/// save_project calculates the curve, so it needs the Henke tables of the
+/// materials it stores; without them the test says so instead of failing.
+function HenkeTablesPresent: Boolean;
+const
+  Needed: array [0 .. 2] of string = ('Ru', 'C', 'SiO2');
+var
+  i: Integer;
+  Dir: string;
+begin
+  Dir := IncludeTrailingPathDelimiter(TConfig.SystemDir[sdHenke]);
+  for i := Low(Needed) to High(Needed) do
+    if not TFile.Exists(Dir + Needed[i] + '.bin') then
+      Exit(False);
+  Result := True;
+end;
 
 { ----------------------------------------------------------------- fixture -- }
 
@@ -177,6 +215,95 @@ begin
     Result := Reg.Execute(Name, Args);
   finally
     Reg.Free;
+  end;
+end;
+
+function TTestMCPProjectFile.JobParams: TXRCXCalcParams;
+begin
+  Result := DefaultCalcParams;
+  Result.Lambda       := 1.540598;
+  Result.ThetaStart   := 0.3;
+  Result.ThetaEnd     := 1.72;
+  Result.Width        := 0.02;
+  Result.Points       := 300;
+  Result.Polarisation := 1;
+  Result.MinLimit     := 1E-6;
+  Result.FitMode      := 1;          // periodic
+  Result.FitIter      := 200;
+  Result.FitPop       := 150;
+  Result.PolyOrder    := 2;
+  Result.PWChi        := False;
+  Result.TWChi        := 1;
+  Result.Tol          := 0.001;
+  Result.Window       := 0.07;
+  Result.LFPSO.NMax         := 200;
+  Result.LFPSO.Pop          := 150;
+  Result.LFPSO.Tolerance    := 0.001;
+  Result.LFPSO.MovAvgWindow := 0.07;
+  Result.LFPSO.ThetaWeight  := 1;
+  Result.LFPSO.MaxPOrder    := 2;
+  Result.LFPSO.Ksxr         := 0.15;
+  Result.LFPSO.RangeSeed    := True;
+end;
+
+procedure TTestMCPProjectFile.MakeJobFolder(const JobId: string;
+  const Params: TXRCXCalcParams);
+var
+  Dir: string;
+  P: TXRCXProject;
+begin
+  Dir := TPath.Combine(WorkDir.JobsDir, JobId);
+  TDirectory.CreateDirectory(Dir);
+  WriteCurveText(TPath.Combine(Dir, 'measured.dat'), Ramp(20, 0.3, 0.07),
+    'theta_deg', 'I', 'deg');
+  P := SampleProject;
+  P.Params := Params;
+  P.DataTitle := JobId;
+  P.DataCurve := Ramp(20, 0.3, 0.07);
+  WriteXRCX(TPath.Combine(Dir, 'fit.xrcx'), P);
+end;
+
+function TTestMCPProjectFile.SaveRuc(const Name, Extra: string): string;
+var
+  Args, Res: TJSONObject;
+begin
+  Args := TJSONObject.ParseJSONValue(Format('{"structure":%s,"name":"%s"%s}',
+    [RUC_JSON, Name, Extra])) as TJSONObject;
+  Assert.IsNotNull(Args, 'the save_project arguments must parse');
+  try
+    Res := CallTool('save_project', Args);
+    try
+      Result := TPath.Combine(WorkDir.Root, Res.GetValue<string>('file'));
+    finally
+      Res.Free;
+    end;
+  finally
+    Args.Free;
+  end;
+  Assert.IsTrue(TFile.Exists(Result), 'the project was written');
+end;
+
+function TTestMCPProjectFile.ParamsOf(const XRCXPath: string): TMemIniFile;
+begin
+  Result := TMemIniFile.Create(ExtractMember(XRCXPath, 'params.dsc'));
+end;
+
+procedure TTestMCPProjectFile.AssertSameSection(A, B: TMemIniFile;
+  const Section, What: string);
+var
+  Keys: TStringList;
+  i: Integer;
+begin
+  Keys := TStringList.Create;
+  try
+    B.ReadSection(Section, Keys);
+    Assert.IsTrue(Keys.Count > 0, Format('[%s] is present in %s', [Section, What]));
+    for i := 0 to Keys.Count - 1 do
+      Assert.AreEqual(B.ReadString(Section, Keys[i], '<absent>'),
+                      A.ReadString(Section, Keys[i], '<absent>'),
+        Format('[%s] %s: %s', [Section, Keys[i], What]));
+  finally
+    Keys.Free;
   end;
 end;
 
@@ -540,6 +667,123 @@ begin
     Res.Free;
     Assert.AreEqual('invalid_argument', Code,
       'a Windows reserved device name must be refused');
+  finally
+    Args.Free;
+  end;
+end;
+
+{ ------------------------------------------- save_project fit settings ---- }
+
+procedure TTestMCPProjectFile.SaveProject_FromJob_UsesTheJobsFitSettings;
+var
+  Saved, JobFile: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  MakeJobFolder('fit-job-1', JobParams);
+
+  Saved := ParamsOf(SaveRuc('from_job', ',"curves":{"job_id":"fit-job-1"}'));
+  try
+    JobFile := ParamsOf(TPath.Combine(TPath.Combine(WorkDir.JobsDir, 'fit-job-1'), 'fit.xrcx'));
+    try
+      AssertSameSection(Saved, JobFile, 'FIT', 'the saved project must carry the job''s fit settings');
+      AssertSameSection(Saved, JobFile, 'LFPSO', 'the saved project must carry the job''s LFPSO settings');
+      AssertSameSection(Saved, JobFile, 'PARAMS', 'the saved project must carry the job''s calculation parameters');
+      AssertSameSection(Saved, JobFile, 'ANGLE', 'the saved project must carry the job''s angular range');
+      Assert.AreEqual(1, Saved.ReadInteger('FIT', 'Mode', -1), 'periodic, as the job ran');
+    finally
+      JobFile.Free;
+    end;
+  finally
+    Saved.Free;
+  end;
+end;
+
+procedure TTestMCPProjectFile.SaveProject_FromJob_ExplicitRangeAndPointsKeepPrecedence;
+var
+  Saved, JobFile: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  MakeJobFolder('fit-job-2', JobParams);
+
+  Saved := ParamsOf(SaveRuc('from_job_range',
+    ',"curves":{"job_id":"fit-job-2"},"theta_min":0.1,"theta_max":2.5,"points":50'));
+  try
+    JobFile := ParamsOf(TPath.Combine(TPath.Combine(WorkDir.JobsDir, 'fit-job-2'), 'fit.xrcx'));
+    try
+      AssertSameSection(Saved, JobFile, 'FIT', 'the fit settings still come from the job');
+      Assert.AreEqual('0.1', Saved.ReadString('ANGLE', 'Start', ''), 'an explicit theta_min wins');
+      Assert.AreEqual('2.5', Saved.ReadString('ANGLE', 'End', ''), 'an explicit theta_max wins');
+      Assert.AreEqual('50', Saved.ReadString('PARAMS', 'N', ''), 'an explicit points wins');
+      Assert.AreEqual(JobFile.ReadString('ANGLE', 'width', 'a'),
+                      Saved.ReadString('ANGLE', 'width', 'b'),
+        'the resolution width not given still comes from the job');
+    finally
+      JobFile.Free;
+    end;
+  finally
+    Saved.Free;
+  end;
+end;
+
+procedure TTestMCPProjectFile.SaveProject_InboxCurve_PeriodicStructure_WritesMode1;
+var
+  Dir: string;
+  Saved: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Dir := TPath.Combine(TPath.Combine(FTemp, 'inbox'), 'S1');
+  TDirectory.CreateDirectory(Dir);
+  TFile.WriteAllText(TPath.Combine(Dir, 'c.dat'),
+    '0.5'#9'1.0'#13#10'0.6'#9'0.5'#13#10'0.7'#9'0.25'#13#10, TEncoding.ASCII);
+
+  Saved := ParamsOf(SaveRuc('from_inbox', ',"curves":{"measurement_id":"S1/c.dat"}'));
+  try
+    Assert.AreEqual(1, Saved.ReadInteger('FIT', 'Mode', -1),
+      'a structure with a repeating stack opens as a periodic fit');
+    Assert.AreEqual('100', Saved.ReadString('FIT', 'Namx', ''), 'the other fit settings stay at the defaults');
+    Assert.AreEqual('1000', Saved.ReadString('FIT', 'Pop', ''), 'the other fit settings stay at the defaults');
+  finally
+    Saved.Free;
+  end;
+end;
+
+procedure TTestMCPProjectFile.SaveProject_NoCurve_SingleLayers_WritesMode0;
+var
+  Args, Res: TJSONObject;
+  Saved: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Args := TJSONObject.ParseJSONValue(Format('{"structure":%s,"name":"irregular"}',
+    [IRREGULAR_JSON])) as TJSONObject;
+  try
+    Res := CallTool('save_project', Args);
+    try
+      Saved := ParamsOf(TPath.Combine(WorkDir.Root, Res.GetValue<string>('file')));
+      try
+        Assert.AreEqual(0, Saved.ReadInteger('FIT', 'Mode', -1),
+          'single layers only: an irregular fit');
+      finally
+        Saved.Free;
+      end;
+    finally
+      Res.Free;
+    end;
   finally
     Args.Free;
   end;

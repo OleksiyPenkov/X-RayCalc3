@@ -44,6 +44,14 @@ could end the fit on a value the client never allowed). The result carries `out_
 the shape of `bounds_used` plus `value` of every fitted value outside its bound; it is empty, and a
 client may treat a non-empty one as a server defect.
 
+**`save_project` since 2026-09-16:** a project saved with `curves.job_id` takes the `[FIT]`, `[LFPSO]`,
+`[PARAMS]` and `[ANGLE]` blocks of that job's own `fit.xrcx`, so it opens in the GUI as the fit that ran
+(periodic or profile mode, the real iterations and population, the chi-squared weighting, the resolution
+width and the range); explicit `theta_min`, `theta_max`, `points`, `delta_theta` and `lambda` still win.
+Without a job the defaults stay, except that `[FIT] Mode` is 1 (periodic) when the structure has a
+repeating stack and 0 (irregular) otherwise. Before, every saved project carried Mode 0 with 100
+iterations and a population of 1000, whatever fit had produced it.
+
 **Smoke test:** `pwsh -File XRC_MCP\smoke\session.ps1` drives one live stdio session against
 `_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 16 tools (jobs are
 submitted, polled through `job_status` and read with `job_result`; one is stopped with
