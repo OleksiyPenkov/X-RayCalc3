@@ -54,6 +54,16 @@ type
     /// <summary>Polls until the job reaches Wanted, ends in some other final
     /// state, or the timeout elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
+    /// <summary>Copies Tests\Data\P2-02 (xrr.dat + meta.json) into the work
+    /// directory's inbox, so a request can name "P2-02/xrr.dat".</summary>
+    procedure StageP2Inbox;
+    /// <summary>One fit_xrr request exactly as a client sent it - a JSON
+    /// literal with "measurement_id" and "seed" - through a manager of its
+    /// own. The result is the caller's to free.</summary>
+    function RunRequest(const RequestJSON: string): TJSONObject;
+    /// <summary>Every fitted value that lies outside the bound the same result
+    /// echoes in bounds_used, one per line; '' when the result is clean.</summary>
+    function BoundViolations(const Res: TJSONObject): string;
   public
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
@@ -96,12 +106,13 @@ type
     [Test] procedure Fit_OnItsOwnCurve_BeatsTheStartModel;
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
     [Test] procedure Fit_Cancelled_StopsAndLeavesNoResult;
+    [Test] procedure Fit_P2_02_FreePeriod_StaysInsideBounds;
   end;
 
 implementation
 
 uses
-  System.IOUtils, System.Classes, System.Diagnostics,
+  System.IOUtils, System.Classes, System.Diagnostics, System.Math,
   unit_Config, unit_MCPErrors, unit_MCPCalc;
 
 const
@@ -182,6 +193,76 @@ const
   CURVE_THETA_MIN = 0.3;
   CURVE_THETA_MAX = 3.0;
   CU_K_ALPHA = 1.5406;
+
+  { The four fit_xrr requests of the paper-2 agent session of 2026-09-16 whose
+    results carried values outside bounds_used (registered binary 02e7b63):
+    docs\superpowers\specs\2026-09-16-fit-bounds-defect.md. A 20-period C/Co
+    mirror on the P2-02 curve (Tests\Data\P2-02, 2theta 0.5..3.6 deg of the
+    scan), the period free, every layer parameter free with tight bounds.
+    Verbatim, seed included: the same seed reproduces the same swarm. }
+  P2_FREE =
+    '[{"target":"period","stack":0},' +
+    '{"stack":0,"layer":0,"parameters":["thickness","sigma","density"]},' +
+    '{"stack":0,"layer":1,"parameters":["thickness","sigma","density"]}]';
+  P2_REQUEST_E49E =
+    '{"measurement_id":"P2-02/xrr.dat","structure":{"substrate":{"material":"SiO2","sigma":5},' +
+    '"stacks":[{"N":20,"layers":[{"material":"C","thickness":25,"sigma":6,"density":2.1},' +
+    '{"material":"Co","thickness":2.5,"sigma":6,"density":5}]}]},"free":' + P2_FREE + ',' +
+    '"bounds":[{"target":"period","stack":0,"min":26,"max":29.5},' +
+    '{"stack":0,"layer":0,"parameter":"thickness","min":15,"max":28.5},' +
+    '{"stack":0,"layer":0,"parameter":"sigma","min":1,"max":15},' +
+    '{"stack":0,"layer":0,"parameter":"density","min":1.6,"max":3.2},' +
+    '{"stack":0,"layer":1,"parameter":"thickness","min":0.2,"max":12},' +
+    '{"stack":0,"layer":1,"parameter":"sigma","min":1,"max":15},' +
+    '{"stack":0,"layer":1,"parameter":"density","min":2,"max":8.8}],' +
+    '"theta_range":{"min":0.3,"max":1.72},"scale":5.5e-7,"resolution":0.015,' +
+    '"chi2":{"theta_weight":1,"point_weight":true},' +
+    '"optimizer":{"iterations":400,"population":250},"points_inline_max":0,"seed":910003}';
+  P2_REQUEST_1763 =
+    '{"measurement_id":"P2-02/xrr.dat","structure":{"substrate":{"material":"SiO2","sigma":5},' +
+    '"stacks":[{"N":20,"layers":[{"material":"C","thickness":21.4,"sigma":9,"density":2.1},' +
+    '{"material":"Co","thickness":6.2,"sigma":9,"density":8.4}]}]},"free":' + P2_FREE + ',' +
+    '"bounds":[{"target":"period","stack":0,"min":26.8,"max":28.4},' +
+    '{"stack":0,"layer":0,"parameter":"thickness","min":16,"max":25},' +
+    '{"stack":0,"layer":0,"parameter":"sigma","min":4,"max":14},' +
+    '{"stack":0,"layer":0,"parameter":"density","min":1.8,"max":2.6},' +
+    '{"stack":0,"layer":1,"parameter":"thickness","min":3,"max":11},' +
+    '{"stack":0,"layer":1,"parameter":"sigma","min":4,"max":14},' +
+    '{"stack":0,"layer":1,"parameter":"density","min":6,"max":8.8}],' +
+    '"theta_range":{"min":1.35,"max":1.72},"scale":5.5e-7,"resolution":0.015,' +
+    '"chi2":{"theta_weight":0,"point_weight":true},' +
+    '"optimizer":{"iterations":400,"population":250},"points_inline_max":0,"seed":930002}';
+  P2_REQUEST_F2D6 =
+    '{"measurement_id":"P2-02/xrr.dat","structure":{"substrate":{"material":"SiO2","sigma":5},' +
+    '"stacks":[{"N":20,"layers":[{"material":"C","thickness":25.97,"sigma":3.8,"density":2.35},' +
+    '{"material":"Co","thickness":1.66,"sigma":4.6,"density":5.8}]}]},"free":' + P2_FREE + ',' +
+    '"bounds":[{"target":"period","stack":0,"min":27,"max":28.2},' +
+    '{"stack":0,"layer":0,"parameter":"thickness","min":18,"max":27},' +
+    '{"stack":0,"layer":0,"parameter":"sigma","min":1,"max":12},' +
+    '{"stack":0,"layer":0,"parameter":"density","min":1.8,"max":2.8},' +
+    '{"stack":0,"layer":1,"parameter":"thickness","min":0.5,"max":8},' +
+    '{"stack":0,"layer":1,"parameter":"sigma","min":1,"max":12},' +
+    '{"stack":0,"layer":1,"parameter":"density","min":3,"max":8.8}],' +
+    '"theta_range":{"min":0.3,"max":1.72},"scale":5.5e-7,"resolution":0.015,' +
+    '"chi2":{"theta_weight":1,"point_weight":true},' +
+    '"optimizer":{"iterations":300,"population":150,"range_seed":false,"ksxr":0.15},' +
+    '"points_inline_max":0,"seed":940001}';
+  P2_REQUEST_C3D5 =
+    '{"measurement_id":"P2-02/xrr.dat","structure":{"substrate":{"material":"SiO2","sigma":5},' +
+    '"stacks":[{"N":20,"layers":[{"material":"C","thickness":24.78,"sigma":10.3,"density":2.6},' +
+    '{"material":"Co","thickness":3,"sigma":8.2,"density":8.8}]}]},"free":' + P2_FREE + ',' +
+    '"bounds":[{"target":"period","stack":0,"min":27.5,"max":28.1},' +
+    '{"stack":0,"layer":0,"parameter":"thickness","min":24,"max":25.6},' +
+    '{"stack":0,"layer":0,"parameter":"sigma","min":9.2,"max":11.4},' +
+    '{"stack":0,"layer":0,"parameter":"density","min":2.4,"max":2.75},' +
+    '{"stack":0,"layer":1,"parameter":"thickness","min":2.4,"max":3.6},' +
+    '{"stack":0,"layer":1,"parameter":"sigma","min":7.6,"max":8.8},' +
+    '{"stack":0,"layer":1,"parameter":"density","min":8.2,"max":8.9}],' +
+    '"theta_range":{"min":0.3,"max":1.72},"scale":5.5e-7,"resolution":0.015,' +
+    '"chi2":{"theta_weight":1,"point_weight":true},' +
+    '"optimizer":{"iterations":150,"population":100,"range_seed":false,"ksxr":0.1},' +
+    '"points_inline_max":0,"seed":950002}';
+  P2_JOBS: array [0 .. 3] of string = ('e49e', '1763', 'f2d6', 'c3d5');
 
 { ----------------------------------------------------------------- helpers -- }
 
@@ -391,6 +472,95 @@ begin
     Result := Job.CloneResult;
   finally
     Mgr.Free;
+  end;
+end;
+
+procedure TTestMCPFit.StageP2Inbox;
+var
+  Src, Dst: string;
+begin
+  Src := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)),
+    '..\..\Data\P2-02'));
+  Dst := TPath.Combine(TPath.Combine(FTemp, 'inbox'), 'P2-02');
+  TDirectory.CreateDirectory(Dst);
+  TFile.Copy(TPath.Combine(Src, 'xrr.dat'), TPath.Combine(Dst, 'xrr.dat'));
+  TFile.Copy(TPath.Combine(Src, 'meta.json'), TPath.Combine(Dst, 'meta.json'));
+end;
+
+function TTestMCPFit.RunRequest(const RequestJSON: string): TJSONObject;
+var
+  J: TJSONObject;
+  Req: TFitRequest;
+  Seed: Integer;
+  Mgr: TJobManager;
+  Job: TJob;
+begin
+  J := TJSONObject.ParseJSONValue(RequestJSON) as TJSONObject;
+  Assert.IsNotNull(J, 'the request does not parse as JSON');
+  try
+    Seed := J.GetValue<Integer>('seed');
+    Req := ParseFitRequest(J);
+    Mgr := TJobManager.Create(WorkDir);
+    try
+      Job := Mgr.Submit(jkFit, Seed,
+        procedure(AJob: TJob)
+        begin
+          RunFitJob(AJob, Req);
+        end,
+        J);
+      if not WaitForState(Job, jsFinished, 600000) then
+        Assert.Fail(Format('the fit ended as "%s": %s',
+          [JobStateName(Job.State), JobErrorText(Job)]));
+      Result := Job.CloneResult;
+    finally
+      Mgr.Free;
+    end;
+  finally
+    J.Free;
+  end;
+end;
+
+function TTestMCPFit.BoundViolations(const Res: TJSONObject): string;
+var
+  Bounds, Modes: TJSONArray;
+  B, M: TJSONObject;
+  i, k, Stack: Integer;
+  Lo, Hi, V, Tol: Double;
+  Target, Param, Where: string;
+begin
+  Result := '';
+  Bounds := Res.GetValue('bounds_used') as TJSONArray;
+  Modes := Res.GetValue('period_mode') as TJSONArray;
+  for i := 0 to Bounds.Count - 1 do
+  begin
+    B := Bounds.Items[i] as TJSONObject;
+    Target := B.GetValue<string>('target');
+    Param := B.GetValue<string>('parameter');
+    Stack := B.GetValue<Integer>('stack');
+    Lo := B.GetValue<Double>('min');
+    Hi := B.GetValue<Double>('max');
+    if Target = 'period' then
+    begin
+      V := 0;
+      Where := Format('period of stack %d', [Stack]);
+      for k := 0 to Modes.Count - 1 do
+      begin
+        M := Modes.Items[k] as TJSONObject;
+        if M.GetValue<Integer>('stack') = Stack then
+          V := M.GetValue<Double>('fitted_A');
+      end;
+    end
+    else
+    begin
+      Where := Format('stack %d layer %d %s', [Stack, B.GetValue<Integer>('layer'), Param]);
+      V := Res.GetValue<Double>(Format('fitted_structure.stacks[%d].layers[%d].%s',
+        [Stack, B.GetValue<Integer>('layer'), Param]));
+    end;
+    { the engine works in single precision and the result prints 6 digits }
+    Tol := 1E-5 * Max(1.0, Max(Abs(Lo), Abs(Hi)));
+    if (V < Lo - Tol) or (V > Hi + Tol) then
+      Result := Result + Format('%s = %.6g outside [%.6g, %.6g]'#13#10,
+        [Where, V, Lo, Hi], TFormatSettings.Invariant);
   end;
 end;
 
@@ -1225,6 +1395,10 @@ begin
     Assert.AreEqual(FIT_CHI2_DEFINITION, Res.GetValue<string>('chi2_definition'));
     Assert.AreEqual(2, (Res.GetValue('bounds_used') as TJSONArray).Count,
       'both free parameters are reported');
+    Assert.IsTrue(Res.GetValue('out_of_bounds') is TJSONArray,
+      'out_of_bounds is always present');
+    Assert.AreEqual(0, (Res.GetValue('out_of_bounds') as TJSONArray).Count,
+      'a fit inside its bounds lists no violation');
 
     { the files the result names must be there }
     Assert.IsTrue(TFile.Exists(TPath.Combine(WorkDir.Root,
@@ -1318,6 +1492,48 @@ begin
   finally
     Mgr.Free;
   end;
+end;
+
+procedure TTestMCPFit.Fit_P2_02_FreePeriod_StaysInsideBounds;
+const
+  Requests: array [0 .. 3] of string =
+    (P2_REQUEST_E49E, P2_REQUEST_1763, P2_REQUEST_F2D6, P2_REQUEST_C3D5);
+var
+  n: Integer;
+  Res: TJSONObject;
+  Violations, Report: string;
+  Listed: TJSONArray;
+begin
+  if not HenkeTablesPresent or
+     not TFile.Exists(HenkePath + 'Co.bin') or
+     not TFile.Exists(HenkePath + 'SiO2.bin') then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  StageP2Inbox;
+  Report := '';
+  for n := 0 to High(Requests) do
+  begin
+    Res := RunRequest(Requests[n]);
+    try
+      Assert.AreEqual(Res.GetValue<Double>('chi2'), Res.GetValue<Double>('chi2_recalc'),
+        Abs(Res.GetValue<Double>('chi2')) * 1E-4 + 1E-12,
+        'job ' + P2_JOBS[n] + ': chi2_recalc must equal chi2');
+      Violations := BoundViolations(Res);
+      if Violations <> '' then
+        Report := Report + 'job ' + P2_JOBS[n] + ':'#13#10 + Violations;
+      Listed := Res.GetValue('out_of_bounds') as TJSONArray;
+      if Listed = nil then
+        Report := Report + 'job ' + P2_JOBS[n] + ': no out_of_bounds list'#13#10
+      else if Listed.Count > 0 then
+        Report := Report + 'job ' + P2_JOBS[n] + ': out_of_bounds = ' + Listed.ToJSON + #13#10;
+    finally
+      Res.Free;
+    end;
+  end;
+  Assert.AreEqual('', Report, 'fitted values outside bounds_used:'#13#10 + Report);
 end;
 
 initialization

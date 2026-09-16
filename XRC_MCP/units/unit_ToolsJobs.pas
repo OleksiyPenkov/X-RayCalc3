@@ -660,7 +660,10 @@ begin
     'bounds in Angstrom) to fit d itself, for example from the Bragg peaks ' +
     'calc_reflectivity reports. The result says in "period_mode" how each ' +
     'repeating stack was treated (held, free, or floating in a profile fit, ' +
-    'where the polynomial engine never holds the period). ' +
+    'where the polynomial engine never holds the period), echoes the bounds ' +
+    'the fit ran with in "bounds_used", and lists in "out_of_bounds" every ' +
+    'fitted value that lies outside them - an empty list, as the engine ' +
+    'keeps every value inside the bounds given. ' +
     'Cancellation is not instant: the engine offers one point per ' +
     'iteration at which it can be stopped, so cancel_job takes up to one ' +
     'iteration, which grows with population x points x layers. Angles are ' +

@@ -55,6 +55,10 @@ type
     [Test] procedure Test_NormalizeD_SkipsNonPeriodicStack;
     [Test] procedure Test_SetPeriodRange_LetsDMoveWithinBounds;
     [Test] procedure Test_SetPeriodRange_ClampsToTheBounds;
+    [Test] procedure Test_NormalizeD_HeldPeriod_RespectsALowerThicknessBound;
+    [Test] procedure Test_NormalizeD_FreePeriod_PullBackStopsAtTheThicknessBound;
+    [Test] procedure Test_NormalizeD_LeavesAFixedThicknessAlone;
+    [Test] procedure Test_NormalizeD_UnreachablePeriod_StaysInsideTheBounds;
 
     { InitVelocity }
     [Test] procedure Test_InitVelocity_SetsVmaxFromXrange;
@@ -64,6 +68,7 @@ type
     { XSeed }
     [Test] procedure Test_XSeed_X0Unchanged;
     [Test] procedure Test_XSeed_OtherParticlesPerturbed;
+    [Test] procedure Test_XSeed_AllWithinBounds;
 
     { RangeSeed }
     [Test] procedure Test_RangeSeed_AllWithinBounds;
@@ -288,6 +293,79 @@ begin
   Assert.AreEqual(Single(15.0), FPSO.GetX[1][0][1][0], 1E-3, 'H0 scaled by 1.5');
 end;
 
+procedure TTestLFPSOPeriodic.Test_NormalizeD_HeldPeriod_RespectsALowerThicknessBound;
+var
+  S: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  S := MakePeriodicStructure;
+  S.Stacks[0].Layers[0].P[1].min := 15.0;   // H0 in [15, 100]
+  FPSO.TestSetStructure(S);                 // D = 50 held
+
+  // H0 sits on its lower bound; the sum 60 must come down to 50. Scaling both
+  // by 50/60 would put H0 at 12.5, under its bound: H1 takes the whole cut.
+  FPSO.GetX[1][0][1][0] := 15.0;
+  FPSO.GetX[1][1][1][0] := 45.0;
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Single(15.0), FPSO.GetX[1][0][1][0], 1E-4, 'H0 stays on its lower bound');
+  Assert.AreEqual(Single(35.0), FPSO.GetX[1][1][1][0], 1E-3, 'H1 absorbs the correction');
+  Assert.AreEqual(Double(50.0), Double(FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0]), 1E-3, 'period held');
+end;
+
+procedure TTestLFPSOPeriodic.Test_NormalizeD_FreePeriod_PullBackStopsAtTheThicknessBound;
+var
+  S: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  S := MakePeriodicStructure;
+  S.Stacks[0].Layers[0].P[1].min := 15.0;   // H0 in [15, 100]
+  FPSO.TestSetStructure(S);                 // D = 50
+  FPSO.SetPeriodRange(0, 45.0, 48.0);
+
+  // sum 60 is above the range: pulled back to 48 without crossing H0's bound
+  FPSO.GetX[1][0][1][0] := 15.0;
+  FPSO.GetX[1][1][1][0] := 45.0;
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Single(15.0), FPSO.GetX[1][0][1][0], 1E-4, 'H0 stays on its lower bound');
+  Assert.AreEqual(Single(33.0), FPSO.GetX[1][1][1][0], 1E-3, 'H1 takes the pull-back');
+  Assert.AreEqual(Double(48.0), Double(FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0]), 1E-3, 'clamped to the upper period bound');
+end;
+
+procedure TTestLFPSOPeriodic.Test_NormalizeD_LeavesAFixedThicknessAlone;
+var
+  S: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  S := MakePeriodicStructure;
+  S.Stacks[0].Layers[0].P[1].min := 20.0;   // H0 fixed: min = max = V
+  S.Stacks[0].Layers[0].P[1].max := 20.0;
+  FPSO.TestSetStructure(S);                 // D = 50 held
+
+  FPSO.GetX[1][0][1][0] := 20.0;
+  FPSO.GetX[1][1][1][0] := 35.0;            // sum 55
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Single(20.0), FPSO.GetX[1][0][1][0], 1E-5, 'a fixed thickness never moves');
+  Assert.AreEqual(Single(30.0), FPSO.GetX[1][1][1][0], 1E-3, 'the free thickness holds the period');
+end;
+
+procedure TTestLFPSOPeriodic.Test_NormalizeD_UnreachablePeriod_StaysInsideTheBounds;
+var
+  S: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  S := MakePeriodicStructure;
+  S.Stacks[0].Layers[0].P[1].min := 15.0;   // H0 in [15, 20]
+  S.Stacks[0].Layers[0].P[1].max := 20.0;
+  S.Stacks[0].Layers[1].P[1].max := 25.0;   // H1 in [1, 25]
+  FPSO.TestSetStructure(S);                 // D = 50 held, but at most 45 is reachable
+
+  FPSO.GetX[1][0][1][0] := 20.0;
+  FPSO.GetX[1][1][1][0] := 25.0;
+  FPSO.TestNormalizeD(1);
+  Assert.AreEqual(Single(20.0), FPSO.GetX[1][0][1][0], 1E-4, 'H0 stops at its upper bound');
+  Assert.AreEqual(Single(25.0), FPSO.GetX[1][1][1][0], 1E-4, 'H1 stops at its upper bound');
+end;
+
 procedure TTestLFPSOPeriodic.Test_NormalizeD_SkipsNonPeriodicStack;
 var
   S: TFitStructure;
@@ -414,6 +492,33 @@ begin
       Break;
     end;
   Assert.IsFalse(allSame, 'Other particles should be perturbed from X[0]');
+end;
+
+procedure TTestLFPSOPeriodic.Test_XSeed_AllWithinBounds;
+var
+  S: TFitStructure;
+  P: TFitParams;
+  i, j, k: integer;
+  v, lo, hi: single;
+begin
+  RandSeed := 42;
+  P := MakeParams;
+  P.Ksxr := 5.0;        // a deliberately huge spread: most seeds land outside
+  FPSO.TestSetParams(P);
+  S := MakePeriodicStructure;
+  FPSO.TestSetStructure(S);
+  FPSO.TestXSeed;
+
+  for i := 0 to High(FPSO.GetX) do
+    for j := 0 to High(FPSO.GetX[i]) do
+      for k := 1 to 3 do
+      begin
+        v := FPSO.GetX[i][j][k][0];
+        lo := FPSO.GetXmin[0][j][k][0];
+        hi := FPSO.GetXmax[0][j][k][0];
+        Assert.IsTrue((v >= lo - 1E-3) and (v <= hi + 1E-3),
+          Format('X[%d][%d][%d] = %g not in [%g..%g]', [i, j, k, v, lo, hi]));
+      end;
 end;
 
 { RangeSeed }

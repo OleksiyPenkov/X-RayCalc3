@@ -119,11 +119,50 @@ begin
   FPeriodMax[StackIndex] := AMax;
 end;
 
-procedure TLFPSO_Periodic.NormalizeD; // keep D of every periodic stack constant, or inside its range
+{ Keeps the period of every periodic stack - at the start model's value, or
+  inside the range SetPeriodRange opened - without moving any thickness outside
+  its own [Xmin, Xmax]. The correction is spread over the layers in proportion
+  to their thickness, so that with room everywhere the ratio between them is
+  kept exactly as the plain rescaling did; a layer that reaches its bound stops
+  there and the remainder goes to the others, and a fixed thickness
+  (Xmin = Xmax) never moves. A period the bounds cannot reach is left at the
+  nearest sum they allow rather than forced. Before 2026-09-16 one factor was
+  applied to every layer, which drove thicknesses through their bounds - and
+  below zero when the pull-back was large - in fit_xrr results. }
+procedure TLFPSO_Periodic.NormalizeD(const ParticleIndex: integer);
 var
-  i, j: integer;
+  i, j, Pass: integer;
   Index, Last: integer;
-  Dreal, Target, f: double;
+  Dreal, Target, Delta, W, Lo, Hi, Xj, Tol: double;
+  Uniform: Boolean;
+
+  function HasRoom(const Layer: integer): Boolean;
+  begin
+    if Delta > 0 then
+      Result := X[ParticleIndex][Layer][1][0] < Xmax[0][Layer][1][0]
+    else
+      Result := X[ParticleIndex][Layer][1][0] > Xmin[0][Layer][1][0];
+  end;
+
+  function Weight(const Layer: integer): double;
+  begin
+    if Uniform then
+      Result := 1
+    else if X[ParticleIndex][Layer][1][0] > 0 then
+      Result := X[ParticleIndex][Layer][1][0]
+    else
+      Result := 0;
+  end;
+
+  function StackSum: double;
+  var
+    k: integer;
+  begin
+    Result := 0;
+    for k := Index to Last do
+      Result := Result + X[ParticleIndex][k][1][0];
+  end;
+
 begin
   Index := 0;
 
@@ -136,9 +175,19 @@ begin
     end;
     Last := Index + Length(FStructure.Stacks[i].Layers) - 1;
 
-    Dreal := 0;
+    // every thickness inside its own bounds first: XSeed and CheckLimits
+    // already see to that, so this only guards a caller that did not
     for j := Index to Last do
-      Dreal := Dreal + X[ParticleIndex][j][1][0];
+    begin
+      Lo := Xmin[0][j][1][0];
+      Hi := Xmax[0][j][1][0];
+      if X[ParticleIndex][j][1][0] < Lo then
+        X[ParticleIndex][j][1][0] := Lo
+      else if X[ParticleIndex][j][1][0] > Hi then
+        X[ParticleIndex][j][1][0] := Hi;
+    end;
+
+    Dreal := StackSum;
 
     if (i < Length(FPeriodMin)) and (FPeriodMax[i] > FPeriodMin[i]) then
     begin
@@ -156,9 +205,50 @@ begin
     else
       Target := FStructure.Stacks[i].D;
 
-    f := (Target - Dreal)/Dreal;
-    for j := Index to Last do
-      X[ParticleIndex][j][1][0] := X[ParticleIndex][j][1][0] * (1 + f);
+    Tol := 1E-6 * Abs(Target);
+    if Tol < 1E-6 then
+      Tol := 1E-6;
+
+    // Every pass either lands on the target or pins one more layer to its
+    // bound, so one pass per layer plus one is always enough.
+    for Pass := 0 to Last - Index + 1 do
+    begin
+      Delta := Target - Dreal;
+      if Abs(Delta) <= Tol then
+        Break;
+
+      Uniform := False;
+      W := 0;
+      for j := Index to Last do
+        if HasRoom(j) then
+          W := W + Weight(j);
+      if W <= 0 then
+      begin
+        // nothing with a positive thickness can move: share the correction
+        // equally among the layers that still have room, if any
+        Uniform := True;
+        for j := Index to Last do
+          if HasRoom(j) then
+            W := W + 1;
+        if W <= 0 then
+          Break;                        // the bounds cannot reach this period
+      end;
+
+      for j := Index to Last do
+        if HasRoom(j) then
+        begin
+          Lo := Xmin[0][j][1][0];
+          Hi := Xmax[0][j][1][0];
+          Xj := X[ParticleIndex][j][1][0] + Delta * Weight(j) / W;
+          if Xj < Lo then
+            Xj := Lo
+          else if Xj > Hi then
+            Xj := Hi;
+          X[ParticleIndex][j][1][0] := Xj;
+        end;
+
+      Dreal := StackSum;
+    end;
 
     Index := Last + 1;
   end;
@@ -172,7 +262,17 @@ begin
   begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do            // for H, s, rho
+      begin
         X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
+        { Clamp the seed as TLFPSO_Irregular.XSeed does through CheckLimits:
+          a seed outside its bounds was evaluated as it stood, and when it
+          scored best - after a shake, or with range_seed off - the fit ended
+          on a value the client never allowed (fit_xrr, 2026-09-16). }
+        if X[i][j][k][0] < Xmin[0][j][k][0] then
+          X[i][j][k][0] := Xmin[0][j][k][0]
+        else if X[i][j][k][0] > Xmax[0][j][k][0] then
+          X[i][j][k][0] := Xmax[0][j][k][0];
+      end;
 
     NormalizeD(i);
   end;

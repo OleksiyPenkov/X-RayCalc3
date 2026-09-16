@@ -1,0 +1,7 @@
+{
+  "specimen": "P2-02",
+  "lambda": 1.540598,
+  "theta_unit": "2theta",
+  "columns": "2theta_deg intensity_counts",
+  "note": "PANalytical Empyrean, Cu K-alpha, 2theta 0.5..3.6 deg of the 2026-09-16 scan of the 20-period C/Co mirror P2-02; test asset for TestMCPFit.Fit_P2_02_FreePeriod_StaysInsideBounds"
+}

@@ -36,6 +36,14 @@ sqrt(2<delta>) with <delta> thickness-weighted over the top 500 A of the structu
 peaks exclude maxima whose 2d sin(theta)/lambda sits more than 0.25 from an integer (Kiessig fringes,
 the plateau edge).
 
+**`fit_xrr` since 2026-09-16:** every fitted value lies inside the bounds the request gave. The
+periodic engine's `NormalizeD` (which holds or pulls back the period) now spreads its correction only
+over layers with room inside their own thickness bounds, and its `XSeed` clamps every seed (a seed
+outside its bounds, after a shake or with `range_seed: false`, used to be evaluated as it stood and
+could end the fit on a value the client never allowed). The result carries `out_of_bounds`, a list in
+the shape of `bounds_used` plus `value` of every fitted value outside its bound; it is empty, and a
+client may treat a non-empty one as a server defect.
+
 **Smoke test:** `pwsh -File XRC_MCP\smoke\session.ps1` drives one live stdio session against
 `_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 16 tools (jobs are
 submitted, polled through `job_status` and read with `job_result`; one is stopped with

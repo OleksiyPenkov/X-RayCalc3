@@ -61,7 +61,11 @@ unit unit_MCPFit;
      the thicknesses of a periodic stack without freeing its period therefore
      fits the ratio, not the period. TLFPSO_Poly never holds the period at all
      (it has no NormalizeD), so a profile fit lets it float within the thickness
-     bounds and the result reports "floating".
+     bounds and the result reports "floating". Since 2026-09-16 NormalizeD
+     spreads its correction only over layers with room inside their own
+     thickness bounds, and XSeed clamps every seed, so no value the engine
+     returns can lie outside the bounds given; the result's "out_of_bounds"
+     list (OutOfBoundsJSON) is the check on that promise, and is empty.
 
    Cancellation is observed once per iteration, in the OnProgress callback: the
    engine offers no other point at which it can be stopped. A cancelled run
@@ -1281,6 +1285,61 @@ begin
     Result := Result + S.Stacks[GUIStack].Layers[j].P[1].V;
 end;
 
+/// Every fitted value that lies outside the bound the client gave, in the shape
+/// of bounds_used plus "value": a safety net behind the engine's own clamping
+/// (CheckLimits, XSeed and NormalizeD all keep a particle inside its bounds
+/// since 2026-09-16), so that a client is never handed a silent violation.
+/// The comparison is against the bounds as the engine holds them - single
+/// precision, TFitValue.min/max - so a value clamped exactly to a bound is
+/// inside it.
+function OutOfBoundsJSON(const Req: TFitRequest; const Fitted: TFitStructure): TJSONArray;
+
+  procedure Add(const Target: string; StackJSON, LayerJSON: Integer;
+    const Param: string; Value, AMin, AMax: Double);
+  var
+    Obj: TJSONObject;
+  begin
+    Obj := TJSONObject.Create;
+    Result.AddElement(Obj);
+    Obj.AddPair('target', Target);
+    Obj.AddPair('stack', TJSONNumber.Create(StackJSON));
+    if Target = 'layer' then
+      Obj.AddPair('layer', TJSONNumber.Create(LayerJSON));
+    Obj.AddPair('parameter', Param);
+    Obj.AddPair('value', JSONArgs.Num(Value));
+    Obj.AddPair('min', JSONArgs.Num(AMin));
+    Obj.AddPair('max', JSONArgs.Num(AMax));
+  end;
+
+var
+  n: Integer;
+  V: Single;
+  D: Double;
+begin
+  Result := TJSONArray.Create;
+  try
+    for n := 0 to High(Req.FreeParams) do
+      with Req.FreeParams[n] do
+      begin
+        V := Fitted.Stacks[GUIStack].Layers[GUILayer].P[P].V;
+        if (V < Single(Min)) or (V > Single(Max)) then
+          Add('layer', StackJSON, LayerJSON, PARAM_NAMES[P], V, Min, Max);
+      end;
+    for n := 0 to High(Req.PeriodRefs) do
+      with Req.PeriodRefs[n] do
+      begin
+        { the sum of single-precision thicknesses against a single-precision
+          bound, with one ulp per layer of slack for the summation }
+        D := StackPeriod(Fitted, GUIStack);
+        if (D < Single(Min) * (1 - 1E-6)) or (D > Single(Max) * (1 + 1E-6)) then
+          Add('period', StackJSON, -1, 'period', D, Min, Max);
+      end;
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
 /// One entry per repeating stack, in JSON order: how its period was treated -
 /// "held" at the start value (the periodic engine's default), "free" inside
 /// the bounds given, or "floating" (a profile fit, where TLFPSO_Poly never
@@ -1715,6 +1774,7 @@ begin
     Res.AddPair('fitted_structure',
       FittedStructureJSON(Fitted, Req.Info, Profiles));
     Res.AddPair('bounds_used', BoundsUsedJSON(Req.FreeParams, Req.PeriodRefs, Req.Info));
+    Res.AddPair('out_of_bounds', OutOfBoundsJSON(Req, Fitted));
     Res.AddPair('period_mode', PeriodModeJSON(Req, Fitted));
     Res.AddPair('profiles', ProfilesJSON(Poly, Req.Info, Req.FreeParams));
 
