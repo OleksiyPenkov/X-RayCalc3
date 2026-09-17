@@ -115,6 +115,7 @@ type
     [Test] procedure Fit_ZeroPasses_EqualsNoSmoothArgument;
     [Test] procedure Fit_NoSmooth_MatchesRevision06035de;
     [Test] procedure Schema_DescribesTheManualsDataConditioning;
+    [Test] procedure Optimizer_Default_IsTheLabsPractice;
 
     [Test] procedure Fit_OnItsOwnCurve_BeatsTheStartModel;
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
@@ -1720,6 +1721,55 @@ begin
       MovAvgText := Props.GetValue<string>('chi2.properties.movavg_window.description');
       Assert.IsTrue(MovAvgText.Contains('"smooth"'),
         'movavg_window says it is not the smoothing of the fitted curve');
+    finally
+      Tools.Free;
+    end;
+  finally
+    Reg.Free;
+  end;
+end;
+
+{ The lab fits with 100 iterations and 500 to 1000 particles - "population
+  wins iterations" (author, 2026-09-17) - so that is what a request that says
+  nothing gets, and what the schema tells an agent that wants to choose. }
+procedure TTestMCPFit.Optimizer_Default_IsTheLabsPractice;
+var
+  Req: TFitRequest;
+  Reg: TToolRegistry;
+  Tools: TJSONArray;
+  Opt: TJSONObject;
+  i: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+  Assert.AreEqual(500, Req.Fit.Pop, 'default population');
+  Assert.AreEqual(100, Req.Fit.NMax, 'default iterations');
+
+  Opt := nil;
+  Reg := TToolRegistry.Create;
+  try
+    RegisterJobTools(Reg);
+    Tools := Reg.GetToolsList;
+    try
+      for i := 0 to Tools.Count - 1 do
+        if Tools.Items[i].GetValue<string>('name') = 'fit_xrr' then
+          Opt := Tools.Items[i].GetValue<TJSONObject>(
+            'inputSchema.properties.optimizer.properties');
+      Assert.IsNotNull(Opt, 'fit_xrr has an optimizer schema');
+      Assert.IsTrue(Opt.GetValue<string>('population.description').Contains('500'),
+        'population: the default');
+      Assert.IsTrue(Opt.GetValue<string>('population.description').Contains('1000'),
+        'population: the practice reaches 1000');
+      Assert.IsTrue(Opt.GetValue<string>('iterations.description').Contains('population'),
+        'iterations: raise the population first');
     finally
       Tools.Free;
     end;

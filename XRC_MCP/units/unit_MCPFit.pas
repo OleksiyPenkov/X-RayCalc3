@@ -101,9 +101,12 @@ const
     'measured.dat and fit.xrcx; the GUI engine (v1) fits neither scale nor ' +
     'background';
 
-  // Argument defaults, all of them the brief's.
+  // Argument defaults, all of them the brief's - but for the population, which
+  // was 100 until 2026-09-17. The lab fits with 100 iterations and 500 to 1000
+  // particles ("population wins iterations"), so a request that names no
+  // optimizer now gets the lower end of that.
   DEF_RESOLUTION   = 0.015;    // theta FWHM, degrees
-  DEF_POPULATION   = 100;
+  DEF_POPULATION   = 500;
   DEF_ITERATIONS   = 100;
   DEF_TOLERANCE    = 0.005;
   DEF_JAMMING_MAX  = 1;

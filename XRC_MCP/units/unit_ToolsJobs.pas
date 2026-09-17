@@ -445,10 +445,14 @@ function FitOptimizerSchema: TJSONObject;
 begin
   Result := SchemaObject([]);
   AddProp(Result, 'population', 'integer',
-    Format('Particles in the swarm (default %d). Cost per iteration is linear ' +
-      'in it, and so is how long a cancel takes.', [DEF_POPULATION]));
+    Format('Particles in the swarm (default %d). The lab''s practice is 500 ' +
+      'to 1000 particles at 100 iterations: a larger swarm helps more than ' +
+      'more iterations. Cost per iteration is linear in it, and so is how ' +
+      'long a cancel takes (about 0.25 s per iteration for 500 particles on ' +
+      'a 1000-point curve).', [DEF_POPULATION]));
   AddProp(Result, 'iterations', 'integer',
-    Format('Iteration budget (default %d). The run also stops early when the ' +
+    Format('Iteration budget (default %d). To search harder, raise the ' +
+      'population before the iterations. The run also stops early when the ' +
       'chi-squared falls below "tolerance".', [DEF_ITERATIONS]));
   AddProp(Result, 'tolerance', 'number',
     Format('Stop as soon as the chi-squared is below this (default %g).',
@@ -641,8 +645,8 @@ begin
       'engine seeds the swarm around it.', [Round(DEF_FREE_DEVIATION * 100)]),
     ArraySchema(FitBoundItemSchema));
   AddRefProp(Schema, 'optimizer',
-    'The particle swarm itself. Every key is optional and defaults to the ' +
-    'value the GUI uses.', FitOptimizerSchema);
+    'The particle swarm itself. Every key is optional; the defaults are the ' +
+    'GUI''s, with the population the lab fits with.', FitOptimizerSchema);
   AddRefProp(Schema, 'chi2',
     'How the residual is weighted. describe_server.fit.chi2 gives the formula.',
     FitChi2Schema);
