@@ -346,12 +346,28 @@ foreach ($run in 1, 2) {
     if ($st.state -ne 'finished') { Fail "fit_xrr run $run ended '$($st.state)': $($st.last_message)" }
     $res = Invoke-Tool 'job_result' @{ job_id = $sub.job_id }
     $fitChi    += [double] $res.chi2
+    $fitChiStart = $res.chi2_start
     $fitStruct += ($res.fitted_structure | ConvertTo-Json -Depth 20 -Compress)
     Say "[11/16] fit_xrr r$run     : $($sub.job_id) chi2=$($res.chi2) (start $($res.chi2_start)) iter=$($res.iterations_run) xrcx=$($res.files.xrcx)"
 }
 if ($fitChi[0] -ne $fitChi[1]) { Fail "fit_xrr is not deterministic: seed 7 gave chi2 $($fitChi[0]) and $($fitChi[1])" }
 if ($fitStruct[0] -ne $fitStruct[1]) { Fail 'fit_xrr with seed 7 produced two different fitted structures' }
+if ($res.smooth.passes -ne 0) { Fail "fit_xrr without `"smooth`" echoed smooth.passes = $($res.smooth.passes), expected 0" }
 Say "[12/16] fit determinism  : both runs report chi2 = $($fitChi[0]) and the same fitted structure"
+
+# the same fit on the curve smoothed once (Data - Smooth): echoed, and a different fit
+$smoothArgs = [ordered]@{}
+foreach ($k in $fitArgs.Keys) { $smoothArgs[$k] = $fitArgs[$k] }
+$smoothArgs.smooth = [ordered]@{ passes = 1 }
+$sub = Invoke-Tool 'fit_xrr' $smoothArgs
+$st  = Wait-JobDone $sub.job_id 600
+if ($st.state -ne 'finished') { Fail "fit_xrr with smooth ended '$($st.state)': $($st.last_message)" }
+$res = Invoke-Tool 'job_result' @{ job_id = $sub.job_id }
+if (($res.smooth.passes -ne 1) -or ($res.smooth.window -ne 5)) {
+    Fail "fit_xrr with smooth.passes = 1 echoed smooth = $($res.smooth | ConvertTo-Json -Compress)"
+}
+if ([double] $res.chi2_start -eq [double] $fitChiStart) { Fail 'fit_xrr with smooth scored the start model exactly as the raw curve does: the curve was not smoothed' }
+Say "[12/16] fit smooth       : $($sub.job_id) smooth=$($res.smooth | ConvertTo-Json -Compress) chi2_start=$($res.chi2_start) (raw $fitChiStart)"
 
 # --- the inbox tools ---------------------------------------------------------
 $meas = Invoke-Tool 'list_measurements' @{}

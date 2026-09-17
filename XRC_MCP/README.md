@@ -36,6 +36,16 @@ sqrt(2<delta>) with <delta> thickness-weighted over the top 500 A of the structu
 peaks exclude maxima whose 2d sin(theta)/lambda sits more than 0.25 from an integer (Kiessig fringes,
 the plateau edge).
 
+**`fit_xrr` since 2026-09-17:** `"smooth": {"passes": n}` (whole number 0..10, default 0 = off)
+smooths the measured curve before the fit with the GUI's Data - Smooth, `MovAvg(Data, 5)` on the
+linear intensities, once per pass. The order is the manual's: `scale`, then `smooth` over the whole
+curve, then the `theta_range` trim. The result echoes `"smooth": {"passes": n, "window": 5}`, and
+`measured.dat`, `fit.xrcx` and a `save_project` with `curves.job_id` hold the curve as fitted;
+`get_measurement` stays raw. Without `smooth` a fit is identical to the one `06035de` ran.
+`scale` is the manual's normalize step - make the measured and the calculated curve agree at about
+theta 0.4 deg - not "normalise to the plateau" as the text above and the tool description used to
+say. `chi2.movavg_window` only sets the point weights and smooths neither curve.
+
 **`fit_xrr` since 2026-09-16:** every fitted value lies inside the bounds the request gave. The
 periodic engine's `NormalizeD` (which holds or pulls back the period) now spreads its correction only
 over layers with room inside their own thickness bounds, and its `XSeed` clamps every seed (a seed

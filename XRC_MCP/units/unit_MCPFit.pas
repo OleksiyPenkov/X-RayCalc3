@@ -44,6 +44,8 @@ unit unit_MCPFit;
      or resolution: the engine has no such parameters. Asking for any of them is
      refused with not_fittable. "scale" is instead a fixed multiplier the client
      applies to the measured intensities (ApplyScale), echoed and stored.
+     "smooth" is the GUI's Data - Smooth on that curve (ApplySmooth). The order
+     is the manual's: scale, smooth the whole curve, then trim to theta_range.
    - A parameter is "fixed" by giving it an empty range. Xrange = max - min = 0
      makes Rand(0) return 0 in XSeed and RangeSeed, and CheckLimits clamps to
      [Xmin, Xmax], so the value never moves. Free parameters get a real range,
@@ -128,6 +130,10 @@ const
   MAX_FIT_POINTS = 100000;
   /// The engine smooths the last MVAWindow points of a convolved curve.
   FIT_MVA_WINDOW = 10;
+  /// "smooth": the window of the GUI's Data - Smooth, which is
+  /// MovAvg(Data, 5) in TfrmChartInfo.SmoothData, and the most passes taken.
+  FIT_SMOOTH_WINDOW = 5;
+  MAX_SMOOTH_PASSES = 10;
 
 type
   /// <summary>One fitted parameter: where it is in the client's JSON, where it
@@ -172,6 +178,7 @@ type
     Profile: Boolean;                   // TLFPSO_Poly rather than TLFPSO_Periodic
     InlineMax: Integer;
     Scale: Double;                      // fixed multiplier already applied to Data
+    SmoothPasses: Integer;              // Data - Smooth passes already applied to Data
     PeriodRefs: TArray<TPeriodRef>;     // repeating stacks whose period is free
   end;
 
@@ -392,9 +399,10 @@ begin
 end;
 
 /// "scale": a fixed multiplier the client applies to the measured intensities
-/// before the fit - the wiki's "normalise to the total-reflection plateau" -
-/// default 1. It is not fitted; the scaled curve is what the chi-squared, the
-/// files and the .xrcx see, so the GUI shows the same data.
+/// before the fit - the manual's "normalize": make the measured and the
+/// calculated curve agree at about theta 0.4 deg - default 1. It is not
+/// fitted; the scaled curve is what the chi-squared, the files and the .xrcx
+/// see, so the GUI shows the same data.
 procedure ApplyScale(const Params: TJSONObject; var Req: TFitRequest);
 var
   i: Integer;
@@ -409,13 +417,48 @@ begin
       Req.Data[i].r := Req.Data[i].r * Req.Scale;
 end;
 
-/// theta_range {min, max}, defaulting to the range of the data, applied to the
-/// curve. Leaves Req.Data restricted and Req.ThetaMin / ThetaMax on the range
-/// the restricted curve actually spans.
-procedure ApplyThetaRange(const Params: TJSONObject; var Req: TFitRequest);
+/// "smooth": {"passes": n} runs the GUI's Data - Smooth n times over the whole
+/// measured curve - MovAvg(Data, 5), the call TfrmChartInfo.SmoothData makes, on
+/// the linear intensities. Default 0, off. It comes after the scale and before
+/// the trim, as in the manual: MovAvg copies the first points and flattens the
+/// last ones, which a trimmed range then leaves out. Like the scale, the
+/// smoothed curve is what the chi-squared, the files and the .xrcx see.
+procedure ApplySmooth(const Params: TJSONObject; var Req: TFitRequest);
 var
-  JRange: TJSONObject;
-  Lo, Hi: Double;
+  JSmooth: TJSONObject;
+  Passes: Double;
+  i: Integer;
+begin
+  Req.SmoothPasses := 0;
+  JSmooth := JSONArgs.OptObj(Params, 'smooth');
+  if JSmooth = nil then
+    Exit;
+
+  Passes := JSONArgs.OptFloat(JSmooth, 'passes', 0);
+  if (Frac(Passes) <> 0) or (Passes < 0) or (Passes > MAX_SMOOTH_PASSES) then
+    raise EMCPError.Create('invalid_argument',
+      Format('"smooth.passes" must be a whole number from 0 to %d',
+             [MAX_SMOOTH_PASSES]),
+      FloatToStr(Passes, FitFmt));
+  Req.SmoothPasses := Round(Passes);
+  if Req.SmoothPasses = 0 then
+    Exit;
+
+  { MovAvg averages Window + 1 points; on a shorter curve it writes zeros over
+    the tail, and the chi-squared takes the logarithm of the intensities. }
+  if Length(Req.Data) <= FIT_SMOOTH_WINDOW then
+    raise EMCPError.Create('invalid_argument',
+      Format('"smooth" needs a measured curve of more than %d points',
+             [FIT_SMOOTH_WINDOW]),
+      IntToStr(Length(Req.Data)));
+
+  for i := 1 to Req.SmoothPasses do
+    Req.Data := MovAvg(Req.Data, FIT_SMOOTH_WINDOW);
+end;
+
+/// A curve a fit can read: at least two points, ordered by increasing theta.
+procedure CheckMeasuredCurve(const Req: TFitRequest);
+var
   i: Integer;
 begin
   if Length(Req.Data) < 2 then
@@ -429,7 +472,16 @@ begin
         'The measured curve must be ordered by increasing theta',
         Format('point %d: theta %.6g after %.6g',
                [i, Req.Data[i].t, Req.Data[i - 1].t], FitFmt));
+end;
 
+/// theta_range {min, max}, defaulting to the range of the data, applied to the
+/// curve. Leaves Req.Data restricted and Req.ThetaMin / ThetaMax on the range
+/// the restricted curve actually spans.
+procedure ApplyThetaRange(const Params: TJSONObject; var Req: TFitRequest);
+var
+  JRange: TJSONObject;
+  Lo, Hi: Double;
+begin
   Lo := Req.Data[0].t;
   Hi := Req.Data[High(Req.Data)].t;
 
@@ -948,8 +1000,10 @@ begin
   Result.ThetaWeight     := JSONArgs.OptInt(JChi, 'theta_weight', 0);
   Result.MovAvgWindow    := JSONArgs.OptFloat(JChi, 'movavg_window', DEF_MOVAVG);
 
-  { The GUI's smoothing of the measured curve is a display aid, not part of the
-    fit; the server never turns it on. }
+  { TFitParams.Smooth makes the irregular engine smooth a parameter's profile
+    over the layers (TLFPSO_Irregular.Smooth); neither engine run here reads
+    it. It is not the GUI's Data - Smooth of the measured curve - that one is
+    the "smooth" argument, ApplySmooth. }
   Result.Smooth       := False;
   Result.SmoothWindow := -1;
 
@@ -1009,9 +1063,12 @@ begin
       Format('No Henke table for material "%s"', [Bad]),
       'list_materials enumerates the names this server knows');
 
+  { The manual's data conditioning, in its order: normalize, smooth, trim. }
   ReadMeasuredCurve(Params, Result);
-  ApplyThetaRange(Params, Result);
+  CheckMeasuredCurve(Result);
   ApplyScale(Params, Result);
+  ApplySmooth(Params, Result);
+  ApplyThetaRange(Params, Result);
 
   { Every omitted density becomes the bulk value the engine would use for it,
     before "free" and "bounds" are read: the engines seed the swarm around the
@@ -1608,6 +1665,8 @@ begin
     P.Note := Format('fit_xrr on %s', [Req.DataTitle])
   else
     P.Note := Format('fit_xrr on %s, intensities x %g', [Req.DataTitle, Req.Scale]);
+  if Req.SmoothPasses > 0 then
+    P.Note := P.Note + Format(', Data - Smooth x %d', [Req.SmoothPasses]);
   P.XRCData    := StructureToXRCData(Fitted, Req.Info);
   P.Extensions := FitExtensions(Poly);
   P.CalcCurve  := CalcCurve;
@@ -1631,7 +1690,7 @@ var
   Chi2, Chi2Recalc, Chi2Start, Scale: Double;
   IterationsRun: Integer;
   MeasuredPath, CalcPath, ResidualPath, XRCXPath: string;
-  Res, JFiles: TJSONObject;
+  Res, JFiles, JSmooth: TJSONObject;
   EngineName: string;
 begin
   if Job = nil then
@@ -1790,6 +1849,10 @@ begin
     Res.AddPair('residual', CurveOrNull(Residual, Req.InlineMax));
 
     Res.AddPair('scale', JSONArgs.Num(Req.Scale));
+    JSmooth := TJSONObject.Create;
+    Res.AddPair('smooth', JSmooth);
+    JSmooth.AddPair('passes', TJSONNumber.Create(Req.SmoothPasses));
+    JSmooth.AddPair('window', TJSONNumber.Create(FIT_SMOOTH_WINDOW));
     Res.AddPair('background', JSONArgs.Num(0.0));
     Res.AddPair('note', FIT_NO_SCALE_NOTE);
 

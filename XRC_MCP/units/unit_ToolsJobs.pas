@@ -507,7 +507,17 @@ begin
     'background (default true).');
   AddProp(Result, 'movavg_window', 'number',
     Format('Window of that moving average, as a fraction of the number of ' +
-      'points (default %g).', [DEF_MOVAVG]));
+      'points (default %g). It only sets the point weights: it changes neither ' +
+      'the measured curve that is fitted - smoothing that one is "smooth" - ' +
+      'nor the calculated curve.', [DEF_MOVAVG]));
+end;
+
+function FitSmoothSchema: TJSONObject;
+begin
+  Result := SchemaObject([]);
+  AddProp(Result, 'passes', 'integer',
+    Format('How many times to smooth, 0 to %d (default 0 = off). One pass is ' +
+      'one click of Data - Smooth.', [MAX_SMOOTH_PASSES]));
 end;
 
 /// Submits one fit. The whole request is parsed and validated here - the
@@ -589,14 +599,32 @@ begin
   AddProp(Schema, 'energy', 'number',
     'Photon energy in eV, instead of "lambda".');
   AddRefProp(Schema, 'theta_range',
-    'The part of the measured curve to fit (the wiki''s "trim"), in degrees ' +
+    'The part of the measured curve to fit (the manual''s "trim"), in degrees ' +
     'theta (never 2theta). Defaults to the whole curve.', FitThetaRangeSchema);
   AddProp(Schema, 'scale', 'number',
     'Fixed multiplier applied to the measured intensities before the fit - ' +
-    'the wiki''s "normalise to the total-reflection plateau" step, chosen by ' +
-    'the caller (default 1). It is not fitted; the result echoes it, and ' +
-    'measured.dat and fit.xrcx hold the scaled curve so that X-Ray Calc 3 ' +
-    'shows the same data.');
+    'the manual''s "normalize" step, chosen by the caller (default 1). To ' +
+    'choose it, compare the measured intensity with the calculated ' +
+    'reflectivity of the start model (calc_reflectivity) at about theta 0.4 ' +
+    'deg - past the critical angle, before the first Bragg peak - and take ' +
+    'scale = calculated / measured there, so that the two curves agree at ' +
+    'that angle. Do not normalize to the total-reflection region or to 1 / ' +
+    'the maximum count. It is not fitted and the server does not choose ' +
+    'it; the result echoes it, and measured.dat and fit.xrcx hold the ' +
+    'scaled curve so that X-Ray Calc 3 shows the same data.');
+  AddRefProp(Schema, 'smooth',
+    Format('Smooths the measured curve before the fit - the manual''s ' +
+      '"smooth" step, the same operation as X-Ray Calc 3''s Data - Smooth: a ' +
+      'moving average on the linear intensities (window %d, the mean of six ' +
+      'adjacent points), once per pass. It also lowers and broadens any ' +
+      'feature narrower than about six points, so it suits finely stepped ' +
+      'scans. Off by default. The order is the manual''s: "scale", ' +
+      'then "smooth" over the whole curve, then the "theta_range" trim. The ' +
+      'first points of the curve are left as they are and the last three ' +
+      'are flattened, so trim both ends. The result echoes it, and ' +
+      'measured.dat, fit.xrcx and a project saved from the job hold the ' +
+      'curve as fitted; get_measurement always returns the raw curve.',
+      [FIT_SMOOTH_WINDOW]), FitSmoothSchema);
   AddProp(Schema, 'resolution', 'number',
     Format('Instrumental resolution as the FWHM in degrees theta of the ' +
       'Gaussian the calculated curve is convolved with (default %g). It is ' +
@@ -664,6 +692,9 @@ begin
     'the fit ran with in "bounds_used", and lists in "out_of_bounds" every ' +
     'fitted value that lies outside them - an empty list, as the engine ' +
     'keeps every value inside the bounds given. ' +
+    'The measured curve is conditioned as the manual says, in this order: ' +
+    '"scale" (normalize), "smooth" (Data - Smooth), "theta_range" (trim); ' +
+    'the server chooses none of them. ' +
     'Cancellation is not instant: the engine offers one point per ' +
     'iteration at which it can be stopped, so cancel_job takes up to one ' +
     'iteration, which grows with population x points x layers. Angles are ' +

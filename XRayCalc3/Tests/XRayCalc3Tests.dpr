@@ -84,6 +84,7 @@ uses
   unit_ToolsFiles in '..\..\XRC_MCP\units\unit_ToolsFiles.pas',
   TestMCPProjectFile in 'TestMCPProjectFile.pas',
   unit_MCPFit in '..\..\XRC_MCP\units\unit_MCPFit.pas',
+  unit_ToolsJobs in '..\..\XRC_MCP\units\unit_ToolsJobs.pas',
   TestMCPFit in 'TestMCPFit.pas';
 
 {$R *.res}

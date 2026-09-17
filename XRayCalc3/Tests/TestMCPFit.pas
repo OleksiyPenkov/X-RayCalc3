@@ -61,6 +61,9 @@ type
     /// literal with "measurement_id" and "seed" - through a manager of its
     /// own. The result is the caller's to free.</summary>
     function RunRequest(const RequestJSON: string): TJSONObject;
+    /// <summary>The data of a parser-only request on CurveJSON; Extra is spliced
+    /// in verbatim and starts with a comma.</summary>
+    function DataOf(const CurveJSON: string; const Extra: string = ''): TDataArray;
     /// <summary>Every fitted value that lies outside the bound the same result
     /// echoes in bounds_used, one per line; '' when the result is clean.</summary>
     function BoundViolations(const Res: TJSONObject): string;
@@ -102,6 +105,16 @@ type
     [Test] procedure Scale_NotPositive_Refused;
     [Test] procedure Fit_FreePeriod_MovesThePeriod;
     [Test] procedure Fit_Scale_IsEchoed;
+    [Test] procedure Smooth_OnePass_EqualsMovAvgFive;
+    [Test] procedure Smooth_TwoPasses_EqualTwoApplications;
+    [Test] procedure Smooth_ComesAfterScaleAndBeforeTrim;
+    [Test] procedure Smooth_ZeroPassesAndAbsent_LeaveTheCurveAlone;
+    [Test] procedure Smooth_PassesOutOfRange_Refused;
+    [Test] procedure Smooth_CurveShorterThanTheWindow_Refused;
+    [Test] procedure Fit_Smooth_IsEchoedAndStoredAsFitted;
+    [Test] procedure Fit_ZeroPasses_EqualsNoSmoothArgument;
+    [Test] procedure Fit_NoSmooth_MatchesRevision06035de;
+    [Test] procedure Schema_DescribesTheManualsDataConditioning;
 
     [Test] procedure Fit_OnItsOwnCurve_BeatsTheStartModel;
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
@@ -115,7 +128,8 @@ implementation
 uses
   System.IOUtils, System.Classes, System.Diagnostics, System.Math,
   System.Zip, System.IniFiles, unit_MCPTools, unit_ToolsFiles,
-  unit_Config, unit_MCPErrors, unit_MCPCalc;
+  unit_Config, unit_MCPErrors, unit_MCPCalc, unit_MCPProjectFile,
+  unit_DataProcessing, unit_ToolsJobs;
 
 const
   { The reference sample: a 10-period Ru/C multilayer on Si, the same materials
@@ -176,6 +190,12 @@ const
     +/-0.1 degree convolution window and the parser says so before it ever looks
     at "free" (which is what Resolution_TooCoarseAGrid_Refused pins down). }
   DUMMY_CURVE = '[[0.5,1],[0.6,0.9],[0.7,0.8],[0.8,0.7],[0.9,0.6],[1.0,0.5]]';
+
+  { Twelve points that zigzag, so that a moving average visibly changes every
+    inner one. For the smoothing tests of the parser; never fitted. }
+  NOISY_CURVE =
+    '[[0.30,1.0],[0.35,0.5],[0.40,0.9],[0.45,0.2],[0.50,0.6],[0.55,0.1],' +
+    '[0.60,0.4],[0.65,0.05],[0.70,0.3],[0.75,0.02],[0.80,0.2],[0.85,0.01]]';
 
   FIT_TOLERANCE = 1E-9;      // low enough that the run never stops early
   FIT_POPULATION = 12;
@@ -1363,6 +1383,348 @@ begin
       Res.GetValue<string>('files.measured'))), 'measured.dat written');
   finally
     Res.Free;
+  end;
+end;
+
+{ ------------------------------------------------------------------ smooth -- }
+
+function TTestMCPFit.DataOf(const CurveJSON, Extra: string): TDataArray;
+begin
+  Result := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]%s}',
+    [START_STRUCTURE, CurveJSON, Extra])).Data;
+end;
+
+procedure AssertSameCurve(const Expected, Actual: TDataArray; const What: string);
+var
+  i: Integer;
+begin
+  Assert.AreEqual(Length(Expected), Length(Actual), What + ': number of points');
+  for i := 0 to High(Expected) do
+  begin
+    Assert.IsTrue(Expected[i].t = Actual[i].t, What + Format(': theta of point %d', [i]));
+    Assert.IsTrue(Expected[i].r = Actual[i].r,
+      What + Format(': intensity of point %d is %g, expected %g',
+                    [i, Actual[i].r, Expected[i].r]));
+  end;
+end;
+
+{ One pass is one click of the GUI's Data - Smooth, which is MovAvg(Data, 5)
+  (TfrmChartInfo.SmoothData): the same function, so the same numbers. }
+procedure TTestMCPFit.Smooth_OnePass_EqualsMovAvgFive;
+var
+  Raw, Smoothed, Data: TDataArray;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Raw := DataOf(NOISY_CURVE);
+  Smoothed := DataOf(NOISY_CURVE, ',"smooth":{"passes":1}');
+  AssertSameCurve(MovAvg(Raw, 5), Smoothed, 'one pass');
+
+  { The GUI writes the call as Data := MovAvg(Data, 5), input and result in one
+    local. Should a compiler ever hand MovAvg that local as its Result, the
+    filter would run in place over values it has already replaced and the GUI
+    would no longer do what the server does. Checked on dcc32 and dcc64 of
+    Studio 37.0, optimization on and off, 2026-09-17: it does not. }
+  Data := Copy(Raw);
+  Data := MovAvg(Data, 5);
+  AssertSameCurve(Data, Smoothed, 'the call form of TfrmChartInfo.SmoothData');
+  Assert.IsTrue(Raw[5].r <> Smoothed[5].r, 'an inner point really moved');
+end;
+
+procedure TTestMCPFit.Smooth_TwoPasses_EqualTwoApplications;
+var
+  Raw: TDataArray;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Raw := DataOf(NOISY_CURVE);
+  AssertSameCurve(MovAvg(MovAvg(Raw, 5), 5),
+    DataOf(NOISY_CURVE, ',"smooth":{"passes":2}'), 'two passes');
+end;
+
+{ The manual's order: normalize, smooth the whole curve, trim. Trimming first
+  would hand MovAvg a curve whose first three points it copies unchanged, so the
+  first kept point tells the two orders apart. }
+procedure TTestMCPFit.Smooth_ComesAfterScaleAndBeforeTrim;
+var
+  Whole, Kept, Got: TDataArray;
+  i, n: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Whole := DataOf(NOISY_CURVE);
+  for i := 0 to High(Whole) do
+    Whole[i].r := Whole[i].r * 2.0;
+  Whole := MovAvg(Whole, 5);
+
+  { 0.44 .. 0.71 keeps the six points 0.45 .. 0.70, indices 3 .. 8 }
+  SetLength(Kept, 6);
+  for n := 0 to 5 do
+    Kept[n] := Whole[n + 3];
+
+  Got := DataOf(NOISY_CURVE,
+    ',"scale":2,"smooth":{"passes":1},"theta_range":{"min":0.44,"max":0.71}');
+  AssertSameCurve(Kept, Got, 'scale, smooth, trim');
+  Assert.IsTrue(Abs(Got[0].r - 0.4) > 1E-3,
+    'the first kept point is smoothed, not copied as a curve edge would be');
+end;
+
+procedure TTestMCPFit.Smooth_ZeroPassesAndAbsent_LeaveTheCurveAlone;
+var
+  Raw: TDataArray;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Raw := DataOf(NOISY_CURVE);
+  Assert.AreEqual(Double(0.1), Double(Raw[5].r), 1E-7, 'no "smooth": the curve as given');
+  AssertSameCurve(Raw, DataOf(NOISY_CURVE, ',"smooth":{"passes":0}'), 'passes 0');
+  AssertSameCurve(Raw, DataOf(NOISY_CURVE, ',"smooth":{}'), 'empty smooth');
+end;
+
+procedure TTestMCPFit.Smooth_PassesOutOfRange_Refused;
+const
+  FMT = '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"smooth":%s,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}';
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument',
+    ErrorCodeOf(Format(FMT, [START_STRUCTURE, NOISY_CURVE, '{"passes":-1}'])), 'negative');
+  Assert.AreEqual('invalid_argument',
+    ErrorCodeOf(Format(FMT, [START_STRUCTURE, NOISY_CURVE, '{"passes":11}'])), 'above the cap');
+  Assert.AreEqual('invalid_argument',
+    ErrorCodeOf(Format(FMT, [START_STRUCTURE, NOISY_CURVE, '{"passes":1.5}'])), 'not a whole number');
+  Assert.AreEqual('',
+    ErrorCodeOf(Format(FMT, [START_STRUCTURE, NOISY_CURVE, '{"passes":10}'])), 'the cap itself');
+end;
+
+{ MovAvg(Data, 5) averages six points and writes zeros over the tail of a curve
+  that has no six, which the log10 of the chi-squared cannot take. }
+procedure TTestMCPFit.Smooth_CurveShorterThanTheWindow_Refused;
+const
+  FIVE = '[[0.5,1],[0.6,0.9],[0.7,0.8],[0.8,0.7],[0.9,0.6]]';
+  FMT = '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0%s,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}';
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument',
+    ErrorCodeOf(Format(FMT, [START_STRUCTURE, FIVE, ',"smooth":{"passes":1}'])));
+  Assert.AreEqual('', ErrorCodeOf(Format(FMT, [START_STRUCTURE, FIVE, ''])),
+    'the same curve is fine without smoothing');
+  Assert.AreEqual('',
+    ErrorCodeOf(Format(FMT, [START_STRUCTURE, DUMMY_CURVE, ',"smooth":{"passes":1}'])),
+    'six points are enough');
+end;
+
+{ What was fitted is what is stored: measured.dat, the data node of fit.xrcx and
+  the project save_project builds from the job all hold the smoothed curve. }
+procedure TTestMCPFit.Fit_Smooth_IsEchoedAndStoredAsFitted;
+
+  procedure SameAsFitted(const Expected, Stored: TDataArray; const What: string);
+  var
+    i: Integer;
+  begin
+    Assert.AreEqual(Length(Expected), Length(Stored), What + ': number of points');
+    for i := 0 to High(Expected) do
+      Assert.AreEqual(Double(Expected[i].r), Double(Stored[i].r),
+        Abs(Expected[i].r) * 1E-6, What + Format(': intensity of point %d', [i]));
+  end;
+
+var
+  Curve, JobId, ProjectFile: string;
+  Expected: TDataArray;
+  Res, Args, Saved: TJSONObject;
+  Reg: TToolRegistry;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Curve := SyntheticCurveJSON;
+  Expected := MovAvg(DataOf(Curve), 5);
+
+  Res := RunFit(7, Curve, '', ',"smooth":{"passes":1}');
+  try
+    Assert.AreEqual(1, Res.GetValue<Integer>('smooth.passes'), 'passes echoed');
+    Assert.AreEqual(5, Res.GetValue<Integer>('smooth.window'), 'window echoed');
+    JobId := Res.GetValue<string>('job_id');
+    SameAsFitted(Expected, ReadCurveText(TPath.Combine(WorkDir.Root,
+      Res.GetValue<string>('files.measured'))), 'measured.dat');
+    SameAsFitted(Expected, ReadXRCX(TPath.Combine(WorkDir.Root,
+      Res.GetValue<string>('files.xrcx'))).DataCurve, 'fit.xrcx');
+  finally
+    Res.Free;
+  end;
+
+  Args := TJSONObject.ParseJSONValue(Format(
+    '{"structure":%s,"name":"saved_smooth","curves":{"job_id":"%s"}}',
+    [START_STRUCTURE, JobId])) as TJSONObject;
+  try
+    Reg := TToolRegistry.Create;
+    try
+      RegisterFileTools(Reg);
+      Saved := Reg.Execute('save_project', Args);
+      try
+        ProjectFile := TPath.Combine(WorkDir.Root, Saved.GetValue<string>('file'));
+      finally
+        Saved.Free;
+      end;
+    finally
+      Reg.Free;
+    end;
+  finally
+    Args.Free;
+  end;
+  SameAsFitted(Expected, ReadXRCX(ProjectFile).DataCurve, 'save_project');
+end;
+
+procedure TTestMCPFit.Fit_ZeroPasses_EqualsNoSmoothArgument;
+var
+  Curve: string;
+  A, B: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Curve := SyntheticCurveJSON;
+  A := RunFit(7, Curve);
+  try
+    B := RunFit(7, Curve, '', ',"smooth":{"passes":0}');
+    try
+      Assert.AreEqual(A.GetValue('chi2').ToJSON, B.GetValue('chi2').ToJSON, 'chi2');
+      Assert.AreEqual(A.GetValue('fitted_structure').ToJSON,
+                      B.GetValue('fitted_structure').ToJSON, 'fitted structure');
+      Assert.AreEqual(0, B.GetValue<Integer>('smooth.passes'), 'echoed as off');
+    finally
+      B.Free;
+    end;
+  finally
+    A.Free;
+  end;
+end;
+
+{ Smoothing is off by default, and off means the fit of revision 06035de: the
+  numbers below are what that revision answers (captured 2026-09-17, before
+  "smooth" existed) to the synthetic fit with seed 7, 12 x 8, and to the
+  paper-2 request c3d5 on the measured P2-02 curve, which is scaled, trimmed,
+  noisy and does not end on a round answer. }
+procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
+const
+  CHI2_06035DE = '0.000413109';
+  FITTED_06035DE =
+    '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
+    '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
+    '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
+  P2_CHI2_06035DE = '2.16926';
+  P2_FITTED_06035DE =
+    '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
+    '"layers":[{"material":"C","thickness":25.3872,"sigma":9.87462,"density":2.74266},' +
+    '{"material":"Co","thickness":2.40001,"sigma":7.79806,"density":8.89981}]}]}';
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON);
+  try
+    Assert.AreEqual(CHI2_06035DE, Res.GetValue('chi2').ToJSON, 'chi2');
+    Assert.AreEqual(FITTED_06035DE, Res.GetValue('fitted_structure').ToJSON,
+      'fitted structure');
+  finally
+    Res.Free;
+  end;
+
+  if not TFile.Exists(HenkePath + 'Co.bin') or
+     not TFile.Exists(HenkePath + 'SiO2.bin') then
+    Exit;
+  StageP2Inbox;
+  Res := RunRequest(P2_REQUEST_C3D5);
+  try
+    Assert.AreEqual(P2_CHI2_06035DE, Res.GetValue('chi2').ToJSON, 'P2-02 chi2');
+    Assert.AreEqual(P2_FITTED_06035DE, Res.GetValue('fitted_structure').ToJSON,
+      'P2-02 fitted structure');
+  finally
+    Res.Free;
+  end;
+end;
+
+{ The tool text is what an agent follows. The manual normalizes by comparing
+  the measured with the calculated curve at about 0.4 degrees, not to the
+  total-reflection plateau: the paper-2 agent read "plateau" here and set every
+  scale to 0.96 / max count, which the author rejected (2026-09-17). }
+procedure TTestMCPFit.Schema_DescribesTheManualsDataConditioning;
+var
+  Reg: TToolRegistry;
+  Tools: TJSONArray;
+  Props: TJSONObject;
+  i: Integer;
+  Scale, MovAvgText: string;
+begin
+  Props := nil;
+  Reg := TToolRegistry.Create;
+  try
+    RegisterJobTools(Reg);
+    Tools := Reg.GetToolsList;
+    try
+      for i := 0 to Tools.Count - 1 do
+        if Tools.Items[i].GetValue<string>('name') = 'fit_xrr' then
+          Props := Tools.Items[i].GetValue<TJSONObject>('inputSchema.properties');
+      Assert.IsNotNull(Props, 'fit_xrr is registered');
+
+      Scale := Props.GetValue<string>('scale.description');
+      Assert.IsFalse(Scale.Contains('plateau'), 'scale: not "the plateau"');
+      Assert.IsTrue(Scale.Contains('0.4'), 'scale: compare at about 0.4 degrees');
+      Assert.IsTrue(Scale.Contains('calculated'), 'scale: against the calculated curve');
+
+      Assert.AreEqual('integer',
+        Props.GetValue<string>('smooth.properties.passes.type'), 'smooth.passes');
+      Assert.IsTrue(Props.GetValue<string>('smooth.description').Contains('Data - Smooth'),
+        'smooth names the GUI command it repeats');
+
+      MovAvgText := Props.GetValue<string>('chi2.properties.movavg_window.description');
+      Assert.IsTrue(MovAvgText.Contains('"smooth"'),
+        'movavg_window says it is not the smoothing of the fitted curve');
+    finally
+      Tools.Free;
+    end;
+  finally
+    Reg.Free;
   end;
 end;
 
