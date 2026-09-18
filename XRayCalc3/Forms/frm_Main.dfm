@@ -1719,12 +1719,14 @@ object frmMain: TfrmMain
     object LayerAdd: TAction
       Category = 'Layer'
       Caption = 'Add'
+      Hint = 'Add layer'
       ImageIndex = 0
       OnExecute = LayerAddExecute
     end
     object LayerInsert: TAction
       Category = 'Layer'
       Caption = 'Insert'
+      Hint = 'Insert layer'
       ImageIndex = 2
       ShortCut = 45
       OnExecute = LayerInsertExecute
@@ -1732,6 +1734,7 @@ object frmMain: TfrmMain
     object LayerDelete: TAction
       Category = 'Layer'
       Caption = 'Delete'
+      Hint = 'Delete layer'
       ImageIndex = 14
       ShortCut = 16430
       OnExecute = LayerDeleteExecute
@@ -1768,6 +1771,7 @@ object frmMain: TfrmMain
     object LayerCut: TAction
       Category = 'Layer'
       Caption = 'Cut'
+      Hint = 'Cut layer'
       ImageIndex = 8
       ShortCut = 24664
       OnExecute = LayerCutExecute
@@ -1806,6 +1810,7 @@ object frmMain: TfrmMain
     object actItemProperites: TAction
       Category = 'Project Item'
       Caption = 'Properies'
+      Hint = 'Properties'
       ImageIndex = 36
       OnExecute = actItemProperitesExecute
     end
@@ -1854,6 +1859,7 @@ object frmMain: TfrmMain
     object ProjectItemDelete: TAction
       Category = 'Project Item'
       Caption = 'Delete Item'
+      Hint = 'Delete item'
       ImageIndex = 48
       OnExecute = ProjectItemDeleteExecute
     end
@@ -1958,6 +1964,7 @@ object frmMain: TfrmMain
     object ProjectItemExtension: TAction
       Category = 'Project Item'
       Caption = 'New extension'
+      Hint = 'Add extension'
       ImageIndex = 0
       OnExecute = ProjectItemExtensionExecute
     end
@@ -1993,11 +2000,13 @@ object frmMain: TfrmMain
     object actModelCopy: TAction
       Category = 'Project Item'
       Caption = 'Copy model'
+      Hint = 'Copy model to clipboard'
       OnExecute = actModelCopyExecute
     end
     object actModelPaste: TAction
       Category = 'Project Item'
       Caption = 'Paste Model'
+      Hint = 'Paste model'
       OnExecute = actModelPasteExecute
     end
     object actEditHenke: TAction

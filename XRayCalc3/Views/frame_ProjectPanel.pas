@@ -509,10 +509,15 @@ procedure TfrmProjectPanel.ConnectFileActions(
   procedure AssignAction(AButton: TRzToolButton; AAction: TBasicAction);
   var
     SavedIndex: Integer;
+    SavedHint: string;
   begin
     SavedIndex := AButton.ImageIndex;
+    SavedHint := AButton.Hint;
     AButton.Action := AAction;
     AButton.ImageIndex := SavedIndex;
+    // a runtime Action assignment overwrites Hint even when the action has none
+    if AButton.Hint = '' then
+      AButton.Hint := SavedHint;
   end;
 
 begin
@@ -531,10 +536,15 @@ procedure TfrmProjectPanel.ConnectProjectActions(
   procedure AssignAction(AButton: TRzToolButton; AAction: TBasicAction);
   var
     SavedIndex: Integer;
+    SavedHint: string;
   begin
     SavedIndex := AButton.ImageIndex;
+    SavedHint := AButton.Hint;
     AButton.Action := AAction;
     AButton.ImageIndex := SavedIndex;
+    // a runtime Action assignment overwrites Hint even when the action has none
+    if AButton.Hint = '' then
+      AButton.Hint := SavedHint;
   end;
 
 begin
