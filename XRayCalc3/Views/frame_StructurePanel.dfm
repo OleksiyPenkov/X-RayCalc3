@@ -36,6 +36,11 @@ object frmStructurePanel: TfrmStructurePanel
       RzSpacer3
       btnLayerDelete)
     object btnPeriodAdd: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 7
       Top = 2
       ImageIndex = 0
@@ -43,6 +48,11 @@ object frmStructurePanel: TfrmStructurePanel
       ShowHint = True
     end
     object btnPeriodInsert: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 60
       Top = 2
       ImageIndex = 2
@@ -50,6 +60,11 @@ object frmStructurePanel: TfrmStructurePanel
       ShowHint = True
     end
     object btnPeriodDelete: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 113
       Top = 2
       ImageIndex = 6
@@ -61,6 +76,11 @@ object frmStructurePanel: TfrmStructurePanel
       Top = 15
     end
     object btnLayerAdd: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 177
       Top = 2
       Hint = 'Add Layer'
@@ -69,6 +89,11 @@ object frmStructurePanel: TfrmStructurePanel
       ShowHint = True
     end
     object btnLayerInsert: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 230
       Top = 2
       Hint = 'Insert Layer'
@@ -77,6 +102,11 @@ object frmStructurePanel: TfrmStructurePanel
       ShowHint = True
     end
     object btnLayerPaste: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 60
       Top = 52
       Hint = 'Paste layer'
@@ -85,6 +115,11 @@ object frmStructurePanel: TfrmStructurePanel
       ShowHint = True
     end
     object btnLayerDelete: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 124
       Top = 52
       Hint = 'Delete layer'
@@ -93,6 +128,11 @@ object frmStructurePanel: TfrmStructurePanel
       ShowHint = True
     end
     object btnLayerCut: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 7
       Top = 52
       Hint = 'Cut layer'
@@ -105,6 +145,11 @@ object frmStructurePanel: TfrmStructurePanel
       Top = 65
     end
     object btnCopyLayer: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 283
       Top = 2
       ImageIndex = 8

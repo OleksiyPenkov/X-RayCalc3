@@ -38,6 +38,11 @@ object frmProjectPanel: TfrmProjectPanel
       RzSpacer1
       BtnPrint)
     object BtnNew: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 7
       Top = 2
       ImageIndex = 0
@@ -45,6 +50,11 @@ object frmProjectPanel: TfrmProjectPanel
       ShowHint = True
     end
     object BtnOpen: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 35
       Top = 2
       Width = 39
@@ -54,6 +64,11 @@ object frmProjectPanel: TfrmProjectPanel
       ToolStyle = tsDropDown
     end
     object btnReopenProject: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 77
       Top = 2
       ImageIndex = 2
@@ -65,6 +80,11 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
     end
     object BtnSave: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 116
       Top = 2
       ImageIndex = 3
@@ -76,6 +96,11 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
     end
     object BtnPrint: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 155
       Top = 2
       ImageIndex = 4
@@ -116,6 +141,11 @@ object frmProjectPanel: TfrmProjectPanel
       RzSpacer5
       BtnRecycle)
     object btnAddModel: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 7
       Top = 2
       ImageIndex = 5
@@ -123,6 +153,11 @@ object frmProjectPanel: TfrmProjectPanel
       ShowHint = True
     end
     object BtnExport: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 35
       Top = 2
       ImageIndex = 6
@@ -130,6 +165,11 @@ object frmProjectPanel: TfrmProjectPanel
       ShowHint = True
     end
     object BtnCopy: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 63
       Top = 2
       Hint = 'Copy model to clipboard'
@@ -138,6 +178,11 @@ object frmProjectPanel: TfrmProjectPanel
       ShowHint = True
     end
     object BtnPaste: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 91
       Top = 2
       Hint = 'Paste model'
@@ -146,6 +191,11 @@ object frmProjectPanel: TfrmProjectPanel
       ShowHint = True
     end
     object BtnEdit: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 119
       Top = 2
       Hint = 'Properties'
@@ -158,6 +208,11 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
     end
     object btnAddExtension: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 158
       Top = 2
       Hint = 'Add extension'
@@ -170,6 +225,11 @@ object frmProjectPanel: TfrmProjectPanel
       Top = 2
     end
     object BtnRecycle: TRzToolButton
+      AlignWithMargins = True
+      Margins.Left = 1
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
       Left = 197
       Top = 2
       Hint = 'Delete item'

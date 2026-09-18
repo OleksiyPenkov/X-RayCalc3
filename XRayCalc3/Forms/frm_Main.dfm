@@ -436,6 +436,11 @@ object frmMain: TfrmMain
           btnDataLoad
           btnDataPaste)
         object btnDataLoad: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 236
           Top = 2
           Hint = 'Load curve'
@@ -445,6 +450,11 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnDataPaste: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 264
           Top = 2
           Hint = 'Paste curve'
@@ -458,6 +468,11 @@ object frmMain: TfrmMain
           Top = 2
         end
         object btnCalcRun: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 7
           Top = 2
           Hint = 'Calculate'
@@ -471,6 +486,11 @@ object frmMain: TfrmMain
           Top = 2
         end
         object btnResultSave: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 113
           Top = 2
           Hint = 'Save resulting curve'
@@ -480,6 +500,11 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnBtnCopy: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 141
           Top = 2
           Hint = 'Copy resulting curve'
@@ -493,6 +518,11 @@ object frmMain: TfrmMain
           Top = 2
         end
         object BtnExecute: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 63
           Top = 2
           Hint = 'Auto Fitting'
@@ -502,6 +532,11 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object BtnFastForward: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 35
           Top = 2
           Hint = 'Calculate all'
@@ -511,6 +546,11 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnCopyImage: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 169
           Top = 2
           Hint = 'Copy resulting curve as image'
@@ -520,6 +560,11 @@ object frmMain: TfrmMain
           ShowHint = True
         end
         object btnPrintGraphics: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
           Left = 197
           Top = 2
           Hint = 'Save chart as image'
