@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Project tree marker: the active model.
+       Drawn on a 16 px grid so it stays sharp at its native size: the left
+       edge sits on x=4.5, where a 1 px stroke covers exactly one pixel
+       column. Rendered at 16 and at 32 (a clean 2x) for high DPI. -->
+  <path d="M4.5 2.5 L13 8 L4.5 13.5 Z"
+        fill="#D42A2A" stroke="#19375F" stroke-width="1" stroke-linejoin="miter"/>
+</svg>

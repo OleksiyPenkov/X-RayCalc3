@@ -19,6 +19,9 @@ uses
   Vcl.Controls,
   VCL.ComCtrls,
   Vcl.Graphics,
+  Vcl.ImgList,
+  Winapi.GDIPOBJ,
+  Winapi.GDIPAPI,
   VirtualTrees,
   VirtualTrees.Types,
   VirtualTrees.Colors,
@@ -36,6 +39,10 @@ type
       FIgnoreFocusChange: boolean;
       FActiveData: PProjectData;
       FTargetDPI: integer;
+      FMarkerImages: TCustomImageList;
+
+      procedure DrawMarker(TargetCanvas: TCanvas; const CellRect: TRect; const Index: Integer);
+      procedure DrawColorSwatch(TargetCanvas: TCanvas; const CellRect: TRect; const AColor: TColor);
 
       procedure ProjectMeasureItem(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode;
                     var NodeHeight: TDimension);
@@ -47,9 +54,7 @@ type
       procedure ProjectLoadNode(Sender: TBaseVirtualTree; Node: PVirtualNode; Stream: TStream);
       procedure ProjectSaveNode(Sender: TBaseVirtualTree; Node: PVirtualNode; Stream: TStream);
       procedure ProjectAfterCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
-      procedure ProjectBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
       function ScaleForDPI(Value: Integer): integer;
-      function ScaleRect(const X1, Y1, X2, Y2: integer): TRect; inline;
     public
       constructor Create(AOwner: TComponent; const DPI: integer); reintroduce; overload;
       destructor Destroy;  reintroduce; overload;
@@ -58,6 +63,9 @@ type
       property ActiveData:PProjectData read FActiveData write FActiveData;
       property LinkedData:PProjectData read FLinkedData write FLinkedData;
       property IgnoreFocusChange: boolean read FIgnoreFocusChange write FIgnoreFocusChange;
+      { Markers painted in column 0. Deliberately not the inherited Images
+        property, which would reserve space in the main column. }
+      property MarkerImages: TCustomImageList read FMarkerImages write FMarkerImages;
       function ProfileAttached(Node: PVirtualNode): Boolean;
       property TargetDPI: integer read FTargetDPI write FTargetDPI;
       procedure Rescale;
@@ -70,6 +78,36 @@ implementation
 const
   DefaultDPI = 96;
 
+  { Indices into MarkerImages (frame_ProjectPanel's vliTreeMarks). }
+  MarkerActiveModel = 0;
+  MarkerLinkedData  = 1;
+
+  { Column 0 layout, in 96 dpi pixels. The column is 41 px wide, so the
+    swatch and the 16 px marker sit side by side without touching. }
+  SwatchLeft   = 5;
+  SwatchSize   = 12;
+  { A tighter radius keeps more of the outline on straight, pixel aligned
+    edges, which is what reads as sharp at this size. }
+  SwatchRadius = 2;
+  MarkerLeft   = 21;
+
+  { The marker icons' outline colour, so swatch and markers look related. }
+  SwatchBorderColor = TColor($005F3719);
+
+{ Rounded rectangle as a GDI+ path - GDI+ has no AddRoundedRect of its own. }
+procedure AddRoundedRect(const Path: TGPGraphicsPath; const R: TGPRectF;
+  const Radius: Single);
+var
+  D: Single;
+begin
+  D := Radius * 2;
+  Path.AddArc(R.X, R.Y, D, D, 180, 90);
+  Path.AddArc(R.X + R.Width - D, R.Y, D, D, 270, 90);
+  Path.AddArc(R.X + R.Width - D, R.Y + R.Height - D, D, D, 0, 90);
+  Path.AddArc(R.X, R.Y + R.Height - D, D, D, 90, 90);
+  Path.CloseFigure;
+end;
+
 { TXRCProjectTree }
 
 function TXRCProjectTree.ScaleForDPI(Value: Integer): integer;
@@ -78,17 +116,6 @@ begin
     Result := Value
   else
     Result := MulDiv(Value, FTargetDPI, DefaultDPI);
-end;
-
-function TXRCProjectTree.ScaleRect(const X1, Y1, X2, Y2: integer): TRect;
-begin
-  if FTargetDPI = DefaultDPI then
-    Result := Rect(X1, Y1, X2, Y2)
-  else
-    Result := Rect(MulDiv(X1, FTargetDPI, DefaultDPI),
-                   MulDiv(Y1, FTargetDPI, DefaultDPI),
-                   MulDiv(X2, FTargetDPI, DefaultDPI),
-                   MulDiv(Y2, FTargetDPI, DefaultDPI))
 end;
 
 constructor TXRCProjectTree.Create(AOwner: TComponent; const DPI: integer);
@@ -126,18 +153,27 @@ begin
   Font.Height := -13;//ScaleForDPI(16);
   Font.Name := 'Tahoma';
   Font.Style := [];
-  Indent := 10; //ScaleForDPI(10);
-  Header.AutoSizeIndex := 0;
+  { Wide enough for the Explorer chevron, which GetThemePartSize reports as
+    16 px at 96 dpi. ChangeScale takes care of higher DPIs. }
+  Indent := 16;
+  { Spare width belongs to the item names, not to the marker column, which
+    only ever holds a colour swatch and a 16 px marker. }
+  Header.AutoSizeIndex := 1;
   Header.Background := 16765595;
   Header.Height := ScaleForDPI(23);
-  Header.MainColumn := 1;
   Header.Options := [hoAutoResize, hoColumnResize, hoDrag, hoOwnerDraw, hoVisible];
   Header.ParentFont := False;
   Header.Font.Style := [fsBold];
-  NodeAlignment := naFromTop;
+  { naFromTop reads Node.Align as pixels from the node top, but its default
+    value is 50 - a percentage meant for naProportional - which drops the
+    expand button below the row and out of sight. The tree paints no node
+    images, so naProportional only affects the button, which it centres. }
+  NodeAlignment := naProportional;
   ParentFont := False;
   TreeOptions.MiscOptions := [toAcceptOLEDrop, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning];
-  TreeOptions.PaintOptions := [toShowButtons,toShowDropmark,toThemeAware,toUseBlendedImages,toUseExplorerTheme];
+  { toShowRoot is what gives the Models and Data nodes an expand button -
+    without it VirtualTrees only paints one from node level 1 downwards. }
+  TreeOptions.PaintOptions := [toShowButtons,toShowDropmark,toShowRoot,toThemeAware,toUseBlendedImages,toUseExplorerTheme];
   TreeOptions.SelectionOptions := [toFullRowSelect, toRightClickSelect, toMultiSelect];
   Touch.InteractiveGestures := [TInteractiveGesture.igPan, TInteractiveGesture.igPressAndTap];
   Touch.InteractiveGestureOptions := [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough];
@@ -150,7 +186,6 @@ begin
   OnLoadNode := ProjectLoadNode;
   OnSaveNode := ProjectSaveNode;
   OnAfterCellPaint := ProjectAfterCellPaint;
-  OnBeforeCellPaint := ProjectBeforeCellPaint;
   OnMeasureItem     := ProjectMeasureItem;
 
   Header.Columns.Add;
@@ -164,6 +199,12 @@ begin
   Header.Columns[1].CheckBox := False;
   Header.Columns[1].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus];
   Header.Columns[1].Text := 'Project Items';
+
+  { Must come after the columns exist: TVTHeader.SetMainColumn clamps the value
+    to Columns.Count - 1, so an earlier assignment is silently dropped and the
+    tree ends up with no main column - hence no indentation and no expand
+    buttons anywhere. }
+  Header.MainColumn := 1;
 end;
 
 destructor TXRCProjectTree.Destroy;
@@ -205,12 +246,70 @@ begin
   end;
 end;
 
+procedure TXRCProjectTree.DrawMarker(TargetCanvas: TCanvas;
+  const CellRect: TRect; const Index: Integer);
+var
+  X, Y: Integer;
+begin
+  if not Assigned(FMarkerImages) then
+    Exit;
+
+  X := CellRect.Left + ScaleForDPI(MarkerLeft);
+  Y := CellRect.Top + (CellRect.Height - FMarkerImages.Height) div 2;
+  FMarkerImages.Draw(TargetCanvas, X, Y, Index, True);
+end;
+
+procedure TXRCProjectTree.DrawColorSwatch(TargetCanvas: TCanvas;
+  const CellRect: TRect; const AColor: TColor);
+var
+  Graphics: TGPGraphics;
+  Path: TGPGraphicsPath;
+  Brush: TGPSolidBrush;
+  Pen: TGPPen;
+  Size, X, Y: Integer;
+begin
+  Size := ScaleForDPI(SwatchSize);
+  X := CellRect.Left + ScaleForDPI(SwatchLeft);
+  Y := CellRect.Top + (CellRect.Height - Size) div 2;
+
+  Graphics := TGPGraphics.Create(TargetCanvas.Handle);
+  try
+    Graphics.SetSmoothingMode(SmoothingModeAntiAlias);
+    Graphics.SetPixelOffsetMode(PixelOffsetModeHalf);
+
+    Path := TGPGraphicsPath.Create;
+    try
+      { With PixelOffsetModeHalf the half pixel inset is what puts the one
+        pixel border on whole pixels instead of straddling two - measured, the
+        other three combinations of offset mode and inset all leave a halo.
+        The path spans Size - 1, which the border widens to Size. }
+      AddRoundedRect(Path, MakeRect(X + 0.5, Y + 0.5, Size - 1.0, Size - 1.0),
+        ScaleForDPI(SwatchRadius));
+
+      Brush := TGPSolidBrush.Create(ColorRefToARGB(ColorToRGB(AColor)));
+      try
+        Graphics.FillPath(Brush, Path);
+      finally
+        Brush.Free;
+      end;
+
+      Pen := TGPPen.Create(ColorRefToARGB(ColorToRGB(SwatchBorderColor)), 1);
+      try
+        Graphics.DrawPath(Pen, Path);
+      finally
+        Pen.Free;
+      end;
+    finally
+      Path.Free;
+    end;
+  finally
+    Graphics.Free;
+  end;
+end;
+
 procedure TXRCProjectTree.ProjectAfterCellPaint(Sender: TBaseVirtualTree;
   TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
   CellRect: TRect);
-const
-  PointsLo: array [0 .. 2] of TPoint = ((X: 22; Y: 5), (X: 32; Y: 10), (X: 22; Y: 15));
-  PointsHi: array [0 .. 2] of TPoint = ((X: 37; Y: 10), (X: 62; Y: 20), (X: 37; Y: 30));
 var
   Data: PProjectData;
 begin
@@ -218,54 +317,22 @@ begin
     Exit;
 
   Data := GetNodeData(Node);
-
-  if Data = FActiveModel then
-  begin
-    TargetCanvas.Brush.Color := clRed;
-    TargetCanvas.Pen.Color := clRed;
-    if TargetDPI = 96 then
-      TargetCanvas.Polygon(PointsLo)
-    else
-      TargetCanvas.Polygon(PointsHi)
-  end;
-
-  if Data = FLinkedData then
-  begin
-    TargetCanvas.Pen.Color := clBlack;
-
-    TargetCanvas.Ellipse(ScaleRect(22, 2, 32, 15));
-    TargetCanvas.Ellipse(ScaleRect(24, 3, 30, 15));
-    TargetCanvas.Brush.Color := clGreen;
-    TargetCanvas.Rectangle(ScaleRect(22, 7, 32, 15));
-    TargetCanvas.Rectangle(ScaleRect(24, 9, 30, 13));
-  end;
-
-  TargetCanvas.Pen.Color := clGray;
+  if Data = nil then
+    Exit;
 
   if Data.RowType = prItem then
   begin
     if Data.Visible then
-      TargetCanvas.Brush.Color := Data.Color
+      DrawColorSwatch(TargetCanvas, CellRect, Data.Color)
     else
-      TargetCanvas.Brush.Color := clLtGray;
-
-    TargetCanvas.Rectangle(ScaleRect(5, 5, 16, 16))
+      DrawColorSwatch(TargetCanvas, CellRect, clLtGray);
   end;
-end;
 
-procedure TXRCProjectTree.ProjectBeforeCellPaint(Sender: TBaseVirtualTree;
-  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
-var
-  Data: PProjectData;
-begin
-  Data := Sender.GetNodeData(Node);
-  case Data.RowType of
-    prFolder: ContentRect.Left    := ContentRect.Left + 5;
-    prGroup : ContentRect.Left    := ContentRect.Left + Integer(Indent);
-    prItem  : ContentRect.Left    := ContentRect.Left + Integer(Indent) * 2;
-    prExtension: ContentRect.Left := ContentRect.Left + Integer(Indent) * 3;
-  end;
+  if Data = FActiveModel then
+    DrawMarker(TargetCanvas, CellRect, MarkerActiveModel);
+
+  if Data = FLinkedData then
+    DrawMarker(TargetCanvas, CellRect, MarkerLinkedData);
 end;
 
 procedure TXRCProjectTree.ProjectFreeNode(Sender: TBaseVirtualTree;

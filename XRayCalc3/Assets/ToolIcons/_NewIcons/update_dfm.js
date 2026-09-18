@@ -67,7 +67,17 @@ const ICON_MAP = {
   'Menu\\Menu_Help': 'Menu/Menu_Help.png',
   'Menu\\Menu_About': 'Menu/Menu_About.png',
   'Menu\\Menu_SaveAs': 'Menu/Menu_SaveAs.png',
+  // Project tree markers. Several PNGs become several source images on one
+  // collection item, so TVirtualImageList picks the matching size instead of
+  // resampling a 32 px source down to the 16 px the tree draws.
+  'Tree\\ActiveModel': ['Tree/Tree_ActiveModel_16.png', 'Tree/Tree_ActiveModel_32.png'],
+  'Tree\\LinkedData':  ['Tree/Tree_LinkedData_16.png', 'Tree/Tree_LinkedData_32.png'],
 };
+
+// Optional DFM names on the command line update just those, e.g.
+//   node update_dfm.js "Tree\ActiveModel" "Tree\LinkedData"
+// Without arguments every mapped icon is rewritten.
+const ONLY = process.argv.slice(2);
 
 function pngToHexBlock(pngPath) {
   const buf = fs.readFileSync(pngPath);
@@ -81,18 +91,68 @@ function pngToHexBlock(pngPath) {
   return lines.join('\n');
 }
 
+const SOURCES_HEADER = '        SourceImages = <\n';
+const SOURCES_TERMINATOR = '\n          end>';
+
+/**
+ * Body of a SourceImages collection: one item per PNG, the last closing the
+ * collection with 'end>'. A single PNG reproduces the original formatting
+ * byte for byte, so single-source items are left untouched.
+ */
+function sourceImagesBlock(pngPaths) {
+  return pngPaths.map(p =>
+    '          item\n' +
+    '            Image.Data = {\n' +
+    pngToHexBlock(p) + '}\n' +
+    '          end').join('\n') + '>';
+}
+
+/**
+ * Append a brand new icon item to the end of the ImageCollection's Images
+ * collection. The last item of a DFM collection ends with 'end>', so the new
+ * item is spliced in by turning that terminator back into a plain 'end'.
+ */
+function appendItem(dfm, dfmName, pngPaths) {
+  const objStart = dfm.indexOf('object ImageCollection: TImageCollection');
+  if (objStart === -1)
+    throw new Error('ImageCollection not found in DFM');
+  // The Left/Top properties follow the Images collection.
+  const propsIdx = dfm.indexOf('\n    Left = ', objStart);
+  const termIdx = dfm.lastIndexOf('      end>', propsIdx);
+  if (termIdx === -1)
+    throw new Error('End of the Images collection not found');
+
+  const item =
+    '      end\n' +
+    '      item\n' +
+    `        Name = '${dfmName}'\n` +
+    SOURCES_HEADER +
+    sourceImagesBlock(pngPaths) + '\n' +
+    '      end>';
+
+  return dfm.slice(0, termIdx) + item + dfm.slice(termIdx + '      end>'.length);
+}
+
 function main() {
   let dfm = fs.readFileSync(DFM_PATH, 'utf-8');
   // Normalize line endings to \n for processing
   dfm = dfm.replace(/\r\n/g, '\n');
 
   let replaced = 0;
+  let added = 0;
   let errors = [];
 
-  for (const [dfmName, pngRelPath] of Object.entries(ICON_MAP)) {
-    const pngPath = path.join(ICONS_BASE, pngRelPath);
-    if (!fs.existsSync(pngPath)) {
-      errors.push(`  MISSING: ${pngRelPath}`);
+  let entries = Object.entries(ICON_MAP);
+  if (ONLY.length > 0)
+    entries = entries.filter(([dfmName]) => ONLY.includes(dfmName));
+
+  for (const [dfmName, pngRelPath] of entries) {
+    // A value may be one PNG or several sizes of the same icon.
+    const relPaths = Array.isArray(pngRelPath) ? pngRelPath : [pngRelPath];
+    const pngPaths = relPaths.map(r => path.join(ICONS_BASE, r));
+    const missing = relPaths.filter((r, i) => !fs.existsSync(pngPaths[i]));
+    if (missing.length > 0) {
+      errors.push(`  MISSING: ${missing.join(', ')}`);
       continue;
     }
 
@@ -102,39 +162,40 @@ function main() {
     const namePattern = new RegExp(`Name = '${escapedName}'`);
     const nameMatch = namePattern.exec(dfm);
     if (!nameMatch) {
-      errors.push(`  NOT FOUND in DFM: ${dfmName}`);
+      // Not in the DFM yet - add it rather than treating it as an error.
+      dfm = appendItem(dfm, dfmName, pngPaths);
+      added++;
+      console.log(`  ADDED: ${dfmName} <- ${relPaths.join(', ')}`);
       continue;
     }
 
-    // Find Image.Data = { ... } after this name
+    // Replace the whole SourceImages collection, so an icon can go from one
+    // source image to several without the block being rebuilt by hand.
     const searchStart = nameMatch.index;
-    const dataStartMarker = 'Image.Data = {';
-    const dataStartIdx = dfm.indexOf(dataStartMarker, searchStart);
-    if (dataStartIdx === -1 || dataStartIdx - searchStart > 500) {
-      errors.push(`  No Image.Data near: ${dfmName}`);
+    const sourcesIdx = dfm.indexOf(SOURCES_HEADER, searchStart);
+    if (sourcesIdx === -1 || sourcesIdx - searchStart > 500) {
+      errors.push(`  No SourceImages near: ${dfmName}`);
       continue;
     }
 
-    // Find the closing }
-    const hexStartIdx = dataStartIdx + dataStartMarker.length;
-    const dataEndIdx = dfm.indexOf('}', hexStartIdx);
-    if (dataEndIdx === -1) {
-      errors.push(`  No closing } for: ${dfmName}`);
+    const bodyStart = sourcesIdx + SOURCES_HEADER.length;
+    const termIdx = dfm.indexOf(SOURCES_TERMINATOR, bodyStart);
+    if (termIdx === -1) {
+      errors.push(`  No end of SourceImages for: ${dfmName}`);
       continue;
     }
 
-    // Replace the hex content
-    const newHex = '\n' + pngToHexBlock(pngPath);
-    dfm = dfm.slice(0, hexStartIdx) + newHex + dfm.slice(dataEndIdx);
+    const bodyEnd = termIdx + SOURCES_TERMINATOR.length;
+    dfm = dfm.slice(0, bodyStart) + sourceImagesBlock(pngPaths) + dfm.slice(bodyEnd);
     replaced++;
-    console.log(`  OK: ${dfmName} <- ${pngRelPath}`);
+    console.log(`  OK: ${dfmName} <- ${relPaths.join(', ')}`);
   }
 
   // Restore \r\n line endings (DFM standard on Windows)
   dfm = dfm.replace(/\n/g, '\r\n');
 
   fs.writeFileSync(DFM_PATH, dfm, 'utf-8');
-  console.log(`\nReplaced ${replaced}/${Object.keys(ICON_MAP).length} icons in frm_Main.dfm`);
+  console.log(`\nReplaced ${replaced}/${entries.length} icons in frm_Main.dfm, added ${added}`);
 
   if (errors.length > 0) {
     console.log('\nErrors:');

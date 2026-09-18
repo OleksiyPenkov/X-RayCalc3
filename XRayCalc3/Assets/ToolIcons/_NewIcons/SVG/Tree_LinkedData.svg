@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Project tree marker: data linked to the active model.
+       Drawn on a 16 px grid so it stays sharp at its native size: the body's
+       1 px stroke sits on half integers and the 2 px shackle legs land on
+       whole pixel columns. Rendered at 16 and at 32 (a clean 2x) for high DPI. -->
+  <path d="M5 8.5 V6.5 a3 3 0 0 1 6 0 V8.5"
+        fill="none" stroke="#19375F" stroke-width="2"/>
+  <rect x="2.5" y="8.5" width="11" height="5" rx="1.5"
+        fill="#2E9E4F" stroke="#19375F" stroke-width="1"/>
+  <circle cx="8" cy="11" r="1.1" fill="#19375F"/>
+</svg>

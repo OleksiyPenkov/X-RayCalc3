@@ -359,6 +359,23 @@ object frmProjectPanel: TfrmProjectPanel
     Left = 120
     Top = 540
   end
+  object vliTreeMarks: TVirtualImageList
+    Width = 16
+    Height = 16
+    Images = <
+      item
+        CollectionIndex = 43
+        CollectionName = 'Tree\ActiveModel'
+        Name = 'ActiveModel'
+      end
+      item
+        CollectionIndex = 44
+        CollectionName = 'Tree\LinkedData'
+        Name = 'LinkedData'
+      end>
+    Left = 120
+    Top = 596
+  end
   object pmProject: TPopupMenu
     Images = vliProject
     OnPopup = pmProjectPopup

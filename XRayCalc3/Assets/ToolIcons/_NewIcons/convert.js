@@ -17,10 +17,29 @@ const TARGET_DIRS = {
   '40_Play': 'Calc', '41_Forward': 'Calc', '42_AutoFit': 'Calc',
   '43_DataLoad': 'Calc', '44_DataPaste': 'Calc', '45_ResultSave': 'Calc',
   '46_CopyResult': 'Calc', '47_CopyImage': 'Calc',
+  'Tree_ActiveModel': 'Tree', 'Tree_LinkedData': 'Tree',
 };
 
+// Icons needing more than the default single 32 px PNG. The project tree
+// markers are drawn at 16 px, and downscaling a 32 px source to 16 blurs them,
+// so each size is rendered from the SVG and added to the image collection as
+// its own source image - the collection then picks one without resampling.
+const SIZES = {
+  'Tree_ActiveModel': [16, 32],
+  'Tree_LinkedData': [16, 32],
+};
+const DEFAULT_SIZE = 32;
+
+// Optional icon names on the command line convert just those, e.g.
+//   node convert.js Tree_ActiveModel Tree_LinkedData
+// Without arguments every SVG is reconverted, which rewrites all PNGs even
+// where nothing changed.
+const ONLY = process.argv.slice(2);
+
 async function convertAll() {
-  const svgFiles = fs.readdirSync(SVG_DIR).filter(f => f.endsWith('.svg')).sort();
+  let svgFiles = fs.readdirSync(SVG_DIR).filter(f => f.endsWith('.svg')).sort();
+  if (ONLY.length > 0)
+    svgFiles = svgFiles.filter(f => ONLY.includes(path.basename(f, '.svg')));
   console.log(`Found ${svgFiles.length} SVG files`);
 
   for (const svgFile of svgFiles) {
@@ -31,17 +50,28 @@ async function convertAll() {
     fs.mkdirSync(outDir, { recursive: true });
 
     const svgPath = path.join(SVG_DIR, svgFile);
-    const pngPath = path.join(outDir, name + '.png');
+    const sizes = SIZES[name] || [DEFAULT_SIZE];
 
-    await sharp(svgPath)
-      .resize(32, 32)
-      .png()
-      .toFile(pngPath);
+    for (const size of sizes) {
+      // A single-size icon keeps its plain name, so existing PNGs are untouched.
+      const suffix = sizes.length > 1 ? `_${size}` : '';
+      const pngPath = path.join(outDir, name + suffix + '.png');
 
-    console.log(`  ${name}.svg -> ${subdir}/${name}.png`);
+      // The multi-size SVGs use a 16 unit viewBox, so raise the render density
+      // to hit the wanted size exactly instead of rasterising then resampling.
+      // Everything else keeps sharp's default, as its PNGs were built that way.
+      const opts = SIZES[name] ? { density: 72 * size / 16 } : {};
+
+      await sharp(svgPath, opts)
+        .resize(size, size)
+        .png()
+        .toFile(pngPath);
+
+      console.log(`  ${name}.svg -> ${subdir}/${name}${suffix}.png (${size}px)`);
+    }
   }
 
-  console.log(`\nDone! ${svgFiles.length} icons converted to 32x32 PNG.`);
+  console.log(`\nDone! ${svgFiles.length} icons converted.`);
 }
 
 convertAll().catch(err => { console.error(err); process.exit(1); });

@@ -44,6 +44,7 @@ type
     RzPanel5: TRzPanel;
     mmDescription: TRzMemo;
     vliProject: TVirtualImageList;
+    vliTreeMarks: TVirtualImageList;
     pmProject: TPopupMenu;
     pmiEnabled: TMenuItem;
     pmiVisible: TMenuItem;
@@ -235,6 +236,10 @@ uses
 
 const
   GradientLabels: array [0..2] of string = ('H', 'S', 'rho');
+
+  { Edge of the project tree markers at 96 dpi, matching the 41 px wide first
+    column of the tree. }
+  TreeMarkSize = 16;
 
 { --- Old XRCX format (v2) support --- }
 
@@ -480,7 +485,11 @@ procedure TfrmProjectPanel.Init(AImageCollection: TImageCollection; ADPI: Intege
   ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
 begin
   vliProject.ImageCollection := AImageCollection;
+  vliTreeMarks.ImageCollection := AImageCollection;
+  vliTreeMarks.SetSize(TreeMarkSize * ADPI div 96, TreeMarkSize * ADPI div 96);
+
   FProject := TXRCProjectTree.Create(Self, ADPI);
+  FProject.MarkerImages := vliTreeMarks;
   FProject.Parent := Self;
   FProject.PopupMenu := pmProject;
   FProject.NodeDataSize := SizeOf(TProjectData);
@@ -754,6 +763,11 @@ begin
 
   FModelsRoot := FProject.GetFirst;
   FDataRoot := FProject.GetNextSibling(FModelsRoot);
+
+  { A saved project restores whatever collapsed state it was stored with, which
+    hides models or data behind a node the user never opened. }
+  FProject.Expanded[FModelsRoot] := True;
+  FProject.Expanded[FDataRoot] := True;
 
   FChartMgr.ClearAll;
   FProject.ActiveModel := nil;
