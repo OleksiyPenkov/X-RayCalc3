@@ -13,10 +13,11 @@
     </linearGradient>
   </defs>
   <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="15" width="29" height="19" rx="2" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
-    <path d="M3 17v-5a2 2 0 0 1 2-2h9l3 5z" fill="url(#secG)" stroke="#19375F" stroke-width="2"/>
+    <rect x="3" y="5" width="22" height="6.5" rx="1.5" fill="url(#bodyG)" stroke="#19375F" stroke-width="1.5"/>
+    <rect x="3" y="14" width="22" height="6.5" rx="1.5" fill="#FFFFFF" fill-opacity="0.6" stroke="#3CB4DC" stroke-width="1.6" stroke-dasharray="3 2.2"/>
+    <rect x="3" y="23" width="22" height="6.5" rx="1.5" fill="url(#secG)" stroke="#19375F" stroke-width="1.5"/>
   </g>
-  <circle cx="29" cy="27" r="9.5" fill="#EAF6FB" stroke="#19375F" stroke-width="2"/>
-  <path d="M30.78,31.89 A5.2,5.2 0 1 0 24.11,25.22" fill="none" stroke="#F5923A" stroke-width="2.6" stroke-linecap="round"/>
-  <polygon points="23.12,27.95 21.76,24.37 26.46,26.08" fill="#F5923A"/>
+  <circle cx="31" cy="17.2" r="7.6" fill="#3CB4DC" stroke="#19375F" stroke-width="1.7"/>
+  <line x1="31" y1="13.2" x2="31" y2="21.2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="27" y1="17.2" x2="35" y2="17.2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
 </svg>

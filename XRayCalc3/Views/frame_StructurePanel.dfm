@@ -43,7 +43,7 @@ object frmStructurePanel: TfrmStructurePanel
       Margins.Bottom = 0
       Left = 7
       Top = 2
-      ImageIndex = 0
+      ImageIndex = 1
       ParentShowHint = False
       ShowHint = True
     end
@@ -55,7 +55,7 @@ object frmStructurePanel: TfrmStructurePanel
       Margins.Bottom = 0
       Left = 60
       Top = 2
-      ImageIndex = 2
+      ImageIndex = 5
       ParentShowHint = False
       ShowHint = True
     end
@@ -84,7 +84,7 @@ object frmStructurePanel: TfrmStructurePanel
       Left = 177
       Top = 2
       Hint = 'Add Layer'
-      ImageIndex = 1
+      ImageIndex = 0
       ParentShowHint = False
       ShowHint = True
     end
@@ -97,7 +97,7 @@ object frmStructurePanel: TfrmStructurePanel
       Left = 230
       Top = 2
       Hint = 'Insert Layer'
-      ImageIndex = 5
+      ImageIndex = 2
       ParentShowHint = False
       ShowHint = True
     end

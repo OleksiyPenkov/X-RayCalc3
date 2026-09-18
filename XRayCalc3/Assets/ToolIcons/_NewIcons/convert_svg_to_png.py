@@ -14,10 +14,11 @@ TARGET_DIRS = {
     "07_Export": "Projects", "08_Copy": "Projects", "09_Paste": "Projects",
     "10_Edit": "Projects", "11_AddExtension": "Projects", "12_DeleteExtension": "Projects",
     # Model icons -> Model/
-    "add_layer": "Model", "add_period": "Model", "add_row_32_h": "Model",
+    "layer_add": "Model", "layer_insert": "Model", "layer_delete": "Model",
+    "layer_up": "Model", "layer_down": "Model",
+    "stack_add": "Model", "stack_insert": "Model", "stack_delete": "Model",
     "clipboard_cut_32_h": "Model", "clipboard_copy_lined_32": "Model",
-    "clipboard_paste_lined_32": "Model", "decrease_indent_32": "Model",
-    "delete_row_32_h": "Model", "increase_indent_32_h": "Model",
+    "clipboard_paste_lined_32": "Model",
     # Calc icons -> Calc/
     "40_Play": "Calc", "41_Forward": "Calc", "42_AutoFit": "Calc",
     "43_DataLoad": "Calc", "44_DataPaste": "Calc", "45_ResultSave": "Calc",

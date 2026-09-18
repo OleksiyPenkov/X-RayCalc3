@@ -104,7 +104,8 @@ uses
 const
   Captions  : array [1..5] of string   = ('Move up','Move down','Insert above','-','Delete');
   Tags      : array [1..5] of Cardinal = (WM_STR_LAYER_UP, WM_STR_LAYER_DOWN, WM_STR_LAYER_INSERT, 0, WM_STR_LAYER_DELETE);
-  ImgIndices: array [1..5] of Integer  = (7, 5, 0, -1, 6);
+  // indices into vilModel: layer_up, layer_down, layer_insert, -, layer_delete
+  ImgIndices: array [1..5] of Integer  = (9, 10, 2, -1, 7);
 
 { TXRCLayerControl }
 

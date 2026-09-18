@@ -13,10 +13,11 @@
     </linearGradient>
   </defs>
   <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="4" y="5" width="32" height="9" rx="1.5" fill="url(#bodyG)" stroke="#19375F" stroke-width="1.5"/>
-    <rect x="4" y="16" width="32" height="9" rx="1.5" fill="url(#secG)" stroke="#19375F" stroke-width="1.5"/>
-    <rect x="4" y="27" width="32" height="9" rx="1.5" fill="url(#bodyG)" stroke="#19375F" stroke-width="1.5"/>
+    <rect x="3" y="5" width="22" height="6.5" rx="1.5" fill="url(#bodyG)" stroke="#19375F" stroke-width="1.5"/>
+    <rect x="3" y="14" width="22" height="6.5" rx="1.5" fill="url(#secG)" stroke="#19375F" stroke-width="1.5"/>
+    <rect x="3" y="23" width="22" height="6.5" rx="1.5" fill="#FFFFFF" fill-opacity="0.6" stroke="#3CB4DC" stroke-width="1.6" stroke-dasharray="3 2.2"/>
   </g>
-  <circle cx="30.5" cy="20.5" r="8.5" fill="#D64545" stroke="#19375F" stroke-width="1.75"/>
-  <line x1="26.0" y1="20.5" x2="35.0" y2="20.5" stroke="white" stroke-width="2.75" stroke-linecap="round"/>
+  <circle cx="31" cy="26.2" r="7.6" fill="#3CB4DC" stroke="#19375F" stroke-width="1.7"/>
+  <line x1="31" y1="22.2" x2="31" y2="30.2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="27" y1="26.2" x2="35" y2="26.2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
 </svg>
