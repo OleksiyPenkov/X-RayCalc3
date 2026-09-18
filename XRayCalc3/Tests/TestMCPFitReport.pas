@@ -27,10 +27,11 @@ type
     /// <summary>Tests\Data\report-ref\&lt;Name&gt;, read as theta / value pairs
     /// with the one-line header WriteCurveFile puts there.</summary>
     function LoadReference(const Name: string): TDataArray;
-    /// <summary>A decaying curve modulated by a cosine of period FringeStep,
-    /// with its maxima at 0.9 + k * FringeStep so that the first two Bragg
-    /// orders of REF_PERIOD_FRINGE fall on two of them.</summary>
-    function FringeCurve(FringeStep: Double): TDataArray;
+    /// <summary>A slowly decaying curve modulated by a cosine of period
+    /// FringeStep and depth Depth, with its maxima at 0.9 + k * FringeStep so
+    /// that the first two Bragg orders of REF_PERIOD_FRINGE fall on two of
+    /// them. Depth 0.5 gives a fringe contrast of 3.</summary>
+    function FringeCurve(FringeStep: Double; Depth: Double = 0.5): TDataArray;
     /// <summary>The orders array of a report over the two curves.</summary>
     function OrdersOf(Rep: TJSONObject): TJSONArray;
     /// <summary>One order of the report, by its n.</summary>
@@ -48,7 +49,9 @@ type
     [Test] procedure Orders_BelowTheBackground_AreNotVisible;
     [Test] procedure Bands_ConstantRatio_IsTheSameInEveryBand;
     [Test] procedure Edge_HasThreePointsBeforeTheFirstMinimum;
-    [Test] procedure Fringes_CountTheSecondaryMaximaBetweenTheOrders;
+    [Test] procedure Fringes_PairEverySecondaryMaximumWithTheMinimumAfterIt;
+    [Test] procedure Fringes_ContrastIsLocalAndNotTheFallBetweenTheOrders;
+    [Test] procedure Fringes_BothCurvesAreReadAtTheSamePositions;
     [Test] procedure Fringes_OneOrderOnly_IsNull;
   end;
 
@@ -105,7 +108,7 @@ begin
   Assert.IsTrue(Length(Result) > 1000, 'the reference curve is too short');
 end;
 
-function TTestMCPFitReport.FringeCurve(FringeStep: Double): TDataArray;
+function TTestMCPFitReport.FringeCurve(FringeStep, Depth: Double): TDataArray;
 const
   TMin = 0.2;
   TMax = 3.0;
@@ -120,7 +123,7 @@ begin
     T := TMin + i * (TMax - TMin) / (Points - 1);
     Result[i].t := T;
     Result[i].r := Exp(-0.2 * T) *
-      (1 + 0.5 * Cos(2 * Pi * (T - 0.9) / FringeStep));
+      (1 + Depth * Cos(2 * Pi * (T - 0.9) / FringeStep));
   end;
 end;
 
@@ -398,13 +401,16 @@ begin
   end;
 end;
 
-procedure TTestMCPFitReport.Fringes_CountTheSecondaryMaximaBetweenTheOrders;
+{ Maxima every 0.15 degrees from 0.9: the first two orders of REF_PERIOD_FRINGE
+  are the ones at 0.9 and 1.8, and five secondary maxima - each with a minimum
+  after it - lie between them. }
+procedure TTestMCPFitReport.Fringes_PairEverySecondaryMaximumWithTheMinimumAfterIt;
 var
   C: TDataArray;
-  Rep, Fr, M: TJSONObject;
+  Rep, Fr, M, Pair: TJSONObject;
+  Pairs: TJSONArray;
+  i: Integer;
 begin
-  { Maxima every 0.15 degrees from 0.9: the first two orders of REF_PERIOD_FRINGE
-    are the ones at 0.9 and 1.8, and five secondary maxima lie between them. }
   C := FringeCurve(0.15);
   Rep := FitReportJSON(InputOf(C, C, REF_PERIOD_FRINGE, 0));
   try
@@ -415,13 +421,96 @@ begin
 
     Assert.IsTrue(Rep.GetValue('fringes') is TJSONObject);
     Fr := Rep.GetValue('fringes') as TJSONObject;
-    M := Fr.GetValue('measured') as TJSONObject;
-    Assert.AreEqual(5, M.GetValue<Integer>('count'),
+    Assert.AreEqual(5, Fr.GetValue<Integer>('count'),
       'five secondary maxima between the two orders');
-    { The modulation runs from 1.5 to 0.5 of the envelope, and the envelope
-      itself falls over the stretch, so the contrast is above 3. }
-    Assert.IsTrue(M.GetValue<Double>('contrast') > 3,
-      'the fringes of a curve modulated by half its height are strong');
+
+    M := Fr.GetValue('measured') as TJSONObject;
+    Pairs := M.GetValue('pairs') as TJSONArray;
+    Assert.AreEqual(5, Pairs.Count);
+    for i := 0 to Pairs.Count - 1 do
+    begin
+      Pair := Pairs.Items[i] as TJSONObject;
+      Assert.AreEqual(Double(1.05 + i * 0.15),
+        Pair.GetValue<Double>('theta_max_deg'), 0.003,
+        Format('fringe %d sits on a maximum of the modulation', [i]));
+      Assert.AreEqual(Pair.GetValue<Double>('theta_max_deg') + 0.075,
+        Pair.GetValue<Double>('theta_min_deg'), 0.003,
+        'the minimum that follows it is half a fringe further on');
+      Assert.IsTrue(Pair.GetValue<Double>('i_max') >
+                    Pair.GetValue<Double>('i_min'));
+    end;
+  finally
+    Rep.Free;
+  end;
+end;
+
+{ The curve runs from 1.5 to 0.5 of its envelope, so every fringe has a contrast
+  of 3 (times the small drop of the envelope over half a fringe). The largest
+  maximum of the stretch over its smallest minimum would be a different and much
+  larger number, because the envelope falls across the whole stretch; the report
+  must give the local one. }
+procedure TTestMCPFitReport.Fringes_ContrastIsLocalAndNotTheFallBetweenTheOrders;
+var
+  C: TDataArray;
+  Rep, Fr, M, First_, Last_: TJSONObject;
+  Pairs: TJSONArray;
+begin
+  C := FringeCurve(0.15);
+  Rep := FitReportJSON(InputOf(C, C, REF_PERIOD_FRINGE, 0));
+  try
+    Fr := Rep.GetValue('fringes') as TJSONObject;
+    M := Fr.GetValue('measured') as TJSONObject;
+    Pairs := M.GetValue('pairs') as TJSONArray;
+    First_ := Pairs.Items[0] as TJSONObject;
+    Last_ := Pairs.Items[Pairs.Count - 1] as TJSONObject;
+
+    Assert.AreEqual(Double(3.045), First_.GetValue<Double>('contrast'), 0.02,
+      'the first fringe stands three times above the minimum after it');
+    Assert.AreEqual(Double(3.045), Last_.GetValue<Double>('contrast'), 0.02,
+      'and so does the last, although it is a decade lower on the curve');
+    Assert.AreEqual(Double(3.045), M.GetValue<Double>('mean_contrast'), 0.02,
+      'the mean of the five is the same number');
+  finally
+    Rep.Free;
+  end;
+end;
+
+{ What the resolution of the calculation is chosen by: the same fringes read off
+  both curves. The calculated curve here is modulated 1.8 to 0.2 - a contrast of
+  9 against the measured 3 - and the report has to show that difference at the
+  same angles rather than compare two sets of extrema found separately. }
+procedure TTestMCPFitReport.Fringes_BothCurvesAreReadAtTheSamePositions;
+var
+  Meas, Calc: TDataArray;
+  Rep, Fr, M, Cc: TJSONObject;
+  MP, CP: TJSONArray;
+  i: Integer;
+begin
+  Meas := FringeCurve(0.15, 0.5);
+  Calc := FringeCurve(0.15, 0.8);
+  Rep := FitReportJSON(InputOf(Meas, Calc, REF_PERIOD_FRINGE, 0));
+  try
+    Fr := Rep.GetValue('fringes') as TJSONObject;
+    M := Fr.GetValue('measured') as TJSONObject;
+    Cc := Fr.GetValue('calculated') as TJSONObject;
+    MP := M.GetValue('pairs') as TJSONArray;
+    CP := Cc.GetValue('pairs') as TJSONArray;
+
+    Assert.AreEqual(MP.Count, CP.Count, 'one pair per fringe on both curves');
+    for i := 0 to MP.Count - 1 do
+    begin
+      Assert.AreEqual((MP.Items[i] as TJSONObject).GetValue<Double>('theta_max_deg'),
+                      (CP.Items[i] as TJSONObject).GetValue<Double>('theta_max_deg'),
+                      1E-12, 'the same angle on both curves');
+      Assert.AreEqual((MP.Items[i] as TJSONObject).GetValue<Double>('theta_min_deg'),
+                      (CP.Items[i] as TJSONObject).GetValue<Double>('theta_min_deg'),
+                      1E-12);
+    end;
+
+    Assert.AreEqual(Double(3.045), M.GetValue<Double>('mean_contrast'), 0.02,
+      'the measured fringes stand three times above their minima');
+    Assert.AreEqual(Double(9.14), Cc.GetValue<Double>('mean_contrast'), 0.05,
+      'the calculated ones nine times: the calculation is too sharp');
   finally
     Rep.Free;
   end;

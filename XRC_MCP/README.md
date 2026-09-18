@@ -107,7 +107,13 @@ abandons the call while the server is still inside it - the job itself is unaffe
   ratio calculated over measured, and `visible`, which is `I_meas > 3 x background` with the
   background the median of the last hundred fitted points), `edge` (three points evenly spaced
   between the start of the range and the first minimum of the calculated curve), `fringes` (the
-  secondary maxima between orders 1 and 2, counted and measured against calculated), `bands` (the
+  Kiessig fringes between orders 1 and 2, each secondary maximum paired with the minimum that
+  follows it down the falling curve, with `contrast = i_max / i_min` per pair, `mean_contrast` and
+  the count; the pairs are located on the measured curve and both curves are read at those same two
+  angles, so `measured` and `calculated` are the same measurement made twice - which is the number
+  the resolution of the calculation is chosen by. The contrast is deliberately local: between two
+  orders the curve falls by decades, and the largest maximum of the stretch over its smallest
+  minimum would measure that fall and not the fringes), `bands` (the
   range in eight equal bands of theta, each with the mean and the rms of
   `log10(R_calc / I_meas)`), `near_bounds` (every fitted value within 5 % of its range of one of its
   bounds), `chi2`, `chi2_start`, and `start`, the same numbers for the model the fit began with.

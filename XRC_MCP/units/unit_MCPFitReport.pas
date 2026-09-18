@@ -45,7 +45,12 @@ unit unit_MCPFitReport;
      noise" is exactly the kind of thing the client has to know.
    - The measured and the calculated maximum are located independently inside
      the same window, so that "the calculated peak sits 0.01 degrees below the
-     measured one" survives into the report instead of being averaged away. *)
+     measured one" survives into the report instead of being averaged away.
+   - The fringe contrast is local: each secondary maximum over the minimum that
+     follows it. Between two Bragg orders the curve falls by decades, so the
+     largest maximum of the stretch over its smallest minimum measures that
+     fall and not the fringes - and it is the fringe contrast, measured against
+     calculated, that the resolution of the calculation is chosen by. *)
 
 interface
 
@@ -290,48 +295,29 @@ end;
 { -------------------------------------------------------------- fringes -- }
 
 type
-  /// The secondary maxima and the minima between them over one stretch of a
-  /// curve: how many, the largest maximum and the smallest minimum.
-  TFringeStats = record
-    Count: Integer;
-    MaxOfMaxima, MinOfMinima: Double;
-    HasMax, HasMin: Boolean;
+  /// <summary>One Kiessig fringe between two Bragg orders, as a pair of grid
+  /// indices: the secondary maximum and the minimum that follows it down the
+  /// falling curve. Both curves are read at these same two angles, so the
+  /// measured and the calculated contrast are the same measurement made twice
+  /// and not two different features compared.</summary>
+  TFringePair = record
+    IdxMax, IdxMin: Integer;
   end;
 
-/// Alternating extrema of C strictly between Lo and Hi, with a hysteresis: a
-/// turn only counts once the curve has moved back by REPORT_FRINGE_HYSTERESIS
-/// from the last extremum. Without it the count of fringes on a measured curve
-/// is a count of its noise.
-function FringeStatsOf(const C: unit_Types.TDataArray;
-  Lo, Hi: Double): TFringeStats;
+/// The fringe pairs of C strictly between Lo and Hi. Extrema are found with a
+/// hysteresis - a turn only counts once the curve has moved back by
+/// REPORT_FRINGE_HYSTERESIS from the last one - because without it the fringes
+/// of a measured curve are its noise. Each maximum is paired with the next
+/// minimum; a maximum with no minimum after it inside the stretch is dropped.
+function FringePairsOf(const C: unit_Types.TDataArray;
+  Lo, Hi: Double): TArray<TFringePair>;
 var
-  i: Integer;
+  i, Count, ExtremeIdx, PendingMax: Integer;
   Rising: Boolean;
-  Extreme: Double;
-  Stats: TFringeStats;
-
-  procedure TakeMax(V: Double);
-  begin
-    Inc(Stats.Count);
-    if (not Stats.HasMax) or (V > Stats.MaxOfMaxima) then
-    begin
-      Stats.MaxOfMaxima := V;
-      Stats.HasMax := True;
-    end;
-  end;
-
-  procedure TakeMin(V: Double);
-  begin
-    if (not Stats.HasMin) or (V < Stats.MinOfMinima) then
-    begin
-      Stats.MinOfMinima := V;
-      Stats.HasMin := True;
-    end;
-  end;
-
 begin
-  Stats := Default(TFringeStats);
-  Result := Stats;
+  Result := nil;
+  Count := 0;
+  PendingMax := -1;
 
   i := 0;
   while (i <= High(C)) and (C[i].t <= Lo) do
@@ -340,64 +326,112 @@ begin
     Exit;
 
   { The stretch starts just past the first order, so the curve is falling. }
-  Extreme := C[i].r;
+  ExtremeIdx := i;
   Rising := False;
 
   while (i <= High(C)) and (C[i].t < Hi) do
   begin
     if Rising then
     begin
-      if C[i].r > Extreme then
-        Extreme := C[i].r
-      else if (C[i].r > 0) and (Extreme > REPORT_FRINGE_HYSTERESIS * C[i].r) then
+      if C[i].r > C[ExtremeIdx].r then
+        ExtremeIdx := i
+      else if (C[i].r > 0) and
+              (C[ExtremeIdx].r > REPORT_FRINGE_HYSTERESIS * C[i].r) then
       begin
-        TakeMax(Extreme);
-        Extreme := C[i].r;
+        PendingMax := ExtremeIdx;        // waiting for the minimum after it
+        ExtremeIdx := i;
         Rising := False;
       end;
     end
     else
     begin
-      if C[i].r < Extreme then
-        Extreme := C[i].r
-      else if (Extreme > 0) and (C[i].r > REPORT_FRINGE_HYSTERESIS * Extreme) then
+      if C[i].r < C[ExtremeIdx].r then
+        ExtremeIdx := i
+      else if (C[ExtremeIdx].r > 0) and
+              (C[i].r > REPORT_FRINGE_HYSTERESIS * C[ExtremeIdx].r) then
       begin
-        TakeMin(Extreme);
-        Extreme := C[i].r;
+        if PendingMax >= 0 then
+        begin
+          SetLength(Result, Count + 1);
+          Result[Count].IdxMax := PendingMax;
+          Result[Count].IdxMin := ExtremeIdx;
+          Inc(Count);
+          PendingMax := -1;
+        end;
+        ExtremeIdx := i;
         Rising := True;
       end;
     end;
     Inc(i);
   end;
-
-  Result := Stats;
 end;
 
-function FringeStatsJSON(const S: TFringeStats): TJSONObject;
+/// One curve read at the fringe positions: every pair with its own contrast,
+/// and the mean of those contrasts. The positions come from the measured curve
+/// and the two arrays share a grid point for point, so an index is an angle.
+function FringeSideJSON(const C: unit_Types.TDataArray;
+  const Ref: unit_Types.TDataArray;
+  const Pairs: TArray<TFringePair>): TJSONObject;
+var
+  n, Used: Integer;
+  Sum, Contrast: Double;
+  Arr: TJSONArray;
+  Obj: TJSONObject;
 begin
   Result := TJSONObject.Create;
   try
-    Result.AddPair('count', TJSONNumber.Create(S.Count));
-    Result.AddPair('max', NumOrNull(S.MaxOfMaxima, S.HasMax));
-    Result.AddPair('min', NumOrNull(S.MinOfMinima, S.HasMin));
-    if S.HasMax and S.HasMin and (S.MinOfMinima > 0) then
-      Result.AddPair('contrast', JSONArgs.Num(S.MaxOfMaxima / S.MinOfMinima))
-    else
-      Result.AddPair('contrast', TJSONNull.Create);
+    Arr := TJSONArray.Create;
+    Result.AddPair('pairs', Arr);
+
+    Sum := 0;
+    Used := 0;
+    for n := 0 to High(Pairs) do
+    begin
+      if (Pairs[n].IdxMax > High(C)) or (Pairs[n].IdxMin > High(C)) then
+        Continue;
+
+      Obj := TJSONObject.Create;
+      Arr.AddElement(Obj);
+      Obj.AddPair('theta_max_deg', JSONArgs.Num(Ref[Pairs[n].IdxMax].t));
+      Obj.AddPair('i_max', JSONArgs.Num(C[Pairs[n].IdxMax].r));
+      Obj.AddPair('theta_min_deg', JSONArgs.Num(Ref[Pairs[n].IdxMin].t));
+      Obj.AddPair('i_min', JSONArgs.Num(C[Pairs[n].IdxMin].r));
+      Obj.AddPair('contrast',
+        RatioOrNull(C[Pairs[n].IdxMax].r, C[Pairs[n].IdxMin].r));
+
+      if C[Pairs[n].IdxMin].r > 0 then
+      begin
+        Contrast := C[Pairs[n].IdxMax].r / C[Pairs[n].IdxMin].r;
+        Sum := Sum + Contrast;
+        Inc(Used);
+      end;
+    end;
+
+    Result.AddPair('mean_contrast', NumOrNull(Sum / Max(1, Used), Used > 0));
   except
     Result.Free;
     raise;
   end;
 end;
 
-/// The fringes between the first and the second order, measured against
-/// calculated. The stretch is bounded by the two measured order maxima, so both
-/// curves are read over exactly the same angles. Null when the range does not
-/// hold two orders.
+/// The Kiessig fringes between the first and the second order: each secondary
+/// maximum over the minimum that follows it, measured against calculated.
+///
+/// The contrast is local on purpose. The global largest maximum over the global
+/// smallest minimum of the stretch is a number an order of magnitude bigger,
+/// because the curve falls by decades between two orders and that fall has
+/// nothing to do with the fringes; it is the contrast of each fringe against
+/// its own neighbourhood that says whether the resolution of the calculation
+/// matches the instrument.
+///
+/// The stretch is bounded by the two measured order maxima and the extrema are
+/// located on the measured curve, so both curves are read at the same angles.
+/// Null when the range does not hold two orders.
 function FringesJSON(const Inp: TFitReportInput; Orders: TJSONArray): TJSONValue;
 var
   Obj: TJSONObject;
   Lo, Hi: Double;
+  Pairs: TArray<TFringePair>;
 
   function ThetaOfOrder(N: Integer; out Theta: Double): Boolean;
   var
@@ -423,12 +457,16 @@ begin
      (Hi <= Lo) then
     Exit(TJSONNull.Create);
 
+  Pairs := FringePairsOf(Inp.Measured, Lo, Hi);
+
   Obj := TJSONObject.Create;
   try
     Obj.AddPair('between_deg', JSONArgs.NumArr(TArray<Double>.Create(Lo, Hi)));
-    Obj.AddPair('measured', FringeStatsJSON(FringeStatsOf(Inp.Measured, Lo, Hi)));
+    Obj.AddPair('count', TJSONNumber.Create(Length(Pairs)));
+    Obj.AddPair('measured',
+      FringeSideJSON(Inp.Measured, Inp.Measured, Pairs));
     Obj.AddPair('calculated',
-      FringeStatsJSON(FringeStatsOf(Inp.Calculated, Lo, Hi)));
+      FringeSideJSON(Inp.Calculated, Inp.Measured, Pairs));
     Result := Obj;
   except
     Obj.Free;

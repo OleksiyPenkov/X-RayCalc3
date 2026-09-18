@@ -360,7 +360,18 @@ if ($null -eq $res.report.start) { Fail 'the fit report has no "start" section' 
 if (@($res.report.bands).Count -ne 8) { Fail "the fit report has $(@($res.report.bands).Count) bands, expected 8" }
 if ($null -eq $res.report.near_bounds) { Fail 'the fit report has no near_bounds list' }
 $rep1 = @($res.report.orders)[0]
-Say "        fit report      : order 1 at theta $($rep1.theta_meas_deg) deg, calc/meas $($rep1.ratio), visible $($rep1.visible), background $($res.report.background)" 
+Say "        fit report      : order 1 at theta $($rep1.theta_meas_deg) deg, calc/meas $($rep1.ratio), visible $($rep1.visible), background $($res.report.background)"
+if ($null -ne $res.report.fringes) {
+    $fr = $res.report.fringes
+    $mp = @($fr.measured.pairs)
+    $cp = @($fr.calculated.pairs)
+    if ($mp.Count -ne $fr.count) { Fail "the report lists $($fr.count) fringes but $($mp.Count) measured pairs" }
+    if ($cp.Count -ne $mp.Count) { Fail 'the two curves are read at a different number of fringe positions' }
+    if (($mp.Count -gt 0) -and ([double] $mp[0].theta_max_deg -ne [double] $cp[0].theta_max_deg)) {
+        Fail 'the calculated fringes are not read at the measured positions'
+    }
+    Say "        fringe contrast : $($fr.count) fringes between orders 1 and 2, mean contrast meas $($fr.measured.mean_contrast) calc $($fr.calculated.mean_contrast)"
+} 
 Say "[12/17] fit determinism  : both runs report chi2 = $($fitChi[0]) and the same fitted structure"
 
 # the same fit on the curve smoothed once (Data - Smooth): echoed, and a different fit
