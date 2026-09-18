@@ -26,6 +26,8 @@ type
     [Test] procedure FindBraggPeaks_BelowCriticalAngle_Ignored;
     [Test] procedure FindBraggPeaks_FractionalOrder_Ignored;
     [Test] procedure FindBraggPeaks_FlatCurve_FindsNothing;
+    [Test] procedure FindBraggPeaks_BroadOrderBesideASharpFringe_TakesTheOrder;
+    [Test] procedure FindBraggPeaks_RefractionShiftedOrder_IsStillFound;
 
     { CurveToJSON / WriteCurveFile }
     [Test] procedure CurveToJSON_ShortCurve_IsInline;
@@ -43,6 +45,7 @@ type
     [Test] procedure CriticalAngle_ThinFilm_IsDominatedByTheSubstrate;
     [Test] procedure RunCalc_RuC_FirstBraggPeak;
     [Test] procedure RunCalc_Convolved_KeepsPointCountAndLowersPeak;
+    [Test] procedure RunCalc_CCo_PeaksAreTheOrdersAndNotTheSatellites;
   end;
 
 implementation
@@ -58,6 +61,15 @@ const
   // is chosen so that the three positions round to orders 1, 2 and 3:
   // 2 * 63.05 * sin(0.7 deg) / 1.5406 = 1.00.
   SYN_PERIOD  = 63.05;              // Angstrom
+
+  { The 20-period C/Co mirror of specimen P2-05, as the skill-test sessions of
+    2026-09-18 gave it to the server: the model whose peak summary named
+    satellites instead of orders. }
+  CCO_JSON =
+    '{"substrate":{"material":"SiO2","sigma":3.8,"density":2.65},' +
+    '"stacks":[{"N":20,"layers":[' +
+    '{"material":"C","thickness":32,"sigma":5,"density":2},' +
+    '{"material":"Co","thickness":18,"sigma":5,"density":8}]}]}';
   SYN_FWHM    = 0.015;              // degrees
   SYN_POINTS  = 4000;
   SYN_TMIN    = 0.1;
@@ -556,6 +568,136 @@ begin
   Assert.AreEqual(2, Peaks[1].Order);
   Assert.IsTrue(Peaks[1].Theta > Peaks[0].Theta, 'orders run outwards');
   Assert.IsTrue(Peaks[1].R < Peaks[0].R, 'higher orders are weaker');
+end;
+
+{ The defect four sessions reported on 2026-09-18: on a C/Co multilayer the
+  summary named a first order at 0.855 deg with R = 0.015 while the real one is
+  at 0.915 with R = 0.203 - a Kiessig satellite, thirteen times weaker.
+
+  The cause is in the shape of the two features, not in the physics. A generic
+  peak finder asks a maximum to stand three times above the smallest value
+  within a fixed number of points; a Bragg peak is broader than that window and
+  fails the test, while a sharp satellite beside it passes. Here the order at
+  0.7 deg is a Gaussian of 0.08 deg FWHM - much wider than the +/-20 points the
+  old test used - and the satellite at 0.63 is a tenth as high and eight times
+  narrower. }
+procedure TTestMCPCalc.FindBraggPeaks_BroadOrderBesideASharpFringe_TakesTheOrder;
+var
+  Curve: TDataArray;
+  Peaks: TArray<TPeak>;
+  i: Integer;
+  T, Broad, Sharp: Double;
+begin
+  Broad := 0.08 / (2 * Sqrt(2 * Ln(2)));
+  Sharp := 0.01 / (2 * Sqrt(2 * Ln(2)));
+  SetLength(Curve, SYN_POINTS);
+  for i := 0 to SYN_POINTS - 1 do
+  begin
+    T := SYN_TMIN + i * (SYN_TMAX - SYN_TMIN) / (SYN_POINTS - 1);
+    Curve[i].t := T;
+    Curve[i].r := 1E-3 * Exp(-1.2 * T)
+                + 0.60 * Exp(-Sqr(T - 0.70) / (2 * Sqr(Broad)))
+                + 0.06 * Exp(-Sqr(T - 0.63) / (2 * Sqr(Sharp)));
+  end;
+
+  Peaks := FindBraggPeaks(Curve, CU_K_ALPHA, SYN_PERIOD, 0.3);
+  Assert.AreEqual(1, Length(Peaks), 'one order is inside this curve');
+  Assert.AreEqual(1, Peaks[0].Order);
+  Assert.AreEqual(Double(0.70), Peaks[0].Theta, 0.005,
+    'the order is the broad maximum, not the sharp satellite beside it');
+  Assert.AreEqual(Double(0.60), Peaks[0].R, 0.01, 'and it has the peak height');
+end;
+
+{ Refraction moves a Bragg maximum to higher angles: sin^2(theta_n) =
+  (n lambda / 2 d)^2 + sin^2(theta_c). With a critical angle of 0.45 deg the
+  first order of this period sits 0.09 deg above the Bragg angle, further than
+  the 0.06 deg the window would allow on its own. }
+procedure TTestMCPCalc.FindBraggPeaks_RefractionShiftedOrder_IsStillFound;
+var
+  Curve: TDataArray;
+  Peaks: TArray<TPeak>;
+  i: Integer;
+  T, Sigma, Shifted, Lo, Hi, Bragg: Double;
+begin
+  Assert.IsTrue(BraggSearchWindow(1, CU_K_ALPHA, SYN_PERIOD, 0.45, Lo, Hi, Bragg),
+    'the first order of this period is not past the horizon');
+  Shifted := RadToDeg(ArcSin(Sqrt(Sqr(CU_K_ALPHA / (2 * SYN_PERIOD)) +
+                                  Sqr(Sin(DegToRad(0.45))))));
+  Assert.IsTrue(Shifted - Bragg > 0.06,
+    'the shift is bigger than the half-width of the window');
+
+  Sigma := SYN_FWHM / (2 * Sqrt(2 * Ln(2)));
+  SetLength(Curve, SYN_POINTS);
+  for i := 0 to SYN_POINTS - 1 do
+  begin
+    T := SYN_TMIN + i * (SYN_TMAX - SYN_TMIN) / (SYN_POINTS - 1);
+    Curve[i].t := T;
+    Curve[i].r := 1E-3 * Exp(-1.2 * T) +
+                  0.6 * Exp(-Sqr(T - Shifted) / (2 * Sqr(Sigma)));
+  end;
+
+  Peaks := FindBraggPeaks(Curve, CU_K_ALPHA, SYN_PERIOD, 0.45);
+  Assert.AreEqual(1, Length(Peaks), 'the shifted order is found');
+  Assert.AreEqual(Shifted, Peaks[0].Theta, 0.005);
+end;
+
+{ The same defect on the structure the sessions actually ran: the 20-period
+  C/Co mirror P2-05, computed by the engine. Every order the summary reports has
+  to be the largest point of its own window - which is what a satellite next to
+  it is not. }
+procedure TTestMCPCalc.RunCalc_CCo_PeaksAreTheOrdersAndNotTheSatellites;
+var
+  J: TJSONObject;
+  Req: TCalcRequest;
+  Used: TFitStructure;
+  Curve: TDataArray;
+  Peaks: TArray<TPeak>;
+  ThetaC, Lo, Hi, Bragg: Double;
+  i, Idx: Integer;
+begin
+  if not (HenkeAvailable('C') and HenkeAvailable('Co') and HenkeAvailable('SiO2')) then
+    Assert.Pass('Henke tables for C, Co and SiO2 are not installed: ' + HenkeDir);
+
+  Req := Default(TCalcRequest);
+  J := TJSONObject.ParseJSONValue(CCO_JSON) as TJSONObject;
+  try
+    Req.Structure := StructureFromJSON(J, Req.Info);
+  finally
+    J.Free;
+  end;
+  Req.Lambda := CU_K_ALPHA;
+  Req.ThetaMin := 0.2;
+  Req.ThetaMax := 4.0;
+  Req.DeltaTheta := 0;
+  Req.Points := 2000;
+  Req.Polarization := cmSP;
+  Req.RMin := 1E-7;
+
+  Assert.AreEqual(Double(50.0), Req.Info.Period, 1E-6, 'C 32 + Co 18');
+
+  Curve := RunCalc(Req, Used);
+  ThetaC := CriticalAngleDeg(Used, Req.Lambda);
+  Peaks := FindBraggPeaks(Curve, Req.Lambda, Req.Info.Period, ThetaC);
+
+  Assert.IsTrue(Length(Peaks) >= 4,
+    'four orders of a 50 A period fit between 0.2 and 4 degrees');
+  for i := 0 to High(Peaks) do
+  begin
+    Assert.IsTrue(BraggSearchWindow(Peaks[i].Order, Req.Lambda, Req.Info.Period,
+      ThetaC, Lo, Hi, Bragg), Format('order %d has a window', [Peaks[i].Order]));
+    Idx := MaxIndexInRange(Curve, Lo, Hi);
+    Assert.AreEqual(Curve[Idx].r, Peaks[i].R, 1E-12,
+      Format('order %d is the largest point of its window, not a satellite ' +
+             'beside it', [Peaks[i].Order]));
+    Assert.IsTrue(Peaks[i].Theta >= Bragg,
+      Format('order %d is at or above the Bragg angle: refraction only moves ' +
+             'it up', [Peaks[i].Order]));
+  end;
+
+  Assert.AreEqual(1, Peaks[0].Order);
+  Assert.IsTrue(Peaks[0].R > 10 * Peaks[1].R,
+    'the first order of this mirror is far stronger than the second: the ' +
+    'summary used to report a satellite a tenth its height');
 end;
 
 initialization

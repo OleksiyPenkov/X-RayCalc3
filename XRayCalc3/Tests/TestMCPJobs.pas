@@ -61,6 +61,13 @@ type
     [Test] procedure NewJobFolder_CreatesUniqueFolder;
     [Test] procedure UnwritableJobDir_JobStillFinishes_WarnsOnce;
     [Test] procedure PlainExceptionBody_FailsInternal_QueueSurvives;
+
+    [Test] procedure WaitFor_JobFinishes_ReturnsEarly;
+    [Test] procedure WaitFor_JobStillRunning_ReturnsAtTheCeiling;
+    [Test] procedure WaitFor_FinishedJob_ReturnsAtOnce;
+    [Test] procedure WaitFor_UnknownId_IsUnknownAtOnce;
+    [Test] procedure WaitFor_CancelledFromElsewhere_EndsTheWait;
+    [Test] procedure WaitFor_QueuedJobCancelled_ComesBackCancelled;
   end;
 
 implementation
@@ -506,6 +513,132 @@ begin
   Good := FMgr.Submit(jkOptimize, 2, LoopBody(2), nil);
   Assert.IsTrue(WaitForState(Good, jsFinished, 5000),
     'the queue survives a job that blew up');
+end;
+
+procedure TTestMCPJobs.WaitFor_JobFinishes_ReturnsEarly;
+var
+  Job: TJob;
+  Status: TJSONObject;
+begin
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(5), nil);     // about 50 ms
+  Status := FMgr.WaitFor(Job.Id, 10000);
+  try
+    Assert.AreEqual('finished', Status.GetValue<string>('state'),
+      'the wait ends when the job does');
+    Assert.IsTrue(Status.GetValue<Double>('waited_s') < 5,
+      'and not at the ceiling it was given');
+  finally
+    Status.Free;
+  end;
+end;
+
+procedure TTestMCPJobs.WaitFor_JobStillRunning_ReturnsAtTheCeiling;
+var
+  Job: TJob;
+  Status: TJSONObject;
+  Waited: Double;
+begin
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(500), nil);   // about 5 s
+  Status := FMgr.WaitFor(Job.Id, 300);
+  try
+    Assert.AreEqual('running', Status.GetValue<string>('state'),
+      'the job is still going and the wait says so');
+    Waited := Status.GetValue<Double>('waited_s');
+    Assert.IsTrue(Waited >= 0.25, Format('waited %.3f s, expected about 0.3', [Waited]));
+    Assert.IsTrue(Waited < 3, Format('waited %.3f s, far past the ceiling', [Waited]));
+  finally
+    Status.Free;
+  end;
+end;
+
+procedure TTestMCPJobs.WaitFor_FinishedJob_ReturnsAtOnce;
+var
+  Job: TJob;
+  Status: TJSONObject;
+begin
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(2), nil);
+  Assert.IsTrue(WaitForState(Job, jsFinished, 5000), 'the job must finish');
+
+  Status := FMgr.WaitFor(Job.Id, 10000);
+  try
+    Assert.AreEqual('finished', Status.GetValue<string>('state'));
+    Assert.IsTrue(Status.GetValue<Double>('waited_s') < 0.5,
+      'a job that has already ended is not waited for');
+  finally
+    Status.Free;
+  end;
+end;
+
+procedure TTestMCPJobs.WaitFor_UnknownId_IsUnknownAtOnce;
+var
+  Status: TJSONObject;
+begin
+  Status := FMgr.WaitFor('fit-19700101-000000-dead', 10000);
+  try
+    Assert.AreEqual('unknown', Status.GetValue<string>('state'));
+    Assert.AreEqual(Double(0), Status.GetValue<Double>('waited_s'), 1E-9,
+      'an id this server never saw is answered without waiting');
+  finally
+    Status.Free;
+  end;
+end;
+
+{ The stdio loop serves one call at a time, so a client cannot cancel the job it
+  is waiting on. A cancel from anywhere else does end the wait, and that is what
+  the manager has to guarantee: the wait watches the state, not a timer. }
+procedure TTestMCPJobs.WaitFor_CancelledFromElsewhere_EndsTheWait;
+var
+  Job: TJob;
+  Status: TJSONObject;
+  Canceller: TThread;
+  Id: string;
+begin
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(2000), nil);   // about 20 s
+  Assert.IsTrue(WaitForState(Job, jsRunning, 5000), 'the job must start');
+
+  Id := Job.Id;
+  Canceller := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      Sleep(200);
+      FMgr.Cancel(Id).Free;
+    end);
+  Canceller.FreeOnTerminate := False;
+  try
+    Canceller.Start;
+    Status := FMgr.WaitFor(Id, 15000);
+    try
+      Assert.AreEqual('cancelled', Status.GetValue<string>('state'),
+        'the wait comes back on the cancellation, not on its ceiling');
+      Assert.IsTrue(Status.GetValue<Double>('waited_s') < 10,
+        'and well before it');
+    finally
+      Status.Free;
+    end;
+  finally
+    Canceller.WaitFor;
+    Canceller.Free;
+  end;
+end;
+
+procedure TTestMCPJobs.WaitFor_QueuedJobCancelled_ComesBackCancelled;
+var
+  First, Second: TJob;
+  Status: TJSONObject;
+begin
+  First := FMgr.Submit(jkOptimize, 1, LoopBody(300), nil);
+  Second := FMgr.Submit(jkOptimize, 2, LoopBody(300), nil);
+  Assert.IsTrue(WaitForState(First, jsRunning, 5000), 'the first job must start');
+  Assert.AreEqual(Ord(jsQueued), Ord(Second.State), 'the second one waits');
+
+  FMgr.Cancel(Second.Id).Free;        // a queued job is cancelled at once
+  Status := FMgr.WaitFor(Second.Id, 5000);
+  try
+    Assert.AreEqual('cancelled', Status.GetValue<string>('state'));
+    Assert.IsTrue(Status.GetValue<Double>('waited_s') < 0.5);
+  finally
+    Status.Free;
+  end;
 end;
 
 initialization

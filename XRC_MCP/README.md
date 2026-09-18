@@ -71,10 +71,68 @@ Without a job the defaults stay, except that `[FIT] Mode` is 1 (periodic) when t
 repeating stack and 0 (irregular) otherwise. Before, every saved project carried Mode 0 with 100
 iterations and a population of 1000, whatever fit had produced it.
 
+**`job_wait` since 2026-09-18:** `job_wait` blocks until a job reaches a final state or
+`wait_s` seconds have passed (default 300, at most 900) and returns the `job_status` object plus
+`waited_s`. One call replaces a poll per turn: a fit of several hundred seconds used to cost two
+to three hundred `job_status` calls, which is a whole segment of an agent's turn budget. The stdio
+loop serves one request at a time, so while a wait is in progress the server answers nothing else -
+including a `cancel_job` for the job being waited on; a cancel from another client, or the server
+shutting down, does end the wait, because the job then reaches `cancelled`. Keep `wait_s` under the
+client's own MCP tool timeout (`MCP_TOOL_TIMEOUT`, milliseconds, in Claude Code) or the client
+abandons the call while the server is still inside it - the job itself is unaffected and
+`job_status` still reports it.
+
+**`fit_xrr` since 2026-09-18:** three arguments and one new block in the result.
+
+- `"scale": "auto"` is the GUI's Data - Normalize Auto (`unit_DataProcessing.NormalizeAuto`): the
+  server takes the largest measured intensity below `auto_theta_max` (degrees theta, default 0.5)
+  and sets it equal to the reflectivity of the start model at that same angle, so
+  `scale = R_calc(theta_max) / I_max`. It is computed on the raw curve, before `smooth` and before
+  the `theta_range` trim, with the wavelength, polarization and resolution of the fit. The result
+  carries `scale_mode` (`"fixed"` or `"auto"`), `scale_theta`, `scale_counts` and, for `auto`,
+  `auto_theta_max`. A numeric `scale` behaves exactly as before. The `scale` description no longer
+  says to compare the curves at about theta 0.4 degrees and not to normalise to the total-reflection
+  region: that was the opposite of the laboratory's procedure.
+- `"paired": ["sigma", "density"]` sets the GUI's Paired boxes - `TFitValue.Paired`, the `HP`/`SP`/`RP`
+  flags of the project file, which `TLFPSO_Poly.Set_Init_XPoly` already honours - so that those
+  parameters keep one value over the periods of a `profile` fit instead of getting a polynomial of
+  their own. This is the author's practice on a multilayer: the thicknesses carry the gradient, the
+  roughness and the density are one number per layer. An item is a bare parameter name, which pairs
+  it in every layer, or `{"stack", "layer", "parameters"}` addressed as in `"free"`. It is refused
+  with `invalid_argument` without `"profile": true`. The result echoes what was paired in `paired`,
+  and a paired parameter has no entry in `profiles`.
+- `"report"` is in every result, and the same object is written as `report.json` in the job folder
+  (`files.report`). It holds `orders` (every Bragg order of the fitted period inside the fitting
+  range: the measured and the calculated maximum located independently inside the same window, the
+  ratio calculated over measured, and `visible`, which is `I_meas > 3 x background` with the
+  background the median of the last hundred fitted points), `edge` (three points evenly spaced
+  between the start of the range and the first minimum of the calculated curve), `fringes` (the
+  secondary maxima between orders 1 and 2, counted and measured against calculated), `bands` (the
+  range in eight equal bands of theta, each with the mean and the rms of
+  `log10(R_calc / I_meas)`), `near_bounds` (every fitted value within 5 % of its range of one of its
+  bounds), `chi2`, `chi2_start`, and `start`, the same numbers for the model the fit began with.
+  There is no verdict and no threshold anywhere in it: the skill states the pass criteria, the tool
+  states the numbers.
+
+A request that uses none of the new keys gives the same answer as `7f5b397` for the same seed: every
+key that revision reports is byte-equal (checked by running one fit through both binaries).
+
+**Bragg peaks since 2026-09-18:** `calc_reflectivity`'s peak summary no longer searches for maxima at
+large when the structure has a repeating stack. For n = 1, 2, ... the order is the largest point
+inside `BraggSearchWindow` - from 0.06 degrees below the Bragg angle to 0.06 degrees above the
+refraction-corrected one, `sin^2(theta_n) = (n lambda / 2 d)^2 + sin^2(theta_c)`, because refraction
+moves a maximum up and never down - provided it is a local maximum, sits more than 0.05 degrees above
+the critical angle, and stands more than three times above the smallest point of the same window.
+The old rule asked a maximum to stand three times above the smallest value within a fixed number of
+points; a Bragg peak is broader than that window and failed the test while the sharp Kiessig
+satellite beside it passed, which is how the summary of the C/Co mirror P2-05 came to report a first
+order at 0.855 degrees with R = 0.015 instead of the real one at 0.915 with R = 0.203. Without a
+period (no repeating stack) the old running-index search is unchanged.
+
 **Smoke test:** `pwsh -File XRC_MCP\smoke\session.ps1` drives one live stdio session against
-`_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 16 tools (jobs are
-submitted, polled through `job_status` and read with `job_result`; one is stopped with
-`cancel_job`) and checks the Ru/C Bragg-peak angle, seed determinism of `optimize_mirror` and
+`_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 17 tools (jobs are
+submitted, polled through `job_status`, waited for with `job_wait` and read with `job_result`; one is
+stopped with `cancel_job`) and checks the Ru/C Bragg-peak angle, seed determinism of `optimize_mirror` and
 `fit_xrr`, the `path_outside_workdir` refusal, that the inbox is byte-identical afterwards, and
 that `log\calls.jsonl` holds exactly one tool line per `tools/call` sent. Exit code 0 means every
 check passed; `-KeepWorkdir` leaves the work directories behind for inspection. It takes a few

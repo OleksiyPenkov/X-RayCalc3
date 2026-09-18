@@ -83,9 +83,11 @@ uses
   unit_MCPTools in '..\..\XRC_MCP\units\unit_MCPTools.pas',
   unit_ToolsFiles in '..\..\XRC_MCP\units\unit_ToolsFiles.pas',
   TestMCPProjectFile in 'TestMCPProjectFile.pas',
+  unit_MCPFitReport in '..\..\XRC_MCP\units\unit_MCPFitReport.pas',
   unit_MCPFit in '..\..\XRC_MCP\units\unit_MCPFit.pas',
   unit_ToolsJobs in '..\..\XRC_MCP\units\unit_ToolsJobs.pas',
   TestMCPFit in 'TestMCPFit.pas',
+  TestMCPFitReport in 'TestMCPFitReport.pas',
   unit_AxisLimit in '..\..\Shared\Math\unit_AxisLimit.pas',
   TestAxisLimit in 'TestAxisLimit.pas',
   TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas';

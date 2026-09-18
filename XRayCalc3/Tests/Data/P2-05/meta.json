@@ -1,0 +1,41 @@
+{
+  "specimen": "P2-05",
+  "specimen_id_on_instrument": "Co-C(260917A)",
+  "lambda": 1.540598,
+  "wavelength_note": "Cu K-alpha as recorded in the instrument file: K-alpha1 1.5405980 A, K-alpha2 1.5444260 A with ratio K-alpha2/K-alpha1 0.5, K-beta 1.3922500 A. No monochromator; the incident optic is a parallel-beam mirror.",
+  "theta_unit": "2theta",
+  "columns": "2theta_deg intensity_counts",
+  "date": "2026-09-18",
+  "scan_start": "2026-09-18T12:43:25+08:00",
+  "scan_end": "2026-09-18T12:58:56+08:00",
+  "instrument": "PANalytical Empyrean, Cu LFF HR tube 40 kV 20 mA, incident parallel-beam W/Si graded parabolic mirror (acceptance 0.8 deg), fixed divergence slit 1/32 deg, Soller slits 0.04 rad on both sides, PIXcel3D-Medipix3 detector in receiving-slit mode (1 equatorial x 255 axial channels), goniometer radius 240 mm, Chi-Phi-z reflection stage",
+  "scan": {
+    "axis": "2Theta-Omega",
+    "mode": "continuous",
+    "status_in_file": "Aborted",
+    "status_note": "The operator stopped the scan once only background was left, to save time; this is routine practice and not a fault. The file therefore ends at 2theta 13.9975 deg; the same measurement program (XRR-1) ran to 15.9985 deg for P2-01 and P2-02.",
+    "two_theta_start_deg": 0.0955,
+    "two_theta_end_deg": 13.9975,
+    "step_deg": 0.003,
+    "points": 4635,
+    "counting_time_s_per_point": 0.176,
+    "intensity_unit": "counts"
+  },
+  "detector_phd": {
+    "lower_level_percent": 25.0,
+    "upper_level_percent": 100.0,
+    "lower_level_keV": 4.02,
+    "upper_level_keV": 16.08
+  },
+  "sample_offset_deg": {
+    "two_theta": 0.0029,
+    "omega": -0.1651
+  },
+  "stage": {
+    "chi_deg": -0.23,
+    "phi_deg": 0.0,
+    "z_mm": 7.116
+  },
+  "raw_file": "XRR 1_Co-C(260917A).xrdml",
+  "processing": "none: the intensities are as exported by the instrument software; no background, footprint or absorption correction"
+}

@@ -75,6 +75,7 @@ uses
   unit_XRCProjectTree in '..\XRayCalc3\Components\unit_XRCProjectTree.pas',
   unit_MCPProjectFile in 'units\unit_MCPProjectFile.pas',
   unit_MCPFit in 'units\unit_MCPFit.pas',
+  unit_MCPFitReport in 'units\unit_MCPFitReport.pas',
   unit_ToolsJobs in 'units\unit_ToolsJobs.pas',
   unit_ToolsFiles in 'units\unit_ToolsFiles.pas',
   unit_MCPServer in 'units\unit_MCPServer.pas';

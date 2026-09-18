@@ -161,6 +161,7 @@
         <DCCReference Include="..\XRayCalc3\Components\unit_XRCProjectTree.pas"/>
         <DCCReference Include="units\unit_MCPProjectFile.pas"/>
         <DCCReference Include="units\unit_MCPFit.pas"/>
+        <DCCReference Include="units\unit_MCPFitReport.pas"/>
         <DCCReference Include="units\unit_ToolsJobs.pas"/>
         <DCCReference Include="units\unit_ToolsFiles.pas"/>
         <DCCReference Include="units\unit_MCPServer.pas"/>

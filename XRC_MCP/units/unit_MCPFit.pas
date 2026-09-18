@@ -122,6 +122,8 @@ const
   DEF_MOVAVG       = 0.05;
   DEF_R_MIN        = 1E-7;
   DEF_INLINE_MAX   = 2000;
+  /// "scale": "auto" looks for the measured maximum below this angle.
+  DEF_AUTO_THETA_MAX = 0.5;
 
   { The range a free parameter gets when no explicit bound is given: the start
     value plus and minus this fraction of it. }
@@ -180,9 +182,15 @@ type
     PointWeight: Boolean;
     Profile: Boolean;                   // TLFPSO_Poly rather than TLFPSO_Periodic
     InlineMax: Integer;
-    Scale: Double;                      // fixed multiplier already applied to Data
+    Scale: Double;                      // multiplier already applied to Data
+    ScaleMode: string;                  // 'fixed' (the client's number) or 'auto'
+    ScaleTheta: Double;                 // angle the auto scale was taken at
+    ScaleCounts: Double;                // raw measured maximum there
+    AutoThetaMax: Double;               // the range that maximum was sought in
     SmoothPasses: Integer;              // Data - Smooth passes already applied to Data
     PeriodRefs: TArray<TPeriodRef>;     // repeating stacks whose period is free
+    PairedParams: TArray<TFitParamRef>; // layer parameters held constant over
+                                        // the periods of a profile fit
   end;
 
 /// <summary>Parses and validates one fit_xrr argument object. Raises
@@ -202,8 +210,8 @@ uses
   System.SysUtils, System.Math, System.IOUtils,
   unit_materials, unit_calc, unit_DataProcessing,
   unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly,
-  unit_MCPCalc, unit_MCPErrors, unit_MCPInbox, unit_MCPProjectFile,
-  unit_MCPSandbox, unit_MCPUnits;
+  unit_MCPCalc, unit_MCPErrors, unit_MCPFitReport, unit_MCPInbox,
+  unit_MCPProjectFile, unit_MCPSandbox, unit_MCPUnits;
 
 const
   { The names section 3 of the requirements uses for the three per-layer
@@ -358,6 +366,9 @@ end;
 /// MeasurementId, DataTitle, Data and Lambda; the range restriction is applied
 /// by the caller, which knows theta_range.
 procedure FillEngineDensities(var S: TFitStructure; Lambda: Double); forward;
+function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
+  const MovAvgCurve: unit_Types.TDataArray;
+  out Chi2: Double): unit_Types.TDataArray; forward;
 
 procedure ReadMeasuredCurve(const Params: TJSONObject; var Req: TFitRequest);
 var
@@ -401,20 +412,97 @@ begin
   end;
 end;
 
-/// "scale": a fixed multiplier the client applies to the measured intensities
-/// before the fit - the manual's "normalize": make the measured and the
-/// calculated curve agree at about theta 0.4 deg - default 1. It is not
+/// The laboratory's Data - Normalize Auto (unit_DataProcessing.NormalizeAuto)
+/// over the arguments of one fit: the largest measured intensity below
+/// Req.AutoThetaMax is set equal to the start model's reflectivity at that same
+/// angle, so scale = R_calc(theta_max) / I_max. The model is computed on the
+/// measured grid with the wavelength, polarization and resolution the fit will
+/// use, on the raw curve - before the smoothing and the trim, as in the GUI,
+/// where the operator normalises what the file holds.
+procedure ComputeAutoScale(var Req: TFitRequest);
+var
+  i, IMax: Integer;
+  Calc: unit_Types.TDataArray;
+  Chi2: Double;
+begin
+  if Length(Req.Data) > MAX_FIT_POINTS then
+    raise EMCPError.Create('invalid_argument',
+      Format('"scale": "auto" computes the start model on all %d measured ' +
+             'points; at most %d are allowed. Give a number instead, or a ' +
+             'shorter curve.', [Length(Req.Data), MAX_FIT_POINTS]));
+
+  IMax := -1;
+  for i := 0 to High(Req.Data) do
+    if Req.Data[i].t < Req.AutoThetaMax then
+      if (IMax < 0) or (Req.Data[i].r > Req.Data[IMax].r) then
+        IMax := i;
+
+  if IMax < 0 then
+    raise EMCPError.Create('invalid_argument',
+      Format('"scale": "auto" needs a measured point below "auto_theta_max" ' +
+             '(%.4g deg); the curve starts at %.4g deg',
+             [Req.AutoThetaMax, Req.Data[0].t], FitFmt));
+  if Req.Data[IMax].r <= 0 then
+    raise EMCPError.Create('invalid_argument',
+      '"scale": "auto" needs a positive measured maximum');
+
+  { ThetaMin / ThetaMax are informational for a scan with ExpValues set, but
+    the .xrcx and the range checks read them later, so they are put on the raw
+    range here and ApplyThetaRange replaces them with the trimmed one. }
+  Req.ThetaMin := Req.Data[0].t;
+  Req.ThetaMax := Req.Data[High(Req.Data)].t;
+  Calc := ScanOnData(Req, BuildLayeredModel(Req.Structure), nil, Chi2);
+
+  if (IMax > High(Calc)) or (Calc[IMax].r <= 0) then
+    raise EMCPError.Create('invalid_argument',
+      Format('"scale": "auto" found no reflectivity of the start model at ' +
+             '%.5g deg to normalise to', [Req.Data[IMax].t], FitFmt));
+
+  Req.ScaleTheta := Req.Data[IMax].t;
+  Req.ScaleCounts := Req.Data[IMax].r;
+  Req.Scale := Calc[IMax].r / Req.Data[IMax].r;
+end;
+
+/// "scale": the multiplier applied to the measured intensities before the fit -
+/// the manual's "normalize" step - default 1. A number is used as it stands;
+/// "auto" is Data - Normalize Auto, computed by ComputeAutoScale. It is never
 /// fitted; the scaled curve is what the chi-squared, the files and the .xrcx
 /// see, so the GUI shows the same data.
 procedure ApplyScale(const Params: TJSONObject; var Req: TFitRequest);
 var
   i: Integer;
+  JScale: TJSONValue;
+  Mode: string;
 begin
-  Req.Scale := JSONArgs.OptFloat(Params, 'scale', 1.0);
-  if Req.Scale <= 0 then
+  Req.AutoThetaMax := JSONArgs.OptFloat(Params, 'auto_theta_max',
+                                        DEF_AUTO_THETA_MAX);
+  if Req.AutoThetaMax <= 0 then
     raise EMCPError.Create('invalid_argument',
-      '"scale" must be greater than zero: it multiplies the measured intensities',
-      FloatToStr(Req.Scale, TFormatSettings.Invariant));
+      '"auto_theta_max" must be greater than zero');
+
+  Req.ScaleMode := 'fixed';
+  Req.Scale := 1.0;
+
+  JScale := Params.FindValue('scale');
+  if JScale is TJSONString then
+  begin
+    Mode := LowerCase(TJSONString(JScale).Value);
+    if Mode <> 'auto' then
+      raise EMCPError.Create('invalid_argument',
+        '"scale" is a positive number or the string "auto"',
+        TJSONString(JScale).Value);
+    Req.ScaleMode := 'auto';
+    ComputeAutoScale(Req);
+  end
+  else
+  begin
+    Req.Scale := JSONArgs.OptFloat(Params, 'scale', 1.0);
+    if Req.Scale <= 0 then
+      raise EMCPError.Create('invalid_argument',
+        '"scale" must be greater than zero: it multiplies the measured intensities',
+        FloatToStr(Req.Scale, TFormatSettings.Invariant));
+  end;
+
   if Req.Scale <> 1.0 then
     for i := 0 to High(Req.Data) do
       Req.Data[i].r := Req.Data[i].r * Req.Scale;
@@ -1052,6 +1140,146 @@ begin
              'structure has %d', [Periodic]));
 end;
 
+/// "paired": which layer parameters are held to one value over all the periods
+/// of a profile fit instead of getting a polynomial. It is the GUI's Paired
+/// box - TFitValue.Paired, the HP / SP / RP flags of the project file, which
+/// TLFPSO_Poly.Set_Init_XPoly already honours - and the author's own practice
+/// is to pair sigma and density and leave the thicknesses free.
+///
+/// An item is either a bare parameter name, which pairs that parameter in every
+/// layer, or {"stack", "layer", "parameters"} addressed exactly as "free" is.
+procedure ParsePaired(const Params: TJSONObject; var S: TFitStructure;
+  const Info: TStructureInfo; Profile: Boolean;
+  out Refs: TArray<TFitParamRef>);
+var
+  Arr, Names: TJSONArray;
+  JEntry: TJSONObject;
+  Item: TJSONValue;
+  i, k, p, Count: Integer;
+  Ref: TFitParamRef;
+  Path: string;
+
+  procedure Add(GUIStack, GUILayer, StackJSON, LayerJSON, Param: Integer;
+    const StackLabel: string);
+  var
+    n: Integer;
+  begin
+    { The same parameter named twice, by a global entry and a per-layer one, is
+      one pairing and one line in the result. }
+    for n := 0 to Count - 1 do
+      if (Refs[n].GUIStack = GUIStack) and (Refs[n].GUILayer = GUILayer) and
+         (Refs[n].P = Param) then
+        Exit;
+    SetLength(Refs, Count + 1);
+    Refs[Count] := Default(TFitParamRef);
+    Refs[Count].GUIStack := GUIStack;
+    Refs[Count].GUILayer := GUILayer;
+    Refs[Count].StackJSON := StackJSON;
+    Refs[Count].LayerJSON := LayerJSON;
+    Refs[Count].StackLabel := StackLabel;
+    Refs[Count].P := Param;
+    Inc(Count);
+    S.Stacks[GUIStack].Layers[GUILayer].P[Param].Paired := True;
+  end;
+
+  /// A bare parameter name pairs that parameter in every layer of every stack,
+  /// which is what the GUI's Paired column does when it is ticked down the page.
+  procedure AddEverywhere(Param: Integer);
+  var
+    gs, gl, js, j: Integer;
+    Lbl: string;
+  begin
+    for gs := 0 to High(S.Stacks) do
+    begin
+      Lbl := '';
+      js := -1;
+      if gs = Info.CapIndex then
+        Lbl := 'cap'
+      else if gs = Info.BufferIndex then
+        Lbl := 'buffer'
+      else
+        for j := 0 to High(Info.StackMap) do
+          if Info.StackMap[j] = gs then
+            js := j;
+      for gl := 0 to High(S.Stacks[gs].Layers) do
+        Add(gs, gl, js, gl, Param, Lbl);
+    end;
+  end;
+
+begin
+  Refs := nil;
+  Count := 0;
+
+  Arr := JSONArgs.OptArr(Params, 'paired');
+  if (Arr = nil) or (Arr.Count = 0) then
+    Exit;
+
+  if not Profile then
+    raise EMCPError.Create('invalid_argument',
+      '"paired" only means something with "profile": true - it says which ' +
+      'parameters keep one value over the periods instead of getting a ' +
+      'polynomial of their own. A periodic fit has one value per layer already.');
+
+  for i := 0 to Arr.Count - 1 do
+  begin
+    Path := Format('paired[%d]', [i]);
+    Item := Arr.Items[i];
+
+    if Item is TJSONString then
+    begin
+      AddEverywhere(ParameterIndex(TJSONString(Item).Value, Path));
+      Continue;
+    end;
+
+    if not (Item is TJSONObject) then
+      raise EMCPError.Create('invalid_argument',
+        'Every item of "paired" is a parameter name or an object with ' +
+        '"stack", "layer" and "parameters"', Path);
+
+    JEntry := TJSONObject(Item);
+    Ref := Default(TFitParamRef);
+    ResolveStack(JEntry, Info, Path, Ref);
+    ResolveLayer(JEntry, S, Path, Ref);
+
+    Names := JSONArgs.OptArr(JEntry, 'parameters');
+    if (Names = nil) or (Names.Count = 0) then
+      raise EMCPError.Create('invalid_argument',
+        '"parameters" lists which of "thickness", "sigma" and "density" of ' +
+        'that layer are paired', Path);
+
+    for k := 0 to Names.Count - 1 do
+    begin
+      p := ParameterIndex(Names.Items[k].Value,
+                          Format('%s.parameters[%d]', [Path, k]));
+      Add(Ref.GUIStack, Ref.GUILayer, Ref.StackJSON, Ref.LayerJSON, p,
+          Ref.StackLabel);
+    end;
+  end;
+end;
+
+/// The parameters "paired" held constant, in the address shape of bounds_used.
+function PairedJSON(const Refs: TArray<TFitParamRef>;
+  const Info: TStructureInfo): TJSONArray;
+var
+  n: Integer;
+  Obj: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  try
+    for n := 0 to High(Refs) do
+    begin
+      Obj := TJSONObject.Create;
+      Result.AddElement(Obj);
+      Obj.AddPair('stack', StackAddress(Info, Refs[n].GUIStack));
+      Obj.AddPair('layer', TJSONNumber.Create(Refs[n].LayerJSON));
+      Obj.AddPair('parameter', PARAM_NAMES[Refs[n].P]);
+    end;
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
 function ParseFitRequest(const Params: TJSONObject): TFitRequest;
 var
   Bad, PolStr: string;
@@ -1066,12 +1294,29 @@ begin
       Format('No Henke table for material "%s"', [Bad]),
       'list_materials enumerates the names this server knows');
 
-  { The manual's data conditioning, in its order: normalize, smooth, trim. }
   ReadMeasuredCurve(Params, Result);
   CheckMeasuredCurve(Result);
+
+  { The calculation settings are read before the data are conditioned because
+    "scale": "auto" computes the start model on the measured grid and needs
+    them. CheckResolutionFits still runs on the trimmed curve, below, where it
+    always has. }
+  Result.Resolution := JSONArgs.OptFloat(Params, 'resolution', DEF_RESOLUTION);
+  if Result.Resolution < 0 then
+    raise EMCPError.Create('invalid_argument', '"resolution" must not be negative');
+
+  Result.RMin := JSONArgs.OptFloat(Params, 'r_min', DEF_R_MIN);
+  if Result.RMin <= 0 then
+    raise EMCPError.Create('invalid_argument', '"r_min" must be greater than zero');
+
+  PolStr := JSONArgs.OptStr(Params, 'polarization', 'sp');
+  Result.Polarization := ParseFitPolarization(PolStr, Result.PolarizationName);
+
+  { The manual's data conditioning, in its order: normalize, smooth, trim. }
   ApplyScale(Params, Result);
   ApplySmooth(Params, Result);
   ApplyThetaRange(Params, Result);
+  CheckResolutionFits(Result.Data, Result.Resolution);
 
   { Every omitted density becomes the bulk value the engine would use for it,
     before "free" and "bounds" are read: the engines seed the swarm around the
@@ -1081,19 +1326,6 @@ begin
     bulk value in place a free density gets its +/-30% default like any other
     parameter, and start_structure reports what the fit started from. }
   FillEngineDensities(Result.Structure, Result.Lambda);
-
-
-  Result.Resolution := JSONArgs.OptFloat(Params, 'resolution', DEF_RESOLUTION);
-  if Result.Resolution < 0 then
-    raise EMCPError.Create('invalid_argument', '"resolution" must not be negative');
-  CheckResolutionFits(Result.Data, Result.Resolution);
-
-  Result.RMin := JSONArgs.OptFloat(Params, 'r_min', DEF_R_MIN);
-  if Result.RMin <= 0 then
-    raise EMCPError.Create('invalid_argument', '"r_min" must be greater than zero');
-
-  PolStr := JSONArgs.OptStr(Params, 'polarization', 'sp');
-  Result.Polarization := ParseFitPolarization(PolStr, Result.PolarizationName);
 
   Result.InlineMax := JSONArgs.OptInt(Params, 'points_inline_max', DEF_INLINE_MAX);
   if Result.InlineMax < 0 then
@@ -1110,6 +1342,8 @@ begin
               Result.PeriodRefs);
   CheckStartInsideBounds(Result.Structure, Result.FreeParams, Result.PeriodRefs);
   ApplyBounds(Result.Structure, Result.FreeParams);
+  ParsePaired(Params, Result.Structure, Result.Info, Result.Profile,
+              Result.PairedParams);
 
   Result.Fit := ParseFitParams(Params);
   Result.PointWeight := JSONArgs.OptBool(JSONArgs.OptObj(Params, 'chi2'),
@@ -1264,16 +1498,6 @@ begin
           end;
 end;
 
-/// The chi-squared one structure scores on the data, with the curve thrown
-/// away: what the start model was worth before the fit touched it.
-function ChiSquareOf(const Req: TFitRequest; const S: TFitStructure;
-  const MovAvgCurve: unit_Types.TDataArray): Double;
-begin
-  { BuildLayeredModel makes the same expanded model TLFPSO_BASE.FillModel does,
-    and ScanOnData hands it to a TCalc, which frees it. }
-  ScanOnData(Req, BuildLayeredModel(S), MovAvgCurve, Result);
-end;
-
 function ResidualCurve(const Data, Calc: unit_Types.TDataArray): unit_Types.TDataArray;
 var
   i, n: Integer;
@@ -1343,6 +1567,90 @@ begin
   Result := 0;
   for j := 0 to High(S.Stacks[GUIStack].Layers) do
     Result := Result + S.Stacks[GUIStack].Layers[j].P[1].V;
+end;
+
+/// How close to a bound a fitted value has to sit, as a fraction of the range,
+/// before the report names it. A parameter that stops on its own bound has not
+/// been fitted: the answer is wherever the client allowed it to stop.
+const
+  NEAR_BOUND_FRACTION = 0.05;
+
+/// The period the report counts its orders on: the first repeating stack of the
+/// structure, which is the one calc_reflectivity reports peaks for. 0 when the
+/// structure has no repeating stack.
+function ReportPeriod(const S: TFitStructure; const Info: TStructureInfo): Double;
+begin
+  if Info.PeriodicStackIndex < 0 then
+    Result := 0
+  else
+    Result := StackPeriod(S, Info.PeriodicStackIndex);
+end;
+
+/// Every fitted value within NEAR_BOUND_FRACTION of its own range of either end
+/// of it, in the shape of bounds_used plus the value, which end it is near and
+/// how far away it is as a fraction of the range.
+function NearBoundsJSON(const Req: TFitRequest;
+  const Fitted: TFitStructure): TJSONArray;
+var
+  n: Integer;
+  V, Lo, Hi, Range, DLo, DHi: Double;
+  Obj: TJSONObject;
+
+  procedure Consider(const Target: string; StackJSON, LayerJSON: Integer;
+    const Param: string);
+  begin
+    Range := Hi - Lo;
+    if Range <= 0 then
+      Exit;
+    DLo := (V - Lo) / Range;
+    DHi := (Hi - V) / Range;
+    if (DLo > NEAR_BOUND_FRACTION) and (DHi > NEAR_BOUND_FRACTION) then
+      Exit;
+
+    Obj := TJSONObject.Create;
+    Result.AddElement(Obj);
+    Obj.AddPair('target', Target);
+    if Target = 'period' then
+      Obj.AddPair('stack', TJSONNumber.Create(StackJSON))
+    else
+      Obj.AddPair('stack', StackAddress(Req.Info, StackJSON));
+    if Target <> 'period' then
+      Obj.AddPair('layer', TJSONNumber.Create(LayerJSON));
+    Obj.AddPair('parameter', Param);
+    Obj.AddPair('value', JSONArgs.Num(V));
+    Obj.AddPair('min', JSONArgs.Num(Lo));
+    Obj.AddPair('max', JSONArgs.Num(Hi));
+    if DLo <= DHi then
+      Obj.AddPair('bound', 'min')
+    else
+      Obj.AddPair('bound', 'max');
+    Obj.AddPair('margin_fraction', JSONArgs.Num(Min(DLo, DHi)));
+  end;
+
+begin
+  Result := TJSONArray.Create;
+  try
+    for n := 0 to High(Req.FreeParams) do
+    begin
+      V := Fitted.Stacks[Req.FreeParams[n].GUIStack]
+                 .Layers[Req.FreeParams[n].GUILayer].P[Req.FreeParams[n].P].V;
+      Lo := Req.FreeParams[n].Min;
+      Hi := Req.FreeParams[n].Max;
+      Consider('layer', Req.FreeParams[n].GUIStack, Req.FreeParams[n].LayerJSON,
+               PARAM_NAMES[Req.FreeParams[n].P]);
+    end;
+
+    for n := 0 to High(Req.PeriodRefs) do
+    begin
+      V := StackPeriod(Fitted, Req.PeriodRefs[n].GUIStack);
+      Lo := Req.PeriodRefs[n].Min;
+      Hi := Req.PeriodRefs[n].Max;
+      Consider('period', Req.PeriodRefs[n].StackJSON, 0, 'period');
+    end;
+  except
+    Result.Free;
+    raise;
+  end;
 end;
 
 /// Every fitted value that lies outside the bound the client gave, in the shape
@@ -1721,11 +2029,12 @@ var
   Poly: TProfileFunctions;
   Model: TLayeredModel;
   Profiles: TArray<TLayerThickness>;
-  MovAvgCurve, CalcCurve, Residual: unit_Types.TDataArray;
+  MovAvgCurve, CalcCurve, StartCalcCurve, Residual: unit_Types.TDataArray;
   Chi2, Chi2Recalc, Chi2Start, Scale: Double;
   IterationsRun: Integer;
-  MeasuredPath, CalcPath, ResidualPath, XRCXPath: string;
-  Res, JFiles, JSmooth: TJSONObject;
+  MeasuredPath, CalcPath, ResidualPath, XRCXPath, ReportPath: string;
+  Res, JFiles, JSmooth, Report: TJSONObject;
+  RepInp: TFitReportInput;
   EngineName: string;
 begin
   if Job = nil then
@@ -1737,6 +2046,7 @@ begin
   CalcPath     := TPath.Combine(Job.Dir, 'calc.dat');
   ResidualPath := TPath.Combine(Job.Dir, 'residual.dat');
   XRCXPath     := TPath.Combine(Job.Dir, 'fit.xrcx');
+  ReportPath   := TPath.Combine(Job.Dir, 'report.json');
   WriteCurveFile(MeasuredPath, Req.Data, 'theta_deg', 'I');
 
   if Req.PointWeight then
@@ -1745,8 +2055,13 @@ begin
     SetLength(MovAvgCurve, 0);
 
   { What the model the client started from was worth, so that the fit can be
-    read as an improvement rather than as a bare number. }
-  Chi2Start := ChiSquareOf(Req, Req.Structure, MovAvgCurve);
+    read as an improvement rather than as a bare number. The curve is kept as
+    well: the report says of the start model everything it says of the fit, and
+    computing it twice would be a second pass over every point.
+    BuildLayeredModel makes the same expanded model TLFPSO_BASE.FillModel does,
+    and ScanOnData hands it to a TCalc, which frees it. }
+  StartCalcCurve := ScanOnData(Req, BuildLayeredModel(Req.Structure),
+                               MovAvgCurve, Chi2Start);
 
   if Job.CancelRequested then
     Exit;
@@ -1879,18 +2194,55 @@ begin
     JFiles.AddPair('measured', WorkDir.RelativePath(MeasuredPath));
     JFiles.AddPair('calculated', WorkDir.RelativePath(CalcPath));
     JFiles.AddPair('residual', WorkDir.RelativePath(ResidualPath));
+    JFiles.AddPair('report', WorkDir.RelativePath(ReportPath));
 
     Res.AddPair('measured', CurveOrNull(Req.Data, Req.InlineMax));
     Res.AddPair('calculated', CurveOrNull(CalcCurve, Req.InlineMax));
     Res.AddPair('residual', CurveOrNull(Residual, Req.InlineMax));
 
     Res.AddPair('scale', JSONArgs.Num(Req.Scale));
+    Res.AddPair('scale_mode', Req.ScaleMode);
+    if Req.ScaleMode = 'auto' then
+    begin
+      Res.AddPair('scale_theta', JSONArgs.Num(Req.ScaleTheta));
+      Res.AddPair('scale_counts', JSONArgs.Num(Req.ScaleCounts));
+      Res.AddPair('auto_theta_max', JSONArgs.Num(Req.AutoThetaMax));
+    end
+    else
+    begin
+      Res.AddPair('scale_theta', TJSONNull.Create);
+      Res.AddPair('scale_counts', TJSONNull.Create);
+    end;
+    Res.AddPair('paired', PairedJSON(Req.PairedParams, Req.Info));
     JSmooth := TJSONObject.Create;
     Res.AddPair('smooth', JSmooth);
     JSmooth.AddPair('passes', TJSONNumber.Create(Req.SmoothPasses));
     JSmooth.AddPair('window', TJSONNumber.Create(FIT_SMOOTH_WINDOW));
     Res.AddPair('background', JSONArgs.Num(0.0));
     Res.AddPair('note', FIT_NO_SCALE_NOTE);
+
+    { The report is the same numbers for the fit and for the model the client
+      started from, so that what the fit changed can be read off one object.
+      Each side counts its orders on its own period: the start model's orders
+      are where the start model puts them. }
+    RepInp := Default(TFitReportInput);
+    RepInp.Measured := Req.Data;
+    RepInp.Calculated := CalcCurve;
+    RepInp.Lambda := Req.Lambda;
+    RepInp.Period := ReportPeriod(Fitted, Req.Info);
+    RepInp.ThetaC := CriticalAngleDeg(Fitted, Req.Lambda);
+    Report := FitReportJSON(RepInp);
+    Res.AddPair('report', Report);        // Res owns it from here on
+    Report.AddPair('chi2', JSONArgs.Num(Chi2));
+    Report.AddPair('chi2_start', JSONArgs.Num(Chi2Start));
+    Report.AddPair('near_bounds', NearBoundsJSON(Req, Fitted));
+
+    RepInp.Calculated := StartCalcCurve;
+    RepInp.Period := ReportPeriod(StartFS, Req.Info);
+    RepInp.ThetaC := CriticalAngleDeg(StartFS, Req.Lambda);
+    Report.AddPair('start', FitReportJSON(RepInp));
+
+    WriteJSONFile(ReportPath, Report);
 
     { The two numbers are the same calculation on the same model, so they must
       agree; if they ever do not, the curve beside the result was produced by

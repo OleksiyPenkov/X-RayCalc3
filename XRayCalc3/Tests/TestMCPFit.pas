@@ -72,6 +72,19 @@ type
     /// <summary>Every fitted value that lies outside the bound the same result
     /// echoes in bounds_used, one per line; '' when the result is clean.</summary>
     function BoundViolations(const Res: TJSONObject): string;
+    /// <summary>[[theta, I], ...] of the START structure, every intensity
+    /// multiplied by Multiplier, on the grid and with the settings a parse of
+    /// it will use. "scale": "auto" must give back 1 / Multiplier.</summary>
+    function StartCurveJSON(Multiplier: Double): string;
+    /// <summary>Copies Tests\Data\&lt;Specimen&gt; into the work directory's
+    /// inbox.</summary>
+    procedure StageInbox(const Specimen: string);
+    /// <summary>The "report" object of a result, with the test failing when
+    /// there is none.</summary>
+    function ReportOf(const Res: TJSONObject): TJSONObject;
+    /// <summary>The file the result names under "files", read back as JSON.
+    /// Caller frees.</summary>
+    function ReadResultFile(const Res: TJSONObject; const Key: string): TJSONValue;
   public
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
@@ -127,6 +140,30 @@ type
     [Test] procedure Fit_Cancelled_StopsAndLeavesNoResult;
     [Test] procedure Fit_P2_02_FreePeriod_StaysInsideBounds;
     [Test] procedure SaveProject_FromFitJob_CarriesTheJobsFitSettings;
+
+    [Test] procedure Scale_Auto_RecoversAKnownMultiplier;
+    [Test] procedure Scale_Auto_ReportsTheAngleAndTheCounts;
+    [Test] procedure Scale_Auto_TakesOnlyTheMaximumBelowAutoThetaMax;
+    [Test] procedure Scale_Auto_NoPointBelowAutoThetaMax_Refused;
+    [Test] procedure Scale_UnknownString_Refused;
+    [Test] procedure Scale_Auto_P2_05_MatchesTheHandComputation;
+    [Test] procedure Scale_Auto_IsEchoedInTheResult;
+
+    [Test] procedure Paired_WithoutProfile_Refused;
+    [Test] procedure Paired_Global_PairsEveryLayer;
+    [Test] procedure Paired_PerLayer_PairsOnlyThatParameter;
+    [Test] procedure Paired_NamedTwice_IsOnePairing;
+    [Test] procedure Paired_UnknownParameter_Refused;
+    [Test] procedure Paired_Absent_LeavesEveryParameterFree;
+    [Test] procedure ProfileFit_SigmaAndDensityPaired_HaveNoPolynomial;
+
+    [Test] procedure Report_IsInTheResultAndInTheJobFolder;
+    [Test] procedure Report_OrdersAndStart_AreBothThere;
+    [Test] procedure Report_WideBounds_LeaveNearBoundsEmpty;
+    [Test] procedure Report_ValueDrivenOntoItsBound_IsNamedInNearBounds;
+
+    [Test] procedure Schema_DescribesNormalizeAutoAndPairing;
+    [Test] procedure JobWait_IsRegisteredAndNamesTheClientTimeout;
   end;
 
 implementation
@@ -196,6 +233,21 @@ const
     +/-0.1 degree convolution window and the parser says so before it ever looks
     at "free" (which is what Resolution_TooCoarseAGrid_Refused pins down). }
   DUMMY_CURVE = '[[0.5,1],[0.6,0.9],[0.7,0.8],[0.8,0.7],[0.9,0.6],[1.0,0.5]]';
+
+  { A curve whose largest point is at 1.0 deg and whose largest point below
+    0.5 deg is at 0.4: what "scale": "auto" takes depends on auto_theta_max. }
+  RISING_CURVE =
+    '[[0.2,0.2],[0.3,0.3],[0.4,0.4],[0.5,0.35],[0.6,0.3],[0.7,0.5],' +
+    '[0.8,0.6],[0.9,0.8],[1.0,1.0],[1.1,0.7],[1.2,0.4],[1.3,0.2]]';
+
+  { The start model of the P2-05 fit of 2026-09-18 (job fit-20260918-170706-196b):
+    a 20-period C/Co mirror on oxidised silicon, as the request.json of that job
+    holds it. }
+  P2_05_START =
+    '{"substrate":{"material":"SiO2","sigma":3.8,"density":2.65},' +
+    '"stacks":[{"N":20,"layers":[' +
+    '{"material":"C","thickness":33,"sigma":5,"density":2},' +
+    '{"material":"Co","thickness":17,"sigma":5,"density":8}]}]}';
 
   { Twelve points that zigzag, so that a moving average visibly changes every
     inner one. For the smoothing tests of the parser; never fitted. }
@@ -529,16 +581,77 @@ begin
   end;
 end;
 
-procedure TTestMCPFit.StageP2Inbox;
+procedure TTestMCPFit.StageInbox(const Specimen: string);
 var
   Src, Dst: string;
 begin
   Src := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)),
-    '..\..\Data\P2-02'));
-  Dst := TPath.Combine(TPath.Combine(FTemp, 'inbox'), 'P2-02');
+    '..\..\Data\' + Specimen));
+  Assert.IsTrue(TDirectory.Exists(Src), 'missing test asset: ' + Src);
+  Dst := TPath.Combine(TPath.Combine(FTemp, 'inbox'), Specimen);
   TDirectory.CreateDirectory(Dst);
   TFile.Copy(TPath.Combine(Src, 'xrr.dat'), TPath.Combine(Dst, 'xrr.dat'));
   TFile.Copy(TPath.Combine(Src, 'meta.json'), TPath.Combine(Dst, 'meta.json'));
+end;
+
+procedure TTestMCPFit.StageP2Inbox;
+begin
+  StageInbox('P2-02');
+end;
+
+function TTestMCPFit.StartCurveJSON(Multiplier: Double): string;
+var
+  Req: TCalcRequest;
+  Used: TFitStructure;
+  Curve: TDataArray;
+  J: TJSONObject;
+  Arr: TJSONArray;
+  i: Integer;
+begin
+  Req := Default(TCalcRequest);
+  J := TJSONObject.ParseJSONValue(START_STRUCTURE) as TJSONObject;
+  try
+    Req.Structure := StructureFromJSON(J, Req.Info);
+  finally
+    J.Free;
+  end;
+  Req.Lambda := CU_K_ALPHA;
+  Req.ThetaMin := CURVE_THETA_MIN;
+  Req.ThetaMax := CURVE_THETA_MAX;
+  Req.Points := CURVE_POINTS;
+  Req.Polarization := cmSP;
+  Req.RMin := 1E-7;
+
+  Curve := RunCalc(Req, Used);
+
+  Arr := TJSONArray.Create;
+  try
+    for i := 0 to High(Curve) do
+      Arr.AddElement(JSONArgs.NumArr(
+        TArray<Double>.Create(Curve[i].t, Curve[i].r * Multiplier)));
+    Result := Arr.ToJSON;
+  finally
+    Arr.Free;
+  end;
+end;
+
+function TTestMCPFit.ReportOf(const Res: TJSONObject): TJSONObject;
+begin
+  Assert.IsTrue(Res.GetValue('report') is TJSONObject,
+    'every fit result carries a "report" object');
+  Result := Res.GetValue('report') as TJSONObject;
+end;
+
+function TTestMCPFit.ReadResultFile(const Res: TJSONObject;
+  const Key: string): TJSONValue;
+var
+  Rel, Full: string;
+begin
+  Rel := (Res.GetValue('files') as TJSONObject).GetValue<string>(Key);
+  Full := TPath.Combine(FTemp, Rel);
+  Assert.IsTrue(TFile.Exists(Full), 'the job folder holds ' + Rel);
+  Result := TJSONObject.ParseJSONValue(TFile.ReadAllText(Full));
+  Assert.IsNotNull(Result, Rel + ' is JSON');
 end;
 
 function TTestMCPFit.RunRequest(const RequestJSON: string): TJSONObject;
@@ -1724,10 +1837,16 @@ procedure TTestMCPFit.Schema_DescribesTheManualsDataConditioning;
 var
   Scale: string;
 begin
+  { Until 2026-09-18 this said the opposite: compare the two curves at about
+    theta 0.4 deg and do not normalise to the total-reflection region. That is
+    not what the laboratory does - Data - Normalize Auto sets the measured
+    maximum of the plateau equal to the model there - and the skill had to talk
+    the agent out of the tool's own description. }
   Scale := FitXrrSchemaValue('scale.description');
-  Assert.IsFalse(Scale.Contains('plateau'), 'scale: not "the plateau"');
-  Assert.IsTrue(Scale.Contains('0.4'), 'scale: compare at about 0.4 degrees');
-  Assert.IsTrue(Scale.Contains('calculated'), 'scale: against the calculated curve');
+  Assert.IsTrue(Scale.Contains('normalize'), 'scale: the step of the manual');
+  Assert.IsTrue(Scale.Contains('start model'),
+    'scale: what the measured maximum is set equal to');
+  Assert.IsFalse(Scale.Contains('0.4 '), 'scale: not "at about 0.4 deg"');
 
   Assert.AreEqual('integer', FitXrrSchemaValue('smooth.properties.passes.type'),
     'smooth.passes');
@@ -2056,6 +2175,518 @@ begin
   finally
     A.Free;
   end;
+end;
+
+{ ------------------------------------------------- "scale": "auto" -- }
+
+{ The curve is the start model's own reflectivity times a known number, so the
+  normalisation the server computes must be exactly its reciprocal. Nothing
+  about the measurement enters: this is the arithmetic of NormalizeAuto. }
+procedure TTestMCPFit.Scale_Auto_RecoversAKnownMultiplier;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"auto",' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, StartCurveJSON(1000)]));
+
+  Assert.AreEqual('auto', Req.ScaleMode);
+  Assert.AreEqual(Double(0.001), Req.Scale, 1E-9,
+    'a curve a thousand times the model is scaled back by a thousand');
+end;
+
+procedure TTestMCPFit.Scale_Auto_ReportsTheAngleAndTheCounts;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { The curve starts at 0.3 deg on the total-reflection plateau and only falls,
+    so its maximum below 0.5 deg is its first point. }
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"auto",' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, StartCurveJSON(1000)]));
+
+  Assert.AreEqual(Double(CURVE_THETA_MIN), Req.ScaleTheta, 1E-6,
+    'the maximum of this curve is its first point');
+  Assert.AreEqual(Double(0.5), Req.AutoThetaMax, 1E-12, 'the default range');
+  Assert.AreEqual(Req.ScaleCounts * Req.Scale, Double(Req.Data[0].r), 1E-9,
+    'the scaled curve holds the maximum times the scale');
+end;
+
+procedure TTestMCPFit.Scale_Auto_TakesOnlyTheMaximumBelowAutoThetaMax;
+var
+  Low_, High_: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { A curve that rises to a peak at 1.0 deg: with auto_theta_max at 0.5 the
+    peak is ignored, with auto_theta_max at 2 it is the maximum. }
+  Low_ := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"auto",' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, RISING_CURVE]));
+  High_ := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"auto","auto_theta_max":2,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, RISING_CURVE]));
+
+  Assert.AreEqual(Double(0.4), Low_.ScaleTheta, 1E-6,
+    'below 0.5 deg the largest point is the one at 0.4');
+  Assert.AreEqual(Double(1.0), High_.ScaleTheta, 1E-6,
+    'over the whole curve it is the peak at 1.0');
+end;
+
+procedure TTestMCPFit.Scale_Auto_NoPointBelowAutoThetaMax_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"auto","auto_theta_max":0.1,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, RISING_CURVE])));
+end;
+
+procedure TTestMCPFit.Scale_UnknownString_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"plateau",' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+{ The number test A of the 2026-09-18 skill run computed by hand from
+  get_measurement and calc_reflectivity, on the same specimen, the same start
+  model and the same instrument settings: the server must reach it on its own. }
+procedure TTestMCPFit.Scale_Auto_P2_05_MatchesTheHandComputation;
+var
+  Req: TFitRequest;
+begin
+  if not (HenkeTablesPresent and TFile.Exists(HenkePath + 'Co.bin') and
+          TFile.Exists(HenkePath + 'SiO2.bin')) then
+  begin
+    Assert.Pass('the C/Co/SiO2 Henke tables are not installed on this machine');
+    Exit;
+  end;
+  StageInbox('P2-05');
+
+  Req := Parse(
+    '{"structure":' + P2_05_START + ',' +
+    '"measurement_id":"P2-05/xrr.dat","lambda":1.5406,"polarization":"s",' +
+    '"resolution":0.009,"r_min":1e-6,"scale":"auto",' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}');
+
+  Assert.AreEqual('auto', Req.ScaleMode);
+
+  { The maximum of the raw scan, which is what Data - Normalize Auto takes and
+    what the procedure of the skill describes: get_measurement, find the
+    maximum, read the model there. Test A, by hand, instead took the value at
+    theta 0.20975 - the angle it had chosen as the start of the fitting range,
+    not the maximum - and got 7.798e-7 from 1064515 counts. The maximum is
+    1074961 counts at 0.20075, and the model is higher there too, so the scale
+    the server computes is 2.3 % above the one test A wrote down. Both are
+    arithmetically right; only one of them is the procedure. }
+  Assert.AreEqual(Double(0.20075), Req.ScaleTheta, 1E-6,
+    'the largest measured intensity below 0.5 deg is at theta 0.20075');
+  Assert.AreEqual(Double(1074961), Req.ScaleCounts, 0.5,
+    'and holds 1074961 counts (2theta 0.4015 of the raw file)');
+  Assert.AreEqual(Double(7.9794E-7), Req.Scale, 1E-10,
+    'R_calc(0.20075) / 1074961, the normalisation of the raw maximum');
+end;
+
+procedure TTestMCPFit.Scale_Auto_IsEchoedInTheResult;
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, StartCurveJSON(1000), '', ',"scale":"auto"');
+  try
+    Assert.AreEqual('auto', Res.GetValue<string>('scale_mode'));
+    Assert.AreEqual(Double(0.001), Res.GetValue<Double>('scale'), 1E-9);
+    Assert.AreEqual(Double(CURVE_THETA_MIN), Res.GetValue<Double>('scale_theta'),
+      1E-6);
+    Assert.IsTrue(Res.GetValue<Double>('scale_counts') > 0,
+      'the raw counts the scale was taken from');
+  finally
+    Res.Free;
+  end;
+end;
+
+{ --------------------------------------------------------- "paired" -- }
+
+procedure TTestMCPFit.Paired_WithoutProfile_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"paired":["sigma"],' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Paired_Global_PairsEveryLayer;
+var
+  Req: TFitRequest;
+  i: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"profile":true,"paired":["sigma","density"],' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+
+  Assert.AreEqual(4, Length(Req.PairedParams),
+    'two layers, sigma and density in each');
+  for i := 0 to High(Req.Structure.Stacks[0].Layers) do
+  begin
+    Assert.IsFalse(Req.Structure.Stacks[0].Layers[i].P[1].Paired,
+      'the thicknesses keep their polynomial');
+    Assert.IsTrue(Req.Structure.Stacks[0].Layers[i].P[2].Paired, 'sigma');
+    Assert.IsTrue(Req.Structure.Stacks[0].Layers[i].P[3].Paired, 'density');
+  end;
+end;
+
+procedure TTestMCPFit.Paired_PerLayer_PairsOnlyThatParameter;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"profile":true,"paired":[{"stack":0,"layer":1,"parameters":["sigma"]}],' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+
+  Assert.AreEqual(1, Length(Req.PairedParams));
+  Assert.AreEqual(1, Req.PairedParams[0].LayerJSON, 'the layer that was named');
+  Assert.AreEqual(2, Req.PairedParams[0].P, 'sigma');
+  Assert.IsTrue(
+    Req.Structure.Stacks[Req.PairedParams[0].GUIStack]
+       .Layers[Req.PairedParams[0].GUILayer].P[2].Paired);
+end;
+
+procedure TTestMCPFit.Paired_NamedTwice_IsOnePairing;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"profile":true,' +
+    '"paired":["sigma",{"stack":0,"layer":1,"parameters":["sigma"]}],' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+
+  Assert.AreEqual(2, Length(Req.PairedParams),
+    'the sigma of layer 1 is named twice and paired once');
+end;
+
+procedure TTestMCPFit.Paired_UnknownParameter_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"profile":true,"paired":["roughness"],' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Paired_Absent_LeavesEveryParameterFree;
+var
+  Req: TFitRequest;
+  i, p: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"profile":true,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+
+  Assert.AreEqual(0, Length(Req.PairedParams));
+  for i := 0 to High(Req.Structure.Stacks[0].Layers) do
+    for p := 1 to 3 do
+      Assert.IsFalse(Req.Structure.Stacks[0].Layers[i].P[p].Paired,
+        'without "paired" every parameter gets its own polynomial');
+end;
+
+{ A paired parameter has no polynomial, and TLFPSO_Poly.GetPolynomes leaves it
+  out of the profiles it reports: what comes back is one curve per unpaired
+  parameter and nothing for the paired ones. }
+procedure TTestMCPFit.ProfileFit_SigmaAndDensityPaired_HaveNoPolynomial;
+var
+  Res: TJSONObject;
+  Profiles, Paired: TJSONArray;
+  i: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(11, SyntheticCurveJSON,
+    '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness","sigma"]},' +
+    '{"target":"layer","stack":0,"layer":1,"parameters":["thickness","sigma"]}]',
+    ',"profile":true,"paired":["sigma","density"]');
+  try
+    Paired := Res.GetValue('paired') as TJSONArray;
+    Assert.AreEqual(4, Paired.Count, 'the result lists what was paired');
+
+    Profiles := Res.GetValue('profiles') as TJSONArray;
+    Assert.IsTrue(Profiles.Count > 0, 'the thicknesses still have profiles');
+    for i := 0 to Profiles.Count - 1 do
+      Assert.AreEqual('thickness',
+        (Profiles.Items[i] as TJSONObject).GetValue<string>('parameter'),
+        'no paired parameter has a polynomial');
+  finally
+    Res.Free;
+  end;
+end;
+
+{ ---------------------------------------------------------- the report -- }
+
+procedure TTestMCPFit.Report_IsInTheResultAndInTheJobFolder;
+var
+  Res: TJSONObject;
+  FromFile: TJSONValue;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON);
+  try
+    FromFile := ReadResultFile(Res, 'report');
+    try
+      Assert.AreEqual(ReportOf(Res).ToJSON, FromFile.ToJSON,
+        'report.json holds exactly what the result holds');
+    finally
+      FromFile.Free;
+    end;
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Report_OrdersAndStart_AreBothThere;
+var
+  Res, Rep, Start, Order: TJSONObject;
+  Orders: TJSONArray;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON);
+  try
+    Rep := ReportOf(Res);
+    Assert.AreEqual(Res.GetValue<Double>('chi2'), Rep.GetValue<Double>('chi2'),
+      1E-12, 'the report repeats the chi-squared of the fit');
+    Assert.AreEqual(Res.GetValue<Double>('chi2_start'),
+      Rep.GetValue<Double>('chi2_start'), 1E-12);
+    Assert.AreEqual(Double(68.5), Rep.GetValue<Double>('period_A'), 0.001,
+      'the periodic engine holds the period of the start model');
+
+    Orders := Rep.GetValue('orders') as TJSONArray;
+    Assert.IsTrue(Orders.Count >= 3,
+      'a 68.5 A period shows at least three orders between 0.3 and 3 degrees');
+    Order := Orders.Items[0] as TJSONObject;
+    Assert.AreEqual(1, Order.GetValue<Integer>('n'));
+    Assert.IsTrue(Order.GetValue<Double>('ratio') > 0, 'calculated over measured');
+
+    Assert.IsTrue(Rep.GetValue('start') is TJSONObject,
+      'the same numbers for the model the fit started from');
+    Start := Rep.GetValue('start') as TJSONObject;
+    Assert.IsTrue((Start.GetValue('orders') as TJSONArray).Count >= 3);
+    Assert.IsTrue(Rep.GetValue('bands') is TJSONArray);
+    Assert.IsTrue(Rep.GetValue('near_bounds') is TJSONArray);
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Report_WideBounds_LeaveNearBoundsEmpty;
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON,
+    '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]',
+    ',"bounds":[{"stack":0,"layer":0,"parameter":"thickness","min":20,"max":65}]');
+  try
+    Assert.AreEqual(0, (ReportOf(Res).GetValue('near_bounds') as TJSONArray).Count,
+      'a thickness of about 54 A is nowhere near 20 or 65');
+  finally
+    Res.Free;
+  end;
+end;
+
+{ The true thickness is 53.8 A and the bound stops the fit at 55.4, so the best
+  value the engine may reach is the bound itself - which is exactly the case the
+  report has to name, because the answer is then the client's limit and not the
+  data's. }
+procedure TTestMCPFit.Report_ValueDrivenOntoItsBound_IsNamedInNearBounds;
+var
+  Res: TJSONObject;
+  Near: TJSONArray;
+  Entry: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  { Both thicknesses are free: with only the C layer free the engine's own
+    NormalizeD would hold it at 55.5 A to keep the period, and there would be
+    nothing for the bound to stop. }
+  Res := RunFit(5, SyntheticCurveJSON, '',
+    ',"bounds":[{"stack":0,"layer":0,"parameter":"thickness","min":55.4,"max":55.6}]',
+    40, 30);
+  try
+    Near := ReportOf(Res).GetValue('near_bounds') as TJSONArray;
+    Assert.AreEqual(1, Near.Count, 'one value stopped on a bound');
+    Entry := Near.Items[0] as TJSONObject;
+    Assert.AreEqual('thickness', Entry.GetValue<string>('parameter'));
+    Assert.AreEqual('min', Entry.GetValue<string>('bound'),
+      'the true thickness is below the range, so the fit runs into the floor');
+    Assert.IsTrue(Entry.GetValue<Double>('margin_fraction') <= 0.05);
+  finally
+    Res.Free;
+  end;
+end;
+
+{ ---------------------------------------------------------- the schema -- }
+
+procedure TTestMCPFit.Schema_DescribesNormalizeAutoAndPairing;
+var
+  Scale, Paired: string;
+begin
+  Scale := FitXrrSchemaValue('scale.description');
+  Assert.IsTrue(Scale.Contains('"auto"'), 'scale: the string it accepts');
+  Assert.IsTrue(Scale.Contains('Normalize Auto'),
+    'scale: the GUI command it repeats');
+  Assert.IsFalse(Scale.Contains('0.4 '),
+    'scale: the old "compare at about 0.4 deg" rule is gone');
+
+  Assert.IsTrue(FitXrrSchemaValue('auto_theta_max.description').Contains('auto'),
+    'auto_theta_max belongs to the automatic scale');
+
+  Paired := FitXrrSchemaValue('paired.description');
+  Assert.IsTrue(Paired.Contains('profile'), 'paired: only in a profile fit');
+  Assert.IsTrue(Paired.Contains('sigma'), 'paired: the laboratory practice');
+end;
+
+procedure TTestMCPFit.JobWait_IsRegisteredAndNamesTheClientTimeout;
+var
+  Reg: TToolRegistry;
+  Tools: TJSONArray;
+  T: TJSONObject;
+  i: Integer;
+  Found: Boolean;
+begin
+  Found := False;
+  Reg := TToolRegistry.Create;
+  try
+    RegisterJobTools(Reg);
+    Tools := Reg.GetToolsList;
+    try
+      for i := 0 to Tools.Count - 1 do
+      begin
+        T := Tools.Items[i] as TJSONObject;
+        if T.GetValue<string>('name') <> 'job_wait' then
+          Continue;
+        Found := True;
+        Assert.IsTrue(T.GetValue<string>('description').Contains('MCP_TOOL_TIMEOUT'),
+          'job_wait names the client setting that limits it');
+        Assert.IsTrue(((T.GetValue('inputSchema') as TJSONObject)
+          .GetValue('properties') as TJSONObject).GetValue('wait_s') <> nil,
+          'job_wait takes wait_s');
+      end;
+    finally
+      Tools.Free;
+    end;
+  finally
+    Reg.Free;
+  end;
+  Assert.IsTrue(Found, 'job_wait is registered');
 end;
 
 initialization

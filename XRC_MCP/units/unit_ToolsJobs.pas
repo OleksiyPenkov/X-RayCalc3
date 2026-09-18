@@ -65,6 +65,38 @@ begin
     'jobs\ that holds the job''s files.');
 end;
 
+function JobWaitSchema: TJSONObject;
+begin
+  Result := JobIdSchema;
+  AddProp(Result, 'wait_s', 'number',
+    Format('How long to block for, in seconds (default %d, at most %d). The ' +
+      'call returns as soon as the job ends, so asking for more than the job ' +
+      'needs costs nothing. Ask for less than your client''s MCP tool ' +
+      'timeout, or the client gives up on the call while the server is still ' +
+      'inside it: in Claude Code that timeout is MCP_TOOL_TIMEOUT, in ' +
+      'milliseconds, and the default %d s here is the largest wait that fits ' +
+      'a 300 s client timeout exactly - set MCP_TOOL_TIMEOUT higher before ' +
+      'asking for more. The job is not affected either way: it keeps running ' +
+      'and job_status still reports it.',
+      [DEF_JOB_WAIT_S, MAX_JOB_WAIT_S, DEF_JOB_WAIT_S]));
+end;
+
+/// job_wait's "wait_s" in milliseconds.
+function ParseWaitMs(const Params: TJSONObject): Integer;
+var
+  Wait: Double;
+begin
+  Wait := JSONArgs.OptFloat(Params, 'wait_s', DEF_JOB_WAIT_S);
+  if Wait < 0 then
+    raise EMCPError.Create('invalid_argument', '"wait_s" must not be negative',
+      FloatToStr(Wait, TFormatSettings.Invariant));
+  if Wait > MAX_JOB_WAIT_S then
+    raise EMCPError.Create('invalid_argument',
+      Format('"wait_s" must not exceed %d seconds', [MAX_JOB_WAIT_S]),
+      FloatToStr(Wait, TFormatSettings.Invariant));
+  Result := Round(Wait * 1000);
+end;
+
 { ------------------------------------------------------- optimize_mirror -- }
 
 { AddRefProp fills in the description, so nothing here adds one: two
@@ -530,6 +562,52 @@ end;
 /// measurement is read, the structure is built and the bounds are resolved - so
 /// that a client learns about a bad argument on this call rather than from a
 /// job that fails a minute later.
+/// One item of "paired": a bare parameter name, or the same {stack, layer,
+/// parameters} address "free" uses.
+function FitPairedItemSchema: TJSONObject;
+var
+  Obj, Str, Names: TJSONObject;
+  Arr: TJSONArray;
+begin
+  Obj := SchemaObject(['parameters']);
+  AddProp(Obj, 'stack', 'integer',
+    'Index in "stacks" from the substrate up, or "cap" or "buffer".');
+  AddProp(Obj, 'layer', 'integer', 'Index of the layer inside that stack.');
+  Names := TJSONObject.Create;
+  Names.AddPair('type', 'string');
+  AddRefProp(Obj, 'parameters',
+    'Which of "thickness", "sigma" and "density" of that layer are paired.',
+    ArraySchema(Names));
+
+  Str := TJSONObject.Create;
+  Str.AddPair('type', 'string');
+  Str.AddPair('description',
+    'A parameter name - "thickness", "sigma" or "density" - paired in every ' +
+    'layer of every stack.');
+
+  Arr := TJSONArray.Create;
+  Arr.AddElement(Str);
+  Arr.AddElement(Obj);
+  Result := TJSONObject.Create;
+  Result.AddPair('oneOf', Arr);
+end;
+
+/// "scale" takes a number or the string "auto", so its schema cannot come from
+/// AddProp, which writes one type name.
+procedure AddScaleProp(Schema: TJSONObject; const Description: string);
+var
+  Prop: TJSONObject;
+  Types: TJSONArray;
+begin
+  Types := TJSONArray.Create;
+  Types.Add('number');
+  Types.Add('string');
+  Prop := TJSONObject.Create;
+  Prop.AddPair('type', Types);
+  Prop.AddPair('description', Description);
+  (Schema.GetValue('properties') as TJSONObject).AddPair('scale', Prop);
+end;
+
 function SubmitFit(const Params: TJSONObject): TJSONObject;
 var
   Req: TFitRequest;
@@ -607,17 +685,27 @@ begin
   AddRefProp(Schema, 'theta_range',
     'The part of the measured curve to fit (the manual''s "trim"), in degrees ' +
     'theta (never 2theta). Defaults to the whole curve.', FitThetaRangeSchema);
-  AddProp(Schema, 'scale', 'number',
-    'Fixed multiplier applied to the measured intensities before the fit - ' +
-    'the manual''s "normalize" step, chosen by the caller (default 1). To ' +
-    'choose it, compare the measured intensity with the calculated ' +
-    'reflectivity of the start model (calc_reflectivity) at about theta 0.4 ' +
-    'deg - past the critical angle, before the first Bragg peak - and take ' +
-    'scale = calculated / measured there, so that the two curves agree at ' +
-    'that angle. Do not normalize to the total-reflection region or to 1 / ' +
-    'the maximum count. It is not fitted and the server does not choose ' +
-    'it; the result echoes it, and measured.dat and fit.xrcx hold the ' +
-    'scaled curve so that X-Ray Calc 3 shows the same data.');
+  AddScaleProp(Schema,
+    'The multiplier applied to the measured intensities before the fit - the ' +
+    'manual''s "normalize" step. A positive number is used exactly as given ' +
+    '(default 1, no scaling). The string "auto" is the laboratory''s own ' +
+    'procedure, the GUI''s Data - Normalize Auto: the server finds the largest ' +
+    'measured intensity below "auto_theta_max" - the maximum of the ' +
+    'total-reflection plateau - and sets it equal to the reflectivity the ' +
+    'start model has at that same angle, so scale = R_calc(theta_max) / ' +
+    'I_max. It is computed on the raw curve, before "smooth" and before the ' +
+    '"theta_range" trim, on the model as given with the wavelength, ' +
+    'polarization and resolution of the fit. The result echoes the number ' +
+    'that was used in "scale" and says where it came from in "scale_mode", ' +
+    '"scale_theta" and "scale_counts". Either way the scale is not fitted, ' +
+    'and measured.dat and fit.xrcx hold the scaled curve so that X-Ray Calc 3 ' +
+    'shows the same data.');
+  AddProp(Schema, 'auto_theta_max', 'number',
+    Format('The angle in degrees theta below which "scale": "auto" looks for ' +
+      'the measured maximum (default %g). It is the end of the ' +
+      'total-reflection plateau: raise it for a mirror whose critical angle is ' +
+      'larger, lower it when the first Bragg order sits very low.',
+      [DEF_AUTO_THETA_MAX]));
   AddRefProp(Schema, 'smooth',
     Format('Smooths the measured curve before the fit - the manual''s ' +
       '"smooth" step, the same operation as X-Ray Calc 3''s Data - Smooth: a ' +
@@ -655,6 +743,18 @@ begin
   AddRefProp(Schema, 'chi2',
     'How the residual is weighted. describe_server.fit.chi2 gives the formula.',
     FitChi2Schema);
+  AddRefProp(Schema, 'paired',
+    'Which layer parameters keep one value over all the periods of a ' +
+    '"profile" fit instead of getting a polynomial of their own - the GUI''s ' +
+    'Paired boxes, the HP / SP / RP flags of the project file (default [], ' +
+    'every parameter free to vary from period to period). The laboratory''s ' +
+    'practice on a multilayer is ["sigma", "density"]: the thicknesses carry ' +
+    'the gradient and the roughness and the density are one number per layer, ' +
+    'which is what "stack locking" means in the 2024 paper. An item is a bare ' +
+    'parameter name, which pairs it in every layer, or {"stack", "layer", ' +
+    '"parameters"} addressed as in "free". Refused with "invalid_argument" ' +
+    'without "profile": true, where it would mean nothing. The result lists ' +
+    'what was paired in "paired".', ArraySchema(FitPairedItemSchema));
   AddProp(Schema, 'profile', 'boolean',
     'Fit a polynomial profile of each parameter over the periods of the ' +
     'repeating stack (TLFPSO_Poly) instead of one value per layer (default ' +
@@ -702,8 +802,17 @@ begin
     'fitted value that lies outside them - an empty list, as the engine ' +
     'keeps every value inside the bounds given. ' +
     'The measured curve is conditioned as the manual says, in this order: ' +
-    '"scale" (normalize), "smooth" (Data - Smooth), "theta_range" (trim); ' +
-    'the server chooses none of them. ' +
+    '"scale" (normalize), "smooth" (Data - Smooth), "theta_range" (trim). ' +
+    'The server chooses none of them, except that "scale": "auto" computes ' +
+    'the normalisation the way the GUI''s Data - Normalize Auto does. ' +
+    'Every result carries a "report" object - and the same numbers as ' +
+    'report.json in the job folder - with the Bragg orders of the fitted ' +
+    'period measured against calculated, the plateau edge, the fringe ' +
+    'contrast between the first two orders, the residual in eight bands of ' +
+    'theta, and every fitted value that stopped on one of its bounds, with ' +
+    'the same set of numbers for the start model under "start". It states no ' +
+    'verdict: the numbers are there so that the answer need not be ' +
+    'reconstructed by recalculating the fitted model. ' +
     'Cancellation is not instant: the engine offers one point per ' +
     'iteration at which it can be stopped, so cancel_job takes up to one ' +
     'iteration, which grows with population x points x layers. Angles are ' +
@@ -735,6 +844,28 @@ begin
     function(const Params: TJSONObject): TJSONObject
     begin
       Result := Jobs.Status(JSONArgs.ReqStr(Params, 'job_id'));
+    end);
+
+  Registry.Register('job_wait',
+    'Waits for a submitted job and returns the same object as job_status, plus ' +
+    '"waited_s". It comes back as soon as the job reaches "finished", "failed" ' +
+    'or "cancelled", or when "wait_s" has passed - whichever happens first - so ' +
+    'one call replaces a poll every turn: a fit of several hundred seconds costs ' +
+    'one or two calls instead of hundreds. A job that has already ended, and an ' +
+    'id this server does not know, come back at once. Check "state": a call that ' +
+    'timed out returns the job still "running", and calling again carries on ' +
+    'waiting. Then call job_result. ' +
+    'While this call is blocked the server answers nothing else - it serves one ' +
+    'request at a time - so cancel_job cannot be reached until the wait ends; ' +
+    'ask for a shorter "wait_s" when you may want to stop the job early. Keep ' +
+    '"wait_s" under your client''s own MCP tool timeout (in Claude Code, ' +
+    'MCP_TOOL_TIMEOUT, in milliseconds), or the client abandons the call while ' +
+    'the server is still waiting; the job itself is never affected by that.',
+    JobWaitSchema,
+    function(const Params: TJSONObject): TJSONObject
+    begin
+      Result := Jobs.WaitFor(JSONArgs.ReqStr(Params, 'job_id'),
+                             ParseWaitMs(Params));
     end);
 
   Registry.Register('job_result',

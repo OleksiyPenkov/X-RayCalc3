@@ -113,9 +113,9 @@ const
   /// the evanescent wave samples at the plateau edge.
   CRITICAL_ANGLE_DEPTH = 500;
 
-  /// How far 2 d sin(theta) / lambda may sit from an integer for a maximum to
-  /// count as a Bragg peak (FindBraggPeaks).
-  BRAGG_ORDER_TOLERANCE = 0.25;
+  /// Half-width in degrees of the window an order is looked for in when the
+  /// period is known (BraggSearchWindow, and the fit report's order table).
+  BRAGG_WINDOW_DEG = 0.06;
   /// The engine convolves over a fixed +/-0.1 degree window and smooths the
   /// last MVAWindow points; see CheckConvolutionFits.
   CALC_MVA_WINDOW = 10;
@@ -126,16 +126,50 @@ const
 /// replaced by the Henke bulk value the engine actually used.</summary>
 function RunCalc(const Req: TCalcRequest; out DensitiesUsed: TFitStructure): unit_Types.TDataArray;
 
-/// <summary>Bragg maxima of a calculated curve. A local maximum counts when it
-/// sits more than 0.05 degrees above ThetaC and rises to more than three times
-/// the smallest value within +/-max(3, n div 200) points. FWHM is the distance
-/// between the linearly interpolated half-maximum crossings on either side, 0
-/// when the curve does not fall to half the peak on both sides. Order is
-/// round(2 d sin(theta) / lambda) when Period > 0 - a maximum whose
-/// 2 d sin(theta) / lambda sits more than 0.25 from an integer is a Kiessig
-/// fringe or the plateau edge, not a Bragg peak, and is dropped - and the
-/// running index from 1 otherwise; orders below 1 are dropped and a repeated
-/// order keeps the stronger peak.</summary>
+/// <summary>The Bragg angle of one order in degrees: asin(n lambda / 2 d).
+/// False when the order is past the horizon (n lambda / 2 d >= 1) or the
+/// period is not positive.</summary>
+function BraggAngleDeg(Order: Integer; Lambda, Period: Double;
+  out Theta: Double): Boolean;
+
+/// <summary>The angular window one order is looked for in, and the Bragg angle
+/// it is centred on. Refraction moves a Bragg maximum to higher angles and
+/// never to lower ones - sin^2(theta_n) = (n lambda / 2 d)^2 + sin^2(theta_c) -
+/// so the window runs from BRAGG_WINDOW_DEG below the Bragg angle to
+/// BRAGG_WINDOW_DEG above the refraction-corrected one. On a Ru/C or Co/C
+/// mirror that shift is 0.02 to 0.05 degrees at the first order and can pass
+/// 0.1 degrees on a dense, long-period stack, so a window of +/-BRAGG_WINDOW_DEG
+/// around the uncorrected angle alone would miss the peak it is looking for.
+/// False when the order is past the horizon.</summary>
+function BraggSearchWindow(Order: Integer; Lambda, Period, ThetaC: Double;
+  out Lo, Hi, Theta: Double): Boolean;
+
+/// <summary>Index of the largest value of Curve with Lo &lt;= theta &lt;= Hi, the
+/// first of them when several are equal; -1 when the window holds no point.
+/// </summary>
+function MaxIndexInRange(const Curve: unit_Types.TDataArray;
+  Lo, Hi: Double): Integer;
+
+/// <summary>Bragg maxima of a calculated curve.
+///
+/// With a period (Period &gt; 0) the orders are looked for where they must be:
+/// for n = 1, 2, ... while the order is inside the curve, the maximum inside
+/// BraggSearchWindow is the peak of that order, provided it is a local maximum,
+/// sits more than 0.05 degrees above ThetaC, and stands more than three times
+/// above the smallest value in the same window. There is no search for maxima
+/// at large: a generic peak finder rejects a strong Bragg peak - which is
+/// broader than the window it is measured against - and accepts the sharp
+/// Kiessig satellite beside it, which is how the summary of a C/Co multilayer
+/// came to report 0.855 degrees (R = 0.015) for a first order that is at 0.915
+/// (R = 0.203).
+///
+/// Without a period every local maximum that rises to more than three times the
+/// smallest value within +/-max(3, n div 200) points counts, numbered from 1 in
+/// angle order.
+///
+/// FWHM is the distance between the linearly interpolated half-maximum
+/// crossings on either side, 0 when the curve does not fall to half the peak on
+/// both sides.</summary>
 function FindBraggPeaks(const Curve: unit_Types.TDataArray;
   Lambda, Period: Double; ThetaC: Double): TArray<TPeak>;
 
@@ -302,27 +336,188 @@ begin
   end;
 end;
 
-function FindBraggPeaks(const Curve: unit_Types.TDataArray;
-  Lambda, Period: Double; ThetaC: Double): TArray<TPeak>;
+function BraggAngleDeg(Order: Integer; Lambda, Period: Double;
+  out Theta: Double): Boolean;
 var
-  N, W, i, j, Lo, Hi, Count, Running, Ord_, K, Dup: Integer;
-  MinLocal, Half, TL, TR, MOrder: Double;
+  S: Double;
+begin
+  Theta := 0;
+  Result := False;
+  if (Order < 1) or (Period <= 0) or (Lambda <= 0) then
+    Exit;
+  S := Order * Lambda / (2 * Period);
+  if S >= 1 then
+    Exit;
+  Theta := RadToDeg(ArcSin(S));
+  Result := True;
+end;
+
+function BraggSearchWindow(Order: Integer; Lambda, Period, ThetaC: Double;
+  out Lo, Hi, Theta: Double): Boolean;
+var
+  S, SC, SR: Double;
+begin
+  Lo := 0;
+  Hi := 0;
+  Result := BraggAngleDeg(Order, Lambda, Period, Theta);
+  if not Result then
+    Exit;
+
+  Lo := Theta - BRAGG_WINDOW_DEG;
+
+  { sin^2(theta_n) = (n lambda / 2 d)^2 + sin^2(theta_c): the refracted Bragg
+    law. The correction is always positive, so the window is not symmetric. }
+  S := Order * Lambda / (2 * Period);
+  SC := 0;
+  if ThetaC > 0 then
+    SC := Sin(DegToRad(ThetaC));
+  SR := Sqrt(S * S + SC * SC);
+  if SR >= 1 then
+    Hi := 90
+  else
+    Hi := RadToDeg(ArcSin(SR)) + BRAGG_WINDOW_DEG;
+end;
+
+function MaxIndexInRange(const Curve: unit_Types.TDataArray;
+  Lo, Hi: Double): Integer;
+var
+  i: Integer;
+begin
+  Result := -1;
+  for i := 0 to High(Curve) do
+    if (Curve[i].t >= Lo) and (Curve[i].t <= Hi) then
+      if (Result < 0) or (Curve[i].r > Curve[Result].r) then
+        Result := i;
+end;
+
+/// The smallest value inside the same window, which is what the maximum has to
+/// stand above to be a peak rather than a point on a slope.
+function MinInRange(const Curve: unit_Types.TDataArray; Lo, Hi: Double): Double;
+var
+  i: Integer;
+  Seen: Boolean;
+begin
+  Result := 0;
+  Seen := False;
+  for i := 0 to High(Curve) do
+    if (Curve[i].t >= Lo) and (Curve[i].t <= Hi) then
+      if (not Seen) or (Curve[i].r < Result) then
+      begin
+        Result := Curve[i].r;
+        Seen := True;
+      end;
+end;
+
+/// A maximum of the sampled curve: strictly above the point on its left and at
+/// least as high as the one on its right, which is the rule the generic search
+/// has always used. The ends of the curve are not maxima.
+function IsLocalMax(const Curve: unit_Types.TDataArray; i: Integer): Boolean;
+begin
+  Result := (i > 0) and (i < High(Curve)) and
+            (Curve[i].r > Curve[i - 1].r) and (Curve[i].r >= Curve[i + 1].r);
+end;
+
+/// Distance between the linearly interpolated half-maximum crossings either
+/// side of Curve[i]; 0 when the curve does not fall to half the peak on both
+/// sides inside the curve.
+function PeakFWHM(const Curve: unit_Types.TDataArray; i: Integer): Double;
+var
+  j: Integer;
+  Half, TL, TR: Double;
   HasL, HasR: Boolean;
+begin
+  Result := 0;
+  Half := Curve[i].r / 2;
+
+  HasL := False;
+  TL := 0;
+  for j := i - 1 downto 0 do
+    if Curve[j].r <= Half then
+    begin
+      if Curve[j + 1].r <> Curve[j].r then
+        TL := Curve[j].t + (Half - Curve[j].r) *
+          (Curve[j + 1].t - Curve[j].t) / (Curve[j + 1].r - Curve[j].r)
+      else
+        TL := Curve[j].t;
+      HasL := True;
+      Break;
+    end;
+
+  HasR := False;
+  TR := 0;
+  for j := i + 1 to High(Curve) do
+    if Curve[j].r <= Half then
+    begin
+      if Curve[j - 1].r <> Curve[j].r then
+        TR := Curve[j].t + (Half - Curve[j].r) *
+          (Curve[j - 1].t - Curve[j].t) / (Curve[j - 1].r - Curve[j].r)
+      else
+        TR := Curve[j].t;
+      HasR := True;
+      Break;
+    end;
+
+  if HasL and HasR then
+    Result := TR - TL;
+end;
+
+/// The orders of a known period, each looked for in its own window. See the
+/// summary of FindBraggPeaks for why this is not a search for maxima at large.
+function BraggPeaksByOrder(const Curve: unit_Types.TDataArray;
+  Lambda, Period, ThetaC: Double): TArray<TPeak>;
+var
+  Order, Idx, Count: Integer;
+  Lo, Hi, Theta, LastT: Double;
+  Pk: TPeak;
+begin
+  Result := nil;
+  Count := 0;
+  LastT := Curve[High(Curve)].t;
+
+  Order := 1;
+  while BraggSearchWindow(Order, Lambda, Period, ThetaC, Lo, Hi, Theta) do
+  begin
+    { The Bragg angle itself has to be inside the curve: an order whose window
+      only overlaps the last points of the scan is not measured, it is clipped. }
+    if Theta > LastT then
+      Break;
+
+    Idx := MaxIndexInRange(Curve, Lo, Hi);
+    if (Idx >= 0) and IsLocalMax(Curve, Idx) and
+       (Curve[Idx].t > ThetaC + 0.05) and
+       (Curve[Idx].r > 3 * MinInRange(Curve, Lo, Hi)) then
+    begin
+      Pk.Order := Order;
+      Pk.Theta := Curve[Idx].t;
+      Pk.R := Curve[Idx].r;
+      Pk.FWHM := PeakFWHM(Curve, Idx);
+      SetLength(Result, Count + 1);
+      Result[Count] := Pk;
+      Inc(Count);
+    end;
+
+    Inc(Order);
+  end;
+end;
+
+/// Every local maximum that stands out from its neighbourhood, numbered from 1
+/// in angle order: what is left when the period is not known.
+function BraggPeaksGeneric(const Curve: unit_Types.TDataArray;
+  ThetaC: Double): TArray<TPeak>;
+var
+  N, W, i, j, Lo, Hi, Count, Running: Integer;
+  MinLocal: Double;
   Pk: TPeak;
 begin
   Result := nil;
   N := Length(Curve);
-  if N < 3 then
-    Exit;
-
   W := Max(3, N div 200);
   Count := 0;
   Running := 0;
-  SetLength(Result, 0);
 
   for i := 1 to N - 2 do
   begin
-    if not ((Curve[i].r > Curve[i - 1].r) and (Curve[i].r >= Curve[i + 1].r)) then
+    if not IsLocalMax(Curve, i) then
       Continue;
     if Curve[i].t <= ThetaC + 0.05 then
       Continue;
@@ -336,84 +531,28 @@ begin
     if not (Curve[i].r > 3 * MinLocal) then
       Continue;
 
-    if Period > 0 then
-    begin
-      { A Bragg peak sits within BRAGG_ORDER_TOLERANCE of an integer order
-        (refraction pulls the first order to about 1.07). A maximum further off
-        is a Kiessig fringe or the plateau edge: a 10-period Ru/C stack shows
-        one at 0.37 degrees that rounds to order 1 and, being strong, would
-        replace the real first-order peak under the "stronger one wins" rule. }
-      MOrder := 2 * Period * Sin(DegToRad(Curve[i].t)) / Lambda;
-      Ord_ := Round(MOrder);
-      if Abs(MOrder - Ord_) > BRAGG_ORDER_TOLERANCE then
-        Continue;
-    end
-    else
-    begin
-      Inc(Running);
-      Ord_ := Running;
-    end;
-    if Ord_ < 1 then
-      Continue;
-
-    { FWHM: walk out to the first point at or below half the peak on each side
-      and interpolate the crossing linearly between it and its inner neighbour. }
-    Half := Curve[i].r / 2;
-    HasL := False;
-    TL := 0;
-    for j := i - 1 downto 0 do
-      if Curve[j].r <= Half then
-      begin
-        if Curve[j + 1].r <> Curve[j].r then
-          TL := Curve[j].t + (Half - Curve[j].r) *
-            (Curve[j + 1].t - Curve[j].t) / (Curve[j + 1].r - Curve[j].r)
-        else
-          TL := Curve[j].t;
-        HasL := True;
-        Break;
-      end;
-    HasR := False;
-    TR := 0;
-    for j := i + 1 to N - 1 do
-      if Curve[j].r <= Half then
-      begin
-        if Curve[j - 1].r <> Curve[j].r then
-          TR := Curve[j].t + (Half - Curve[j].r) *
-            (Curve[j - 1].t - Curve[j].t) / (Curve[j - 1].r - Curve[j].r)
-        else
-          TR := Curve[j].t;
-        HasR := True;
-        Break;
-      end;
-
-    Pk.Order := Ord_;
+    Inc(Running);
+    Pk.Order := Running;
     Pk.Theta := Curve[i].t;
     Pk.R := Curve[i].r;
-    if HasL and HasR then
-      Pk.FWHM := TR - TL
-    else
-      Pk.FWHM := 0;
-
-    { One order, one peak: a shoulder that rounds to an order already taken
-      only replaces it when it is the stronger of the two. }
-    Dup := -1;
-    for K := 0 to Count - 1 do
-      if Result[K].Order = Ord_ then
-      begin
-        Dup := K;
-        Break;
-      end;
-    if Dup >= 0 then
-    begin
-      if Pk.R > Result[Dup].R then
-        Result[Dup] := Pk;
-      Continue;
-    end;
+    Pk.FWHM := PeakFWHM(Curve, i);
 
     SetLength(Result, Count + 1);
     Result[Count] := Pk;
     Inc(Count);
   end;
+end;
+
+function FindBraggPeaks(const Curve: unit_Types.TDataArray;
+  Lambda, Period: Double; ThetaC: Double): TArray<TPeak>;
+begin
+  Result := nil;
+  if Length(Curve) < 3 then
+    Exit;
+  if Period > 0 then
+    Result := BraggPeaksByOrder(Curve, Lambda, Period, ThetaC)
+  else
+    Result := BraggPeaksGeneric(Curve, ThetaC);
 end;
 
 function CriticalAngleDeg(const S: TFitStructure; Lambda: Double): Double;

@@ -64,6 +64,9 @@ uses
 const
   MAX_QUEUED_JOBS      = 16;    // jobs waiting to run; the running one is extra
   JOB_SAVE_INTERVAL_MS = 250;   // job.json is not rewritten more often than this
+  JOB_WAIT_POLL_MS     = 50;    // how often WaitFor looks at the state
+  DEF_JOB_WAIT_S       = 300;   // job_wait's default ceiling, seconds
+  MAX_JOB_WAIT_S       = 900;   // and the longest it will block for
 
 type
   TJobState = (jsQueued, jsRunning, jsFinished, jsFailed, jsCancelled);
@@ -206,6 +209,19 @@ type
     /// <summary>The status object; {"job_id","state":"unknown"} for an id this
     /// server has never seen (the registry does not survive a restart).</summary>
     function Status(const Id: string): TJSONObject;
+    /// <summary>The same object as Status, plus "waited_s", returned as soon as
+    /// the job reaches a final state (finished, failed or cancelled) or
+    /// TimeoutMs has passed, whichever comes first. A job that has already
+    /// ended, and an id this server does not know, return at once.
+    ///
+    /// The wait is a poll of the job's own state every JOB_WAIT_POLL_MS on the
+    /// calling thread; the work itself runs on the worker, so nothing here
+    /// touches it. The caller is the stdio loop, which serves one request at a
+    /// time: while this blocks, the server answers nothing else - including a
+    /// cancel_job for the very job being waited on. A cancel that arrives from
+    /// somewhere else (a second client, the manager shutting down) does end the
+    /// wait, because the job then reaches cancelled.</summary>
+    function WaitFor(const Id: string; TimeoutMs: Integer): TJSONObject;
     /// <summary>A clone of the result of a finished job. Raises EMCPError
     /// job_unknown / job_not_finished / job_failed / job_cancelled otherwise.</summary>
     function ResultOf(const Id: string): TJSONObject;
@@ -953,6 +969,50 @@ begin
     Result := Job.StatusJSON;
   finally
     FLock.Leave;
+  end;
+end;
+
+function TJobManager.WaitFor(const Id: string; TimeoutMs: Integer): TJSONObject;
+var
+  Job: TJob;
+  SW: TStopwatch;
+  Waited: Int64;
+begin
+  Job := Find(Id);
+  if Job = nil then
+  begin
+    Result := UnknownStatus(Id);
+    try
+      Result.AddPair('waited_s', JSONArgs.Num(0));
+    except
+      Result.Free;
+      raise;
+    end;
+    Exit;
+  end;
+
+  if TimeoutMs < 0 then
+    TimeoutMs := 0;
+
+  SW := TStopwatch.StartNew;
+  while not (Job.State in [jsFinished, jsFailed, jsCancelled]) do
+  begin
+    if SW.ElapsedMilliseconds >= TimeoutMs then
+      Break;
+    { The destructor cancels every job and joins the worker; a wait that ignored
+      it would hold the server open for the whole timeout. }
+    if FTerminating then
+      Break;
+    Sleep(JOB_WAIT_POLL_MS);
+  end;
+  Waited := SW.ElapsedMilliseconds;
+
+  Result := Job.StatusJSON;
+  try
+    Result.AddPair('waited_s', JSONArgs.Num(Waited / 1000));
+  except
+    Result.Free;
+    raise;
   end;
 end;
 
