@@ -1,4 +1,4 @@
-unit unit_RecentProjects;
+﻿unit unit_RecentProjects;
 
 interface
 
@@ -18,6 +18,7 @@ type
     FOnClick: TRecentProjectClickEvent;
 
     function IndexOfFile(const FileName: string): Integer;
+    function PruneMissing: Boolean;
     procedure MenuItemClick(Sender: TObject);
     procedure ClearMenuClick(Sender: TObject);
     procedure FillMenus;
@@ -35,10 +36,31 @@ type
     property OnClick: TRecentProjectClickEvent read FOnClick write FOnClick;
   end;
 
+/// <summary>
+///   True when the entry is known to be gone: it sits on a fixed local drive
+///   and the file is not there. Entries on network or removable drives are
+///   never reported as stale - the share may simply be offline right now.
+/// </summary>
+function IsRecentEntryStale(const FileName: string): Boolean;
+
 implementation
 
 uses
+  Winapi.Windows,
   unit_Config, unit_consts;
+
+function IsRecentEntryStale(const FileName: string): Boolean;
+var
+  Root: string;
+begin
+  Root := ExtractFileDrive(FileName);
+  // relative path or UNC share - leave it alone
+  if (Length(Root) <> 2) or (Root[2] <> ':') then
+    Exit(False);
+  if GetDriveType(PChar(Root + PathDelim)) <> DRIVE_FIXED then
+    Exit(False);
+  Result := not FileExists(FileName);
+end;
 
 { TRecentProjectsManager }
 
@@ -114,15 +136,37 @@ end;
 
 procedure TRecentProjectsManager.Remove(const FileName: string);
 var
-  Idx: Integer;
+  i: Integer;
+  Removed: Boolean;
 begin
-  Idx := IndexOfFile(FileName);
-  if Idx >= 0 then
+  Removed := False;
+  // delete every match: an older INI may still hold the same path twice,
+  // written before the list became case-insensitive
+  for i := FItems.Count - 1 downto 0 do
+    if SameText(FItems[i], FileName) then
+    begin
+      FItems.Delete(i);
+      Removed := True;
+    end;
+
+  if Removed then
   begin
-    FItems.Delete(Idx);
     Save;
     FillMenus;
   end;
+end;
+
+function TRecentProjectsManager.PruneMissing: Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  for i := FItems.Count - 1 downto 0 do
+    if IsRecentEntryStale(FItems[i]) then
+    begin
+      FItems.Delete(i);
+      Result := True;
+    end;
 end;
 
 procedure TRecentProjectsManager.Clear;
@@ -163,6 +207,11 @@ procedure TRecentProjectsManager.FillMenus;
   end;
 
 begin
+  // drop entries whose file has since been deleted or moved, so the list
+  // never offers a project that cannot be opened
+  if PruneMissing then
+    Save;
+
   FMenuParent.Clear;
   FPopupParent.Items.Clear;
 
@@ -185,6 +234,8 @@ var
   FileName: string;
 begin
   Index := (Sender as TMenuItem).Tag;
+  if (Index < 0) or (Index >= FItems.Count) then
+    Exit;
   FileName := FItems[Index];
   FItems.Move(Index, 0);
   Save;

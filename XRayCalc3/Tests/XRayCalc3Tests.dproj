@@ -96,6 +96,7 @@
         <DCCReference Include="..\Units\unit_helpers.pas"/>
         <DCCReference Include="..\Units\unit_Config.pas"/>
         <DCCReference Include="..\Units\unit_consts.pas"/>
+        <DCCReference Include="..\Units\unit_RecentProjects.pas"/>
         <DCCReference Include="TestHenke.pas"/>
         <DCCReference Include="TestCalcPhysics.pas"/>
         <DCCReference Include="TestSeriesIO.pas"/>

@@ -1,4 +1,4 @@
-unit TestConfig;
+﻿unit TestConfig;
 
 interface
 
@@ -22,10 +22,20 @@ type
     [Test] procedure Test_WriteRead_String;
   end;
 
+  [TestFixture]
+  TTestRecentEntryStale = class
+  public
+    [Test] procedure Test_ExistingFile_NotStale;
+    [Test] procedure Test_DeletedFile_IsStale;
+    [Test] procedure Test_UNCPath_NeverStale;
+    [Test] procedure Test_RelativePath_NeverStale;
+  end;
+
 implementation
 
 uses
-  unit_Config, IniFiles, System.SysUtils, System.IOUtils;
+  unit_Config, unit_RecentProjects,
+  IniFiles, System.SysUtils, System.IOUtils;
 
 procedure TTestConfigOptions.Setup;
 begin
@@ -191,6 +201,42 @@ begin
   finally
     Ini.Free;
   end;
+end;
+
+{ TTestRecentEntryStale }
+
+procedure TTestRecentEntryStale.Test_ExistingFile_NotStale;
+var
+  FileName: string;
+begin
+  FileName := TPath.GetTempFileName;   // created on the local temp drive
+  try
+    Assert.IsFalse(IsRecentEntryStale(FileName),
+      'A file that is there must not be pruned');
+  finally
+    TFile.Delete(FileName);
+  end;
+end;
+
+procedure TTestRecentEntryStale.Test_DeletedFile_IsStale;
+var
+  FileName: string;
+begin
+  FileName := TPath.GetTempFileName;
+  TFile.Delete(FileName);
+  Assert.IsTrue(IsRecentEntryStale(FileName),
+    'A deleted file on a fixed drive must be pruned');
+end;
+
+procedure TTestRecentEntryStale.Test_UNCPath_NeverStale;
+begin
+  // the share may simply be offline - never drop the entry over that
+  Assert.IsFalse(IsRecentEntryStale('\\no-such-host\share\project.xrcx'));
+end;
+
+procedure TTestRecentEntryStale.Test_RelativePath_NeverStale;
+begin
+  Assert.IsFalse(IsRecentEntryStale('project.xrcx'));
 end;
 
 end.
