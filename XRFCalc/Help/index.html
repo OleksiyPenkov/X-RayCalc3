@@ -8,68 +8,70 @@
 </head>
 <body>
 
-<nav class="top-nav">
-  <a class="logo" href="index.html">XRF<span>Calc</span></a>
-  <div class="page-title">Help</div>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search topics..." onkeyup="filterCards(this.value)">
+<div class="hero">
+  <h1>XRFCalc Help</h1>
+  <p>View and run Universal Mirror optimization results: .xrfx files, reflectivity curves, structure overlays, and new optimization runs from the interface.</p>
+  <span class="version">Copyright &copy; 2026 Oleksiy Penkov</span>
+</div>
+
+<div class="container wide">
+
+  <div class="section-title">Using XRFCalc</div>
+  <div class="card-grid">
+    <a class="card" href="Overview.html">
+      <div class="card-icon"><img class="icon-ref" src="icons/10_Edit.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Application Overview</div>
+        <p class="card-desc">Window layout, the run configuration panel, toolbar, tab panels, and menus.</p>
+      </div>
+    </a>
+    <a class="card" href="Viewing.html">
+      <div class="card-icon"><img class="icon-ref" src="icons/47_CopyImage.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Viewing Results</div>
+        <p class="card-desc">Reflectivity curves, chart controls, legend, structure overlay, metrics charts, Info and Progress tabs.</p>
+      </div>
+    </a>
+    <a class="card" href="Running.html">
+      <div class="card-icon"><img class="icon-ref" src="icons/40_Play.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Running Optimizations</div>
+        <p class="card-desc">New Run, live monitoring, stopping, saving results, and a typical workflow.</p>
+      </div>
+    </a>
   </div>
-</nav>
 
-<main class="content" style="margin-left: 0; max-width: 1100px; margin-left: auto; margin-right: auto;">
-
-<h1>XRFCalc &mdash; Help</h1>
-<p class="subtitle">Copyright &copy; 2026 Oleksiy Penkov</p>
-
-<p><strong>XRFCalc</strong> is a focused GUI application for viewing and running Universal Mirror optimization results. It reads <code>.xrfx</code> result files produced by the Universal Mirror Optimizer, displays reflectivity curves and structure overlays, and lets you launch new or modified optimization runs directly from the interface.</p>
-
-<div class="cards" id="cardGrid">
-
-  <a class="card" href="01-overview.html">
-    <div class="card-num">1</div>
-    <div class="card-title">Application Overview</div>
-    <div class="card-desc">Window layout, run configuration panel, toolbar, and tab panels.</div>
-  </a>
-
-  <a class="card" href="02-viewing.html">
-    <div class="card-num">2</div>
-    <div class="card-title">Viewing Results</div>
-    <div class="card-desc">Reflectivity curves, structure overlay, metrics charts, Info and Progress tabs.</div>
-  </a>
-
-  <a class="card" href="03-running.html">
-    <div class="card-num">3</div>
-    <div class="card-title">Running Optimizations</div>
-    <div class="card-desc">New Run, Stop, live monitoring, and saving results.</div>
-  </a>
-
-  <a class="card" href="04-config.html">
-    <div class="card-num">4</div>
-    <div class="card-title">Configuration Reference</div>
-    <div class="card-desc">Complete JSON configuration format: targets, structure, fitness, optimizer.</div>
-  </a>
-
-  <a class="card" href="05-reference.html">
-    <div class="card-num">5</div>
-    <div class="card-title">Quick Reference</div>
-    <div class="card-desc">Keyboard shortcuts, file association, .xrfx format, troubleshooting.</div>
-  </a>
-
-  <a class="card" href="06-calculation.html">
-    <div class="card-num">6</div>
-    <div class="card-title">Calculation Engine</div>
-    <div class="card-desc">Parratt recursion, Henke database, VCA model, LFPSO algorithm, figure of merit, spectral purity.</div>
-  </a>
+  <div class="section-title">Reference</div>
+  <div class="card-grid">
+    <a class="card" href="Configuration.html">
+      <div class="card-icon"><img class="icon-ref" src="icons/Menu_EditTable.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Configuration Reference</div>
+        <p class="card-desc">The JSON configuration: targets, element pool, structure, fitness, optimizer, top-level fields.</p>
+      </div>
+    </a>
+    <a class="card" href="Calculation.html">
+      <div class="card-icon"><img class="icon-ref" src="icons/Menu_Benchmark.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Calculation Engine</div>
+        <p class="card-desc">Parratt recursion, the Henke database, VCA, the LFPSO algorithm, figure of merit, spectral purity.</p>
+      </div>
+    </a>
+    <a class="card" href="Reference.html">
+      <div class="card-icon"><img class="icon-ref" src="icons/Menu_Help.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Quick Reference</div>
+        <p class="card-desc">Keyboard shortcuts, file association, the .xrfx format, xrccmd output files, troubleshooting.</p>
+      </div>
+    </a>
+  </div>
 
 </div>
 
 <div class="footer">
-  <p>XRFCalc &mdash; Oleksiy Penkov</p>
+  XRFCalc &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a>
 </div>
-
-</main>
-
-<script src="script.js"></script>
 
 </body>
 </html>

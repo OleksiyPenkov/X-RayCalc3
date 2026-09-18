@@ -16,7 +16,7 @@ import re
 import sys
 from html.parser import HTMLParser
 
-INDEX = "UserManual.html"
+INDEXES = ("UserManual.html", "index.html")
 PRINT = "print.html"
 
 
@@ -93,7 +93,7 @@ def main(help_dir):
                     t = scan(full) if full.lower().endswith(".html") else None
                 if t is not None and anchor not in t.ids:
                     fail(page, f"{value}: anchor not found in target")
-        if page in (INDEX, PRINT):
+        if page in INDEXES or page == PRINT:
             continue
         # anatomy
         for cls, want in (("topbar", 1), ("bottom-nav", 1)):

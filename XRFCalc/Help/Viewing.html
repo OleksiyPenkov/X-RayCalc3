@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XRFCalc — Viewing Results</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">XRFCalc Help</span>
+  <span class="sep">|</span>
+  <a href="index.html">Home</a>
+  <span class="sep">/</span>
+  <span>Viewing Results</span>
+</div>
+
+<div class="container">
+
+<h1>Viewing Results</h1>
+<div class="subtitle">Reflectivity curves, chart controls, legend, structure overlay, metrics charts, Info and Progress tabs</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#curves-tab">Curves Tab</a></li>
+    <li><a href="#chart-controls">Chart Controls</a></li>
+    <li><a href="#legend">Legend</a></li>
+    <li><a href="#structure-overlay">Structure Overlay</a></li>
+    <li><a href="#metrics">Metrics Charts</a></li>
+    <li><a href="#info-tab">Info Tab</a></li>
+    <li><a href="#progress-tab">Progress Tab</a></li>
+  </ul>
+</div>
+
+<p>When you open a <code>.xrfx</code> file (File &gt; Open or Ctrl+O), XRFCalc loads and displays its contents across three tabs. The <strong>Curves</strong> tab is the primary analysis view; <strong>Info</strong> gives a text summary; <strong>Progress</strong> shows convergence history. The loaded file name is shown in the window title bar.</p>
+
+<h2 id="curves-tab">Curves Tab</h2>
+<p>The Curves tab shows the reflectivity results for the best-found mirror structure. It is divided vertically into two areas:</p>
+
+<ul>
+  <li><strong>Upper area</strong> &mdash; the main reflectivity chart and the legend panel.</li>
+  <li><strong>Lower area</strong> &mdash; the structure overlay panel (left) and the metrics bar charts (right). A horizontal splitter between upper and lower areas can be dragged to resize them.</li>
+</ul>
+
+<h2 id="chart-controls">Chart Controls</h2>
+<p>The main reflectivity chart plots incidence angle (&theta;, degrees) on the X axis and reflectivity on the Y axis. Each target element is shown as a separate curve.</p>
+
+<h3>Scale Toggle</h3>
+<p>A toggle button above the chart switches the Y axis between <strong>logarithmic</strong> and <strong>linear</strong> scale:</p>
+<ul>
+  <li><strong>Log scale</strong> (default) &mdash; suitable for inspecting the full dynamic range of the Bragg peak. Weak side-lobes and background reflectivity are visible.</li>
+  <li><strong>Linear scale</strong> &mdash; useful when comparing peak heights directly.</li>
+</ul>
+
+<h3>Minimum Limit Selector</h3>
+<p>A drop-down next to the scale toggle sets the lower Y-axis limit in log scale (e.g. 10<sup>&minus;6</sup>, 10<sup>&minus;5</sup>, 10<sup>&minus;4</sup>). This prevents the chart from extending into numerical noise for very low reflectivity values. Adjust it if the Bragg peak appears compressed at the top of the chart.</p>
+
+<h3>Zoom and Pan</h3>
+<p>The chart supports standard TChart interactions:</p>
+<ul>
+  <li><strong>Left-drag</strong> &mdash; zoom into a rectangular region.</li>
+  <li><strong>Right-click</strong> &mdash; context menu with options including Zoom Out, Zoom to Full, and Copy to Clipboard.</li>
+  <li><strong>Mouse wheel</strong> &mdash; zoom in/out on the X axis centered on the cursor.</li>
+</ul>
+
+<h2 id="legend">Legend</h2>
+<p>A floating legend panel sits horizontally above the structure overlay. It shows one entry per target element, each with a colored swatch and element name.</p>
+
+<p>Each legend entry has a <strong>checkbox</strong>. Unchecking an element hides its curve in the main chart without removing the data. This is useful when you want to isolate a single element's curve in a multi-target result.</p>
+
+<div class="tip"><strong>Tip:</strong> If curves overlap heavily in the same angular range, hide all but one element at a time to inspect individual Bragg peaks clearly.</div>
+
+<h2 id="structure-overlay">Structure Overlay</h2>
+<p>The structure overlay panel displays the best mirror structure found by the optimizer as a table of layers. For a bilayer mirror, it shows two rows per period plus the substrate:</p>
+
+<table>
+  <tr><th>Column</th><th>Description</th></tr>
+  <tr><td>Layer</td><td>Layer identifier (e.g. Layer 1, Layer 2, Substrate)</td></tr>
+  <tr><td>Material</td><td>Element or composition of the layer (e.g. <code>C</code>, <code>W 32.7% Si 35.8% C 31.5%</code>)</td></tr>
+  <tr><td>d (&Aring;)</td><td>Layer thickness in &Aring;ngstr&ouml;ms. For a bilayer, Layer 1 thickness = d &times; &gamma;, Layer 2 = d &times; (1 &minus; &gamma;).</td></tr>
+  <tr><td>&sigma; (&Aring;)</td><td>Interface roughness in &Aring;ngstr&ouml;ms (shared across all interfaces).</td></tr>
+  <tr><td>Density</td><td>Density factor relative to bulk. 1.0 = bulk density.</td></tr>
+</table>
+
+<p>The global structure parameters (period d, gamma, N) are shown above the table as a summary line.</p>
+
+<h2 id="metrics">Metrics Charts</h2>
+<p>To the right of the structure overlay, four compact bar charts show per-element performance metrics for the best structure:</p>
+
+<table>
+  <tr><th>Chart</th><th>Description</th></tr>
+  <tr><td><strong>Peak Position (&theta;<sub>B</sub>)</strong></td><td>Bragg angle in degrees for each target element. Confirms the mirror reflects at a practical angle (&gt; 3&deg; is typically required).</td></tr>
+  <tr><td><strong>R (Peak Reflectivity)</strong></td><td>Peak reflectivity (0&ndash;1) for each target. Higher is better.</td></tr>
+  <tr><td><strong>FWHM</strong></td><td>Angular full width at half maximum of the Bragg peak in degrees. Narrower peaks give better spectral selectivity; broader peaks tolerate more angular divergence.</td></tr>
+  <tr><td><strong>SNR (Spectral Purity)</strong></td><td>Signal-to-noise ratio related to spectral purity. A high value means low contamination from other-order reflections at this element's measurement angle.</td></tr>
+</table>
+
+<p>Each bar is labeled with its numeric value. The bar color corresponds to the element's color in the legend and curves chart.</p>
+
+<h2 id="info-tab">Info Tab</h2>
+<p>The Info tab shows a read-only text summary of everything stored in the <code>.xrfx</code> file. It is organized in sections:</p>
+
+<ul>
+  <li><strong>Figure of Merit</strong> &mdash; the final FoM value achieved by the optimizer.</li>
+  <li><strong>Structure Parameters</strong> &mdash; period d, gamma, N, sigma, and density factors for each layer.</li>
+  <li><strong>Layer Compositions</strong> &mdash; element fractions for each layer.</li>
+  <li><strong>Target Lines</strong> &mdash; the target elements, wavelengths, and weights specified in the run configuration.</li>
+  <li><strong>Element Pool</strong> &mdash; the materials made available to the optimizer.</li>
+  <li><strong>Optimizer Settings</strong> &mdash; population size, iteration count, stagnation limit, and other LFPSO parameters.</li>
+  <li><strong>Per-Element Results</strong> &mdash; R<sub>peak</sub>, FWHM, Bragg angle, and spectral purity for each target element.</li>
+</ul>
+
+<p>The Info text can be selected and copied (Ctrl+A, Ctrl+C) for pasting into reports or lab notebooks.</p>
+
+<h2 id="progress-tab">Progress Tab</h2>
+<p>The Progress tab shows the optimization convergence history:</p>
+
+<ul>
+  <li><strong>Convergence chart</strong> (top) &mdash; plots the best figure of merit (FoM) vs. iteration number. A rising curve indicates the optimizer is still finding improvements. A flat plateau indicates convergence or stagnation.</li>
+  <li><strong>Console log</strong> (bottom) &mdash; the text output from <code>xrccmd</code>, including the per-iteration progress table (Iter, FoM, R per element, Div) and any checkpoint or shake events.</li>
+</ul>
+
+<p>During an active optimization (started via New Run), both the chart and the console update in real time. When the run completes, XRFCalc automatically switches to the Curves tab to show the result. For a result loaded from a completed <code>.xrfx</code> file, the Progress tab shows the recorded history from that run.</p>
+
+<div class="note"><strong>Console log:</strong> The console log is scrollable. During a long run you can scroll up to review earlier iterations without affecting the live update at the bottom.</div>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Calculation.html#fom">Calculation Engine &gt; Figure of Merit</a></li>
+  <li><a href="Reference.html#xrfx-format">Quick Reference &gt; .xrfx File Format</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Overview.html">Application Overview</a>
+  <a href="index.html">Home</a>
+  <a class="next" href="Running.html">Running Optimizations</a>
+</div>
+
+</div>
+</body>
+</html>
