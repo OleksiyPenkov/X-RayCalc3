@@ -3,57 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitting (Optimization) — X-Ray Calc 3 Manual</title>
+<title>X-Ray Calc 3 — Fitting (Optimization)</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<nav class="top-nav">
-  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
-  <div class="page-title">User Manual</div>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
-  </div>
-</nav>
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Fitting (Optimization)</span>
+</div>
 
-<aside class="sidebar" id="sidebar">
-  <h3>Contents</h3>
-  <a href="01-introduction.html">1. Introduction</a>
-  <a href="02-quick-start.html">2. Quick Start</a>
-  <a href="03-installation.html">3. Installation</a>
-  <a href="04-overview.html">4. Application Overview</a>
-    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
-    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
-    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
-  <a href="05-projects.html">5. Projects</a>
-  <a href="06-models.html">6. Defining a Model</a>
-    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
-    <a href="06-models.html#layers" class="sub">Layers</a>
-  <a href="07-data.html">7. Experimental Data</a>
-  <a href="08-calculation.html">8. Calculation</a>
-    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
-    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
-  <a href="09-fitting.html">9. Fitting</a>
-    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
-    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
-    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
-    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
-    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
-  <a href="10-results.html">10. Results &amp; Export</a>
-  <a href="11-charts.html">11. Charts</a>
-  <a href="12-profiles.html">12. Profile Extensions</a>
-  <a href="13-tools.html">13. Tools</a>
-  <a href="14-settings.html">14. Settings</a>
-  <a href="15-shortcuts.html">15. Quick Reference</a>
-  <a href="16-formats.html">16. File Formats</a>
-  <a href="17-examples.html">17. Examples</a>
-  <a href="18-troubleshooting.html">18. Troubleshooting</a>
-  <a href="19-universal-mirror.html">19. Universal Mirror</a>
-</aside>
+<div class="container">
 
-<main class="content">
+<h1>Fitting (Optimization)</h1>
+<div class="subtitle">The Shake LFPSO algorithm, fit limits, fitting modes, parameters, convergence, and the cost function</div>
 
-<h2><span class="num">9</span> Fitting (Optimization)</h2>
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#prerequisites-for-fitting">Prerequisites for Fitting</a></li>
+    <li><a href="#fit-limits">Setting Fit Limits</a></li>
+    <li><a href="#fit-modes">Fitting Modes</a></li>
+    <li><a href="#fit-params">Basic Fitting Parameters</a></li>
+    <li><a href="#fit-advanced">Advanced Fitting Settings</a></li>
+    <li><a href="#running-a-fit">Running a Fit</a></li>
+    <li><a href="#convergence-enhancements">Convergence Enhancements</a></li>
+    <li><a href="#understanding-the-cost-function">Understanding the Cost Function</a></li>
+  </ul>
+</div>
+
 <p>Fitting adjusts model parameters to minimize the difference between calculated and experimental reflectivity curves. X-Ray Calc 3 uses the <strong>Shake LFPSO (L&eacute;vy Flight Particle Swarm Optimization)</strong> algorithm &mdash; a population-based global optimization method with an enhanced &ldquo;Shake&rdquo; mechanism to escape local minima (Li <em>et al.</em>, 2023; Penkov <em>et al.</em>, 2024).</p>
 
 <figure>
@@ -70,7 +51,7 @@
   <figcaption><strong>Figure 4.</strong> The Shake concept. (a) All particles trapped in a local minimum. (b) Shaking event: locations and velocities are randomized based on P<sub>gbest</sub>; V<sub>max</sub> is multiplied by k<sub>1</sub> and the cost function threshold is lifted by k<sub>2</sub>. (c) After LFPSO leap, a new best solution is found. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
 
-<h3>Prerequisites for Fitting</h3>
+<h2 id="prerequisites-for-fitting">Prerequisites for Fitting</h2>
 <p>Before starting a fit, you need:</p>
 <ol>
   <li><strong>A defined model</strong> with initial parameter estimates</li>
@@ -78,7 +59,7 @@
   <li><strong>Fit limits</strong> set for each adjustable parameter</li>
 </ol>
 
-<h3 id="fit-limits">Setting Fit Limits</h3>
+<h2 id="fit-limits">Setting Fit Limits</h2>
 <ol>
   <li>Select the model in the project tree.</li>
   <li>Click the <strong>Set Fit Limits</strong> button in the structure toolbar.</li>
@@ -87,7 +68,7 @@
   <li>Only parameters with Min &ne; Max will be adjusted during fitting. Set Min = Max to lock (fix) a parameter.</li>
 </ol>
 
-<h4>Limit Actions</h4>
+<h3>Limit Actions</h3>
 <p>The dialog provides action buttons for batch operations on limits:</p>
 <table>
   <tr><th>Button</th><th>Action</th></tr>
@@ -97,7 +78,7 @@
   <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling.</td></tr>
 </table>
 
-<h4>Validation and Visual Feedback</h4>
+<h3>Validation and Visual Feedback</h3>
 <p>The dialog validates limits in real time and highlights problematic cells:</p>
 <ul>
   <li><span style="background:#FFCCCC;padding:1px 6px">Red cells</span> indicate <strong>errors</strong> that must be fixed before fitting:
@@ -118,7 +99,7 @@
 </ul>
 <p>Click <strong>Fix</strong> to resolve all highlighted issues automatically, or address them manually by editing individual cells.</p>
 
-<h4>Physics Constraints</h4>
+<h3>Physics Constraints</h3>
 <p>All limit operations automatically enforce physical constraints:</p>
 <ul>
   <li>H, &sigma;, &rho; &ge; 0 (no negative values)</li>
@@ -126,7 +107,7 @@
   <li>&sigma; Max &le; min(own H, neighboring layer H) &mdash; roughness cannot exceed layer thickness or the thickness of the layer below</li>
 </ul>
 
-<h3 id="fit-modes">Fitting Modes</h3>
+<h2 id="fit-modes">Fitting Modes</h2>
 <p>The software provides several structure-representation methods. The user chooses the most suitable depending on the nature of the coating:</p>
 
 <table>
@@ -137,7 +118,7 @@
   <tr><td>Polynomial distributions</td><td>PMMs with gradual change of parameters</td><td>Moderate</td></tr>
 </table>
 
-<h4>Irregular Mode</h4>
+<h3>Irregular Mode</h3>
 <p>Every parameter of each layer is treated independently. This mode is used for non-periodic coatings consisting of several layers. At the start of fitting, the software expands each periodic stack into individual layers. Once fitting is complete, distribution charts are generated for each parameter of every material type (thickness, roughness, density).</p>
 <ul>
   <li>Each layer has its own fitted thickness, roughness, and density.</li>
@@ -146,21 +127,21 @@
 </ul>
 <div class="note"><strong>Example:</strong> A Mo/Si PMM with 60 repeated stacks would require 726 variables if treated individually. Using the periodic mode, this reduces to just 18 variables.</div>
 
-<h4>Periodic Mode</h4>
+<h3>Periodic Mode</h3>
 <p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. A periodicity keeper normalizes layer thicknesses to maintain the total period D of each stack.</p>
 <ul>
   <li>Suitable for structures with consistent periodicity.</li>
   <li>Dramatically reduces the number of fitting variables for PMMs.</li>
 </ul>
 
-<h4>Polynomial Mode</h4>
+<h3>Polynomial Mode</h3>
 <p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of depth. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>. The user can select the polynomial order from 1 to 20.</p>
 <ul>
   <li><strong>Order:</strong> Maximum polynomial order (1 = linear, 2 = quadratic, etc.)</li>
   <li>Useful for smooth, continuous parameter gradients (e.g. graded-period supermirrors, PMMs with unstable deposition rate).</li>
 </ul>
 
-<h3 id="fit-params">Basic Fitting Parameters</h3>
+<h2 id="fit-params">Basic Fitting Parameters</h2>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Iterations</strong></td><td>Maximum number of optimization iterations</td><td>100</td></tr>
@@ -172,7 +153,7 @@
   <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
 </table>
 
-<h4>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h4>
+<h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
 <p>Controls how the chi-square metric weights different angular regions:</p>
 <table>
   <tr><th>Option</th><th>Effect</th></tr>
@@ -184,17 +165,17 @@
   <tr><td>1/sqrt</td><td>Weight &prop; 1/&radic;&theta;</td></tr>
 </table>
 
-<h3 id="fit-advanced">Advanced Fitting Settings</h3>
+<h2 id="fit-advanced">Advanced Fitting Settings</h2>
 <p>Click the <strong>Advanced Settings</strong> button in the Fitting panel to open the detailed LFPSO configuration dialog.</p>
 
-<h4>General</h4>
+<h3>General</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Tolerance</strong></td><td>Target cost function value; fitting stops when reached</td><td>0.005</td></tr>
   <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
 </table>
 
-<h4>LFPSO Parameters</h4>
+<h3>LFPSO Parameters</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>SHmax</strong></td><td>Maximum number of consecutive shakes</td><td>3</td></tr>
@@ -206,20 +187,20 @@
   <tr><td><strong>k<sub>2</sub></strong></td><td>Best cost function shake coefficient</td><td>1.41</td></tr>
 </table>
 
-<h4>Irregular Mode Settings</h4>
+<h3>Irregular Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Smoothing window</strong></td><td>Width of the smoothing window (set &minus;1 for automatic)</td><td>3</td></tr>
 </table>
 
-<h4>Polynomial Mode Settings</h4>
+<h3>Polynomial Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Polynomial factor</strong></td><td>Scale factor for polynomial parameter space</td><td>10</td></tr>
   <tr><td><strong>Ksxr</strong></td><td>Velocity scale factor for polynomial coefficients</td><td>0.2</td></tr>
 </table>
 
-<h3>Running a Fit</h3>
+<h2 id="running-a-fit">Running a Fit</h2>
 <ol>
   <li>Ensure a model with experimental data and fit limits is selected.</li>
   <li>Configure fitting mode and parameters.</li>
@@ -241,10 +222,10 @@
   </li>
 </ol>
 
-<h3 id="convergence-enhancements">Convergence Enhancements <span class="badge">v3.6</span></h3>
+<h2 id="convergence-enhancements">Convergence Enhancements <span class="badge">v3.6</span></h2>
 <p>Version 3.6 introduces several improvements to the LFPSO algorithm that significantly improve convergence speed and reliability. Six enhancements are always active and require no configuration; one is optional.</p>
 
-<h4>Always-On Improvements</h4>
+<h3>Always-On Improvements</h3>
 
 <table>
   <tr><th>Enhancement</th><th>Description</th></tr>
@@ -274,7 +255,7 @@
   </tr>
 </table>
 
-<h4 id="constriction">Constriction Factor (Optional)</h4>
+<h3 id="constriction">Constriction Factor (Optional)</h3>
 <p>When the <strong>Constriction factor</strong> checkbox is enabled in Advanced Settings, the standard linear inertia weight decay is replaced by the Clerc-Kennedy constriction coefficient:</p>
 
 <div class="note">
@@ -286,17 +267,17 @@
 
 <p><strong>When to use:</strong> The constriction factor is enabled by default and is recommended for most problems. Consider disabling it if you notice premature convergence on problems with many sharp local minima &mdash; the linear inertia decay may provide more aggressive exploration in such cases. When disabled, the &omega;<sub>1</sub> and &omega;<sub>2</sub> parameters in the LFPSO section control the inertia schedule.</p>
 
-<h3>Understanding the Cost Function</h3>
+<h2 id="understanding-the-cost-function">Understanding the Cost Function</h2>
 <p>The cost function (E) measures the deviation between the calculated and target XRR curves:</p>
 <div class="note">
   <strong>E = &Sigma; |log I(&theta;)<sub>exp</sub> &minus; log I(&theta;)<sub>calc</sub>| &times; &omega;(&theta;)<sub>peak</sub> &times; &omega;(&theta;)<sub>&theta;</sub></strong>
 </div>
 <p>where I(&theta;)<sub>exp</sub> and I(&theta;)<sub>calc</sub> are the measured and computed XRR intensities, &omega;(&theta;)<sub>peak</sub> is the peak weight function, and &omega;(&theta;)<sub>&theta;</sub> is the incidence-angle weight function.</p>
 
-<h4>Peak Weight Function (PW &chi;&sup2;)</h4>
+<h3>Peak Weight Function (PW &chi;&sup2;)</h3>
 <p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight function concentrates fitting on the primary features of the XRR curve by computing a moving average and weighting points based on their deviation from it.</p>
 
-<h4>Incidence-Angle Weight Function (TW &chi;&sup2;)</h4>
+<h3>Incidence-Angle Weight Function (TW &chi;&sup2;)</h3>
 <p>Allows concentration of the fitting process on distinct segments of the XRR curve by weighting different angular regions differently.</p>
 
 <p>Key properties of the cost function:</p>
@@ -306,21 +287,20 @@
   <li>Calculated on a logarithmic scale to give equal weight to both high and low reflectivity regions</li>
 </ul>
 
-<div class="page-nav">
-  <a href="08-calculation.html">&larr; Calculation</a>
+<h3>See Also</h3>
+<ul>
+  <li><a href="Data.html">Experimental Data</a></li>
+  <li><a href="Results.html">Results &amp; Export</a></li>
+  <li><a href="Examples.html">Illustrative Examples</a></li>
+  <li><a href="MCPServer.html#fitting">MCP Server &gt; Fitting</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Calculation.html">Calculation</a>
   <a href="UserManual.html">Home</a>
-  <a href="10-results.html">Results &amp; Export &rarr;</a>
+  <a class="next" href="Results.html">Results &amp; Export</a>
 </div>
 
-<div class="footer">
-  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
-  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
 </div>
-
-</main>
-
-<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
-<script src="script.js"></script>
-
 </body>
 </html>

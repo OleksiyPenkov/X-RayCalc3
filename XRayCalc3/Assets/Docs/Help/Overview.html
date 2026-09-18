@@ -3,58 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Application Overview — X-Ray Calc 3 Manual</title>
+<title>X-Ray Calc 3 — Application Overview</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<nav class="top-nav">
-  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
-  <div class="page-title">User Manual</div>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
-  </div>
-</nav>
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Application Overview</span>
+</div>
 
-<aside class="sidebar" id="sidebar">
-  <h3>Contents</h3>
-  <a href="01-introduction.html">1. Introduction</a>
-  <a href="02-quick-start.html">2. Quick Start</a>
-  <a href="03-installation.html">3. Installation</a>
-  <a href="04-overview.html">4. Application Overview</a>
-    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
-    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
-    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
-  <a href="05-projects.html">5. Projects</a>
-  <a href="06-models.html">6. Defining a Model</a>
-    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
-    <a href="06-models.html#layers" class="sub">Layers</a>
-  <a href="07-data.html">7. Experimental Data</a>
-  <a href="08-calculation.html">8. Calculation</a>
-    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
-    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
-  <a href="09-fitting.html">9. Fitting</a>
-    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
-    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
-    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
-    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
-    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
-  <a href="10-results.html">10. Results &amp; Export</a>
-  <a href="11-charts.html">11. Charts</a>
-  <a href="12-profiles.html">12. Profile Extensions</a>
-  <a href="13-tools.html">13. Tools</a>
-  <a href="14-settings.html">14. Settings</a>
-  <a href="15-shortcuts.html">15. Quick Reference</a>
-  <a href="16-formats.html">16. File Formats</a>
-  <a href="17-examples.html">17. Examples</a>
-  <a href="18-troubleshooting.html">18. Troubleshooting</a>
-  <a href="19-universal-mirror.html">19. Universal Mirror</a>
-</aside>
+<div class="container">
 
-<main class="content">
+<h1>Application Overview</h1>
+<div class="subtitle">Main window layout, the three columns, status bar, and the menu bar</div>
 
-<h2><span class="num">4</span> Application Overview</h2>
-<h3 id="layout">Main Window Layout</h3>
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#layout">Main Window Layout</a></li>
+    <li><a href="#menus">Menu Bar</a></li>
+  </ul>
+</div>
+
+<h2 id="layout">Main Window Layout</h2>
 
 <figure>
   <img src="images/fig5.jpg" alt="Screenshot of the X-Ray Calc 3 graphical user interface">
@@ -63,7 +38,7 @@
 
 <p>The primary window comprises four key panels (see Figure 1). The first panel, <strong>Project Items</strong> (1), showcases the contents of the current project. A project can organize an unlimited number of theoretical models and experimental curves into well-structured folders. The <strong>Structure panel</strong> (2) functions as a visual depiction of the layered model and provides easy access to all parameters linked with the structural model. The right side contains <strong>XRR calculation parameters</strong> (3) and <strong>Fitting parameters</strong> (4) at the top, the main <strong>XRR curve plot</strong> (5) in the center, and <strong>Distributions / Convergence charts</strong> (6) at the bottom.</p>
 
-<h4>Left Column &mdash; Project Panel</h4>
+<h3>Left Column &mdash; Project Panel</h3>
 <ul>
   <li><strong>File Toolbar:</strong> <img src="images/icons/01_New.png" alt="New" class="icon">&nbsp;New, <img src="images/icons/02_OpenProject.png" alt="Open" class="icon">&nbsp;Open, <img src="images/icons/03_Reopen.png" alt="Reopen" class="icon">&nbsp;Reopen, <img src="images/icons/04_Save.png" alt="Save" class="icon">&nbsp;Save, <img src="images/icons/05_Print.png" alt="Print" class="icon">&nbsp;Print</li>
   <li><strong>Project Toolbar:</strong> <img src="images/icons/06_AddModel.png" alt="Add Model" class="icon">&nbsp;Add Model, <img src="images/icons/07_Export.png" alt="Export" class="icon">&nbsp;Export, <img src="images/icons/08_Copy.png" alt="Copy" class="icon">&nbsp;Copy, <img src="images/icons/09_Paste.png" alt="Paste" class="icon">&nbsp;Paste, <img src="images/icons/10_Edit.png" alt="Edit" class="icon">&nbsp;Edit Properties, <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon">&nbsp;Add Extension, <img src="images/icons/47_CopyImage.png" alt="Copy Image" class="icon">&nbsp;Copy Image, <img src="images/icons/05_Print.png" alt="Print" class="icon">&nbsp;Print, <img src="images/icons/12_DeleteExtension.png" alt="Delete" class="icon">&nbsp;Delete</li>
@@ -71,7 +46,7 @@
   <li><strong>Description:</strong> Read-only text memo showing the description of the selected item</li>
 </ul>
 
-<h4 id="structure-panel">Middle Column &mdash; Structure Panel</h4>
+<h3 id="structure-panel">Middle Column &mdash; Structure Panel</h3>
 <ul>
   <li><strong>Structure Toolbar:</strong> Stack operations (<img src="images/icons/add_period.png" alt="Add Stack" class="icon">&nbsp;Add, <img src="images/icons/add_row_32_h.png" alt="Insert Stack" class="icon">&nbsp;Insert, <img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon">&nbsp;Delete) and Layer operations (<img src="images/icons/add_layer.png" alt="Add Layer" class="icon">&nbsp;Add, <img src="images/icons/add_row_32_h.png" alt="Insert" class="icon">&nbsp;Insert, <img src="images/icons/clipboard_copy_lined_32.png" alt="Copy" class="icon">&nbsp;Copy, <img src="images/icons/clipboard_cut_32_h.png" alt="Cut" class="icon">&nbsp;Cut, <img src="images/icons/clipboard_paste_lined_32.png" alt="Paste" class="icon">&nbsp;Paste, <img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon">&nbsp;Delete)</li>
   <li><strong>Increment Selector:</strong> Step size for quick parameter adjustment (10, 5, 1, 0.25, 0.1, 0.01)</li>
@@ -79,7 +54,7 @@
   <li><strong>Visual Structure Editor:</strong> Interactive graphical representation of the layer structure &mdash; shows Ambient, Stacks (with N repetitions), individual Layers (with H, &sigma;, &rho; values), and Substrate. Double-click elements to edit properties; click parameter values for in-place editing.</li>
 </ul>
 
-<h4>Right Column &mdash; Working Area</h4>
+<h3>Right Column &mdash; Working Area</h3>
 <ul>
   <li><strong>Calculation Toolbar:</strong> <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon">&nbsp;Load Data, <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon">&nbsp;Paste Data, <img src="images/icons/40_Play.png" alt="Calculate" class="icon">&nbsp;Calculate, <img src="images/icons/45_ResultSave.png" alt="Save Result" class="icon">&nbsp;Save Result, <img src="images/icons/46_CopyResult.png" alt="Copy Result" class="icon">&nbsp;Copy Result, <img src="images/icons/Menu_BatchJobs.png" alt="Batch Execute" class="icon">&nbsp;Batch Execute, <img src="images/icons/41_Forward.png" alt="Auto Fit" class="icon">&nbsp;Auto Fit, Stop</li>
   <li><strong>Settings Panel:</strong> Calculation mode and parameters (left half) alongside Fitting mode and parameters (right half)</li>
@@ -88,10 +63,10 @@
   <li><strong>Chart Pages:</strong> Tabbed sub-charts for parameter distributions (Thickness, Roughness, Density, Profile, Fitting Progress)</li>
 </ul>
 
-<h4>Status Bar</h4>
+<h3>Status Bar</h3>
 <p>Displays calculation time, fitting time, application version, and platform (x64).</p>
 
-<h3 id="menus">Menu Bar</h3>
+<h2 id="menus">Menu Bar</h2>
 <table>
   <tr><th>Menu</th><th>Purpose</th></tr>
   <tr><td><strong>File</strong></td><td>Project management (New, Open, Save, Settings, Exit)</td></tr>
@@ -104,21 +79,19 @@
   <tr><td><strong>Help</strong></td><td>User Manual, About dialog</td></tr>
 </table>
 
-<div class="page-nav">
-  <a href="03-installation.html">&larr; Installation &amp; First Launch</a>
+<h3>See Also</h3>
+<ul>
+  <li><a href="QuickReference.html">Quick Reference</a></li>
+  <li><a href="Projects.html">Projects</a></li>
+  <li><a href="Charts.html">Charts &amp; Visualization</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Installation.html">Installation &amp; First Launch</a>
   <a href="UserManual.html">Home</a>
-  <a href="05-projects.html">Projects &rarr;</a>
+  <a class="next" href="QuickReference.html">Quick Reference</a>
 </div>
 
-<div class="footer">
-  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
-  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
 </div>
-
-</main>
-
-<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
-<script src="script.js"></script>
-
 </body>
 </html>

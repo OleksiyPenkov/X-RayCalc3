@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Charts & Visualization</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Charts &amp; Visualization</span>
+</div>
+
+<div class="container">
+
+<h1>Charts &amp; Visualization</h1>
+<div class="subtitle">The reflectivity chart, zoom and pan, cursor tracking, chart pages, and peak analysis</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#main-reflectivity-chart">Main Reflectivity Chart</a></li>
+    <li><a href="#chart-pages">Chart Pages</a></li>
+    <li><a href="#peak-analysis">Peak Analysis</a></li>
+  </ul>
+</div>
+
+<h2 id="main-reflectivity-chart">Main Reflectivity Chart</h2>
+<p>The large chart in the working area displays:</p>
+<ul>
+  <li><strong>Calculated reflectivity curves</strong> (one per model, color-coded)</li>
+  <li><strong>Experimental data</strong> (if loaded)</li>
+  <li><strong>Best-fit curve</strong> (during and after fitting)</li>
+</ul>
+
+<h3>Interaction</h3>
+<ul>
+  <li><strong>Zoom:</strong> Click and drag to select a zoom region</li>
+  <li><strong>Pan:</strong> Right-click and drag to pan</li>
+  <li><strong>Reset zoom:</strong> Double-click to reset to full view</li>
+  <li><strong>Scale toggle:</strong> Click the <strong>Scale</strong> button to switch between linear and logarithmic Y-axis</li>
+  <li><strong>Min limit:</strong> Set a cutoff threshold &mdash; reflectivity values below this limit are clipped</li>
+</ul>
+
+<h3>Cursor Tracking</h3>
+<p>The Chart Info bar shows the current cursor position (X, Y coordinates) as you move the mouse over the chart.</p>
+
+<h2 id="chart-pages">Chart Pages</h2>
+<p>Below the main chart are tabbed sub-charts:</p>
+
+<h3>Thickness (H)</h3>
+<p>Bar chart showing the thickness of each layer in the structure. After fitting, this shows how layer thicknesses vary across the structure.</p>
+
+<h3>Roughness (&sigma;)</h3>
+<p>Bar chart showing the interface roughness of each layer. Useful for identifying roughness trends in periodic structures.</p>
+
+<h3>Density (&rho;)</h3>
+<p>Bar chart showing the density of each layer, with the applied density profile overlaid.</p>
+
+<h3>Profile</h3>
+<p>Electron density (or refractive index) profile as a function of depth into the structure. This gives a physical picture of the complete multilayer structure.</p>
+
+<h3>Fitting Progress</h3>
+<p>During fitting, this chart shows the &chi;&sup2; value vs. iteration number. Use this to monitor convergence:</p>
+<ul>
+  <li>A steadily decreasing curve indicates good convergence</li>
+  <li>Plateaus may indicate local minima (shake/re-initialization helps escape these)</li>
+  <li>Sudden jumps up indicate a shake event</li>
+</ul>
+
+<h2 id="peak-analysis">Peak Analysis</h2>
+<p>The Chart Info bar includes peak detection and analysis:</p>
+<ul>
+  <li><strong>Peak Max:</strong> Maximum reflectivity value and its position</li>
+  <li><strong>Area:</strong> Integrated area under the peak (useful for quantitative analysis)</li>
+  <li><strong>Period:</strong> Estimated multilayer period from peak spacing</li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Calculation.html">Calculation</a></li>
+  <li><a href="Results.html">Results &amp; Export</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Results.html">Results &amp; Export</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Profiles.html">Profile Extensions</a>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Introduction</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Introduction</span>
+</div>
+
+<div class="container">
+
+<h1>Introduction</h1>
+<div class="subtitle">What X-Ray Calc 3 does, the calculation method, and the reference publication</div>
+
+<p><strong>X-Ray Calc 3</strong> (XRC3) is an open-source software package for simulating X-ray reflectivity (XRR) and solving the inverse problem of reconstructing film structures from measured XRR curves. It is designed for researchers working with X-ray optics, synchrotron radiation, and thin-film coatings.</p>
+
+<p>The software employs Parratt&rsquo;s exact recursive method based on the Fresnel equations to calculate XRR and incorporates specialized tools for modeling periodic multilayer structures (PMMs). Refractive indices of materials are computed using the Henke tables of atomic scattering factors (Henke <em>et al.</em>, 1993). The computational algorithm has been validated against the <em>IMD</em> software (Windt, 1998), with accumulated variances consistently below 0.5%.</p>
+
+<p>The application allows you to:</p>
+<ul>
+  <li>Build multilayer structural models composed of stacks and individual layers</li>
+  <li>Calculate theoretical X-ray reflectivity curves as a function of incidence angle (&theta;) or wavelength (&lambda;)</li>
+  <li>Load experimental reflectivity data and compare it with theoretical predictions</li>
+  <li>Automatically fit model parameters to experimental data using the Shake LFPSO (L&eacute;vy Flight Particle Swarm Optimization) algorithm</li>
+  <li>Visualize results through interactive charts with logarithmic/linear scaling</li>
+  <li>Define parameter profiles (polynomial, exponential, tabulated) across periodic structures</li>
+  <li>Manage materials via the built-in Henke atomic form factor database</li>
+</ul>
+
+<div class="note">
+  <strong>Reference:</strong> Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity.</em> J. Appl. Cryst. <strong>57</strong>, 555&ndash;566. <a href="https://doi.org/10.1107/S1600576724001031">https://doi.org/10.1107/S1600576724001031</a>
+</div>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="QuickStart.html">Quick Start</a></li>
+  <li><a href="Fitting.html">Fitting (Optimization)</a></li>
+  <li><a href="SourceCode.html">Source Code &amp; Git</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <span></span>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="QuickStart.html">Quick Start</a>
+</div>
+
+</div>
+</body>
+</html>

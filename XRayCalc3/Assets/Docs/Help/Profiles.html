@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Profile Extensions</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Profile Extensions</span>
+</div>
+
+<div class="container">
+
+<h1>Profile Extensions</h1>
+<div class="subtitle">Function and table profiles that vary a parameter across a periodic structure</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#adding-a-profile-extension">Adding a Profile Extension</a></li>
+    <li><a href="#profile-types">Profile Types</a></li>
+    <li><a href="#enabling-disabling-extensions">Enabling / Disabling Extensions</a></li>
+  </ul>
+</div>
+
+<p>Profile extensions allow you to define how layer parameters (H, &sigma;, &rho;) vary across a periodic structure. They model parameter gradients &mdash; for example, when layer thickness gradually increases or density changes with depth.</p>
+
+<h2 id="adding-a-profile-extension">Adding a Profile Extension</h2>
+<ol>
+  <li>Select a model in the project tree.</li>
+  <li>Click the <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon"> <strong>Add Extension</strong> toolbar button or choose the extension option from the project toolbar.</li>
+  <li>The Extension Type Selector dialog opens with available profile types.</li>
+</ol>
+
+<h2 id="profile-types">Profile Types</h2>
+
+<h3>Function Profile</h3>
+<p>Defines parameter variation using an analytical function:</p>
+<table>
+  <tr><th>Function</th><th>Formula</th><th>Use Case</th></tr>
+  <tr><td><strong>Polynomial</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x&sup2; + &hellip;</td><td>General-purpose gradient</td></tr>
+  <tr><td><strong>Exponential</strong></td><td>a<sub>0</sub> &middot; e<sup>a<sub>1</sub>x</sup></td><td>Exponential growth/decay</td></tr>
+  <tr><td><strong>Parabolic</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x&sup2;</td><td>Symmetric variation</td></tr>
+  <tr><td><strong>SQRT</strong></td><td>a<sub>0</sub> + a<sub>1</sub>&radic;x</td><td>Gradual initial change</td></tr>
+</table>
+<p>The Profile Function editor lets you set the coefficients and preview the resulting profile.</p>
+
+<h3>Table Profile</h3>
+<p>Defines parameter variation as a set of (position, value) data points. The application interpolates between points. This allows arbitrary profile shapes that cannot be described by simple functions.</p>
+<p>The Profile Table editor provides a grid where you enter depth positions and corresponding parameter values.</p>
+
+<h2 id="enabling-disabling-extensions">Enabling / Disabling Extensions</h2>
+<p>Each extension can be individually enabled or disabled without deleting it. This lets you quickly compare results with and without a particular profile applied.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Models.html#stacks">Defining a Model &gt; Stacks</a></li>
+  <li><a href="Fitting.html#fit-modes">Fitting &gt; Fitting Modes</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Charts.html">Charts &amp; Visualization</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Tools.html">Tools</a>
+</div>
+
+</div>
+</body>
+</html>

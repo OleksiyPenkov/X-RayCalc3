@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Projects</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Projects</span>
+</div>
+
+<div class="container">
+
+<h1>Projects</h1>
+<div class="subtitle">Project files, creating, opening and saving, auto-save, locking, and the project tree</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#project-files">Project Files</a></li>
+    <li><a href="#creating-a-new-project">Creating a New Project</a></li>
+    <li><a href="#opening-a-project">Opening a Project</a></li>
+    <li><a href="#saving-a-project">Saving a Project</a></li>
+    <li><a href="#auto-save">Auto-Save</a></li>
+    <li><a href="#project-locking">Project Locking</a></li>
+    <li><a href="#project-tree-organization">Project Tree Organization</a></li>
+  </ul>
+</div>
+
+<h2 id="project-files">Project Files</h2>
+<p>Projects are saved as <code>.xrcx</code> files. Internally, an <code>.xrcx</code> file is a ZIP archive containing:</p>
+<ul>
+  <li><code>project.dsc</code> &mdash; project metadata</li>
+  <li><code>params.dsc</code> &mdash; model structure definitions</li>
+  <li>Associated experimental data files</li>
+</ul>
+
+<h2 id="creating-a-new-project">Creating a New Project</h2>
+<ol>
+  <li>Choose <strong>File &gt; New Project</strong> (or click the <img src="images/icons/01_New.png" alt="New" class="icon"> <strong>New</strong> toolbar button).</li>
+  <li>An empty project is created with no models or data.</li>
+</ol>
+
+<h2 id="opening-a-project">Opening a Project</h2>
+<ul>
+  <li><strong>File &gt; Open Project</strong> &mdash; browse for a <code>.xrcx</code> file</li>
+  <li><strong>File &gt; Recent Projects</strong> &mdash; select from up to 10 recently opened projects</li>
+  <li><img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> <strong>Open toolbar button</strong> &mdash; click the dropdown arrow for recent projects</li>
+</ul>
+
+<h2 id="saving-a-project">Saving a Project</h2>
+<ul>
+  <li><strong>File &gt; Save Project</strong> &mdash; save to the current file</li>
+  <li><strong>File &gt; Save Project As</strong> &mdash; save with a new name/location</li>
+</ul>
+
+<h2 id="auto-save">Auto-Save</h2>
+<p>When enabled in Settings, the application periodically saves a backup to <code>AutoSave.xrcx</code> in the temp directory. This provides crash recovery &mdash; on next launch, you will be prompted to restore the auto-saved project.</p>
+
+<h2 id="project-locking">Project Locking</h2>
+<p>When a project is open, a lock file (<code>temp.lock</code>) prevents simultaneous access from another instance. The lock is released when the project is closed.</p>
+
+<h2 id="project-tree-organization">Project Tree Organization</h2>
+<p>The project tree shows items in a hierarchy:</p>
+<ul>
+  <li><strong>Model Group:</strong> Contains all structural models
+    <ul>
+      <li>Individual models (each with its own layer structure and calculation parameters)</li>
+      <li>Extensions (profile functions attached to models)</li>
+    </ul>
+  </li>
+  <li><strong>Data Group:</strong> Contains experimental data sets</li>
+  <li><strong>Folders:</strong> User-created organizational folders</li>
+</ul>
+<div class="tip"><strong>Tip:</strong> Right-click the project tree for context menu operations.</div>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="FileFormats.html#project-file-xrcx">File Formats &gt; Project File</a></li>
+  <li><a href="Models.html">Defining a Model</a></li>
+  <li><a href="Settings.html">Application Settings</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="QuickReference.html">Quick Reference</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Models.html">Defining a Model</a>
+</div>
+
+</div>
+</body>
+</html>

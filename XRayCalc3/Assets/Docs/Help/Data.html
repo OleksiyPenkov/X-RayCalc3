@@ -3,58 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Experimental Data — X-Ray Calc 3 Manual</title>
+<title>X-Ray Calc 3 — Experimental Data</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<nav class="top-nav">
-  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
-  <div class="page-title">User Manual</div>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterTOC(this.value)">
-  </div>
-</nav>
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Experimental Data</span>
+</div>
 
-<aside class="sidebar" id="sidebar">
-  <h3>Contents</h3>
-  <a href="01-introduction.html">1. Introduction</a>
-  <a href="02-quick-start.html">2. Quick Start</a>
-  <a href="03-installation.html">3. Installation</a>
-  <a href="04-overview.html">4. Application Overview</a>
-    <a href="04-overview.html#layout" class="sub">Main Window Layout</a>
-    <a href="04-overview.html#structure-panel" class="sub">Structure Panel</a>
-    <a href="04-overview.html#menus" class="sub">Menu Bar</a>
-  <a href="05-projects.html">5. Projects</a>
-  <a href="06-models.html">6. Defining a Model</a>
-    <a href="06-models.html#stacks" class="sub">Stacks (Periods)</a>
-    <a href="06-models.html#layers" class="sub">Layers</a>
-  <a href="07-data.html">7. Experimental Data</a>
-  <a href="08-calculation.html">8. Calculation</a>
-    <a href="08-calculation.html#calc-modes" class="sub">Calculation Modes</a>
-    <a href="08-calculation.html#multi-thread" class="sub">Multi-Threading</a>
-  <a href="09-fitting.html">9. Fitting</a>
-    <a href="09-fitting.html#fit-limits" class="sub">Setting Fit Limits</a>
-    <a href="09-fitting.html#fit-modes" class="sub">Fitting Modes</a>
-    <a href="09-fitting.html#fit-params" class="sub">Parameters</a>
-    <a href="09-fitting.html#fit-advanced" class="sub">Advanced Settings</a>
-    <a href="09-fitting.html#convergence-enhancements" class="sub">Convergence Enhancements</a>
-  <a href="10-results.html">10. Results &amp; Export</a>
-  <a href="11-charts.html">11. Charts</a>
-  <a href="12-profiles.html">12. Profile Extensions</a>
-  <a href="13-tools.html">13. Tools</a>
-  <a href="14-settings.html">14. Settings</a>
-  <a href="15-shortcuts.html">15. Quick Reference</a>
-  <a href="16-formats.html">16. File Formats</a>
-  <a href="17-examples.html">17. Examples</a>
-  <a href="18-troubleshooting.html">18. Troubleshooting</a>
-  <a href="19-universal-mirror.html">19. Universal Mirror</a>
-</aside>
+<div class="container">
 
-<main class="content">
+<h1>Experimental Data</h1>
+<div class="subtitle">Loading and pasting measured curves, the data format, normalize, smooth, trim, and export</div>
 
-<h2><span class="num">7</span> Experimental Data</h2>
-<h3>Loading Data from File</h3>
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#loading-data-from-file">Loading Data from File</a></li>
+    <li><a href="#pasting-data-from-clipboard">Pasting Data from Clipboard</a></li>
+    <li><a href="#data-format">Data Format</a></li>
+    <li><a href="#data-processing">Data Processing</a></li>
+    <li><a href="#data-conditioning-walkthrough">Data Conditioning Walkthrough</a></li>
+    <li><a href="#exporting-data">Exporting Data</a></li>
+  </ul>
+</div>
+
+<h2 id="loading-data-from-file">Loading Data from File</h2>
 <ol>
   <li>Select a model or data item in the project tree.</li>
   <li>Choose <strong>Data &gt; Load from File</strong> or click the <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> <strong>Load Data</strong> toolbar button.</li>
@@ -62,14 +41,14 @@
   <li>The data appears as a series on the main chart.</li>
 </ol>
 
-<h3>Pasting Data from Clipboard</h3>
+<h2 id="pasting-data-from-clipboard">Pasting Data from Clipboard</h2>
 <ol>
   <li>Copy two-column data from another application (e.g., a spreadsheet).</li>
   <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> <strong>Paste Data</strong> toolbar button.</li>
   <li>The data is imported into the current model.</li>
 </ol>
 
-<h3>Data Format</h3>
+<h2 id="data-format">Data Format</h2>
 <p>The expected data format is a two-column ASCII text file:</p>
 <ul>
   <li><strong>2 columns</strong> with TAB as the column separator</li>
@@ -93,19 +72,19 @@ Theta    Reflectivity
 
 <div class="tip"><strong>Tip:</strong> You can also copy and paste table data directly from <strong>OriginLab Origin</strong>. The recommended workflow is to import your raw data into Origin first, then copy-paste the two-column table into X-Ray Calc.</div>
 
-<h3>Data Processing</h3>
+<h2 id="data-processing">Data Processing</h2>
 
-<h4>Normalize</h4>
+<h3>Normalize</h3>
 <p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. This scales the reflectivity values so the maximum equals 1.0 (or another chosen value).</p>
 <p><strong>Data &gt; Normalize (Auto)</strong> automatically normalizes the data by dividing all reflectivity values by the maximum value.</p>
 
-<h4>Smooth</h4>
+<h3>Smooth</h3>
 <p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise in the experimental data while preserving peak shapes.</p>
 
-<h4>Trim</h4>
+<h3>Trim</h3>
 <p><img src="images/icons/Menu_Trim.png" alt="Trim" class="icon"> <strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.</p>
 
-<h3>Data Conditioning Walkthrough</h3>
+<h2 id="data-conditioning-walkthrough">Data Conditioning Walkthrough</h2>
 <p>Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:</p>
 
 <p><strong>Step 1 &mdash; Normalize.</strong> Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via <strong>Data &gt; Normalize</strong>. For example, if the experimental intensity at 0.4&deg; is 0.099, divide by 0.099 to bring the curve to unit reflectivity.</p>
@@ -122,27 +101,25 @@ Theta    Reflectivity
 
 <p>After these steps, the experimental curve is ready for fitting.</p>
 
-<h3>Exporting Data</h3>
+<h2 id="exporting-data">Exporting Data</h2>
 <ul>
   <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copy data in tab-separated format for pasting into other applications</li>
   <li><strong>Data &gt; Export to File</strong> &mdash; save processed data to a text file</li>
 </ul>
 
-<div class="page-nav">
-  <a href="06-models.html">&larr; Defining a Model</a>
+<h3>See Also</h3>
+<ul>
+  <li><a href="FileFormats.html#experimental-data-files">File Formats &gt; Experimental Data Files</a></li>
+  <li><a href="Fitting.html">Fitting (Optimization)</a></li>
+  <li><a href="Troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Models.html">Defining a Model</a>
   <a href="UserManual.html">Home</a>
-  <a href="08-calculation.html">Calculation &rarr;</a>
+  <a class="next" href="Calculation.html">Calculation</a>
 </div>
 
-<div class="footer">
-  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
-  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
 </div>
-
-</main>
-
-<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0})" title="Back to top">&uarr;</button>
-<script src="script.js"></script>
-
 </body>
 </html>

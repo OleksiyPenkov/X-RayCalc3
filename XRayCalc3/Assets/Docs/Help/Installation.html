@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Installation & First Launch</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Installation &amp; First Launch</span>
+</div>
+
+<div class="container">
+
+<h1>Installation &amp; First Launch</h1>
+<div class="subtitle">System requirements, the working directory, portable mode, and file association</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#system-requirements">System Requirements</a></li>
+    <li><a href="#data-storage">Data Storage</a></li>
+    <li><a href="#file-association">File Association</a></li>
+  </ul>
+</div>
+
+<h2 id="system-requirements">System Requirements</h2>
+<ul>
+  <li>Windows 10 or later (64-bit recommended)</li>
+  <li>Minimum 4 GB RAM (8 GB recommended for large models)</li>
+  <li>Multi-core CPU recommended for parallel computation</li>
+</ul>
+
+<h2 id="data-storage">Data Storage</h2>
+<p>On first launch, X-Ray Calc 3 creates a working directory:</p>
+<ul>
+  <li><strong>Default location:</strong> <code>%APPDATA%\X-RayCalc3\</code></li>
+  <li><strong>Portable mode:</strong> If a file named <code>uselocaldata</code> exists in the application folder, all data is stored locally next to the executable.</li>
+</ul>
+
+<p>The working directory contains:</p>
+<table>
+  <tr><th>File / Folder</th><th>Purpose</th></tr>
+  <tr><td><code>xrc3.ini</code></td><td>Application settings</td></tr>
+  <tr><td><code>Henke/</code></td><td>Atomic form factor tables</td></tr>
+  <tr><td><code>Backup/</code></td><td>Auto-save and backup projects</td></tr>
+  <tr><td><code>Output/</code></td><td>Fitting results (when auto-save is enabled)</td></tr>
+  <tr><td><code>Benchmark/</code></td><td>Benchmark model files</td></tr>
+  <tr><td><code>Jobs/</code></td><td>Batch job definitions</td></tr>
+</table>
+
+<h2 id="file-association">File Association</h2>
+<p>To associate <code>.xrcx</code> project files with X-Ray Calc 3, go to <strong>File &gt; Settings &gt; Paths and Files</strong> and click <strong>Register file associations (xrcx)</strong>.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Settings.html#paths-and-files">Application Settings &gt; Paths and Files</a></li>
+  <li><a href="FileFormats.html">File Formats</a></li>
+  <li><a href="Troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="QuickStart.html">Quick Start</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Overview.html">Application Overview</a>
+</div>
+
+</div>
+</body>
+</html>

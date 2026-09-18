@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Tools</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Tools</span>
+</div>
+
+<div class="container">
+
+<h1>Tools</h1>
+<div class="subtitle">Creating materials, editing Henke tables, and the benchmark</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#create-new-material">Create New Material</a></li>
+    <li><a href="#edit-henke-table">Edit Henke Table</a></li>
+    <li><a href="#benchmark">Benchmark</a></li>
+  </ul>
+</div>
+
+<h2 id="create-new-material">Create New Material</h2>
+<p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create New Material</strong> opens a dialog to add a custom material to the Henke database.</p>
+<p>Enter the chemical formula and the application calculates the atomic form factors from the constituent elements. This is useful for compounds not already in the database.</p>
+
+<h2 id="edit-henke-table">Edit Henke Table</h2>
+<p><img src="images/icons/Menu_EditTable.png" alt="Edit Table" class="icon"> <strong>Tools &gt; Edit Henke Table</strong> opens the Henke Table Editor, which allows you to view and modify the atomic scattering factor tables used for reflectivity calculations.</p>
+<p>The Henke tables contain wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These are the fundamental optical constants used in the Fresnel equation calculations.</p>
+
+<h2 id="benchmark">Benchmark</h2>
+<p><img src="images/icons/Menu_Benchmark.png" alt="Benchmark" class="icon"> <strong>Calc &gt; Benchmark</strong> opens the Benchmark dialog, which measures the calculation performance of your system:</p>
+<ul>
+  <li>Runs a standard reflectivity calculation multiple times</li>
+  <li>Reports average execution time</li>
+  <li>Useful for comparing performance across different hardware or thread configurations</li>
+</ul>
+<p>Configure the number of benchmark runs in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Models.html">Defining a Model</a></li>
+  <li><a href="FileFormats.html#henke-tables">File Formats &gt; Henke Tables</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Profiles.html">Profile Extensions</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Settings.html">Application Settings</a>
+</div>
+
+</div>
+</body>
+</html>

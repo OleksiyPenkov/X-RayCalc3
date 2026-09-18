@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — File Formats</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>File Formats</span>
+</div>
+
+<div class="container">
+
+<h1>File Formats</h1>
+<div class="subtitle">Project files (.xrcx), experimental data files, Henke tables, and the settings file</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#project-file-xrcx">Project File (.xrcx)</a></li>
+    <li><a href="#experimental-data-files">Experimental Data Files</a></li>
+    <li><a href="#henke-tables">Henke Tables</a></li>
+    <li><a href="#settings-file-xrc3-ini">Settings File (xrc3.ini)</a></li>
+  </ul>
+</div>
+
+<h2 id="project-file-xrcx">Project File (.xrcx)</h2>
+<p>A ZIP archive containing:</p>
+<ul>
+  <li><code>project.dsc</code> &mdash; project metadata (title, descriptions)</li>
+  <li><code>params.dsc</code> &mdash; complete model definitions in text format (layers, stacks, parameters, calculation settings)</li>
+  <li>Embedded experimental data files</li>
+</ul>
+
+<h2 id="experimental-data-files">Experimental Data Files</h2>
+<p>Plain text, two columns separated by tabs or spaces:</p>
+<pre><code># Optional comment lines starting with #
+0.100   1.000000
+0.200   0.999850
+...</code></pre>
+<p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
+Column 2: Reflectivity (typically 0 to 1)</p>
+
+<h2 id="henke-tables">Henke Tables</h2>
+<p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>
+
+<h2 id="settings-file-xrc3-ini">Settings File (xrc3.ini)</h2>
+<p>Standard Windows INI file format. Sections include:</p>
+<ul>
+  <li><code>[Path]</code> &mdash; directory paths</li>
+  <li><code>[Window]</code> &mdash; window position and size</li>
+  <li><code>[Options]</code> &mdash; behavior flags</li>
+  <li><code>[Graphics]</code> &mdash; chart display settings</li>
+  <li><code>[Calc]</code> &mdash; calculation settings</li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Projects.html">Projects</a></li>
+  <li><a href="Data.html">Experimental Data</a></li>
+  <li><a href="Settings.html">Application Settings</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="MCPServer.html">MCP Server (XRC_MCP)</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Examples.html">Illustrative Examples</a>
+</div>
+
+</div>
+</body>
+</html>
