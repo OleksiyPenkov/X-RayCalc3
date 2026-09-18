@@ -12,10 +12,10 @@ object frmStructurePanel: TfrmStructurePanel
     Left = 3
     Top = 3
     Width = 344
-    Height = 104
-    RowHeight = 25
-    ButtonWidth = 25
-    ButtonHeight = 25
+    Height = 114
+    RowHeight = 30
+    ButtonWidth = 30
+    ButtonHeight = 30
     TextOptions = ttoCustom
     BorderInner = fsNone
     BorderOuter = fsGroove

@@ -12,8 +12,11 @@ object frmProjectPanel: TfrmProjectPanel
     Left = 3
     Top = 3
     Width = 233
-    Height = 29
+    Height = 34
     Images = vliProject
+    RowHeight = 30
+    ButtonWidth = 30
+    ButtonHeight = 30
     TextOptions = ttoCustom
     BorderInner = fsNone
     BorderOuter = fsGroove
@@ -85,8 +88,11 @@ object frmProjectPanel: TfrmProjectPanel
     Left = 3
     Top = 38
     Width = 233
-    Height = 29
+    Height = 34
     Images = vliProject
+    RowHeight = 30
+    ButtonWidth = 30
+    ButtonHeight = 30
     TextOptions = ttoCustom
     BorderInner = fsNone
     BorderOuter = fsGroove
@@ -207,6 +213,8 @@ object frmProjectPanel: TfrmProjectPanel
     end
   end
   object vliProject: TVirtualImageList
+    Width = 24
+    Height = 24
     Images = <
       item
         CollectionIndex = 0

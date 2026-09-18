@@ -71,8 +71,8 @@ object frmMain: TfrmMain
     Top = 0
     Width = 1982
     Height = 1091
-    Position = 245
-    Percent = 12
+    Position = 275
+    Percent = 13
     UpperLeft.Color = 15987699
     LowerRight.Color = 15987699
     SplitterWidth = 8
@@ -80,9 +80,9 @@ object frmMain: TfrmMain
     Color = 15987699
     TabOrder = 1
     BarSize = (
-      245
+      275
       0
-      253
+      283
       1091)
     UpperLeftControls = (
       FProjectPanel)
@@ -93,7 +93,7 @@ object frmMain: TfrmMain
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 239
+      Width = 269
       Height = 1085
       Align = alClient
       Color = 15987699
@@ -410,8 +410,11 @@ object frmMain: TfrmMain
         Left = 5
         Top = 5
         Width = 1363
-        Height = 29
+        Height = 34
         Images = vilCalc
+        RowHeight = 30
+        ButtonWidth = 30
+        ButtonHeight = 30
         TextOptions = ttoCustom
         BorderInner = fsNone
         BorderOuter = fsGroove
@@ -5427,6 +5430,8 @@ object frmMain: TfrmMain
         CollectionName = 'Model\clipboard_copy_lined_32'
         Name = 'clipboard_copy_lined_32'
       end>
+    Width = 24
+    Height = 24
     ImageCollection = ImageCollection
     Left = 265
     Top = 83
@@ -5478,6 +5483,8 @@ object frmMain: TfrmMain
         CollectionName = 'Project\05_Print'
         Name = '05_Print'
       end>
+    Width = 24
+    Height = 24
     ImageCollection = ImageCollection
     Left = 711
     Top = 189
