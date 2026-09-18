@@ -52,6 +52,21 @@ const ICON_MAP = {
   'Calc\\45_ResultSave': 'Calc/45_ResultSave.png',
   'Calc\\46_CopyResult': 'Calc/46_CopyResult.png',
   'Calc\\47_CopyImage':  'Calc/47_CopyImage.png',
+  // Menu
+  'Menu\\Menu_Settings': 'Menu/Menu_Settings.png',
+  'Menu\\Menu_Exit': 'Menu/Menu_Exit.png',
+  'Menu\\Menu_NewFolder': 'Menu/Menu_NewFolder.png',
+  'Menu\\Menu_Undo': 'Menu/Menu_Undo.png',
+  'Menu\\Menu_Normalize': 'Menu/Menu_Normalize.png',
+  'Menu\\Menu_Smooth': 'Menu/Menu_Smooth.png',
+  'Menu\\Menu_Trim': 'Menu/Menu_Trim.png',
+  'Menu\\Menu_BatchJobs': 'Menu/Menu_BatchJobs.png',
+  'Menu\\Menu_Benchmark': 'Menu/Menu_Benchmark.png',
+  'Menu\\Menu_NewMaterial': 'Menu/Menu_NewMaterial.png',
+  'Menu\\Menu_EditTable': 'Menu/Menu_EditTable.png',
+  'Menu\\Menu_Help': 'Menu/Menu_Help.png',
+  'Menu\\Menu_About': 'Menu/Menu_About.png',
+  'Menu\\Menu_SaveAs': 'Menu/Menu_SaveAs.png',
 };
 
 function pngToHexBlock(pngPath) {
