@@ -139,6 +139,7 @@
         <DCCReference Include="TestMCPFit.pas"/>
         <DCCReference Include="..\..\Shared\Math\unit_AxisLimit.pas"/>
         <DCCReference Include="TestAxisLimit.pas"/>
+        <DCCReference Include="TestProjectTreeNodeIO.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

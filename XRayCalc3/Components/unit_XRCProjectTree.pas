@@ -372,6 +372,30 @@ var
   S: string;
   p, i, Order: Integer;
 
+  { Everything after the fixed header belongs to the prExtension branch of
+    TProjectData, which shares memory with prItem's ID, CurveID, Color, Active
+    and Visible. ProjectSaveNode writes those fields for every node, so they
+    have to be read back for every node - but they may only be STORED on a node
+    that really is an extension.
+
+    Reading them straight into Data worked only while the branch's layout was
+    frozen. It is not: FromFit was inserted after Enabled and PolyCount before
+    Poly, which moved ExtType from the second byte of ID onto the third and put
+    PolyCount right on top of Active and Visible. An older project whose data
+    items carry a Unix-timestamp ID then loaded with an ID matching neither
+    [STATE] LinkedData nor its own data_<ID>.dat, and RecoverDataCurves dropped
+    the node - the linked measured curve simply vanished.
+
+    So: read into locals, copy into Data only for a real extension. The file
+    format is untouched; only where the bytes land has been fixed. }
+  LEnabled: Boolean;
+  LExtType: TExtentionType;
+  LStackID, LLayerID, LPolyCount: Integer;
+  LPoly: array [0 .. 9] of Single;
+  LForm: TFunctionForm;
+  LSubj: TParameterType;
+  LCoeff: Single;
+
   function GetString: string;
   var
     size: Integer;
@@ -400,6 +424,15 @@ var
   end;
 
 begin
+  LEnabled := False;
+  LExtType := etNone;
+  LStackID := 0;
+  LLayerID := 0;
+  LPolyCount := 0;
+  FillChar(LPoly, SizeOf(LPoly), 0);
+  LForm := ffNone;
+  LSubj := ptH;
+
   Data := Sender.GetNodeData(Node);
   Stream.Read(Data.ID, SizeOf(Integer));
   Data.Title := GetString;
@@ -414,75 +447,84 @@ begin
 
   case FProjectVersion of
     2: begin
-          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.Poly[1], SizeOf(Data.Poly[1]));
-          Data.PolyCount := 1;
+          Stream.Read(LEnabled, SizeOf(LEnabled));
+          Stream.Read(LExtType, SizeOf(LExtType));
+          Stream.Read(LPoly[1], SizeOf(LPoly[1]));
+          LPolyCount := 1;
           S := GetString;
           S := GetString;
-          Stream.Read(Data.Form, SizeOf(Data.Form));
-          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(LForm, SizeOf(LForm));
+          Stream.Read(LSubj, SizeOf(LSubj));
           Data.Data := GetString;
        end;
     3: begin
-          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Integer));
-          Stream.Read(Data.StackID, SizeOf(Integer));
-          Stream.Read(Data.Form, SizeOf(Data.Form));
-          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(LEnabled, SizeOf(LEnabled));
+          Stream.Read(LExtType, SizeOf(LExtType));
+          Stream.Read(LLayerID, SizeOf(Integer));
+          Stream.Read(LStackID, SizeOf(Integer));
+          Stream.Read(LForm, SizeOf(LForm));
+          Stream.Read(LSubj, SizeOf(LSubj));
           for I := 1 to 3 do
-            Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
-          Data.PolyCount := 3;
+            Stream.Read(LPoly[i], SizeOf(LPoly[i]));
+          LPolyCount := 3;
           Data.Data := GetString;
        end;
     4: begin
-          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Integer));
-          Stream.Read(Data.StackID, SizeOf(Integer));
-          Stream.Read(Data.Form, SizeOf(Data.Form));
-          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(LEnabled, SizeOf(LEnabled));
+          Stream.Read(LExtType, SizeOf(LExtType));
+          Stream.Read(LLayerID, SizeOf(Integer));
+          Stream.Read(LStackID, SizeOf(Integer));
+          Stream.Read(LForm, SizeOf(LForm));
+          Stream.Read(LSubj, SizeOf(LSubj));
           for I := 1 to 9 do
-            Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+            Stream.Read(LPoly[i], SizeOf(LPoly[i]));
           Stream.Read(Order, SizeOf(Single)); // skip legacy Poly[10]
-          Data.PolyCount := 9;
+          LPolyCount := 9;
           Data.Data := GetString;
        end;
 
     5: begin
-          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Integer));
-          Stream.Read(Data.StackID, SizeOf(Integer));
-          Stream.Read(Data.Form, SizeOf(Data.Form));
-          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(LEnabled, SizeOf(LEnabled));
+          Stream.Read(LExtType, SizeOf(LExtType));
+          Stream.Read(LLayerID, SizeOf(Integer));
+          Stream.Read(LStackID, SizeOf(Integer));
+          Stream.Read(LForm, SizeOf(LForm));
+          Stream.Read(LSubj, SizeOf(LSubj));
 
           if (Data.Group = gtModel) and (Data.RowType = prExtension) then
           begin
             for I := 1 to 9 do
-              Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
+              Stream.Read(LPoly[i], SizeOf(LPoly[i]));
             Stream.Read(Order, SizeOf(Single)); // skip legacy Poly[10]
-            Data.PolyCount := 9;
+            LPolyCount := 9;
           end;
 
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
             Data.Data := GetString;
        end;
     6, 7: begin
-          Stream.Read(Data.Enabled, SizeOf(Data.Enabled));
-          Stream.Read(Data.ExtType, SizeOf(Data.ExtType));
-          Stream.Read(Data.LayerID, SizeOf(Integer));
-          Stream.Read(Data.StackID, SizeOf(Integer));
-          Stream.Read(Data.Form, SizeOf(Data.Form));
-          Stream.Read(Data.Subj, SizeOf(Data.Subj));
+          Stream.Read(LEnabled, SizeOf(LEnabled));
+          Stream.Read(LExtType, SizeOf(LExtType));
+          Stream.Read(LLayerID, SizeOf(Integer));
+          Stream.Read(LStackID, SizeOf(Integer));
+          Stream.Read(LForm, SizeOf(LForm));
+          Stream.Read(LSubj, SizeOf(LSubj));
 
           if (Data.Group = gtModel) and (Data.RowType = prExtension) then
           begin
+            // Order is whatever the file says, so consume every coefficient
+            // to keep the stream in step but keep only the ones that fit.
             Stream.Read(Order, SizeOf(Order));
             for I := 1 to Order do
-              Stream.Read(Data.Poly[i], SizeOf(Data.Poly[i]));
-            Data.PolyCount := Order;
+            begin
+              Stream.Read(LCoeff, SizeOf(LCoeff));
+              if I <= High(LPoly) then
+                LPoly[i] := LCoeff;
+            end;
+            if Order > High(LPoly) then
+              LPolyCount := High(LPoly)
+            else
+              LPolyCount := Order;
           end;
 
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
@@ -490,6 +532,29 @@ begin
        end;
 
   end; // case
+
+  // Only an extension owns these fields; on any other node they would land on
+  // ID, CurveID, Color, Active and Visible.
+  if Data.RowType = prExtension then
+  begin
+    Data.Enabled := LEnabled;
+    { FromFit is NOT touched here, despite what its declaration in unit_Types
+      says about being runtime only. On an extension the four bytes of the
+      header's ID field are Enabled, FromFit, ExtType and padding, so
+      ProjectSaveNode really does store the flag and the read of Data.ID above
+      really does restore it. Clearing it here would leave every extension
+      loaded from a project looking as if a human had drawn it, and
+      RunFitting would stop asking whether to keep or clear the gradients a
+      previous fit produced before starting a new one. }
+    Data.ExtType := LExtType;
+    Data.StackID := LStackID;
+    Data.LayerID := LLayerID;
+    Data.PolyCount := LPolyCount;
+    for I := 0 to High(LPoly) do
+      Data.Poly[I] := LPoly[I];
+    Data.Form := LForm;
+    Data.Subj := LSubj;
+  end;
 
   p := pos('}}', Data.Data);
   if p <> Length(Data.Data) - 1 then

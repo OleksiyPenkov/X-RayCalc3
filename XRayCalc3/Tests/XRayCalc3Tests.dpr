@@ -87,7 +87,8 @@ uses
   unit_ToolsJobs in '..\..\XRC_MCP\units\unit_ToolsJobs.pas',
   TestMCPFit in 'TestMCPFit.pas',
   unit_AxisLimit in '..\..\Shared\Math\unit_AxisLimit.pas',
-  TestAxisLimit in 'TestAxisLimit.pas';
+  TestAxisLimit in 'TestAxisLimit.pas',
+  TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas';
 
 {$R *.res}
 
