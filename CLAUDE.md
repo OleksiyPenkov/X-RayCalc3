@@ -68,7 +68,8 @@ _Installer/         InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
 
 Exception: `XRFCalc.dproj` only redirects output to the shared `_Out/BIN` in its **Win64** property
 groups, so a Win32 build lands in `XRFCalc/_Out/BIN/XRFCalc.exe` with DCUs in the misnamed
-`XRFCalc/_Out/DCU64`.
+`XRFCalc/_Out/DCU64`. A post-build event in `XRFCalc.dproj` copies `XRFCalc/Help/` to `<exe dir>/Help/` on both
+platforms; the app opens `Help\index.html` next to the executable.
 
 ## Release / installer
 
