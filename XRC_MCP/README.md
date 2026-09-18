@@ -50,8 +50,10 @@ say. `chi2.movavg_window` only sets the point weights and smooths neither curve.
 100); `iterations` stays 100. This is the lab's practice - 100 iterations with 500 to 1000
 particles, "population wins iterations" - at about 25 s per fit of a 1000-point curve. A request that
 names no `population` therefore no longer reproduces a fit made by `f0168e0` or earlier; one that
-names it is unaffected. `request.json` stores the arguments as sent, not the defaults, so to replay
-an old job that omitted `population`, add `"population": 100`.
+names it is unaffected. The result now carries `optimizer_used`, every optimizer key with the
+defaults filled in, so a job's own `job_result` says what ran; `request.json` still stores the
+arguments as sent. To replay a job from before `optimizer_used` existed that omitted `population`,
+add `"population": 100`.
 
 **`fit_xrr` since 2026-09-16:** every fitted value lies inside the bounds the request gave. The
 periodic engine's `NormalizeD` (which holds or pulls back the period) now spreads its correction only

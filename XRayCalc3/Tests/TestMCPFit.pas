@@ -57,6 +57,11 @@ type
     /// <summary>Copies Tests\Data\P2-02 (xrr.dat + meta.json) into the work
     /// directory's inbox, so a request can name "P2-02/xrr.dat".</summary>
     procedure StageP2Inbox;
+    /// <summary>One string value out of fit_xrr's input schema, by its path
+    /// under inputSchema.properties (for instance
+    /// 'optimizer.properties.population.description'). Fails the test when
+    /// fit_xrr is not registered.</summary>
+    function FitXrrSchemaValue(const Path: string): string;
     /// <summary>One fit_xrr request exactly as a client sent it - a JSON
     /// literal with "measurement_id" and "seed" - through a manager of its
     /// own. The result is the caller's to free.</summary>
@@ -495,6 +500,32 @@ begin
     Result := Job.CloneResult;
   finally
     Mgr.Free;
+  end;
+end;
+
+function TTestMCPFit.FitXrrSchemaValue(const Path: string): string;
+var
+  Reg: TToolRegistry;
+  Tools: TJSONArray;
+  Props: TJSONObject;
+  i: Integer;
+begin
+  Props := nil;
+  Reg := TToolRegistry.Create;
+  try
+    RegisterJobTools(Reg);
+    Tools := Reg.GetToolsList;
+    try
+      for i := 0 to Tools.Count - 1 do
+        if Tools.Items[i].GetValue<string>('name') = 'fit_xrr' then
+          Props := Tools.Items[i].GetValue<TJSONObject>('inputSchema.properties');
+      Assert.IsNotNull(Props, 'fit_xrr is registered');
+      Result := Props.GetValue<string>(Path);
+    finally
+      Tools.Free;
+    end;
+  finally
+    Reg.Free;
   end;
 end;
 
@@ -1691,55 +1722,52 @@ end;
   scale to 0.96 / max count, which the author rejected (2026-09-17). }
 procedure TTestMCPFit.Schema_DescribesTheManualsDataConditioning;
 var
-  Reg: TToolRegistry;
-  Tools: TJSONArray;
-  Props: TJSONObject;
-  i: Integer;
-  Scale, MovAvgText: string;
+  Scale: string;
 begin
-  Props := nil;
-  Reg := TToolRegistry.Create;
-  try
-    RegisterJobTools(Reg);
-    Tools := Reg.GetToolsList;
-    try
-      for i := 0 to Tools.Count - 1 do
-        if Tools.Items[i].GetValue<string>('name') = 'fit_xrr' then
-          Props := Tools.Items[i].GetValue<TJSONObject>('inputSchema.properties');
-      Assert.IsNotNull(Props, 'fit_xrr is registered');
+  Scale := FitXrrSchemaValue('scale.description');
+  Assert.IsFalse(Scale.Contains('plateau'), 'scale: not "the plateau"');
+  Assert.IsTrue(Scale.Contains('0.4'), 'scale: compare at about 0.4 degrees');
+  Assert.IsTrue(Scale.Contains('calculated'), 'scale: against the calculated curve');
 
-      Scale := Props.GetValue<string>('scale.description');
-      Assert.IsFalse(Scale.Contains('plateau'), 'scale: not "the plateau"');
-      Assert.IsTrue(Scale.Contains('0.4'), 'scale: compare at about 0.4 degrees');
-      Assert.IsTrue(Scale.Contains('calculated'), 'scale: against the calculated curve');
+  Assert.AreEqual('integer', FitXrrSchemaValue('smooth.properties.passes.type'),
+    'smooth.passes');
+  Assert.IsTrue(FitXrrSchemaValue('smooth.description').Contains('Data - Smooth'),
+    'smooth names the GUI command it repeats');
 
-      Assert.AreEqual('integer',
-        Props.GetValue<string>('smooth.properties.passes.type'), 'smooth.passes');
-      Assert.IsTrue(Props.GetValue<string>('smooth.description').Contains('Data - Smooth'),
-        'smooth names the GUI command it repeats');
-
-      MovAvgText := Props.GetValue<string>('chi2.properties.movavg_window.description');
-      Assert.IsTrue(MovAvgText.Contains('"smooth"'),
-        'movavg_window says it is not the smoothing of the fitted curve');
-    finally
-      Tools.Free;
-    end;
-  finally
-    Reg.Free;
-  end;
+  Assert.IsTrue(
+    FitXrrSchemaValue('chi2.properties.movavg_window.description').Contains('"smooth"'),
+    'movavg_window says it is not the smoothing of the fitted curve');
 end;
 
 { The lab fits with 100 iterations and 500 to 1000 particles - "population
   wins iterations" (author, 2026-09-17) - so that is what a request that says
-  nothing gets, and what the schema tells an agent that wants to choose. }
+  nothing gets, and what the schema tells an agent that wants to choose. The
+  schema half needs no Henke tables, so it runs on every machine; only the
+  parse half is behind the guard. }
 procedure TTestMCPFit.Optimizer_Default_IsTheLabsPractice;
 var
   Req: TFitRequest;
-  Reg: TToolRegistry;
-  Tools: TJSONArray;
-  Opt: TJSONObject;
-  i: Integer;
+  Population, Optimizer: string;
 begin
+  Population := FitXrrSchemaValue('optimizer.properties.population.description');
+  Assert.IsTrue(Population.Contains('500'), 'population: the default');
+  Assert.IsTrue(Population.Contains('1000'), 'population: the practice reaches 1000');
+  Assert.IsFalse(Population.Contains(' s per iteration'),
+    'population: no machine-specific timing baked into the schema');
+  Assert.IsTrue(Population.Contains('elapsed_s'),
+    'population: the cost is read off the result');
+  Assert.IsTrue(
+    FitXrrSchemaValue('optimizer.properties.iterations.description').Contains('population'),
+    'iterations: raise the population first');
+
+  { The GUI's own default population is 1000 (frame_CalcSettings), so the
+    schema must not send an agent there for the defaults. }
+  Optimizer := FitXrrSchemaValue('optimizer.description');
+  Assert.IsTrue(Optimizer.Contains('not the GUI''s'),
+    'optimizer: says the defaults are not the GUI''s');
+  Assert.IsTrue(Optimizer.Contains('optimizer_used'),
+    'optimizer: says where the effective values are echoed');
+
   if not HenkeTablesPresent then
   begin
     Assert.Pass('Henke tables not installed on this machine');
@@ -1752,30 +1780,6 @@ begin
     [START_STRUCTURE, DUMMY_CURVE]));
   Assert.AreEqual(500, Req.Fit.Pop, 'default population');
   Assert.AreEqual(100, Req.Fit.NMax, 'default iterations');
-
-  Opt := nil;
-  Reg := TToolRegistry.Create;
-  try
-    RegisterJobTools(Reg);
-    Tools := Reg.GetToolsList;
-    try
-      for i := 0 to Tools.Count - 1 do
-        if Tools.Items[i].GetValue<string>('name') = 'fit_xrr' then
-          Opt := Tools.Items[i].GetValue<TJSONObject>(
-            'inputSchema.properties.optimizer.properties');
-      Assert.IsNotNull(Opt, 'fit_xrr has an optimizer schema');
-      Assert.IsTrue(Opt.GetValue<string>('population.description').Contains('500'),
-        'population: the default');
-      Assert.IsTrue(Opt.GetValue<string>('population.description').Contains('1000'),
-        'population: the practice reaches 1000');
-      Assert.IsTrue(Opt.GetValue<string>('iterations.description').Contains('population'),
-        'iterations: raise the population first');
-    finally
-      Tools.Free;
-    end;
-  finally
-    Reg.Free;
-  end;
 end;
 
 procedure TTestMCPFit.Fit_OnItsOwnCurve_BeatsTheStartModel;
@@ -1807,6 +1811,19 @@ begin
     Assert.AreEqual(7, Res.GetValue<Integer>('seed'), 'the seed is echoed');
     Assert.AreEqual('TLFPSO_Periodic', Res.GetValue<string>('engine'));
     Assert.AreEqual(FIT_CHI2_DEFINITION, Res.GetValue<string>('chi2_definition'));
+    { the optimizer that ran, defaults filled in, so a job that named no
+      population is reproducible from its result alone }
+    Assert.AreEqual(FIT_POPULATION, Res.GetValue<Integer>('optimizer_used.population'),
+      'optimizer_used.population');
+    Assert.AreEqual(FIT_ITERATIONS, Res.GetValue<Integer>('optimizer_used.iterations'),
+      'optimizer_used.iterations');
+    Assert.AreEqual(Double(FIT_TOLERANCE),
+      Res.GetValue<Double>('optimizer_used.tolerance'), FIT_TOLERANCE * 1E-3,
+      'optimizer_used.tolerance is the one the request sent (through a Single)');
+    Assert.IsTrue(Res.GetValue<Boolean>('optimizer_used.use_constriction'),
+      'optimizer_used.use_constriction is the default the request left alone');
+    Assert.AreEqual(Double(DEF_K_CHI), Res.GetValue<Double>('optimizer_used.k_chi'), 1E-9,
+      'optimizer_used.k_chi is the default the request left alone');
     Assert.AreEqual(2, (Res.GetValue('bounds_used') as TJSONArray).Count,
       'both free parameters are reported');
     Assert.IsTrue(Res.GetValue('out_of_bounds') is TJSONArray,

@@ -1606,6 +1606,38 @@ begin
   Result := StrToFloat(FloatToStrF(V, ffGeneral, 7, 0, FitFmt), FitFmt);
 end;
 
+/// The optimizer the run used, every key of the "optimizer" argument with the
+/// defaults filled in. request.json stores the arguments as sent, so without
+/// this a job that named no population cannot be told apart from one that
+/// did, and a change of a default (500 particles since 2026-09-17) would be
+/// invisible in job_result.
+function OptimizerUsedJSON(const Req: TFitRequest): TJSONObject;
+begin
+  Result := TJSONObject.Create;
+  try
+    Result.AddPair('population', TJSONNumber.Create(Req.Fit.Pop));
+    Result.AddPair('iterations', TJSONNumber.Create(Req.Fit.NMax));
+    Result.AddPair('tolerance', JSONArgs.Num(FromSingle(Req.Fit.Tolerance)));
+    Result.AddPair('shake', TJSONBool.Create(Req.Fit.Shake));
+    Result.AddPair('range_seed', TJSONBool.Create(Req.Fit.RangeSeed));
+    Result.AddPair('jamming_max', TJSONNumber.Create(Req.Fit.JammingMax));
+    Result.AddPair('reinit_max', TJSONNumber.Create(Req.Fit.ReInitMax));
+    Result.AddPair('k_chi', JSONArgs.Num(FromSingle(Req.Fit.KChiSqr)));
+    Result.AddPair('k_vmax', JSONArgs.Num(FromSingle(Req.Fit.KVmax)));
+    Result.AddPair('w1', JSONArgs.Num(FromSingle(Req.Fit.w1)));
+    Result.AddPair('w2', JSONArgs.Num(FromSingle(Req.Fit.w2)));
+    Result.AddPair('vmax', JSONArgs.Num(FromSingle(Req.Fit.Vmax)));
+    Result.AddPair('adapt_velocity', TJSONBool.Create(Req.Fit.AdaptVel));
+    Result.AddPair('use_constriction', TJSONBool.Create(Req.Fit.UseConstriction));
+    Result.AddPair('ksxr', JSONArgs.Num(FromSingle(Req.Fit.Ksxr)));
+    Result.AddPair('poly_factor', TJSONNumber.Create(Req.Fit.PolyFactor));
+    Result.AddPair('poly_order', TJSONNumber.Create(Req.Fit.MaxPOrder));
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
 function FitXRCXParams(const Req: TFitRequest): TXRCXCalcParams;
 begin
   Result := DefaultCalcParams;
@@ -1824,6 +1856,7 @@ begin
     Res.AddPair('chi2_start', JSONArgs.Num(Chi2Start));
     Res.AddPair('chi2_definition', FIT_CHI2_DEFINITION);
     Res.AddPair('chi2_settings', Chi2SettingsJSON(Req));
+    Res.AddPair('optimizer_used', OptimizerUsedJSON(Req));
     Res.AddPair('iterations_run', TJSONNumber.Create(IterationsRun));
     Res.AddPair('elapsed_s', JSONArgs.Num(Job.ElapsedMs / 1000));
     Res.AddPair('lambda_used', JSONArgs.Num(Req.Lambda));

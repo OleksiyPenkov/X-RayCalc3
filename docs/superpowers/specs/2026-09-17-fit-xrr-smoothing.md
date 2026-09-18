@@ -60,5 +60,8 @@ normalizations.
 
 Optimizer defaults (`DEF_POPULATION` 100 / `DEF_ITERATIONS` 100): the author's lab practice is 100
 iterations with population 500–1000 ("population wins iterations"); whether the server default changes is
-the author's call and is **not** part of this spec unless he says so. The agent's choice of resolution
+the author's call and is **not** part of this spec unless he says so. *(Decided after this spec shipped:
+`DEF_POPULATION` became 500 in `7f5b397`, 2026-09-17, and the result now echoes the effective optimizer in
+`optimizer_used`. A request that omits `population` no longer reproduces a fit made by `f0168e0` or
+earlier.)* The agent's choice of resolution
 (ΔΘ) and its normalization values are handled in the paper session by an intervention.

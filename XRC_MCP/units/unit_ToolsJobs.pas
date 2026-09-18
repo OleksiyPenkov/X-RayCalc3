@@ -447,9 +447,11 @@ begin
   AddProp(Result, 'population', 'integer',
     Format('Particles in the swarm (default %d). The lab''s practice is 500 ' +
       'to 1000 particles at 100 iterations: a larger swarm helps more than ' +
-      'more iterations. Cost per iteration is linear in it, and so is how ' +
-      'long a cancel takes (about 0.25 s per iteration for 500 particles on ' +
-      'a 1000-point curve).', [DEF_POPULATION]));
+      'more iterations. Cost per iteration is linear in it and in the ' +
+      'number of points, and so is how long a cancel takes; a fit of a ' +
+      '1000-point curve with the defaults takes tens of seconds. Read the ' +
+      'real cost off a finished job: elapsed_s / iterations_run in its ' +
+      'result.', [DEF_POPULATION]));
   AddProp(Result, 'iterations', 'integer',
     Format('Iteration budget (default %d). To search harder, raise the ' +
       'population before the iterations. The run also stops early when the ' +
@@ -645,8 +647,11 @@ begin
       'engine seeds the swarm around it.', [Round(DEF_FREE_DEVIATION * 100)]),
     ArraySchema(FitBoundItemSchema));
   AddRefProp(Schema, 'optimizer',
-    'The particle swarm itself. Every key is optional; the defaults are the ' +
-    'GUI''s, with the population the lab fits with.', FitOptimizerSchema);
+    'The particle swarm itself. Every key is optional. The defaults are the ' +
+    'ones each key states (the population is the lab''s practice, the rest ' +
+    'the design brief''s); they are not the GUI''s, whose own default ' +
+    'population is 1000. The result echoes every value the run used in ' +
+    'optimizer_used.', FitOptimizerSchema);
   AddRefProp(Schema, 'chi2',
     'How the residual is weighted. describe_server.fit.chi2 gives the formula.',
     FitChi2Schema);
