@@ -53,7 +53,10 @@ type
     Chart: TChart;
     btnStop: TRzBitBtn;
     procedure btnChartScaleClick(Sender: TObject);
-    procedure cbMinLimitChange(Sender: TObject);
+    procedure cbMinLimitSelect(Sender: TObject);
+    procedure cbMinLimitExit(Sender: TObject);
+    procedure cbMinLimitKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
     procedure ChartMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ChartMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -69,11 +72,15 @@ type
     FOnLegendCheckBoxClick: TLegendCheckEvent;
     FCalcSettings: TfrmCalcSettings;
     FLegendControls: TArray<TControl>;
+    FMinLimit: Single;
     procedure LegendCheckBoxClick(Sender: TObject);
+    procedure CommitMinLimit;
     function GetMinLimit: Single;
     function GetMinLimitText: string;
     procedure SetMinLimitText(const Value: string);
   public
+    constructor Create(AOwner: TComponent); override;
+
     procedure SetCursorPos(const X, Y: Single);
     procedure SetPeakInfo(Series: TChartSeries; XMin, XMax: Single);
     procedure SetChiSquare(const Current, Best: Single);
@@ -120,11 +127,22 @@ implementation
 
 uses
   System.Math,
-  unit_SeriesIO, unit_DataProcessing;
+  unit_AxisLimit, unit_SeriesIO, unit_DataProcessing;
 
 {$R *.dfm}
 
 { TfrmChartInfo }
+
+constructor TfrmChartInfo.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  // Seed the last-good value from the DFM before anything can read MinLimit.
+  if not TryParseAxisLimit(cbMinLimit.Text, Chart.LeftAxis.Maximum, FMinLimit) then
+  begin
+    FMinLimit := DEFAULT_AXIS_LIMIT;
+    cbMinLimit.Text := DEFAULT_AXIS_LIMIT_TEXT;
+  end;
+end;
 
 procedure TfrmChartInfo.btnChartScaleClick(Sender: TObject);
 begin
@@ -146,14 +164,57 @@ begin
   end;
 end;
 
-procedure TfrmChartInfo.cbMinLimitChange(Sender: TObject);
+{ R min combo.
+
+  The combo is free text so a fit can be tuned to a limit the drop-down does
+  not list. That means it must never be read while the user is still typing:
+  the value also drives FCalc.Limit and FLFPSO.Limit, and a log axis given
+  zero, a negative, or anything at or above its maximum is a crash. So the
+  text is parsed on commit only - Enter, focus loss, or a pick from the list -
+  and the last accepted value is kept in FMinLimit for everyone else to read. }
+
+procedure TfrmChartInfo.CommitMinLimit;
+var
+  V: Single;
 begin
-  Chart.LeftAxis.Minimum := MinLimit;
+  if TryParseAxisLimit(cbMinLimit.Text, Chart.LeftAxis.Maximum, V) then
+  begin
+    FMinLimit := V;
+    // Show back the canonical spelling, so '1e-8' and '1,0E-8' both settle
+    // into the same '1E-8' the drop-down uses.
+    cbMinLimit.Text := AxisLimitToText(V);
+    Chart.LeftAxis.Minimum := V;
+  end
+  else
+  begin
+    Beep;
+    cbMinLimit.Text := AxisLimitToText(FMinLimit);
+  end;
+end;
+
+procedure TfrmChartInfo.cbMinLimitSelect(Sender: TObject);
+begin
+  CommitMinLimit;
+end;
+
+procedure TfrmChartInfo.cbMinLimitExit(Sender: TObject);
+begin
+  CommitMinLimit;
+end;
+
+procedure TfrmChartInfo.cbMinLimitKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = vkReturn then
+  begin
+    Key := 0;
+    CommitMinLimit;
+  end;
 end;
 
 function TfrmChartInfo.GetMinLimit: Single;
 begin
-  Result := StrToFloat(cbMinLimit.Text);
+  Result := FMinLimit;
 end;
 
 function TfrmChartInfo.GetMinLimitText: string;
@@ -164,6 +225,7 @@ end;
 procedure TfrmChartInfo.SetMinLimitText(const Value: string);
 begin
   cbMinLimit.Text := Value;
+  CommitMinLimit;
 end;
 
 procedure TfrmChartInfo.SetCursorPos(const X, Y: Single);
@@ -235,12 +297,13 @@ end;
 
 procedure TfrmChartInfo.LoadFromINI(INF: TMemIniFile);
 begin
-  cbMinLimit.Text := INF.ReadString('PARAMS', 'MinLimit', '1E-7');
+  cbMinLimit.Text := INF.ReadString('PARAMS', 'MinLimit', DEFAULT_AXIS_LIMIT_TEXT);
+  CommitMinLimit;
 end;
 
 procedure TfrmChartInfo.SaveToINI(INF: TMemIniFile);
 begin
-  INF.WriteString('PARAMS', 'MinLimit', cbMinLimit.Text);
+  INF.WriteString('PARAMS', 'MinLimit', AxisLimitToText(FMinLimit));
 end;
 
 procedure TfrmChartInfo.ChartMouseDown(Sender: TObject; Button: TMouseButton;

@@ -137,6 +137,8 @@
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPFit.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_ToolsJobs.pas"/>
         <DCCReference Include="TestMCPFit.pas"/>
+        <DCCReference Include="..\..\Shared\Math\unit_AxisLimit.pas"/>
+        <DCCReference Include="TestAxisLimit.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

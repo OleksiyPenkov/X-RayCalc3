@@ -53,31 +53,46 @@ object frameCurvesView: TframeCurvesView
       OnClick = chkTotalClick
     end
     object btnScale: TRzBitBtn
-      Left = 650
-      Top = 2
+      Left = 648
+      Top = 3
       Width = 65
-      Height = 25
+      Height = 24
+      Hint = 'Switch the reflectivity axis between logarithmic and linear'
       Anchors = [akTop, akRight]
       Caption = 'Log'
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 1
       OnClick = btnScaleClick
     end
     object cbMinLimit: TRzComboBox
-      Left = 722
+      Left = 718
       Top = 3
-      Width = 72
-      Height = 21
+      Width = 76
+      Height = 24
+      Hint = 
+        'Lower limit of the reflectivity axis - pick a decade or type a va' +
+        'lue such as 3E-8'
       Anchors = [akTop, akRight]
+      AutoComplete = False
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 2
       Text = '1E-7'
-      OnChange = cbMinLimitChange
+      OnExit = cbMinLimitExit
+      OnKeyDown = cbMinLimitKeyDown
+      OnSelect = cbMinLimitSelect
       Items.Strings = (
+        '1E-3'
         '1E-4'
         '1E-5'
         '1E-6'
         '1E-7'
         '1E-8'
-        '1E-9')
+        '1E-9'
+        '1E-10'
+        '1E-11'
+        '1E-12')
     end
   end
   object pnlMetrics: TRzPanel

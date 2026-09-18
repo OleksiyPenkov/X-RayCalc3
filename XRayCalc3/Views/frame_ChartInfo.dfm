@@ -216,10 +216,14 @@ object frmChartInfo: TfrmChartInfo
       Caption = '0.00'
     end
     object btnChartScale: TRzBitBtn
-      Left = 892
-      Top = 7
+      Left = 887
+      Top = 13
+      Height = 24
+      Hint = 'Switch the reflectivity axis between logarithmic and linear'
       Anchors = [akTop, akRight]
       Caption = 'Linear'
+      ParentShowHint = False
+      ShowHint = True
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
@@ -231,11 +235,17 @@ object frmChartInfo: TfrmChartInfo
       Margin = 4
     end
     object cbMinLimit: TRzComboBox
-      Left = 973
-      Top = 8
-      Width = 66
+      Left = 967
+      Top = 13
+      Width = 76
       Height = 24
-      Anchors = [akRight, akBottom]
+      Hint = 
+        'Lower limit of the reflectivity axis - pick a decade or type a va' +
+        'lue such as 3E-8'
+      Anchors = [akTop, akRight]
+      AutoComplete = False
+      ParentShowHint = False
+      ShowHint = True
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
@@ -243,15 +253,21 @@ object frmChartInfo: TfrmChartInfo
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 1
-      Text = '5E-7'
-      OnChange = cbMinLimitChange
+      Text = '1E-7'
+      OnExit = cbMinLimitExit
+      OnKeyDown = cbMinLimitKeyDown
+      OnSelect = cbMinLimitSelect
       Items.Strings = (
-        '10E-4'
-        '10E-5'
-        '10E-6'
-        '10E-7'
-        '10E-8'
-        '10E-9')
+        '1E-3'
+        '1E-4'
+        '1E-5'
+        '1E-6'
+        '1E-7'
+        '1E-8'
+        '1E-9'
+        '1E-10'
+        '1E-11'
+        '1E-12')
     end
   end
   object Chart: TChart

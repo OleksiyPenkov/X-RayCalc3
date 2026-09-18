@@ -148,6 +148,7 @@
         <DCCReference Include="..\Shared\Universal\unit_xrf_lines.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_xrfx_package.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_types.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_AxisLimit.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

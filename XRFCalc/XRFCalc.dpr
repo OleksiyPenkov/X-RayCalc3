@@ -12,7 +12,8 @@ uses
   unit_universal_io in '..\Shared\Universal\unit_universal_io.pas',
   unit_xrf_lines in '..\Shared\Universal\unit_xrf_lines.pas',
   unit_xrfx_package in '..\Shared\Universal\unit_xrfx_package.pas',
-  unit_universal_types in '..\Shared\Universal\unit_universal_types.pas';
+  unit_universal_types in '..\Shared\Universal\unit_universal_types.pas',
+  unit_AxisLimit in '..\Shared\Math\unit_AxisLimit.pas';
 
 {$R *.res}
 {$R XRFCalcIcons.RES}

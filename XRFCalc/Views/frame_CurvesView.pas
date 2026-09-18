@@ -10,7 +10,7 @@ uses
   VclTee.TeeGDIPlus,
   Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Grids,
   RzPanel, RzStatus, RzButton, RzCmboBx, RzRadChk, RzLabel,
-  unit_xrfx_package;
+  unit_AxisLimit, unit_xrfx_package;
 
 type
   TframeCurvesView = class(TFrame)
@@ -36,7 +36,10 @@ type
     sbLegend: TScrollBox;
     procedure chkTotalClick(Sender: TObject);
     procedure btnScaleClick(Sender: TObject);
-    procedure cbMinLimitChange(Sender: TObject);
+    procedure cbMinLimitSelect(Sender: TObject);
+    procedure cbMinLimitExit(Sender: TObject);
+    procedure cbMinLimitKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
     procedure ChartMouseMove(Sender: TObject; Shift: TShiftState;
       X, Y: Integer);
     procedure ChartResize(Sender: TObject);
@@ -48,12 +51,16 @@ type
     FSubstrateRow: Integer;
     FStackHeaderRows: TArray<Integer>;
     FLegendControls: TArray<TControl>;
+    FMinLimit: Single;
+    procedure CommitMinLimit;
     function IsStackHeaderRow(ARow: Integer): Boolean;
     procedure UpdateTotalCurve;
     procedure PositionStructurePanel;
     procedure PositionLegendPanel;
     procedure LegendCheckBoxClick(Sender: TObject);
   public
+    constructor Create(AOwner: TComponent); override;
+
     procedure LoadCurves(const Curves: TArray<TXRFXCurveData>;
       const FileLabel: string = '');
     procedure AddCurves(const Curves: TArray<TXRFXCurveData>;
@@ -69,6 +76,17 @@ type
 implementation
 
 {$R *.dfm}
+
+constructor TframeCurvesView.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  // Seed the last-good value from the DFM before the chart can ask for it.
+  if not TryParseAxisLimit(cbMinLimit.Text, 1.0, FMinLimit) then
+  begin
+    FMinLimit := DEFAULT_AXIS_LIMIT;
+    cbMinLimit.Text := DEFAULT_AXIS_LIMIT_TEXT;
+  end;
+end;
 
 { Curves }
 
@@ -109,7 +127,7 @@ begin
     chrtCurves.LeftAxis.AutomaticMaximum := False;
     chrtCurves.LeftAxis.AutomaticMinimum := False;
     chrtCurves.LeftAxis.Maximum := 1;
-    chrtCurves.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+    chrtCurves.LeftAxis.Minimum := FMinLimit;
     chrtCurves.LeftAxis.Logarithmic := True;
   end
   else
@@ -233,15 +251,57 @@ begin
     chrtCurves.LeftAxis.AutomaticMaximum := False;
     chrtCurves.LeftAxis.AutomaticMinimum := False;
     chrtCurves.LeftAxis.Maximum := 1;
-    chrtCurves.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+    chrtCurves.LeftAxis.Minimum := FMinLimit;
     chrtCurves.LeftAxis.Logarithmic := True;
   end;
 end;
 
-procedure TframeCurvesView.cbMinLimitChange(Sender: TObject);
+{ R min combo.
+
+  Free text, so the value has to be parsed on commit - Enter, focus loss, or a
+  pick from the list - never per keystroke: a log axis handed zero, a negative
+  or a number at or above its maximum raises, and half of '1e-8' is all three
+  in turn. Bad input puts the last accepted value back. }
+
+procedure TframeCurvesView.CommitMinLimit;
+var
+  V: Single;
 begin
-  if chrtCurves.LeftAxis.Logarithmic then
-    chrtCurves.LeftAxis.Minimum := StrToFloat(cbMinLimit.Text);
+  // The log branches always pin the axis maximum to 1, so validate against
+  // that rather than whatever an automatic linear axis happens to show now.
+  if TryParseAxisLimit(cbMinLimit.Text, 1.0, V) then
+  begin
+    FMinLimit := V;
+    // Settle '1e-8' and '1,0E-8' into the same spelling the drop-down uses.
+    cbMinLimit.Text := AxisLimitToText(V);
+    if chrtCurves.LeftAxis.Logarithmic then
+      chrtCurves.LeftAxis.Minimum := V;
+  end
+  else
+  begin
+    Beep;
+    cbMinLimit.Text := AxisLimitToText(FMinLimit);
+  end;
+end;
+
+procedure TframeCurvesView.cbMinLimitSelect(Sender: TObject);
+begin
+  CommitMinLimit;
+end;
+
+procedure TframeCurvesView.cbMinLimitExit(Sender: TObject);
+begin
+  CommitMinLimit;
+end;
+
+procedure TframeCurvesView.cbMinLimitKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+  begin
+    Key := 0;
+    CommitMinLimit;
+  end;
 end;
 
 { Mouse tracking }

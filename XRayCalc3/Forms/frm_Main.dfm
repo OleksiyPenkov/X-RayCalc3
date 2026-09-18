@@ -605,13 +605,13 @@ object frmMain: TfrmMain
           ExplicitTop = 668
           ExplicitWidth = 1363
           inherited btnChartScale: TRzBitBtn
-            Left = 1155
-            ExplicitLeft = 1155
+            Left = 1202
+            ExplicitLeft = 1202
           end
           inherited cbMinLimit: TRzComboBox
-            Left = 1236
+            Left = 1282
             StyleElements = [seFont, seClient, seBorder]
-            ExplicitLeft = 1236
+            ExplicitLeft = 1282
           end
         end
       end

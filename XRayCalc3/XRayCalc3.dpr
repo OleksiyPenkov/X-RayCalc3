@@ -44,6 +44,7 @@ uses
   unit_LFPSO_Poly in 'LFPSO\unit_LFPSO_Poly.pas',
   unit_SavitzkyGolay in '..\Shared\Math\unit_SavitzkyGolay.pas',
   unit_ProfileCalc in '..\Shared\Math\unit_ProfileCalc.pas',
+  unit_AxisLimit in '..\Shared\Math\unit_AxisLimit.pas',
   frm_Benchmark in 'Forms\frm_Benchmark.pas' {frmBenchmark},
   unit_files_list in 'Components\unit_files_list.pas',
   unit_Config in 'Units\unit_Config.pas',

@@ -265,6 +265,7 @@
         <DCCReference Include="LFPSO\unit_LFPSO_Poly.pas"/>
         <DCCReference Include="..\Shared\Math\unit_SavitzkyGolay.pas"/>
         <DCCReference Include="..\Shared\Math\unit_ProfileCalc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_AxisLimit.pas"/>
         <DCCReference Include="Forms\frm_Benchmark.pas">
             <Form>frmBenchmark</Form>
             <FormType>dfm</FormType>

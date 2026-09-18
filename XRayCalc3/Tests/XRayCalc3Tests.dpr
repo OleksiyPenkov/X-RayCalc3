@@ -85,7 +85,9 @@ uses
   TestMCPProjectFile in 'TestMCPProjectFile.pas',
   unit_MCPFit in '..\..\XRC_MCP\units\unit_MCPFit.pas',
   unit_ToolsJobs in '..\..\XRC_MCP\units\unit_ToolsJobs.pas',
-  TestMCPFit in 'TestMCPFit.pas';
+  TestMCPFit in 'TestMCPFit.pas',
+  unit_AxisLimit in '..\..\Shared\Math\unit_AxisLimit.pas',
+  TestAxisLimit in 'TestAxisLimit.pas';
 
 {$R *.res}
 
