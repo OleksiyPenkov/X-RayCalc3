@@ -146,6 +146,9 @@ type
     [Test] procedure Scale_Auto_TakesOnlyTheMaximumBelowAutoThetaMax;
     [Test] procedure Scale_Auto_NoPointBelowAutoThetaMax_Refused;
     [Test] procedure Scale_UnknownString_Refused;
+    [Test] procedure ScaleAuto_Boolean_IsTheSameAsTheString;
+    [Test] procedure ScaleAuto_True_IgnoresANumericScale;
+    [Test] procedure ScaleAuto_False_LeavesTheNumberAlone;
     [Test] procedure Scale_Auto_P2_05_MatchesTheHandComputation;
     [Test] procedure Scale_Auto_IsEchoedInTheResult;
 
@@ -1844,8 +1847,11 @@ begin
     the agent out of the tool's own description. }
   Scale := FitXrrSchemaValue('scale.description');
   Assert.IsTrue(Scale.Contains('normalize'), 'scale: the step of the manual');
-  Assert.IsTrue(Scale.Contains('start model'),
-    'scale: what the measured maximum is set equal to');
+  Assert.IsTrue(Scale.Contains('scale_auto'),
+    'scale: where to go to have the server choose the number');
+  Assert.IsTrue(
+    FitXrrSchemaValue('scale_auto.description').Contains('start model'),
+    'scale_auto: what the measured maximum is set equal to');
   Assert.IsFalse(Scale.Contains('0.4 '), 'scale: not "at about 0.4 deg"');
 
   Assert.AreEqual('integer', FitXrrSchemaValue('smooth.properties.passes.type'),
@@ -2287,6 +2293,81 @@ begin
     [START_STRUCTURE, DUMMY_CURVE])));
 end;
 
+{ Two spellings, one normalisation. The boolean exists because "scale" takes a
+  number or a string, and on the exp-03 run of 2026-09-18 an agent wrote
+  "scale": auto unquoted fifteen times running - malformed JSON its own client
+  refused before the server saw any of it. A boolean cannot be got wrong. }
+procedure TTestMCPFit.ScaleAuto_Boolean_IsTheSameAsTheString;
+var
+  ByString, ByBoolean: TFitRequest;
+  Curve: string;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Curve := StartCurveJSON(1000);
+  ByString := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale":"auto",' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, Curve]));
+  ByBoolean := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale_auto":true,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, Curve]));
+
+  Assert.AreEqual('auto', ByBoolean.ScaleMode);
+  Assert.AreEqual(ByString.Scale, ByBoolean.Scale, 1E-12,
+    'the boolean and the string give the same number');
+  Assert.AreEqual(ByString.ScaleTheta, ByBoolean.ScaleTheta, 1E-12);
+  Assert.AreEqual(ByString.ScaleCounts, ByBoolean.ScaleCounts, 1E-12);
+end;
+
+procedure TTestMCPFit.ScaleAuto_True_IgnoresANumericScale;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale_auto":true,"scale":123.5,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, StartCurveJSON(1000)]));
+
+  Assert.AreEqual('auto', Req.ScaleMode);
+  Assert.AreEqual(Double(0.001), Req.Scale, 1E-9,
+    'the number beside "scale_auto": true is ignored, not multiplied in');
+end;
+
+procedure TTestMCPFit.ScaleAuto_False_LeavesTheNumberAlone;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"scale_auto":false,"scale":2.5,' +
+    '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+
+  Assert.AreEqual('fixed', Req.ScaleMode);
+  Assert.AreEqual(Double(2.5), Req.Scale, 1E-12);
+end;
+
 { The number test A of the 2026-09-18 skill run computed by hand from
   get_measurement and calc_reflectivity, on the same specimen, the same start
   model and the same instrument settings: the server must reach it on its own. }
@@ -2640,14 +2721,20 @@ var
   Scale, Paired: string;
 begin
   Scale := FitXrrSchemaValue('scale.description');
-  Assert.IsTrue(Scale.Contains('"auto"'), 'scale: the string it accepts');
-  Assert.IsTrue(Scale.Contains('Normalize Auto'),
-    'scale: the GUI command it repeats');
+  Assert.IsTrue(Scale.Contains('"auto"'),
+    'scale: the string it still accepts');
   Assert.IsFalse(Scale.Contains('0.4 '),
     'scale: the old "compare at about 0.4 deg" rule is gone');
 
   Assert.IsTrue(FitXrrSchemaValue('auto_theta_max.description').Contains('auto'),
     'auto_theta_max belongs to the automatic scale');
+
+  Assert.AreEqual('boolean', FitXrrSchemaValue('scale_auto.type'),
+    'scale_auto is a plain boolean: a union type is what a client gets wrong');
+  Assert.IsTrue(FitXrrSchemaValue('scale_auto.description').Contains('Normalize Auto'),
+    'scale_auto names the GUI command it repeats');
+  Assert.IsTrue(Scale.Contains('scale_auto'),
+    'the scale description sends the reader to the boolean first');
 
   Paired := FitXrrSchemaValue('paired.description');
   Assert.IsTrue(Paired.Contains('profile'), 'paired: only in a profile fit');

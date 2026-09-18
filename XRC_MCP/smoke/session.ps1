@@ -430,7 +430,19 @@ if ($res.scale_mode -ne 'auto') { Fail "scale_mode is '$($res.scale_mode)', expe
 if ([double] $res.scale -le 0) { Fail "the automatic scale came back as $($res.scale)" }
 if ([double] $res.scale_theta -le 0) { Fail 'the automatic scale reported no angle' }
 if ([double] $res.scale_theta -ge 0.5) { Fail "the automatic scale took its maximum at $($res.scale_theta) deg, outside auto_theta_max" }
-Say "        scale auto      : $($res.scale) at theta $($res.scale_theta) deg from $($res.scale_counts) counts"
+$autoScale = [double] $res.scale
+$boolArgs = [ordered]@{}
+foreach ($k in $fitArgs.Keys) { $boolArgs[$k] = $fitArgs[$k] }
+$boolArgs.scale_auto = $true
+$sub = Invoke-Tool 'fit_xrr' $boolArgs
+$w   = Invoke-Tool 'job_wait' ([ordered]@{ job_id = $sub.job_id; wait_s = 120 }) -TimeoutSec 180
+if ($w.state -ne 'finished') { Fail "the fit with scale_auto ended '$($w.state)'" }
+$res = Invoke-Tool 'job_result' @{ job_id = $sub.job_id }
+if ($res.scale_mode -ne 'auto') { Fail "scale_auto true gave scale_mode '$($res.scale_mode)'" }
+if ([double] $res.scale -ne $autoScale) {
+    Fail "scale_auto true gave $($res.scale) where scale 'auto' gave $autoScale"
+}
+Say "        scale auto      : $($res.scale) at theta $($res.scale_theta) deg from $($res.scale_counts) counts (the boolean and the string agree)"
 
 # --- the inbox tools ---------------------------------------------------------
 $meas = Invoke-Tool 'list_measurements' @{}

@@ -463,16 +463,25 @@ begin
   Req.Scale := Calc[IMax].r / Req.Data[IMax].r;
 end;
 
-/// "scale": the multiplier applied to the measured intensities before the fit -
-/// the manual's "normalize" step - default 1. A number is used as it stands;
-/// "auto" is Data - Normalize Auto, computed by ComputeAutoScale. It is never
-/// fitted; the scaled curve is what the chi-squared, the files and the .xrcx
-/// see, so the GUI shows the same data.
+/// The multiplier applied to the measured intensities before the fit - the
+/// manual's "normalize" step - default 1. It is asked for in one of two ways:
+/// "scale_auto": true, or the string "auto" in "scale". Both run
+/// ComputeAutoScale; a number in "scale" is used as it stands, and is ignored
+/// when "scale_auto" is true. It is never fitted; the scaled curve is what the
+/// chi-squared, the files and the .xrcx see, so the GUI shows the same data.
+///
+/// There are two spellings because one of them is hard for a client to write.
+/// An agent on the exp-03 run of 2026-09-18 sent "scale": auto unquoted fifteen
+/// times running, and its own client refused every call as malformed JSON
+/// before the server ever saw it: a key whose type is number-or-string invites
+/// that. The boolean cannot be got wrong, so it is the one the schema names
+/// first.
 procedure ApplyScale(const Params: TJSONObject; var Req: TFitRequest);
 var
   i: Integer;
   JScale: TJSONValue;
   Mode: string;
+  Auto: Boolean;
 begin
   Req.AutoThetaMax := JSONArgs.OptFloat(Params, 'auto_theta_max',
                                         DEF_AUTO_THETA_MAX);
@@ -483,14 +492,22 @@ begin
   Req.ScaleMode := 'fixed';
   Req.Scale := 1.0;
 
+  Auto := JSONArgs.OptBool(Params, 'scale_auto', False);
+
   JScale := Params.FindValue('scale');
   if JScale is TJSONString then
   begin
     Mode := LowerCase(TJSONString(JScale).Value);
     if Mode <> 'auto' then
       raise EMCPError.Create('invalid_argument',
-        '"scale" is a positive number or the string "auto"',
+        '"scale" is a positive number or the string "auto"; to normalise ' +
+        'automatically you can also send "scale_auto": true',
         TJSONString(JScale).Value);
+    Auto := True;
+  end;
+
+  if Auto then
+  begin
     Req.ScaleMode := 'auto';
     ComputeAutoScale(Req);
   end

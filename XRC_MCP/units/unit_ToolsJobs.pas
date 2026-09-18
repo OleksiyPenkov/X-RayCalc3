@@ -685,17 +685,24 @@ begin
   AddRefProp(Schema, 'theta_range',
     'The part of the measured curve to fit (the manual''s "trim"), in degrees ' +
     'theta (never 2theta). Defaults to the whole curve.', FitThetaRangeSchema);
+  AddProp(Schema, 'scale_auto', 'boolean',
+    'Let the server normalize the measured curve, the way the GUI''s Data - ' +
+    'Normalize Auto does (default false): the largest measured intensity ' +
+    'below "auto_theta_max" - the maximum of the total-reflection plateau - is ' +
+    'set equal to the reflectivity the start model has at that same angle, so ' +
+    'scale = R_calc(theta_max) / I_max. It is computed on the raw curve, ' +
+    'before "smooth" and before the "theta_range" trim, on the model as given ' +
+    'with the wavelength, polarization and resolution of the fit. This is the ' +
+    'plain way to ask for it and the one to prefer; "scale": "auto" does ' +
+    'exactly the same thing. With this true, "scale" is ignored. The result ' +
+    'reports scale_mode "auto" with the number used, the angle it was taken ' +
+    'at and the counts there.');
   AddScaleProp(Schema,
     'The multiplier applied to the measured intensities before the fit - the ' +
     'manual''s "normalize" step. A positive number is used exactly as given ' +
-    '(default 1, no scaling). The string "auto" is the laboratory''s own ' +
-    'procedure, the GUI''s Data - Normalize Auto: the server finds the largest ' +
-    'measured intensity below "auto_theta_max" - the maximum of the ' +
-    'total-reflection plateau - and sets it equal to the reflectivity the ' +
-    'start model has at that same angle, so scale = R_calc(theta_max) / ' +
-    'I_max. It is computed on the raw curve, before "smooth" and before the ' +
-    '"theta_range" trim, on the model as given with the wavelength, ' +
-    'polarization and resolution of the fit. The result echoes the number ' +
+    '(default 1, no scaling). To have the server choose it instead, set ' +
+    '"scale_auto": true; the string "auto" here does the same thing and is ' +
+    'kept for clients that already send it. The result echoes the number ' +
     'that was used in "scale" and says where it came from in "scale_mode", ' +
     '"scale_theta" and "scale_counts". Either way the scale is not fitted, ' +
     'and measured.dat and fit.xrcx hold the scaled curve so that X-Ray Calc 3 ' +

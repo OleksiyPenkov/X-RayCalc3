@@ -84,13 +84,18 @@ abandons the call while the server is still inside it - the job itself is unaffe
 
 **`fit_xrr` since 2026-09-18:** three arguments and one new block in the result.
 
-- `"scale": "auto"` is the GUI's Data - Normalize Auto (`unit_DataProcessing.NormalizeAuto`): the
+- `"scale_auto": true` (or `"scale": "auto"`) is the GUI's Data - Normalize Auto
+  (`unit_DataProcessing.NormalizeAuto`): the
   server takes the largest measured intensity below `auto_theta_max` (degrees theta, default 0.5)
   and sets it equal to the reflectivity of the start model at that same angle, so
   `scale = R_calc(theta_max) / I_max`. It is computed on the raw curve, before `smooth` and before
   the `theta_range` trim, with the wavelength, polarization and resolution of the fit. The result
   carries `scale_mode` (`"fixed"` or `"auto"`), `scale_theta`, `scale_counts` and, for `auto`,
-  `auto_theta_max`. A numeric `scale` behaves exactly as before. The `scale` description no longer
+  `auto_theta_max`; with `scale_auto` true a number in `scale` is ignored. The boolean exists
+  because a key typed number-or-string is easy for a client to get wrong: on the exp-03 run of
+  2026-09-18 an agent sent `"scale": auto` unquoted fifteen times running and its own client refused
+  every call as malformed JSON before the server saw it. A numeric `scale` behaves exactly as
+  before. The `scale` description no longer
   says to compare the curves at about theta 0.4 degrees and not to normalise to the total-reflection
   region: that was the opposite of the laboratory's procedure.
 - `"paired": ["sigma", "density"]` sets the GUI's Paired boxes - `TFitValue.Paired`, the `HP`/`SP`/`RP`
