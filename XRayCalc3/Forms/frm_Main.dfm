@@ -413,7 +413,7 @@ object frmMain: TfrmMain
         Height = 34
         Images = vilCalc
         RowHeight = 30
-        ButtonWidth = 30
+        ButtonWidth = 26
         ButtonHeight = 30
         TextOptions = ttoCustom
         BorderInner = fsNone
