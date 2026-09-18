@@ -241,6 +241,12 @@ type
     procedure FilePlotToFileExecute(Sender: TObject);
     procedure HelpAboutExecute(Sender: TObject);
     procedure HelpContentExecute(Sender: TObject);
+    procedure actHomePageExecute(Sender: TObject);
+    procedure actWikiExecute(Sender: TObject);
+    procedure actSupportExecute(Sender: TObject);
+    procedure actQuickStartExecute(Sender: TObject);
+    procedure actHelpStructureExecute(Sender: TObject);
+    procedure actHelpFittingExecute(Sender: TObject);
     procedure CalcAllExecute(Sender: TObject);
     procedure CalcStopExecute(Sender: TObject);
     procedure actEditHenkeExecute(Sender: TObject);
@@ -289,6 +295,8 @@ type
     procedure OnSetFitLimits(Sender: TObject);
     procedure OnProjectCaptionChange(const S: string);
     procedure OnLegendCheckBoxClick(Sender: TObject; Series: TChartSeries);
+    procedure OpenHelpPage(const PageName: string);
+    procedure OpenURL(const URL: string);
   public
     { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
@@ -327,6 +335,7 @@ uses
   frm_about,
   editor_HenkeTable,
   unit_config,
+  unit_consts,
   frm_settings,
   unit_XRCStackControl,
   unit_sys_helpers,
@@ -622,12 +631,55 @@ begin
   frmAbout.ShowModal;
 end;
 
-procedure TfrmMain.HelpContentExecute(Sender: TObject);
+procedure TfrmMain.OpenHelpPage(const PageName: string);
 var
-  ManualPath: string;
+  PagePath: string;
 begin
-  ManualPath := TConfig.AppPath + 'Help\UserManual.html';
-  ShellExecute(Handle, 'open', PChar(ManualPath), nil, nil, SW_SHOWNORMAL);
+  PagePath := TConfig.AppPath + HELP_DIR_NAME + '\' + PageName;
+  if FileExists(PagePath) then
+    ShellExecute(Handle, 'open', PChar(PagePath), nil, nil, SW_SHOWNORMAL)
+  else
+    MessageDlg('Help page not found: ' + PagePath, mtWarning, [mbOK], 0);
+end;
+
+procedure TfrmMain.OpenURL(const URL: string);
+begin
+  ShellExecute(Handle, 'open', PChar(URL), nil, nil, SW_SHOWNORMAL);
+end;
+
+procedure TfrmMain.HelpContentExecute(Sender: TObject);
+begin
+  OpenHelpPage('UserManual.html');
+end;
+
+procedure TfrmMain.actQuickStartExecute(Sender: TObject);
+begin
+  OpenHelpPage('QuickStart.html');
+end;
+
+procedure TfrmMain.actHelpStructureExecute(Sender: TObject);
+begin
+  OpenHelpPage('Models.html');
+end;
+
+procedure TfrmMain.actHelpFittingExecute(Sender: TObject);
+begin
+  OpenHelpPage('Fitting.html');
+end;
+
+procedure TfrmMain.actHomePageExecute(Sender: TObject);
+begin
+  OpenURL(URL_HOMEPAGE);
+end;
+
+procedure TfrmMain.actWikiExecute(Sender: TObject);
+begin
+  OpenURL(URL_WIKI);
+end;
+
+procedure TfrmMain.actSupportExecute(Sender: TObject);
+begin
+  OpenURL(URL_SUPPORT);
 end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);

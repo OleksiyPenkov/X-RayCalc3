@@ -1876,6 +1876,7 @@ object frmMain: TfrmMain
     object actHomePage: TAction
       Category = 'Help'
       Caption = 'Home'#13#10'Page'
+      OnExecute = actHomePageExecute
     end
     object actCheckUpdate: TAction
       Category = 'Help'
@@ -1884,22 +1885,27 @@ object frmMain: TfrmMain
     object actWiki: TAction
       Category = 'Help'
       Caption = 'Wiki'
+      OnExecute = actWikiExecute
     end
     object actSupport: TAction
       Category = 'Help'
       Caption = 'Support'
+      OnExecute = actSupportExecute
     end
     object actQuickStart: TAction
       Category = 'Help'
       Caption = 'Getting Started'
+      OnExecute = actQuickStartExecute
     end
     object actHelpStructure: TAction
       Category = 'Help'
       Caption = 'Multilayer'#13#10'Structure'
+      OnExecute = actHelpStructureExecute
     end
     object actHelpFitting: TAction
       Category = 'Help'
       Caption = 'Fitting'
+      OnExecute = actHelpFittingExecute
     end
     object ProjectItemExtension: TAction
       Category = 'Project Item'

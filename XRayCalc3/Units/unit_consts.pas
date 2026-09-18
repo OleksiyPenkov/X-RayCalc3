@@ -34,6 +34,10 @@ const
   APP_HELP_FILENAME = 'xraycalc3.chm';
   VERINFO_FILENAME = 'version.info';
   LICENSE_FILENAME = 'xraycalc3.lic';
+  HELP_DIR_NAME = 'Help';
+  URL_HOMEPAGE = 'https://github.com/OleksiyPenkov/X-RayCalc3';
+  URL_WIKI = URL_HOMEPAGE + '/wiki';
+  URL_SUPPORT = URL_HOMEPAGE + '/issues';
   DEFAULT_PROJECT_NAME = 'NewProject.xrcx';
   PROJECT_EXT = '.xrcx';
   BACKUP_DIR_NAME = 'Backup';
