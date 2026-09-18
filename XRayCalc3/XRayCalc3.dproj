@@ -85,6 +85,7 @@
         <Icon_MainIcon>Assets\XRayCalc3_Icon.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <PostBuildEvent>xcopy "$(MSBuildProjectDirectory)\Assets\Docs\Help" "$(DCC_ExeOutput)\Help\" /E /I /Y /Q &gt;nul</PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_Define>FM_NOSIMD;$(DCC_Define)</DCC_Define>
@@ -101,6 +102,7 @@
         <VerInfo_Release>0</VerInfo_Release>
         <VerInfo_Build>850</VerInfo_Build>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.8.0.850;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <PostBuildEvent>xcopy "$(MSBuildProjectDirectory)\Assets\Docs\Help" "$(DCC_ExeOutput)\Help\" /E /I /Y /Q &gt;nul</PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>

@@ -356,7 +356,7 @@ procedure TfrmXRFCalcMain.mnuHelpContentsClick(Sender: TObject);
 var
   HelpPath: string;
 begin
-  HelpPath := TPath.Combine(ExtractFilePath(Application.ExeName), 'Help\index.html');
+  HelpPath := TPath.Combine(ExtractFilePath(Application.ExeName), 'Help\XRFCalc\index.html');
   if TFile.Exists(HelpPath) then
     ShellExecute(Handle, 'open', PChar(HelpPath), nil, nil, SW_SHOWNORMAL)
   else
