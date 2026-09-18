@@ -1,4 +1,4 @@
-; X-Ray Calc 3 — InnoSetup Installer Script
+﻿; X-Ray Calc 3 — InnoSetup Installer Script
 ; Run deploy.sh first to stage files into deploy/
 
 #define MyAppName "X-Ray Calc 3"
@@ -43,7 +43,6 @@ Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";    
 Source: "deploy\Examples\*";                         DestDir: "{app}\Examples";          Flags: ignoreversion
 Source: "deploy\Help\UserManual.html";               DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\style.css";                     DestDir: "{app}\Help";              Flags: ignoreversion
-Source: "deploy\Help\script.js";                     DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\*.html";                        DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\images\*";                      DestDir: "{app}\Help\images";       Flags: ignoreversion
 Source: "deploy\XRayCalc3_Icon.ico";                 DestDir: "{app}";                   Flags: ignoreversion

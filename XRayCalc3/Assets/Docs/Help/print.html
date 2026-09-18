@@ -2,58 +2,72 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>X-Ray Calc 3 — User Manual</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Override layout for print/PDF — no sidebar, full width */
-  .top-nav, .sidebar, .back-to-top, .page-nav { display: none !important; }
-  .content {
-    margin: 0 !important;
-    padding: 30px 40px !important;
-    max-width: none !important;
-  }
-  h2 { page-break-before: always; }
-  h2:first-of-type { page-break-before: avoid; }
-  figure { page-break-inside: avoid; }
-  table { page-break-inside: avoid; }
-  .note, .tip, .warning { page-break-inside: avoid; }
+  .topbar, .page-toc, .bottom-nav { display: none !important; }
+  .container { max-width: none; padding: 0; }
+  .chapter { page-break-before: always; }
+  .chapter:first-of-type { page-break-before: avoid; }
+  .chapter h1 { font-size: 26px; border-bottom: 2px solid #1a5276; padding-bottom: 6px; }
+  .chapter h1 .num { color: #2980b9; margin-right: 10px; }
+  figure, table, .note, .tip, .warn, pre { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+  .title-page { text-align: center; padding-top: 180px; page-break-after: always; }
+  .title-page h1 { font-size: 40px; border: none; margin-bottom: 8px; }
+  .title-page .sub { font-size: 18px; color: #555; }
+  .title-page .meta { margin-top: 60px; color: #777; font-size: 14px; line-height: 1.8; }
+  .toc { page-break-after: always; }
+  .toc ol { columns: 2; font-size: 14px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { text-decoration: none; color: #1a5276; }
+  a { color: #1a5276; text-decoration: none; }
 </style>
 </head>
 <body>
 
-<main class="content">
+<div class="container">
 
-<h1>X-Ray Calc 3 &mdash; User Manual</h1>
-<p class="subtitle">Version 8 &nbsp;|&nbsp; Copyright &copy; 2001&ndash;2026 Oleksiy Penkov</p>
+<div class="title-page">
+  <h1>X-Ray Calc 3</h1>
+  <div class="sub">User Manual</div>
+  <div class="meta">Version 9<br>Copyright &copy; 2001&ndash;2026 Oleksiy Penkov<br>
+  Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>J. Appl. Cryst.</em> <strong>57</strong>, 555&ndash;566.</div>
+</div>
 
-<div style="margin: 32px 0;">
-<h3 style="color: var(--accent);">Table of Contents</h3>
-<ol style="columns: 2; font-size: 14px;">
-  <li>Introduction</li>
-  <li>Quick Start</li>
-  <li>Installation &amp; First Launch</li>
-  <li>Application Overview</li>
-  <li>Projects</li>
-  <li>Defining a Model</li>
-  <li>Experimental Data</li>
-  <li>Calculation</li>
-  <li>Fitting (Optimization)</li>
-  <li>Results &amp; Export</li>
-  <li>Charts &amp; Visualization</li>
-  <li>Profile Extensions</li>
-  <li>Tools</li>
-  <li>Application Settings</li>
-  <li>Quick Reference</li>
-  <li>File Formats</li>
-  <li>Illustrative Examples</li>
-  <li>Troubleshooting</li>
-  <li>Universal Mirror</li>
+<div class="toc" id="toc">
+<h1>Contents</h1>
+<ol>
+  <li><a href="#Introduction">Introduction</a></li>
+  <li><a href="#QuickStart">Quick Start</a></li>
+  <li><a href="#Installation">Installation &amp; First Launch</a></li>
+  <li><a href="#Overview">Application Overview</a></li>
+  <li><a href="#QuickReference">Quick Reference</a></li>
+  <li><a href="#Projects">Projects</a></li>
+  <li><a href="#Models">Defining a Model</a></li>
+  <li><a href="#Data">Experimental Data</a></li>
+  <li><a href="#Calculation">Calculation</a></li>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+  <li><a href="#Results">Results &amp; Export</a></li>
+  <li><a href="#Charts">Charts &amp; Visualization</a></li>
+  <li><a href="#Profiles">Profile Extensions</a></li>
+  <li><a href="#Tools">Tools</a></li>
+  <li><a href="#Settings">Application Settings</a></li>
+  <li><a href="#UniversalMirror">Universal Mirror Optimizer v3.7</a></li>
+  <li><a href="#MCPServer">MCP Server (XRC_MCP)</a></li>
+  <li><a href="#FileFormats">File Formats</a></li>
+  <li><a href="#Examples">Illustrative Examples</a></li>
+  <li><a href="#Troubleshooting">Troubleshooting</a></li>
+  <li><a href="#SourceCode">Source Code &amp; Git</a></li>
+  <li><a href="#Wiki">Online Wiki</a></li>
 </ol>
 </div>
 
-<!-- ═══ 1. Introduction ═══ -->
-<h2><span class="num">1</span> Introduction</h2>
+<div class="chapter" id="Introduction">
+
+
+<h1><span class="num">1</span>Introduction</h1>
+<div class="subtitle">What X-Ray Calc 3 does, the calculation method, and the reference publication</div>
 
 <p><strong>X-Ray Calc 3</strong> (XRC3) is an open-source software package for simulating X-ray reflectivity (XRR) and solving the inverse problem of reconstructing film structures from measured XRR curves. It is designed for researchers working with X-ray optics, synchrotron radiation, and thin-film coatings.</p>
 
@@ -74,19 +88,44 @@
   <strong>Reference:</strong> Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity.</em> J. Appl. Cryst. <strong>57</strong>, 555&ndash;566. <a href="https://doi.org/10.1107/S1600576724001031">https://doi.org/10.1107/S1600576724001031</a>
 </div>
 
-<!-- ═══ 2. Quick Start ═══ -->
-<h2><span class="num">2</span> Quick Start</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#QuickStart">Quick Start</a></li>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+  <li><a href="#SourceCode">Source Code &amp; Git</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="QuickStart">
+
+
+<h1><span class="num">2</span>Quick Start</h1>
+<div class="subtitle">A hands-on tour: open a demo project, build a model from scratch, calculate and export</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#exploring-the-demo-projects">Exploring the Demo Projects</a></li>
+    <li><a href="#navigating-the-interface">Navigating the Interface</a></li>
+    <li><a href="#creating-a-model-from-scratch">Creating a Model from Scratch</a></li>
+    <li><a href="#calculation-settings">Calculation Settings</a></li>
+    <li><a href="#exporting-results">Exporting Results</a></li>
+  </ul>
+</div>
 
 <p>This section provides a hands-on introduction to X-Ray Calc 3. The distribution includes several demonstration projects in the <strong>Examples</strong> folder &mdash; open one to explore the interface before building your own models.</p>
 
-<h3>Exploring the Demo Projects</h3>
+<h2 id="exploring-the-demo-projects">Exploring the Demo Projects</h2>
 <ol>
-  <li>Click <strong>Open</strong> and navigate to the <strong>Examples</strong> folder.</li>
+  <li>Click <img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> <strong>Open</strong> and navigate to the <strong>Examples</strong> folder.</li>
   <li>Select a project file (<code>.xrcx</code>).</li>
   <li>Go to the <strong>Computation</strong> tab and click <strong>Run</strong> (or press <strong>F5</strong>). You can also use <strong>Calc All</strong> (<strong>F12</strong>) to calculate all models at once.</li>
 </ol>
 
-<h3>Navigating the Interface</h3>
+<h2 id="navigating-the-interface">Navigating the Interface</h2>
 <ul>
   <li><strong>Double-click a model name</strong> in the Project Items list to open its Properties dialog (name, color, description). The same dialog is available from the right-click context menu.</li>
   <li><strong>Double-click a layer</strong> to open the Layer Properties dialog, where you can change material, thickness, roughness, and density.</li>
@@ -94,17 +133,17 @@
   <li>Use the <strong>Stack</strong> and <strong>Layer</strong> toolbar panels to add, insert, or delete structural elements.</li>
 </ul>
 
-<h3>Creating a Model from Scratch</h3>
+<h2 id="creating-a-model-from-scratch">Creating a Model from Scratch</h2>
 <ol>
   <li>Create a new project (<strong>File &gt; New Project</strong>).</li>
   <li>Select <strong>Model 1</strong> in the project tree.</li>
   <li>Add a stack: <strong>Structure &gt; Add Stack</strong> (or use the toolbar). In the dialog, set the stack name (e.g., &ldquo;Main&rdquo;) and the number of periods (default: 1 for non-periodic structures).</li>
   <li>Select the stack by clicking its title in the structure panel.</li>
-  <li>Add layers: click <strong>Add Layer</strong> (or <strong>Structure &gt; Add Layer</strong>). Fill in the material (click &ldquo;...&rdquo; to select from the Materials Database), thickness, roughness, and density. Repeat for each layer.</li>
+  <li>Add layers: click <img src="images/icons/add_layer.png" alt="Add Layer" class="icon"> <strong>Add Layer</strong> (or <strong>Structure &gt; Add Layer</strong>). Fill in the material (click &ldquo;...&rdquo; to select from the Materials Database), thickness, roughness, and density. Repeat for each layer.</li>
   <li>Calculate the reflectivity: press <strong>F5</strong> (or <strong>Calc &gt; Calculate</strong>).</li>
 </ol>
 
-<h3>Calculation Settings</h3>
+<h2 id="calculation-settings">Calculation Settings</h2>
 <ul>
   <li><strong>Mode:</strong> Reflectivity can be calculated as a function of grazing angle or wavelength.</li>
   <li><strong>Polarization:</strong> Use <strong>s-polarization</strong> for hard X-rays at low grazing angles (below 20&deg;) &mdash; this is significantly faster. Use <strong>sp-polarization</strong> for larger angles or softer radiation.</li>
@@ -114,23 +153,46 @@
   <li><strong>Legend:</strong> Click items in the chart legend to toggle curve visibility.</li>
 </ul>
 
-<h3>Exporting Results</h3>
+<h2 id="exporting-results">Exporting Results</h2>
 <ul>
   <li>The <strong>Export</strong> button on the Result panel saves the calculated curve to an ASCII file or copies it to the clipboard.</li>
   <li>The <strong>Save</strong> button on the Plot panel saves the chart as a bitmap image.</li>
 </ul>
 
-<!-- ═══ 3. Installation ═══ -->
-<h2><span class="num">3</span> Installation &amp; First Launch</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Models">Defining a Model</a></li>
+  <li><a href="#Calculation">Calculation</a></li>
+  <li><a href="#Examples">Illustrative Examples</a></li>
+</ul>
 
-<h3>System Requirements</h3>
+
+
+
+</div>
+<div class="chapter" id="Installation">
+
+
+<h1><span class="num">3</span>Installation &amp; First Launch</h1>
+<div class="subtitle">System requirements, the working directory, portable mode, and file association</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#system-requirements">System Requirements</a></li>
+    <li><a href="#data-storage">Data Storage</a></li>
+    <li><a href="#file-association">File Association</a></li>
+  </ul>
+</div>
+
+<h2 id="system-requirements">System Requirements</h2>
 <ul>
   <li>Windows 10 or later (64-bit recommended)</li>
   <li>Minimum 4 GB RAM (8 GB recommended for large models)</li>
   <li>Multi-core CPU recommended for parallel computation</li>
 </ul>
 
-<h3>Data Storage</h3>
+<h2 id="data-storage">Data Storage</h2>
 <p>On first launch, X-Ray Calc 3 creates a working directory:</p>
 <ul>
   <li><strong>Default location:</strong> <code>%APPDATA%\X-RayCalc3\</code></li>
@@ -148,13 +210,35 @@
   <tr><td><code>Jobs/</code></td><td>Batch job definitions</td></tr>
 </table>
 
-<h3>File Association</h3>
+<h2 id="file-association">File Association</h2>
 <p>To associate <code>.xrcx</code> project files with X-Ray Calc 3, go to <strong>File &gt; Settings &gt; Paths and Files</strong> and click <strong>Register file associations (xrcx)</strong>.</p>
 
-<!-- ═══ 4. Application Overview ═══ -->
-<h2><span class="num">4</span> Application Overview</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#paths-and-files">Application Settings &gt; Paths and Files</a></li>
+  <li><a href="#FileFormats">File Formats</a></li>
+  <li><a href="#Troubleshooting">Troubleshooting</a></li>
+</ul>
 
-<h3>Main Window Layout</h3>
+
+
+
+</div>
+<div class="chapter" id="Overview">
+
+
+<h1><span class="num">4</span>Application Overview</h1>
+<div class="subtitle">Main window layout, the three columns, status bar, and the menu bar</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#layout">Main Window Layout</a></li>
+    <li><a href="#menus">Menu Bar</a></li>
+  </ul>
+</div>
+
+<h2 id="layout">Main Window Layout</h2>
 
 <figure>
   <img src="images/fig5.jpg" alt="Screenshot of the X-Ray Calc 3 graphical user interface">
@@ -163,7 +247,7 @@
 
 <p>The primary window comprises four key panels (see Figure 1). The first panel, <strong>Project Items</strong> (1), showcases the contents of the current project. A project can organize an unlimited number of theoretical models and experimental curves into well-structured folders. The <strong>Structure panel</strong> (2) functions as a visual depiction of the layered model and provides easy access to all parameters linked with the structural model. The right side contains <strong>XRR calculation parameters</strong> (3) and <strong>Fitting parameters</strong> (4) at the top, the main <strong>XRR curve plot</strong> (5) in the center, and <strong>Distributions / Convergence charts</strong> (6) at the bottom.</p>
 
-<h4>Left Column &mdash; Project Panel</h4>
+<h3>Left Column &mdash; Project Panel</h3>
 <ul>
   <li><strong>File Toolbar:</strong> <img src="images/icons/01_New.png" alt="New" class="icon">&nbsp;New, <img src="images/icons/02_OpenProject.png" alt="Open" class="icon">&nbsp;Open, <img src="images/icons/03_Reopen.png" alt="Reopen" class="icon">&nbsp;Reopen, <img src="images/icons/04_Save.png" alt="Save" class="icon">&nbsp;Save, <img src="images/icons/05_Print.png" alt="Print" class="icon">&nbsp;Print</li>
   <li><strong>Project Toolbar:</strong> <img src="images/icons/06_AddModel.png" alt="Add Model" class="icon">&nbsp;Add Model, <img src="images/icons/07_Export.png" alt="Export" class="icon">&nbsp;Export, <img src="images/icons/08_Copy.png" alt="Copy" class="icon">&nbsp;Copy, <img src="images/icons/09_Paste.png" alt="Paste" class="icon">&nbsp;Paste, <img src="images/icons/10_Edit.png" alt="Edit" class="icon">&nbsp;Edit Properties, <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon">&nbsp;Add Extension, <img src="images/icons/47_CopyImage.png" alt="Copy Image" class="icon">&nbsp;Copy Image, <img src="images/icons/05_Print.png" alt="Print" class="icon">&nbsp;Print, <img src="images/icons/12_DeleteExtension.png" alt="Delete" class="icon">&nbsp;Delete</li>
@@ -171,7 +255,7 @@
   <li><strong>Description:</strong> Read-only text memo showing the description of the selected item</li>
 </ul>
 
-<h4>Middle Column &mdash; Structure Panel</h4>
+<h3 id="structure-panel">Middle Column &mdash; Structure Panel</h3>
 <ul>
   <li><strong>Structure Toolbar:</strong> Stack operations (<img src="images/icons/add_period.png" alt="Add Stack" class="icon">&nbsp;Add, <img src="images/icons/add_row_32_h.png" alt="Insert Stack" class="icon">&nbsp;Insert, <img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon">&nbsp;Delete) and Layer operations (<img src="images/icons/add_layer.png" alt="Add Layer" class="icon">&nbsp;Add, <img src="images/icons/add_row_32_h.png" alt="Insert" class="icon">&nbsp;Insert, <img src="images/icons/clipboard_copy_lined_32.png" alt="Copy" class="icon">&nbsp;Copy, <img src="images/icons/clipboard_cut_32_h.png" alt="Cut" class="icon">&nbsp;Cut, <img src="images/icons/clipboard_paste_lined_32.png" alt="Paste" class="icon">&nbsp;Paste, <img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon">&nbsp;Delete)</li>
   <li><strong>Increment Selector:</strong> Step size for quick parameter adjustment (10, 5, 1, 0.25, 0.1, 0.01)</li>
@@ -179,7 +263,7 @@
   <li><strong>Visual Structure Editor:</strong> Interactive graphical representation of the layer structure &mdash; shows Ambient, Stacks (with N repetitions), individual Layers (with H, &sigma;, &rho; values), and Substrate. Double-click elements to edit properties; click parameter values for in-place editing.</li>
 </ul>
 
-<h4>Right Column &mdash; Working Area</h4>
+<h3>Right Column &mdash; Working Area</h3>
 <ul>
   <li><strong>Calculation Toolbar:</strong> <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon">&nbsp;Load Data, <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon">&nbsp;Paste Data, <img src="images/icons/40_Play.png" alt="Calculate" class="icon">&nbsp;Calculate, <img src="images/icons/45_ResultSave.png" alt="Save Result" class="icon">&nbsp;Save Result, <img src="images/icons/46_CopyResult.png" alt="Copy Result" class="icon">&nbsp;Copy Result, <img src="images/icons/Menu_BatchJobs.png" alt="Batch Execute" class="icon">&nbsp;Batch Execute, <img src="images/icons/41_Forward.png" alt="Auto Fit" class="icon">&nbsp;Auto Fit, Stop</li>
   <li><strong>Settings Panel:</strong> Calculation mode and parameters (left half) alongside Fitting mode and parameters (right half)</li>
@@ -188,10 +272,10 @@
   <li><strong>Chart Pages:</strong> Tabbed sub-charts for parameter distributions (Thickness, Roughness, Density, Profile, Fitting Progress)</li>
 </ul>
 
-<h4>Status Bar</h4>
+<h3>Status Bar</h3>
 <p>Displays calculation time, fitting time, application version, and platform (x64).</p>
 
-<h3>Menu Bar</h3>
+<h2 id="menus">Menu Bar</h2>
 <table>
   <tr><th>Menu</th><th>Purpose</th></tr>
   <tr><td><strong>File</strong></td><td>Project management (New, Open, Save, Settings, Exit)</td></tr>
@@ -204,10 +288,103 @@
   <tr><td><strong>Help</strong></td><td>User Manual, About dialog</td></tr>
 </table>
 
-<!-- ═══ 5. Projects ═══ -->
-<h2><span class="num">5</span> Projects</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#QuickReference">Quick Reference</a></li>
+  <li><a href="#Projects">Projects</a></li>
+  <li><a href="#Charts">Charts &amp; Visualization</a></li>
+</ul>
 
-<h3>Project Files</h3>
+
+
+
+</div>
+<div class="chapter" id="QuickReference">
+
+
+<h1><span class="num">5</span>Quick Reference</h1>
+<div class="subtitle">Toolbar buttons, the structure toolbar, and keyboard shortcuts on one page</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#toolbar-quick-reference">Toolbar Quick Reference</a></li>
+    <li><a href="#structure-toolbar">Structure Toolbar</a></li>
+    <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+  </ul>
+</div>
+
+<h2 id="toolbar-quick-reference">Toolbar Quick Reference</h2>
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td><img src="images/icons/01_New.png" alt="New" class="icon"> New</td><td>Create a new project</td></tr>
+  <tr><td><img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> Open</td><td>Open an existing project</td></tr>
+  <tr><td><img src="images/icons/04_Save.png" alt="Save" class="icon"> Save</td><td>Save the current project</td></tr>
+  <tr><td><img src="images/icons/05_Print.png" alt="Print" class="icon"> Print</td><td>Print the current chart</td></tr>
+  <tr><td><img src="images/icons/06_AddModel.png" alt="Add Model" class="icon"> Add Model</td><td>Add a new model to the project</td></tr>
+  <tr><td><img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> Load Data</td><td>Load experimental data from file</td></tr>
+  <tr><td><img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> Paste Data</td><td>Paste experimental data from clipboard</td></tr>
+  <tr><td><img src="images/icons/40_Play.png" alt="Calc Run" class="icon"> Calc Run</td><td>Calculate the selected model</td></tr>
+  <tr><td>Stop</td><td>Abort the current calculation or fitting</td></tr>
+  <tr><td><img src="images/icons/41_Forward.png" alt="Fast Forward" class="icon"> Fast Forward</td><td>Start auto-fitting</td></tr>
+  <tr><td><img src="images/icons/45_ResultSave.png" alt="Result Save" class="icon"> Result Save</td><td>Save calculation results to file</td></tr>
+  <tr><td><img src="images/icons/46_CopyResult.png" alt="Copy Result" class="icon"> Copy Result</td><td>Copy results to clipboard</td></tr>
+  <tr><td>Scale</td><td>Toggle linear/logarithmic chart scale</td></tr>
+  <tr><td><img src="images/icons/12_DeleteExtension.png" alt="Delete" class="icon"> Delete</td><td>Remove the selected item</td></tr>
+</table>
+
+<h2 id="structure-toolbar">Structure Toolbar</h2>
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td><img src="images/icons/add_period.png" alt="Period +" class="icon"> Period +</td><td>Add a new stack</td></tr>
+  <tr><td><img src="images/icons/add_row_32_h.png" alt="Period Insert" class="icon"> Period Insert</td><td>Insert a stack at the current position</td></tr>
+  <tr><td><img src="images/icons/delete_row_32_h.png" alt="Period −" class="icon"> Period &minus;</td><td>Delete the selected stack</td></tr>
+  <tr><td><img src="images/icons/add_layer.png" alt="Layer +" class="icon"> Layer +</td><td>Add a new layer</td></tr>
+  <tr><td><img src="images/icons/add_row_32_h.png" alt="Layer Insert" class="icon"> Layer Insert</td><td>Insert a layer at the current position</td></tr>
+  <tr><td><img src="images/icons/clipboard_copy_lined_32.png" alt="Layer Copy" class="icon"> Layer Copy</td><td>Copy the selected layer</td></tr>
+  <tr><td><img src="images/icons/clipboard_cut_32_h.png" alt="Layer Cut" class="icon"> Layer Cut</td><td>Cut the selected layer</td></tr>
+  <tr><td><img src="images/icons/clipboard_paste_lined_32.png" alt="Layer Paste" class="icon"> Layer Paste</td><td>Paste the copied layer</td></tr>
+  <tr><td><img src="images/icons/delete_row_32_h.png" alt="Layer −" class="icon"> Layer &minus;</td><td>Delete the selected layer</td></tr>
+  <tr><td>Set Fit Limits</td><td>Open the parameter bounds editor</td></tr>
+  <tr><td>Increment</td><td>Set the step size for parameter adjustments</td></tr>
+</table>
+
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+<table>
+  <tr><th>Key</th><th>Action</th></tr>
+  <tr><td><strong>F1</strong></td><td>Open User Manual</td></tr>
+</table>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Overview">Application Overview</a></li>
+  <li><a href="#Models">Defining a Model</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="Projects">
+
+
+<h1><span class="num">6</span>Projects</h1>
+<div class="subtitle">Project files, creating, opening and saving, auto-save, locking, and the project tree</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#project-files">Project Files</a></li>
+    <li><a href="#creating-a-new-project">Creating a New Project</a></li>
+    <li><a href="#opening-a-project">Opening a Project</a></li>
+    <li><a href="#saving-a-project">Saving a Project</a></li>
+    <li><a href="#auto-save">Auto-Save</a></li>
+    <li><a href="#project-locking">Project Locking</a></li>
+    <li><a href="#project-tree-organization">Project Tree Organization</a></li>
+  </ul>
+</div>
+
+<h2 id="project-files">Project Files</h2>
 <p>Projects are saved as <code>.xrcx</code> files. Internally, an <code>.xrcx</code> file is a ZIP archive containing:</p>
 <ul>
   <li><code>project.dsc</code> &mdash; project metadata</li>
@@ -215,32 +392,32 @@
   <li>Associated experimental data files</li>
 </ul>
 
-<h3>Creating a New Project</h3>
+<h2 id="creating-a-new-project">Creating a New Project</h2>
 <ol>
   <li>Choose <strong>File &gt; New Project</strong> (or click the <img src="images/icons/01_New.png" alt="New" class="icon"> <strong>New</strong> toolbar button).</li>
   <li>An empty project is created with no models or data.</li>
 </ol>
 
-<h3>Opening a Project</h3>
+<h2 id="opening-a-project">Opening a Project</h2>
 <ul>
   <li><strong>File &gt; Open Project</strong> &mdash; browse for a <code>.xrcx</code> file</li>
   <li><strong>File &gt; Recent Projects</strong> &mdash; select from up to 10 recently opened projects</li>
   <li><img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> <strong>Open toolbar button</strong> &mdash; click the dropdown arrow for recent projects</li>
 </ul>
 
-<h3>Saving a Project</h3>
+<h2 id="saving-a-project">Saving a Project</h2>
 <ul>
   <li><strong>File &gt; Save Project</strong> &mdash; save to the current file</li>
   <li><strong>File &gt; Save Project As</strong> &mdash; save with a new name/location</li>
 </ul>
 
-<h3>Auto-Save</h3>
+<h2 id="auto-save">Auto-Save</h2>
 <p>When enabled in Settings, the application periodically saves a backup to <code>AutoSave.xrcx</code> in the temp directory. This provides crash recovery &mdash; on next launch, you will be prompted to restore the auto-saved project.</p>
 
-<h3>Project Locking</h3>
+<h2 id="project-locking">Project Locking</h2>
 <p>When a project is open, a lock file (<code>temp.lock</code>) prevents simultaneous access from another instance. The lock is released when the project is closed.</p>
 
-<h3>Project Tree Organization</h3>
+<h2 id="project-tree-organization">Project Tree Organization</h2>
 <p>The project tree shows items in a hierarchy:</p>
 <ul>
   <li><strong>Model Group:</strong> Contains all structural models
@@ -254,19 +431,48 @@
 </ul>
 <div class="tip"><strong>Tip:</strong> Right-click the project tree for context menu operations.</div>
 
-<!-- ═══ 6. Defining a Model ═══ -->
-<h2><span class="num">6</span> Defining a Model</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#project-file-xrcx">File Formats &gt; Project File</a></li>
+  <li><a href="#Models">Defining a Model</a></li>
+  <li><a href="#Settings">Application Settings</a></li>
+</ul>
 
-<h3>Creating a Model</h3>
+
+
+
+</div>
+<div class="chapter" id="Models">
+
+
+<h1><span class="num">7</span>Defining a Model</h1>
+<div class="subtitle">The structure editor, stacks and layers, materials, quick editing, undo, and the JSON view</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#creating-a-model">Creating a Model</a></li>
+    <li><a href="#duplicating-a-model">Duplicating a Model</a></li>
+    <li><a href="#the-structure-editor">The Structure Editor</a></li>
+    <li><a href="#terminology">Terminology</a></li>
+    <li><a href="#stacks">Stacks (Periods)</a></li>
+    <li><a href="#layers">Layers</a></li>
+    <li><a href="#quick-parameter-editing">Quick Parameter Editing</a></li>
+    <li><a href="#undo">Undo</a></li>
+    <li><a href="#model-text-json">Model Text (JSON)</a></li>
+  </ul>
+</div>
+
+<h2 id="creating-a-model">Creating a Model</h2>
 <ol>
   <li>Choose <strong>Project &gt; New Model</strong> or click the <img src="images/icons/06_AddModel.png" alt="Add Model" class="icon"> <strong>Add Model</strong> toolbar button.</li>
   <li>A new model appears in the project tree with a default empty structure.</li>
 </ol>
 
-<h3>Duplicating a Model</h3>
+<h2 id="duplicating-a-model">Duplicating a Model</h2>
 <p>Select a model in the project tree and choose <strong>Project &gt; Duplicate Model</strong> to create an exact copy, including all layers, stacks, and parameters.</p>
 
-<h3>The Structure Editor</h3>
+<h2 id="the-structure-editor">The Structure Editor</h2>
 
 <figure>
   <img src="images/fig1.jpg" alt="Examples of different types of fitting structures">
@@ -282,18 +488,19 @@
 </ul>
 <p>Each element in the structure is displayed as a colored block with its parameters.</p>
 
-<h3>Terminology</h3>
+<h2 id="terminology">Terminology</h2>
+<p>The following terminology is used throughout XRC3 (as defined in Penkov <em>et al.</em>, 2024):</p>
 <ul>
-  <li><strong>Material</strong> &mdash; the chemical composition of a layer (e.g. Mo, SiO<sub>2</sub>, B<sub>4</sub>C). Used to look up atomic scattering factors, atomic weights and table densities in the embedded database.</li>
-  <li><strong>Layer</strong> &mdash; the basic geometrical entity. A layer consists of a material and has three parameters: thickness (H), roughness (&sigma;) and density (&rho;).</li>
+  <li><strong>Material</strong> &mdash; the chemical composition of a layer (e.g. Mo, SiO<sub>2</sub>, B<sub>4</sub>C). Used to look up atomic scattering factors, atomic weights and table densities in the embedded database. Cannot be changed during fitting.</li>
+  <li><strong>Layer</strong> &mdash; the basic geometrical entity. A layer consists of a material and has three parameters: thickness (H), roughness (&sigma;) and density (&rho;). All three are adjustable during fitting.</li>
   <li><strong>Stack</strong> &mdash; a set of layers. It can be single (non-repeating) or periodic (repeated N times).</li>
   <li><strong>Structure</strong> &mdash; a set of stacks, including a substrate. The substrate is a special stack consisting of a single layer with infinite thickness.</li>
 </ul>
 
-<h3>Stacks (Periods)</h3>
+<h2 id="stacks">Stacks (Periods)</h2>
 <p>A stack represents a periodic multilayer structure &mdash; a group of layers repeated N times.</p>
 
-<h4>Adding a stack</h4>
+<h3>Adding a stack</h3>
 <ol>
   <li>Select the model in the project tree.</li>
   <li>Choose <strong>Structure &gt; Add Stack</strong> or use the structure toolbar.</li>
@@ -305,10 +512,10 @@
   </li>
 </ol>
 
-<h4>Editing a stack</h4>
+<h3>Editing a stack</h3>
 <p>Double-click the stack header in the structure editor to open the Stack Properties dialog.</p>
 
-<h3>Layers</h3>
+<h2 id="layers">Layers</h2>
 <p>Each layer has three primary parameters:</p>
 <table>
   <tr><th>Parameter</th><th>Symbol</th><th>Unit</th><th>Description</th></tr>
@@ -317,40 +524,78 @@
   <tr><td>Density</td><td>&rho;</td><td>g/cm&sup3;</td><td>Material density</td></tr>
 </table>
 
-<h4>Adding a layer</h4>
+<p>Additionally, each layer has a <strong>material</strong> assignment that links it to an entry in the Henke atomic form factor database.</p>
+
+<h3>Adding a layer</h3>
 <ol>
   <li>Select a stack or model in the structure editor.</li>
-  <li>Choose <strong>Structure &gt; Add Layer</strong> or use the toolbar.</li>
-  <li>The Layer Properties dialog opens with fields for material, H, &sigma;, and &rho;.</li>
+  <li>Choose <strong>Structure &gt; Add Layer</strong> or use the <img src="images/icons/add_layer.png" alt="Add Layer" class="icon"> toolbar.</li>
+  <li>The Layer Properties dialog opens with fields for:
+    <ul>
+      <li><strong>Layer material:</strong> Select or type a chemical formula (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;)</li>
+      <li><strong>H (&#8491;):</strong> Thickness in Angstroms</li>
+      <li><strong>&sigma; (&#8491;):</strong> Roughness in Angstroms</li>
+      <li><strong>&rho; (g/cm&sup3;):</strong> Density in g/cm&sup3;</li>
+    </ul>
+  </li>
 </ol>
 
-<h4>Layer operations (via Structure menu or toolbar)</h4>
+<h3>Navigating layers</h3>
+<p>The Layer Properties dialog includes <strong>&lt;&lt;</strong> and <strong>&gt;&gt;</strong> buttons to move to the previous or next layer without closing the dialog.</p>
+
+<h3>Layer operations (via Structure menu or toolbar)</h3>
 <ul>
-  <li><strong>Insert Layer</strong> &mdash; insert before the selected position</li>
-  <li><strong>Copy Layer</strong> &mdash; copy to internal clipboard</li>
-  <li><strong>Paste Layer</strong> &mdash; paste from internal clipboard</li>
-  <li><strong>Cut Layer</strong> &mdash; copy and delete</li>
-  <li><strong>Delete Layer</strong> &mdash; remove the layer</li>
+  <li><img src="images/icons/add_row_32_h.png" alt="Insert" class="icon"> <strong>Insert Layer</strong> &mdash; insert before the selected position</li>
+  <li><img src="images/icons/clipboard_copy_lined_32.png" alt="Copy" class="icon"> <strong>Copy Layer</strong> &mdash; copy to internal clipboard</li>
+  <li><img src="images/icons/clipboard_paste_lined_32.png" alt="Paste" class="icon"> <strong>Paste Layer</strong> &mdash; paste from internal clipboard</li>
+  <li><img src="images/icons/clipboard_cut_32_h.png" alt="Cut" class="icon"> <strong>Cut Layer</strong> &mdash; copy and delete</li>
+  <li><img src="images/icons/delete_row_32_h.png" alt="Delete" class="icon"> <strong>Delete Layer</strong> &mdash; remove the layer</li>
 </ul>
 
-<h3>Quick Parameter Editing</h3>
+<h2 id="quick-parameter-editing">Quick Parameter Editing</h2>
 <p>In the structure editor, you can adjust layer parameters directly:</p>
 <ul>
   <li>Click a parameter value to edit it in-place</li>
-  <li>Use the <strong>Increment</strong> selector to set the step size for fine-tuning</li>
+  <li>Use the <strong>Increment</strong> selector (in the structure toolbar) to set the step size for fine-tuning</li>
   <li>Changes are applied immediately; if Auto-Calc is enabled, the reflectivity recalculates in real time</li>
 </ul>
 
-<h3>Undo</h3>
+<h2 id="undo">Undo</h2>
 <p>Choose <strong>Structure &gt; Undo Structure Changes</strong> to revert the last structural modification.</p>
 
-<h3>Model Text (JSON)</h3>
-<p>For advanced users, <strong>Structure &gt; Edit Model Text</strong> opens a JSON editor showing the raw model definition.</p>
+<h2 id="model-text-json">Model Text (JSON)</h2>
+<p>For advanced users, <strong>Structure &gt; Edit Model Text</strong> opens a JSON editor showing the raw model definition. This allows direct text editing of the complete structure.</p>
 
-<!-- ═══ 7. Experimental Data ═══ -->
-<h2><span class="num">7</span> Experimental Data</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Profiles">Profile Extensions</a></li>
+  <li><a href="#Tools">Tools</a></li>
+  <li><a href="#fit-limits">Fitting &gt; Setting Fit Limits</a></li>
+</ul>
 
-<h3>Loading Data from File</h3>
+
+
+
+</div>
+<div class="chapter" id="Data">
+
+
+<h1><span class="num">8</span>Experimental Data</h1>
+<div class="subtitle">Loading and pasting measured curves, the data format, normalize, smooth, trim, and export</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#loading-data-from-file">Loading Data from File</a></li>
+    <li><a href="#pasting-data-from-clipboard">Pasting Data from Clipboard</a></li>
+    <li><a href="#data-format">Data Format</a></li>
+    <li><a href="#data-processing">Data Processing</a></li>
+    <li><a href="#data-conditioning-walkthrough">Data Conditioning Walkthrough</a></li>
+    <li><a href="#exporting-data">Exporting Data</a></li>
+  </ul>
+</div>
+
+<h2 id="loading-data-from-file">Loading Data from File</h2>
 <ol>
   <li>Select a model or data item in the project tree.</li>
   <li>Choose <strong>Data &gt; Load from File</strong> or click the <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> <strong>Load Data</strong> toolbar button.</li>
@@ -358,14 +603,14 @@
   <li>The data appears as a series on the main chart.</li>
 </ol>
 
-<h3>Pasting Data from Clipboard</h3>
+<h2 id="pasting-data-from-clipboard">Pasting Data from Clipboard</h2>
 <ol>
   <li>Copy two-column data from another application (e.g., a spreadsheet).</li>
   <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> <strong>Paste Data</strong> toolbar button.</li>
   <li>The data is imported into the current model.</li>
 </ol>
 
-<h3>Data Format</h3>
+<h2 id="data-format">Data Format</h2>
 <p>The expected data format is a two-column ASCII text file:</p>
 <ul>
   <li><strong>2 columns</strong> with TAB as the column separator</li>
@@ -385,40 +630,82 @@ Theta    Reflectivity
 2.000   0.012450
 5.000   0.000023</code></pre>
 
-<div class="tip"><strong>Tip:</strong> You can also copy and paste table data directly from <strong>OriginLab Origin</strong>.</div>
+<p>Lines starting with <code>#</code> or other non-numeric characters are treated as comments and ignored.</p>
 
-<h3>Data Processing</h3>
+<div class="tip"><strong>Tip:</strong> You can also copy and paste table data directly from <strong>OriginLab Origin</strong>. The recommended workflow is to import your raw data into Origin first, then copy-paste the two-column table into X-Ray Calc.</div>
 
-<h4>Normalize</h4>
-<p><strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. <strong>Data &gt; Normalize (Auto)</strong> automatically normalizes the data.</p>
+<h2 id="data-processing">Data Processing</h2>
 
-<h4>Smooth</h4>
-<p><strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise while preserving peak shapes.</p>
+<h3>Normalize</h3>
+<p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. This scales the reflectivity values so the maximum equals 1.0 (or another chosen value).</p>
+<p><strong>Data &gt; Normalize (Auto)</strong> automatically normalizes the data by dividing all reflectivity values by the maximum value.</p>
 
-<h4>Trim</h4>
-<p><strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data.</p>
+<h3>Smooth</h3>
+<p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise in the experimental data while preserving peak shapes.</p>
 
-<h3>Data Conditioning Walkthrough</h3>
-<p>Raw experimental data often requires conditioning before fitting:</p>
-<p><strong>Step 1 &mdash; Normalize.</strong> Compare experimental and calculated intensities at a known point. Apply via <strong>Data &gt; Normalize</strong>.</p>
-<p><strong>Step 2 &mdash; Smooth.</strong> Apply smoothing to reduce noise: <strong>Data &gt; Smooth</strong>.</p>
-<p><strong>Step 3 &mdash; Trim.</strong> Remove data points outside the useful range: <strong>Data &gt; Trim</strong>.</p>
+<h3>Trim</h3>
+<p><img src="images/icons/Menu_Trim.png" alt="Trim" class="icon"> <strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.</p>
 
-<h3>Exporting Data</h3>
+<h2 id="data-conditioning-walkthrough">Data Conditioning Walkthrough</h2>
+<p>Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:</p>
+
+<p><strong>Step 1 &mdash; Normalize.</strong> Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via <strong>Data &gt; Normalize</strong>. For example, if the experimental intensity at 0.4&deg; is 0.099, divide by 0.099 to bring the curve to unit reflectivity.</p>
+
+<p><strong>Step 2 &mdash; Smooth.</strong> Apply smoothing to reduce noise: <strong>Data &gt; Smooth</strong>. This uses a Savitzky-Golay filter that preserves peak shapes while reducing point-to-point scatter.</p>
+
+<p><strong>Step 3 &mdash; Trim.</strong> Remove data points outside the useful range:</p>
+<ol>
+  <li>Set the calculation angle range to cover only the reliable portion of the data (e.g., 0.4&deg; to 4.5&deg;).</li>
+  <li>Click <strong>Calc</strong> and note the &chi;&sup2; value.</li>
+  <li>Select <strong>Data &gt; Trim</strong> to discard points outside the calculation range.</li>
+  <li>Click <strong>Calc</strong> again &mdash; the &chi;&sup2; should decrease significantly, confirming that noisy tail data has been removed.</li>
+</ol>
+
+<p>After these steps, the experimental curve is ready for fitting.</p>
+
+<h2 id="exporting-data">Exporting Data</h2>
 <ul>
-  <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copy data in tab-separated format</li>
+  <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copy data in tab-separated format for pasting into other applications</li>
   <li><strong>Data &gt; Export to File</strong> &mdash; save processed data to a text file</li>
 </ul>
 
-<!-- ═══ 8. Calculation ═══ -->
-<h2><span class="num">8</span> Calculation</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#experimental-data-files">File Formats &gt; Experimental Data Files</a></li>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+  <li><a href="#Troubleshooting">Troubleshooting</a></li>
+</ul>
 
-<h3>Algorithm</h3>
-<p>XRC3 uses the Parratt exact recursive method for simulating specular X-ray reflectivity. A Gaussian distribution is assumed for interface roughness. The refractive indices of materials are calculated using the Henke tables of X-ray scattering factors.</p>
 
-<h3>Calculation Modes</h3>
 
-<h4>Theta Mode (by angle)</h4>
+
+</div>
+<div class="chapter" id="Calculation">
+
+
+<h1><span class="num">9</span>Calculation</h1>
+<div class="subtitle">Theta and lambda modes, polarization, number of points, auto-calculation, and multi-threading</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#algorithm">Algorithm</a></li>
+    <li><a href="#calc-modes">Calculation Modes</a></li>
+    <li><a href="#polarization">Polarization</a></li>
+    <li><a href="#number-of-points-n">Number of Points (N)</a></li>
+    <li><a href="#running-a-calculation">Running a Calculation</a></li>
+    <li><a href="#auto-calculation">Auto-Calculation</a></li>
+    <li><a href="#multi-thread">Multi-Threading</a></li>
+  </ul>
+</div>
+
+<h2 id="algorithm">Algorithm</h2>
+<p>XRC3 uses the Parratt exact recursive method for simulating specular X-ray reflectivity. A Gaussian distribution is assumed for interface roughness. The refractive indices of materials are calculated using the Henke tables of X-ray scattering factors (Henke <em>et al.</em>, 1993). Reflectivity calculations can be performed as functions of either incidence angle or wavelength.</p>
+
+<h2 id="calc-modes">Calculation Modes</h2>
+<p>X-Ray Calc 3 supports two calculation modes:</p>
+
+<h3>Theta Mode (by angle)</h3>
 <p>Calculates reflectivity as a function of incidence angle at a fixed wavelength.</p>
 <table>
   <tr><th>Parameter</th><th>Description</th></tr>
@@ -426,10 +713,10 @@ Theta    Reflectivity
   <tr><td><strong>&theta;<sub>2</sub></strong></td><td>End angle (degrees)</td></tr>
   <tr><td><strong>&lambda; (&#8491;)</strong></td><td>Fixed wavelength in Angstroms (default: 1.54043 &#8491;, Cu K&alpha;)</td></tr>
   <tr><td><strong>&Delta;&theta;</strong></td><td>Angular resolution / step size (degrees)</td></tr>
-  <tr><td><strong>2&theta;</strong></td><td>When checked, angles are in 2&theta; convention</td></tr>
+  <tr><td><strong>2&theta;</strong></td><td>When checked, angles are in 2&theta; (double angle) convention</td></tr>
 </table>
 
-<h4>Lambda Mode (by wavelength)</h4>
+<h3>Lambda Mode (by wavelength)</h3>
 <p>Calculates reflectivity as a function of wavelength at a fixed incidence angle.</p>
 <table>
   <tr><th>Parameter</th><th>Description</th></tr>
@@ -439,296 +726,1800 @@ Theta    Reflectivity
   <tr><td><strong>&Delta;&lambda;</strong></td><td>Wavelength step size (Angstroms)</td></tr>
 </table>
 
-<h3>Polarization</h3>
+<h2 id="polarization">Polarization</h2>
 <ul>
-  <li><strong>s-type:</strong> S-polarization (TE mode)</li>
+  <li><strong>s-type:</strong> S-polarization (TE mode, electric field perpendicular to the plane of incidence)</li>
   <li><strong>sp-type:</strong> Mixed &sigma;/&pi; polarization</li>
 </ul>
-<div class="tip"><strong>Guidance:</strong> Use <strong>s-polarization</strong> for hard X-rays at low grazing angles (below 20&deg;) &mdash; significantly faster. Use <strong>sp-polarization</strong> for larger angles and softer radiation.</div>
 
-<h3>Running a Calculation</h3>
+<div class="tip"><strong>Guidance:</strong> Use <strong>s-polarization</strong> when calculating at hard X-rays and low grazing angles (below 20&deg;) &mdash; in this regime the difference from sp is negligible and calculation speed is significantly faster. Use <strong>sp-polarization</strong> for larger angles and softer radiation where both polarization components contribute.</div>
+
+<h2 id="number-of-points-n">Number of Points (N)</h2>
+<p>The <strong>N</strong> parameter controls the number of calculation points (default: 2000). More points give smoother curves but take longer to compute.</p>
+
+<h2 id="running-a-calculation">Running a Calculation</h2>
 <ol>
   <li>Select a model in the project tree.</li>
-  <li>Set the calculation parameters.</li>
+  <li>Set the calculation parameters (mode, angle/wavelength range, polarization, N).</li>
   <li>Choose <strong>Calc &gt; Calculate</strong> or click the <img src="images/icons/40_Play.png" alt="Calculate" class="icon"> <strong>Calc Run</strong> toolbar button.</li>
   <li>The calculated reflectivity curve appears on the main chart.</li>
 </ol>
+<p><strong>Calculate All</strong> (<strong>Calc &gt; Calculate All</strong>) calculates reflectivity for every model in the project.</p>
 
-<h3>Multi-Threading</h3>
-<p>The angular range is divided into segments matching CPU cores for parallel computation. Configure in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>.</p>
+<h2 id="auto-calculation">Auto-Calculation</h2>
+<div class="note"><strong>Auto-Calc:</strong> When enabled in Settings, the reflectivity is recalculated automatically whenever you modify the structure. This provides real-time feedback as you adjust layer parameters.</div>
 
-<!-- ═══ 9. Fitting ═══ -->
-<h2><span class="num">9</span> Fitting (Optimization)</h2>
+<h2 id="multi-thread">Multi-Threading</h2>
+<p>The complete angular data range is divided into segments matching the number of available CPU cores, and each segment is computed in parallel. Configure the number of cores in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>:</p>
+<ul>
+  <li><strong>Auto (Use all)</strong> &mdash; use all available CPU cores (default)</li>
+  <li><strong>2, 4, 8, 12, 16, 32, 64</strong> &mdash; limit to a specific number of threads</li>
+</ul>
+<div class="tip"><strong>Performance:</strong> With a 16-core CPU, the typical simulation time for XRR ranges from 0.05 to 0.25 s for a periodic multilayer model consisting of 300 stacks of 4 layers each (3000-point curve). This speed enables real-time manual curve fitting.</div>
 
-<p>Fitting adjusts model parameters to minimize the difference between calculated and experimental reflectivity curves. X-Ray Calc 3 uses the <strong>Shake LFPSO (L&eacute;vy Flight Particle Swarm Optimization)</strong> algorithm.</p>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Models">Defining a Model</a></li>
+  <li><a href="#Charts">Charts &amp; Visualization</a></li>
+  <li><a href="#Settings">Application Settings</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="Fitting">
+
+
+<h1><span class="num">10</span>Fitting (Optimization)</h1>
+<div class="subtitle">The Shake LFPSO algorithm, fit limits, fitting modes, parameters, convergence, and the cost function</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#prerequisites-for-fitting">Prerequisites for Fitting</a></li>
+    <li><a href="#fit-limits">Setting Fit Limits</a></li>
+    <li><a href="#fit-modes">Fitting Modes</a></li>
+    <li><a href="#fit-params">Basic Fitting Parameters</a></li>
+    <li><a href="#fit-advanced">Advanced Fitting Settings</a></li>
+    <li><a href="#running-a-fit">Running a Fit</a></li>
+    <li><a href="#convergence-enhancements">Convergence Enhancements</a></li>
+    <li><a href="#understanding-the-cost-function">Understanding the Cost Function</a></li>
+  </ul>
+</div>
+
+<p>Fitting adjusts model parameters to minimize the difference between calculated and experimental reflectivity curves. X-Ray Calc 3 uses the <strong>Shake LFPSO (L&eacute;vy Flight Particle Swarm Optimization)</strong> algorithm &mdash; a population-based global optimization method with an enhanced &ldquo;Shake&rdquo; mechanism to escape local minima (Li <em>et al.</em>, 2023; Penkov <em>et al.</em>, 2024).</p>
 
 <figure>
   <img src="images/fig2.jpg" alt="Shake LFPSO algorithm diagram">
-  <figcaption><strong>Figure 3.</strong> General diagram of the Shake LFPSO algorithm. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+  <figcaption><strong>Figure 3.</strong> General diagram of the Shake LFPSO algorithm. Bold dashed lines indicate calls to subroutines. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
+
+<p>The LFPSO algorithm creates a population of solutions (particles), each being a vector of structural parameters. The population is iteratively modified to produce better-fitting solutions. The L&eacute;vy flight is a random walk that uses the L&eacute;vy distribution to determine step sizes, providing efficient global exploration due to occasional long jumps. The Shake modification re-initializes the population when convergence stalls, helping the algorithm escape local minima.</p>
+
+<p>Version 3.6 introduces several <a href="#convergence-enhancements">convergence enhancements</a> that improve exploration/exploitation balance, boundary handling, and shake triggering. Six improvements are always active; the Clerc-Kennedy constriction factor is optional (enabled by default in Advanced Settings).</p>
 
 <figure>
   <img src="images/fig4.jpg" alt="Shake LFPSO concept">
-  <figcaption><strong>Figure 4.</strong> The Shake concept. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+  <figcaption><strong>Figure 4.</strong> The Shake concept. (a) All particles trapped in a local minimum. (b) Shaking event: locations and velocities are randomized based on P<sub>gbest</sub>; V<sub>max</sub> is multiplied by k<sub>1</sub> and the cost function threshold is lifted by k<sub>2</sub>. (c) After LFPSO leap, a new best solution is found. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
 
-<h3>Prerequisites for Fitting</h3>
+<h2 id="prerequisites-for-fitting">Prerequisites for Fitting</h2>
+<p>Before starting a fit, you need:</p>
 <ol>
   <li><strong>A defined model</strong> with initial parameter estimates</li>
   <li><strong>Experimental data</strong> loaded into the project</li>
   <li><strong>Fit limits</strong> set for each adjustable parameter</li>
 </ol>
 
-<h3>Setting Fit Limits</h3>
-<p>Click <strong>Set Fit Limits</strong> in the structure toolbar. Only parameters with Min &ne; Max will be adjusted during fitting.</p>
+<h2 id="fit-limits">Setting Fit Limits</h2>
+<ol>
+  <li>Select the model in the project tree.</li>
+  <li>Click the <strong>Set Fit Limits</strong> button in the structure toolbar.</li>
+  <li>The Limits dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;) with columns for Min and Max of each parameter.</li>
+  <li>Click any cell to edit its value directly.</li>
+  <li>Only parameters with Min &ne; Max will be adjusted during fitting. Set Min = Max to lock (fix) a parameter.</li>
+</ol>
 
-<h3>Fitting Modes</h3>
+<h3>Limit Actions</h3>
+<p>The dialog provides action buttons for batch operations on limits:</p>
+<table>
+  <tr><th>Button</th><th>Action</th></tr>
+  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; percentages. For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
+  <tr><td><strong>Narrow</strong></td><td>Shrinks all unlocked limits toward the current fitted value by 50%, reducing the search space. Useful after a successful fit to refine results.</td></tr>
+  <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 1% of the range edge). Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range.</td></tr>
+  <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling.</td></tr>
+</table>
+
+<h3>Validation and Visual Feedback</h3>
+<p>The dialog validates limits in real time and highlights problematic cells:</p>
+<ul>
+  <li><span style="background:#FFCCCC;padding:1px 6px">Red cells</span> indicate <strong>errors</strong> that must be fixed before fitting:
+    <ul>
+      <li>Min &gt; Max (inverted range)</li>
+      <li>Negative Min for H, &sigma;, or &rho;</li>
+    </ul>
+  </li>
+  <li><span style="background:#FFFFCC;padding:1px 6px">Yellow cells</span> indicate <strong>warnings</strong> &mdash; fitting is allowed but results may be suboptimal:
+    <ul>
+      <li>Fitted value below Min or above Max</li>
+      <li>Fitted value at a limit boundary (within 1% of range)</li>
+      <li>Range too wide (&gt;100&times;) or too narrow (&lt;1% of value)</li>
+      <li>&rho; Max exceeds densest stable element (23 g/cm&sup3;)</li>
+      <li>All parameters locked &mdash; nothing to fit</li>
+    </ul>
+  </li>
+</ul>
+<p>Click <strong>Fix</strong> to resolve all highlighted issues automatically, or address them manually by editing individual cells.</p>
+
+<h3>Physics Constraints</h3>
+<p>All limit operations automatically enforce physical constraints:</p>
+<ul>
+  <li>H, &sigma;, &rho; &ge; 0 (no negative values)</li>
+  <li>&rho; &le; 23 g/cm&sup3; (densest stable element, Osmium)</li>
+  <li>&sigma; Max &le; min(own H, neighboring layer H) &mdash; roughness cannot exceed layer thickness or the thickness of the layer below</li>
+</ul>
+
+<h2 id="fit-modes">Fitting Modes</h2>
+<p>The software provides several structure-representation methods. The user chooses the most suitable depending on the nature of the coating:</p>
+
 <table>
   <tr><th>Structure Representation</th><th>Applicability</th><th>Computation Time</th></tr>
-  <tr><td>Regular (Irregular)</td><td>Non-periodic coatings</td><td>Long</td></tr>
-  <tr><td>Periodic</td><td>Periodic multilayer mirrors</td><td>Short</td></tr>
-  <tr><td>Periodic with arbitrary deviations</td><td>Supermirrors</td><td>Long</td></tr>
-  <tr><td>Polynomial distributions</td><td>PMMs with gradual parameter change</td><td>Moderate</td></tr>
+  <tr><td>Regular (Irregular)</td><td>Regular non-periodic coatings</td><td>Long</td></tr>
+  <tr><td>Periodic</td><td>Periodic multilayer mirrors (PMMs)</td><td>Short</td></tr>
+  <tr><td>Periodic with arbitrary deviations</td><td>Supermirrors, PMMs with arbitrary distributions</td><td>Long</td></tr>
+  <tr><td>Polynomial distributions</td><td>PMMs with gradual change of parameters</td><td>Moderate</td></tr>
 </table>
 
-<h3>Basic Fitting Parameters</h3>
+<h3>Irregular Mode</h3>
+<p>Every parameter of each layer is treated independently. This mode is used for non-periodic coatings consisting of several layers. At the start of fitting, the software expands each periodic stack into individual layers. Once fitting is complete, distribution charts are generated for each parameter of every material type (thickness, roughness, density).</p>
+<ul>
+  <li>Each layer has its own fitted thickness, roughness, and density.</li>
+  <li>The <strong>Smoothing window</strong> parameter (in Advanced Settings) applies spatial smoothing to prevent unphysical oscillations.</li>
+  <li>Specific parameters can be &ldquo;stack-locked&rdquo; (paired) &mdash; e.g. roughness and density remain constant while thickness varies across the stack.</li>
+</ul>
+<div class="note"><strong>Example:</strong> A Mo/Si PMM with 60 repeated stacks would require 726 variables if treated individually. Using the periodic mode, this reduces to just 18 variables.</div>
+
+<h3>Periodic Mode</h3>
+<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. A periodicity keeper normalizes layer thicknesses to maintain the total period D of each stack.</p>
+<ul>
+  <li>Suitable for structures with consistent periodicity.</li>
+  <li>Dramatically reduces the number of fitting variables for PMMs.</li>
+</ul>
+
+<h3>Polynomial Mode</h3>
+<p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of depth. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>. The user can select the polynomial order from 1 to 20.</p>
+<ul>
+  <li><strong>Order:</strong> Maximum polynomial order (1 = linear, 2 = quadratic, etc.)</li>
+  <li>Useful for smooth, continuous parameter gradients (e.g. graded-period supermirrors, PMMs with unstable deposition rate).</li>
+</ul>
+
+<h2 id="fit-params">Basic Fitting Parameters</h2>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Iterations</strong></td><td>Maximum optimization iterations</td><td>100</td></tr>
-  <tr><td><strong>Population</strong></td><td>Number of particles in the swarm</td><td>100</td></tr>
-  <tr><td><strong>Shake</strong></td><td>Enable perturbation to escape local minima</td><td>Checked</td></tr>
-  <tr><td><strong>SeedR</strong></td><td>Seed particles from parameter range</td><td>Checked</td></tr>
-  <tr><td><strong>Smooth</strong></td><td>Apply smoothing to fitted profiles</td><td>Unchecked</td></tr>
-  <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square</td><td>Checked</td></tr>
-  <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square</td><td>None</td></tr>
+  <tr><td><strong>Iterations</strong></td><td>Maximum number of optimization iterations</td><td>100</td></tr>
+  <tr><td><strong>Population</strong></td><td>Number of particles (candidate solutions) in the swarm</td><td>100</td></tr>
+  <tr><td><strong>Shake</strong></td><td>Enable random perturbation to escape local minima</td><td>Checked</td></tr>
+  <tr><td><strong>SeedR</strong></td><td>Seed particles from the parameter range</td><td>Checked</td></tr>
+  <tr><td><strong>Smooth</strong></td><td>Apply smoothing to fitted parameter profiles</td><td>Unchecked</td></tr>
+  <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square calculation</td><td>Checked</td></tr>
+  <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
 </table>
 
-<h3>Advanced Fitting Settings</h3>
+<h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
+<p>Controls how the chi-square metric weights different angular regions:</p>
+<table>
+  <tr><th>Option</th><th>Effect</th></tr>
+  <tr><td>None</td><td>Equal weight across all angles</td></tr>
+  <tr><td>sqr</td><td>Weight &prop; &theta;&sup2; (emphasizes high angles)</td></tr>
+  <tr><td>line</td><td>Weight &prop; &theta;</td></tr>
+  <tr><td>sqrt</td><td>Weight &prop; &radic;&theta;</td></tr>
+  <tr><td>1/sqr</td><td>Weight &prop; 1/&theta;&sup2; (emphasizes low angles)</td></tr>
+  <tr><td>1/sqrt</td><td>Weight &prop; 1/&radic;&theta;</td></tr>
+</table>
+
+<h2 id="fit-advanced">Advanced Fitting Settings</h2>
+<p>Click the <strong>Advanced Settings</strong> button in the Fitting panel to open the detailed LFPSO configuration dialog.</p>
+
+<h3>General</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Tolerance</strong></td><td>Target cost function value</td><td>0.005</td></tr>
-  <tr><td><strong>SHmax</strong></td><td>Maximum consecutive shakes</td><td>3</td></tr>
-  <tr><td><strong>Jmax</strong></td><td>Iterations without improvement before shake</td><td>1</td></tr>
+  <tr><td><strong>Tolerance</strong></td><td>Target cost function value; fitting stops when reached</td><td>0.005</td></tr>
+  <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
+</table>
+
+<h3>LFPSO Parameters</h3>
+<table>
+  <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>SHmax</strong></td><td>Maximum number of consecutive shakes</td><td>3</td></tr>
+  <tr><td><strong>Jmax</strong></td><td>Number of iterations without improvement before shake</td><td>1</td></tr>
   <tr><td><strong>Vmax</strong></td><td>Maximum particle velocity factor</td><td>0.3</td></tr>
-  <tr><td><strong>&omega;<sub>1</sub></strong></td><td>Velocity scale factor</td><td>0.3</td></tr>
+  <tr><td><strong>&omega;<sub>1</sub></strong></td><td>Velocity scale factor (permanent component)</td><td>0.3</td></tr>
   <tr><td><strong>&omega;<sub>2</sub></strong></td><td>Velocity reducing factor</td><td>0.1</td></tr>
   <tr><td><strong>k<sub>1</sub></strong></td><td>Velocity shake coefficient</td><td>1.41</td></tr>
-  <tr><td><strong>k<sub>2</sub></strong></td><td>Cost function shake coefficient</td><td>1.41</td></tr>
+  <tr><td><strong>k<sub>2</sub></strong></td><td>Best cost function shake coefficient</td><td>1.41</td></tr>
 </table>
 
-<h3>Running a Fit</h3>
+<h3>Irregular Mode Settings</h3>
+<table>
+  <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>Smoothing window</strong></td><td>Width of the smoothing window (set &minus;1 for automatic)</td><td>3</td></tr>
+</table>
+
+<h3>Polynomial Mode Settings</h3>
+<table>
+  <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>Polynomial factor</strong></td><td>Scale factor for polynomial parameter space</td><td>10</td></tr>
+  <tr><td><strong>Ksxr</strong></td><td>Velocity scale factor for polynomial coefficients</td><td>0.2</td></tr>
+</table>
+
+<h2 id="running-a-fit">Running a Fit</h2>
 <ol>
   <li>Ensure a model with experimental data and fit limits is selected.</li>
   <li>Configure fitting mode and parameters.</li>
   <li>Choose <strong>Calc &gt; Auto Fitting</strong> or click the <img src="images/icons/41_Forward.png" alt="Fast Forward" class="icon"> <strong>Fast Forward</strong> toolbar button.</li>
-  <li>Fitting stops when iterations are exhausted, tolerance is met, or you click <strong>Stop</strong>.</li>
+  <li>The fitting process begins:
+    <ul>
+      <li>The main chart updates in real time, showing the best-fit curve converging toward the experimental data.</li>
+      <li>The <strong>Fitting Progress</strong> chart page shows the &chi;&sup2; convergence curve.</li>
+      <li>The status bar displays elapsed fitting time.</li>
+      <li>If <strong>Live Update</strong> is enabled (in Settings), the structure editor updates to show current best-fit parameters.</li>
+    </ul>
+  </li>
+  <li>Fitting stops when:
+    <ul>
+      <li>The maximum number of iterations is reached, OR</li>
+      <li>The tolerance threshold is met, OR</li>
+      <li>You click the <strong>Stop</strong> button.</li>
+    </ul>
+  </li>
 </ol>
 
-<h3>Understanding the Cost Function</h3>
+<h2 id="convergence-enhancements">Convergence Enhancements <span class="badge">v3.6</span></h2>
+<p>Version 3.6 introduces several improvements to the LFPSO algorithm that significantly improve convergence speed and reliability. Six enhancements are always active and require no configuration; one is optional.</p>
+
+<h3>Always-On Improvements</h3>
+
+<table>
+  <tr><th>Enhancement</th><th>Description</th></tr>
+  <tr>
+    <td><strong>Reflective boundaries</strong></td>
+    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search.</td>
+  </tr>
+  <tr>
+    <td><strong>Adaptive L&eacute;vy scale</strong></td>
+    <td>The L&eacute;vy flight step size starts large (0.10) for broad exploration and decreases to 0.01 by the end of fitting for fine-tuning. Previously, a fixed value of 0.01 was used throughout.</td>
+  </tr>
+  <tr>
+    <td><strong>Adaptive PSO/L&eacute;vy switching</strong></td>
+    <td>Early iterations favor L&eacute;vy flights (70%) for exploration; later iterations favor PSO updates (70%) for exploitation. When the algorithm stagnates, L&eacute;vy probability increases automatically to escape local minima. Previously, a fixed 50/50 split was used.</td>
+  </tr>
+  <tr>
+    <td><strong>Random-peer L&eacute;vy targets</strong></td>
+    <td>30% of L&eacute;vy flights are directed toward a randomly chosen peer particle instead of the global best. This creates diverse search directions and helps explore regions that global-best targeting would miss &mdash; particularly valuable for the multimodal fitness landscapes common in X-ray reflectivity.</td>
+  </tr>
+  <tr>
+    <td><strong>Population diversity monitoring</strong></td>
+    <td>The algorithm now tracks the normalized spread of particle positions across all parameters, providing a measure of how converged or diverse the swarm is.</td>
+  </tr>
+  <tr>
+    <td><strong>Diversity-aware shake</strong></td>
+    <td>The shake mechanism now checks population diversity before triggering. If the swarm is still diverse (spread &ge; 1% of parameter ranges), the shake is delayed for up to 3 additional iterations to let ongoing exploration proceed. If diversity has collapsed (&lt; 1%), the shake fires immediately. This prevents premature reinitializations that waste computation.</td>
+  </tr>
+</table>
+
+<h3 id="constriction">Constriction Factor (Optional)</h3>
+<p>When the <strong>Constriction factor</strong> checkbox is enabled in Advanced Settings, the standard linear inertia weight decay is replaced by the Clerc-Kennedy constriction coefficient:</p>
+
+<div class="note">
+  <strong>V = &chi; &times; (V + &phi;<sub>1</sub>r<sub>1</sub>(p<sub>best</sub> &minus; X) + &phi;<sub>2</sub>r<sub>2</sub>(g<sub>best</sub> &minus; X))</strong><br>
+  where &phi; = &phi;<sub>1</sub> + &phi;<sub>2</sub> = 4.1, &ensp; &chi; = 2 / |2 &minus; &phi; &minus; &radic;(&phi;&sup2; &minus; 4&phi;)| &asymp; 0.7298
+</div>
+
+<p>Unlike the empirical linear schedule, the constriction coefficient is mathematically proven to guarantee convergence while maintaining effective exploration. The higher cognitive and social coefficients (&phi;<sub>1</sub> = &phi;<sub>2</sub> = 2.05 vs. the previous c<sub>1</sub> = c<sub>2</sub> = 1) give particles stronger attraction to good solutions, while the constriction factor prevents velocity explosion.</p>
+
+<p><strong>When to use:</strong> The constriction factor is enabled by default and is recommended for most problems. Consider disabling it if you notice premature convergence on problems with many sharp local minima &mdash; the linear inertia decay may provide more aggressive exploration in such cases. When disabled, the &omega;<sub>1</sub> and &omega;<sub>2</sub> parameters in the LFPSO section control the inertia schedule.</p>
+
+<h2 id="understanding-the-cost-function">Understanding the Cost Function</h2>
+<p>The cost function (E) measures the deviation between the calculated and target XRR curves:</p>
 <div class="note">
   <strong>E = &Sigma; |log I(&theta;)<sub>exp</sub> &minus; log I(&theta;)<sub>calc</sub>| &times; &omega;(&theta;)<sub>peak</sub> &times; &omega;(&theta;)<sub>&theta;</sub></strong>
 </div>
-<p>Lower is better &mdash; E = 0 means a perfect fit. Calculated on a logarithmic scale to give equal weight to both high and low reflectivity regions.</p>
+<p>where I(&theta;)<sub>exp</sub> and I(&theta;)<sub>calc</sub> are the measured and computed XRR intensities, &omega;(&theta;)<sub>peak</sub> is the peak weight function, and &omega;(&theta;)<sub>&theta;</sub> is the incidence-angle weight function.</p>
 
-<!-- ═══ 10. Results & Export ═══ -->
-<h2><span class="num">10</span> Results &amp; Export</h2>
+<h3>Peak Weight Function (PW &chi;&sup2;)</h3>
+<p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight function concentrates fitting on the primary features of the XRR curve by computing a moving average and weighting points based on their deviation from it.</p>
 
-<h3>Saving Results</h3>
-<p><strong>Result &gt; Save Results</strong> saves the calculated reflectivity data to a text file.</p>
+<h3>Incidence-Angle Weight Function (TW &chi;&sup2;)</h3>
+<p>Allows concentration of the fitting process on distinct segments of the XRR curve by weighting different angular regions differently.</p>
 
-<h3>Copying to Clipboard</h3>
+<p>Key properties of the cost function:</p>
 <ul>
-  <li><strong>Result &gt; Copy to Clipboard</strong> &mdash; tab-separated text</li>
-  <li><strong>Result &gt; Copy as BMP</strong> &mdash; bitmap image</li>
-  <li><strong>Result &gt; Copy as WMF</strong> &mdash; Windows Metafile (vector format)</li>
+  <li><strong>Lower is better</strong> &mdash; E = 0 means a perfect fit</li>
+  <li>Displayed in the Chart Info bar as both current and best values</li>
+  <li>Calculated on a logarithmic scale to give equal weight to both high and low reflectivity regions</li>
 </ul>
 
-<h3>Auto-Save Results</h3>
-<p>When enabled in Settings, fitting results are automatically saved to the configured Output directory after each fitting run.</p>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Data">Experimental Data</a></li>
+  <li><a href="#Results">Results &amp; Export</a></li>
+  <li><a href="#Examples">Illustrative Examples</a></li>
+  <li><a href="#fitting">MCP Server &gt; Fitting</a></li>
+</ul>
 
-<!-- ═══ 11. Charts ═══ -->
-<h2><span class="num">11</span> Charts &amp; Visualization</h2>
 
-<h3>Main Reflectivity Chart</h3>
+
+
+</div>
+<div class="chapter" id="Results">
+
+
+<h1><span class="num">11</span>Results &amp; Export</h1>
+<div class="subtitle">Saving results, the clipboard, plot and structure images, and auto-saved fits</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#saving-results">Saving Results</a></li>
+    <li><a href="#copying-to-clipboard">Copying to Clipboard</a></li>
+    <li><a href="#saving-the-plot">Saving the Plot</a></li>
+    <li><a href="#structure-image">Structure Image</a></li>
+    <li><a href="#auto-save-results">Auto-Save Results</a></li>
+  </ul>
+</div>
+
+<h2 id="saving-results">Saving Results</h2>
+<p><img src="images/icons/45_ResultSave.png" alt="Save" class="icon"> <strong>Result &gt; Save Results</strong> saves the calculated reflectivity data to a text file with columns for angle/wavelength and reflectivity.</p>
+
+<h2 id="copying-to-clipboard">Copying to Clipboard</h2>
+<ul>
+  <li><img src="images/icons/46_CopyResult.png" alt="Copy" class="icon"> <strong>Result &gt; Copy to Clipboard</strong> &mdash; copy reflectivity data as tab-separated text</li>
+  <li><img src="images/icons/47_CopyImage.png" alt="Copy Image" class="icon"> <strong>Result &gt; Copy as BMP</strong> &mdash; copy the chart as a bitmap image</li>
+  <li><strong>Result &gt; Copy as WMF</strong> &mdash; copy the chart as a Windows Metafile (vector format, suitable for publications)</li>
+</ul>
+
+<h2 id="saving-the-plot">Saving the Plot</h2>
+<p><strong>Result &gt; Save Plot as File</strong> saves the chart as an image file.</p>
+
+<h2 id="structure-image">Structure Image</h2>
+<p><strong>Structure &gt; Copy as Image</strong> copies the visual structure diagram (the layer/stack representation) to the clipboard as an image.</p>
+
+<h2 id="auto-save-results">Auto-Save Results</h2>
+<p>When enabled in Settings (<strong>Automatically save results to output folder after fitting</strong>), fitting results are automatically saved to the configured Output directory after each fitting run completes.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+  <li><a href="#Charts">Charts &amp; Visualization</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="Charts">
+
+
+<h1><span class="num">12</span>Charts &amp; Visualization</h1>
+<div class="subtitle">The reflectivity chart, zoom and pan, cursor tracking, chart pages, and peak analysis</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#main-reflectivity-chart">Main Reflectivity Chart</a></li>
+    <li><a href="#chart-pages">Chart Pages</a></li>
+    <li><a href="#peak-analysis">Peak Analysis</a></li>
+  </ul>
+</div>
+
+<h2 id="main-reflectivity-chart">Main Reflectivity Chart</h2>
+<p>The large chart in the working area displays:</p>
+<ul>
+  <li><strong>Calculated reflectivity curves</strong> (one per model, color-coded)</li>
+  <li><strong>Experimental data</strong> (if loaded)</li>
+  <li><strong>Best-fit curve</strong> (during and after fitting)</li>
+</ul>
+
+<h3>Interaction</h3>
 <ul>
   <li><strong>Zoom:</strong> Click and drag to select a zoom region</li>
-  <li><strong>Pan:</strong> Right-click and drag</li>
-  <li><strong>Reset zoom:</strong> Double-click</li>
-  <li><strong>Scale toggle:</strong> Switch between linear and logarithmic Y-axis</li>
+  <li><strong>Pan:</strong> Right-click and drag to pan</li>
+  <li><strong>Reset zoom:</strong> Double-click to reset to full view</li>
+  <li><strong>Scale toggle:</strong> Click the <strong>Scale</strong> button to switch between linear and logarithmic Y-axis</li>
+  <li><strong>Min limit:</strong> Set a cutoff threshold &mdash; reflectivity values below this limit are clipped</li>
 </ul>
 
-<h3>Chart Pages</h3>
-<p>Below the main chart are tabbed sub-charts: <strong>Thickness (H)</strong>, <strong>Roughness (&sigma;)</strong>, <strong>Density (&rho;)</strong>, <strong>Profile</strong>, and <strong>Fitting Progress</strong>.</p>
+<h3>Cursor Tracking</h3>
+<p>The Chart Info bar shows the current cursor position (X, Y coordinates) as you move the mouse over the chart.</p>
 
-<h3>Peak Analysis</h3>
+<h2 id="chart-pages">Chart Pages</h2>
+<p>Below the main chart are tabbed sub-charts:</p>
+
+<h3>Thickness (H)</h3>
+<p>Bar chart showing the thickness of each layer in the structure. After fitting, this shows how layer thicknesses vary across the structure.</p>
+
+<h3>Roughness (&sigma;)</h3>
+<p>Bar chart showing the interface roughness of each layer. Useful for identifying roughness trends in periodic structures.</p>
+
+<h3>Density (&rho;)</h3>
+<p>Bar chart showing the density of each layer, with the applied density profile overlaid.</p>
+
+<h3>Profile</h3>
+<p>Electron density (or refractive index) profile as a function of depth into the structure. This gives a physical picture of the complete multilayer structure.</p>
+
+<h3>Fitting Progress</h3>
+<p>During fitting, this chart shows the &chi;&sup2; value vs. iteration number. Use this to monitor convergence:</p>
 <ul>
-  <li><strong>Peak Max:</strong> Maximum reflectivity value and position</li>
-  <li><strong>Area:</strong> Integrated area under the peak</li>
+  <li>A steadily decreasing curve indicates good convergence</li>
+  <li>Plateaus may indicate local minima (shake/re-initialization helps escape these)</li>
+  <li>Sudden jumps up indicate a shake event</li>
+</ul>
+
+<h2 id="peak-analysis">Peak Analysis</h2>
+<p>The Chart Info bar includes peak detection and analysis:</p>
+<ul>
+  <li><strong>Peak Max:</strong> Maximum reflectivity value and its position</li>
+  <li><strong>Area:</strong> Integrated area under the peak (useful for quantitative analysis)</li>
   <li><strong>Period:</strong> Estimated multilayer period from peak spacing</li>
 </ul>
 
-<!-- ═══ 12. Profile Extensions ═══ -->
-<h2><span class="num">12</span> Profile Extensions</h2>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Calculation">Calculation</a></li>
+  <li><a href="#Results">Results &amp; Export</a></li>
+</ul>
 
-<p>Profile extensions define how layer parameters vary across a periodic structure.</p>
 
-<h3>Profile Types</h3>
+
+
+</div>
+<div class="chapter" id="Profiles">
+
+
+<h1><span class="num">13</span>Profile Extensions</h1>
+<div class="subtitle">Function and table profiles that vary a parameter across a periodic structure</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#adding-a-profile-extension">Adding a Profile Extension</a></li>
+    <li><a href="#profile-types">Profile Types</a></li>
+    <li><a href="#enabling-disabling-extensions">Enabling / Disabling Extensions</a></li>
+  </ul>
+</div>
+
+<p>Profile extensions allow you to define how layer parameters (H, &sigma;, &rho;) vary across a periodic structure. They model parameter gradients &mdash; for example, when layer thickness gradually increases or density changes with depth.</p>
+
+<h2 id="adding-a-profile-extension">Adding a Profile Extension</h2>
+<ol>
+  <li>Select a model in the project tree.</li>
+  <li>Click the <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon"> <strong>Add Extension</strong> toolbar button or choose the extension option from the project toolbar.</li>
+  <li>The Extension Type Selector dialog opens with available profile types.</li>
+</ol>
+
+<h2 id="profile-types">Profile Types</h2>
+
+<h3>Function Profile</h3>
+<p>Defines parameter variation using an analytical function:</p>
 <table>
   <tr><th>Function</th><th>Formula</th><th>Use Case</th></tr>
   <tr><td><strong>Polynomial</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x&sup2; + &hellip;</td><td>General-purpose gradient</td></tr>
   <tr><td><strong>Exponential</strong></td><td>a<sub>0</sub> &middot; e<sup>a<sub>1</sub>x</sup></td><td>Exponential growth/decay</td></tr>
   <tr><td><strong>Parabolic</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x&sup2;</td><td>Symmetric variation</td></tr>
   <tr><td><strong>SQRT</strong></td><td>a<sub>0</sub> + a<sub>1</sub>&radic;x</td><td>Gradual initial change</td></tr>
-  <tr><td><strong>Table</strong></td><td>(position, value) pairs</td><td>Arbitrary profile shapes</td></tr>
 </table>
+<p>The Profile Function editor lets you set the coefficients and preview the resulting profile.</p>
 
-<!-- ═══ 13. Tools ═══ -->
-<h2><span class="num">13</span> Tools</h2>
+<h3>Table Profile</h3>
+<p>Defines parameter variation as a set of (position, value) data points. The application interpolates between points. This allows arbitrary profile shapes that cannot be described by simple functions.</p>
+<p>The Profile Table editor provides a grid where you enter depth positions and corresponding parameter values.</p>
 
-<h3>Create New Material</h3>
-<p><strong>Tools &gt; Create New Material</strong> adds a custom material to the Henke database by computing atomic form factors from constituent elements.</p>
+<h2 id="enabling-disabling-extensions">Enabling / Disabling Extensions</h2>
+<p>Each extension can be individually enabled or disabled without deleting it. This lets you quickly compare results with and without a particular profile applied.</p>
 
-<h3>Edit Henke Table</h3>
-<p><strong>Tools &gt; Edit Henke Table</strong> opens the Henke Table Editor for viewing and modifying atomic scattering factor tables.</p>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#stacks">Defining a Model &gt; Stacks</a></li>
+  <li><a href="#fit-modes">Fitting &gt; Fitting Modes</a></li>
+</ul>
 
-<h3>Benchmark</h3>
-<p><strong>Calc &gt; Benchmark</strong> measures calculation performance by running a standard reflectivity calculation multiple times.</p>
 
-<!-- ═══ 14. Settings ═══ -->
-<h2><span class="num">14</span> Application Settings</h2>
 
-<p>Access via <strong>File &gt; Settings</strong>. Sections: Paths and Files, Behavior, Interface, Calc &amp; Fit, Graphics.</p>
 
-<h3>Behavior</h3>
+</div>
+<div class="chapter" id="Tools">
+
+
+<h1><span class="num">14</span>Tools</h1>
+<div class="subtitle">Creating materials, editing Henke tables, and the benchmark</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#create-new-material">Create New Material</a></li>
+    <li><a href="#edit-henke-table">Edit Henke Table</a></li>
+    <li><a href="#benchmark">Benchmark</a></li>
+  </ul>
+</div>
+
+<h2 id="create-new-material">Create New Material</h2>
+<p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create New Material</strong> opens a dialog to add a custom material to the Henke database.</p>
+<p>Enter the chemical formula and the application calculates the atomic form factors from the constituent elements. This is useful for compounds not already in the database.</p>
+
+<h2 id="edit-henke-table">Edit Henke Table</h2>
+<p><img src="images/icons/Menu_EditTable.png" alt="Edit Table" class="icon"> <strong>Tools &gt; Edit Henke Table</strong> opens the Henke Table Editor, which allows you to view and modify the atomic scattering factor tables used for reflectivity calculations.</p>
+<p>The Henke tables contain wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These are the fundamental optical constants used in the Fresnel equation calculations.</p>
+
+<h2 id="benchmark">Benchmark</h2>
+<p><img src="images/icons/Menu_Benchmark.png" alt="Benchmark" class="icon"> <strong>Calc &gt; Benchmark</strong> opens the Benchmark dialog, which measures the calculation performance of your system:</p>
+<ul>
+  <li>Runs a standard reflectivity calculation multiple times</li>
+  <li>Reports average execution time</li>
+  <li>Useful for comparing performance across different hardware or thread configurations</li>
+</ul>
+<p>Configure the number of benchmark runs in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Models">Defining a Model</a></li>
+  <li><a href="#henke-tables">File Formats &gt; Henke Tables</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="Settings">
+
+
+<h1><span class="num">15</span>Application Settings</h1>
+<div class="subtitle">Paths and files, behavior, interface, calculation and fitting defaults, graphics</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#paths-and-files">Paths and Files</a></li>
+    <li><a href="#behavior">Behavior</a></li>
+    <li><a href="#interface">Interface</a></li>
+    <li><a href="#calc-fit">Calc &amp; Fit</a></li>
+    <li><a href="#graphics">Graphics</a></li>
+  </ul>
+</div>
+
+<p>Access settings via <strong>File &gt; Settings</strong>. The Settings dialog has five sections, navigated via the tree on the left.</p>
+
+<h2 id="paths-and-files">Paths and Files</h2>
 <table>
-  <tr><th>Setting</th><th>Default</th></tr>
-  <tr><td>Automatically calculate when opening project</td><td>On</td></tr>
-  <tr><td>Live update structure panel during fitting</td><td>Off</td></tr>
-  <tr><td>Automatically save results to output folder</td><td>Off</td></tr>
-  <tr><td>Automatically check for updates</td><td>Off</td></tr>
+  <tr><th>Setting</th><th>Description</th></tr>
+  <tr><td><strong>Default Project's Folder</strong></td><td>Where new projects are saved by default</td></tr>
+  <tr><td><strong>Work Folder</strong></td><td>Base directory for all application data</td></tr>
+  <tr><td><strong>Henke Library</strong></td><td>Location of Henke atomic form factor tables</td></tr>
+  <tr><td><strong>Jobs</strong></td><td>Directory for batch job definitions</td></tr>
+  <tr><td><strong>Benchmark output</strong></td><td>Where benchmark results are saved</td></tr>
+  <tr><td><strong>Benchmark</strong></td><td>Location of benchmark model files</td></tr>
+  <tr><td><strong>Fitting Output</strong></td><td>Where fitting results are auto-saved</td></tr>
 </table>
+<p><strong>Register file associations (xrcx)</strong> &mdash; associates <code>.xrcx</code> files with X-Ray Calc 3 in Windows.</p>
 
-<!-- ═══ 15. Quick Reference ═══ -->
-<h2><span class="num">15</span> Quick Reference</h2>
-
-<h3>Toolbar Quick Reference</h3>
+<h2 id="behavior">Behavior</h2>
 <table>
-  <tr><th>Button</th><th>Action</th></tr>
-  <tr><td><img src="images/icons/01_New.png" alt="New" class="icon"> New</td><td>Create a new project</td></tr>
-  <tr><td><img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> Open</td><td>Open an existing project</td></tr>
-  <tr><td><img src="images/icons/04_Save.png" alt="Save" class="icon"> Save</td><td>Save the current project</td></tr>
-  <tr><td><img src="images/icons/05_Print.png" alt="Print" class="icon"> Print</td><td>Print the current chart</td></tr>
-  <tr><td><img src="images/icons/06_AddModel.png" alt="Add Model" class="icon"> Add Model</td><td>Add a new model to the project</td></tr>
-  <tr><td><img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> Load Data</td><td>Load experimental data from file</td></tr>
-  <tr><td><img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> Paste Data</td><td>Paste experimental data from clipboard</td></tr>
-  <tr><td><img src="images/icons/40_Play.png" alt="Calc Run" class="icon"> Calc Run</td><td>Calculate the selected model</td></tr>
-  <tr><td>Stop</td><td>Abort the current calculation or fitting</td></tr>
-  <tr><td><img src="images/icons/41_Forward.png" alt="Fast Forward" class="icon"> Fast Forward</td><td>Start auto-fitting</td></tr>
-  <tr><td><img src="images/icons/45_ResultSave.png" alt="Result Save" class="icon"> Result Save</td><td>Save calculation results to file</td></tr>
-  <tr><td><img src="images/icons/46_CopyResult.png" alt="Copy Result" class="icon"> Copy Result</td><td>Copy results to clipboard</td></tr>
-  <tr><td>Scale</td><td>Toggle linear/logarithmic chart scale</td></tr>
-  <tr><td><img src="images/icons/12_DeleteExtension.png" alt="Delete" class="icon"> Delete</td><td>Remove the selected item</td></tr>
+  <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>Automatically calculate when opening project</strong></td><td>Run calculation on all models when a project is opened</td><td>On</td></tr>
+  <tr><td><strong>Live update structure panel during fitting</strong></td><td>Show real-time parameter changes in the structure editor during fitting</td><td>Off</td></tr>
+  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save fitting results to the Output directory automatically</td><td>Off</td></tr>
+  <tr><td><strong>Automatically check for updates</strong></td><td>Check for new versions on launch</td><td>Off</td></tr>
 </table>
 
-<h3>Keyboard Shortcuts</h3>
+<h2 id="interface">Interface</h2>
+<p>Interface customization settings (reserved for future options).</p>
+
+<h2 id="calc-fit">Calc &amp; Fit</h2>
 <table>
-  <tr><th>Key</th><th>Action</th></tr>
-  <tr><td><strong>F1</strong></td><td>Open User Manual</td></tr>
+  <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>Number of CPU cores to use</strong></td><td>Thread count for parallel computation</td><td>Auto (Use all)</td></tr>
+  <tr><td><strong>Number of runs</strong> (Benchmark)</td><td>How many benchmark iterations to perform</td><td>10</td></tr>
 </table>
 
-<!-- ═══ 16. File Formats ═══ -->
-<h2><span class="num">16</span> File Formats</h2>
+<h2 id="graphics">Graphics</h2>
+<table>
+  <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>Default line width</strong></td><td>Width of chart series lines in pixels</td><td>2</td></tr>
+</table>
 
-<h3>Project File (.xrcx)</h3>
-<p>A ZIP archive containing <code>project.dsc</code>, <code>params.dsc</code>, and embedded experimental data files.</p>
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Installation">Installation &amp; First Launch</a></li>
+  <li><a href="#settings-file-xrc3-ini">File Formats &gt; Settings File</a></li>
+</ul>
 
-<h3>Experimental Data Files</h3>
-<p>Plain text, two columns separated by tabs or spaces. Lines starting with <code>#</code> are comments.</p>
 
-<h3>Henke Tables</h3>
-<p>Binary files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>).</p>
 
-<h3>Settings File (xrc3.ini)</h3>
-<p>Standard Windows INI file. Sections: <code>[Path]</code>, <code>[Window]</code>, <code>[Options]</code>, <code>[Graphics]</code>, <code>[Calc]</code>.</p>
 
-<!-- ═══ 17. Examples ═══ -->
-<h2><span class="num">17</span> Illustrative Examples</h2>
+</div>
+<div class="chapter" id="UniversalMirror">
 
-<p>The following examples from the literature demonstrate XRC3 capabilities (Penkov <em>et al.</em>, 2024).</p>
 
-<h3>Single-Layer Coating</h3>
+<h1><span class="num">16</span>Universal Mirror Optimizer <span class="badge">v3.7</span></h1>
+<div class="subtitle">Command-line design of multi-wavelength multilayer mirrors with LFPSO: configuration, output, resume, figure of merit</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#concept">Concept</a></li>
+    <li><a href="#usage">CLI Usage</a></li>
+    <li><a href="#config">Configuration File</a></li>
+    <li><a href="#output">Output Files</a></li>
+    <li><a href="#resume">Checkpoint &amp; Resume</a></li>
+    <li><a href="#fom">Figure of Merit</a></li>
+    <li><a href="#purity">Spectral Purity</a></li>
+    <li><a href="#example">Example Workflow</a></li>
+    <li><a href="#tips">Tips and Best Practices</a></li>
+  </ul>
+</div>
+
+<p>The <strong>Universal Mirror Optimizer</strong> is a command-line tool that designs periodic multilayer mirrors (PMMs) optimized for <em>multiple characteristic wavelengths simultaneously</em>. Given a set of target elements (e.g. C&nbsp;K&alpha; and O&nbsp;K&alpha;), the optimizer searches for the best combination of materials, period thickness, layer ratio, number of periods, and interface roughness to maximize reflectivity across all targets at once.</p>
+
+<p>This tool is part of the <code>xrccmd</code> command-line interface and uses the same Fresnel reflectivity engine and Henke optical constants database as the main X-Ray Calc 3 GUI application.</p>
+
+<h2 id="concept">Concept</h2>
+<p>Traditional multilayer mirror design targets a single wavelength. When an analytical instrument (e.g. an electron microprobe or X-ray fluorescence spectrometer) needs to measure multiple characteristic lines, the standard approach is to use separate mirrors for each element. The Universal Mirror Optimizer explores whether a single bilayer structure can provide useful reflectivity at two or more wavelengths simultaneously, even if it compromises peak performance at any single wavelength.</p>
+
+<p>The optimizer uses the <strong>Virtual Crystal Approximation</strong> (VCA) to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from a user-defined pool (e.g. W, Si, C). The dielectric constant of the mixed material is computed as a weighted average of the constituents&rsquo; optical constants from the Henke database.</p>
+
+<h3>Search Space</h3>
+<p>The optimizer searches over the following parameters:</p>
+<table>
+  <tr><th>Parameter</th><th>Description</th></tr>
+  <tr><td><strong>Composition</strong> (per layer)</td><td>Element fractions for each layer in the bilayer period. Fractions are normalized to sum to 1.0.</td></tr>
+  <tr><td><strong>d</strong></td><td>Period thickness in &Aring;ngstr&ouml;ms</td></tr>
+  <tr><td><strong>&gamma;</strong> (gamma)</td><td>Ratio of the reflector layer thickness to the full period (0&ndash;1)</td></tr>
+  <tr><td><strong>N</strong></td><td>Number of periods (rounded to integer for evaluation)</td></tr>
+  <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms (shared by all interfaces)</td></tr>
+  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer (0.7&ndash;1.3 typical), accounting for thin-film density deviations</td></tr>
+</table>
+
+<h3>Optimization Algorithm</h3>
+<p>The optimizer uses <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO) with the same adaptive enhancements as the GUI fitting engine (see <a href="#convergence-enhancements">Chapter 9: Convergence Enhancements</a>). Key features include:</p>
+<ul>
+  <li>Adaptive PSO/L&eacute;vy flight switching (more exploration early, more exploitation late)</li>
+  <li>Reflective boundary handling with velocity damping</li>
+  <li>Composition normalization (fractions always sum to 1.0)</li>
+  <li>Diversity-aware shake mechanism for stagnation escape</li>
+  <li>Parallel fitness evaluation using all available CPU cores</li>
+</ul>
+
+<h2 id="usage">CLI Usage</h2>
+<p>The Universal Mirror Optimizer is invoked via the <code>xrccmd</code> command-line tool with the <code>-u</code> switch:</p>
+<pre><code>xrccmd -u config.json [-v]</code></pre>
+<table>
+  <tr><th>Switch</th><th>Description</th></tr>
+  <tr><td><code>-u config.json</code></td><td>Run the Universal Mirror Optimizer with the specified JSON configuration file</td></tr>
+  <tr><td><code>-v</code></td><td>Verbose mode &mdash; prints checkpoint saves and shake events during optimization</td></tr>
+</table>
+
+<h3>Console Output</h3>
+<p>During optimization, the console displays a progress table updated every iteration:</p>
+<pre><code>Universal Mirror Optimizer v1.0
+Targets: C(44.7A) O(23.6A)
+Pool: W Si C
+Structure: bilayer, d=[20..80], N=[20..100]
+Population: 100, Max iterations: 500
+---
+ Iter       FoM   R_C   R_O    Div
+    0    0.0124  0.012  0.003  0.438
+    1    0.0298  0.031  0.009  0.412
+    2    0.0356  0.037  0.015  0.391
+  ...
+  500    0.1823  0.187  0.044  0.003
+---
+Optimization complete.
+Best FoM: 0.182300
+Period d=54.94 A, gamma=0.697, N=36, sigma=0.72 A
+Layer 1: C=100.0%
+Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
+
+<p>Columns: <strong>Iter</strong> = iteration number, <strong>FoM</strong> = figure of merit (higher is better), <strong>R_<em>X</em></strong> = peak reflectivity for each target element, <strong>Div</strong> = population diversity (0&ndash;1, lower = more converged).</p>
+
+<h2 id="config">Configuration File</h2>
+<p>The optimizer is configured via a JSON file with the following sections:</p>
+
+<h3>Targets</h3>
+<p>An array of target characteristic lines to optimize for:</p>
+<pre><code>"targets": [
+  {"element": "C",  "lambda": 44.7, "weight": 1.0},
+  {"element": "O",  "lambda": 23.6, "weight": 1.0}
+]</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>element</code></td><td>string</td><td>Element name (used for labeling output)</td></tr>
+  <tr><td><code>lambda</code></td><td>number</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms (e.g. C&nbsp;K&alpha; = 44.7&nbsp;&Aring;)</td></tr>
+  <tr><td><code>weight</code></td><td>number</td><td>Relative weight in the figure of merit. Use higher values to prioritize specific targets.</td></tr>
+</table>
+
+<h3>Element Pool</h3>
+<p>The set of materials available for layer composition:</p>
+<pre><code>"element_pool": ["W", "Si", "C"]</code></pre>
+<p>Each element must have a corresponding Henke database file (<code>.bin</code>) in the Henke data directory. The optimizer can mix any combination of these elements in each layer.</p>
+
+<h3>Structure</h3>
+<p>Defines the mirror topology and parameter search ranges:</p>
+<pre><code>"structure": {
+  "type": "bilayer",
+  "layers_per_period": 2,
+  "pure_elements": true,
+  "d":              {"min": 20, "max": 80},
+  "gamma":          {"min": 0.2, "max": 0.8},
+  "N":              {"min": 20, "max": 100},
+  "sigma":          {"min": 0.5, "max": 3},
+  "density_factor": {"min": 0.7, "max": 1.3}
+}</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>type</code></td><td>string</td><td>Structure type. Currently only <code>"bilayer"</code> is supported (two layers per period).</td></tr>
+  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Must be <code>2</code> for bilayer mode.</td></tr>
+  <tr><td><code>pure_elements</code></td><td>boolean</td><td>When <code>true</code>, each layer is forced to use a single material from the pool (the dominant component). When <code>false</code>, layers can be arbitrary mixtures. Pure-element mode is recommended for most practical applications.</td></tr>
+  <tr><td><code>d</code></td><td>range</td><td>Period thickness search range in &Aring;. Ensure the range accommodates all target wavelengths (d &gt; &lambda;/2 for a valid Bragg condition).</td></tr>
+  <tr><td><code>gamma</code></td><td>range</td><td>Reflector/period thickness ratio (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
+  <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
+  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;. Shared by all interfaces in the structure.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Density multiplier range for each layer. 1.0 = bulk density. Values &lt; 1 model porous or amorphous films; values &gt; 1 model compressive stress.</td></tr>
+</table>
+
+<div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;.</div>
+
+<h3>Fitness</h3>
+<p>Controls the figure of merit calculation:</p>
+<pre><code>"fitness": {
+  "w_R": 1.0,
+  "w_FWHM": 0.3,
+  "R_min_threshold": 0.0001,
+  "polarization": "sp",
+  "delta_theta": 0.1,
+  "theta_min": 3.0,
+  "w_purity": 1.0
+}</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>w_R</code></td><td>number</td><td>Weight for peak reflectivity in the FoM. Higher values emphasize maximizing R<sub>peak</sub>.</td></tr>
+  <tr><td><code>w_FWHM</code></td><td>number</td><td>Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
+  <tr><td><code>R_min_threshold</code></td><td>number</td><td>Minimum acceptable peak reflectivity. Particles below this threshold receive a heavy penalty (100.0) to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
+  <tr><td><code>polarization</code></td><td>string</td><td>Polarization mode: <code>"sp"</code> for averaged S+P (recommended for most applications).</td></tr>
+  <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian of this width before extracting R<sub>peak</sub> and FWHM.</td></tr>
+  <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees. Targets whose Bragg angle falls below this value receive a heavy penalty. Prevents solutions at impractically low grazing angles.</td></tr>
+  <tr><td><code>w_purity</code></td><td>number</td><td>Weight for the spectral purity penalty (0&ndash;1). Controls how strongly higher-order Bragg peak contamination between targets is penalized. 0 = no purity penalty, 1 = full penalty. Default: 1.0. See <a href="#purity">Spectral Purity</a>.</td></tr>
+  <tr><td><code>scan_points</code></td><td>integer</td><td>Number of points in the reflectivity scan around each Bragg peak. Higher values give finer theta resolution in output curves. Default: 200.</td></tr>
+  <tr><td><code>scan_half_range</code></td><td>number</td><td>Half-range of the reflectivity scan in degrees, centered on the Bragg peak. The scan covers [&theta;<sub>Bragg</sub> &minus; half_range, &theta;<sub>Bragg</sub> + half_range]. Default: 5.0.</td></tr>
+</table>
+
+<h3>Optimizer</h3>
+<p>LFPSO algorithm parameters:</p>
+<pre><code>"optimizer": {
+  "population": 100,
+  "iterations": 500,
+  "tolerance": 1e-8,
+  "stagnation_limit": 50,
+  "w1": 0.4,
+  "w2": 0.5,
+  "jamming_max": 5,
+  "checkpoint_every": 50
+}</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>population</code></td><td>integer</td><td>&mdash;</td><td>Number of particles (candidate solutions) in the swarm. Larger populations explore more broadly but run slower per iteration.</td></tr>
+  <tr><td><code>iterations</code></td><td>integer</td><td>&mdash;</td><td>Maximum number of optimization iterations.</td></tr>
+  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>Target FoM threshold (not actively used for early stopping; kept for future use).</td></tr>
+  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Number of iterations without improvement before the optimizer declares convergence and stops.</td></tr>
+  <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight (permanent velocity component).</td></tr>
+  <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia reducing factor (decays over iterations).</td></tr>
+  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Iterations without improvement before a shake event is considered (subject to diversity check).</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Set to 0 to disable periodic checkpoints.</td></tr>
+</table>
+
+<div class="tip"><strong>Recommended settings:</strong> For a 3-element pool with 2 targets, <code>population: 100</code> and <code>iterations: 500</code> is a good starting point. Increase population for larger element pools. Reduce iterations for quick exploratory runs.</div>
+
+<h3>Top-Level Fields</h3>
+<pre><code>"substrate": "Si",
+"henke_path": null,
+"output_dir": "./results",
+"resume_from": null</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>substrate</code></td><td>string</td><td>Substrate material (used for the bottom layer of the mirror structure).</td></tr>
+  <tr><td><code>henke_path</code></td><td>string or null</td><td>Path to the Henke database directory. <code>null</code> uses the default location next to the executable (<code>Henke/</code>).</td></tr>
+  <tr><td><code>output_dir</code></td><td>string</td><td>Directory where all output files are written. Created automatically if it does not exist.</td></tr>
+  <tr><td><code>resume_from</code></td><td>string or null</td><td>Path to a checkpoint file to resume from. <code>null</code> starts a fresh optimization. See <a href="#resume">Checkpoint &amp; Resume</a>.</td></tr>
+</table>
+
+<h2 id="output">Output Files</h2>
+<p>The optimizer writes several files to the <code>output_dir</code> upon completion:</p>
+
+<table>
+  <tr><th>File</th><th>Description</th></tr>
+  <tr><td><code>best_structure.json</code></td><td>The optimized mirror structure in XRC3-compatible JSON format, including the full genome (composition, period, gamma, N, sigma), per-target reflectivity results (R<sub>peak</sub>, FWHM, &theta;<sub>Bragg</sub>), and a structure definition that can be imported into the GUI.</td></tr>
+  <tr><td><code>best_curves/<em>Element</em>.dat</code></td><td>Tab-separated reflectivity curves for each target element. Two columns: angle (degrees) and reflectivity. One file per target.</td></tr>
+  <tr><td><code>population.json</code></td><td>The top 10 solutions ranked by FoM. Useful for comparing alternative mirror designs that may trade off performance between targets differently.</td></tr>
+  <tr><td><code>checkpoint.json</code></td><td>Full optimizer state (all particle positions, velocities, and personal bests). Used for resuming interrupted runs.</td></tr>
+  <tr><td><code>progress.log</code></td><td>Plain text log of every iteration&rsquo;s FoM, per-target R<sub>peak</sub>, and population diversity. Matches the console output.</td></tr>
+</table>
+
+<h3>best_structure.json Format</h3>
+<p>The output structure file contains two sections:</p>
+<ul>
+  <li><strong><code>optimizer_result</code></strong> &mdash; numerical results: FoM, structural parameters (d, &gamma;, N, &sigma;), layer compositions, and per-element reflectivity metrics.</li>
+  <li><strong><code>structure</code></strong> &mdash; the mirror definition in a format compatible with the X-Ray Calc 3 project file. Contains the periodic bilayer stack and substrate definition with layer thickness, roughness, and density factor values.</li>
+</ul>
+
+<h3>Reflectivity Curve Files</h3>
+<p>Each <code>.dat</code> file in the <code>best_curves/</code> subdirectory contains a 200-point reflectivity scan centered on the Bragg angle &plusmn; 5&deg; for that target wavelength. The data is tab-separated with columns:</p>
+<pre><code>  angle(deg)    reflectivity
+  3.2400        1.23456789e-03
+  3.2900        2.34567890e-03
+  ...</code></pre>
+
+<h2 id="resume">Checkpoint &amp; Resume</h2>
+<p>Long optimization runs can be interrupted (Ctrl+C) and resumed later. The optimizer handles this gracefully:</p>
+
+<ol>
+  <li><strong>Automatic checkpoints</strong> &mdash; saved every <code>checkpoint_every</code> iterations to <code>checkpoint.json</code> in the output directory.</li>
+  <li><strong>Ctrl+C handling</strong> &mdash; when the user presses Ctrl+C, the optimizer saves a final checkpoint before exiting. No data is lost.</li>
+  <li><strong>Resume</strong> &mdash; set <code>"resume_from"</code> in the configuration file to the path of a checkpoint file. The optimizer restores all particle positions, velocities, personal bests, and the global/all-time best, then continues from where it left off.</li>
+</ol>
+
+<p>Example resume configuration:</p>
+<pre><code>{
+  "targets": [...],
+  "element_pool": ["W", "Si", "C"],
+  ...
+  "optimizer": {
+    "population": 100,
+    "iterations": 1000,
+    ...
+  },
+  "output_dir": "./results",
+  "resume_from": "./results/checkpoint.json"
+}</code></pre>
+
+<div class="warn"><strong>Important:</strong> When resuming, the <code>population</code> size and <code>element_pool</code> must match the checkpoint. The <code>iterations</code> count can be increased to allow more optimization cycles.</div>
+
+<h2 id="fom">Figure of Merit</h2>
+<p>The figure of merit (FoM) combines peak reflectivity and angular bandwidth for all target wavelengths:</p>
+
+<div class="note">
+  <strong>FoM = &Sigma;<sub>i</sub> [ weight<sub>i</sub> &times; ( w<sub>R</sub> &times; R<sub>eff,i</sub> &minus; w<sub>FWHM</sub> &times; FWHM<sub>i</sub> / FWHM<sub>ref,i</sub> ) ]</strong>
+</div>
+
+<p>where:</p>
+<ul>
+  <li><strong>R<sub>eff,i</sub></strong> &mdash; effective reflectivity for target <em>i</em>, which equals R<sub>peak,i</sub> when <code>w_purity</code> is 0, or purity-adjusted reflectivity when <code>w_purity</code> &gt; 0 (see <a href="#purity">Spectral Purity</a>)</li>
+  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, extracted from a 200-point scan around the Bragg angle</li>
+  <li><strong>FWHM<sub>i</sub></strong> &mdash; angular full width at half maximum (degrees) of the Bragg peak</li>
+  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; theoretical minimum FWHM = &lambda; / (N&middot;d&middot;cos&theta;<sub>B</sub>), converted to degrees. Normalizes the FWHM penalty so it is comparable across targets.</li>
+  <li><strong>weight<sub>i</sub></strong> &mdash; per-target weight from the configuration</li>
+  <li><strong>w<sub>R</sub></strong>, <strong>w<sub>FWHM</sub></strong> &mdash; global weights for reflectivity and bandwidth terms</li>
+</ul>
+
+<p>Higher FoM is better. Particles with R<sub>peak</sub> below <code>R_min_threshold</code> for any target receive a heavy penalty (100.0 per dark target) to steer the swarm toward functional solutions.</p>
+
+<h2 id="purity">Spectral Purity</h2>
+<p>When optimizing a mirror for multiple characteristic wavelengths, higher-order Bragg reflections can cause <strong>cross-contamination</strong> between measurement channels. For example, a mirror tuned to O&nbsp;K&alpha; (23.6&nbsp;&Aring;) at its first-order Bragg angle will also reflect wavelengths at &lambda;/2 = 11.8&nbsp;&Aring; via the second order &mdash; which nearly coincides with Na&nbsp;K&alpha; (11.9&nbsp;&Aring;). When both O and Na are among the target elements, any Na fluorescence reaching the detector at the O measurement angle is misattributed to O.</p>
+
+<p>The spectral purity penalty addresses this by computing a <strong>cross-reflectivity matrix</strong> and penalizing solutions where contamination is significant.</p>
+
+<h3>Cross-Reflectivity Matrix</h3>
+<p>For each pair of targets <em>i</em> and <em>j</em>, the optimizer computes:</p>
+<div class="note">
+  <strong>CrossR[j, i] = R(&theta;<sub>j</sub>, &lambda;<sub>i</sub>)</strong>
+</div>
+<p>This is the reflectivity of light with wavelength &lambda;<sub>i</sub> hitting the mirror at the Bragg angle of target <em>j</em>. A high value of CrossR[j, i] means that when the spectrometer measures target <em>j</em>, it also picks up signal from target <em>i</em>&rsquo;s wavelength via higher-order reflection. The calculation uses the full multilayer reflectivity at each (&theta;, &lambda;) point &mdash; all Bragg orders are naturally included.</p>
+
+<h3>Purity and Effective Reflectivity</h3>
+<p>For each target <em>j</em>, the <strong>purity</strong> is defined as:</p>
+<div class="note">
+  <strong>Purity<sub>j</sub> = R<sub>peak,j</sub> / ( R<sub>peak,j</sub> + &Sigma;<sub>i&ne;j</sub> CrossR[j, i] )</strong>
+</div>
+<p>Purity ranges from 0 (entirely contaminated) to 1 (no contamination). The effective reflectivity used in the FoM is then:</p>
+<div class="note">
+  <strong>R<sub>eff,j</sub> = R<sub>peak,j</sub> &times; ( 1 + w<sub>purity</sub> &times; ( Purity<sub>j</sub> &minus; 1 ) )</strong>
+</div>
+<p>When <code>w_purity = 0</code>, R<sub>eff</sub> = R<sub>peak</sub> (no penalty). When <code>w_purity = 1</code>, R<sub>eff</sub> = R<sub>peak</sub> &times; Purity, giving maximum penalization of contaminated channels. Intermediate values blend between the two.</p>
+
+<h3>Physical Background</h3>
+<p>Higher-order contamination depends on two structural factors:</p>
+<ul>
+  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls which orders are suppressed. &gamma; = 0.5 completely eliminates all even-order reflections (2nd, 4th, &hellip;). Values far from 0.5 produce strong even-order peaks. Second-order contamination is typically the most significant.</li>
+  <li><strong>&sigma; (roughness)</strong> &mdash; interfacial roughness attenuates higher orders via the Debye-Waller factor, which decays exponentially with order number. Orders above 4&ndash;5 are generally negligible for typical roughness values.</li>
+</ul>
+
+<div class="tip"><strong>Practical note:</strong> The overlap pattern is inherent to the target wavelength set &mdash; second-order overlap at &lambda;/2 is independent of the period <em>d</em>. The optimizer can only mitigate overlaps through &gamma; (order suppression), material choice (absorption edges), and roughness. For large element pools with many close-spaced wavelengths, use <code>w_purity = 1.0</code> and a population &ge; 500 to give the optimizer enough room to find purity-optimized solutions.</div>
+
+<h2 id="example">Example Workflow</h2>
+<p>This example designs a multilayer mirror for simultaneous C&nbsp;K&alpha; (44.7&nbsp;&Aring;) and O&nbsp;K&alpha; (23.6&nbsp;&Aring;) characterization using W/Si/C materials on a Si substrate.</p>
+
+<h3>Step 1: Create the configuration file</h3>
+<p>Save the following as <code>dual_mirror.json</code>:</p>
+<pre><code>{
+  "targets": [
+    {"element": "C",  "lambda": 44.7, "weight": 1.0},
+    {"element": "O",  "lambda": 23.6, "weight": 1.0}
+  ],
+  "element_pool": ["W", "Si", "C"],
+  "structure": {
+    "type": "bilayer",
+    "layers_per_period": 2,
+    "d":              {"min": 20, "max": 80},
+    "gamma":          {"min": 0.2, "max": 0.8},
+    "N":              {"min": 20, "max": 100},
+    "sigma":          {"min": 0.5, "max": 3},
+    "density_factor": {"min": 0.7, "max": 1.3}
+  },
+  "fitness": {
+    "w_R": 1.0,
+    "w_FWHM": 0.3,
+    "R_min_threshold": 0.0001,
+    "polarization": "sp"
+  },
+  "optimizer": {
+    "population": 100,
+    "iterations": 500,
+    "tolerance": 1e-8,
+    "stagnation_limit": 50,
+    "w1": 0.4,
+    "w2": 0.5,
+    "jamming_max": 5,
+    "checkpoint_every": 50
+  },
+  "substrate": "Si",
+  "henke_path": null,
+  "output_dir": "./dual_mirror_results",
+  "resume_from": null
+}</code></pre>
+
+<h3>Step 2: Run the optimizer</h3>
+<pre><code>xrccmd -u dual_mirror.json -v</code></pre>
+<p>The <code>-v</code> flag enables verbose output, showing checkpoint saves and shake events. A typical run with population 100 and 500 iterations takes a few minutes on a modern multi-core CPU.</p>
+
+<h3>Step 3: Review results</h3>
+<p>After completion, examine the output directory:</p>
+<ul>
+  <li><code>dual_mirror_results/best_structure.json</code> &mdash; the optimal mirror design and its performance</li>
+  <li><code>dual_mirror_results/best_curves/C.dat</code> &mdash; reflectivity curve at C&nbsp;K&alpha; (44.7&nbsp;&Aring;)</li>
+  <li><code>dual_mirror_results/best_curves/O.dat</code> &mdash; reflectivity curve at O&nbsp;K&alpha; (23.6&nbsp;&Aring;)</li>
+  <li><code>dual_mirror_results/population.json</code> &mdash; top 10 alternative solutions</li>
+</ul>
+<p>The reflectivity curve files can be plotted in any graphing tool (Origin, gnuplot, Python/matplotlib) or imported into the X-Ray Calc 3 GUI for comparison with experimental data.</p>
+
+<h3>Step 4: Continue optimization (optional)</h3>
+<p>If you want to refine the result further, increase the iteration count and add a resume path:</p>
+<pre><code>{
+  ...
+  "optimizer": {
+    "population": 100,
+    "iterations": 1000,
+    ...
+  },
+  "resume_from": "./dual_mirror_results/checkpoint.json"
+}</code></pre>
+<p>Then re-run: <code>xrccmd -u dual_mirror.json -v</code></p>
+
+<h2 id="tips">Tips and Best Practices</h2>
+<ul>
+  <li><strong>Start small, then refine.</strong> Begin with a small population (20&ndash;50) and few iterations (50&ndash;100) to verify the configuration produces sensible results, then increase for production runs.</li>
+  <li><strong>Element pool size.</strong> Each additional element adds composition dimensions for each layer. Pools of 3&ndash;5 elements work well. Very large pools may require larger populations.</li>
+  <li><strong>Period range.</strong> Ensure d<sub>min</sub> &gt; &lambda;<sub>max</sub>/2 so all targets have valid Bragg conditions. A generous range (e.g. 20&ndash;80 &Aring;) allows the optimizer to find the best compromise period.</li>
+  <li><strong>Weighting targets.</strong> If one target is more important, increase its <code>weight</code> in the configuration. The optimizer will prioritize that target&rsquo;s reflectivity at the expense of the others.</li>
+  <li><strong>Interpreting diversity.</strong> A diversity value near zero means all particles have converged to similar solutions. If diversity drops quickly but FoM is still low, consider increasing the population or widening the search ranges.</li>
+  <li><strong>Population JSON.</strong> The <code>population.json</code> file contains up to 10 distinct solutions. These often reveal physically different mirror designs (different compositions or periods) with similar overall FoM. Examining them can provide insight into the design trade-space.</li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#optimisation-and-jobs">MCP Server &gt; Optimisation and Jobs</a></li>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="MCPServer">
+
+
+<h1><span class="num">17</span>MCP Server (XRC_MCP)</h1>
+<div class="subtitle">Connect an AI assistant to the calculation engine through the Model Context Protocol</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#installation">Installation and Registration</a></li>
+    <li><a href="#workdir">The Working Directory</a></li>
+    <li><a href="#conventions">Units and the Structure JSON</a></li>
+    <li><a href="#reference-tools">Reference Tools</a></li>
+    <li><a href="#calculation-tools">Calculation Tools</a></li>
+    <li><a href="#optimisation-and-jobs">Optimisation and Jobs</a></li>
+    <li><a href="#fitting">Fitting</a></li>
+    <li><a href="#inbox">Inbox: Measured Curves</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#example">Example Session</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#smoke-test">Smoke Test</a></li>
+  </ul>
+</div>
+
+<!-- =============================== -->
+<h2 id="overview">Overview</h2>
+
+<p><strong>XRC_MCP</strong> is a console program that exposes the X-Ray Calc 3 calculation engine to AI assistants over the <strong>Model Context Protocol</strong> (MCP). An MCP client such as Claude Code starts <code>XRC_MCP.exe</code>, talks to it as JSON-RPC 2.0 over standard input and output, and calls its <strong>tools</strong>: calculate a reflectivity curve, score a mirror design, run the universal optimizer, fit a measured curve, and read or write <code>.xrcx</code> project files.</p>
+
+<p>The engines are the GUI's own. The curve, the &chi;&sup2; and the figure of merit the server returns are the numbers X-Ray Calc 3 and XRFCalc display for the same structure, and a fit written by the server opens in the GUI as an ordinary project file. This lets you have an assistant prepare, run and compare fits while you verify every result in the GUI.</p>
+
+<table>
+  <tr>
+    <th style="width:170px">Property</th>
+    <th>Value</th>
+  </tr>
+  <tr><td>Executable</td><td><code>XRC_MCP.exe</code>, 64-bit only, in the same folder as the GUI</td></tr>
+  <tr><td>Transport</td><td>JSON-RPC 2.0 over stdio; one JSON object per line, UTF-8</td></tr>
+  <tr><td>Tools</td><td>16, grouped below</td></tr>
+  <tr><td>Long jobs</td><td><code>optimize_mirror</code> and <code>fit_xrr</code> run in the background and are polled</td></tr>
+  <tr><td>Record</td><td>Every call and result appended to <code>log\calls.jsonl</code></td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="installation">Installation and Registration</h2>
+
+<p>The server needs no configuration file. It takes one mandatory argument, the <strong>working directory</strong> that becomes its sandbox (see <a href="#workdir">below</a>):</p>
+
+<pre>XRC_MCP.exe --workdir "D:\Experiments\RuC-2026-09"</pre>
+
+<p>Register it with Claude Code once per experiment directory. The name <code>xrc</code> is how the assistant refers to the server:</p>
+
+<pre>claude mcp add -s user xrc -- "C:\Program Files\X-RayCalc3\XRC_MCP.exe" --workdir "D:\Experiments\RuC-2026-09"</pre>
+
+<p>Other MCP clients register a stdio server the same way: the command is the path to <code>XRC_MCP.exe</code>, the arguments are <code>--workdir</code> and an absolute path. Nothing in the server depends on the current directory of the process.</p>
+
+<p>To verify the registration, ask the assistant to call <code>describe_server</code>. The reply states the server version, the git revision it was built from, the Henke table directory in use, the unit conventions, and a one-line summary of every tool.</p>
+
+<div class="warn">
+  <strong>OmniThreadLibrary 3.08:</strong> If you build the server yourself, it needs OmniThreadLibrary 3.08 or later. With an older library a job stays at iteration 0 for ever and the server will not exit. See <a href="#dependencies">Source Code &gt; Dependencies</a>.
+</div>
+
+<!-- =============================== -->
+<h2 id="workdir">The Working Directory</h2>
+
+<p>Every path the server reads or writes lies under the working directory. It is created on first start with four subfolders:</p>
+
+<pre>&lt;workdir&gt;\
+  projects\        .xrcx files the server writes (save_project) and reads (load_project)
+  jobs\            one folder per job: request, progress log, curves, results
+  inbox\           measured curves that YOU put there; the server never writes here
+    &lt;specimen&gt;\    one folder per specimen, any number of data files inside
+  log\
+    calls.jsonl    every tools/call and its result, appended, never truncated</pre>
+
+<p>A path argument that resolves outside the working directory (a rooted path, a drive letter, a UNC path, or a <code>..</code> segment) is refused with the error <code>path_outside_workdir</code>; it is never silently remapped.</p>
+
+<div class="note">
+  <strong>The journal is the record.</strong> <code>log\calls.jsonl</code> holds one line per call with a timestamp, the tool name, the full arguments and the full result or error. Long numeric arrays such as curves are replaced by their length and the SHA-256 of the file they were written to. Keep it with the experiment.
+</div>
+
+<!-- =============================== -->
+<h2 id="conventions">Units and the Structure JSON</h2>
+
+<p>The conventions are the program's: thickness, roughness &sigma; and wavelength in <strong>&aring;ngstr&ouml;m</strong>, density in <strong>g/cm&sup3;</strong>, angles as the grazing angle <strong>&theta; in degrees</strong> (not 2&theta;). Wherever a wavelength is expected, a photon energy in eV is accepted instead and converted with &lambda;[&Aring;] = 12398.42 / E[eV]; the wavelength actually used is echoed back.</p>
+
+<p>Every tool that takes or returns a layered structure uses one JSON form, listed from the substrate to the surface:</p>
+
+<pre>{
+  "substrate": {"material": "SiO2", "density": 2.2, "sigma": 3.0},
+  "buffer":    {"material": "Ru", "thickness": 197.0, "sigma": 3.0},
+  "stacks": [
+    {"N": 30, "layers": [
+      {"material": "Ru", "thickness": 14.7, "sigma": 3.0, "density": 12.4},
+      {"material": "C",  "thickness": 53.8, "sigma": 3.0, "density": 2.2}
+    ]}
+  ],
+  "cap":       {"material": "Ru", "thickness": 20.0, "sigma": 3.0}
+}</pre>
+
+<ul>
+  <li><code>material</code> is a Henke table name, matched case-insensitively (<code>list_materials</code> gives the valid names).</li>
+  <li><code>density</code> is optional and defaults to the bulk value from the table; the value used is echoed.</li>
+  <li><code>buffer</code> (between substrate and first stack) and <code>cap</code> (on top) are optional. Several stacks are allowed.</li>
+  <li>Numeric results are rounded to 6 significant digits.</li>
+</ul>
+
+<!-- =============================== -->
+<h2 id="reference-tools">Reference Tools</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>describe_server</code></td><td>Call it first. Reports the server version and git revision, the Henke directory, the unit conventions, the material-name syntax, the structure form, the limits, the working-directory layout, and a summary of every tool.</td></tr>
+  <tr><td><code>list_materials</code></td><td>The Henke tables the server can use, optionally filtered by an element pool. Each entry gives the table name, formula, bulk density and atomic mass.</td></tr>
+  <tr><td><code>optical_constants</code></td><td>&delta; and &beta; of n = 1 &minus; &delta; + i&beta; for one material at one wavelength or energy, plus n, k and the nearby absorption edges. Unknown materials are refused with <code>unknown_material</code>.</td></tr>
+  <tr><td><code>list_templates</code></td><td>The multilayer design templates (one period each: sub-layers with thickness rule, &sigma;, density, capping variants) that <code>optimize_mirror</code> can start from, optionally filtered by a material pool.</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="calculation-tools">Calculation Tools</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>calc_reflectivity</code></td><td>Specular reflectivity of a structure over a &theta; range at one wavelength: <code>theta_min</code>, <code>theta_max</code>, <code>points</code>, <code>polarization</code> (<code>s</code>, <code>p</code>, <code>sp</code>) and an optional beam divergence <code>delta_theta</code>. Returns the curve inline when short enough and always as <code>jobs\&lt;id&gt;\curve.dat</code>, the Bragg peaks (order, &theta;<sub>B</sub>, R<sub>peak</sub>, FWHM) and the critical angle. This is the GUI's curve for the same structure (see <a href="#Calculation">Calculation</a>).</td></tr>
+  <tr><td><code>evaluate_lines</code></td><td>Scores a structure against a set of X-ray emission lines (<code>name</code>, <code>lambda</code> or <code>energy</code>, <code>weight</code>) with the universal optimizer's own figure of merit; optional <code>fitness</code> overrides. The number is directly comparable with what <code>optimize_mirror</code> reports (see <a href="#fom">Universal Mirror &gt; Figure of Merit</a>).</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="optimisation-and-jobs">Optimisation and Jobs</h2>
+
+<p>Two tools take longer than a request should wait for. They return a <code>job_id</code> at once and run in a background thread; the client polls.</p>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>optimize_mirror</code></td><td>Searches for the periodic multilayer that best serves a set of emission lines with the XRFCalc particle swarm. Takes the optimizer configuration (lines, <code>element_pool</code>, excluded pairs, structure ranges, fitness, optimizer settings, substrate, template), a <code>seed</code> and <code>top_k</code> (default 5). The result holds the <code>top_k</code> distinct structures with genome, figure of merit, per-line results and the <code>.xrfx</code> package written for each.</td></tr>
+  <tr><td><code>job_status</code></td><td>State of a job without waiting: <code>queued</code>, <code>running</code>, <code>finished</code>, <code>failed</code>, <code>cancelled</code> or <code>unknown</code>, with the current iteration and budget, the best value so far, elapsed seconds and the last message.</td></tr>
+  <tr><td><code>job_result</code></td><td>The result of a finished job. Fails with <code>job_not_finished</code> while it runs, <code>job_failed</code> when it ended in an error, <code>job_cancelled</code> when it was stopped.</td></tr>
+  <tr><td><code>cancel_job</code></td><td>Asks a job to stop and returns its state. A running job usually stops within a second or two; poll <code>job_status</code> to see it become <code>cancelled</code>.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Determinism and lifetime:</strong> With the same <code>seed</code> and inputs, <code>optimize_mirror</code> and <code>fit_xrr</code> give identical results; the seed used is echoed. Jobs do not survive the server: if the process ends, running jobs are lost and <code>job_status</code> reports <code>unknown</code> after a restart. Each job's folder <code>jobs\&lt;job_id&gt;\</code> keeps its request, progress log and outputs.
+</div>
+
+<!-- =============================== -->
+<h2 id="fitting">Fitting</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>fit_xrr</code></td><td>Fits a layer model to a measured curve with the GUI's LFPSO, minimising the same &chi;&sup2; X-Ray Calc 3 displays (see <a href="#Fitting">Fitting</a>). Returns a <code>job_id</code>; the result is read with <code>job_result</code>.</td></tr>
+</table>
+
+<p>The main arguments:</p>
+<table>
+  <tr>
+    <th style="width:170px">Argument</th>
+    <th>Meaning</th>
+  </tr>
+  <tr><td><code>measurement_id</code> or <code>curve</code></td><td>The measured data: an inbox id such as <code>"RuC-07/xrr.dat"</code>, or the curve inline.</td></tr>
+  <tr><td><code>structure</code></td><td>The start model in the structure JSON.</td></tr>
+  <tr><td><code>free</code></td><td>Which values may vary. Each entry addresses one layer by its <code>stack</code> index (from the substrate up, or <code>"cap"</code> / <code>"buffer"</code>) and <code>layer</code> index, and lists the <code>parameters</code> that take part: <code>"thickness"</code>, <code>"sigma"</code>, <code>"density"</code>. An entry <code>{"target":"period","stack":k}</code> frees the period of repeating stack <em>k</em> instead; at least one thickness of that stack must be free too. Scale, background and resolution are not fitted; asking for them is answered with <code>not_fittable</code>.</td></tr>
+  <tr><td><code>bounds</code></td><td>One <code>min</code> / <code>max</code> pair per free parameter (<code>stack</code>, <code>layer</code>, <code>parameter</code>), or per free period (<code>target: "period"</code>). Omitted bounds default to the start value &plusmn;30&nbsp;%; the start value must lie inside the range. Every fitted value stays inside its bounds, and the result's <code>bounds_used</code> lists the ranges that applied.</td></tr>
+  <tr><td><code>lambda</code> or <code>energy</code>, <code>theta_range</code></td><td>The wavelength (or photon energy) of the measurement and the &theta; interval to fit.</td></tr>
+  <tr><td><code>scale</code></td><td>A fixed multiplier applied to the measured intensities before the fit (the manual's Normalize step), default 1. Not fitted.</td></tr>
+  <tr><td><code>smooth</code></td><td><code>{"passes": n}</code>, 0 to 10, runs the GUI's <strong>Data &gt; Smooth</strong> on the measured curve before the fit. Order: scale, then smooth, then the <code>theta_range</code> trim, as in <a href="#data-conditioning-walkthrough">Data Conditioning</a>.</td></tr>
+  <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), tolerance. The result carries <code>optimizer_used</code> with every default filled in.</td></tr>
+  <tr><td><code>profile</code>, <code>seed</code></td><td>Allow per-period thickness polynomials (the GUI's polynomial mode), and the random seed.</td></tr>
+  <tr><td><code>polarization</code>, <code>resolution</code>, <code>chi2</code>, <code>r_min</code></td><td>Polarization (<code>s</code>, <code>p</code>, <code>sp</code>), the instrumental resolution width, the &chi;&sup2; weighting options of the GUI's fit dialog, and the reflectivity floor below which points are ignored.</td></tr>
+</table>
+
+<p>The result holds the fitted structure (with the expanded per-period profile when <code>profile</code> was set), &chi;&sup2;, the scale, background and resolution values, the start model, the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit. Open that file in the GUI to check the fit yourself.</p>
+
+<!-- =============================== -->
+<h2 id="inbox">Inbox: Measured Curves</h2>
+
+<p>Measured curves reach the server through the <code>inbox\</code> folder, one subfolder per specimen. You copy the files there; the server only reads them and never modifies them.</p>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>list_measurements</code></td><td>Every file in the inbox, optionally filtered by specimen, with its id <code>"&lt;specimen&gt;/&lt;file&gt;"</code>, size, SHA-256, modified time, and the specimen's metadata file if present.</td></tr>
+  <tr><td><code>get_measurement</code></td><td>One curve as [&theta;, intensity] pairs, parsed the way the GUI parses a data file (see <a href="#experimental-data-files">File Formats</a>): two columns separated by tab or space, comma accepted as the decimal mark, non-numeric lines reported as the header. <code>max_points</code> decimates a long curve for inline return; the file stays raw.</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="projects">Projects</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>save_project</code></td><td>Writes <code>projects\&lt;name&gt;.xrcx</code> that opens in the GUI with no conversion: the structure as the active model, the calculated curve beside it, and optionally a measured curve (an inbox id or a job's curves via <code>curves.job_id</code>). A project saved from a fit job carries the job's own fit settings, so it opens as the fit that ran. Refuses to overwrite unless <code>overwrite: true</code>.</td></tr>
+  <tr><td><code>load_project</code></td><td>Reads a project back: the active model's structure in the structure JSON, its profile extensions, the calculation parameters (angles always as &theta;), and a summary of the embedded curves.</td></tr>
+  <tr><td><code>list_projects</code></td><td>The <code>.xrcx</code> files in <code>projects\</code> with size, SHA-256 and modified time. Nothing is written.</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="example">Example Session</h2>
+
+<p>A typical exchange, with the assistant's tool calls in order. The curve <code>RuC-07\xrr.dat</code> was copied into the inbox beforehand.</p>
+
+<ol>
+  <li><code>describe_server</code> &mdash; confirm the revision and the Henke directory.</li>
+  <li><code>list_measurements</code> &rarr; finds <code>"RuC-07/xrr.dat"</code>; <code>get_measurement</code> with <code>max_points: 200</code> to look at the curve.</li>
+  <li><code>calc_reflectivity</code> with the nominal Ru/C structure (30 periods, d = 68.5&nbsp;&Aring;) at &lambda; = 1.5406&nbsp;&Aring; &mdash; compare the Bragg peak position with the measurement.</li>
+  <li><code>fit_xrr</code> with the period of stack 0 and both layer thicknesses free, <code>smooth: {"passes": 1}</code>, <code>theta_range: [0.3, 4.0]</code>, <code>seed: 1</code> &rarr; <code>job_id: "fit-000003"</code>.</li>
+  <li><code>job_status</code> every few seconds until <code>finished</code> (about 25&nbsp;s for a 1000-point curve with the default population of 500).</li>
+  <li><code>job_result</code> &rarr; fitted d, &Gamma;, &chi;&sup2;, and the path of <code>fit.xrcx</code>.</li>
+  <li><code>save_project</code> with <code>name: "RuC-07-fit"</code> and <code>curves.job_id: "fit-000003"</code> &rarr; <code>projects\RuC-07-fit.xrcx</code>, which you open in X-Ray Calc 3 to inspect and refit.</li>
+</ol>
+
+<div class="tip">
+  <strong>Practice:</strong> The lab's rule of thumb for the LFPSO is 100 iterations with 500 to 1000 particles: population wins over iterations. These are the server's defaults, so a request that names neither reproduces the GUI's usual fit.
+</div>
+
+<!-- =============================== -->
+<h2 id="security">Security</h2>
+
+<ul>
+  <li><strong>Sandbox:</strong> the server can only read and write under its working directory. A path outside it is refused, never remapped.</li>
+  <li><strong>Read-only inbox:</strong> no tool has a write path into <code>inbox\</code>; your measured data cannot be altered by an assistant.</li>
+  <li><strong>No network:</strong> the server speaks only over its own stdin and stdout to the client that started it. It opens no ports.</li>
+  <li><strong>Journal:</strong> every call and result is appended to <code>log\calls.jsonl</code>; the file is never truncated by the server.</li>
+  <li><strong>Structured errors:</strong> failures are returned as <code>{code, message, detail}</code>. The process never shows a dialog or waits for a key, so it is safe to run unattended.</li>
+</ul>
+
+<!-- =============================== -->
+<h2 id="smoke-test">Smoke Test</h2>
+
+<p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 16 tools over one live stdio session (jobs are submitted, polled and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>
+
+<pre>pwsh -File XRC_MCP\smoke\session.ps1</pre>
+
+<p>Exit code 0 means every check passed; <code>-KeepWorkdir</code> leaves the work directories behind for inspection. It takes a few seconds.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Fitting">Fitting (Optimization)</a> &mdash; the LFPSO the server runs</li>
+  <li><a href="#UniversalMirror">Universal Mirror Optimizer</a> &mdash; the optimizer behind <code>optimize_mirror</code></li>
+  <li><a href="#FileFormats">File Formats</a> &mdash; <code>.xrcx</code> and data files</li>
+  <li><a href="#SourceCode">Source Code &amp; Git</a> &mdash; building the server</li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="FileFormats">
+
+
+<h1><span class="num">18</span>File Formats</h1>
+<div class="subtitle">Project files (.xrcx), experimental data files, Henke tables, and the settings file</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#project-file-xrcx">Project File (.xrcx)</a></li>
+    <li><a href="#experimental-data-files">Experimental Data Files</a></li>
+    <li><a href="#henke-tables">Henke Tables</a></li>
+    <li><a href="#settings-file-xrc3-ini">Settings File (xrc3.ini)</a></li>
+  </ul>
+</div>
+
+<h2 id="project-file-xrcx">Project File (.xrcx)</h2>
+<p>A ZIP archive containing:</p>
+<ul>
+  <li><code>project.dsc</code> &mdash; project metadata (title, descriptions)</li>
+  <li><code>params.dsc</code> &mdash; complete model definitions in text format (layers, stacks, parameters, calculation settings)</li>
+  <li>Embedded experimental data files</li>
+</ul>
+
+<h2 id="experimental-data-files">Experimental Data Files</h2>
+<p>Plain text, two columns separated by tabs or spaces:</p>
+<pre><code># Optional comment lines starting with #
+0.100   1.000000
+0.200   0.999850
+...</code></pre>
+<p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
+Column 2: Reflectivity (typically 0 to 1)</p>
+
+<h2 id="henke-tables">Henke Tables</h2>
+<p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>
+
+<h2 id="settings-file-xrc3-ini">Settings File (xrc3.ini)</h2>
+<p>Standard Windows INI file format. Sections include:</p>
+<ul>
+  <li><code>[Path]</code> &mdash; directory paths</li>
+  <li><code>[Window]</code> &mdash; window position and size</li>
+  <li><code>[Options]</code> &mdash; behavior flags</li>
+  <li><code>[Graphics]</code> &mdash; chart display settings</li>
+  <li><code>[Calc]</code> &mdash; calculation settings</li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Projects">Projects</a></li>
+  <li><a href="#Data">Experimental Data</a></li>
+  <li><a href="#Settings">Application Settings</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="Examples">
+
+
+<h1><span class="num">19</span>Illustrative Examples</h1>
+<div class="subtitle">Single-layer coatings, periodic mirrors, polynomial fitting, and a supermirror</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#single-layer-coating">Single-Layer Coating</a></li>
+    <li><a href="#periodic-x-ray-mirrors">Periodic X-Ray Mirrors</a></li>
+    <li><a href="#polynomial-fitting-on-graded-pmms">Polynomial Fitting on Graded PMMs</a></li>
+    <li><a href="#supermirror">Supermirror</a></li>
+  </ul>
+</div>
+
+<p>The following examples from the literature demonstrate the application of XRC3 to different types of structures (Penkov <em>et al.</em>, 2024).</p>
+
+<h2 id="single-layer-coating">Single-Layer Coating</h2>
+<p>Evaluation of a single-layer TiZrNi coating deposited by DC magnetron sputtering. The XRR was fitted starting with a two-layer model (TiZrNi + TiO<sub>2</sub>), which yielded a cost function of ~0.48. Adding extra layers minimized the cost function to 0.14, revealing non-stoichiometric surface layers and hydrocarbon contamination.</p>
+
 <figure>
   <img src="images/fig8.jpg" alt="XRR curve fitting for a single-layer coating">
-  <figcaption><strong>Figure 5.</strong> XRR curve fitting for a single-layer coating. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+  <figcaption><strong>Figure 5.</strong> XRR curve fitting for a single-layer coating. (a) Two-layer model. (b) Four-layer model. Insets show the fitted structures. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
 
-<h3>Periodic X-Ray Mirrors</h3>
+<h2 id="periodic-x-ray-mirrors">Periodic X-Ray Mirrors</h2>
+<p>Fitting of XRR curves for Mo/Si and Mo/B periodic multilayer mirrors (PMMs) in periodic mode. The Mo/Si results reveal the well-known asymmetric intermixed zones between Mo and Si. For the 2.3 nm period Mo/B PMM, fitting revealed thin asymmetric intermixing zones and a density difference between the thick Mo sublayer (near-bulk density) and the 0.6 nm Mo layers within the periodic structure (84% of bulk).</p>
+
 <figure>
   <img src="images/fig9.jpg" alt="XRR curve fitting for X-ray mirrors">
   <figcaption><strong>Figure 6.</strong> XRR curve fitting for X-ray mirrors. (a) Mo/Si. (b) Mo/B. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
 
-<h3>Polynomial Fitting on Graded PMMs</h3>
+<h2 id="polynomial-fitting-on-graded-pmms">Polynomial Fitting on Graded PMMs</h2>
+<p>A W/BN PMM fitted in polynomial mode. The broadening and shape changes of diffraction peaks indicate variation of layer parameters across the stack. Due to unstable deposition conditions, the thickness and roughness of layers were found to vary gradually.</p>
+
 <figure>
-  <img src="images/fig10.jpg" alt="Polynomial XRR curve fitting">
-  <figcaption><strong>Figure 7.</strong> Polynomial XRR curve fitting for a W/BN X-ray mirror. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+  <img src="images/fig10.jpg" alt="Polynomial XRR curve fitting for graded PMM">
+  <figcaption><strong>Figure 7.</strong> Polynomial XRR curve fitting for a W/BN X-ray mirror with gradually changed thickness of layers. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
 
-<h3>Supermirror</h3>
+<h2 id="supermirror">Supermirror</h2>
+<p>An Sb/B<sub>4</sub>C supermirror fitted in irregular mode with paired roughness and density. The fitting revealed the designed depth-graded structure.</p>
+
 <figure>
   <img src="images/fig11.jpg" alt="XRR curve fitting for a supermirror">
   <figcaption><strong>Figure 8.</strong> XRR curve fitting for an Sb/B<sub>4</sub>C supermirror. (From Penkov <em>et al.</em>, 2024.)</figcaption>
 </figure>
 
-<!-- ═══ 18. Troubleshooting ═══ -->
-<h2><span class="num">18</span> Troubleshooting</h2>
-
-<h3>Application crashes without error message</h3>
-<p><strong>Solution:</strong> Use the <strong>x64 version</strong> (<code>XRayCalc3.x64.exe</code>). The x32 version is limited to ~2 GB RAM.</p>
-
-<h3>Choosing between x32 and x64</h3>
-<table>
-  <tr><th>Version</th><th>Advantage</th><th>Limitation</th></tr>
-  <tr><td><strong>x32</strong></td><td>~2&times; faster calculation</td><td>Limited to ~2 GB RAM</td></tr>
-  <tr><td><strong>x64</strong></td><td>Handles large models</td><td>Slower for small models</td></tr>
-</table>
-
-<h3>Fitting does not converge</h3>
+<h3>See Also</h3>
 <ul>
-  <li>Widen the fit limits</li>
-  <li>Increase population size</li>
-  <li>Increase iterations</li>
-  <li>Enable Shake</li>
-  <li>Check initial model</li>
-  <li>Try a different fitting mode</li>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+  <li><a href="#QuickStart">Quick Start</a></li>
 </ul>
 
-<h3>Calculation is slow</h3>
-<ul>
-  <li>Ensure multi-threading is enabled</li>
-  <li>Reduce number of points (N)</li>
-  <li>Use x32 for small models (~2&times; faster)</li>
-  <li>Use x64 only for large models</li>
-</ul>
 
-<h3>Material not found</h3>
-<p>Check spelling. Use <strong>Tools &gt; Create New Material</strong> to add custom compounds.</p>
 
-<h3>Chart appears empty after calculation</h3>
-<p>Check angle/wavelength range. Try switching between linear and logarithmic scale. Verify the model has at least one layer.</p>
 
-<h3>Data import fails</h3>
-<p>Ensure plain text with two numeric columns. Check decimal separators match your locale. Try clipboard paste instead.</p>
+</div>
+<div class="chapter" id="Troubleshooting">
 
-<hr>
-<div class="footer">
-  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
-  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
-  <p style="margin-top:8px; font-size:12px;">Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>J. Appl. Cryst.</em> <strong>57</strong>, 555&ndash;566.
-  <a href="https://doi.org/10.1107/S1600576724001031">doi:10.1107/S1600576724001031</a></p>
+
+<h1><span class="num">20</span>Troubleshooting</h1>
+<div class="subtitle">Crashes, x32 versus x64, locked projects, convergence, slow calculation, data import</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#application-crashes-without-error-message">Application crashes without error message</a></li>
+    <li><a href="#choosing-between-x32-and-x64">Choosing between x32 and x64</a></li>
+    <li><a href="#the-application-shows-a-project-locked-message">The application shows a &ldquo;project locked&rdquo; message</a></li>
+    <li><a href="#fitting-does-not-converge">Fitting does not converge</a></li>
+    <li><a href="#calculation-is-slow">Calculation is slow</a></li>
+    <li><a href="#material-not-found">Material not found</a></li>
+    <li><a href="#chart-appears-empty-after-calculation">Chart appears empty after calculation</a></li>
+    <li><a href="#data-import-fails">Data import fails</a></li>
+  </ul>
 </div>
 
-</main>
+<h2 id="application-crashes-without-error-message">Application crashes without error message</h2>
+<p>This is typically caused by running out of memory when solving very large fitting problems (many layers or a very large population size).</p>
+<p><strong>Solution:</strong> Use the <strong>x64 version</strong> (<code>XRayCalc3.x64.exe</code>). It is somewhat slower than the x32 version for small models, but can address much larger amounts of RAM. The x32 version is limited to approximately 2 GB of memory.</p>
+
+<h2 id="choosing-between-x32-and-x64">Choosing between x32 and x64</h2>
+<p>Both versions are included in the distribution:</p>
+<table>
+  <tr><th>Version</th><th>Advantage</th><th>Limitation</th></tr>
+  <tr><td><strong>x32</strong> (<code>XRayCalc3.exe</code>)</td><td>~2&times; faster calculation</td><td>Limited to ~2 GB RAM</td></tr>
+  <tr><td><strong>x64</strong> (<code>XRayCalc3.x64.exe</code>)</td><td>Handles large models and populations</td><td>Slower for small models</td></tr>
+</table>
+<p>Use <strong>x32</strong> for routine calculations with small-to-medium models. Switch to <strong>x64</strong> when working with large multilayer structures, high population sizes, or when you encounter crashes.</p>
+
+<h2 id="the-application-shows-a-project-locked-message">The application shows a &ldquo;project locked&rdquo; message</h2>
+<p>Another instance of X-Ray Calc 3 may have the project open, or a previous session crashed without releasing the lock. Close the other instance, or manually delete the <code>temp.lock</code> file from the temp directory (<code>%TEMP%\X-RayCalc3\</code>).</p>
+
+<h2 id="fitting-does-not-converge">Fitting does not converge</h2>
+<ul>
+  <li><strong>Widen the fit limits</strong> &mdash; the initial parameter bounds may be too narrow to contain the true solution.</li>
+  <li><strong>Increase population size</strong> &mdash; more particles explore the parameter space more thoroughly.</li>
+  <li><strong>Increase iterations</strong> &mdash; the algorithm may need more time to converge.</li>
+  <li><strong>Enable Shake</strong> &mdash; this helps escape local minima.</li>
+  <li><strong>Check initial model</strong> &mdash; a better starting guess leads to faster convergence.</li>
+  <li><strong>Try a different fitting mode</strong> &mdash; Periodic mode may work better than Irregular for regular multilayers, and vice versa.</li>
+</ul>
+
+<h2 id="calculation-is-slow">Calculation is slow</h2>
+<ul>
+  <li>Ensure multi-threading is enabled (<strong>Settings &gt; Calc &amp; Fit &gt; Auto (Use all)</strong>).</li>
+  <li>Reduce the number of calculation points (N) for preliminary calculations.</li>
+  <li>Use the <strong>x32 version</strong> for small-to-medium models &mdash; it is approximately 2&times; faster than x64.</li>
+  <li>Use the <strong>x64 version</strong> only when the model is too large for x32 (memory limit).</li>
+</ul>
+
+<h2 id="material-not-found">Material not found</h2>
+<ul>
+  <li>Check the spelling (chemical formula must be exact, e.g., &ldquo;SiO2&rdquo; not &ldquo;Sio2&rdquo;).</li>
+  <li>The material may not exist in the Henke database. Use <strong>Tools &gt; Create New Material</strong> to add it.</li>
+</ul>
+
+<h2 id="chart-appears-empty-after-calculation">Chart appears empty after calculation</h2>
+<ul>
+  <li>Check that the angle/wavelength range is appropriate for the structure.</li>
+  <li>For very thin films, use small angles (0.01 to 5 degrees).</li>
+  <li>Switch between linear and logarithmic scale &mdash; the reflectivity may be visible only on one scale.</li>
+  <li>Verify that the model has at least one layer defined.</li>
+</ul>
+
+<h2 id="data-import-fails">Data import fails</h2>
+<ul>
+  <li>Ensure the data file is plain text with two numeric columns.</li>
+  <li>Remove any header lines that are not prefixed with <code>#</code>.</li>
+  <li>Check that decimal separators match your system locale (period vs. comma).</li>
+  <li>Try pasting the data via clipboard instead.</li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Installation">Installation &amp; First Launch</a></li>
+  <li><a href="#Fitting">Fitting (Optimization)</a></li>
+  <li><a href="#Wiki">Online Wiki</a></li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="SourceCode">
+
+
+<h1><span class="num">21</span>Source Code &amp; Git</h1>
+<div class="subtitle">The GitHub repository: getting the source, branches, building, dependencies, tests, and contributing</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#repository">The Repository</a></li>
+    <li><a href="#getting-the-source">Getting the Source</a></li>
+    <li><a href="#branches">Branches and History</a></li>
+    <li><a href="#layout">Repository Layout</a></li>
+    <li><a href="#building">Building</a></li>
+    <li><a href="#dependencies">Dependencies</a></li>
+    <li><a href="#tests">Running the Tests</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#licence">Licence and Citation</a></li>
+  </ul>
+</div>
+
+<!-- =============================== -->
+<h2 id="repository">The Repository</h2>
+
+<p>X-Ray Calc 3 is open source. The complete source code, the issue tracker, the release installers and the <a href="#Wiki">wiki</a> live in one Git repository on GitHub:</p>
+
+<pre>https://github.com/OleksiyPenkov/X-RayCalc3</pre>
+
+<p>The repository holds more than the GUI. It is a Delphi project group with four programs that share one calculation engine:</p>
+
+<table>
+  <tr>
+    <th style="width:160px">Program</th>
+    <th>Purpose</th>
+  </tr>
+  <tr><td><strong>XRayCalc3</strong></td><td>The GUI application this manual describes (<code>XRayCalc3.exe</code>, <code>XRayCalc3.x64.exe</code>).</td></tr>
+  <tr><td><strong>xrccmd</strong></td><td>Command-line calculation, fitting, and the <a href="#UniversalMirror">Universal Mirror Optimizer</a>.</td></tr>
+  <tr><td><strong>XRFCalc</strong></td><td>GUI for viewing and running universal-mirror optimizations (<code>.xrfx</code> result files).</td></tr>
+  <tr><td><strong>XRC_MCP</strong></td><td>The <a href="#MCPServer">MCP server</a> that exposes the engine to AI assistants.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Releases:</strong> You do not need the source to use the program. Windows installers are published under <strong>Releases</strong> on the repository page; each installer ships the 32-bit and 64-bit GUI, the Henke optical-constant tables and the example projects.
+</div>
+
+<!-- =============================== -->
+<h2 id="getting-the-source">Getting the Source</h2>
+
+<p>Install <strong>Git for Windows</strong>, then clone the repository:</p>
+
+<pre>git clone https://github.com/OleksiyPenkov/X-RayCalc3.git
+cd X-RayCalc3</pre>
+
+<p>To update a clone you already have:</p>
+
+<pre>git pull</pre>
+
+<p>If you only want to read the code, the <strong>Code &gt; Download ZIP</strong> button on GitHub gives you a snapshot of the current branch without Git.</p>
+
+<!-- =============================== -->
+<h2 id="branches">Branches and History</h2>
+
+<table>
+  <tr>
+    <th style="width:200px">Ref</th>
+    <th>Content</th>
+  </tr>
+  <tr><td><code>master</code></td><td>The development branch since 2023. Releases are built from it. This is what <code>git clone</code> checks out.</td></tr>
+  <tr><td><code>main</code></td><td>The earlier public history with the flat directory layout and the 3.5.x releases, kept for reference.</td></tr>
+  <tr><td>tag <code>legacy-main-3.5.3</code></td><td>The last state of that earlier history.</td></tr>
+</table>
+
+<p>Commit messages follow a small convention: a leading <code>+</code> marks a new feature, a leading <code>*</code> a modification or fix. <code>git log --oneline</code> is therefore a readable change list.</p>
+
+<!-- =============================== -->
+<h2 id="layout">Repository Layout</h2>
+
+<pre>XRayCalc3/         GUI application
+  Forms/           Main windows (frm_Main, settings, about, ...)
+  Views/           Reusable frames (chart info, project panel, ...)
+  Units/           Business logic (config, types, helpers, orchestrators)
+  LFPSO/           Particle swarm optimization for curve fitting
+  Components/      Custom VCL components + package (tree, grid, editors)
+  Editors/         Data editor dialogs (profile, Henke table, JSON, ...)
+  Assets/          Icons, this help, development plans
+  Tests/           DUnitX test suite
+XRC_CMD/           xrccmd, the command-line interface
+XRFCalc/           XRF mirror-design GUI
+XRC_MCP/           MCP server for AI assistants
+Shared/
+  Math/            Calculation engine, complex math, materials database
+  Universal/       Universal-mirror types, fitness, templates, XRF lines
+_Out/              Build output (BIN/, DCU/, DCU64/)
+_Installer/        Inno Setup script and deployment script
+docs/              Design documents and implementation plans
+XRC3.groupproj     Delphi project group</pre>
+
+<p>Project files are <code>.xrcx</code> archives (see <a href="#project-file-xrcx">File Formats</a>). Lengths are in &aring;ngstr&ouml;m, densities in g/cm&sup3;, angles are the grazing angle &theta; in degrees, throughout the code.</p>
+
+<!-- =============================== -->
+<h2 id="building">Building</h2>
+
+<p>The programs are written in Delphi (Object Pascal) and build with <strong>Embarcadero RAD Studio 37.0</strong> (Delphi 13). Win32 is the primary target for the GUI and the CLI; XRC_MCP is built for Win64 only.</p>
+
+<h3>In the IDE</h3>
+<ol>
+  <li>Open <code>XRC3.groupproj</code> in RAD Studio.</li>
+  <li>Choose the <strong>Release</strong> configuration and the <strong>Win32</strong> platform (or Win64 for the 64-bit GUI).</li>
+  <li>Right-click the project group in the Project Manager and select <strong>Build All</strong>. The build order is XRayCalc3 &rarr; XRayCalcVisualControls &rarr; xrccmd &rarr; XRFCalc &rarr; XRC_MCP.</li>
+</ol>
+
+<h3>From the command line</h3>
+<p>Set the Embarcadero environment variables, then call MSBuild for the project you need. Always use <code>/t:Build</code>; <code>/t:Make</code> does not work with these projects.</p>
+
+<pre>set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0
+set BDSCOMMONDIR=C:\Users\Public\Documents\Embarcadero\Studio\37.0
+set MSB=C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+
+%MSB% XRayCalc3\XRayCalc3.dproj /t:Build /p:Config=Release /p:Platform=Win32
+%MSB% XRC_CMD\xrccmd.dproj      /t:Build /p:Config=Release /p:Platform=Win32
+%MSB% XRFCalc\XRFCalc.dproj     /t:Build /p:Config=Release /p:Platform=Win32
+%MSB% XRC_MCP\XRC_MCP.dproj     /t:Build /p:Config=Release /p:Platform=Win64</pre>
+
+<p>Executables land in <code>_Out\BIN\</code>. The 64-bit GUI is <code>XRayCalc3.x64.exe</code>; <code>XRayCalc3.exe</code> is the 32-bit build.</p>
+
+<div class="note">
+  <strong>Git on PATH:</strong> XRC_MCP regenerates <code>XRC_MCP\units\gitrev.inc</code> from <code>git describe --always --dirty</code> in its pre-build event, so <code>git</code> must be on <code>PATH</code> when you build it. The value is what the server reports as its revision; a <code>-dirty</code> suffix means the tree had uncommitted changes when it was built.
+</div>
+
+<!-- =============================== -->
+<h2 id="dependencies">Dependencies</h2>
+
+<p>The following libraries must be on the Delphi library path for the platform you build:</p>
+
+<table>
+  <tr>
+    <th style="width:200px">Library</th>
+    <th>Used for</th>
+  </tr>
+  <tr><td><strong>OmniThreadLibrary</strong> 3.08 or later</td><td>Parallel calculation and fitting. Older versions truncate 64-bit code pointers in <code>OtlTaskControl.pas</code>, and every Win64 build that runs the optimizer or the fit then hangs at the first iteration. <a href="https://github.com/gabr42/OmniThreadLibrary">github.com/gabr42/OmniThreadLibrary</a></td></tr>
+  <tr><td><strong>FastMath</strong></td><td>Vectorised math. <a href="https://github.com/neslib/FastMath">github.com/neslib/FastMath</a></td></tr>
+  <tr><td><strong>Raize Components</strong> (Konopka Signature VCL Controls)</td><td>UI controls (<code>Rz*</code> prefix).</td></tr>
+  <tr><td><strong>Virtual TreeView</strong></td><td>Project tree and grids.</td></tr>
+  <tr><td><strong>Abbrevia</strong></td><td>The <code>.xrcx</code> ZIP archives.</td></tr>
+  <tr><td><strong>SynEdit</strong></td><td>The JSON and text editors.</td></tr>
+  <tr><td><strong>DUnitX</strong></td><td>The test suite; shipped with RAD Studio.</td></tr>
+</table>
+
+<div class="warn">
+  <strong>Symptom of an old OmniThreadLibrary:</strong> a Win64 fit or optimization that stops at iteration 0 and a process that will not exit. Win32 builds are unaffected. Check out the library at tag <code>release-3.08</code> or later and rebuild.
+</div>
+
+<!-- =============================== -->
+<h2 id="tests">Running the Tests</h2>
+
+<p><code>XRayCalc3\Tests\XRayCalc3Tests.dproj</code> is a DUnitX suite (Win32, Debug) covering the calculation engine, the Henke tables, the LFPSO fit, the universal optimizer and every XRC_MCP unit. Build it, then run:</p>
+
+<pre>%MSB% XRayCalc3\Tests\XRayCalc3Tests.dproj /t:Build /p:Config=Debug
+XRayCalc3\Tests\_Out\BIN\XRayCalc3Tests.exe --exitbehavior:Continue</pre>
+
+<p>The XRC_MCP server additionally has an end-to-end smoke test, described in <a href="#smoke-test">MCP Server &gt; Smoke Test</a>.</p>
+
+<!-- =============================== -->
+<h2 id="contributing">Contributing</h2>
+
+<ul>
+  <li><strong>Bug reports and feature requests</strong> go to the <strong>Issues</strong> tab of the repository. Attach the project file (<code>.xrcx</code>) and the measured data that reproduce the problem, and state whether you ran the 32-bit or the 64-bit build (see <a href="#Troubleshooting">Troubleshooting</a>).</li>
+  <li><strong>Code changes</strong> are welcome as pull requests against <code>master</code>. Fork the repository on GitHub, create a branch, commit with the <code>+</code>/<code>*</code> prefix convention, and open the pull request. Build the Win32 Release target and run the test suite before submitting.</li>
+  <li><strong>Documentation</strong> changes to this manual are code changes too: the pages live in <code>XRayCalc3/Assets/Docs/Help/</code>. Tutorial-style material belongs in the <a href="#Wiki">wiki</a>, which anyone with a GitHub account can edit.</li>
+</ul>
+
+<!-- =============================== -->
+<h2 id="licence">Licence and Citation</h2>
+
+<p>X-Ray Calc 3 is distributed under the <strong>GNU General Public License v3.0</strong>; see the <code>LICENSE</code> file in the repository.</p>
+
+<p>If you use the software in published work, please cite:</p>
+<ul>
+  <li>Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity.</em> J. Appl. Cryst. <strong>57</strong>, 555&ndash;566. <a href="https://doi.org/10.1107/S1600576724001031">doi:10.1107/S1600576724001031</a></li>
+  <li>Penkov, O. V., Kopylets, I. A., Khadem, M. &amp; Qin, T. (2020). <em>X-Ray Calc: a software for the simulation of X-ray reflectivity.</em> SoftwareX <strong>12</strong>, 100528. <a href="https://doi.org/10.1016/j.softx.2020.100528">doi:10.1016/j.softx.2020.100528</a></li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#Wiki">Online Wiki</a> &mdash; tutorials and notes hosted next to the repository</li>
+  <li><a href="#MCPServer">MCP Server</a> &mdash; the fourth program in the project group</li>
+  <li><a href="#Introduction">Introduction</a> &mdash; what the software does</li>
+</ul>
+
+
+
+
+</div>
+<div class="chapter" id="Wiki">
+
+
+<h1><span class="num">22</span>Online Wiki</h1>
+<div class="subtitle">The GitHub wiki that accompanies this manual: its pages, and how to read and edit them</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#pages">Wiki Pages</a></li>
+    <li><a href="#manual-vs-wiki">This Manual and the Wiki</a></li>
+    <li><a href="#editing">Editing the Wiki</a></li>
+    <li><a href="#cloning">Cloning the Wiki</a></li>
+  </ul>
+</div>
+
+<!-- =============================== -->
+<h2 id="overview">Overview</h2>
+
+<p>Besides this manual, which is installed with the program and describes every feature, X-Ray Calc 3 has an <strong>online wiki</strong> hosted with the source repository on GitHub:</p>
+
+<pre>https://github.com/OleksiyPenkov/X-RayCalc3/wiki</pre>
+
+<p>The wiki is the place for material that changes faster than a release, or that is easier to write as a walkthrough than as a reference: tutorials with screenshots, worked fitting sessions, benchmark results, and answers to questions that come up repeatedly. It is public, needs no login to read, and can be edited by anyone with a GitHub account.</p>
+
+<div class="note">
+  <strong>Which one to read:</strong> Start with the wiki's <strong>Getting started</strong> if you are new to the program and want to see a complete session end to end. Use this manual when you need to know what a particular setting, button or file format does.
+</div>
+
+<!-- =============================== -->
+<h2 id="pages">Wiki Pages</h2>
+
+<table>
+  <tr>
+    <th style="width:230px">Page</th>
+    <th>Content</th>
+  </tr>
+  <tr>
+    <td><strong>Home</strong></td>
+    <td>Entry page with links to every other page.</td>
+  </tr>
+  <tr>
+    <td><strong>Getting started</strong></td>
+    <td>A first session: open a demonstration project, run a calculation from the Computation tab, edit layers, stacks and model properties, change polarization and the angle range, and export or plot the result.</td>
+  </tr>
+  <tr>
+    <td><strong>How to create a model and calculate XRR</strong></td>
+    <td>Building a multilayer model from an empty project: stacks, layers, materials from the Henke database, and the calculation settings.</td>
+  </tr>
+  <tr>
+    <td><strong>Working with experimental data</strong></td>
+    <td>Loading a measured curve, the expected file format, and comparing it with the calculated one.</td>
+  </tr>
+  <tr>
+    <td><strong>Working with experimental data (Data conditioning)</strong></td>
+    <td>Preparing a measured curve for fitting: normalize, smooth and trim, in that order, with the reasoning behind each step.</td>
+  </tr>
+  <tr>
+    <td><strong>Manual curve fitting</strong></td>
+    <td>Fitting by hand before (or instead of) the automatic fit: create an initial model and load the data, roughly match the period of the structure, then adjust the roughness of the layers until the peak intensities agree.</td>
+  </tr>
+  <tr>
+    <td><strong>Benchmarks</strong></td>
+    <td>Convergence studies of the fitting algorithm: the effect of the algorithm constants, LFPSO versus Shake LFPSO on several structures, and how the iteration count and population size influence convergence, with CPU timings. A benchmark archive can be downloaded from the repository.</td>
+  </tr>
+  <tr>
+    <td><strong>Troubleshooting</strong></td>
+    <td>Known problems and their remedies, for example the application closing without an error message when a large fit runs out of memory in the 32-bit build.</td>
+  </tr>
+  <tr>
+    <td><strong>User Manual</strong></td>
+    <td>An older, interface-oriented description of the main menu and toolbars. Superseded by this manual, kept for readers of earlier versions.</td>
+  </tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="manual-vs-wiki">This Manual and the Wiki</h2>
+
+<p>Several wiki pages have a counterpart here. The wiki version is the walkthrough; the chapter here is the reference.</p>
+
+<table>
+  <tr>
+    <th style="width:300px">Wiki page</th>
+    <th>Chapter in this manual</th>
+  </tr>
+  <tr><td>Getting started</td><td><a href="#QuickStart">Quick Start</a></td></tr>
+  <tr><td>How to create a model and calculate XRR</td><td><a href="#Models">Defining a Model</a>, <a href="#Calculation">Calculation</a></td></tr>
+  <tr><td>Working with experimental data</td><td><a href="#Data">Experimental Data</a>, <a href="#experimental-data-files">File Formats</a></td></tr>
+  <tr><td>Working with experimental data (Data conditioning)</td><td><a href="#data-conditioning-walkthrough">Experimental Data &gt; Data Conditioning Walkthrough</a></td></tr>
+  <tr><td>Manual curve fitting</td><td>No counterpart: the technique is described only in the wiki. <a href="#Fitting">Fitting</a> covers the automatic fit.</td></tr>
+  <tr><td>Benchmarks</td><td>No counterpart. <a href="#benchmark">Tools &gt; Benchmark</a> describes how to run the built-in benchmark on your own machine.</td></tr>
+  <tr><td>Troubleshooting</td><td><a href="#Troubleshooting">Troubleshooting</a></td></tr>
+</table>
+
+<div class="tip">
+  <strong>Tip:</strong> The <strong>Help &gt; User Manual</strong> menu command opens this manual in your browser. The wiki is at the address at the top of this page; the repository's README links to it as well.
+</div>
+
+<!-- =============================== -->
+<h2 id="editing">Editing the Wiki</h2>
+
+<p>Corrections and new tutorials are welcome. GitHub wikis are edited in the browser:</p>
+<ol>
+  <li>Sign in to GitHub (a free account is enough).</li>
+  <li>Open the page you want to change and click <strong>Edit</strong> in the top right, or click <strong>New page</strong> on any wiki page to add one.</li>
+  <li>Write in Markdown: <code>#</code> headings, <code>*</code> bullets, <code>![caption](image-url)</code> for screenshots. The <strong>Preview</strong> tab shows the rendered result.</li>
+  <li>Enter a short edit summary and click <strong>Save page</strong>. The change is live at once.</li>
+</ol>
+
+<p>Screenshots are added by dragging the image into the editor, which uploads it and inserts the Markdown link for you. Please keep to the existing page structure: one topic per page, a short introduction, then numbered steps.</p>
+
+<div class="note">
+  <strong>What belongs where:</strong> Walkthroughs, tips, benchmark results and questions-and-answers go in the wiki. A description of what a setting does, a file format, or a keyboard shortcut belongs in this manual, which is versioned with the source code (see <a href="#contributing">Source Code &amp; Git &gt; Contributing</a>).
+</div>
+
+<!-- =============================== -->
+<h2 id="cloning">Cloning the Wiki</h2>
+
+<p>A GitHub wiki is itself a Git repository, so you can keep an offline copy, edit pages in your own editor, or back it up:</p>
+
+<pre>git clone https://github.com/OleksiyPenkov/X-RayCalc3.wiki.git</pre>
+
+<p>Each page is one Markdown file named after its title (<code>Getting-started.md</code>, <code>Manual-curve-fitting.md</code>, and so on). Commit and push to publish your edits; pushing requires write access to the wiki, which every signed-in GitHub user has unless the repository owner restricts it.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="#SourceCode">Source Code &amp; Git</a> &mdash; the repository the wiki belongs to</li>
+  <li><a href="#QuickStart">Quick Start</a> &mdash; the manual's own tutorial</li>
+  <li><a href="#Troubleshooting">Troubleshooting</a></li>
+</ul>
+
+
+
+
+</div>
+
+</div>
 
 </body>
 </html>
