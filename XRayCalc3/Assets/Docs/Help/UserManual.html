@@ -3,167 +3,205 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>X-Ray Calc 3 — User Manual</title>
+<title>X-Ray Calc 3 — Help</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<nav class="top-nav">
-  <a class="logo" href="UserManual.html">X-Ray <span>Calc 3</span></a>
-  <div class="page-title">User Manual &middot; v8</div>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search sections..." onkeyup="filterCards(this.value)">
+<div class="hero">
+  <h1>X-Ray Calc 3 Help</h1>
+  <p>Simulation of X-ray reflectivity of layered structures and reconstruction of film structures from measured curves. Choose a topic below to get started.</p>
+  <span class="version">User Manual, version 9 &nbsp;&middot;&nbsp; Copyright &copy; 2001&ndash;2026 Oleksiy Penkov</span>
+</div>
+
+<div class="container wide">
+
+  <div class="section-title">Getting Started</div>
+  <div class="card-grid">
+    <a class="card" href="Introduction.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_About.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Introduction</div>
+        <p class="card-desc">What X-Ray Calc 3 does, Parratt recursion and Henke tables, and the reference publication.</p>
+      </div>
+    </a>
+    <a class="card" href="QuickStart.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/06_AddModel.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Quick Start</div>
+        <p class="card-desc">Hands-on tutorial: demo projects, building a model from scratch, calculation settings, export.</p>
+      </div>
+    </a>
+    <a class="card" href="Installation.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_SaveAs.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Installation &amp; First Launch</div>
+        <p class="card-desc">System requirements, the working directory, portable mode, and file association.</p>
+      </div>
+    </a>
+    <a class="card" href="Overview.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/10_Edit.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Application Overview</div>
+        <p class="card-desc">Main window layout, the project, structure and working-area columns, and the menu bar.</p>
+      </div>
+    </a>
+    <a class="card" href="QuickReference.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_Help.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Quick Reference</div>
+        <p class="card-desc">Toolbar buttons, the structure toolbar, and keyboard shortcuts on one page.</p>
+      </div>
+    </a>
   </div>
-</nav>
 
-<main class="content" style="margin-left: 0; max-width: 1100px; margin-left: auto; margin-right: auto;">
+  <div class="section-title">Working with Projects</div>
+  <div class="card-grid">
+    <a class="card" href="Projects.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/02_OpenProject.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Projects</div>
+        <p class="card-desc">Project files, creating, opening and saving, auto-save, locking, and the project tree.</p>
+      </div>
+    </a>
+    <a class="card" href="Models.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/add_layer.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Defining a Model</div>
+        <p class="card-desc">The structure editor, stacks and layers, materials, quick parameter editing, undo, JSON view.</p>
+      </div>
+    </a>
+    <a class="card" href="Data.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/43_DataLoad.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Experimental Data</div>
+        <p class="card-desc">Loading and pasting measured curves, the data format, normalize, smooth, trim, and export.</p>
+      </div>
+    </a>
+    <a class="card" href="Calculation.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/40_Play.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Calculation</div>
+        <p class="card-desc">Theta and lambda modes, polarization, number of points, auto-calculation, multi-threading.</p>
+      </div>
+    </a>
+    <a class="card" href="Fitting.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/42_AutoFit.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Fitting (Optimization)</div>
+        <p class="card-desc">Shake LFPSO, fit limits, fitting modes, parameters, convergence enhancements, cost function.</p>
+      </div>
+    </a>
+    <a class="card" href="Results.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/45_ResultSave.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Results &amp; Export</div>
+        <p class="card-desc">Saving results, the clipboard, plot and structure images, and auto-saved fits.</p>
+      </div>
+    </a>
+    <a class="card" href="Charts.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/47_CopyImage.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Charts &amp; Visualization</div>
+        <p class="card-desc">The reflectivity chart, zoom and pan, cursor tracking, chart pages, and peak analysis.</p>
+      </div>
+    </a>
+    <a class="card" href="Profiles.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/11_AddExtension.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Profile Extensions</div>
+        <p class="card-desc">Function and table profiles that vary a parameter across a periodic structure.</p>
+      </div>
+    </a>
+  </div>
 
-<h1>X-Ray Calc 3 &mdash; User Manual</h1>
-<p class="subtitle">Version 8 &nbsp;|&nbsp; Copyright &copy; 2001&ndash;2026 Oleksiy Penkov</p>
+  <div class="section-title">Tools and Settings</div>
+  <div class="card-grid">
+    <a class="card" href="Tools.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_NewMaterial.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Tools</div>
+        <p class="card-desc">Creating materials, editing Henke tables, and the benchmark.</p>
+      </div>
+    </a>
+    <a class="card" href="Settings.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_Settings.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Application Settings</div>
+        <p class="card-desc">Paths and files, behavior, interface, calculation and fitting defaults, graphics.</p>
+      </div>
+    </a>
+    <a class="card" href="UniversalMirror.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_Benchmark.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Universal Mirror Optimizer</div>
+        <p class="card-desc">Command-line design of multi-wavelength multilayer mirrors: configuration, output, resume, figure of merit.</p>
+      </div>
+    </a>
+  </div>
 
-<p><strong>X-Ray Calc 3</strong> (XRC3) is an open-source software package for simulating X-ray reflectivity (XRR) and solving the inverse problem of reconstructing film structures from measured XRR curves.</p>
+  <div class="section-title">Automation</div>
+  <div class="card-grid">
+    <a class="card" href="MCPServer.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_BatchJobs.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">MCP Server (XRC_MCP)</div>
+        <p class="card-desc">Connect an AI assistant to the calculation engine through the Model Context Protocol: tools, jobs, inbox, projects.</p>
+      </div>
+    </a>
+  </div>
 
-<div class="cards" id="cardGrid">
+  <div class="section-title">Reference</div>
+  <div class="card-grid">
+    <a class="card" href="FileFormats.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_EditTable.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">File Formats</div>
+        <p class="card-desc">Project files (.xrcx), experimental data files, Henke tables, and the settings file.</p>
+      </div>
+    </a>
+    <a class="card" href="Examples.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/03_Reopen.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Illustrative Examples</div>
+        <p class="card-desc">Single-layer coatings, periodic mirrors, polynomial fitting, and a supermirror.</p>
+      </div>
+    </a>
+    <a class="card" href="Troubleshooting.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_Undo.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Troubleshooting</div>
+        <p class="card-desc">Crashes, x32 versus x64, locked projects, convergence, slow calculation, data import.</p>
+      </div>
+    </a>
+  </div>
 
-  <a class="card" href="01-introduction.html">
-    <div class="card-num">1</div>
-    <div class="card-title">Introduction</div>
-    <div class="card-desc">Overview of XRC3 capabilities, algorithm, and references.</div>
-  </a>
-
-  <a class="card" href="02-quick-start.html">
-    <div class="card-num">2</div>
-    <div class="card-title">Quick Start</div>
-    <div class="card-desc">Hands-on tutorial: demo projects, creating models, calculation settings.</div>
-  </a>
-
-  <a class="card" href="03-installation.html">
-    <div class="card-num">3</div>
-    <div class="card-title">Installation &amp; First Launch</div>
-    <div class="card-desc">System requirements, data storage, portable mode, file association.</div>
-  </a>
-
-  <a class="card" href="04-overview.html">
-    <div class="card-num">4</div>
-    <div class="card-title">Application Overview</div>
-    <div class="card-desc">Main window layout, panels, menus, and toolbars.</div>
-  </a>
-
-  <a class="card" href="05-projects.html">
-    <div class="card-num">5</div>
-    <div class="card-title">Projects</div>
-    <div class="card-desc">Creating, opening, saving projects. Auto-save and project tree.</div>
-  </a>
-
-  <a class="card" href="06-models.html">
-    <div class="card-num">6</div>
-    <div class="card-title">Defining a Model</div>
-    <div class="card-desc">Structure editor, stacks, layers, materials, and quick editing.</div>
-  </a>
-
-  <a class="card" href="07-data.html">
-    <div class="card-num">7</div>
-    <div class="card-title">Experimental Data</div>
-    <div class="card-desc">Loading data, data format, normalize, smooth, trim, conditioning walkthrough.</div>
-  </a>
-
-  <a class="card" href="08-calculation.html">
-    <div class="card-num">8</div>
-    <div class="card-title">Calculation</div>
-    <div class="card-desc">Theta/lambda modes, polarization guidance, multi-threading.</div>
-  </a>
-
-  <a class="card" href="09-fitting.html">
-    <div class="card-num">9</div>
-    <div class="card-title">Fitting (Optimization)</div>
-    <div class="card-desc">Shake LFPSO algorithm, fit limits, modes, parameters, cost function.</div>
-  </a>
-
-  <a class="card" href="10-results.html">
-    <div class="card-num">10</div>
-    <div class="card-title">Results &amp; Export</div>
-    <div class="card-desc">Saving results, clipboard, plot export, auto-save.</div>
-  </a>
-
-  <a class="card" href="11-charts.html">
-    <div class="card-num">11</div>
-    <div class="card-title">Charts &amp; Visualization</div>
-    <div class="card-desc">Reflectivity chart, zoom/pan, chart pages, peak analysis.</div>
-  </a>
-
-  <a class="card" href="12-profiles.html">
-    <div class="card-num">12</div>
-    <div class="card-title">Profile Extensions</div>
-    <div class="card-desc">Function profiles, table profiles, parameter gradients.</div>
-  </a>
-
-  <a class="card" href="13-tools.html">
-    <div class="card-num">13</div>
-    <div class="card-title">Tools</div>
-    <div class="card-desc">Create materials, edit Henke tables, benchmark.</div>
-  </a>
-
-  <a class="card" href="14-settings.html">
-    <div class="card-num">14</div>
-    <div class="card-title">Application Settings</div>
-    <div class="card-desc">Paths, behavior, interface, calc &amp; fit, graphics.</div>
-  </a>
-
-  <a class="card" href="15-shortcuts.html">
-    <div class="card-num">15</div>
-    <div class="card-title">Quick Reference</div>
-    <div class="card-desc">Toolbar buttons, structure toolbar, keyboard shortcuts.</div>
-  </a>
-
-  <a class="card" href="16-formats.html">
-    <div class="card-num">16</div>
-    <div class="card-title">File Formats</div>
-    <div class="card-desc">Project files (.xrcx), data files, Henke tables, INI settings.</div>
-  </a>
-
-  <a class="card" href="17-examples.html">
-    <div class="card-num">17</div>
-    <div class="card-title">Illustrative Examples</div>
-    <div class="card-desc">Single-layer, periodic mirrors, polynomial fitting, supermirror.</div>
-  </a>
-
-  <a class="card" href="18-troubleshooting.html">
-    <div class="card-num">18</div>
-    <div class="card-title">Troubleshooting</div>
-    <div class="card-desc">Crashes, x32 vs x64, convergence, slow calculation, data import.</div>
-  </a>
-
-  <a class="card" href="19-universal-mirror.html">
-    <div class="card-num">19</div>
-    <div class="card-title">Universal Mirror Optimizer</div>
-    <div class="card-desc">CLI tool for multi-wavelength multilayer mirror design via LFPSO.</div>
-  </a>
+  <div class="section-title">Project and Community</div>
+  <div class="card-grid">
+    <a class="card" href="SourceCode.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/07_Export.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Source Code &amp; Git</div>
+        <p class="card-desc">The GitHub repository: getting the source, branches, building, dependencies, tests, contributing.</p>
+      </div>
+    </a>
+    <a class="card" href="Wiki.html">
+      <div class="card-icon"><img class="icon-ref" src="images/icons/Menu_NewFolder.png" alt=""></div>
+      <div class="card-body">
+        <div class="card-title">Online Wiki</div>
+        <p class="card-desc">The GitHub wiki that accompanies this manual: its pages, and how to read and edit them.</p>
+      </div>
+    </a>
+  </div>
 
 </div>
 
 <div class="footer">
-  <p>X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
-  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a></p>
-  <p style="margin-top:8px; font-size:12px;">Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>J. Appl. Cryst.</em> <strong>57</strong>, 555&ndash;566.
-  <a href="https://doi.org/10.1107/S1600576724001031">doi:10.1107/S1600576724001031</a></p>
+  X-Ray Calc 3 &mdash; Oleksiy Penkov &mdash;
+  <a href="mailto:oleksiypenkov@intl.zju.edu.cn">oleksiypenkov@intl.zju.edu.cn</a><br>
+  Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>J. Appl. Cryst.</em> <strong>57</strong>, 555&ndash;566.
+  <a href="https://doi.org/10.1107/S1600576724001031">doi:10.1107/S1600576724001031</a>
 </div>
-
-</main>
-
-<script>
-function filterCards(query) {
-  var cards = document.querySelectorAll('.card');
-  var q = query.toLowerCase();
-  if (!q) {
-    cards.forEach(function(c) { c.style.display = ''; });
-    return;
-  }
-  cards.forEach(function(c) {
-    var text = c.textContent.toLowerCase();
-    c.style.display = text.indexOf(q) >= 0 ? '' : 'none';
-  });
-}
-</script>
 
 </body>
 </html>

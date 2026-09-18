@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — MCP Server (XRC_MCP)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>MCP Server (XRC_MCP)</span>
+</div>
+
+<div class="container">
+
+<h1>MCP Server (XRC_MCP)</h1>
+<div class="subtitle">Connect an AI assistant to the calculation engine through the Model Context Protocol</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#installation">Installation and Registration</a></li>
+    <li><a href="#workdir">The Working Directory</a></li>
+    <li><a href="#conventions">Units and the Structure JSON</a></li>
+    <li><a href="#reference-tools">Reference Tools</a></li>
+    <li><a href="#calculation-tools">Calculation Tools</a></li>
+    <li><a href="#optimisation-and-jobs">Optimisation and Jobs</a></li>
+    <li><a href="#fitting">Fitting</a></li>
+    <li><a href="#inbox">Inbox: Measured Curves</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#example">Example Session</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#smoke-test">Smoke Test</a></li>
+  </ul>
+</div>
+
+<!-- =============================== -->
+<h2 id="overview">Overview</h2>
+
+<p><strong>XRC_MCP</strong> is a console program that exposes the X-Ray Calc 3 calculation engine to AI assistants over the <strong>Model Context Protocol</strong> (MCP). An MCP client such as Claude Code starts <code>XRC_MCP.exe</code>, talks to it as JSON-RPC 2.0 over standard input and output, and calls its <strong>tools</strong>: calculate a reflectivity curve, score a mirror design, run the universal optimizer, fit a measured curve, and read or write <code>.xrcx</code> project files.</p>
+
+<p>The engines are the GUI's own. The curve, the &chi;&sup2; and the figure of merit the server returns are the numbers X-Ray Calc 3 and XRFCalc display for the same structure, and a fit written by the server opens in the GUI as an ordinary project file. This lets you have an assistant prepare, run and compare fits while you verify every result in the GUI.</p>
+
+<table>
+  <tr>
+    <th style="width:170px">Property</th>
+    <th>Value</th>
+  </tr>
+  <tr><td>Executable</td><td><code>XRC_MCP.exe</code>, 64-bit only, in the same folder as the GUI</td></tr>
+  <tr><td>Transport</td><td>JSON-RPC 2.0 over stdio; one JSON object per line, UTF-8</td></tr>
+  <tr><td>Tools</td><td>16, grouped below</td></tr>
+  <tr><td>Long jobs</td><td><code>optimize_mirror</code> and <code>fit_xrr</code> run in the background and are polled</td></tr>
+  <tr><td>Record</td><td>Every call and result appended to <code>log\calls.jsonl</code></td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="installation">Installation and Registration</h2>
+
+<p>The server needs no configuration file. It takes one mandatory argument, the <strong>working directory</strong> that becomes its sandbox (see <a href="#workdir">below</a>):</p>
+
+<pre>XRC_MCP.exe --workdir "D:\Experiments\RuC-2026-09"</pre>
+
+<p>Register it with Claude Code once per experiment directory. The name <code>xrc</code> is how the assistant refers to the server:</p>
+
+<pre>claude mcp add -s user xrc -- "C:\Program Files\X-RayCalc3\XRC_MCP.exe" --workdir "D:\Experiments\RuC-2026-09"</pre>
+
+<p>Other MCP clients register a stdio server the same way: the command is the path to <code>XRC_MCP.exe</code>, the arguments are <code>--workdir</code> and an absolute path. Nothing in the server depends on the current directory of the process.</p>
+
+<p>To verify the registration, ask the assistant to call <code>describe_server</code>. The reply states the server version, the git revision it was built from, the Henke table directory in use, the unit conventions, and a one-line summary of every tool.</p>
+
+<div class="warn">
+  <strong>OmniThreadLibrary 3.08:</strong> If you build the server yourself, it needs OmniThreadLibrary 3.08 or later. With an older library a job stays at iteration 0 for ever and the server will not exit. See <a href="SourceCode.html#dependencies">Source Code &gt; Dependencies</a>.
+</div>
+
+<!-- =============================== -->
+<h2 id="workdir">The Working Directory</h2>
+
+<p>Every path the server reads or writes lies under the working directory. It is created on first start with four subfolders:</p>
+
+<pre>&lt;workdir&gt;\
+  projects\        .xrcx files the server writes (save_project) and reads (load_project)
+  jobs\            one folder per job: request, progress log, curves, results
+  inbox\           measured curves that YOU put there; the server never writes here
+    &lt;specimen&gt;\    one folder per specimen, any number of data files inside
+  log\
+    calls.jsonl    every tools/call and its result, appended, never truncated</pre>
+
+<p>A path argument that resolves outside the working directory (a rooted path, a drive letter, a UNC path, or a <code>..</code> segment) is refused with the error <code>path_outside_workdir</code>; it is never silently remapped.</p>
+
+<div class="note">
+  <strong>The journal is the record.</strong> <code>log\calls.jsonl</code> holds one line per call with a timestamp, the tool name, the full arguments and the full result or error. Long numeric arrays such as curves are replaced by their length and the SHA-256 of the file they were written to. Keep it with the experiment.
+</div>
+
+<!-- =============================== -->
+<h2 id="conventions">Units and the Structure JSON</h2>
+
+<p>The conventions are the program's: thickness, roughness &sigma; and wavelength in <strong>&aring;ngstr&ouml;m</strong>, density in <strong>g/cm&sup3;</strong>, angles as the grazing angle <strong>&theta; in degrees</strong> (not 2&theta;). Wherever a wavelength is expected, a photon energy in eV is accepted instead and converted with &lambda;[&Aring;] = 12398.42 / E[eV]; the wavelength actually used is echoed back.</p>
+
+<p>Every tool that takes or returns a layered structure uses one JSON form, listed from the substrate to the surface:</p>
+
+<pre>{
+  "substrate": {"material": "SiO2", "density": 2.2, "sigma": 3.0},
+  "buffer":    {"material": "Ru", "thickness": 197.0, "sigma": 3.0},
+  "stacks": [
+    {"N": 30, "layers": [
+      {"material": "Ru", "thickness": 14.7, "sigma": 3.0, "density": 12.4},
+      {"material": "C",  "thickness": 53.8, "sigma": 3.0, "density": 2.2}
+    ]}
+  ],
+  "cap":       {"material": "Ru", "thickness": 20.0, "sigma": 3.0}
+}</pre>
+
+<ul>
+  <li><code>material</code> is a Henke table name, matched case-insensitively (<code>list_materials</code> gives the valid names).</li>
+  <li><code>density</code> is optional and defaults to the bulk value from the table; the value used is echoed.</li>
+  <li><code>buffer</code> (between substrate and first stack) and <code>cap</code> (on top) are optional. Several stacks are allowed.</li>
+  <li>Numeric results are rounded to 6 significant digits.</li>
+</ul>
+
+<!-- =============================== -->
+<h2 id="reference-tools">Reference Tools</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>describe_server</code></td><td>Call it first. Reports the server version and git revision, the Henke directory, the unit conventions, the material-name syntax, the structure form, the limits, the working-directory layout, and a summary of every tool.</td></tr>
+  <tr><td><code>list_materials</code></td><td>The Henke tables the server can use, optionally filtered by an element pool. Each entry gives the table name, formula, bulk density and atomic mass.</td></tr>
+  <tr><td><code>optical_constants</code></td><td>&delta; and &beta; of n = 1 &minus; &delta; + i&beta; for one material at one wavelength or energy, plus n, k and the nearby absorption edges. Unknown materials are refused with <code>unknown_material</code>.</td></tr>
+  <tr><td><code>list_templates</code></td><td>The multilayer design templates (one period each: sub-layers with thickness rule, &sigma;, density, capping variants) that <code>optimize_mirror</code> can start from, optionally filtered by a material pool.</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="calculation-tools">Calculation Tools</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>calc_reflectivity</code></td><td>Specular reflectivity of a structure over a &theta; range at one wavelength: <code>theta_min</code>, <code>theta_max</code>, <code>points</code>, <code>polarization</code> (<code>s</code>, <code>p</code>, <code>sp</code>) and an optional beam divergence <code>delta_theta</code>. Returns the curve inline when short enough and always as <code>jobs\&lt;id&gt;\curve.dat</code>, the Bragg peaks (order, &theta;<sub>B</sub>, R<sub>peak</sub>, FWHM) and the critical angle. This is the GUI's curve for the same structure (see <a href="Calculation.html">Calculation</a>).</td></tr>
+  <tr><td><code>evaluate_lines</code></td><td>Scores a structure against a set of X-ray emission lines (<code>name</code>, <code>lambda</code> or <code>energy</code>, <code>weight</code>) with the universal optimizer's own figure of merit; optional <code>fitness</code> overrides. The number is directly comparable with what <code>optimize_mirror</code> reports (see <a href="UniversalMirror.html#fom">Universal Mirror &gt; Figure of Merit</a>).</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="optimisation-and-jobs">Optimisation and Jobs</h2>
+
+<p>Two tools take longer than a request should wait for. They return a <code>job_id</code> at once and run in a background thread; the client polls.</p>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>optimize_mirror</code></td><td>Searches for the periodic multilayer that best serves a set of emission lines with the XRFCalc particle swarm. Takes the optimizer configuration (lines, <code>element_pool</code>, excluded pairs, structure ranges, fitness, optimizer settings, substrate, template), a <code>seed</code> and <code>top_k</code> (default 5). The result holds the <code>top_k</code> distinct structures with genome, figure of merit, per-line results and the <code>.xrfx</code> package written for each.</td></tr>
+  <tr><td><code>job_status</code></td><td>State of a job without waiting: <code>queued</code>, <code>running</code>, <code>finished</code>, <code>failed</code>, <code>cancelled</code> or <code>unknown</code>, with the current iteration and budget, the best value so far, elapsed seconds and the last message.</td></tr>
+  <tr><td><code>job_result</code></td><td>The result of a finished job. Fails with <code>job_not_finished</code> while it runs, <code>job_failed</code> when it ended in an error, <code>job_cancelled</code> when it was stopped.</td></tr>
+  <tr><td><code>cancel_job</code></td><td>Asks a job to stop and returns its state. A running job usually stops within a second or two; poll <code>job_status</code> to see it become <code>cancelled</code>.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Determinism and lifetime:</strong> With the same <code>seed</code> and inputs, <code>optimize_mirror</code> and <code>fit_xrr</code> give identical results; the seed used is echoed. Jobs do not survive the server: if the process ends, running jobs are lost and <code>job_status</code> reports <code>unknown</code> after a restart. Each job's folder <code>jobs\&lt;job_id&gt;\</code> keeps its request, progress log and outputs.
+</div>
+
+<!-- =============================== -->
+<h2 id="fitting">Fitting</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>fit_xrr</code></td><td>Fits a layer model to a measured curve with the GUI's LFPSO, minimising the same &chi;&sup2; X-Ray Calc 3 displays (see <a href="Fitting.html">Fitting</a>). Returns a <code>job_id</code>; the result is read with <code>job_result</code>.</td></tr>
+</table>
+
+<p>The main arguments:</p>
+<table>
+  <tr>
+    <th style="width:170px">Argument</th>
+    <th>Meaning</th>
+  </tr>
+  <tr><td><code>measurement_id</code> or <code>curve</code></td><td>The measured data: an inbox id such as <code>"RuC-07/xrr.dat"</code>, or the curve inline.</td></tr>
+  <tr><td><code>structure</code></td><td>The start model in the structure JSON.</td></tr>
+  <tr><td><code>free</code></td><td>Which values may vary. Each entry addresses one layer by its <code>stack</code> index (from the substrate up, or <code>"cap"</code> / <code>"buffer"</code>) and <code>layer</code> index, and lists the <code>parameters</code> that take part: <code>"thickness"</code>, <code>"sigma"</code>, <code>"density"</code>. An entry <code>{"target":"period","stack":k}</code> frees the period of repeating stack <em>k</em> instead; at least one thickness of that stack must be free too. Scale, background and resolution are not fitted; asking for them is answered with <code>not_fittable</code>.</td></tr>
+  <tr><td><code>bounds</code></td><td>One <code>min</code> / <code>max</code> pair per free parameter (<code>stack</code>, <code>layer</code>, <code>parameter</code>), or per free period (<code>target: "period"</code>). Omitted bounds default to the start value &plusmn;30&nbsp;%; the start value must lie inside the range. Every fitted value stays inside its bounds, and the result's <code>bounds_used</code> lists the ranges that applied.</td></tr>
+  <tr><td><code>lambda</code> or <code>energy</code>, <code>theta_range</code></td><td>The wavelength (or photon energy) of the measurement and the &theta; interval to fit.</td></tr>
+  <tr><td><code>scale</code></td><td>A fixed multiplier applied to the measured intensities before the fit (the manual's Normalize step), default 1. Not fitted.</td></tr>
+  <tr><td><code>smooth</code></td><td><code>{"passes": n}</code>, 0 to 10, runs the GUI's <strong>Data &gt; Smooth</strong> on the measured curve before the fit. Order: scale, then smooth, then the <code>theta_range</code> trim, as in <a href="Data.html#data-conditioning-walkthrough">Data Conditioning</a>.</td></tr>
+  <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), tolerance. The result carries <code>optimizer_used</code> with every default filled in.</td></tr>
+  <tr><td><code>profile</code>, <code>seed</code></td><td>Allow per-period thickness polynomials (the GUI's polynomial mode), and the random seed.</td></tr>
+  <tr><td><code>polarization</code>, <code>resolution</code>, <code>chi2</code>, <code>r_min</code></td><td>Polarization (<code>s</code>, <code>p</code>, <code>sp</code>), the instrumental resolution width, the &chi;&sup2; weighting options of the GUI's fit dialog, and the reflectivity floor below which points are ignored.</td></tr>
+</table>
+
+<p>The result holds the fitted structure (with the expanded per-period profile when <code>profile</code> was set), &chi;&sup2;, the scale, background and resolution values, the start model, the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit. Open that file in the GUI to check the fit yourself.</p>
+
+<!-- =============================== -->
+<h2 id="inbox">Inbox: Measured Curves</h2>
+
+<p>Measured curves reach the server through the <code>inbox\</code> folder, one subfolder per specimen. You copy the files there; the server only reads them and never modifies them.</p>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>list_measurements</code></td><td>Every file in the inbox, optionally filtered by specimen, with its id <code>"&lt;specimen&gt;/&lt;file&gt;"</code>, size, SHA-256, modified time, and the specimen's metadata file if present.</td></tr>
+  <tr><td><code>get_measurement</code></td><td>One curve as [&theta;, intensity] pairs, parsed the way the GUI parses a data file (see <a href="FileFormats.html#experimental-data-files">File Formats</a>): two columns separated by tab or space, comma accepted as the decimal mark, non-numeric lines reported as the header. <code>max_points</code> decimates a long curve for inline return; the file stays raw.</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="projects">Projects</h2>
+
+<table>
+  <tr>
+    <th style="width:170px">Tool</th>
+    <th>Description</th>
+  </tr>
+  <tr><td><code>save_project</code></td><td>Writes <code>projects\&lt;name&gt;.xrcx</code> that opens in the GUI with no conversion: the structure as the active model, the calculated curve beside it, and optionally a measured curve (an inbox id or a job's curves via <code>curves.job_id</code>). A project saved from a fit job carries the job's own fit settings, so it opens as the fit that ran. Refuses to overwrite unless <code>overwrite: true</code>.</td></tr>
+  <tr><td><code>load_project</code></td><td>Reads a project back: the active model's structure in the structure JSON, its profile extensions, the calculation parameters (angles always as &theta;), and a summary of the embedded curves.</td></tr>
+  <tr><td><code>list_projects</code></td><td>The <code>.xrcx</code> files in <code>projects\</code> with size, SHA-256 and modified time. Nothing is written.</td></tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="example">Example Session</h2>
+
+<p>A typical exchange, with the assistant's tool calls in order. The curve <code>RuC-07\xrr.dat</code> was copied into the inbox beforehand.</p>
+
+<ol>
+  <li><code>describe_server</code> &mdash; confirm the revision and the Henke directory.</li>
+  <li><code>list_measurements</code> &rarr; finds <code>"RuC-07/xrr.dat"</code>; <code>get_measurement</code> with <code>max_points: 200</code> to look at the curve.</li>
+  <li><code>calc_reflectivity</code> with the nominal Ru/C structure (30 periods, d = 68.5&nbsp;&Aring;) at &lambda; = 1.5406&nbsp;&Aring; &mdash; compare the Bragg peak position with the measurement.</li>
+  <li><code>fit_xrr</code> with the period of stack 0 and both layer thicknesses free, <code>smooth: {"passes": 1}</code>, <code>theta_range: [0.3, 4.0]</code>, <code>seed: 1</code> &rarr; <code>job_id: "fit-000003"</code>.</li>
+  <li><code>job_status</code> every few seconds until <code>finished</code> (about 25&nbsp;s for a 1000-point curve with the default population of 500).</li>
+  <li><code>job_result</code> &rarr; fitted d, &Gamma;, &chi;&sup2;, and the path of <code>fit.xrcx</code>.</li>
+  <li><code>save_project</code> with <code>name: "RuC-07-fit"</code> and <code>curves.job_id: "fit-000003"</code> &rarr; <code>projects\RuC-07-fit.xrcx</code>, which you open in X-Ray Calc 3 to inspect and refit.</li>
+</ol>
+
+<div class="tip">
+  <strong>Practice:</strong> The lab's rule of thumb for the LFPSO is 100 iterations with 500 to 1000 particles: population wins over iterations. These are the server's defaults, so a request that names neither reproduces the GUI's usual fit.
+</div>
+
+<!-- =============================== -->
+<h2 id="security">Security</h2>
+
+<ul>
+  <li><strong>Sandbox:</strong> the server can only read and write under its working directory. A path outside it is refused, never remapped.</li>
+  <li><strong>Read-only inbox:</strong> no tool has a write path into <code>inbox\</code>; your measured data cannot be altered by an assistant.</li>
+  <li><strong>No network:</strong> the server speaks only over its own stdin and stdout to the client that started it. It opens no ports.</li>
+  <li><strong>Journal:</strong> every call and result is appended to <code>log\calls.jsonl</code>; the file is never truncated by the server.</li>
+  <li><strong>Structured errors:</strong> failures are returned as <code>{code, message, detail}</code>. The process never shows a dialog or waits for a key, so it is safe to run unattended.</li>
+</ul>
+
+<!-- =============================== -->
+<h2 id="smoke-test">Smoke Test</h2>
+
+<p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 16 tools over one live stdio session (jobs are submitted, polled and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>
+
+<pre>pwsh -File XRC_MCP\smoke\session.ps1</pre>
+
+<p>Exit code 0 means every check passed; <code>-KeepWorkdir</code> leaves the work directories behind for inspection. It takes a few seconds.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Fitting.html">Fitting (Optimization)</a> &mdash; the LFPSO the server runs</li>
+  <li><a href="UniversalMirror.html">Universal Mirror Optimizer</a> &mdash; the optimizer behind <code>optimize_mirror</code></li>
+  <li><a href="FileFormats.html">File Formats</a> &mdash; <code>.xrcx</code> and data files</li>
+  <li><a href="SourceCode.html">Source Code &amp; Git</a> &mdash; building the server</li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="UniversalMirror.html">Universal Mirror Optimizer</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="FileFormats.html">File Formats</a>
+</div>
+
+</div>
+</body>
+</html>

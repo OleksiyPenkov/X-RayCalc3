@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Online Wiki</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Online Wiki</span>
+</div>
+
+<div class="container">
+
+<h1>Online Wiki</h1>
+<div class="subtitle">The GitHub wiki that accompanies this manual: its pages, and how to read and edit them</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#pages">Wiki Pages</a></li>
+    <li><a href="#manual-vs-wiki">This Manual and the Wiki</a></li>
+    <li><a href="#editing">Editing the Wiki</a></li>
+    <li><a href="#cloning">Cloning the Wiki</a></li>
+  </ul>
+</div>
+
+<!-- =============================== -->
+<h2 id="overview">Overview</h2>
+
+<p>Besides this manual, which is installed with the program and describes every feature, X-Ray Calc 3 has an <strong>online wiki</strong> hosted with the source repository on GitHub:</p>
+
+<pre>https://github.com/OleksiyPenkov/X-RayCalc3/wiki</pre>
+
+<p>The wiki is the place for material that changes faster than a release, or that is easier to write as a walkthrough than as a reference: tutorials with screenshots, worked fitting sessions, benchmark results, and answers to questions that come up repeatedly. It is public, needs no login to read, and can be edited by anyone with a GitHub account.</p>
+
+<div class="note">
+  <strong>Which one to read:</strong> Start with the wiki's <strong>Getting started</strong> if you are new to the program and want to see a complete session end to end. Use this manual when you need to know what a particular setting, button or file format does.
+</div>
+
+<!-- =============================== -->
+<h2 id="pages">Wiki Pages</h2>
+
+<table>
+  <tr>
+    <th style="width:230px">Page</th>
+    <th>Content</th>
+  </tr>
+  <tr>
+    <td><strong>Home</strong></td>
+    <td>Entry page with links to every other page.</td>
+  </tr>
+  <tr>
+    <td><strong>Getting started</strong></td>
+    <td>A first session: open a demonstration project, run a calculation from the Computation tab, edit layers, stacks and model properties, change polarization and the angle range, and export or plot the result.</td>
+  </tr>
+  <tr>
+    <td><strong>How to create a model and calculate XRR</strong></td>
+    <td>Building a multilayer model from an empty project: stacks, layers, materials from the Henke database, and the calculation settings.</td>
+  </tr>
+  <tr>
+    <td><strong>Working with experimental data</strong></td>
+    <td>Loading a measured curve, the expected file format, and comparing it with the calculated one.</td>
+  </tr>
+  <tr>
+    <td><strong>Working with experimental data (Data conditioning)</strong></td>
+    <td>Preparing a measured curve for fitting: normalize, smooth and trim, in that order, with the reasoning behind each step.</td>
+  </tr>
+  <tr>
+    <td><strong>Manual curve fitting</strong></td>
+    <td>Fitting by hand before (or instead of) the automatic fit: create an initial model and load the data, roughly match the period of the structure, then adjust the roughness of the layers until the peak intensities agree.</td>
+  </tr>
+  <tr>
+    <td><strong>Benchmarks</strong></td>
+    <td>Convergence studies of the fitting algorithm: the effect of the algorithm constants, LFPSO versus Shake LFPSO on several structures, and how the iteration count and population size influence convergence, with CPU timings. A benchmark archive can be downloaded from the repository.</td>
+  </tr>
+  <tr>
+    <td><strong>Troubleshooting</strong></td>
+    <td>Known problems and their remedies, for example the application closing without an error message when a large fit runs out of memory in the 32-bit build.</td>
+  </tr>
+  <tr>
+    <td><strong>User Manual</strong></td>
+    <td>An older, interface-oriented description of the main menu and toolbars. Superseded by this manual, kept for readers of earlier versions.</td>
+  </tr>
+</table>
+
+<!-- =============================== -->
+<h2 id="manual-vs-wiki">This Manual and the Wiki</h2>
+
+<p>Several wiki pages have a counterpart here. The wiki version is the walkthrough; the chapter here is the reference.</p>
+
+<table>
+  <tr>
+    <th style="width:300px">Wiki page</th>
+    <th>Chapter in this manual</th>
+  </tr>
+  <tr><td>Getting started</td><td><a href="QuickStart.html">Quick Start</a></td></tr>
+  <tr><td>How to create a model and calculate XRR</td><td><a href="Models.html">Defining a Model</a>, <a href="Calculation.html">Calculation</a></td></tr>
+  <tr><td>Working with experimental data</td><td><a href="Data.html">Experimental Data</a>, <a href="FileFormats.html#experimental-data-files">File Formats</a></td></tr>
+  <tr><td>Working with experimental data (Data conditioning)</td><td><a href="Data.html#data-conditioning-walkthrough">Experimental Data &gt; Data Conditioning Walkthrough</a></td></tr>
+  <tr><td>Manual curve fitting</td><td>No counterpart: the technique is described only in the wiki. <a href="Fitting.html">Fitting</a> covers the automatic fit.</td></tr>
+  <tr><td>Benchmarks</td><td>No counterpart. <a href="Tools.html#benchmark">Tools &gt; Benchmark</a> describes how to run the built-in benchmark on your own machine.</td></tr>
+  <tr><td>Troubleshooting</td><td><a href="Troubleshooting.html">Troubleshooting</a></td></tr>
+</table>
+
+<div class="tip">
+  <strong>Tip:</strong> The <strong>Help &gt; User Manual</strong> menu command opens this manual in your browser. The wiki is at the address at the top of this page; the repository's README links to it as well.
+</div>
+
+<!-- =============================== -->
+<h2 id="editing">Editing the Wiki</h2>
+
+<p>Corrections and new tutorials are welcome. GitHub wikis are edited in the browser:</p>
+<ol>
+  <li>Sign in to GitHub (a free account is enough).</li>
+  <li>Open the page you want to change and click <strong>Edit</strong> in the top right, or click <strong>New page</strong> on any wiki page to add one.</li>
+  <li>Write in Markdown: <code>#</code> headings, <code>*</code> bullets, <code>![caption](image-url)</code> for screenshots. The <strong>Preview</strong> tab shows the rendered result.</li>
+  <li>Enter a short edit summary and click <strong>Save page</strong>. The change is live at once.</li>
+</ol>
+
+<p>Screenshots are added by dragging the image into the editor, which uploads it and inserts the Markdown link for you. Please keep to the existing page structure: one topic per page, a short introduction, then numbered steps.</p>
+
+<div class="note">
+  <strong>What belongs where:</strong> Walkthroughs, tips, benchmark results and questions-and-answers go in the wiki. A description of what a setting does, a file format, or a keyboard shortcut belongs in this manual, which is versioned with the source code (see <a href="SourceCode.html#contributing">Source Code &amp; Git &gt; Contributing</a>).
+</div>
+
+<!-- =============================== -->
+<h2 id="cloning">Cloning the Wiki</h2>
+
+<p>A GitHub wiki is itself a Git repository, so you can keep an offline copy, edit pages in your own editor, or back it up:</p>
+
+<pre>git clone https://github.com/OleksiyPenkov/X-RayCalc3.wiki.git</pre>
+
+<p>Each page is one Markdown file named after its title (<code>Getting-started.md</code>, <code>Manual-curve-fitting.md</code>, and so on). Commit and push to publish your edits; pushing requires write access to the wiki, which every signed-in GitHub user has unless the repository owner restricts it.</p>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="SourceCode.html">Source Code &amp; Git</a> &mdash; the repository the wiki belongs to</li>
+  <li><a href="QuickStart.html">Quick Start</a> &mdash; the manual's own tutorial</li>
+  <li><a href="Troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="SourceCode.html">Source Code &amp; Git</a>
+  <a href="UserManual.html">Home</a>
+  <span></span>
+</div>
+
+</div>
+</body>
+</html>

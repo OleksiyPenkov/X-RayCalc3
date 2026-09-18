@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Calc 3 — Source Code &amp; Git</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">X-Ray Calc 3 Help</span>
+  <span class="sep">|</span>
+  <a href="UserManual.html">Home</a>
+  <span class="sep">/</span>
+  <span>Source Code &amp; Git</span>
+</div>
+
+<div class="container">
+
+<h1>Source Code &amp; Git</h1>
+<div class="subtitle">The GitHub repository: getting the source, branches, building, dependencies, tests, and contributing</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#repository">The Repository</a></li>
+    <li><a href="#getting-the-source">Getting the Source</a></li>
+    <li><a href="#branches">Branches and History</a></li>
+    <li><a href="#layout">Repository Layout</a></li>
+    <li><a href="#building">Building</a></li>
+    <li><a href="#dependencies">Dependencies</a></li>
+    <li><a href="#tests">Running the Tests</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#licence">Licence and Citation</a></li>
+  </ul>
+</div>
+
+<!-- =============================== -->
+<h2 id="repository">The Repository</h2>
+
+<p>X-Ray Calc 3 is open source. The complete source code, the issue tracker, the release installers and the <a href="Wiki.html">wiki</a> live in one Git repository on GitHub:</p>
+
+<pre>https://github.com/OleksiyPenkov/X-RayCalc3</pre>
+
+<p>The repository holds more than the GUI. It is a Delphi project group with four programs that share one calculation engine:</p>
+
+<table>
+  <tr>
+    <th style="width:160px">Program</th>
+    <th>Purpose</th>
+  </tr>
+  <tr><td><strong>XRayCalc3</strong></td><td>The GUI application this manual describes (<code>XRayCalc3.exe</code>, <code>XRayCalc3.x64.exe</code>).</td></tr>
+  <tr><td><strong>xrccmd</strong></td><td>Command-line calculation, fitting, and the <a href="UniversalMirror.html">Universal Mirror Optimizer</a>.</td></tr>
+  <tr><td><strong>XRFCalc</strong></td><td>GUI for viewing and running universal-mirror optimizations (<code>.xrfx</code> result files).</td></tr>
+  <tr><td><strong>XRC_MCP</strong></td><td>The <a href="MCPServer.html">MCP server</a> that exposes the engine to AI assistants.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Releases:</strong> You do not need the source to use the program. Windows installers are published under <strong>Releases</strong> on the repository page; each installer ships the 32-bit and 64-bit GUI, the Henke optical-constant tables and the example projects.
+</div>
+
+<!-- =============================== -->
+<h2 id="getting-the-source">Getting the Source</h2>
+
+<p>Install <strong>Git for Windows</strong>, then clone the repository:</p>
+
+<pre>git clone https://github.com/OleksiyPenkov/X-RayCalc3.git
+cd X-RayCalc3</pre>
+
+<p>To update a clone you already have:</p>
+
+<pre>git pull</pre>
+
+<p>If you only want to read the code, the <strong>Code &gt; Download ZIP</strong> button on GitHub gives you a snapshot of the current branch without Git.</p>
+
+<!-- =============================== -->
+<h2 id="branches">Branches and History</h2>
+
+<table>
+  <tr>
+    <th style="width:200px">Ref</th>
+    <th>Content</th>
+  </tr>
+  <tr><td><code>master</code></td><td>The development branch since 2023. Releases are built from it. This is what <code>git clone</code> checks out.</td></tr>
+  <tr><td><code>main</code></td><td>The earlier public history with the flat directory layout and the 3.5.x releases, kept for reference.</td></tr>
+  <tr><td>tag <code>legacy-main-3.5.3</code></td><td>The last state of that earlier history.</td></tr>
+</table>
+
+<p>Commit messages follow a small convention: a leading <code>+</code> marks a new feature, a leading <code>*</code> a modification or fix. <code>git log --oneline</code> is therefore a readable change list.</p>
+
+<!-- =============================== -->
+<h2 id="layout">Repository Layout</h2>
+
+<pre>XRayCalc3/         GUI application
+  Forms/           Main windows (frm_Main, settings, about, ...)
+  Views/           Reusable frames (chart info, project panel, ...)
+  Units/           Business logic (config, types, helpers, orchestrators)
+  LFPSO/           Particle swarm optimization for curve fitting
+  Components/      Custom VCL components + package (tree, grid, editors)
+  Editors/         Data editor dialogs (profile, Henke table, JSON, ...)
+  Assets/          Icons, this help, development plans
+  Tests/           DUnitX test suite
+XRC_CMD/           xrccmd, the command-line interface
+XRFCalc/           XRF mirror-design GUI
+XRC_MCP/           MCP server for AI assistants
+Shared/
+  Math/            Calculation engine, complex math, materials database
+  Universal/       Universal-mirror types, fitness, templates, XRF lines
+_Out/              Build output (BIN/, DCU/, DCU64/)
+_Installer/        Inno Setup script and deployment script
+docs/              Design documents and implementation plans
+XRC3.groupproj     Delphi project group</pre>
+
+<p>Project files are <code>.xrcx</code> archives (see <a href="FileFormats.html#project-file-xrcx">File Formats</a>). Lengths are in &aring;ngstr&ouml;m, densities in g/cm&sup3;, angles are the grazing angle &theta; in degrees, throughout the code.</p>
+
+<!-- =============================== -->
+<h2 id="building">Building</h2>
+
+<p>The programs are written in Delphi (Object Pascal) and build with <strong>Embarcadero RAD Studio 37.0</strong> (Delphi 13). Win32 is the primary target for the GUI and the CLI; XRC_MCP is built for Win64 only.</p>
+
+<h3>In the IDE</h3>
+<ol>
+  <li>Open <code>XRC3.groupproj</code> in RAD Studio.</li>
+  <li>Choose the <strong>Release</strong> configuration and the <strong>Win32</strong> platform (or Win64 for the 64-bit GUI).</li>
+  <li>Right-click the project group in the Project Manager and select <strong>Build All</strong>. The build order is XRayCalc3 &rarr; XRayCalcVisualControls &rarr; xrccmd &rarr; XRFCalc &rarr; XRC_MCP.</li>
+</ol>
+
+<h3>From the command line</h3>
+<p>Set the Embarcadero environment variables, then call MSBuild for the project you need. Always use <code>/t:Build</code>; <code>/t:Make</code> does not work with these projects.</p>
+
+<pre>set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0
+set BDSCOMMONDIR=C:\Users\Public\Documents\Embarcadero\Studio\37.0
+set MSB=C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+
+%MSB% XRayCalc3\XRayCalc3.dproj /t:Build /p:Config=Release /p:Platform=Win32
+%MSB% XRC_CMD\xrccmd.dproj      /t:Build /p:Config=Release /p:Platform=Win32
+%MSB% XRFCalc\XRFCalc.dproj     /t:Build /p:Config=Release /p:Platform=Win32
+%MSB% XRC_MCP\XRC_MCP.dproj     /t:Build /p:Config=Release /p:Platform=Win64</pre>
+
+<p>Executables land in <code>_Out\BIN\</code>. The 64-bit GUI is <code>XRayCalc3.x64.exe</code>; <code>XRayCalc3.exe</code> is the 32-bit build.</p>
+
+<div class="note">
+  <strong>Git on PATH:</strong> XRC_MCP regenerates <code>XRC_MCP\units\gitrev.inc</code> from <code>git describe --always --dirty</code> in its pre-build event, so <code>git</code> must be on <code>PATH</code> when you build it. The value is what the server reports as its revision; a <code>-dirty</code> suffix means the tree had uncommitted changes when it was built.
+</div>
+
+<!-- =============================== -->
+<h2 id="dependencies">Dependencies</h2>
+
+<p>The following libraries must be on the Delphi library path for the platform you build:</p>
+
+<table>
+  <tr>
+    <th style="width:200px">Library</th>
+    <th>Used for</th>
+  </tr>
+  <tr><td><strong>OmniThreadLibrary</strong> 3.08 or later</td><td>Parallel calculation and fitting. Older versions truncate 64-bit code pointers in <code>OtlTaskControl.pas</code>, and every Win64 build that runs the optimizer or the fit then hangs at the first iteration. <a href="https://github.com/gabr42/OmniThreadLibrary">github.com/gabr42/OmniThreadLibrary</a></td></tr>
+  <tr><td><strong>FastMath</strong></td><td>Vectorised math. <a href="https://github.com/neslib/FastMath">github.com/neslib/FastMath</a></td></tr>
+  <tr><td><strong>Raize Components</strong> (Konopka Signature VCL Controls)</td><td>UI controls (<code>Rz*</code> prefix).</td></tr>
+  <tr><td><strong>Virtual TreeView</strong></td><td>Project tree and grids.</td></tr>
+  <tr><td><strong>Abbrevia</strong></td><td>The <code>.xrcx</code> ZIP archives.</td></tr>
+  <tr><td><strong>SynEdit</strong></td><td>The JSON and text editors.</td></tr>
+  <tr><td><strong>DUnitX</strong></td><td>The test suite; shipped with RAD Studio.</td></tr>
+</table>
+
+<div class="warn">
+  <strong>Symptom of an old OmniThreadLibrary:</strong> a Win64 fit or optimization that stops at iteration 0 and a process that will not exit. Win32 builds are unaffected. Check out the library at tag <code>release-3.08</code> or later and rebuild.
+</div>
+
+<!-- =============================== -->
+<h2 id="tests">Running the Tests</h2>
+
+<p><code>XRayCalc3\Tests\XRayCalc3Tests.dproj</code> is a DUnitX suite (Win32, Debug) covering the calculation engine, the Henke tables, the LFPSO fit, the universal optimizer and every XRC_MCP unit. Build it, then run:</p>
+
+<pre>%MSB% XRayCalc3\Tests\XRayCalc3Tests.dproj /t:Build /p:Config=Debug
+XRayCalc3\Tests\_Out\BIN\XRayCalc3Tests.exe --exitbehavior:Continue</pre>
+
+<p>The XRC_MCP server additionally has an end-to-end smoke test, described in <a href="MCPServer.html#smoke-test">MCP Server &gt; Smoke Test</a>.</p>
+
+<!-- =============================== -->
+<h2 id="contributing">Contributing</h2>
+
+<ul>
+  <li><strong>Bug reports and feature requests</strong> go to the <strong>Issues</strong> tab of the repository. Attach the project file (<code>.xrcx</code>) and the measured data that reproduce the problem, and state whether you ran the 32-bit or the 64-bit build (see <a href="Troubleshooting.html">Troubleshooting</a>).</li>
+  <li><strong>Code changes</strong> are welcome as pull requests against <code>master</code>. Fork the repository on GitHub, create a branch, commit with the <code>+</code>/<code>*</code> prefix convention, and open the pull request. Build the Win32 Release target and run the test suite before submitting.</li>
+  <li><strong>Documentation</strong> changes to this manual are code changes too: the pages live in <code>XRayCalc3/Assets/Docs/Help/</code>. Tutorial-style material belongs in the <a href="Wiki.html">wiki</a>, which anyone with a GitHub account can edit.</li>
+</ul>
+
+<!-- =============================== -->
+<h2 id="licence">Licence and Citation</h2>
+
+<p>X-Ray Calc 3 is distributed under the <strong>GNU General Public License v3.0</strong>; see the <code>LICENSE</code> file in the repository.</p>
+
+<p>If you use the software in published work, please cite:</p>
+<ul>
+  <li>Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity.</em> J. Appl. Cryst. <strong>57</strong>, 555&ndash;566. <a href="https://doi.org/10.1107/S1600576724001031">doi:10.1107/S1600576724001031</a></li>
+  <li>Penkov, O. V., Kopylets, I. A., Khadem, M. &amp; Qin, T. (2020). <em>X-Ray Calc: a software for the simulation of X-ray reflectivity.</em> SoftwareX <strong>12</strong>, 100528. <a href="https://doi.org/10.1016/j.softx.2020.100528">doi:10.1016/j.softx.2020.100528</a></li>
+</ul>
+
+<h3>See Also</h3>
+<ul>
+  <li><a href="Wiki.html">Online Wiki</a> &mdash; tutorials and notes hosted next to the repository</li>
+  <li><a href="MCPServer.html">MCP Server</a> &mdash; the fourth program in the project group</li>
+  <li><a href="Introduction.html">Introduction</a> &mdash; what the software does</li>
+</ul>
+
+<div class="bottom-nav">
+  <a class="prev" href="Troubleshooting.html">Troubleshooting</a>
+  <a href="UserManual.html">Home</a>
+  <a class="next" href="Wiki.html">Online Wiki</a>
+</div>
+
+</div>
+</body>
+</html>
