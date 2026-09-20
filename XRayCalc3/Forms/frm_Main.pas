@@ -317,6 +317,8 @@ type
     procedure OnLayerDownMsg(var Msg: TMessage); message WM_STR_LAYER_DOWN;
     procedure OnLayerDeleteMsg(var Msg: TMessage); message WM_STR_LAYER_DELETE;
     procedure OnLayerInsertMsg(var Msg: TMessage); message WM_STR_LAYER_INSERT;
+    procedure OnStackFreezeMsg(var Msg: TMessage); message WM_STR_STACK_FREEZE;
+    procedure OnStackThawMsg(var Msg: TMessage); message WM_STR_STACK_THAW;
     procedure OnCancelBenchmarkMsg(var Msg: TMessage); message WM_BENCH_CANCEL;
   end;
 
@@ -452,6 +454,16 @@ end;
 procedure TfrmMain.OnMyMessage(var Msg: TMessage);
 begin
   FOrchestrator.RecalcFromStructure;
+end;
+
+procedure TfrmMain.OnStackFreezeMsg(var Msg: TMessage);
+begin
+  Structure.SetStackFrozen(Msg.WParam, True);
+end;
+
+procedure TfrmMain.OnStackThawMsg(var Msg: TMessage);
+begin
+  Structure.SetStackFrozen(Msg.WParam, False);
 end;
 
 procedure TfrmMain.ProjectAddFolderExecute(Sender: TObject);

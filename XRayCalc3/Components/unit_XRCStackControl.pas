@@ -14,7 +14,7 @@ interface
 uses
   SysUtils, Classes, VCL.Controls, VCL.ExtCtrls, RzEdit, RzSpnEdt, VCL.StdCtrls,
   VCL.Forms, RzBckgnd, unit_XRCLayerControl, unit_XRCPanel,
-  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, JvDesignSurface,
+  RzPanel, RzButton, RzLabel, RzRadChk, RzCommon, Vcl.Graphics, VCL.Menus, JvDesignSurface,
   unit_Types;
 
 type
@@ -33,10 +33,10 @@ type
       FSubstrate: Boolean;
       FEnablePairing: Boolean;
       FLinkedLayers: array [0..1] of Integer;
+      FMenu: TPopupMenu;
 
 //      procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
-      procedure UpdateInfo;
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
       function GetMaterialsList: TMaterialsList;
@@ -44,6 +44,8 @@ type
       procedure UpdateLayersStatus(const Pairable, EnableLinking: Boolean);
       procedure SetLayerColor(const ID: Integer);
       procedure RealignLayers;
+      procedure CreateMenu;
+      procedure MenuOnClick(Sender: TObject);
     protected
       { Protected declarations }
       procedure FOnClick(Sender: TObject);
@@ -55,6 +57,7 @@ type
       function AddLayer(Data: TLayerData; Pos: integer = -1): integer;
       procedure AddSubstrate(const Material: string; s, rho: single);
       procedure UpdateLayer(const Index: integer; AData: TLayerData);
+      procedure UpdateInfo;
       procedure DeleteLayer(const Index: integer);
       procedure MoveLayer(const Index, Direction: integer);
       procedure UpdateLayersID;
@@ -79,6 +82,10 @@ implementation
 
 uses
   unit_SMessages, editor_Stack, WinApi.Windows;
+
+const
+  Captions : array [1..2] of string   = ('Freeze stack', 'Thaw stack');
+  Tags     : array [1..2] of Cardinal = (WM_STR_STACK_FREEZE, WM_STR_STACK_THAW);
 
 { TXRCStack }
 
@@ -172,9 +179,51 @@ begin
 end;
 
 procedure TXRCStack.UpdateInfo;
+var
+  i, p, Frozen, Total: Integer;
 begin
-  Caption := FTitle;
+  Frozen := 0;
+  Total := 0;
+  if not FSubstrate then
+    for i := 0 to High(FLayers) do
+      for p := 1 to 3 do
+      begin
+        Inc(Total);
+        if FLayers[i].Data.P[p].Fixed then
+          Inc(Frozen);
+      end;
+
+  if Frozen = 0 then
+    Caption := FTitle
+  else if Frozen = Total then
+    Caption := FTitle + ' [frozen]'
+  else
+    Caption := FTitle + Format(' [%d/%d frozen]', [Frozen, Total]);
+
   lblLayers.Caption := IntToStr(FN);
+end;
+
+procedure TXRCStack.CreateMenu;
+var
+  Item: TMenuItem;
+  i: Integer;
+begin
+  FMenu := TPopupMenu.Create(Self);
+  Self.PopupMenu := FMenu;
+
+  for I := 1 to 2 do
+  begin
+    Item := TMenuItem.Create(FMenu);
+    Item.Tag     := Tags[i];
+    Item.Caption := Captions[i];
+    Item.OnClick := MenuOnClick;
+    FMenu.Items.Add(Item);
+  end;
+end;
+
+procedure TXRCStack.MenuOnClick(Sender: TObject);
+begin
+  ArrangeLayer((Sender as TMenuItem).Tag, FID, 0);
 end;
 
 procedure TXRCStack.UpdateLayer(const Index: integer; AData: TLayerData);
@@ -273,6 +322,7 @@ begin
   FLinkedLayers[0] := -1;
   FLinkedLayers[1] := -1;
 
+  CreateMenu;
   UpdateInfo;
 end;
 

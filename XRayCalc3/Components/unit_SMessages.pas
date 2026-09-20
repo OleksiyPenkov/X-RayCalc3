@@ -33,6 +33,9 @@ const
   WM_STR_LAYER_INSERT = WM_STR_BASE + 22;
   WM_STR_LAYER_DELETE = WM_STR_BASE + 23;
 
+  WM_STR_STACK_FREEZE = WM_STR_BASE + 24;
+  WM_STR_STACK_THAW   = WM_STR_BASE + 25;
+
 
   procedure StackClick(const ID: integer);
   procedure StackDoubleClick(const ID: integer);

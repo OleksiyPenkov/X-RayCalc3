@@ -100,6 +100,11 @@ type
         route - the limits dialog writing the user's edits back. }
       procedure UpdateInterfaceP(const Inp: TFitStructure; const ValuesOnly: Boolean = False);
       procedure UpdateInterfaceNP(const Inp: TFitStructure; const ValuesOnly: Boolean = False);
+      { Sets or clears TFitValue.Fixed on H/sigma/rho for every layer of the given
+        stack. This is the structure-panel entry point onto the same flag the
+        fit-limits dialog edits; see UpdateInterfaceP for why the write-back must
+        seed Data from the live layer rather than starting from a fresh record. }
+      procedure SetStackFrozen(const StackID: Integer; const Frozen: Boolean);
       procedure UpdateProfiles(const Inp: TLayeredModel);
       procedure UpdateProfilesP;
       procedure Clear;
@@ -651,6 +656,26 @@ begin
       FStacks[i].UpdateLayer(j, Data);
     end;
   end;
+end;
+
+procedure TXRCStructure.SetStackFrozen(const StackID: Integer; const Frozen: Boolean);
+var
+  j, p: integer;
+  Data: TLayerData;
+begin
+  if (StackID < 0) or (StackID > High(FStacks)) then Exit;
+
+  for j := 0 to High(FStacks[StackID].Layers) do
+  begin
+    // See UpdateInterfaceP: seed from the live layer so its cached
+    // StackID/LayerID survive the write-back.
+    Data := FStacks[StackID].Layers[j].Data;
+    for p := 1 to 3 do
+      Data.P[p].Fixed := Frozen;
+    FStacks[StackID].UpdateLayer(j, Data);
+  end;
+
+  FStacks[StackID].UpdateInfo;
 end;
 
 procedure TXRCStructure.UpdateProfiles(const Inp: TLayeredModel);
