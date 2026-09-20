@@ -571,8 +571,8 @@ var
   FitStructure: TFitStructure;
 begin
   FitStructure := Structure.ToFitStructure;
-  frmLimits.ShowLimits('Save', FitStructure);
-  Structure.UpdateInterfaceP(FitStructure);
+  if frmLimits.ShowLimits('Save', FitStructure) then
+    Structure.UpdateInterfaceP(FitStructure);
 end;
 
 procedure TfrmMain.DataPasteExecute(Sender: TObject);

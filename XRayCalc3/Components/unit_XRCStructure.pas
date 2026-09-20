@@ -92,8 +92,14 @@ type
       function ToFitStructure: TFitStructure;
       procedure FromFitStructure(const Inp: TLayeredModel);
       procedure RecreateFromFitStructure(const Inp: TFitStructure);
-      procedure UpdateInterfaceP(const Inp: TFitStructure);
-      procedure UpdateInterfaceNP(const Inp: TFitStructure);
+      { ValuesOnly = True takes only V (and Material) from Inp and leaves min,
+        max, Paired and Fixed as the live layer holds them. That is what the fit
+        write-back needs: the structure handed to the engine has its frozen
+        parameters collapsed to min = max = V, and those collapsed ranges must
+        never flow back into the interface. ValuesOnly = False is the authoring
+        route - the limits dialog writing the user's edits back. }
+      procedure UpdateInterfaceP(const Inp: TFitStructure; const ValuesOnly: Boolean = False);
+      procedure UpdateInterfaceNP(const Inp: TFitStructure; const ValuesOnly: Boolean = False);
       procedure UpdateProfiles(const Inp: TLayeredModel);
       procedure UpdateProfilesP;
       procedure Clear;
@@ -590,9 +596,10 @@ begin
   Substrate.UpdateLayer(0, Value);
 end;
 
-procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure);
+procedure TXRCStructure.UpdateInterfaceNP(const Inp: TFitStructure;
+  const ValuesOnly: Boolean);
 var
-  i, j: integer;
+  i, j, p: integer;
   Count: integer;
   Data: TLayerData;
 begin
@@ -605,7 +612,13 @@ begin
       // StackID/LayerID survive the write-back.
       Data := FStacks[i].Layers[j].Data;
       Data.Material := Inp.Stacks[0].Layers[Count].Material;
-      Data.P := Inp.Stacks[0].Layers[Count].P;
+      if ValuesOnly then
+      begin
+        for p := 1 to 3 do
+          Data.P[p].V := Inp.Stacks[0].Layers[Count].P[p].V;
+      end
+      else
+        Data.P := Inp.Stacks[0].Layers[Count].P;
       FStacks[i].UpdateLayer(j, Data);
       inc(Count);
     end;
@@ -613,9 +626,10 @@ begin
   end;
 end;
 
-procedure TXRCStructure.UpdateInterfaceP(const Inp: TFitStructure);
+procedure TXRCStructure.UpdateInterfaceP(const Inp: TFitStructure;
+  const ValuesOnly: Boolean);
 var
-  i, j: integer;
+  i, j, p: integer;
   Data: TLayerData;
 begin
   for I := 0 to High(FStacks) do
@@ -627,7 +641,13 @@ begin
       // garbage and the layer would post that garbage back on the next click.
       Data := FStacks[i].Layers[j].Data;
       Data.Material := Inp.Stacks[i].Layers[j].Material;
-      Data.P := Inp.Stacks[i].Layers[j].P;
+      if ValuesOnly then
+      begin
+        for p := 1 to 3 do
+          Data.P[p].V := Inp.Stacks[i].Layers[j].P[p].V;
+      end
+      else
+        Data.P := Inp.Stacks[i].Layers[j].P;
       FStacks[i].UpdateLayer(j, Data);
     end;
   end;

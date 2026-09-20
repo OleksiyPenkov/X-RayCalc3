@@ -90,7 +90,7 @@ uses
   Vcl.Controls,
   unit_DataProcessing, unit_SeriesIO,
   unit_LFPSO_Periodic, unit_LFPSO_Irregular, unit_LFPSO_Poly,
-  unit_config,
+  unit_config, unit_SmartLimits,
   frm_Limits;
 
 type
@@ -281,6 +281,9 @@ begin
      Exit;
   end;
 
+  { Frozen parameters become an empty range here and nowhere else. The engine
+    has no concept of freezing; an empty range is what pins a value. }
+  CollapseFixed(FFitStructure);
   FLFPSO.Structure := FFitStructure;
 
   FChartPages.PrepareConvergence(FProjectPanel.FitParams.NMax);
@@ -304,11 +307,11 @@ begin
   if Structure.IsPeriodic then
   begin
     if FCalcSettings.FittingMode = fmPeriodic then
-       Structure.UpdateInterfaceP(FitStructure)
+       Structure.UpdateInterfaceP(FitStructure, True)
     else begin
       if FCalcSettings.FittingMode = fmPoly then
       begin
-        Structure.UpdateInterfaceP(FitStructure);
+        Structure.UpdateInterfaceP(FitStructure, True);
         if CreateExtension then
           FProjectPanel.CreateFitGradientExtensions(Poly)
         else
@@ -316,7 +319,7 @@ begin
       end
       else
       begin
-        Structure.UpdateInterfaceNP(FitStructure);
+        Structure.UpdateInterfaceNP(FitStructure, True);
         if CreateExtension then
            FProjectPanel.CreateProfileExtension(True);
         Structure.UpdateProfiles(Res);
@@ -324,7 +327,7 @@ begin
     end;
   end
   else
-    Structure.UpdateInterfaceNP(FitStructure);
+    Structure.UpdateInterfaceNP(FitStructure, True);
 end;
 
 procedure TCalcOrchestrator.RunFitting;
