@@ -365,8 +365,12 @@ begin
   MO := FFitParams.MaxPOrder + 1;
   Init_Domains(0);
 
+  { One entry per declared layer, on the same basis as X, V and abest, because
+    its only reader is CheckLimitsP's Eval and the index it uses there is the
+    layer index j - the second dimension of X, which Init_Domains sized from
+    Inp.Total. Filled at the end of this procedure. }
   SetLength(Counts, 0);
-  SetLength(Counts, FStructure.TotalNP);
+  SetLength(Counts, FStructure.Total);
   Index := 0;
   for i := 0 to High(Inp.Stacks) do
   begin
@@ -383,16 +387,19 @@ begin
     end;
   end;
 
+  { Counts[LayerIndex] is how many periods Eval has to scan the polynomial
+    over, so it is the OWNING stack's N, stored once per declared layer. The
+    period loop that used to wrap this one wrote the same value N times and
+    pushed every later stack's entries out of reach of the only index that
+    ever reads them: with two repeating stacks the second one silently read
+    the first one's period count. }
   Index := 0;
   for I := 0 to High(FStructure.Stacks) do
-  begin
-    for j := 1 to FStructure.Stacks[i].N do
-      for k := 0 to High(FStructure.Stacks[i].Layers) do
-      begin
-        Counts[Index]  := FStructure.Stacks[i].N;
-        Inc(Index);
-      end;
-  end;
+    for k := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      Counts[Index]  := FStructure.Stacks[i].N;
+      Inc(Index);
+    end;
 end;
 
 procedure TLFPSO_Poly.Set_Init_XPoly(const N, Index, ValueType: Integer; const Paired: Boolean; Val: TFitValue);

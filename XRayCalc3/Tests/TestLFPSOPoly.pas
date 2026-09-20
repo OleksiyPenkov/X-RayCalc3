@@ -37,6 +37,7 @@ type
     function GetX: TPopulation;
     function GetPoly: TProfileFunctions;
     function GetStructure: TFitStructure;
+    function GetCounts: TIntArray;
 
     procedure SeedAbestFromLeader;
     procedure TestSetStructure(const Inp: TFitStructure);
@@ -92,6 +93,8 @@ type
     { 3 - the index basis of the per-layer arrays, with several repeating stacks }
     [Test] procedure Test_Polynomes_SecondRepeatingStackReadsItsOwnSlots;
     [Test] procedure Test_Polynomes_SinglePeriodStackIsSkippedNotSpecialCased;
+    [Test] procedure Test_Counts_AreOnePerDeclaredLayer;
+    [Test] procedure Test_Counts_EveryLayerCarriesItsOwnStackPeriodCount;
   end;
 
 implementation
@@ -174,6 +177,11 @@ end;
 function TTestablePoly.GetStructure: TFitStructure;
 begin
   Result := FStructure;
+end;
+
+function TTestablePoly.GetCounts: TIntArray;
+begin
+  Result := Counts;
 end;
 
 { abest is only ever assigned by a run, and GetPolynomes is the only thing that
@@ -1000,6 +1008,43 @@ begin
   for i := 0 to High(Polys) do
     Assert.IsFalse(Polys[i].StackID = 0,
       Format('stack 0 has N = 1 and no gradient, yet record %d claims it', [i]));
+end;
+
+{ Counts is read as Counts[LayerIndex] by CheckLimitsP's Eval, so it is sized
+  and filled on the declared-layer basis - not the period-expanded one, which
+  made it TotalNP = 1 + 8 + 9 = 18 entries long. }
+procedure TTestLFPSOPoly.Test_Counts_AreOnePerDeclaredLayer;
+begin
+  FPSO.TestSetParams(MakeParams(1));
+  FPSO.InitialPolynomes := MakeMultiStackProfiles;
+  FPSO.TestSetStructure(MakeMultiStackStructure);
+
+  Assert.AreEqual(M_LAYERS, Length(FPSO.GetCounts),
+    'Counts is indexed by declared layer, so it has Total entries, not TotalNP');
+end;
+
+{ And each of those entries is its OWN stack's period count. Built period by
+  period, the second repeating stack's layers read the first one's N, so Eval
+  scanned the polynomial over the wrong number of periods and the range walk
+  zeroed gradients it should have kept. }
+procedure TTestLFPSOPoly.Test_Counts_EveryLayerCarriesItsOwnStackPeriodCount;
+var
+  Counts: TIntArray;
+begin
+  FPSO.TestSetParams(MakeParams(1));
+  FPSO.InitialPolynomes := MakeMultiStackProfiles;
+  FPSO.TestSetStructure(MakeMultiStackStructure);
+
+  { Length is Test_Counts_AreOnePerDeclaredLayer's job; this one is about what
+    the six entries a layer index can reach actually say. }
+  Counts := FPSO.GetCounts;
+
+  Assert.AreEqual(Integer(M_S0_N), Integer(Counts[0]), 'layer 0 is stack 0');
+  Assert.AreEqual(Integer(M_S1_N), Integer(Counts[1]), 'layer 1 is stack 1');
+  Assert.AreEqual(Integer(M_S1_N), Integer(Counts[2]), 'layer 2 is stack 1');
+  Assert.AreEqual(Integer(M_S2_N), Integer(Counts[3]), 'layer 3 is stack 2');
+  Assert.AreEqual(Integer(M_S2_N), Integer(Counts[4]), 'layer 4 is stack 2');
+  Assert.AreEqual(Integer(M_S2_N), Integer(Counts[5]), 'layer 5 is stack 2');
 end;
 
 end.
