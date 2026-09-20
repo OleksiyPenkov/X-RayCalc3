@@ -53,6 +53,9 @@ type
     [Test] procedure Test_AutoFix_ClearsAllErrors;
     [Test] procedure Test_AutoFix_FixesValueBelowMin;
     [Test] procedure Test_AutoFix_FixesValueAboveMax;
+    [Test] procedure Test_CollapseFixed_PinsFrozenParam;
+    [Test] procedure Test_CollapseFixed_LeavesFreeParam;
+    [Test] procedure Test_CollapseFixed_HandlesSubstrate;
   end;
 
 implementation
@@ -863,6 +866,50 @@ begin
 
   Issues := ValidateLimits(FS);
   Assert.IsFalse(HasErrors(Issues), 'No errors should remain after AutoFix + ClampToPhysics');
+end;
+
+procedure TTestValidateLimits.Test_CollapseFixed_PinsFrozenParam;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(2);
+  FS.Stacks[0].Layers[0].P[1].V := 12.5;
+  FS.Stacks[0].Layers[0].P[1].Fixed := True;
+
+  CollapseFixed(FS);
+
+  Assert.AreEqual(12.5, FS.Stacks[0].Layers[0].P[1].min, 1e-6, 'min pinned to V');
+  Assert.AreEqual(12.5, FS.Stacks[0].Layers[0].P[1].max, 1e-6, 'max pinned to V');
+end;
+
+procedure TTestValidateLimits.Test_CollapseFixed_LeavesFreeParam;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(2);
+  FS.Stacks[0].Layers[1].P[2].Fixed := False;
+
+  CollapseFixed(FS);
+
+  Assert.AreEqual(5.0, FS.Stacks[0].Layers[1].P[2].min, 1e-6, 'free min untouched');
+  Assert.AreEqual(15.0, FS.Stacks[0].Layers[1].P[2].max, 1e-6, 'free max untouched');
+end;
+
+procedure TTestValidateLimits.Test_CollapseFixed_HandlesSubstrate;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Subs.Material := 'Si';
+  FS.Subs.P[2].V := 3.0;
+  FS.Subs.P[2].min := 1.0;
+  FS.Subs.P[2].max := 6.0;
+  FS.Subs.P[2].Fixed := True;
+
+  CollapseFixed(FS);
+
+  Assert.AreEqual(3.0, FS.Subs.P[2].min, 1e-6, 'substrate min pinned');
+  Assert.AreEqual(3.0, FS.Subs.P[2].max, 1e-6, 'substrate max pinned');
 end;
 
 end.

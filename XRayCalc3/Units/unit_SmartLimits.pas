@@ -41,6 +41,13 @@ procedure NarrowLimits(var Structure: TFitStructure; ShrinkFactor: Single);
 procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single);
 procedure AutoFixErrors(var Structure: TFitStructure);
 
+{ Pins every parameter marked Fixed to its current value by giving it an empty
+  range. The optimizer needs no concept of freezing: Xrange = max - min = 0
+  makes Rand(0) return 0 in XSeed and RangeSeed, and CheckLimits clamps to
+  [Xmin, Xmax], so the value cannot move. Call this on the copy handed to the
+  engine, never on a structure that is written back to the interface. }
+procedure CollapseFixed(var Structure: TFitStructure);
+
 implementation
 
 uses
@@ -356,6 +363,29 @@ begin
       if Structure.Stacks[i].Layers[j].P[2].max > Bound then
         Structure.Stacks[i].Layers[j].P[2].max := Bound;
     end;
+end;
+
+procedure CollapseFixed(var Structure: TFitStructure);
+var
+  i, j, p: Integer;
+
+  procedure Pin(var Value: TFitValue);
+  begin
+    if Value.Fixed then
+    begin
+      Value.min := Value.V;
+      Value.max := Value.V;
+    end;
+  end;
+
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+        Pin(Structure.Stacks[i].Layers[j].P[p]);
+
+  for p := 1 to 3 do
+    Pin(Structure.Subs.P[p]);
 end;
 
 end.

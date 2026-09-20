@@ -172,6 +172,7 @@ type
 
   TFitValue = record
     Paired: Boolean;
+    Fixed: Boolean;   // does not move in the next fit; min/max keep their range
     V, min, max: single;
     procedure New(const Val: single);
     procedure Init(const dev: single); overload;
@@ -329,6 +330,7 @@ begin
   min := 0;
   max := 0;
   Paired := False;
+  Fixed := False;
 end;
 
 procedure TFitValue.Seed;
