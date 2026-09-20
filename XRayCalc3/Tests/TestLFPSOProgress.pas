@@ -28,6 +28,16 @@ type
     still leaves nothing behind. }
   ETestProgressAbort = class(Exception);
 
+  { Stops the fit at the last moment before FindTheBest can assign abest.
+    InitVelocity is the final virtual hook inside Init(0), so terminating
+    here reproduces a stop that lands between Run resetting FTerminated and
+    the first solution being recorded - the state that used to crash the
+    post-loop update. }
+  TTerminateBeforeBestPSO = class(TLFPSO_Periodic)
+  protected
+    procedure InitVelocity; override;
+  end;
+
   [TestFixture]
   TTestLFPSOProgress = class
   private
@@ -57,6 +67,7 @@ type
     [Test] procedure Test_Seed_DifferentSeedsGiveDifferentAnswers;
     [Test] procedure Test_OnProgress_ThatRaises_LeaksNothing;
     [Test] procedure Test_BestCurve_IsNotEmptyAfterARun;
+    [Test] procedure Test_StopBeforeFirstBest_DoesNotRaise;
   end;
 
 implementation
@@ -398,6 +409,51 @@ begin
     'BestCurve must survive the iterations that do not improve');
   Assert.AreEqual(200, Length(BestCurve),
     'BestCurve must cover the whole measured grid');
+end;
+
+{ TTerminateBeforeBestPSO }
+
+procedure TTerminateBeforeBestPSO.InitVelocity;
+begin
+  inherited;
+  Terminate;
+end;
+
+{ Stopping a fit before it has recorded a single solution used to raise an
+  access violation: FindTheBest returns at its own FTerminated check, which
+  sits above the only line that assigns abest, and the post-loop update then
+  indexed that empty abest - reading address $24 inside GetPolynomes for a
+  gradient fit, or address 0 via FillModel for any other mode. Run must now
+  finish quietly instead, because a fit stopped that early has nothing to
+  report. }
+procedure TTestLFPSOProgress.Test_StopBeforeFirstBest_DoesNotRaise;
+var
+  PSO: TTerminateBeforeBestPSO;
+  CalcParams: TCalcThreadParams;
+  S: TFitStructure;
+begin
+  if not TablesReady then
+  begin
+    Assert.Pass('Henke tables for Si/Mo are not installed');
+    Exit;
+  end;
+
+  CalcParams := MakeCalcParams;
+  PSO := TTerminateBeforeBestPSO.Create;
+  try
+    PSO.Params    := MakeFitParams;
+    PSO.Limit     := 1E-7;
+    PSO.ExpValues := MakeExpData(CalcParams);
+    PSO.Seed      := 1;
+    S := MakeStructure;
+    PSO.Structure := S;
+
+    PSO.Run(CalcParams);
+
+    Assert.Pass('Run returned without raising');
+  finally
+    PSO.Free;
+  end;
 end;
 
 end.

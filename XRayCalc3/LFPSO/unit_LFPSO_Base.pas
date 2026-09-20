@@ -780,8 +780,15 @@ begin
         inc(SuccessCount);
       end;
     end;
-    UpdateStructure(abest);
-    SendUpdateMessage(t);
+    { Stopping before the first improvement leaves abest empty: FindTheBest
+      returns at its own FTerminated check, above the only line that assigns
+      it. There is no solution to report, and both calls below index abest
+      unconditionally - GetPolynomes reads abest[n][p] and faults. }
+    if Length(abest) > 0 then
+    begin
+      UpdateStructure(abest);
+      SendUpdateMessage(t);
+    end;
   finally
     for i := 0 to High(FWorkers) do
     begin
@@ -804,6 +811,14 @@ procedure TLFPSO_BASE.SendUpdateMessage(const Step: integer);
 var
   msg_prm: PUpdateFitProgressMsg;
 begin
+  { A stop can land before FindTheBest has assigned abest - it returns at its
+    own FTerminated check, which sits above the only line that assigns it.
+    Everything below indexes abest: FitModelToLayer walks it per layer, and
+    TLFPSO_Poly.GetPolynomes reads abest[n][p]. There is no solution to
+    report yet, so report nothing. }
+  if Length(abest) = 0 then
+    Exit;
+
   New(msg_prm);
   msg_prm.Full         := True;
   msg_prm.LastChi      := FGlobalBestChiSqr;
