@@ -106,6 +106,7 @@ type
       function GetStackSize(const ID: Integer): Integer;
 //      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
+      function HasLayer(const StackID, LayerID: Integer): Boolean;
       property RealHeight: Integer read FRealHeight;
       property LayerData: TLayerData write SetCurrentLayerData;
       property SubstrateData: TLayerData read GetSubstrateData write SetSubstrateData;
@@ -232,6 +233,16 @@ begin
   Result := (FSelectedLayerParent >= 0) or (FSelectedLayer >= 0);
 end;
 
+function TXRCStructure.HasLayer(const StackID, LayerID: Integer): Boolean;
+begin
+  // Layer coordinates reach the main form through posted (asynchronous)
+  // messages and may be stale by the time they are dispatched. Release builds
+  // have range checking off, so indexing FStacks with them reads raw memory.
+  Result := (StackID >= 0) and (StackID <= High(FStacks)) and
+            (FStacks[StackID] <> nil) and
+            (LayerID >= 0) and (LayerID <= High(FStacks[StackID].Layers));
+end;
+
 procedure TXRCStructure.CopyLayer;
 begin
   if not IfValidLayerSelected then Exit;
@@ -351,6 +362,8 @@ end;
 procedure TXRCStructure.EditNextLayer(const StackID, LayerID: Integer;
   Frwrd: boolean);
 begin
+  if not HasLayer(StackID, LayerID) then Exit;
+
   Stacks[StackID].UpdateLayer(LayerID, edtrLayer.GetData);
 
   if Frwrd then
@@ -550,6 +563,8 @@ end;
 
 procedure TXRCStructure.SetCurrentLayerData(const Value: TLayerData);
 begin
+  if not HasLayer(Value.StackID, Value.LayerID) then Exit;
+
   Stacks[Value.StackID].UpdateLayer(Value.LayerID, Value);
 end;
 
@@ -586,6 +601,9 @@ begin
   begin
     for j := 0 to High(FStacks[i].Layers) do
     begin
+      // See UpdateInterfaceP: seed from the live layer so its cached
+      // StackID/LayerID survive the write-back.
+      Data := FStacks[i].Layers[j].Data;
       Data.Material := Inp.Stacks[0].Layers[Count].Material;
       Data.P := Inp.Stacks[0].Layers[Count].P;
       FStacks[i].UpdateLayer(j, Data);
@@ -604,6 +622,10 @@ begin
   begin
     for j := 0 to High(FStacks[i].Layers) do
     begin
+      // Start from the layer as it stands: a fresh TLayerData only has its
+      // managed fields zeroed, so StackID/LayerID would arrive as stack
+      // garbage and the layer would post that garbage back on the next click.
+      Data := FStacks[i].Layers[j].Data;
       Data.Material := Inp.Stacks[i].Layers[j].Material;
       Data.P := Inp.Stacks[i].Layers[j].P;
       FStacks[i].UpdateLayer(j, Data);
@@ -746,6 +768,9 @@ begin
   begin
     for j := 0 to High(FStacks[i].LayerData) do
     begin
+      // Only the three values come from the fit - the identity, the pairing
+      // flags and the fit limits belong to the layer and must survive.
+      Data := FStacks[i].Layers[j].Data;
       Data.Material := Inp.LayerNames[Count];
       Data.P[1].V := Inp.Layers[Count].L;
       Data.P[2].V := Inp.Layers[Count].s;

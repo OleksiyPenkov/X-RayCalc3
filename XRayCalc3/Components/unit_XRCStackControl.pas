@@ -179,6 +179,18 @@ end;
 
 procedure TXRCStack.UpdateLayer(const Index: integer; AData: TLayerData);
 begin
+  // A layer's cached StackID/LayerID are its position in the structure, never
+  // payload: the layer posts them back on every click. Callers that build
+  // AData from a fit result fill only Material and P, so those two fields
+  // arrive as whatever was on the stack - overwrite them with the truth.
+  // The substrate keeps its 65535/65535 marker, which is how frmMain tells it
+  // apart from a real layer.
+  if not FSubstrate then
+  begin
+    AData.StackID := FID;
+    AData.LayerID := Index;
+  end;
+
   FLayers[Index].Onset := True;
   FLayers[Index].Data  := AData;
   FLayers[Index].Onset := False;

@@ -1116,6 +1116,11 @@ begin
   LayerID := Msg.LParam;
   StackID := Msg.WParam;
   ifSubstrate := (LayerID = 65535) and (StackID = 65535);
+
+  // The coordinates come from a posted message and may be stale by dispatch
+  // time; Release builds index FStacks without range checking.
+  if not (IfSubstrate or Structure.HasLayer(StackID, LayerID)) then Exit;
+
   if IfSubstrate then
         edtrLayer.SetData(True, Structure.SubstrateData)
   else
