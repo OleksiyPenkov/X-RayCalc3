@@ -87,6 +87,7 @@ type
     DataExport: TAction;
     actNewMaterial: TAction;
     actAutoFitting: TAction;
+    actResumeFitting: TAction;
     Project1: TMenuItem;
     Project2: TMenuItem;
     Calc1: TMenuItem;
@@ -113,6 +114,7 @@ type
     btnBtnCopy: TRzToolButton;
     RzSpacer2: TRzSpacer;
     BtnExecute: TRzToolButton;
+    btnResumeFitting: TRzToolButton;
     BtnFastForward: TRzToolButton;
     actLayerCopy: TAction;
     actProjectItemDuplicate: TAction;
@@ -167,6 +169,7 @@ type
     N9: TMenuItem;
     N10: TMenuItem;
     Fitting1: TMenuItem;
+    ResumeFitting1: TMenuItem;
     N11: TMenuItem;
     MaterialsLibrary1: TMenuItem;
     actDataSmooth: TAction;
@@ -223,6 +226,7 @@ type
     procedure LayerPasteExecute(Sender: TObject);
     procedure DataNormExecute(Sender: TObject);
     procedure actAutoFittingExecute(Sender: TObject);
+    procedure actResumeFittingExecute(Sender: TObject);
     procedure ProjectAddFolderExecute(Sender: TObject);
     procedure ModelCreateExecute(Sender: TObject);
     procedure FileNewExecute(Sender: TObject);
@@ -726,6 +730,7 @@ begin
   Structure.Enabled := Enable;
   FProjectPanel.Project.Enabled := Enable;
   FCalcSettings.Enabled := Enable;
+  actResumeFitting.Enabled := FOrchestrator.HasFitResults;
 end;
 
 procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
@@ -737,6 +742,11 @@ end;
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);
 begin
   FOrchestrator.RunFitting;
+end;
+
+procedure TfrmMain.actResumeFittingExecute(Sender: TObject);
+begin
+  FOrchestrator.ResumeFitting;
 end;
 
 procedure TfrmMain.actCalcBenchmarkExecute(Sender: TObject);

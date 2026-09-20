@@ -54,11 +54,11 @@ type
 
     procedure AddConvergencePoint(Step: Integer; BestChi, WorstChi: Double; WasShaken: Boolean);
     procedure ClearConvergence;
-    procedure PrepareConvergence(NMax: Integer);
+    procedure PrepareConvergence(NMax: Integer; const Append: Boolean = False);
 
     procedure SetCopyEnabled(Value: Boolean);
 
-    procedure PrepareDiagnostics(NMax: Integer);
+    procedure PrepareDiagnostics(NMax: Integer; const Append: Boolean = False);
     procedure AddDiagnosticPoint(Step: Integer; Diversity, MeanVelocity: Single;
       JammingCount: Integer; LevyScale, CFact: Single; JammingMax: Integer);
     procedure ClearDiagnostics;
@@ -129,9 +129,10 @@ begin
     lsrWorstChi.Active := chkWorstChi.Checked;
 end;
 
-procedure TfrmChartPages.PrepareConvergence(NMax: Integer);
+procedure TfrmChartPages.PrepareConvergence(NMax: Integer; const Append: Boolean);
 begin
-  lsrConvergence.Clear;
+  if not Append then
+    lsrConvergence.Clear;
 
   if lsrWorstChi = nil then
   begin
@@ -144,7 +145,7 @@ begin
     lsrWorstChi.Active := False;
     lsrWorstChi.ShowInLegend := False;
   end
-  else
+  else if not Append then
     lsrWorstChi.Clear;
 
   if lsrShake = nil then
@@ -158,7 +159,7 @@ begin
     lsrShake.Pointer.Pen.Color := $000040C0;
     lsrShake.ShowInLegend := False;
   end
-  else
+  else if not Append then
     lsrShake.Clear;
 
   if chkWorstChi = nil then
@@ -235,7 +236,7 @@ begin
   if lsrCFactor <> nil then lsrCFactor.Clear;
 end;
 
-procedure TfrmChartPages.PrepareDiagnostics(NMax: Integer);
+procedure TfrmChartPages.PrepareDiagnostics(NMax: Integer; const Append: Boolean);
 
   function CreateSeries(const ATitle: string; AColor: TColor; ADash: Boolean = False): TLineSeries;
   begin
@@ -257,7 +258,7 @@ begin
     lsrLevyScale    := CreateSeries('Levy Scale',  clPurple);
     lsrCFactor      := CreateSeries('CFactor',     clTeal);
   end
-  else
+  else if not Append then
     ClearDiagnostics;
 
   chDiagnostics.BottomAxis.Minimum := 0;

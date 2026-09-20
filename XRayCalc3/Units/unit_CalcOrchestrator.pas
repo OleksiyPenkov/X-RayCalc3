@@ -54,12 +54,13 @@ type
     function PrepareCalc: Boolean;
     procedure GetThreadParams;
     procedure FinalizeCalc(Calc: TCalc);
-    function GetFitParams: Boolean;
-    function PrepareLFPSO: Boolean;
+    function GetFitParams(const Resume: Boolean): Boolean;
+    function PrepareLFPSO(const Resume: Boolean): Boolean;
     procedure UpdateInterface(const FitStructure: TFitStructure;
       const Poly: TProfileFunctions; const Res: TLayeredModel;
       const CreateExtension: Boolean = True);
     procedure FinalizeFitting;
+    procedure StartFitting(const Resume: Boolean);
   public
     constructor Create(ACalcSettings: TfrmCalcSettings;
       AProjectPanel: TfrmProjectPanel; AChartInfo: TfrmChartInfo;
@@ -69,6 +70,7 @@ type
 
     procedure RunCalc(const Recover: Boolean);
     procedure RunFitting;
+    procedure ResumeFitting;
     procedure StopCalc;
     procedure RecalcFromStructure;
     procedure HandleFitUpdate(var Msg: TMessage);
@@ -231,16 +233,26 @@ begin
   end;
 end;
 
-function TCalcOrchestrator.GetFitParams: Boolean;
+function TCalcOrchestrator.GetFitParams(const Resume: Boolean): Boolean;
 var
   FFitParams: TFitParams;
+  Caption: string;
 begin
   FFitParams := FProjectPanel.FitParams;
   if not FBenchmarkMode then
   begin
     Result := False;
     FFitStructure := Structure.ToFitStructure;
-    if frmLimits.ShowLimits('Run', FFitStructure) then
+    if Resume then
+    begin
+      RecentreOnValue(FFitStructure);
+      ClampToPhysics(FFitStructure);
+    end;
+    if Resume then
+      Caption := 'Resume'
+    else
+      Caption := 'Run';
+    if frmLimits.ShowLimits(Caption, FFitStructure) then
           Structure.UpdateInterfaceP(FFitStructure)
     else begin
       Exit;
@@ -255,7 +267,7 @@ begin
   Result := True;
 end;
 
-function TCalcOrchestrator.PrepareLFPSO: Boolean;
+function TCalcOrchestrator.PrepareLFPSO(const Resume: Boolean): Boolean;
 begin
   Result := False;
   case FCalcSettings.FittingMode of
@@ -286,8 +298,8 @@ begin
   CollapseFixed(FFitStructure);
   FLFPSO.Structure := FFitStructure;
 
-  FChartPages.PrepareConvergence(FProjectPanel.FitParams.NMax);
-  FChartPages.PrepareDiagnostics(FProjectPanel.FitParams.NMax);
+  FChartPages.PrepareConvergence(FProjectPanel.FitParams.NMax, Resume);
+  FChartPages.PrepareDiagnostics(FProjectPanel.FitParams.NMax, Resume);
 
   Result := True;
 end;
@@ -330,7 +342,7 @@ begin
     Structure.UpdateInterfaceNP(FitStructure, True);
 end;
 
-procedure TCalcOrchestrator.RunFitting;
+procedure TCalcOrchestrator.StartFitting(const Resume: Boolean);
 var
   FitThread: TFittingThread;
 begin
@@ -344,8 +356,8 @@ begin
       seaKeep:   FKeepExtensions := True;
     end;
 
-  if not GetFitParams then Exit;
-  if not PrepareLFPSO then Exit;
+  if not GetFitParams(Resume) then Exit;
+  if not PrepareLFPSO(Resume) then Exit;
 
   Screen.Cursor := crHourGlass;
   FProjectPanel.GenerateAutosaveName;
@@ -370,6 +382,22 @@ begin
     FFitThread.WaitFor;
     FinalizeFitting;
   end;
+end;
+
+procedure TCalcOrchestrator.RunFitting;
+begin
+  StartFitting(False);
+end;
+
+{ Continue from where the last fit stopped: free parameters get their window
+  slid onto the value they reached, frozen ones stay pinned to theirs. The best
+  chi-squared is not carried across - changing the weight type changes the
+  objective, so the two runs' numbers are not on the same scale. }
+procedure TCalcOrchestrator.ResumeFitting;
+begin
+  if not FHasFitResults then
+    Exit;
+  StartFitting(True);
 end;
 
 procedure TCalcOrchestrator.FinalizeFitting;

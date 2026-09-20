@@ -426,6 +426,7 @@ object frmMain: TfrmMain
           btnCalcRun
           BtnFastForward
           BtnExecute
+          btnResumeFitting
           RzSpacer2
           rzspcr4
           btnResultSave
@@ -528,6 +529,19 @@ object frmMain: TfrmMain
           Hint = 'Auto Fitting'
           ImageIndex = 2
           Action = actAutoFitting
+          ParentShowHint = False
+          ShowHint = True
+        end
+        object btnResumeFitting: TRzToolButton
+          AlignWithMargins = True
+          Margins.Left = 1
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
+          Left = 270
+          Top = 2
+          Hint = 'Continue fitting from the last result, keeping frozen parameters pinned'
+          Action = actResumeFitting
           ParentShowHint = False
           ShowHint = True
         end
@@ -860,6 +874,9 @@ object frmMain: TfrmMain
       object Fitting1: TMenuItem
         ImageIndex = 23
         Action = actAutoFitting
+      end
+      object ResumeFitting1: TMenuItem
+        Action = actResumeFitting
       end
       object Calcbatchjobs1: TMenuItem
         ImageIndex = 36
@@ -1989,6 +2006,13 @@ object frmMain: TfrmMain
       ImageIndex = 50
       ShortCut = 118
       OnExecute = actAutoFittingExecute
+    end
+    object actResumeFitting: TAction
+      Category = 'Calc'
+      Caption = 'Resume Fitting'
+      Hint = 'Continue fitting from the last result, keeping frozen parameters pinned'
+      Enabled = False
+      OnExecute = actResumeFittingExecute
     end
     object actProjectItemDuplicate: TAction
       Category = 'Project Item'
