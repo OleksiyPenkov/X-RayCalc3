@@ -54,6 +54,7 @@ const ICON_MAP = {
   'Calc\\45_ResultSave': 'Calc/45_ResultSave.png',
   'Calc\\46_CopyResult': 'Calc/46_CopyResult.png',
   'Calc\\47_CopyImage':  'Calc/47_CopyImage.png',
+  'Calc\\48_Resume':     'Calc/48_Resume.png',
   // Menu
   'Menu\\Menu_Settings': 'Menu/Menu_Settings.png',
   'Menu\\Menu_Exit': 'Menu/Menu_Exit.png',

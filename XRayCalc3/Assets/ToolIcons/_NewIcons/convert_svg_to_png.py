@@ -22,7 +22,7 @@ TARGET_DIRS = {
     # Calc icons -> Calc/
     "40_Play": "Calc", "41_Forward": "Calc", "42_AutoFit": "Calc",
     "43_DataLoad": "Calc", "44_DataPaste": "Calc", "45_ResultSave": "Calc",
-    "46_CopyResult": "Calc", "47_CopyImage": "Calc",
+    "46_CopyResult": "Calc", "47_CopyImage": "Calc", "48_Resume": "Calc",
     # Project tree markers -> Tree/
     "Tree_ActiveModel": "Tree", "Tree_LinkedData": "Tree",
 }

@@ -17,7 +17,7 @@ const TARGET_DIRS = {
   'clipboard_paste_lined_32': 'Model',
   '40_Play': 'Calc', '41_Forward': 'Calc', '42_AutoFit': 'Calc',
   '43_DataLoad': 'Calc', '44_DataPaste': 'Calc', '45_ResultSave': 'Calc',
-  '46_CopyResult': 'Calc', '47_CopyImage': 'Calc',
+  '46_CopyResult': 'Calc', '47_CopyImage': 'Calc', '48_Resume': 'Calc',
   'Menu_About': 'Menu', 'Menu_BatchJobs': 'Menu',
   'Menu_Benchmark': 'Menu', 'Menu_EditTable': 'Menu',
   'Menu_Exit': 'Menu', 'Menu_Help': 'Menu',
