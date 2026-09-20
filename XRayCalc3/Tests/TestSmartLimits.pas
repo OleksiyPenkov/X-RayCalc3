@@ -60,6 +60,10 @@ type
     [Test] procedure Test_Frozen_NotNarrowed;
     [Test] procedure Test_Frozen_NotWidened;
     [Test] procedure Test_Frozen_NotClamped;
+    [Test] procedure Test_Recentre_KeepsWidth;
+    [Test] procedure Test_Recentre_MovesValueOffTheWall;
+    [Test] procedure Test_Recentre_SkipsFrozen;
+    [Test] procedure Test_Recentre_ZeroWidthStaysPinned;
   end;
 
 implementation
@@ -969,6 +973,63 @@ begin
   ClampToPhysics(FS);
 
   Assert.AreEqual(-3.0, FS.Stacks[0].Layers[0].P[2].min, 1e-6, 'min untouched');
+end;
+
+procedure TTestValidateLimits.Test_Recentre_KeepsWidth;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 12.0;   // min 5, max 15, width 10
+
+  RecentreOnValue(FS);
+
+  Assert.AreEqual(7.0, FS.Stacks[0].Layers[0].P[1].min, 1e-6);
+  Assert.AreEqual(17.0, FS.Stacks[0].Layers[0].P[1].max, 1e-6);
+end;
+
+procedure TTestValidateLimits.Test_Recentre_MovesValueOffTheWall;
+var
+  FS: TFitStructure;
+  Rec: TFitValue;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 15.0;   // pinned against max
+
+  RecentreOnValue(FS);
+
+  Rec := FS.Stacks[0].Layers[0].P[1];
+  Assert.IsTrue(Rec.max > Rec.V, 'the value is no longer at the wall');
+  Assert.IsTrue(Rec.min < Rec.V, 'and not at the other one either');
+end;
+
+procedure TTestValidateLimits.Test_Recentre_SkipsFrozen;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 12.0;
+  FS.Stacks[0].Layers[0].P[1].Fixed := True;
+
+  RecentreOnValue(FS);
+
+  Assert.AreEqual(5.0, FS.Stacks[0].Layers[0].P[1].min, 1e-6, 'frozen window kept');
+  Assert.AreEqual(15.0, FS.Stacks[0].Layers[0].P[1].max, 1e-6);
+end;
+
+procedure TTestValidateLimits.Test_Recentre_ZeroWidthStaysPinned;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 9.0;
+  FS.Stacks[0].Layers[0].P[1].min := 9.0;
+  FS.Stacks[0].Layers[0].P[1].max := 9.0;
+
+  RecentreOnValue(FS);
+
+  Assert.AreEqual(9.0, FS.Stacks[0].Layers[0].P[1].min, 1e-6);
+  Assert.AreEqual(9.0, FS.Stacks[0].Layers[0].P[1].max, 1e-6);
 end;
 
 end.

@@ -48,6 +48,14 @@ procedure AutoFixErrors(var Structure: TFitStructure);
   engine, never on a structure that is written back to the interface. }
 procedure CollapseFixed(var Structure: TFitStructure);
 
+{ Slides every free parameter's window so its current value sits at the centre,
+  keeping the width it had. A value that ended hard against a boundary can then
+  keep exploring past it. Frozen parameters keep their stored window - they are
+  pinned by CollapseFixed at hand-off instead. A window that is already zero
+  width re-centres to zero width and so stays pinned; only Fixed thaws.
+  Apply ClampToPhysics afterwards. }
+procedure RecentreOnValue(var Structure: TFitStructure);
+
 implementation
 
 uses
@@ -410,6 +418,33 @@ begin
 
   for p := 1 to 3 do
     Pin(Structure.Subs.P[p]);
+end;
+
+procedure RecentreOnValue(var Structure: TFitStructure);
+var
+  i, j, p: Integer;
+
+  procedure Recentre(var Value: TFitValue);
+  var
+    Half: Single;
+  begin
+    if Value.Fixed then
+      Exit;
+    Half := (Value.max - Value.min) / 2;
+    if Half <= 0 then
+      Exit;
+    Value.min := Value.V - Half;
+    Value.max := Value.V + Half;
+  end;
+
+begin
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+        Recentre(Structure.Stacks[i].Layers[j].P[p]);
+
+  for p := 1 to 3 do
+    Recentre(Structure.Subs.P[p]);
 end;
 
 end.
