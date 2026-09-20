@@ -730,6 +730,7 @@ begin
         begin
           JLayer.AddPair(PAlias[p], Data.P[p].V);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'F', Data.P[p].Fixed);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
           Profile := Data.ProfileToString(TParameterType(p - 1));
@@ -851,6 +852,7 @@ begin
         begin
           Data.P[p].V := JLayer.GetValue<single>(PAlias[p]);
           Data.P[p].Paired := FindBoolValue(UpperCase(PAlias[p]) + 'P');
+          Data.P[p].Fixed := FindBoolValue(UpperCase(PAlias[p]) + 'F');
           Data.P[p].min := FindValue(UpperCase(PAlias[p]) + 'min', Data.P[p].V);
           Data.P[p].max := FindValue(UpperCase(PAlias[p]) + 'max', Data.P[p].V);
 
