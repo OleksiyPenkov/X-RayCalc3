@@ -30,6 +30,7 @@
     <li><a href="#fit-params">Basic Fitting Parameters</a></li>
     <li><a href="#fit-advanced">Advanced Fitting Settings</a></li>
     <li><a href="#running-a-fit">Running a Fit</a></li>
+    <li><a href="#staged-fitting">Staged Fitting</a></li>
     <li><a href="#convergence-enhancements">Convergence Enhancements</a></li>
     <li><a href="#understanding-the-cost-function">Understanding the Cost Function</a></li>
   </ul>
@@ -63,10 +64,22 @@
 <ol>
   <li>Select the model in the project tree.</li>
   <li>Click the <strong>Set Fit Limits</strong> button in the structure toolbar.</li>
-  <li>The Limits dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;) with columns for Min and Max of each parameter.</li>
-  <li>Click any cell to edit its value directly.</li>
-  <li>Only parameters with Min &ne; Max will be adjusted during fitting. Set Min = Max to lock (fix) a parameter.</li>
+  <li>The Limits dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;), each with a <strong>Fix</strong> column and columns for Min and Max.</li>
+  <li>Click any Min or Max cell to edit its value directly.</li>
+  <li>Only parameters with Min &ne; Max will be adjusted during fitting. Setting Min = Max pins a parameter permanently; to hold one temporarily, freeze it instead (see below).</li>
 </ol>
+
+<h3 id="freezing">Freezing Parameters <span class="badge">v3.8.2</span></h3>
+<p>Freezing holds a parameter at its current value for the next fit <em>without discarding its limits</em>. This is the difference between freezing and typing Min = Max: a frozen parameter keeps the search window you set, so thawing restores exactly that window, and the value it holds follows the model &mdash; it tracks the result of every later fit and every manual edit.</p>
+<ul>
+  <li>Click a cell in a parameter's <strong>Fix</strong> column to freeze or thaw it. Frozen parameters show <strong>X</strong> and their limits are greyed.</li>
+  <li>Select one or more rows and use <strong>Freeze</strong> or <strong>Thaw</strong> to act on whole layers.</li>
+  <li>Right-click for <strong>Freeze this stack</strong>, <strong>Freeze this layer</strong>, <strong>Freeze all</strong> and <strong>Thaw all</strong>.</li>
+  <li>Each stack's group header counts what is held &mdash; <em>Period stack &mdash; all 6 frozen</em> or <em>&mdash; 1 of 6 frozen</em>.</li>
+</ul>
+<p>A stack can also be frozen without opening this dialog: right-click it in the structure panel and choose <strong>Freeze stack</strong> or <strong>Thaw stack</strong>. The stack header then shows <em>[frozen]</em> or <em>[3/6 frozen]</em>, and the two views always agree.</p>
+<p>Freeze state is saved in the project file, so it survives closing and reopening. Projects written by earlier versions load with nothing frozen.</p>
+<p>Frozen parameters are left alone by <strong>Initialize</strong>, <strong>Narrow</strong>, <strong>Widen</strong> and <strong>Fix</strong>, and are not reported by validation &mdash; a frozen parameter with a stale range cannot block a fit.</p>
 
 <h3>Limit Actions</h3>
 <p>The dialog provides action buttons for batch operations on limits:</p>
@@ -75,7 +88,8 @@
   <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; percentages. For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
   <tr><td><strong>Narrow</strong></td><td>Shrinks all unlocked limits toward the current fitted value by 50%, reducing the search space. Useful after a successful fit to refine results.</td></tr>
   <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 1% of the range edge). Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range.</td></tr>
-  <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling.</td></tr>
+  <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling. Despite the name, this is unrelated to the <strong>Fix</strong> columns &mdash; it repairs limits, it does not freeze anything.</td></tr>
+  <tr><td><strong>Freeze</strong> / <strong>Thaw</strong></td><td>Holds or releases every parameter of the selected layers. See <a href="#freezing">Freezing Parameters</a>.</td></tr>
 </table>
 
 <h3>Validation and Visual Feedback</h3>
@@ -221,6 +235,24 @@
     </ul>
   </li>
 </ol>
+
+<h2 id="staged-fitting">Staged Fitting <span class="badge">v3.8.2</span></h2>
+<p>A complex model rarely fits well in one pass. Staged fitting lets you settle part of it, hold that part still, and concentrate the search on what remains &mdash; typically fitting the periodic stack first, then freezing it and working on the top and bottom stacks with a different weighting.</p>
+<ol>
+  <li>Run a fit as usual and let it converge.</li>
+  <li>Freeze the part that has settled &mdash; right-click the stack in the structure panel, or use the <strong>Fix</strong> columns in the Limits dialog.</li>
+  <li>Change whatever you want for the next pass, the weight type above all.</li>
+  <li>Choose <strong>Calc &gt; Resume Fitting</strong> or click the <img src="images/icons/48_Resume.png" alt="Resume Fitting" class="icon"> <strong>Resume Fitting</strong> toolbar button.</li>
+</ol>
+<p><strong>Resume Fitting</strong> is available once a fit has produced a result, and differs from <strong>Auto Fitting</strong> in three ways:</p>
+<ul>
+  <li><strong>It re-centres the search.</strong> Every free parameter's window slides so the value the last fit reached sits at its centre, keeping the width you set. A parameter that ended hard against a boundary can therefore carry on past it, instead of being stuck at the wall.</li>
+  <li><strong>It keeps your fit extensions</strong> without asking. A resumed fit continues from the depth profiles they hold, so the stale-extension prompt would be meaningless there.</li>
+  <li><strong>It continues the convergence chart</strong> rather than clearing it, so both passes are visible on one axis.</li>
+</ul>
+<p>The best &chi;&sup2; is <em>not</em> carried across a resume. Changing the weight type changes what is being minimised, so the two passes' numbers are not on the same scale and comparing them would be misleading.</p>
+<p>In Polynomial mode a frozen stack keeps its depth profile: the fit is seeded from the gradient the previous pass produced, so freezing holds the grading rather than flattening it.</p>
+<p>Freezing everything leaves nothing to fit, and validation says so.</p>
 
 <h2 id="convergence-enhancements">Convergence Enhancements <span class="badge">v3.6</span></h2>
 <p>Version 3.6 introduces several improvements to the LFPSO algorithm that significantly improve convergence speed and reliability. Six enhancements are always active and require no configuration; one is optional.</p>
