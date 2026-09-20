@@ -35,3 +35,4 @@ XRC_MCP/units/gitrev.inc
 # icon tooling
 XRayCalc3/Assets/ToolIcons/_NewIcons/node_modules/
 XRayCalc3/Assets/ToolIcons/_NewIcons/package-lock.json
+.claude/worktrees/
