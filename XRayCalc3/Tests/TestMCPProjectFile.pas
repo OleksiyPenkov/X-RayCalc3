@@ -1,4 +1,4 @@
-unit TestMCPProjectFile;
+﻿unit TestMCPProjectFile;
 
 (* .xrcx project files written and read by the server.
 
@@ -69,6 +69,7 @@ type
     [Test] procedure WriteXRCX_Overwrite_IsAtomicAndLeavesNoTmpFile;
     [Test] procedure ReadXRCX_RoundTrip_Structure;
     [Test] procedure ReadXRCX_RoundTrip_Extension;
+    [Test] procedure WriteXRCX_Extension_IsMarkedFromFit;
     [Test] procedure ReadXRCX_SampleFromELNPlugins;
     [Test] procedure ListProjects_ReportsEveryProject;
     [Test] procedure SaveProject_ExistingFile_WithoutOverwrite_Refused;
@@ -540,6 +541,80 @@ begin
   // layer's own parameter every time it reads a profile back.
   Assert.AreEqual(0.0, Double(Read_.Extensions[0].Coeffs[0]), 1E-9,
     'C0 is not stored in the file, by design');
+end;
+
+{ Every extension WriteTree emits came out of a fit - WriteFitProject is the
+  only caller that fills Extensions, from FitExtensions(Poly) - so each node
+  must carry FromFit.
+
+  The GUI reads that flag through TProjectData.IsFitExtension. RunFitting asks
+  HasFitExtensions before it starts, and only offers to keep or clear the
+  gradients of an earlier fit when the answer is True. An .xrcx written here
+  without the flag opens in the GUI looking as if a human had drawn its
+  gradients by hand: no prompt, and the next fit silently stacks a second set
+  of gradients on top of the first.
+
+  ReadXRCX cannot see this - TXRCXProfileExt has no FromFit field - so the test
+  goes to the tree the file actually holds. }
+procedure TTestMCPProjectFile.WriteXRCX_Extension_IsMarkedFromFit;
+var
+  Path, DscPath: string;
+  P: TXRCXProject;
+  Ext: TXRCXProfileExt;
+  Tree: TXRCProjectTree;
+  Node: PVirtualNode;
+  PD: PProjectData;
+  Found: Boolean;
+  GotFromFit, GotEnabled: Boolean;
+  GotExtType: TExtentionType;
+begin
+  P := SampleProject;
+
+  Ext := Default(TXRCXProfileExt);
+  Ext.StackID := 0;
+  Ext.LayerID := 1;
+  Ext.Subj := ptH;
+  Ext.Coeffs := [9.5, 2.5, 3.5, 4.5];
+  P.Extensions := [Ext];
+
+  Path := TPath.Combine(FTemp, 'fromfit.xrcx');
+  WriteXRCX(Path, P);
+  DscPath := ExtractMember(Path, 'project.dsc');
+
+  Found := False;
+  GotFromFit := False;
+  GotEnabled := False;
+  GotExtType := etNone;
+
+  Tree := TXRCProjectTree.Create(nil, 96);
+  try
+    Tree.NodeDataSize := SizeOf(TProjectData);
+    Tree.Version := 7;
+    Tree.LoadFromFile(DscPath);
+
+    Node := Tree.GetFirst;
+    while Node <> nil do
+    begin
+      PD := Tree.GetNodeData(Node);
+      if PD.RowType = prExtension then
+      begin
+        Found := True;
+        GotFromFit := PD.FromFit;
+        GotEnabled := PD.Enabled;
+        GotExtType := PD.ExtType;
+      end;
+      Node := Tree.GetNext(Node);
+    end;
+  finally
+    Tree.Free;
+  end;
+
+  Assert.IsTrue(Found, 'the extension is missing from the written tree');
+  Assert.IsTrue(GotEnabled, 'Enabled');
+  Assert.AreEqual(Ord(etFunction), Ord(GotExtType), 'ExtType');
+  Assert.IsTrue(GotFromFit,
+    'a gradient written by a fit job must be marked FromFit, or the GUI will ' +
+    'not offer to clear it before the next fit');
 end;
 
 procedure TTestMCPProjectFile.ReadXRCX_SampleFromELNPlugins;

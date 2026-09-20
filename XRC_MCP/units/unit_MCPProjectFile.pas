@@ -1,4 +1,4 @@
-(* *****************************************************************************
+﻿(* *****************************************************************************
   *
   *   X-Ray Calc 3 - XRC_MCP, the calculation engine as an MCP server
   *
@@ -678,6 +678,15 @@ begin
         PD.RowType := prExtension;
         // prExtension branch only
         PD.Enabled := True;
+        { Every extension written here came out of a fit: WriteFitProject is
+          the only caller that fills Extensions, and it fills them from
+          FitExtensions(Poly). The GUI reads this flag through
+          TProjectData.IsFitExtension, and RunFitting offers to keep or clear
+          an earlier fit's gradients only when HasFitExtensions finds it. Left
+          False, the gradients open looking hand-drawn, no prompt appears and
+          the next fit stacks a second set on top of them. It rides to disk in
+          the header's ID field - see the note in ProjectLoadNode. }
+        PD.FromFit := True;
         PD.ExtType := etFunction;
         PD.StackID := P.Extensions[i].StackID;
         PD.LayerID := P.Extensions[i].LayerID;
