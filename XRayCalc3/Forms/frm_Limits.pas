@@ -14,7 +14,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, RzPanel, RzEdit, Vcl.ComCtrls,
-  RzListVw, unit_Types, unit_SmartLimits, Vcl.StdCtrls, Vcl.Buttons, RzButton;
+  RzListVw, unit_Types, unit_SmartLimits, Vcl.StdCtrls, Vcl.Buttons, RzButton, Vcl.Menus;
 
 Const
   USER_EDITLISTVIEW = WM_USER + 666;
@@ -36,6 +36,13 @@ type
     btnFix: TBitBtn;
     btnSet: TRzBitBtn;
     RzBitBtn2: TRzBitBtn;
+    btnFreeze: TBitBtn;
+    btnThaw: TBitBtn;
+    pmFreeze: TPopupMenu;
+    miFreezeStack: TMenuItem;
+    miFreezeLayer: TMenuItem;
+    miFreezeAll: TMenuItem;
+    miThawAll: TMenuItem;
     procedure ListViewClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btnInitClick(Sender: TObject);
@@ -49,6 +56,12 @@ type
     procedure ListViewCustomDrawSubItem(Sender: TCustomListView;
       Item: TListItem; SubItem: Integer; State: TCustomDrawState;
       var DefaultDraw: Boolean);
+    procedure btnFreezeClick(Sender: TObject);
+    procedure btnThawClick(Sender: TObject);
+    procedure miFreezeStackClick(Sender: TObject);
+    procedure miFreezeLayerClick(Sender: TObject);
+    procedure miFreezeAllClick(Sender: TObject);
+    procedure miThawAllClick(Sender: TObject);
   private
     ListViewEditor: TRzEdit;
     LItem: TListitem;
@@ -58,6 +71,7 @@ type
 
     function FreezeParamOf(const Column: Integer): Integer;
     function LimitCellOf(const Column: Integer): Integer;
+    function StackCaption(const StackIndex: Integer): string;
 
     procedure UserEditListView( Var Message: TMessage ); message USER_EDITLISTVIEW;
     procedure ListViewEditorExit(Sender: TObject);
@@ -66,6 +80,7 @@ type
     procedure StructureFromView;
     procedure RunValidation;
     procedure ToggleFreezeAt(Item: TListItem; const ParamIndex: Integer);
+    procedure SetFreeze(const Frozen, AllRows, StackOnly: Boolean);
   public
     { Public declarations }
 
@@ -295,6 +310,79 @@ begin
     end;
 end;
 
+{ Frozen: True freezes, False thaws. StackOnly limits the sweep to the stack the
+  focused row belongs to; AllRows ignores the selection entirely. }
+procedure TfrmLimits.SetFreeze(const Frozen, AllRows, StackOnly: Boolean);
+var
+  i, j, p, Index, FocusStack: Integer;
+  Touch: Boolean;
+begin
+  FocusStack := -1;
+  if StackOnly then
+  begin
+    if ListView.ItemFocused = nil then
+      Exit;
+    Index := 0;
+    for i := 0 to High(FStructure.Stacks) do
+      for j := 0 to High(FStructure.Stacks[i].Layers) do
+      begin
+        if Index = ListView.ItemFocused.Index then
+          FocusStack := i;
+        Inc(Index);
+      end;
+  end;
+
+  Index := 0;
+  for i := 0 to High(FStructure.Stacks) do
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      if AllRows then
+        Touch := True
+      else if StackOnly then
+        Touch := (i = FocusStack)
+      else
+        Touch := ListView.Items[Index].Selected;
+
+      if Touch then
+        for p := 1 to 3 do
+          FStructure.Stacks[i].Layers[j].P[p].Fixed := Frozen;
+
+      Inc(Index);
+    end;
+
+  StructureToView;
+end;
+
+procedure TfrmLimits.btnFreezeClick(Sender: TObject);
+begin
+  SetFreeze(True, False, False);
+end;
+
+procedure TfrmLimits.btnThawClick(Sender: TObject);
+begin
+  SetFreeze(False, False, False);
+end;
+
+procedure TfrmLimits.miFreezeStackClick(Sender: TObject);
+begin
+  SetFreeze(True, False, True);
+end;
+
+procedure TfrmLimits.miFreezeLayerClick(Sender: TObject);
+begin
+  SetFreeze(True, False, False);
+end;
+
+procedure TfrmLimits.miFreezeAllClick(Sender: TObject);
+begin
+  SetFreeze(True, True, False);
+end;
+
+procedure TfrmLimits.miThawAllClick(Sender: TObject);
+begin
+  SetFreeze(False, True, False);
+end;
+
 procedure TfrmLimits.ListViewEditorExit(Sender: TObject);
 begin
   If Assigned(LItem) and (FreezeParamOf(EDIT_COLUMN) = 0) Then
@@ -311,6 +399,29 @@ begin
   ModalResult := mrCancel;
 end;
 
+function TfrmLimits.StackCaption(const StackIndex: Integer): string;
+var
+  j, p, Frozen, Total: Integer;
+begin
+  Frozen := 0;
+  Total := 0;
+  for j := 0 to High(FStructure.Stacks[StackIndex].Layers) do
+    for p := 1 to 3 do
+    begin
+      Inc(Total);
+      if FStructure.Stacks[StackIndex].Layers[j].P[p].Fixed then
+        Inc(Frozen);
+    end;
+
+  Result := FStructure.Stacks[StackIndex].Header;
+  if Frozen = 0 then
+    Exit;
+  if Frozen = Total then
+    Result := Format('%s — all %d frozen', [Result, Total])
+  else
+    Result := Format('%s — %d of %d frozen', [Result, Frozen, Total]);
+end;
+
 procedure TfrmLimits.StructureToView;
 var
   i, j, p: integer;
@@ -323,7 +434,7 @@ begin
   for I := 0 to High(FStructure.Stacks) do
   begin
     Group := ListView.Groups.Add;
-    Group.Header := FStructure.Stacks[i].Header;
+    Group.Header := StackCaption(i);
 
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin

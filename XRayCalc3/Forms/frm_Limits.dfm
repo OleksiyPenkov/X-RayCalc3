@@ -150,6 +150,8 @@ object frmLimits: TfrmLimits
       ColumnClick = False
       GridLines = True
       GroupView = True
+      MultiSelect = True
+      PopupMenu = pmFreeze
       ReadOnly = True
       ShowWorkAreas = True
       TabOrder = 0
@@ -275,6 +277,28 @@ object frmLimits: TfrmLimits
       ShowHint = True
       OnClick = btnFixClick
     end
+    object btnFreeze: TBitBtn
+      Left = 176
+      Top = 391
+      Width = 75
+      Height = 25
+      Caption = 'Freeze'
+      TabOrder = 8
+      Hint = 'Freeze every parameter of the selected layers'
+      ShowHint = True
+      OnClick = btnFreezeClick
+    end
+    object btnThaw: TBitBtn
+      Left = 256
+      Top = 391
+      Width = 75
+      Height = 25
+      Caption = 'Thaw'
+      TabOrder = 9
+      Hint = 'Release every parameter of the selected layers'
+      ShowHint = True
+      OnClick = btnThawClick
+    end
   end
   object RzPanel2: TRzPanel
     AlignWithMargins = True
@@ -321,6 +345,26 @@ object frmLimits: TfrmLimits
       OnClick = RzBitBtn2Click
       Margin = 4
       Spacing = 4
+    end
+  end
+  object pmFreeze: TPopupMenu
+    Left = 24
+    Top = 440
+    object miFreezeStack: TMenuItem
+      Caption = 'Freeze this stack'
+      OnClick = miFreezeStackClick
+    end
+    object miFreezeLayer: TMenuItem
+      Caption = 'Freeze this layer'
+      OnClick = miFreezeLayerClick
+    end
+    object miFreezeAll: TMenuItem
+      Caption = 'Freeze all'
+      OnClick = miFreezeAllClick
+    end
+    object miThawAll: TMenuItem
+      Caption = 'Thaw all'
+      OnClick = miThawAllClick
     end
   end
 end
