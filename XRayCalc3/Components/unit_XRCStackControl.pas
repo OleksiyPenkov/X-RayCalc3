@@ -131,6 +131,10 @@ begin
     SetLayerColor(Pos);
     FLayers[Pos].Top := ClientHeight - 10;
   end;
+  { The header counts frozen parameters across the layers, so it has to be
+    rebuilt whenever the layer set changes. The call in the constructor runs
+    while FLayers is still empty and can only ever render "not frozen". }
+  UpdateInfo;
   Result := Pos;
 end;
 
@@ -243,6 +247,10 @@ begin
   FLayers[Index].Onset := True;
   FLayers[Index].Data  := AData;
   FLayers[Index].Onset := False;
+
+  { A fit writes every layer back through here. AData carries the freeze
+    flags, so the header's count can change with it. }
+  UpdateInfo;
 end;
 
 procedure TXRCStack.UpdateLayersID;
