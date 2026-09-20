@@ -97,10 +97,21 @@ presses Save **or Cancel**. It gets an `if frmLimits.ShowLimits(...) then`.
 which already returns `False` for an absent key (`:853`). Old projects therefore
 load as "nothing frozen". **`CURRENT_PROJECT_VERSION` stays at 7.**
 
-XRC_MCP and xrccmd round-trip the new keys without interpreting them; neither
-references `unit_XRCStructure`, so nothing in them changes. Teaching `fit_xrr` to
-honour the flag is explicitly out of scope — it has its own per-parameter freedom
-list and already defaults everything to frozen.
+**XRC_MCP needs four lines, or it eats the flag.** It does not share
+`unit_XRCStructure`; it has its own reader and writer for the same JSON in
+`unit_MCPStructure.pas`, and the writer **reconstructs** each layer object from
+its own model (`:520-532`) rather than editing the original — so any key it does
+not know is dropped. Left alone, a project frozen in the GUI and then written
+back by any MCP tool would come back thawed, silently.
+
+So the MCP reader gains `...P[p].Fixed := DataBool(JLayer, UpperCase(PAlias[p]) + 'F')`
+beside the existing `'P'` read (`:646`), and the writer gains the matching
+`AddPair` beside `'P'` (`:524`). The flag is then carried but never acted on:
+`CollapseFixed` is called only from `TCalcOrchestrator`, so `fit_xrr` behaviour
+is unchanged. Teaching `fit_xrr` to *honour* the flag stays out of scope — it has
+its own per-parameter freedom list and already defaults everything to frozen.
+
+`xrccmd` neither reads nor writes `.xrcx` project files, so it needs nothing.
 
 ### Limit operations respect the freeze
 
@@ -214,7 +225,7 @@ in the running application.
 | Engine pinning | a structure with one frozen parameter, run through `TLFPSO_Irregular` for a few iterations, leaves that parameter at `V` in every particle |
 | Poly mode | a frozen parameter's higher-order coefficients all get zero range |
 | Write-back split | `UpdateInterfaceP(ValuesOnly := True)` changes `V` and preserves `min`, `max`, `Paired`, `Fixed`; with `False` it copies all of them |
-| Persistence | `ToString` → `FromString` round-trips `Fixed` for layers and substrate; a JSON without `HF`/`SF`/`RF` loads as all-thawed |
+| Persistence | `unit_MCPStructure`'s reader/writer round-trip `Fixed`; a JSON without `HF`/`SF`/`RF` loads as all-thawed. `unit_XRCStructure` is not in the test project — a VCL/Raize component unit in a console runner — so the GUI's own symmetric `ToString`/`FromString` change is covered by inspection and by the user's check in the app |
 | Re-centring | width preserved, `V` centred; a value at a wall moves off it; `ClampToPhysics` applied afterwards |
 | Limit ops | `NarrowLimits`, `WidenAtLimit`, `AutoFixErrors`, `ApplyMaterialDensity`, `ApplyGeometryCoupling`, `ClampToPhysics` leave frozen parameters alone; `ValidateLimits` reports nothing for them |
 
