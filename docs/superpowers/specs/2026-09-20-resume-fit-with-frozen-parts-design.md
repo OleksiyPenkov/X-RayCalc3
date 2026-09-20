@@ -23,9 +23,16 @@ free parameters on the values the last fit reached.
 - **The engine already pins an empty range.** `Xrange = max - min = 0` makes
   `Rand(0)` return 0 in `XSeed` and `RangeSeed`, and `CheckLimits` clamps to
   `[Xmin, Xmax]`, so the value never moves. XRC_MCP depends on exactly this and
-  documents it (`unit_MCPFit.pas:49`). In Poly mode every higher-order
-  coefficient derives from `Xrange[0]` (`TLFPSO_Poly.Set_Init_XPoly`), so an
-  empty range freezes the whole polynomial. In Periodic mode the period is held
+  documents it (`unit_MCPFit.pas:49`). In Poly mode an empty range pins the
+  higher-order coefficients too, because they all derive from `Xrange[0]`
+  (`TLFPSO_Poly.Set_Init_XPoly`) - but it pins them at whatever
+  `SetStructure` started them on, and that used to be zero, so freezing a
+  graded stack fitted it flat. The engine now loads the layer's existing depth
+  profile back in first: `TLFPSO_Poly.InitialPolynomes` carries the model's
+  `TProfileFunctions` and `SeedInitialPoly` copies orders >= 1 into
+  `X[0]`, matching profiles to layers by `StackID`/`LayerID`/`Subj`. Freezing
+  therefore pins the gradient the user can see, and a resumed fit continues
+  from it. In Periodic mode the period is held
   unless `SetPeriodRange` opens it, which the GUI never calls.
 - After a fit, values are written back into the live structure, so pressing Run
   again already continues from them.

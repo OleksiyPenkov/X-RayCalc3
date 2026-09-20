@@ -20,11 +20,14 @@ type
   TLFPSO_Poly = class (TLFPSO_BASE)
     private
       MO: Integer;
+      FInitialPolynomes: TProfileFunctions;
 
       function TP(const n: Integer): LongInt;
     protected
       Counts: TIntArray;
 
+      procedure SeedInitialPoly(const N, Index, ValueType: Integer;
+        const Paired: Boolean; const StackID, LayerID: Word);
       procedure CheckLimitsP(const i, j, k, Ord: integer);
       procedure UpdateLFPSO(const t: integer); override;
       procedure RangeSeed; override;
@@ -39,7 +42,13 @@ type
       function GetPolynomes: TProfileFunctions; override;
     public
       destructor Destroy; override;
-      //
+
+      { The gradient the fit starts from - the input counterpart of the
+        inherited Polynomes property, which reports the gradient it ended on.
+        Assign it before Structure: SetStructure is what consumes it, and it
+        seeds the higher-order coefficients of X[0]. Without it they start at
+        zero, which a free fit can recover from but a frozen one cannot. }
+      property InitialPolynomes: TProfileFunctions write FInitialPolynomes;
   end;
 
 implementation
@@ -341,7 +350,11 @@ begin
     for j := 0 to High(Inp.Stacks[i].Layers) do
     begin
       for p := 1 to 3 do
+      begin
         Set_Init_XPoly(Inp.Stacks[i].N, Index, p, Inp.Stacks[i].Layers[j].P[p].Paired, Inp.Stacks[i].Layers[j].P[p]);
+        SeedInitialPoly(Inp.Stacks[i].N, Index, p, Inp.Stacks[i].Layers[j].P[p].Paired,
+          Inp.Stacks[i].Layers[j].StackID, Inp.Stacks[i].Layers[j].LayerID);
+      end;
 
       Inc(Index);
     end;
@@ -384,6 +397,53 @@ begin
       SetLength(X[i][Index][ValueType], MO);
       SetLength(V[i][Index][ValueType], MO);
     end;
+  end;
+end;
+
+{ Load the layer's existing depth profile back into the swarm's first particle.
+
+  Only orders >= 1: X[0][Index][ValueType][0] is the live structure's V, which
+  may have been edited by hand since the profile was written and is therefore
+  authoritative for the constant term.
+
+  Profiles are matched to layers by identity (StackID, LayerID, Subj), never by
+  position: the order in which the project panel hands them over is the order of
+  the extension nodes, which has nothing to do with SetStructure's flat Index.
+
+  No match leaves the coefficients at zero, which is what the user asked for by
+  clearing the extensions. }
+procedure TLFPSO_Poly.SeedInitialPoly(const N, Index, ValueType: Integer;
+  const Paired: Boolean; const StackID, LayerID: Word);
+var
+  i, k, Count: Integer;
+  Src: TFuncProfileRec;
+begin
+  { Set_Init_XPoly grows the coefficient array only here; everywhere else it is
+    length 1 and orders >= 1 do not exist. }
+  if Paired or (N = 1) then
+    Exit;
+
+  for i := 0 to High(FInitialPolynomes) do
+  begin
+    Src := FInitialPolynomes[i];
+
+    { A hand-authored exponential, parabolic or square-root profile does not
+      carry coefficients in this basis. }
+    if Src.Func <> ffPoly then
+      Continue;
+    if (Src.StackID <> StackID) or (Src.LayerID <> LayerID) then
+      Continue;
+    if Src.PIndex <> Word(ValueType) then
+      Continue;
+
+    Count := Length(Src.C);          // fewer leaves the rest at 0, more truncates
+    if Count > MO then
+      Count := MO;
+
+    for k := 1 to Count - 1 do
+      X[0][Index][ValueType][k] := Src.C[k];
+
+    Break;
   end;
 end;
 

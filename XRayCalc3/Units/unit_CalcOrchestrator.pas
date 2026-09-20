@@ -294,6 +294,14 @@ begin
      Exit;
   end;
 
+  { The gradient the model already carries, fed to the optimizer the same way
+    PrepareCalc feeds it to TCalc. SetStructure consumes it, so it has to be in
+    place before Structure is assigned. Without it every higher-order
+    coefficient starts at zero, and a frozen gradient - whose empty range lets
+    nothing move off that zero - is fitted flat. }
+  if FCalcSettings.FittingMode = fmPoly then
+    TLFPSO_Poly(FLFPSO).InitialPolynomes := FProjectPanel.GetProfileFunctions;
+
   { Frozen parameters become an empty range here and nowhere else. The engine
     has no concept of freezing; an empty range is what pins a value. }
   CollapseFixed(FFitStructure);

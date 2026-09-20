@@ -90,7 +90,9 @@ uses
   TestMCPFitReport in 'TestMCPFitReport.pas',
   unit_AxisLimit in '..\..\Shared\Math\unit_AxisLimit.pas',
   TestAxisLimit in 'TestAxisLimit.pas',
-  TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas';
+  TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas',
+  unit_LFPSO_Poly in '..\LFPSO\unit_LFPSO_Poly.pas',
+  TestLFPSOPoly in 'TestLFPSOPoly.pas';
 
 {$R *.res}
 
