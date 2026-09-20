@@ -13,7 +13,13 @@ unit TestLFPSOPoly;
 
   Test_SeededGradient_SurvivesAFrozenFit is the invariant that matters: it needs
   the GUI's Henke tables and passes with a note when they are not installed, the
-  way TestLFPSOProgress does. }
+  way TestLFPSOProgress does.
+
+  Section 3 covers a second subject in the same unit: the index basis of the
+  per-layer arrays. X, V, abest and Counts all hold one slot per DECLARED layer
+  - Init_Domains sizes them from FLayersCount := Inp.Total - and two places used
+  to index them by period count instead. Neither can misbehave until a model has
+  two or more stacks with N > 1, which is the ordinary depth-graded mirror. }
 
 interface
 
@@ -32,6 +38,7 @@ type
     function GetPoly: TProfileFunctions;
     function GetStructure: TFitStructure;
 
+    procedure SeedAbestFromLeader;
     procedure TestSetStructure(const Inp: TFitStructure);
     procedure TestSetParams(const Value: TFitParams);
   end;
@@ -58,6 +65,13 @@ type
     function MakePartlyFrozenExpData(const ACalcParams: TCalcThreadParams): TDataArray;
     function FindPoly(const APolynomes: TProfileFunctions;
       const AStackID, ALayerID: Word; const ASubj: TParameterType): TFuncProfileRec;
+
+    function MakeMultiStackStructure: TFitStructure;
+    function MakeMultiStackProfiles: TProfileFunctions;
+    function HasPoly(const APolynomes: TProfileFunctions;
+      const AStackID, ALayerID: Word; const ASubj: TParameterType): Boolean;
+    procedure AssertPolyIsLayers(const APolynomes: TProfileFunctions;
+      const AStackID, ALayerID: Word; const AConst, AGradient: Single);
   public
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
@@ -74,6 +88,10 @@ type
     { 2 - the invariant the user cares about }
     [Test] procedure Test_SeededGradient_SurvivesAFrozenFit;
     [Test] procedure Test_SeededGradient_SurvivesAPartlyFrozenFit;
+
+    { 3 - the index basis of the per-layer arrays, with several repeating stacks }
+    [Test] procedure Test_Polynomes_SecondRepeatingStackReadsItsOwnSlots;
+    [Test] procedure Test_Polynomes_SinglePeriodStackIsSkippedNotSpecialCased;
   end;
 
 implementation
@@ -122,6 +140,25 @@ const
   P_POP       = 8;
   P_SEED      = 5;
 
+  { Test 3 - three stacks, two of them repeating, with different period counts
+    AND different layer counts. Declared-layer indices: 0 for stack 0, 1..2 for
+    stack 1, 3..5 for stack 2, so every per-layer array has six slots. A Base
+    that advances by period count stands at 1 + 4 = 5 when it reaches stack 2
+    and reads slots 5, 6 and 7 - one wrong layer, then two past the end. }
+  M_S0_N = 1;   M_S1_N = 4;   M_S2_N = 3;
+  M_LAYERS = 6;                          // 1 + 2 + 3 declared layers
+
+  M_S0_L0_H = 25.0;
+  M_S1_L0_H = 40.0;   M_S1_L1_H = 20.0;
+  M_S2_L0_H = 38.0;   M_S2_L1_H = 18.0;   M_S2_L2_H = 12.0;
+
+  { One distinct gradient per repeating layer: the value alone says which slot
+    of abest the record was read from. }
+  M_S1_L0_G = -1.0;   M_S1_L1_G = -2.0;
+  M_S2_L0_G = -3.0;   M_S2_L1_G = -4.0;   M_S2_L2_G = -5.0;
+
+  M_SIGMA = 3.0;   M_RHO = 5.0;
+
 { TTestablePoly }
 
 function TTestablePoly.GetX: TPopulation;
@@ -137,6 +174,16 @@ end;
 function TTestablePoly.GetStructure: TFitStructure;
 begin
   Result := FStructure;
+end;
+
+{ abest is only ever assigned by a run, and GetPolynomes is the only thing that
+  reads it, so testing its indexing needs abest shaped the way a run leaves it:
+  one slot per declared layer, laid out exactly as X. The leader is that shape
+  already, and SetStructure has just filled it from the structure and the seeded
+  profiles, which makes every slot distinguishable. }
+procedure TTestablePoly.SeedAbestFromLeader;
+begin
+  abest := CopySolution(X[0]);
 end;
 
 procedure TTestablePoly.TestSetStructure(const Inp: TFitStructure);
@@ -794,6 +841,165 @@ begin
   finally
     PSO.Free;
   end;
+end;
+
+{ ---------------- 3: index basis with several repeating stacks ---------------- }
+
+{ Stack 0 is a single-period cap, stacks 1 and 2 both repeat, with different N
+  and different layer counts. Rho of stack 2 / layer 1 is paired, so it has no
+  polynomial and must not be reported. }
+function TTestLFPSOPoly.MakeMultiStackStructure: TFitStructure;
+
+  procedure SetLayer(var L: TLayerData; const AMaterial: string;
+    const AStackID, ALayerID: Word; const AH: Single);
+  var
+    p: Integer;
+  begin
+    L.Material := AMaterial;
+    L.StackID  := AStackID;
+    L.LayerID  := ALayerID;
+    L.P[1].V   := AH;
+    L.P[2].V   := M_SIGMA;
+    L.P[3].V   := M_RHO;
+    for p := 1 to 3 do
+    begin
+      L.P[p].min := 0.5;
+      L.P[p].max := 60.0;
+    end;
+  end;
+
+var
+  p: Integer;
+begin
+  SetLength(Result.Stacks, 3);
+
+  Result.Stacks[0].ID := 0;
+  Result.Stacks[0].N  := M_S0_N;
+  SetLength(Result.Stacks[0].Layers, 1);
+  SetLayer(Result.Stacks[0].Layers[0], 'C', 0, 0, M_S0_L0_H);
+
+  Result.Stacks[1].ID := 1;
+  Result.Stacks[1].N  := M_S1_N;
+  SetLength(Result.Stacks[1].Layers, 2);
+  SetLayer(Result.Stacks[1].Layers[0], 'Si', 1, 0, M_S1_L0_H);
+  SetLayer(Result.Stacks[1].Layers[1], 'Mo', 1, 1, M_S1_L1_H);
+
+  Result.Stacks[2].ID := 2;
+  Result.Stacks[2].N  := M_S2_N;
+  SetLength(Result.Stacks[2].Layers, 3);
+  SetLayer(Result.Stacks[2].Layers[0], 'Si', 2, 0, M_S2_L0_H);
+  SetLayer(Result.Stacks[2].Layers[1], 'Mo', 2, 1, M_S2_L1_H);
+  SetLayer(Result.Stacks[2].Layers[2], 'C',  2, 2, M_S2_L2_H);
+
+  Result.Stacks[2].Layers[1].P[3].Paired := True;
+
+  Result.Subs.Material := 'Si';
+  for p := 1 to 3 do
+    Result.Subs.P[p].New(3.0);
+end;
+
+{ A distinct H gradient for every layer of both repeating stacks, so the
+  coefficients a record carries identify the slot it was read from. }
+function TTestLFPSOPoly.MakeMultiStackProfiles: TProfileFunctions;
+
+  procedure SetPoly(var R: TFuncProfileRec; const AStackID, ALayerID: Word;
+    const AConst, AGradient: Single);
+  begin
+    R.Func    := ffPoly;
+    R.Subj    := ptH;
+    R.StackID := AStackID;
+    R.LayerID := ALayerID;
+    R.C       := [AConst, AGradient];
+  end;
+
+begin
+  SetLength(Result, 5);
+  SetPoly(Result[0], 1, 0, M_S1_L0_H, M_S1_L0_G);
+  SetPoly(Result[1], 1, 1, M_S1_L1_H, M_S1_L1_G);
+  SetPoly(Result[2], 2, 0, M_S2_L0_H, M_S2_L0_G);
+  SetPoly(Result[3], 2, 1, M_S2_L1_H, M_S2_L1_G);
+  SetPoly(Result[4], 2, 2, M_S2_L2_H, M_S2_L2_G);
+end;
+
+function TTestLFPSOPoly.HasPoly(const APolynomes: TProfileFunctions;
+  const AStackID, ALayerID: Word; const ASubj: TParameterType): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to High(APolynomes) do
+    if (APolynomes[i].StackID = AStackID) and (APolynomes[i].LayerID = ALayerID)
+      and (APolynomes[i].Subj = ASubj) then
+      Exit(True);
+  Result := False;
+end;
+
+procedure TTestLFPSOPoly.AssertPolyIsLayers(const APolynomes: TProfileFunctions;
+  const AStackID, ALayerID: Word; const AConst, AGradient: Single);
+var
+  Rec: TFuncProfileRec;
+begin
+  Rec := FindPoly(APolynomes, AStackID, ALayerID, ptH);
+  Assert.AreEqual(2, Length(Rec.C),
+    Format('stack %d layer %d: MaxPOrder = 1 gives two coefficients',
+      [AStackID, ALayerID]));
+  Assert.AreEqual(AConst, Rec.C[0], 1E-5,
+    Format('stack %d layer %d: constant term belongs to another layer''s slot',
+      [AStackID, ALayerID]));
+  Assert.AreEqual(AGradient, Rec.C[1], 1E-5,
+    Format('stack %d layer %d: gradient belongs to another layer''s slot',
+      [AStackID, ALayerID]));
+end;
+
+{ GetPolynomes walked Base by the stack's period count, but abest has one slot
+  per declared layer. One repeating stack among N = 1 neighbours is safe, which
+  is why this never showed up; a SECOND repeating stack starts reading from
+  1 + 4 = 5 instead of 3 and runs off the end of a six-slot array. }
+procedure TTestLFPSOPoly.Test_Polynomes_SecondRepeatingStackReadsItsOwnSlots;
+var
+  Polys: TProfileFunctions;
+begin
+  FPSO.TestSetParams(MakeParams(1));            // MO = 2: constant + gradient
+  FPSO.InitialPolynomes := MakeMultiStackProfiles;
+  FPSO.TestSetStructure(MakeMultiStackStructure);
+  FPSO.SeedAbestFromLeader;
+
+  Polys := FPSO.GetPoly;
+
+  { Stack 1 reports 2 layers x 3 parameters; stack 2 reports 3 x 3 less the
+    one paired rho. Stack 0 repeats once and reports nothing. }
+  Assert.AreEqual(6 + 8, Length(Polys),
+    'every non-paired parameter of both repeating stacks is reported once');
+
+  AssertPolyIsLayers(Polys, 1, 0, M_S1_L0_H, M_S1_L0_G);
+  AssertPolyIsLayers(Polys, 1, 1, M_S1_L1_H, M_S1_L1_G);
+
+  { The second repeating stack - the one a period-counted Base cannot reach. }
+  AssertPolyIsLayers(Polys, 2, 0, M_S2_L0_H, M_S2_L0_G);
+  AssertPolyIsLayers(Polys, 2, 1, M_S2_L1_H, M_S2_L1_G);
+  AssertPolyIsLayers(Polys, 2, 2, M_S2_L2_H, M_S2_L2_G);
+
+  Assert.IsFalse(HasPoly(Polys, 2, 1, ptRho),
+    'a paired parameter has no polynomial of its own');
+end;
+
+{ The N = 1 branch is a "nothing to report" shortcut, not an indexing special
+  case: once Base advances by layer count in both branches the two are the same
+  arithmetic, and the cap must simply be absent from the result. }
+procedure TTestLFPSOPoly.Test_Polynomes_SinglePeriodStackIsSkippedNotSpecialCased;
+var
+  Polys: TProfileFunctions;
+  i: Integer;
+begin
+  FPSO.TestSetParams(MakeParams(1));
+  FPSO.InitialPolynomes := MakeMultiStackProfiles;
+  FPSO.TestSetStructure(MakeMultiStackStructure);
+  FPSO.SeedAbestFromLeader;
+
+  Polys := FPSO.GetPoly;
+
+  for i := 0 to High(Polys) do
+    Assert.IsFalse(Polys[i].StackID = 0,
+      Format('stack 0 has N = 1 and no gradient, yet record %d claims it', [i]));
 end;
 
 end.

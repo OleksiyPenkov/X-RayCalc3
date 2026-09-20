@@ -329,27 +329,28 @@ begin
   Base := 0;
   for i := 0 to High(FStructure.Stacks) do
   begin
-    if FStructure.Stacks[i].N = 1 then
-    begin
-     Inc(Base, Length(FStructure.Stacks[i].Layers));
-     Continue;
-    end;
+    { N = 1 is not an indexing special case, only "this stack has nothing to
+      report": Set_Init_XPoly leaves its parameters a single coefficient, so
+      there is no gradient to hand back. Its layers still own their slots in
+      abest, and Base walks past them below like everyone else's. }
+    if FStructure.Stacks[i].N > 1 then
+      for j := 0 to High(FStructure.Stacks[i].Layers) do
+        for p := 1 to 3 do
+          if not FStructure.Stacks[i].Layers[j].P[p].Paired then
+          begin
+            NewRecord.Subj := TParameterType(p - 1);
+            NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
+            NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
+            NewRecord.C := Copy(abest[Base + j][p], 0, MO);
+            Result := Result + [NewRecord];
+          end;
 
-    for j := 0 to High(FStructure.Stacks[i].Layers) do
-    begin
-      for p := 1 to 3 do
-      begin
-        if not FStructure.Stacks[i].Layers[j].P[p].Paired then
-        begin
-          NewRecord.Subj := TParameterType(p - 1);
-          NewRecord.LayerID := FStructure.Stacks[i].Layers[j].LayerID;
-          NewRecord.StackID := FStructure.Stacks[i].Layers[j].StackID;
-          NewRecord.C := Copy(abest[Base + j][p], 0, MO);
-          Result := Result + [NewRecord];
-        end;
-      end;
-    end;
-    Inc(Base, FStructure.Stacks[i].N);
+    { abest carries one slot per DECLARED layer, never one per period:
+      Init_Domains sizes the population from FLayersCount := Inp.Total, which
+      sums Length(Stacks[i].Layers) and is not expanded by N. Advancing Base by
+      N here instead ran off the end of abest as soon as a second repeating
+      stack followed the first - the depth-graded case this mode exists for. }
+    Inc(Base, Length(FStructure.Stacks[i].Layers));
   end;
 end;
 
