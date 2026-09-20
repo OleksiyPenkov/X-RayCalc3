@@ -161,6 +161,28 @@ var
    end;
 
 begin
+  { A frozen parameter has an empty range - CollapseFixed pins min = max = V -
+    and a pinned parameter is not a constrained one. Eval below takes the
+    polynomial's span across all periods and compares it with that single
+    point, so ANY grading reads as out of range by construction, and the walk
+    that follows only stops once every higher order is zero: freezing a graded
+    stack would flatten the very gradient the freeze was meant to hold. Hold
+    the whole polynomial at the seeded leader instead, and stop here.
+    Xrange rather than Xmax - Xmin because Xrange[0] is the quantity the rest
+    of the freeze mechanism keys on: XSeed's Rand(Xrange * Ksxr), InitVelocity's
+    Vmax, and Set_Init_XPoly's Xrange[p] := Xrange[0] / TP(p). }
+  if Xrange[0][j][k][0] = 0 then
+  begin
+    { Ord is High(X[0][j][k]) at every call site, and Set_Init_XPoly gives
+      X[i][j][k] and V[i][j][k] that same length for every particle. }
+    for p := 0 to Ord do
+    begin
+      X[i][j][k][p] := X[0][j][k][p];
+      V[i][j][k][p] := 0;
+    end;
+    Exit;
+  end;
+
   for p := 0 to Ord do
   begin
     if V[i][j][k][p] > Vmax[0][j][k][p] then

@@ -30,6 +30,7 @@ type
   public
     function GetX: TPopulation;
     function GetPoly: TProfileFunctions;
+    function GetStructure: TFitStructure;
 
     procedure TestSetStructure(const Inp: TFitStructure);
     procedure TestSetParams(const Value: TFitParams);
@@ -41,7 +42,8 @@ type
     FPSO: TTestablePoly;
     FSavedHenkeDir: string;
 
-    function MakeParams(const AMaxPOrder: Integer): TFitParams;
+    function MakeParams(const AMaxPOrder: Integer;
+      const ANMax: Integer = 5; const APop: Integer = 6): TFitParams;
     function MakeTwoStackStructure: TFitStructure;
     function MakeProfiles: TProfileFunctions;
 
@@ -51,6 +53,9 @@ type
     function MakeGradedStructure: TFitStructure;
     function MakeGradedProfiles: TProfileFunctions;
     function MakeGradedExpData(const ACalcParams: TCalcThreadParams): TDataArray;
+    function MakePartlyFrozenStructure: TFitStructure;
+    function MakePartlyFrozenProfiles: TProfileFunctions;
+    function MakePartlyFrozenExpData(const ACalcParams: TCalcThreadParams): TDataArray;
     function FindPoly(const APolynomes: TProfileFunctions;
       const AStackID, ALayerID: Word; const ASubj: TParameterType): TFuncProfileRec;
   public
@@ -68,6 +73,7 @@ type
 
     { 2 - the invariant the user cares about }
     [Test] procedure Test_SeededGradient_SurvivesAFrozenFit;
+    [Test] procedure Test_SeededGradient_SurvivesAPartlyFrozenFit;
   end;
 
 implementation
@@ -105,6 +111,17 @@ const
   G_SUB_S   = 3.0;     G_SUB_R = 2.33;
   G_SEED    = 11;
 
+  { Test 2b - the same stack, frozen, under a free capping layer that starts
+    well off the truth, so the swarm has real work to do on a free parameter
+    while the gradient is pinned. }
+  P_GRAD      = -0.8;   // A per period, against 40 A layers
+  P_CAP_TRUE  = 30.0;   // what the measurement really has
+  P_CAP_START = 45.0;   // ... and where the fit is told to start
+  P_CAP_S     = 3.0;    P_CAP_R = 2.20;
+  P_NMAX      = 12;
+  P_POP       = 8;
+  P_SEED      = 5;
+
 { TTestablePoly }
 
 function TTestablePoly.GetX: TPopulation;
@@ -115,6 +132,11 @@ end;
 function TTestablePoly.GetPoly: TProfileFunctions;
 begin
   Result := GetPolynomes;
+end;
+
+function TTestablePoly.GetStructure: TFitStructure;
+begin
+  Result := FStructure;
 end;
 
 procedure TTestablePoly.TestSetStructure(const Inp: TFitStructure);
@@ -153,11 +175,12 @@ begin
   Result := HenkeAvailable('Si') and HenkeAvailable('Mo');
 end;
 
-function TTestLFPSOPoly.MakeParams(const AMaxPOrder: Integer): TFitParams;
+function TTestLFPSOPoly.MakeParams(const AMaxPOrder: Integer;
+  const ANMax: Integer; const APop: Integer): TFitParams;
 begin
   FillChar(Result, SizeOf(Result), 0);
-  Result.NMax       := 5;
-  Result.Pop        := 6;
+  Result.NMax       := ANMax;
+  Result.Pop        := APop;
   Result.Tolerance  := 0;
   Result.Vmax       := 0.3;
   Result.JammingMax := 100;
@@ -558,6 +581,216 @@ begin
     Assert.AreEqual(Single(G_GRAD), Reported.C[1], 1E-4,
       Format('the frozen gradient must survive the fit, got %g instead of %g',
         [Reported.C[1], G_GRAD]));
+  finally
+    PSO.Free;
+  end;
+end;
+
+{ The same graded, fully frozen Si/Mo stack, but with a free capping layer on
+  top of it. This is the workflow the freeze feature exists for: pin the part
+  of the structure you already trust and let the rest move. Because the cap is
+  free, a particle other than the seeded leader X[0] wins FindTheBest, and
+  abest then carries THAT particle's copy of the frozen gradient. }
+function TTestLFPSOPoly.MakePartlyFrozenStructure: TFitStructure;
+var
+  p: Integer;
+begin
+  SetLength(Result.Stacks, 2);
+
+  { Stack 0 - the graded multilayer, every parameter frozen. }
+  Result.Stacks[0].ID := 0;
+  Result.Stacks[0].N  := G_PERIODS;
+  SetLength(Result.Stacks[0].Layers, 2);
+
+  Result.Stacks[0].Layers[0].Material := 'Si';
+  Result.Stacks[0].Layers[0].StackID  := 0;
+  Result.Stacks[0].Layers[0].LayerID  := 0;
+  Result.Stacks[0].Layers[0].P[1].V   := G_H1;
+  Result.Stacks[0].Layers[0].P[2].V   := G_S1;
+  Result.Stacks[0].Layers[0].P[3].V   := G_R1;
+
+  Result.Stacks[0].Layers[1].Material := 'Mo';
+  Result.Stacks[0].Layers[1].StackID  := 0;
+  Result.Stacks[0].Layers[1].LayerID  := 1;
+  Result.Stacks[0].Layers[1].P[1].V   := G_H2;
+  Result.Stacks[0].Layers[1].P[2].V   := G_S2;
+  Result.Stacks[0].Layers[1].P[3].V   := G_R2;
+
+  for p := 1 to 3 do
+  begin
+    Result.Stacks[0].Layers[0].P[p].min   := 0.5;
+    Result.Stacks[0].Layers[0].P[p].max   := 60.0;
+    Result.Stacks[0].Layers[0].P[p].Fixed := True;
+    Result.Stacks[0].Layers[1].P[p].min   := 0.5;
+    Result.Stacks[0].Layers[1].P[p].max   := 60.0;
+    Result.Stacks[0].Layers[1].P[p].Fixed := True;
+  end;
+
+  { Stack 1 - the cap, free, and deliberately started well off the truth so
+    the swarm has somewhere to go. N = 1, so it comes after the periodic stack
+    and never reaches GetPolynomes' indexing branch. }
+  Result.Stacks[1].ID := 1;
+  Result.Stacks[1].N  := 1;
+  SetLength(Result.Stacks[1].Layers, 1);
+  Result.Stacks[1].Layers[0].Material := 'C';
+  Result.Stacks[1].Layers[0].StackID  := 1;
+  Result.Stacks[1].Layers[0].LayerID  := 0;
+
+  Result.Stacks[1].Layers[0].P[1].V   := P_CAP_START;
+  Result.Stacks[1].Layers[0].P[1].min := 10.0;
+  Result.Stacks[1].Layers[0].P[1].max := 60.0;
+  Result.Stacks[1].Layers[0].P[2].V   := P_CAP_S;
+  Result.Stacks[1].Layers[0].P[2].min := 1.0;
+  Result.Stacks[1].Layers[0].P[2].max := 6.0;
+  Result.Stacks[1].Layers[0].P[3].V   := P_CAP_R;
+  Result.Stacks[1].Layers[0].P[3].min := 1.5;
+  Result.Stacks[1].Layers[0].P[3].max := 3.0;
+
+  Result.Subs.Material := 'Si';
+  Result.Subs.P[1].New(0);
+  Result.Subs.P[2].New(G_SUB_S);
+  Result.Subs.P[3].New(G_SUB_R);
+end;
+
+function TTestLFPSOPoly.MakePartlyFrozenProfiles: TProfileFunctions;
+begin
+  SetLength(Result, 1);
+  Result[0].Func    := ffPoly;
+  Result[0].Subj    := ptH;
+  Result[0].StackID := 0;
+  Result[0].LayerID := 0;
+  Result[0].C       := [G_H1, P_GRAD];
+end;
+
+{ The measurement for the partly frozen fit: the graded stack exactly as it is
+  frozen, under a cap of the thickness the fit has to find. }
+function TTestLFPSOPoly.MakePartlyFrozenExpData(const ACalcParams: TCalcThreadParams): TDataArray;
+var
+  Calc: TCalc;
+  Model: TLayeredModel;
+  Data, CapData, SubData: TLayersData;
+  j: Integer;
+begin
+  Model := TLayeredModel.Create;
+  Model.Init;
+
+  SetLength(Data, 2);
+  Data[0].Material := 'Si';
+  Data[0].StackID  := 0;
+  Data[0].LayerID  := 0;
+  Data[1].Material := 'Mo';
+  Data[1].StackID  := 0;
+  Data[1].LayerID  := 1;
+  Data[1].P[1].New(G_H2);
+  Data[1].P[2].New(G_S2);
+  Data[1].P[3].New(G_R2);
+
+  for j := 1 to G_PERIODS do
+  begin
+    Data[0].P[1].New(G_H1 + P_GRAD * (j - 1));
+    Data[0].P[2].New(G_S1);
+    Data[0].P[3].New(G_R1);
+    Model.AddLayers(-1, Data);
+  end;
+
+  SetLength(CapData, 1);
+  CapData[0].Material := 'C';
+  CapData[0].StackID  := 1;
+  CapData[0].LayerID  := 0;
+  CapData[0].P[1].New(P_CAP_TRUE);
+  CapData[0].P[2].New(P_CAP_S);
+  CapData[0].P[3].New(P_CAP_R);
+  Model.AddLayers(-1, CapData);
+
+  SetLength(SubData, 1);
+  SubData[0].Material := 'Si';
+  SubData[0].P[1].New(0);
+  SubData[0].P[2].New(G_SUB_S);
+  SubData[0].P[3].New(G_SUB_R);
+  Model.AddSubstrate(SubData);
+
+  Calc := TCalc.Create;
+  try
+    Calc.MaxThreads := 1;
+    Calc.Params := ACalcParams;
+    Calc.Limit  := 1E-7;
+    Calc.Model  := Model;
+    Calc.Run;
+    Result := Copy(Calc.Results);
+  finally
+    Calc.Model := nil;
+    Calc.Free;
+    Model.Free;
+  end;
+end;
+
+{ Freeze a graded stack but leave a cap free, and the leader no longer protects
+  the gradient: a free particle wins FindTheBest and abest is ITS solution. The
+  gradient therefore has to survive inside every particle, not just X[0] - which
+  is what CheckLimitsP's empty-range guard is for. Without that guard the range
+  walk zeroes the higher orders of every particle it touches, so abest comes
+  back flat and, worse, every chi square from iteration 1 on is computed against
+  a flattened model. }
+procedure TTestLFPSOPoly.Test_SeededGradient_SurvivesAPartlyFrozenFit;
+var
+  PSO: TTestablePoly;
+  CalcParams: TCalcThreadParams;
+  S: TFitStructure;
+  Final: TFitStructure;
+  Reported: TFuncProfileRec;
+begin
+  if not TablesReady then
+  begin
+    Assert.Pass('Henke tables for Si and Mo are not installed: ' + HENKE_DB_PATH);
+    Exit;
+  end;
+
+  CalcParams := MakeCalcParams;
+  S := MakePartlyFrozenStructure;
+  CollapseFixed(S);
+
+  PSO := TTestablePoly.Create;
+  try
+    PSO.Params           := MakeParams(1, P_NMAX, P_POP);
+    PSO.Limit            := 1E-7;
+    PSO.ExpValues        := MakePartlyFrozenExpData(CalcParams);
+    PSO.Seed             := P_SEED;
+    PSO.InitialPolynomes := MakePartlyFrozenProfiles;
+    PSO.Structure        := S;
+
+    PSO.Run(CalcParams);
+
+    Final := PSO.GetStructure;
+
+    { The precondition, asserted rather than assumed: a particle other than the
+      seeded leader won, and won by improving the free parameter. X[0] holds
+      the cap at P_CAP_START and, being the leader, never moves off it, so a
+      cap nearer the truth can only have come from another particle's solution.
+      Without the empty-range guard this is exactly what cannot happen: the
+      leader is the only particle that still carries the gradient, nothing can
+      out-score it, pbest and gbest stay pinned to it, and the swarm converges
+      back onto the starting cap instead of the right one. }
+    Assert.IsTrue(Abs(Final.Stacks[1].Layers[0].P[1].V - P_CAP_START) > 1E-3,
+      Format('a free particle must have won the fit: the cap is still at its ' +
+        'starting %g, so abest is the leader''s own solution',
+        [Final.Stacks[1].Layers[0].P[1].V]));
+
+    { The frozen constants are untouched, as an empty range demands. }
+    Assert.AreEqual(Single(G_H1), Final.Stacks[0].Layers[0].P[1].V, 1E-4,
+      'the frozen Si thickness stayed put');
+    Assert.AreEqual(Single(G_H2), Final.Stacks[0].Layers[1].P[1].V, 1E-4,
+      'the frozen Mo thickness stayed put');
+
+    { And so is the gradient. }
+    Reported := FindPoly(PSO.GetPoly, 0, 0, ptH);
+    Assert.IsTrue(Length(Reported.C) >= 2,
+      Format('the fit must report a polynomial, got %d coefficients',
+        [Length(Reported.C)]));
+    Assert.AreEqual(Single(G_H1), Reported.C[0], 1E-4,
+      'the frozen constant term comes back untouched');
+    Assert.AreEqual(Single(P_GRAD), Reported.C[1], 1E-4,
+      Format('the frozen gradient must survive a fit won by another particle, ' +
+        'got %g instead of %g', [Reported.C[1], P_GRAD]));
   finally
     PSO.Free;
   end;

@@ -30,7 +30,11 @@ free parameters on the values the last fit reached.
   graded stack fitted it flat. The engine now loads the layer's existing depth
   profile back in first: `TLFPSO_Poly.InitialPolynomes` carries the model's
   `TProfileFunctions` and `SeedInitialPoly` copies orders >= 1 into
-  `X[0]`, matching profiles to layers by `StackID`/`LayerID`/`Subj`. Freezing
+  `X[0]`, matching profiles to layers by `StackID`/`LayerID`/`Subj`, and
+  `CheckLimitsP` recognises the empty range and holds every particle's whole
+  polynomial on that seed instead of range-checking it - its span across the
+  periods would otherwise read as out of range against a single point, and the
+  walk that follows would zero the higher orders again. Freezing
   therefore pins the gradient the user can see, and a resumed fit continues
   from it. In Periodic mode the period is held
   unless `SetPeriodRange` opens it, which the GUI never calls.
