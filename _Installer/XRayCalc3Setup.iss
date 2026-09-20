@@ -38,6 +38,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "deploy\Win64\XRayCalc3.x64.exe";          DestDir: "{app}"; Flags: ignoreversion
 Source: "deploy\Win32\XRayCalc3.exe";               DestDir: "{app}"; Flags: ignoreversion
 
+; --- MCP server for LLM agents (Win64 console; register with "claude mcp add") ---
+Source: "deploy\Win64\XRC_MCP.exe";                 DestDir: "{app}"; Flags: ignoreversion
+
 ; --- Shared data files ---
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
 Source: "deploy\Examples\*";                         DestDir: "{app}\Examples";          Flags: ignoreversion
