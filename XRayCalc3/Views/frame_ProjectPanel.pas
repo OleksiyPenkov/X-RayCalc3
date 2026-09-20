@@ -1,4 +1,4 @@
-unit frame_ProjectPanel;
+﻿unit frame_ProjectPanel;
 
 interface
 
@@ -808,8 +808,25 @@ begin
 
   if FProject.ActiveModel = nil then
   begin
+    { Falling back to the first model because [STATE] ActiveModel named none of
+      them. It has to leave behind everything the matching branch above leaves
+      behind, not just the two the chart needs.
+
+      FLastModel is the node HasFitExtensions, ClearFitExtensions and both
+      gradient writers walk from. Left nil, HasFitExtensions exits False on its
+      nil guard, so RunFitting never offers to keep or clear an earlier fit's
+      gradients and CreateFitGradientExtensions hangs the new ones off the tree
+      root via AddChild(nil). FLastData would otherwise still point into the
+      previous project's node memory, freed by the LoadFromFile above.
+
+      Selecting the node cannot stand in for this: LoadProject holds
+      IgnoreFocusChange for the whole of RecoverProjectTree, and ProjectChange
+      exits on Node = LastNode in any case, because LastNode is assigned here
+      before the selection is made. }
     LastNode := First;
+    FLastModel := First;
     FProject.ActiveModel := FProject.GetNodeData(First);
+    FLastData := FProject.ActiveModel;
   end;
 
   inc(FLastID);
