@@ -8,7 +8,7 @@ object frmLimits: TfrmLimits
   BorderStyle = bsDialog
   Caption = 'Fitting Limits'
   ClientHeight = 476
-  ClientWidth = 569
+  ClientWidth = 666
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -24,7 +24,7 @@ object frmLimits: TfrmLimits
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 563
+    Width = 660
     Height = 423
     Margins.Left = 3
     Margins.Top = 3
@@ -90,7 +90,7 @@ object frmLimits: TfrmLimits
       AlignWithMargins = True
       Left = 5
       Top = 5
-      Width = 553
+      Width = 650
       Height = 366
       Margins.Left = 3
       Margins.Top = 3
@@ -104,6 +104,11 @@ object frmLimits: TfrmLimits
         end
         item
           Alignment = taCenter
+          Caption = 'Fix'
+          Width = 30
+        end
+        item
+          Alignment = taCenter
           Caption = 'Hmin'
           Width = 70
         end
@@ -114,6 +119,11 @@ object frmLimits: TfrmLimits
         end
         item
           Alignment = taCenter
+          Caption = 'Fix'
+          Width = 30
+        end
+        item
+          Alignment = taCenter
           Caption = 'Smin'
           Width = 70
         end
@@ -121,6 +131,11 @@ object frmLimits: TfrmLimits
           Alignment = taCenter
           Caption = 'Smax'
           Width = 70
+        end
+        item
+          Alignment = taCenter
+          Caption = 'Fix'
+          Width = 30
         end
         item
           Alignment = taCenter
@@ -201,7 +216,7 @@ object frmLimits: TfrmLimits
       Text = '0.25'
     end
     object btnInit: TBitBtn
-      Left = 216
+      Left = 336
       Top = 391
       Width = 75
       Height = 25
@@ -216,7 +231,7 @@ object frmLimits: TfrmLimits
       OnClick = btnInitClick
     end
     object btnNarrow: TBitBtn
-      Left = 296
+      Left = 416
       Top = 391
       Width = 75
       Height = 25
@@ -231,7 +246,7 @@ object frmLimits: TfrmLimits
       OnClick = btnNarrowClick
     end
     object btnWiden: TBitBtn
-      Left = 376
+      Left = 496
       Top = 391
       Width = 75
       Height = 25
@@ -246,7 +261,7 @@ object frmLimits: TfrmLimits
       OnClick = btnWidenClick
     end
     object btnFix: TBitBtn
-      Left = 456
+      Left = 576
       Top = 391
       Width = 75
       Height = 25
@@ -265,7 +280,7 @@ object frmLimits: TfrmLimits
     AlignWithMargins = True
     Left = 3
     Top = 432
-    Width = 563
+    Width = 660
     Height = 41
     Margins.Left = 3
     Margins.Top = 3
@@ -277,7 +292,7 @@ object frmLimits: TfrmLimits
     TabOrder = 1
     Color = 15987699
     object btnSet: TRzBitBtn
-      Left = 473
+      Left = 570
       Top = 8
       Width = 75
       Height = 25

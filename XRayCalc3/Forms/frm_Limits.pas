@@ -56,12 +56,16 @@ type
     FDPI: integer;
     FIssues: TArray<TLimitIssue>;
 
+    function FreezeParamOf(const Column: Integer): Integer;
+    function LimitCellOf(const Column: Integer): Integer;
+
     procedure UserEditListView( Var Message: TMessage ); message USER_EDITLISTVIEW;
     procedure ListViewEditorExit(Sender: TObject);
     procedure EditorKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure StructureToView;
     procedure StructureFromView;
     procedure RunValidation;
+    procedure ToggleFreezeAt(Item: TListItem; const ParamIndex: Integer);
   public
     { Public declarations }
 
@@ -80,6 +84,31 @@ uses
 
 var
   EDIT_COLUMN: integer;
+
+{ Columns run Layer, then (Fix, min, max) per parameter. Returns 1..3 for a
+  freeze column, 0 for anything else. Column is 1-based, as OnCustomDrawSubItem
+  and the hit test both report it. }
+function TfrmLimits.FreezeParamOf(const Column: Integer): Integer;
+begin
+  if (Column >= 1) and ((Column - 1) mod 3 = 0) then
+    Result := (Column - 1) div 3 + 1
+  else
+    Result := 0;
+end;
+
+{ The index CellState expects: 0..5 over (Hmin, Hmax, Smin, Smax, Rmin, Rmax),
+  or -1 for a freeze column, which carries no limit and is never validated. }
+function TfrmLimits.LimitCellOf(const Column: Integer): Integer;
+var
+  Group, Pos: Integer;
+begin
+  Group := (Column - 1) div 3;
+  Pos := (Column - 1) mod 3;
+  if Pos = 0 then
+    Result := -1
+  else
+    Result := Group * 2 + (Pos - 1);
+end;
 
 procedure TfrmLimits.btnInitClick(Sender: TObject);
 var
@@ -124,7 +153,7 @@ begin
   begin
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      Count := 0;
+      Count := 1;
       for p := 1 to 3 do
       begin
         if (p = 3) and (Index <= High(NroValues)) and (NroValues[Index] > 0) then
@@ -138,7 +167,7 @@ begin
           ListView.Items[Index].SubItems[Count] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, -dP[p]);
           ListView.Items[Index].SubItems[Count + 1] := Convert(FStructure.Stacks[i].Layers[j].P[p].V, dP[p]);
         end;
-        Inc(Count, 2);
+        Inc(Count, 3);
       end;
       Inc(Index);
     end;
@@ -206,19 +235,34 @@ procedure TfrmLimits.ListViewClick(Sender: TObject);
 var
   LPoint: TPoint;
   LVHitTestInfo: TLVHitTestInfo;
+  P: Integer;
 
-  function GetColumns(const X: integer):integer;
+  function GetColumns(const X: integer): integer;
   var
-    Pos: integer;
+    i, Edge: integer;
   begin
-    Pos := (X - ListView.Columns[0].Width) div ListView.Columns[1].Width + 1;
-    Result := Pos; //MulDiv(Pos, 96, FDPI);
+    Edge := 0;
+    for i := 0 to ListView.Columns.Count - 1 do
+    begin
+      Inc(Edge, ListView.Columns[i].Width);
+      if X < Edge then
+        Exit(i);
+    end;
+    Result := -1;
   end;
 
 begin
   LPoint:= ListView.ScreenToClient(Mouse.CursorPos);
 
   EDIT_COLUMN := GetColumns(LPoint.X);
+
+  P := FreezeParamOf(EDIT_COLUMN);
+  if P > 0 then
+  begin
+    ListViewEditor.Visible := False;
+    ToggleFreezeAt(ListView.GetItemAt(LPoint.X, LPoint.Y), P);
+    Exit;
+  end;
 
   ZeroMemory( @LVHitTestInfo, SizeOf(LVHitTestInfo));
   LVHitTestInfo.pt := LPoint;
@@ -229,9 +273,31 @@ begin
     ListViewEditor.Visible:=False; //hide the TEdit
 end;
 
+procedure TfrmLimits.ToggleFreezeAt(Item: TListItem; const ParamIndex: Integer);
+var
+  i, j, Index: Integer;
+begin
+  if Item = nil then
+    Exit;
+
+  Index := 0;
+  for i := 0 to High(FStructure.Stacks) do
+    for j := 0 to High(FStructure.Stacks[i].Layers) do
+    begin
+      if Index = Item.Index then
+      begin
+        with FStructure.Stacks[i].Layers[j].P[ParamIndex] do
+          Fixed := not Fixed;
+        StructureToView;
+        Exit;
+      end;
+      Inc(Index);
+    end;
+end;
+
 procedure TfrmLimits.ListViewEditorExit(Sender: TObject);
 begin
-  If Assigned(LItem) Then
+  If Assigned(LItem) and (FreezeParamOf(EDIT_COLUMN) = 0) Then
   Begin
     //assign the vslue of the TEdit to the Subitem
     LItem.SubItems[ EDIT_COLUMN-1 ] := ListViewEditor.Text;
@@ -267,6 +333,10 @@ begin
 
       for p := 1 to 3 do
       begin
+        if FStructure.Stacks[i].Layers[j].P[p].Fixed then
+          ListItem.SubItems.Add('X')
+        else
+          ListItem.SubItems.Add('');
         ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].min, ffFixed, 5, 2));
         ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].max, ffFixed, 5, 2));
       end;
@@ -286,12 +356,12 @@ begin
   begin
     for j := 0 to High(FStructure.Stacks[i].Layers) do
     begin
-      Count := 0;
+      Count := 1;
       for p := 1 to 3 do
       begin
         FStructure.Stacks[i].Layers[j].P[p].min := StrToFloat(ListView.Items[Index].SubItems[Count]);
         FStructure.Stacks[i].Layers[j].P[p].max := StrToFloat(ListView.Items[Index].SubItems[Count + 1]);
-        Inc(Count, 2);
+        Inc(Count, 3);
       end;
       Inc(Index);
     end;
@@ -365,11 +435,21 @@ procedure TfrmLimits.ListViewCustomDrawSubItem(Sender: TCustomListView;
   var DefaultDraw: Boolean);
 var
   Kind: TLimitIssueKind;
+  Cell: Integer;
 begin
   if SubItem < 1 then
     Exit;
 
-  Kind := CellState(FIssues, Item.Index, SubItem - 1);
+  if Item.SubItems[((SubItem - 1) div 3) * 3] = 'X' then
+    Sender.Canvas.Font.Color := clGrayText
+  else
+    Sender.Canvas.Font.Color := clWindowText;
+
+  Cell := LimitCellOf(SubItem);
+  if Cell < 0 then
+    Exit;
+
+  Kind := CellState(FIssues, Item.Index, Cell);
 
   case Kind of
     likError:
