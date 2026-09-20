@@ -56,6 +56,10 @@ type
     [Test] procedure Test_CollapseFixed_PinsFrozenParam;
     [Test] procedure Test_CollapseFixed_LeavesFreeParam;
     [Test] procedure Test_CollapseFixed_HandlesSubstrate;
+    [Test] procedure Test_Frozen_NotValidated;
+    [Test] procedure Test_Frozen_NotNarrowed;
+    [Test] procedure Test_Frozen_NotWidened;
+    [Test] procedure Test_Frozen_NotClamped;
   end;
 
 implementation
@@ -910,6 +914,61 @@ begin
 
   Assert.AreEqual(3.0, FS.Subs.P[2].min, 1e-6, 'substrate min pinned');
   Assert.AreEqual(3.0, FS.Subs.P[2].max, 1e-6, 'substrate max pinned');
+end;
+
+procedure TTestValidateLimits.Test_Frozen_NotValidated;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+begin
+  FS := MakeStructure(1);
+  // A range that would certainly be reported if it were free.
+  FS.Stacks[0].Layers[0].P[1].min := 20.0;
+  FS.Stacks[0].Layers[0].P[1].max := 5.0;
+  FS.Stacks[0].Layers[0].P[1].Fixed := True;
+
+  Issues := ValidateLimits(FS);
+
+  Assert.AreEqual(0, Length(Issues), 'a frozen parameter is not validated');
+end;
+
+procedure TTestValidateLimits.Test_Frozen_NotNarrowed;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].Fixed := True;
+
+  NarrowLimits(FS, 0.5);
+
+  Assert.AreEqual(5.0, FS.Stacks[0].Layers[0].P[1].min, 1e-6, 'min untouched');
+  Assert.AreEqual(15.0, FS.Stacks[0].Layers[0].P[1].max, 1e-6, 'max untouched');
+end;
+
+procedure TTestValidateLimits.Test_Frozen_NotWidened;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 15.0;   // hard against max, would widen
+  FS.Stacks[0].Layers[0].P[1].Fixed := True;
+
+  WidenAtLimit(FS, 0.5);
+
+  Assert.AreEqual(15.0, FS.Stacks[0].Layers[0].P[1].max, 1e-6, 'max untouched');
+end;
+
+procedure TTestValidateLimits.Test_Frozen_NotClamped;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[2].min := -3.0;  // would be clamped to 0 if free
+  FS.Stacks[0].Layers[0].P[2].Fixed := True;
+
+  ClampToPhysics(FS);
+
+  Assert.AreEqual(-3.0, FS.Stacks[0].Layers[0].P[2].min, 1e-6, 'min untouched');
 end;
 
 end.

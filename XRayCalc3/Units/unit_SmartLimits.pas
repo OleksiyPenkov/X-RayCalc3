@@ -88,6 +88,9 @@ begin
 
       for p := 1 to 3 do
       begin
+        if Structure.Stacks[i].Layers[j].P[p].Fixed then
+          Continue;
+
         FV := Structure.Stacks[i].Layers[j].P[p];
 
         if FV.min <> FV.max then
@@ -160,6 +163,9 @@ begin
     for j := 0 to High(Structure.Stacks[i].Layers) do
       for p := 1 to 3 do
       begin
+        if Structure.Stacks[i].Layers[j].P[p].Fixed then
+          Continue;
+
         // H and S: min >= 0
         if p in [1, 2] then
         begin
@@ -256,6 +262,12 @@ begin
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
+      if Structure.Stacks[i].Layers[j].P[3].Fixed then
+      begin
+        Inc(Index);
+        Continue;
+      end;
+
       if (Index <= High(NroValues)) and (NroValues[Index] > 0) and
          (Structure.Stacks[i].Layers[j].P[3].V = 0) then
         Structure.Stacks[i].Layers[j].P[3].V := NroValues[Index];
@@ -271,6 +283,9 @@ begin
     for j := 0 to High(Structure.Stacks[i].Layers) do
       for p := 1 to 3 do
       begin
+        if Structure.Stacks[i].Layers[j].P[p].Fixed then
+          Continue;
+
         // Skip locked params (min == max)
         if Structure.Stacks[i].Layers[j].P[p].min = Structure.Stacks[i].Layers[j].P[p].max then
           Continue;
@@ -292,6 +307,9 @@ begin
     for j := 0 to High(Structure.Stacks[i].Layers) do
       for p := 1 to 3 do
       begin
+        if Structure.Stacks[i].Layers[j].P[p].Fixed then
+          Continue;
+
         with Structure.Stacks[i].Layers[j].P[p] do
         begin
           if (min = max) or (max <= min) then
@@ -317,6 +335,9 @@ begin
     for j := 0 to High(Structure.Stacks[i].Layers) do
       for p := 1 to 3 do
       begin
+        if Structure.Stacks[i].Layers[j].P[p].Fixed then
+          Continue;
+
         // Fix inverted min/max
         if Structure.Stacks[i].Layers[j].P[p].min > Structure.Stacks[i].Layers[j].P[p].max then
         begin
@@ -344,6 +365,9 @@ begin
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
     begin
+      if Structure.Stacks[i].Layers[j].P[2].Fixed then
+        Continue;
+
       H_self := Structure.Stacks[i].Layers[j].P[1].V;
 
       if j > 0 then
