@@ -357,8 +357,12 @@ var
 begin
   if FFitThread <> nil then Exit;
 
-  FKeepExtensions := False;
-  if (not FBenchmarkMode) and FProjectPanel.HasFitExtensions then
+  { A resume continues from the extensions the last run produced - they are
+    its starting point, not stale leftovers. Asking whether to clear them
+    makes no sense there, and clearing them would throw away the depth
+    profiles the polynomial fit is seeded from. Keep them, silently. }
+  FKeepExtensions := Resume;
+  if (not Resume) and (not FBenchmarkMode) and FProjectPanel.HasFitExtensions then
     case ConfirmStaleExtensions of
       seaCancel: Exit;
       seaClear:  FProjectPanel.ClearFitExtensions;
