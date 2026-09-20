@@ -7,7 +7,8 @@ uses
   unit_Types,
   unit_materials,
   unit_LFPSO_Base,
-  unit_LFPSO_Irregular;
+  unit_LFPSO_Irregular,
+  unit_SmartLimits;
 
 type
   TTestableIrregular = class(TLFPSO_Irregular)
@@ -33,6 +34,10 @@ type
     procedure TestXSeed;
     procedure TestRangeSeed;
     procedure TestSetParams(const Value: TFitParams);
+
+    function TestXMin(const LIndex, PIndex: Integer): Single;
+    function TestXMax(const LIndex, PIndex: Integer): Single;
+    function TestXRange(const LIndex, PIndex: Integer): Single;
   end;
 
   [TestFixture]
@@ -69,6 +74,9 @@ type
     { RangeSeed }
     [Test] procedure Test_RangeSeed_LinkedLayersCopied;
     [Test] procedure Test_RangeSeed_UnlinkedWithinBounds;
+
+    { Fixed parameters — Task 2: CollapseFixed pins an empty range }
+    [Test] procedure Test_FrozenParam_HasEmptyDomain;
   end;
 
 implementation
@@ -102,6 +110,21 @@ begin RangeSeed; end;
 
 procedure TTestableIrregular.TestSetParams(const Value: TFitParams);
 begin SetParams(Value); end;
+
+function TTestableIrregular.TestXMin(const LIndex, PIndex: Integer): Single;
+begin
+  Result := Xmin[0][LIndex][PIndex][0];
+end;
+
+function TTestableIrregular.TestXMax(const LIndex, PIndex: Integer): Single;
+begin
+  Result := Xmax[0][LIndex][PIndex][0];
+end;
+
+function TTestableIrregular.TestXRange(const LIndex, PIndex: Integer): Single;
+begin
+  Result := Xrange[0][LIndex][PIndex][0];
+end;
 
 { TTestLFPSOIrregular — helpers }
 
@@ -378,6 +401,27 @@ begin
         Assert.IsTrue((v >= lo - 1E-3) and (v <= hi + 1E-3),
           Format('X[%d][%d][%d] = %g not in [%g..%g]', [i, j, k, v, lo, hi]));
       end;
+end;
+
+{ Fixed parameters — Task 2 }
+
+procedure TTestLFPSOIrregular.Test_FrozenParam_HasEmptyDomain;
+var
+  Inp: TFitStructure;
+begin
+  Inp := MakeIrregularStructure_Simple;
+  Inp.Stacks[0].Layers[0].P[1].V := 13.0;
+  Inp.Stacks[0].Layers[0].P[1].min := 10.0;
+  Inp.Stacks[0].Layers[0].P[1].max := 16.0;
+  Inp.Stacks[0].Layers[0].P[1].Fixed := True;
+
+  CollapseFixed(Inp);
+  FPSO.TestSetParams(MakeParams);
+  FPSO.TestSetStructure(Inp);
+
+  Assert.AreEqual(Single(13.0), FPSO.TestXMin(0, 1), 1E-6, 'lower bound pinned to V');
+  Assert.AreEqual(Single(13.0), FPSO.TestXMax(0, 1), 1E-6, 'upper bound pinned to V');
+  Assert.AreEqual(Single(0.0), FPSO.TestXRange(0, 1), 1E-6, 'empty range');
 end;
 
 end.
