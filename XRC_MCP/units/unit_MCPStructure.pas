@@ -92,7 +92,7 @@ function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo): TFit
 function StructureToJSON(const S: TFitStructure; const Info: TStructureInfo): TJSONObject;
 
 /// <summary>The GUI's TXRCStructure.ToString format ("Stacks" / "Subs" with the
-/// 16 H, HP, Hmin, ... keys per layer).</summary>
+/// 19 H, HP, HF, Hmin, ... keys per layer).</summary>
 function StructureToXRCData(const S: TFitStructure; const Info: TStructureInfo): string;
 
 /// <summary>The GUI's TXRCStructure.FromString without the controls. Derives
@@ -522,6 +522,7 @@ begin
         begin
           JLayer.AddPair(PAlias[p], Data.P[p].V);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'F', Data.P[p].Fixed);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
           JLayer.AddPair('Profile' + UpperCase(PAlias[p]),
@@ -644,6 +645,7 @@ begin
         begin
           Result.Stacks[i].Layers[j].P[p].V := JLayer.GetValue<Single>(PAlias[p]);
           Result.Stacks[i].Layers[j].P[p].Paired := DataBool(JLayer, UpperCase(PAlias[p]) + 'P');
+          Result.Stacks[i].Layers[j].P[p].Fixed := DataBool(JLayer, UpperCase(PAlias[p]) + 'F');
           Result.Stacks[i].Layers[j].P[p].min := DataValue(JLayer,
             UpperCase(PAlias[p]) + 'min', Result.Stacks[i].Layers[j].P[p].V);
           Result.Stacks[i].Layers[j].P[p].max := DataValue(JLayer,

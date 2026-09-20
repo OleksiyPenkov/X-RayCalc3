@@ -20,7 +20,9 @@ type
     [Test] procedure FromJSON_NegativeThickness_Raises;
     [Test] procedure ToJSON_RoundTrip;
     [Test] procedure XRCData_RoundTrip;
-    [Test] procedure XRCData_HasAllSixteenLayerKeys;
+    [Test] procedure XRCData_HasAllNineteenLayerKeys;
+    [Test] procedure XRCData_RoundTripsFixed;
+    [Test] procedure XRCData_MissingFixedKeyIsThawed;
     [Test] procedure BuildLayeredModel_LayerCount;
     [Test] procedure BuildLayeredModel_TopLayerIsCap;
     // fix round 1
@@ -50,6 +52,14 @@ const
   FAT_CAP_XRC = '{"Stacks":[{"T":"Cap","N":3,"Layers":[' +
     '{"M":"Ru","H":10.0,"s":3.0,"r":12.4},' +
     '{"M":"C","H":20.0,"s":3.0,"r":2.2}]}],' +
+    '"Subs":{"M":"Si","s":2.0,"r":0.0}}';
+
+  // a project written before the Fixed flag existed: H/HP/Hmin/Hmax (and the
+  // s/r equivalents) are all present, but there is no HF/SF/RF anywhere.
+  LEGACY_XRCDATA_JSON = '{"Stacks":[{"T":"ML","N":10,"Layers":[' +
+    '{"M":"Ru","H":10.0,"HP":false,"Hmin":8.0,"Hmax":12.0,"ProfileH":"",' +
+    '"s":3.0,"SP":false,"Smin":1.0,"Smax":5.0,"ProfileS":"",' +
+    '"r":12.4,"RP":false,"Rmin":10.0,"Rmax":14.0,"ProfileR":""}]}],' +
     '"Subs":{"M":"Si","s":2.0,"r":0.0}}';
 
 function TTestMCPStructure.Parse(const S: string): TJSONObject;
@@ -297,12 +307,12 @@ begin
     Assert.AreEqual(I1.StackMap[i], I2.StackMap[i]);
 end;
 
-procedure TTestMCPStructure.XRCData_HasAllSixteenLayerKeys;
+procedure TTestMCPStructure.XRCData_HasAllNineteenLayerKeys;
 const
-  KEYS: array [0..15] of string = ('M',
-    'H', 'HP', 'Hmin', 'Hmax', 'ProfileH',
-    's', 'SP', 'Smin', 'Smax', 'ProfileS',
-    'r', 'RP', 'Rmin', 'Rmax', 'ProfileR');
+  KEYS: array [0..18] of string = ('M',
+    'H', 'HP', 'HF', 'Hmin', 'Hmax', 'ProfileH',
+    's', 'SP', 'SF', 'Smin', 'Smax', 'ProfileS',
+    'r', 'RP', 'RF', 'Rmin', 'Rmax', 'ProfileR');
 var
   J, JRoot, JLayer: TJSONObject;
   S: TFitStructure;
@@ -325,7 +335,7 @@ begin
     Assert.IsNotNull(JLayer);
     for k := 0 to High(KEYS) do
       Assert.IsNotNull(JLayer.FindValue(KEYS[k]), 'missing layer key "' + KEYS[k] + '"');
-    Assert.AreEqual(16, JLayer.Count, 'exactly the 16 GUI layer keys');
+    Assert.AreEqual(19, JLayer.Count, 'exactly the 19 GUI layer keys');
 
     Assert.IsNotNull(JRoot.GetValue<TJSONObject>('Subs').FindValue('M'));
     Assert.IsNotNull(JRoot.GetValue<TJSONObject>('Subs').FindValue('s'));
@@ -333,6 +343,44 @@ begin
   finally
     JRoot.Free;
   end;
+end;
+
+procedure TTestMCPStructure.XRCData_RoundTripsFixed;
+var
+  J: TJSONObject;
+  S, Back: TFitStructure;
+  Info, InfoBack: TStructureInfo;
+  Data: string;
+begin
+  J := Parse(RUC_JSON);
+  try
+    S := StructureFromJSON(J, Info);
+  finally
+    J.Free;
+  end;
+
+  S.Stacks[1].Layers[0].P[1].Fixed := True;
+  S.Stacks[1].Layers[0].P[3].Fixed := True;
+
+  Data := StructureToXRCData(S, Info);
+  Back := StructureFromXRCData(Data, InfoBack);
+
+  Assert.IsTrue(Back.Stacks[1].Layers[0].P[1].Fixed, 'H stays frozen');
+  Assert.IsFalse(Back.Stacks[1].Layers[0].P[2].Fixed, 'sigma stays free');
+  Assert.IsTrue(Back.Stacks[1].Layers[0].P[3].Fixed, 'rho stays frozen');
+end;
+
+procedure TTestMCPStructure.XRCData_MissingFixedKeyIsThawed;
+var
+  Back: TFitStructure;
+  Info: TStructureInfo;
+begin
+  // A project written before the flag existed: no HF/SF/RF anywhere.
+  Back := StructureFromXRCData(LEGACY_XRCDATA_JSON, Info);
+
+  Assert.IsFalse(Back.Stacks[0].Layers[0].P[1].Fixed, 'absent key means thawed');
+  Assert.IsFalse(Back.Stacks[0].Layers[0].P[2].Fixed);
+  Assert.IsFalse(Back.Stacks[0].Layers[0].P[3].Fixed);
 end;
 
 procedure TTestMCPStructure.BuildLayeredModel_LayerCount;
