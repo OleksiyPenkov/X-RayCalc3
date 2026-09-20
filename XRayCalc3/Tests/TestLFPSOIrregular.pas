@@ -75,7 +75,7 @@ type
     [Test] procedure Test_RangeSeed_LinkedLayersCopied;
     [Test] procedure Test_RangeSeed_UnlinkedWithinBounds;
 
-    { Fixed parameters — Task 2: CollapseFixed pins an empty range }
+    { Fixed parameters - Task 2: CollapseFixed pins an empty range }
     [Test] procedure Test_FrozenParam_HasEmptyDomain;
   end;
 
@@ -403,7 +403,7 @@ begin
       end;
 end;
 
-{ Fixed parameters — Task 2 }
+{ Fixed parameters - Task 2 }
 
 procedure TTestLFPSOIrregular.Test_FrozenParam_HasEmptyDomain;
 var

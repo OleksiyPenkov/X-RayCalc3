@@ -38,8 +38,13 @@ new command.
 `TFitValue` (`unit_Types.pas:213`) gains `Fixed: Boolean` beside the existing
 `Paired`. `TFitValue.New` clears it. Everything downstream — `TLayerData.P[1..3]`,
 `TFitStack.Layers`, `TFitStructure.Subs`, `TFitStructure.CopyContent` — carries it
-with no further change, so the substrate's σ and ρ freeze by the same mechanism
-as any layer.
+with no further change.
+
+The substrate is **not** a fitted domain: it has no row in the limits dialog,
+which walks `Stacks` only, and `ToString`/`FromString` serialise `Subs` as
+`M`/`s`/`r` — a value each, no `min`, no `max`, no `Fixed`. `CollapseFixed` and
+`RecentreOnValue` do walk `Subs`, but only for symmetry with the layers; on a
+substrate that carries no window and no flag the work is inert.
 
 **Meaning.** `Fixed` means *this parameter does not move in the next fit*.
 `min` and `max` keep the range they had, untouched, so thawing returns exactly

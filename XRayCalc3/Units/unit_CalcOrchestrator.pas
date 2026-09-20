@@ -71,6 +71,7 @@ type
     procedure RunCalc(const Recover: Boolean);
     procedure RunFitting;
     procedure ResumeFitting;
+    procedure ModelChanged;
     procedure StopCalc;
     procedure RecalcFromStructure;
     procedure HandleFitUpdate(var Msg: TMessage);
@@ -398,6 +399,15 @@ begin
   if not FHasFitResults then
     Exit;
   StartFitting(True);
+end;
+
+{ The last fit's results belong to the model it ran on. Once another model is
+  loaded or swapped in, there is nothing to resume: Resume would slide that
+  model's windows onto its own values and write them back, which is not what
+  the user asked for. Call this wherever the live structure is replaced. }
+procedure TCalcOrchestrator.ModelChanged;
+begin
+  FHasFitResults := False;
 end;
 
 procedure TCalcOrchestrator.FinalizeFitting;

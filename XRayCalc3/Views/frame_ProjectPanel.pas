@@ -97,6 +97,9 @@ type
 
     FOnCaptionChange: TStringProc;
     FOnCalcRun: TNotifyEvent;
+    { Fired whenever the live structure is replaced by another model - a
+      project loaded or created, or a different model node focused. }
+    FOnModelChanged: TNotifyEvent;
 
     procedure CreateNewModel(Node: PVirtualNode);
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -223,6 +226,7 @@ type
 
     property OnCaptionChange: TStringProc read FOnCaptionChange write FOnCaptionChange;
     property OnCalcRun: TNotifyEvent read FOnCalcRun write FOnCalcRun;
+    property OnModelChanged: TNotifyEvent read FOnModelChanged write FOnModelChanged;
   end;
 
 implementation
@@ -1482,6 +1486,8 @@ begin
   RescaleChart;
   RefreshChartLegend;
   FChartInfo.Chart.Repaint;
+  if Assigned(FOnModelChanged) then
+    FOnModelChanged(Self);
 end;
 
 procedure TfrmProjectPanel.SaveProject(const FileName: string);
@@ -1560,6 +1566,8 @@ begin
   FProject.Rescale;
   FCalcSettings.ApplyModeSettings;
   RefreshChartLegend;
+  if Assigned(FOnModelChanged) then
+    FOnModelChanged(Self);
 end;
 
 { --- Tree event handlers --- }
@@ -1594,6 +1602,8 @@ begin
       FOperationsStack.Push(FLastData.Data);
       FProfileMgr.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
       FProfileMgr.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
+      if Assigned(FOnModelChanged) then
+        FOnModelChanged(Self);
     end;
   end;
 end;

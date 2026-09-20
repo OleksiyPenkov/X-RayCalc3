@@ -64,6 +64,9 @@ type
     [Test] procedure Test_Recentre_MovesValueOffTheWall;
     [Test] procedure Test_Recentre_SkipsFrozen;
     [Test] procedure Test_Recentre_ZeroWidthStaysPinned;
+    [Test] procedure Test_Recentre_RepeatedResumeKeepsWidthNearZero;
+    [Test] procedure Test_Recentre_KeepsWidthUnderRhoCap;
+    [Test] procedure Test_ColumnHelpers_Mapping;
   end;
 
 implementation
@@ -1030,6 +1033,79 @@ begin
 
   Assert.AreEqual(9.0, FS.Stacks[0].Layers[0].P[1].min, 1e-6);
   Assert.AreEqual(9.0, FS.Stacks[0].Layers[0].P[1].max, 1e-6);
+end;
+
+{ A roughness that has settled near zero used to lose half its window on every
+  resume: RecentreOnValue centred it on V, ClampToPhysics lifted min back to 0
+  and the width went with it. Five resumes must leave the window as wide as it
+  started. }
+procedure TTestValidateLimits.Test_Recentre_RepeatedResumeKeepsWidthNearZero;
+var
+  FS: TFitStructure;
+  i: Integer;
+  Width: Single;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[2].V := 0.2;
+  FS.Stacks[0].Layers[0].P[2].min := 0.0;
+  FS.Stacks[0].Layers[0].P[2].max := 3.0;
+
+  for i := 1 to 5 do
+  begin
+    RecentreOnValue(FS);
+    ClampToPhysics(FS);
+  end;
+
+  Width := FS.Stacks[0].Layers[0].P[2].max - FS.Stacks[0].Layers[0].P[2].min;
+  Assert.AreEqual(3.0, Width, 1e-5, 'the window kept its width');
+  Assert.AreEqual(0.0, FS.Stacks[0].Layers[0].P[2].min, 1e-6,
+    'and still starts at the physical floor');
+  Assert.AreEqual(0.2, FS.Stacks[0].Layers[0].P[2].V, 1e-6,
+    'the value never moved');
+end;
+
+{ The same at the other end: Rho is capped at MAX_DENSITY. }
+procedure TTestValidateLimits.Test_Recentre_KeepsWidthUnderRhoCap;
+var
+  FS: TFitStructure;
+  Width: Single;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 22.5;
+  FS.Stacks[0].Layers[0].P[3].min := 20.0;
+  FS.Stacks[0].Layers[0].P[3].max := 23.0;
+
+  RecentreOnValue(FS);
+  ClampToPhysics(FS);
+
+  Width := FS.Stacks[0].Layers[0].P[3].max - FS.Stacks[0].Layers[0].P[3].min;
+  Assert.AreEqual(3.0, Width, 1e-5, 'the window kept its width');
+  Assert.AreEqual(MAX_DENSITY, FS.Stacks[0].Layers[0].P[3].max, 1e-5,
+    'slid down against the cap, not truncated at it');
+end;
+
+{ The limits dialog reads one 9-column stride three different ways. Pin the
+  arithmetic here, where no VCL is needed to exercise it. }
+procedure TTestValidateLimits.Test_ColumnHelpers_Mapping;
+const
+  ExpectedParam:   array [1..9] of Integer = ( 1, 0, 0,  2, 0, 0,  3, 0, 0);
+  ExpectedCell:    array [1..9] of Integer = (-1, 0, 1, -1, 2, 3, -1, 4, 5);
+  ExpectedFixCell: array [1..9] of Integer = ( 0, 0, 0,  3, 3, 3,  6, 6, 6);
+var
+  Col: Integer;
+begin
+  for Col := 1 to 9 do
+  begin
+    Assert.AreEqual(ExpectedParam[Col], FreezeParamOf(Col),
+      Format('FreezeParamOf(%d)', [Col]));
+    Assert.AreEqual(ExpectedCell[Col], LimitCellOf(Col),
+      Format('LimitCellOf(%d)', [Col]));
+    Assert.AreEqual(ExpectedFixCell[Col], FreezeCellOf(Col),
+      Format('FreezeCellOf(%d)', [Col]));
+  end;
+
+  // Column 0 is the layer caption: no parameter, and never a Fix column.
+  Assert.AreEqual(0, FreezeParamOf(0), 'the Layer column freezes nothing');
 end;
 
 end.

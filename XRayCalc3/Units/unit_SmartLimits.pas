@@ -34,6 +34,24 @@ function HasWarnings(const Issues: TArray<TLimitIssue>): Boolean;
 function IssuesToText(const Issues: TArray<TLimitIssue>): string;
 function CellState(const Issues: TArray<TLimitIssue>;
   ItemIndex, SubItemIndex: Integer): TLimitIssueKind;
+
+{ Column arithmetic for the limits dialog's list view. Its columns run Layer,
+  then (Fix, min, max) per parameter, a stride of 3. Column is the 0-based
+  column index the hit test returns; because column i holds subitem i - 1,
+  that same number is what OnCustomDrawSubItem reports as SubItem, so one set
+  of helpers serves both. }
+
+{ 1..3 for the Fix column of H, S or Rho, 0 for any other column. }
+function FreezeParamOf(const Column: Integer): Integer;
+
+{ The index CellState expects: 0..5 over (Hmin, Hmax, Smin, Smax, Rmin, Rmax),
+  or -1 for a Fix column, which carries no limit and is never validated. }
+function LimitCellOf(const Column: Integer): Integer;
+
+{ The SubItems index of the Fix cell governing the column's parameter:
+  columns 1..3 -> 0, 4..6 -> 3, 7..9 -> 6. }
+function FreezeCellOf(const Column: Integer): Integer;
+
 procedure ApplyMaterialDensity(var Structure: TFitStructure;
   const NroValues: array of Single);
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);
@@ -53,6 +71,12 @@ procedure CollapseFixed(var Structure: TFitStructure);
   keep exploring past it. Frozen parameters keep their stored window - they are
   pinned by CollapseFixed at hand-off instead. A window that is already zero
   width re-centres to zero width and so stays pinned; only Fixed thaws.
+  A window that would reach past a physical bound - min below zero, or Rho max
+  above MAX_DENSITY - is slid back inside it with its width intact rather than
+  truncated there. Truncating would cost half the window on every resume of a
+  value sitting near the bound, and a few resumes later the parameter would be
+  pinned with no Fixed flag to show for it. Only a window wider than the whole
+  physical range still has to be shortened.
   Apply ClampToPhysics afterwards. }
 procedure RecentreOnValue(var Structure: TFitStructure);
 
@@ -261,6 +285,31 @@ begin
   end;
 end;
 
+function FreezeParamOf(const Column: Integer): Integer;
+begin
+  if (Column >= 1) and ((Column - 1) mod 3 = 0) then
+    Result := (Column - 1) div 3 + 1
+  else
+    Result := 0;
+end;
+
+function LimitCellOf(const Column: Integer): Integer;
+var
+  Group, Offset: Integer;
+begin
+  Group := (Column - 1) div 3;
+  Offset := (Column - 1) mod 3;
+  if Offset = 0 then
+    Result := -1
+  else
+    Result := Group * 2 + (Offset - 1);
+end;
+
+function FreezeCellOf(const Column: Integer): Integer;
+begin
+  Result := ((Column - 1) div 3) * 3;
+end;
+
 procedure ApplyMaterialDensity(var Structure: TFitStructure;
   const NroValues: array of Single);
 var
@@ -424,27 +473,52 @@ procedure RecentreOnValue(var Structure: TFitStructure);
 var
   i, j, p: Integer;
 
-  procedure Recentre(var Value: TFitValue);
+  { The upper bound ClampToPhysics would enforce on this parameter. }
+  function HiBound(const ParamIndex: Integer): Single;
+  begin
+    if ParamIndex = 3 then
+      Result := MAX_DENSITY
+    else
+      Result := MaxSingle;
+  end;
+
+  procedure Recentre(var Value: TFitValue; const Lo, Hi: Single);
   var
-    Half: Single;
+    Width: Single;
   begin
     if Value.Fixed then
       Exit;
-    Half := (Value.max - Value.min) / 2;
-    if Half <= 0 then
+    Width := Value.max - Value.min;
+    if Width <= 0 then
       Exit;
-    Value.min := Value.V - Half;
-    Value.max := Value.V + Half;
+
+    Value.min := Value.V - Width / 2;
+    Value.max := Value.V + Width / 2;
+
+    { Slide, do not truncate: the width is what the next run gets to explore. }
+    if Value.max > Hi then
+    begin
+      Value.max := Hi;
+      Value.min := Hi - Width;
+    end;
+    if Value.min < Lo then
+    begin
+      Value.min := Lo;
+      Value.max := Lo + Width;
+    end;
+    { Wider than the physical range itself - it has to give. }
+    if Value.max > Hi then
+      Value.max := Hi;
   end;
 
 begin
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
       for p := 1 to 3 do
-        Recentre(Structure.Stacks[i].Layers[j].P[p]);
+        Recentre(Structure.Stacks[i].Layers[j].P[p], 0, HiBound(p));
 
   for p := 1 to 3 do
-    Recentre(Structure.Subs.P[p]);
+    Recentre(Structure.Subs.P[p], 0, HiBound(p));
 end;
 
 end.

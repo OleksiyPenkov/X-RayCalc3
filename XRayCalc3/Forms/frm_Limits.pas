@@ -62,6 +62,8 @@ type
     procedure miFreezeLayerClick(Sender: TObject);
     procedure miFreezeAllClick(Sender: TObject);
     procedure miThawAllClick(Sender: TObject);
+    procedure ListViewContextPopup(Sender: TObject; MousePos: TPoint;
+      var Handled: Boolean);
   private
     ListViewEditor: TRzEdit;
     LItem: TListitem;
@@ -69,8 +71,6 @@ type
     FDPI: integer;
     FIssues: TArray<TLimitIssue>;
 
-    function FreezeParamOf(const Column: Integer): Integer;
-    function LimitCellOf(const Column: Integer): Integer;
     function StackCaption(const StackIndex: Integer): string;
 
     procedure UserEditListView( Var Message: TMessage ); message USER_EDITLISTVIEW;
@@ -99,31 +99,6 @@ uses
 
 var
   EDIT_COLUMN: integer;
-
-{ Columns run Layer, then (Fix, min, max) per parameter. Returns 1..3 for a
-  freeze column, 0 for anything else. Column is 1-based, as OnCustomDrawSubItem
-  and the hit test both report it. }
-function TfrmLimits.FreezeParamOf(const Column: Integer): Integer;
-begin
-  if (Column >= 1) and ((Column - 1) mod 3 = 0) then
-    Result := (Column - 1) div 3 + 1
-  else
-    Result := 0;
-end;
-
-{ The index CellState expects: 0..5 over (Hmin, Hmax, Smin, Smax, Rmin, Rmax),
-  or -1 for a freeze column, which carries no limit and is never validated. }
-function TfrmLimits.LimitCellOf(const Column: Integer): Integer;
-var
-  Group, Pos: Integer;
-begin
-  Group := (Column - 1) div 3;
-  Pos := (Column - 1) mod 3;
-  if Pos = 0 then
-    Result := -1
-  else
-    Result := Group * 2 + (Pos - 1);
-end;
 
 procedure TfrmLimits.btnInitClick(Sender: TObject);
 var
@@ -171,6 +146,15 @@ begin
       Count := 1;
       for p := 1 to 3 do
       begin
+        { A frozen parameter keeps the window it was given - Initialize is the
+          one path that used to overwrite it. ApplyMaterialDensity above skips
+          frozen Rho for the same reason. }
+        if FStructure.Stacks[i].Layers[j].P[p].Fixed then
+        begin
+          Inc(Count, 3);
+          Continue;
+        end;
+
         if (p = 3) and (Index <= High(NroValues)) and (NroValues[Index] > 0) then
         begin
           // Use Henke density as center for Rho limits
@@ -286,6 +270,29 @@ begin
     PostMessage( self.Handle, USER_EDITLISTVIEW, LVHitTestInfo.iItem, 0 )
   else
     ListViewEditor.Visible:=False; //hide the TEdit
+end;
+
+{ A native list view does not move focus or selection on a right-click, so the
+  popup would otherwise act on whatever was last left-clicked - possibly a row
+  in another stack, possibly nothing at all. Resolve the row under the cursor
+  first. A right-click inside an existing multi-selection keeps it; one outside
+  replaces it, as Explorer does. MousePos is (-1, -1) for the keyboard menu
+  key, where GetItemAt finds nothing and the current focus stands. }
+procedure TfrmLimits.ListViewContextPopup(Sender: TObject; MousePos: TPoint;
+  var Handled: Boolean);
+var
+  Item: TListItem;
+  i: Integer;
+begin
+  Item := ListView.GetItemAt(MousePos.X, MousePos.Y);
+  if Item = nil then
+    Exit;
+
+  if not Item.Selected then
+    for i := 0 to ListView.Items.Count - 1 do
+      ListView.Items[i].Selected := ListView.Items[i] = Item;
+
+  ListView.ItemFocused := Item;
 end;
 
 procedure TfrmLimits.ToggleFreezeAt(Item: TListItem; const ParamIndex: Integer);
@@ -416,43 +423,75 @@ begin
   Result := FStructure.Stacks[StackIndex].Header;
   if Frozen = 0 then
     Exit;
+  { An em dash as a literal byte would be mojibake: this file has no BOM, so
+    the compiler reads it in the system ANSI codepage. }
   if Frozen = Total then
-    Result := Format('%s — all %d frozen', [Result, Total])
+    Result := Format('%s '#8212' all %d frozen', [Result, Total])
   else
-    Result := Format('%s — %d of %d frozen', [Result, Frozen, Total]);
+    Result := Format('%s '#8212' %d of %d frozen', [Result, Frozen, Total]);
 end;
 
+{ Rebuilding the list drops every Selected flag and nils ItemFocused, which
+  would cost the user the selection they just froze - and make a second
+  "Freeze this stack" a silent no-op. Row indices are stable here: the row
+  count follows the structure, which this dialog never changes. }
 procedure TfrmLimits.StructureToView;
 var
   i, j, p: integer;
   Group: TListGroup;
   ListItem: TListItem;
+  Selection: TArray<Integer>;
+  Focused: Integer;
 begin
-  ListView.Items.Clear;
-  ListView.Groups.Clear;
-
-  for I := 0 to High(FStructure.Stacks) do
-  begin
-    Group := ListView.Groups.Add;
-    Group.Header := StackCaption(i);
-
-    for j := 0 to High(FStructure.Stacks[i].Layers) do
+  SetLength(Selection, 0);
+  for i := 0 to ListView.Items.Count - 1 do
+    if ListView.Items[i].Selected then
     begin
-      ListItem := ListView.Items.Add;
-      ListItem.GroupID := Group.GroupID;
-      ListItem.Caption := FStructure.Stacks[i].Layers[j].Material;
+      SetLength(Selection, Length(Selection) + 1);
+      Selection[High(Selection)] := i;
+    end;
+  if ListView.ItemFocused <> nil then
+    Focused := ListView.ItemFocused.Index
+  else
+    Focused := -1;
 
-      for p := 1 to 3 do
+  ListView.Items.BeginUpdate;
+  try
+    ListView.Items.Clear;
+    ListView.Groups.Clear;
+
+    for I := 0 to High(FStructure.Stacks) do
+    begin
+      Group := ListView.Groups.Add;
+      Group.Header := StackCaption(i);
+
+      for j := 0 to High(FStructure.Stacks[i].Layers) do
       begin
-        if FStructure.Stacks[i].Layers[j].P[p].Fixed then
-          ListItem.SubItems.Add('X')
-        else
-          ListItem.SubItems.Add('');
-        ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].min, ffFixed, 5, 2));
-        ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].max, ffFixed, 5, 2));
+        ListItem := ListView.Items.Add;
+        ListItem.GroupID := Group.GroupID;
+        ListItem.Caption := FStructure.Stacks[i].Layers[j].Material;
+
+        for p := 1 to 3 do
+        begin
+          if FStructure.Stacks[i].Layers[j].P[p].Fixed then
+            ListItem.SubItems.Add('X')
+          else
+            ListItem.SubItems.Add('');
+          ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].min, ffFixed, 5, 2));
+          ListItem.SubItems.Add(FloatToStrF(FStructure.Stacks[i].Layers[j].P[p].max, ffFixed, 5, 2));
+        end;
       end;
     end;
+
+    for i := 0 to High(Selection) do
+      if Selection[i] < ListView.Items.Count then
+        ListView.Items[Selection[i]].Selected := True;
+    if (Focused >= 0) and (Focused < ListView.Items.Count) then
+      ListView.ItemFocused := ListView.Items[Focused];
+  finally
+    ListView.Items.EndUpdate;
   end;
+
   RunValidation;
 end;
 
@@ -551,7 +590,7 @@ begin
   if SubItem < 1 then
     Exit;
 
-  if Item.SubItems[((SubItem - 1) div 3) * 3] = 'X' then
+  if Item.SubItems[FreezeCellOf(SubItem)] = 'X' then
     Sender.Canvas.Font.Color := clGrayText
   else
     Sender.Canvas.Font.Color := clWindowText;

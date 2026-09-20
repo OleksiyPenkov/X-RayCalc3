@@ -41,6 +41,12 @@ type
     lsrJamming: TLineSeries;
     lsrLevyScale: TLineSeries;
     lsrCFactor: TLineSeries;
+    { The optimizer's step counter restarts at zero on every Run, so an
+      appended segment has to be pushed past the points already plotted.
+      Without it the series - all loAscending - interleave the two runs'
+      identical X values and the plot zig-zags between their chi-squared
+      levels. Set by PrepareConvergence, which runs before PrepareDiagnostics. }
+    FStepOffset: Integer;
     procedure chkWorstChiClick(Sender: TObject);
   public
     property ThicknessChart: TChart read chThickness;
@@ -107,16 +113,20 @@ begin
 end;
 
 procedure TfrmChartPages.AddConvergencePoint(Step: Integer; BestChi, WorstChi: Double; WasShaken: Boolean);
+var
+  X: Integer;
 begin
-  lsrConvergence.AddXY(Step, BestChi);
+  X := Step + FStepOffset;
+  lsrConvergence.AddXY(X, BestChi);
   if lsrWorstChi <> nil then
-    lsrWorstChi.AddXY(Step, WorstChi);
+    lsrWorstChi.AddXY(X, WorstChi);
   if WasShaken and (lsrShake <> nil) then
-    lsrShake.AddXY(Step, BestChi);
+    lsrShake.AddXY(X, BestChi);
 end;
 
 procedure TfrmChartPages.ClearConvergence;
 begin
+  FStepOffset := 0;
   lsrConvergence.Clear;
   if lsrWorstChi <> nil then lsrWorstChi.Clear;
   if lsrShake <> nil then lsrShake.Clear;
@@ -133,6 +143,15 @@ procedure TfrmChartPages.PrepareConvergence(NMax: Integer; const Append: Boolean
 begin
   if not Append then
     lsrConvergence.Clear;
+
+  { One past the last step already plotted, so the resumed segment continues
+    the axis instead of overwriting it. Taken from the series rather than
+    counted up by NMax: a run can stop early on tolerance, and NMax may itself
+    have been changed between the two runs. }
+  if Append and (lsrConvergence.Count > 0) then
+    FStepOffset := Round(lsrConvergence.XValue[lsrConvergence.Count - 1]) + 1
+  else
+    FStepOffset := 0;
 
   if lsrWorstChi = nil then
   begin
@@ -176,7 +195,7 @@ begin
 
   Pages.ActivePage := tsFittingProgress;
   chFittingProgress.BottomAxis.Minimum := 0;
-  chFittingProgress.BottomAxis.Maximum := NMax;
+  chFittingProgress.BottomAxis.Maximum := FStepOffset + NMax;
 end;
 
 procedure TfrmChartPages.SetCopyEnabled(Value: Boolean);
@@ -261,8 +280,9 @@ begin
   else if not Append then
     ClearDiagnostics;
 
+  { PrepareConvergence has already set FStepOffset for this run. }
   chDiagnostics.BottomAxis.Minimum := 0;
-  chDiagnostics.BottomAxis.Maximum := NMax;
+  chDiagnostics.BottomAxis.Maximum := FStepOffset + NMax;
 end;
 
 procedure TfrmChartPages.AddDiagnosticPoint(Step: Integer;
@@ -270,29 +290,32 @@ procedure TfrmChartPages.AddDiagnosticPoint(Step: Integer;
   LevyScale, CFact: Single; JammingMax: Integer);
 var
   normJam, normLevy, normCF: Double;
+  X: Integer;
 begin
   if lsrDiversity = nil then Exit;
 
+  X := Step + FStepOffset;
+
   // Diversity: already 0-1
-  lsrDiversity.AddXY(Step, Diversity);
+  lsrDiversity.AddXY(X, Diversity);
 
   // MeanVelocity: already normalized by Vmax, cap at 1.0
-  lsrMeanVelocity.AddXY(Step, Min(MeanVelocity, 1.0));
+  lsrMeanVelocity.AddXY(X, Min(MeanVelocity, 1.0));
 
   // Jamming: normalized by JammingMax
   if JammingMax > 0 then
     normJam := Min(JammingCount / JammingMax, 1.0)
   else
     normJam := 0;
-  lsrJamming.AddXY(Step, normJam);
+  lsrJamming.AddXY(X, normJam);
 
   // LevyScale: map [0.01, 0.1] -> [0, 1]
   normLevy := Min(Max((LevyScale - 0.01) / 0.09, 0), 1.0);
-  lsrLevyScale.AddXY(Step, normLevy);
+  lsrLevyScale.AddXY(X, normLevy);
 
   // CFactor: divide by 2.0, cap at 1.0
   normCF := Min(CFact / 2.0, 1.0);
-  lsrCFactor.AddXY(Step, normCF);
+  lsrCFactor.AddXY(X, normCF);
 end;
 
 end.

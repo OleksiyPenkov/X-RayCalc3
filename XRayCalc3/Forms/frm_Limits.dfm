@@ -158,6 +158,7 @@ object frmLimits: TfrmLimits
       ViewStyle = vsReport
       FillLastColumn = False
       OnClick = ListViewClick
+      OnContextPopup = ListViewContextPopup
       OnCustomDrawSubItem = ListViewCustomDrawSubItem
     end
     object edFdH: TEdit

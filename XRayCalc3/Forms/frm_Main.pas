@@ -286,6 +286,7 @@ type
     procedure UpdateCalcTime(const S: string);
     procedure UpdateFitTime(const S: string);
     procedure OnCalcModeChange(Sender: TObject);
+    procedure OnModelChanged(Sender: TObject);
     procedure OnFittingModeChange(Sender: TObject);
     procedure OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
 
@@ -703,6 +704,8 @@ begin
     begin
       FProjectPanel.Project.ActiveModel := Data;
       Structure.FromString(Data.Data);
+      { Swapped behind the tree's back, so the tree fires nothing. }
+      OnModelChanged(Self);
       FOrchestrator.RunCalc(False);
     end;
     Node := FProjectPanel.Project.GetNextSibling(Node);
@@ -1011,6 +1014,7 @@ begin
     FChartInfo, FChartPages, PM, miRecent, pmRecentList);
   FProjectPanel.OnCaptionChange := OnProjectCaptionChange;
   FProjectPanel.OnCalcRun := CalcRunExecute;
+  FProjectPanel.OnModelChanged := OnModelChanged;
 
   FProjectPanel.Project.OnChange := FProjectPanel.ProjectChange;
   FProjectPanel.Project.OnDblClick := FProjectPanel.ProjectDblClick;
@@ -1072,6 +1076,14 @@ begin
          FChartInfo.Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
     1: FChartInfo.Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
   end;
+end;
+
+{ A fit's results belong to the model it ran on, so swapping the live model
+  disarms Resume Fitting until the next fit finishes. }
+procedure TfrmMain.OnModelChanged(Sender: TObject);
+begin
+  FOrchestrator.ModelChanged;
+  actResumeFitting.Enabled := FOrchestrator.HasFitResults;
 end;
 
 procedure TfrmMain.OnFittingModeChange(Sender: TObject);

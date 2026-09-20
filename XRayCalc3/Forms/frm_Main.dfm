@@ -541,6 +541,7 @@ object frmMain: TfrmMain
           Left = 270
           Top = 2
           Hint = 'Continue fitting from the last result, keeping frozen parameters pinned'
+          ImageIndex = 1
           Action = actResumeFitting
           ParentShowHint = False
           ShowHint = True
