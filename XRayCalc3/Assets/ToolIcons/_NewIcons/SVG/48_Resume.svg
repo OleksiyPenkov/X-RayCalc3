@@ -3,14 +3,17 @@
     <filter id="sh" x="-10%" y="-10%" width="130%" height="130%">
       <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#0a1a2e" flood-opacity="0.3"/>
     </filter>
-    <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="lineG" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#D8E6F2"/>
       <stop offset="100%" stop-color="#B4C8DC"/>
     </linearGradient>
   </defs>
   <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="20" cy="20" r="16" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
-    <rect x="11" y="10" width="4" height="20" fill="#3CB4DC" stroke="#19375F" stroke-width="1.2"/>
-    <polygon points="19,10 19,30 32,20" fill="#3CB4DC" stroke="#19375F" stroke-width="1.2"/>
+    <path d="M4,32 L12,18 L18,26 L25,6 L36,20" fill="none" stroke="url(#lineG)" stroke-width="6"/>
+    <path d="M4,32 L12,18 L18,26 L25,6 L36,20" fill="none" stroke="#19375F" stroke-width="2.5"/>
   </g>
+  <path d="M4,34 L12,22 L18,28 L25,12 L36,23" fill="none" stroke="#3CB4DC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3,2.5"/>
+  <circle cx="30" cy="30" r="9.5" fill="#3CB4DC" stroke="#19375F" stroke-width="1.75"/>
+  <rect x="25.4" y="26.0" width="3.0" height="8.0" fill="white"/>
+  <polygon points="29.8,26.0 29.8,34.0 35.2,30.0" fill="white"/>
 </svg>
