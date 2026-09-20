@@ -1,4 +1,4 @@
-unit cmd_unit_fitting;
+﻿unit cmd_unit_fitting;
 
 interface
 
@@ -17,10 +17,12 @@ uses
 var
   FittingSet: array of TFittedStructure;
   ChiSquares: array of Single;
+  ChiSquaresPlain: array of Single;
   BestFit   : TFittedStructure;
 
 
   ChiSquareMin : Single;
+  ChiSquareMinPlain : Single;
   CalcParams : TCalcParams;
   ExpValues  : TDataArray;
   Model      : TLayeredModel;
@@ -221,6 +223,7 @@ begin
       Calc.Model := Model;
       Calc.Run;
       ChiSquares[i] := Calc.ChiSquare;
+      ChiSquaresPlain[i] := Calc.ChiSquarePlain;
       Application.ProcessMessages;
     finally
       FreeAndNil(Calc);
@@ -241,6 +244,7 @@ begin
 
   Randomize;
   SetLength(ChiSquares, Population);
+  SetLength(ChiSquaresPlain, Population);
   SetLength(FittingSet, Population);
 
   CalcParams := ReadINI;
@@ -254,7 +258,8 @@ begin
   Min := FindMin;
   BestFit := FittingSet[Min];
   ChiSquareMin := ChiSquares[Min];
-  writeln('Initial seeding: ', ChiSquareMin:5:4);
+  ChiSquareMinPlain := ChiSquaresPlain[Min];
+  writeln('Initial seeding: ', ChiSquareMin:5:4, '  plain ', ChiSquareMinPlain:5:4);
 
   FinalCalc;
 
@@ -272,8 +277,9 @@ begin
     if ChiSquares[Min] < ChiSquareMin then
     begin
       ChiSquareMin := ChiSquares[Min];
+      ChiSquareMinPlain := ChiSquaresPlain[Min];
       BestFit := FittingSet[Min];
-      writeln('ChiSQR ', ChiSquareMin:5:4);
+      writeln('ChiSQR ', ChiSquareMin:5:4, '  plain ', ChiSquareMinPlain:5:4);
       FinalCalc;
       //w := w_max-(w_max - w_min) * i / Iterations;
     end;

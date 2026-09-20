@@ -1,4 +1,4 @@
-(* *****************************************************************************
+﻿(* *****************************************************************************
   *
   *   X-Ray Calc 3 - XRC_MCP, the calculation engine as an MCP server
   *
@@ -92,6 +92,17 @@ const
     'exceeds 3 and 1 otherwise (point_weight=true); w_theta from theta_weight ' +
     '0..5 as in the GUI. This is TCalc.CalcChiSquare, the number X-Ray Calc 3 ' +
     'displays.';
+
+  { The same sum with both weights dropped: what the fit is worth as a bare
+    data-to-fit disagreement, on the same scale as chi2, so the two can be read
+    side by side. It is reported, never minimised. }
+  FIT_CHI2_PLAIN_DEFINITION =
+    'chi2_plain and chi2_start_plain are the same sum as chi2 with w_point = ' +
+    'w_theta = 1: 1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 ' +
+    'R_calc)^2) over the same points. It is the bare disagreement between the ' +
+    'measured and the calculated curve, reported beside chi2 so that the ' +
+    'weighting the fit applies can be read off the difference. Nothing ' +
+    'optimises it.';
 
   { Said in every result: the two parameters a client coming from another
     refinement program looks for first, and does not have here. }
@@ -368,7 +379,7 @@ end;
 procedure FillEngineDensities(var S: TFitStructure; Lambda: Double); forward;
 function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
   const MovAvgCurve: unit_Types.TDataArray;
-  out Chi2: Double): unit_Types.TDataArray; forward;
+  out Chi2, Chi2Plain: Double): unit_Types.TDataArray; forward;
 
 procedure ReadMeasuredCurve(const Params: TJSONObject; var Req: TFitRequest);
 var
@@ -423,7 +434,7 @@ procedure ComputeAutoScale(var Req: TFitRequest);
 var
   i, IMax: Integer;
   Calc: unit_Types.TDataArray;
-  Chi2: Double;
+  Chi2, Chi2Plain: Double;
 begin
   if Length(Req.Data) > MAX_FIT_POINTS then
     raise EMCPError.Create('invalid_argument',
@@ -451,7 +462,7 @@ begin
     range here and ApplyThetaRange replaces them with the trimmed one. }
   Req.ThetaMin := Req.Data[0].t;
   Req.ThetaMax := Req.Data[High(Req.Data)].t;
-  Calc := ScanOnData(Req, BuildLayeredModel(Req.Structure), nil, Chi2);
+  Calc := ScanOnData(Req, BuildLayeredModel(Req.Structure), nil, Chi2, Chi2Plain);
 
   if (IMax > High(Calc)) or (Calc[IMax].r <= 0) then
     raise EMCPError.Create('invalid_argument',
@@ -1445,11 +1456,12 @@ begin
   Result.MVAWindow := FIT_MVA_WINDOW;
 end;
 
-/// One scan of Model on the measured angles, with the chi-squared that goes
-/// with it. Model is handed to TCalc, which frees it.
+/// One scan of Model on the measured angles, with the two chi-squareds that go
+/// with it: the weighted one the fit minimises and the unweighted one beside
+/// it. Model is handed to TCalc, which frees it.
 function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
   const MovAvgCurve: unit_Types.TDataArray;
-  out Chi2: Double): unit_Types.TDataArray;
+  out Chi2, Chi2Plain: Double): unit_Types.TDataArray;
 var
   Calc: TCalc;
 begin
@@ -1476,6 +1488,7 @@ begin
     Calc.Model     := Model;          // TCalc.Destroy frees it from here on
     Calc.Run;
     Chi2 := Calc.CalcChiSquare(Req.Fit.ThetaWeight);
+    Chi2Plain := Calc.ChiSQRPlain;
     Result := Copy(Calc.Results);
   finally
     Calc.Free;
@@ -2048,6 +2061,7 @@ var
   Profiles: TArray<TLayerThickness>;
   MovAvgCurve, CalcCurve, StartCalcCurve, Residual: unit_Types.TDataArray;
   Chi2, Chi2Recalc, Chi2Start, Scale: Double;
+  Chi2Plain, Chi2StartPlain: Double;
   IterationsRun: Integer;
   MeasuredPath, CalcPath, ResidualPath, XRCXPath, ReportPath: string;
   Res, JFiles, JSmooth, Report: TJSONObject;
@@ -2078,7 +2092,7 @@ begin
     BuildLayeredModel makes the same expanded model TLFPSO_BASE.FillModel does,
     and ScanOnData hands it to a TCalc, which frees it. }
   StartCalcCurve := ScanOnData(Req, BuildLayeredModel(Req.Structure),
-                               MovAvgCurve, Chi2Start);
+                               MovAvgCurve, Chi2Start, Chi2StartPlain);
 
   if Job.CancelRequested then
     Exit;
@@ -2152,7 +2166,7 @@ begin
       recomputed rather than taken from BestCurve so that the chi-squared beside
       it comes from the structure the result reports. ScanOnData takes the
       model, raise or not, so Model must not be touched afterwards. }
-    CalcCurve := ScanOnData(Req, Model, MovAvgCurve, Chi2Recalc);
+    CalcCurve := ScanOnData(Req, Model, MovAvgCurve, Chi2Recalc, Chi2Plain);
   finally
     L.Free;
   end;
@@ -2186,7 +2200,10 @@ begin
     Res.AddPair('chi2', JSONArgs.Num(Chi2));
     Res.AddPair('chi2_recalc', JSONArgs.Num(Chi2Recalc));
     Res.AddPair('chi2_start', JSONArgs.Num(Chi2Start));
+    Res.AddPair('chi2_plain', JSONArgs.Num(Chi2Plain));
+    Res.AddPair('chi2_start_plain', JSONArgs.Num(Chi2StartPlain));
     Res.AddPair('chi2_definition', FIT_CHI2_DEFINITION);
+    Res.AddPair('chi2_plain_definition', FIT_CHI2_PLAIN_DEFINITION);
     Res.AddPair('chi2_settings', Chi2SettingsJSON(Req));
     Res.AddPair('optimizer_used', OptimizerUsedJSON(Req));
     Res.AddPair('iterations_run', TJSONNumber.Create(IterationsRun));
@@ -2252,6 +2269,8 @@ begin
     Res.AddPair('report', Report);        // Res owns it from here on
     Report.AddPair('chi2', JSONArgs.Num(Chi2));
     Report.AddPair('chi2_start', JSONArgs.Num(Chi2Start));
+    Report.AddPair('chi2_plain', JSONArgs.Num(Chi2Plain));
+    Report.AddPair('chi2_start_plain', JSONArgs.Num(Chi2StartPlain));
     Report.AddPair('near_bounds', NearBoundsJSON(Req, Fitted));
 
     RepInp.Calculated := StartCalcCurve;

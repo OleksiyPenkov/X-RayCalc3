@@ -53,6 +53,7 @@ type
 
       FTotalD: single;
       FChiSQR: single;
+      FChiSQRPlain: single;
 
       Tasks: array of TProc;
       NThreads : integer;
@@ -86,6 +87,7 @@ type
       property Results: TDataArray read FResult;
       property TotalD: single read FTotalD;
       property ChiSQR: single read FChiSQR;
+      property ChiSQRPlain: single read FChiSQRPlain;
       property Model: TLayeredModel read FLayeredModel write FLayeredModel;
       property MaxThreads: Integer read FMaxThreads write FMaxThreads;
   end;
@@ -116,6 +118,8 @@ function TCalc.CalcChiSquare(const ThetaWieght: integer): single;
 var
   i: Integer;
   Chi: single;
+  Bare: single;
+  Plain: single;
   LogResult: single;
 
   UseWeight: boolean;
@@ -134,12 +138,19 @@ begin
   UseWeight := Length(FMovAvg) > 1;
 
   Result := 0;
+  Plain := 0;
   for I := FTail  to High(FData) - FTail - 1 do
   begin
     if FResult[i].r = 0 then Continue;
 
     LogResult := Log10(FResult[i].r);
-    Chi := Sqr((FLogData[i] - LogResult) / LogResult);
+    { The unweighted residual of this point. It is summed on its own so that
+      ChiSQRPlain reports the bare data-to-fit disagreement on the same scale
+      as ChiSQR, which the peak and theta weights below then reshape. }
+    Bare := Sqr((FLogData[i] - LogResult) / LogResult);
+    Plain := Plain + Bare;
+
+    Chi := Bare;
     if UseWeight  then
     begin
       Ratio := FData[i].r / FMovAvg[i].r;
@@ -158,6 +169,7 @@ begin
     Result := Result + Chi;
   end;
 
+  FChiSQRPlain := Plain / High(FData) * 1000;
   FChiSQR := Result / High(FData) * 1000;
   Result := FChiSQR;
 end;

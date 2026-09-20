@@ -47,6 +47,7 @@ type
       Tasks: array of TProc;
       NThreads : byte;
       FChiSquare: single;
+      FChiSquarePlain: single;
 
       procedure CalcLambda(StartL, EndL, Theta: single; N: integer);
       procedure CalcTet(const Params: TThreadCalcParams);
@@ -69,6 +70,7 @@ type
       property Model: TLayeredModel read FLayeredModel write FLayeredModel;
       property ExpValues: TDataArray read FData write FData;
       property ChiSquare: single read FChiSquare;
+      property ChiSquarePlain: single read FChiSquarePlain;
   end;
 
 implementation
@@ -82,12 +84,21 @@ uses
 function TCalc.CalcChiSquare: Single;
 var
   i: Integer;
+  Bare, Plain: Single;
 begin
   Result := 0;
+  Plain := 0;
   for I := 0 to High(FResult) do
-    Result := Result + Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r)) * Exp(FData[i].t);
+  begin
+    Bare := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
+    // The bare data-to-fit disagreement, reported beside the angle-weighted
+    // sum that is actually minimised
+    Plain := Plain + Bare;
+    Result := Result + Bare * Exp(FData[i].t);
+  end;
 
   FChiSquare := Result;
+  FChiSquarePlain := Plain;
 end;
 
 procedure TCalc.PrepareWorkers;

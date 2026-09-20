@@ -1,4 +1,4 @@
-(* *****************************************************************************
+﻿(* *****************************************************************************
   *
   *   X-Ray Calc 3 - XRC_MCP, the calculation engine as an MCP server
   *
@@ -71,6 +71,9 @@ const
   { The definition lives in the unit that computes it, so describe_server and
     every fit_xrr result can never describe two different chi-squareds. }
   FIT_CHI2 = FIT_CHI2_DEFINITION;
+
+  { Reported beside it, never minimised. }
+  FIT_CHI2_PLAIN = FIT_CHI2_PLAIN_DEFINITION;
 
   FIT_FREE_PARAMETERS =
     'layer thickness/sigma/density only. The GUI engine keeps the substrate fixed ' +
@@ -188,6 +191,7 @@ begin
   try
     Result.AddPair('engine', FIT_ENGINE);
     Result.AddPair('chi2', FIT_CHI2);
+    Result.AddPair('chi2_plain', FIT_CHI2_PLAIN);
     Result.AddPair('free_parameters', FIT_FREE_PARAMETERS);
     Result.AddPair('top_k_rule', FIT_TOP_K_RULE);
   except

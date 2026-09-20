@@ -1,4 +1,4 @@
-unit TestCalcEngine;
+﻿unit TestCalcEngine;
 
 interface
 
@@ -25,10 +25,23 @@ type
     [Test] procedure Test_SetExpValues;
   end;
 
+  { ChiSQRPlain is the sum CalcChiSquare builds with the peak and angle weights
+    left off. The weights are what the fit optimises against; the plain number
+    is the bare data-to-fit disagreement the GUI shows beside it, so what these
+    tests pin down is that no weight can move it. }
+  [TestFixture]
+  TTestChiSquare = class
+  public
+    [Test] procedure Test_Plain_EqualsChiSQR_WhenNothingIsWeighted;
+    [Test] procedure Test_Plain_MatchesHandSum;
+    [Test] procedure Test_Plain_IgnoresThetaWeight;
+    [Test] procedure Test_Plain_IgnoresPeakWeight;
+  end;
+
 implementation
 
 uses
-  unit_materials, unit_calc, System.SysUtils;
+  unit_materials, unit_calc, System.SysUtils, System.Math;
 
 { TTestLayeredModel }
 
@@ -210,6 +223,159 @@ begin
     C.ExpValues := D;
     Assert.AreEqual(3, Length(C.ExpValues));
     Assert.AreEqual(Single(0.5), Single(C.ExpValues[0].t), 1E-5);
+  finally
+    C.Free;
+  end;
+end;
+
+{ TTestChiSquare }
+
+type
+  { CalcChiSquare scores FData against FResult; the calculated curve normally
+    comes from Run, and is put there directly here so the arithmetic is the
+    only thing under test. }
+  TChiCalc = class(TCalc)
+  public
+    procedure SetResults(const A: TDataArray);
+  end;
+
+procedure TChiCalc.SetResults(const A: TDataArray);
+begin
+  FResult := Copy(A);
+end;
+
+{ Four measured points an order of magnitude apart, and a calculated curve that
+  misses each of them by a different amount. Every r is positive, so no point is
+  skipped, and every theta differs from 1, so an angle weight cannot be mistaken
+  for no weight. }
+procedure MakeChiCurves(out Data, Calc: TDataArray);
+begin
+  SetLength(Data, 4);
+  Data[0].t := 0.5; Data[0].r := 1E-1;
+  Data[1].t := 1.5; Data[1].r := 1E-2;
+  Data[2].t := 2.5; Data[2].r := 1E-3;
+  Data[3].t := 3.5; Data[3].r := 1E-4;
+
+  SetLength(Calc, 4);
+  Calc[0].t := 0.5; Calc[0].r := 1.1E-1;
+  Calc[1].t := 1.5; Calc[1].r := 0.9E-2;
+  Calc[2].t := 2.5; Calc[2].r := 1.2E-3;
+  Calc[3].t := 3.5; Calc[3].r := 1.0E-4;
+end;
+
+function MakeChiCalc(const Data, Calc: TDataArray): TChiCalc;
+begin
+  Result := TChiCalc.Create;
+  Result.ExpValues := Data;
+  Result.SetResults(Calc);
+end;
+
+procedure TTestChiSquare.Test_Plain_EqualsChiSQR_WhenNothingIsWeighted;
+var
+  C: TChiCalc;
+  Data, Calc: TDataArray;
+begin
+  MakeChiCurves(Data, Calc);
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.CalcChiSquare(0);
+    Assert.AreEqual(Double(C.ChiSQR), Double(C.ChiSQRPlain), 1E-9,
+      'With no peak weight and no angle weight the two sums are the same sum');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestChiSquare.Test_Plain_MatchesHandSum;
+var
+  C: TChiCalc;
+  Data, Calc: TDataArray;
+  i: Integer;
+  LogCalc, Expected: Double;
+begin
+  MakeChiCurves(Data, Calc);
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.CalcChiSquare(0);
+
+    { The same range CalcChiSquare walks: FTail is 0 without a resolution
+      convolution, so the points are 0 .. n - 2, normalised by n - 1. }
+    Expected := 0;
+    for i := 0 to High(Data) - 1 do
+    begin
+      LogCalc := Log10(Calc[i].r);
+      Expected := Expected + Sqr((Log10(Data[i].r) - LogCalc) / LogCalc);
+    end;
+    Expected := Expected / High(Data) * 1000;
+
+    { The engine takes its logarithms with FastLn, and the residual is the
+      difference of two nearly equal ones, so the approximation shows up
+      magnified: a few parts in ten thousand, against an exact Log10. }
+    Assert.AreEqual(Expected, Double(C.ChiSQRPlain), Abs(Expected) * 2E-3,
+      Format('plain chi-squared should be %.6g', [Expected]));
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestChiSquare.Test_Plain_IgnoresThetaWeight;
+var
+  C: TChiCalc;
+  Data, Calc: TDataArray;
+  Unweighted: Single;
+  W: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.CalcChiSquare(0);
+    Unweighted := C.ChiSQRPlain;
+
+    for W := 1 to 5 do
+    begin
+      C.CalcChiSquare(W);
+      Assert.AreEqual(Double(Unweighted), Double(C.ChiSQRPlain), 1E-9,
+        Format('theta_weight %d must not move the plain sum', [W]));
+    end;
+
+    { And the weights really are doing something, or the test above is empty. }
+    C.CalcChiSquare(1);
+    Assert.AreNotEqual(Double(C.ChiSQRPlain), Double(C.ChiSQR), 1E-6,
+      'theta_weight 1 should change the weighted sum');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestChiSquare.Test_Plain_IgnoresPeakWeight;
+var
+  C: TChiCalc;
+  Data, Calc, Avg: TDataArray;
+  i: Integer;
+  Unweighted: Single;
+begin
+  MakeChiCurves(Data, Calc);
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.CalcChiSquare(0);
+    Unweighted := C.ChiSQRPlain;
+
+    { A moving average a tenth of the data: every ratio is 10, over the 3 that
+      turns the peak weight on. }
+    SetLength(Avg, Length(Data));
+    for i := 0 to High(Data) do
+    begin
+      Avg[i].t := Data[i].t;
+      Avg[i].r := Data[i].r * 0.1;
+    end;
+    C.MovAvg := Avg;
+
+    C.CalcChiSquare(0);
+    Assert.AreEqual(Double(Unweighted), Double(C.ChiSQRPlain), 1E-9,
+      'the peak weight must not move the plain sum');
+    Assert.IsTrue(C.ChiSQR > C.ChiSQRPlain * 5,
+      Format('a peak weight of 10 should inflate the weighted sum: %.6g vs %.6g',
+             [C.ChiSQR, C.ChiSQRPlain]));
   finally
     C.Free;
   end;

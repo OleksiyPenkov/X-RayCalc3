@@ -1,4 +1,4 @@
-unit frame_ChartInfo;
+﻿unit frame_ChartInfo;
 
 interface
 
@@ -43,6 +43,8 @@ type
     spChiSqr: TRzStatusPane;
     RzStatusPane7: TRzStatusPane;
     spChiBest: TRzStatusPane;
+    RzStatusPane8: TRzStatusPane;
+    spChiPlain: TRzStatusPane;
     btnChartScale: TRzBitBtn;
     cbMinLimit: TRzComboBox;
     dlgSaveResult: TSaveDialog;
@@ -84,7 +86,9 @@ type
     procedure SetCursorPos(const X, Y: Single);
     procedure SetPeakInfo(Series: TChartSeries; XMin, XMax: Single);
     procedure SetChiSquare(const Current, Best: Single);
+    procedure SetChiSquarePlain(const Value: Single);
     procedure ClearChiSquare;
+    procedure ClearChiSquarePlain;
     procedure SetPeriod(const D: Single);
     procedure SetScaleCaption(const Caption: string);
     procedure UpdateAxisFormat;
@@ -280,9 +284,20 @@ begin
   spChiBest.Caption := FloatToStrF(Best, ffFixed, 8, 4);
 end;
 
+procedure TfrmChartInfo.SetChiSquarePlain(const Value: Single);
+begin
+  spChiPlain.Caption := FloatToStrF(Value, ffFixed, 8, 4);
+end;
+
 procedure TfrmChartInfo.ClearChiSquare;
 begin
   spChiSqr.Caption := '';
+  spChiPlain.Caption := '';
+end;
+
+procedure TfrmChartInfo.ClearChiSquarePlain;
+begin
+  spChiPlain.Caption := '';
 end;
 
 procedure TfrmChartInfo.SetPeriod(const D: Single);

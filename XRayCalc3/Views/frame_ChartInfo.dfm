@@ -1,4 +1,4 @@
-object frmChartInfo: TfrmChartInfo
+﻿object frmChartInfo: TfrmChartInfo
   Left = 0
   Top = 0
   Width = 1048
@@ -206,6 +206,42 @@ object frmChartInfo: TfrmChartInfo
       Left = 392
       Top = 27
       Width = 89
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Alignment = taCenter
+      Caption = '0.00'
+    end
+    object RzStatusPane8: TRzStatusPane
+      Left = 489
+      Top = 15
+      Width = 56
+      Hint = 
+        'Unweighted '#967'2 - the bare disagreement between data and fit, wit' +
+        'hout the peak and angle weights the fit optimises'
+      ParentShowHint = False
+      ShowHint = True
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Alignment = taRightJustify
+      Caption = 'plain '#967'2'
+    end
+    object spChiPlain: TRzStatusPane
+      Left = 549
+      Top = 15
+      Width = 89
+      Hint = 
+        'Unweighted '#967'2 - the bare disagreement between data and fit, wit' +
+        'hout the peak and angle weights the fit optimises'
+      ParentShowHint = False
+      ShowHint = True
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13

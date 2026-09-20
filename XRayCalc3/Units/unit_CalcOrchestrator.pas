@@ -1,4 +1,4 @@
-(* *****************************************************************************
+﻿(* *****************************************************************************
   *
   *   X-Ray Calc 3
   *
@@ -202,6 +202,7 @@ begin
       begin
         FCalc.CalcChiSquare(FCalcSettings.ThetaWeightIndex);
         FChartInfo.SetChiSquare(FCalc.ChiSQR, FCalc.ChiSQR);
+        FChartInfo.SetChiSquarePlain(FCalc.ChiSQRPlain);
       end
       else begin
         FChartInfo.ClearChiSquare;
@@ -350,6 +351,10 @@ begin
   FFitStartTime := Now;
   FFirstUpdate := not FKeepExtensions;
   FABestChiSquare := 1e32;
+  { The plain chi-squared belongs to a full curve, and the fit reports only the
+    weighted one it minimises. Blank it until FinalizeFitting recalculates the
+    model the fit ended on, rather than leave the pre-fit number standing. }
+  FChartInfo.ClearChiSquarePlain;
 
   FitThread := TFittingThread.Create(True);
   FitThread.FLFPSO := FLFPSO;

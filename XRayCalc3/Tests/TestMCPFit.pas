@@ -1,4 +1,4 @@
-unit TestMCPFit;
+﻿unit TestMCPFit;
 
 (* fit_xrr: the argument parser and one real fit.
 
@@ -136,6 +136,7 @@ type
     [Test] procedure Optimizer_Default_IsTheLabsPractice;
 
     [Test] procedure Fit_OnItsOwnCurve_BeatsTheStartModel;
+    [Test] procedure Fit_PlainChiSquared_IsTheUnweightedSum;
     [Test] procedure Fit_SameSeedTwice_GivesTheSameAnswer;
     [Test] procedure Fit_Cancelled_StopsAndLeavesNoResult;
     [Test] procedure Fit_P2_02_FreePeriod_StaysInsideBounds;
@@ -1911,6 +1912,7 @@ procedure TTestMCPFit.Fit_OnItsOwnCurve_BeatsTheStartModel;
 var
   Res: TJSONObject;
   Chi2, Chi2Start, Chi2Recalc: Double;
+  Chi2Plain, Chi2StartPlain: Double;
 begin
   if not HenkeTablesPresent then
   begin
@@ -1936,6 +1938,25 @@ begin
     Assert.AreEqual(7, Res.GetValue<Integer>('seed'), 'the seed is echoed');
     Assert.AreEqual('TLFPSO_Periodic', Res.GetValue<string>('engine'));
     Assert.AreEqual(FIT_CHI2_DEFINITION, Res.GetValue<string>('chi2_definition'));
+    Assert.AreEqual(FIT_CHI2_PLAIN_DEFINITION,
+      Res.GetValue<string>('chi2_plain_definition'));
+
+    { The unweighted sum beside each weighted one. The defaults leave the peak
+      weight on and the angle weight off, and the peak weight only ever
+      multiplies a point by more than 1, so the plain sum cannot be the larger
+      of the two. }
+    Chi2Plain := Res.GetValue<Double>('chi2_plain');
+    Chi2StartPlain := Res.GetValue<Double>('chi2_start_plain');
+    Assert.IsTrue(Chi2Plain > 0, 'chi2_plain must be a real sum');
+    Assert.IsTrue(Chi2StartPlain > 0, 'chi2_start_plain must be a real sum');
+    Assert.IsTrue(Chi2Plain <= Chi2Recalc * (1 + 1E-6),
+      Format('chi2_plain %.6g cannot exceed the peak-weighted %.6g',
+             [Chi2Plain, Chi2Recalc]));
+    Assert.AreEqual(Chi2Plain, Res.GetValue<Double>('report.chi2_plain'), 1E-12,
+      'the report repeats chi2_plain');
+    Assert.AreEqual(Chi2StartPlain,
+      Res.GetValue<Double>('report.chi2_start_plain'), 1E-12,
+      'the report repeats chi2_start_plain');
     { the optimizer that ran, defaults filled in, so a job that named no
       population is reproducible from its result alone }
     Assert.AreEqual(FIT_POPULATION, Res.GetValue<Integer>('optimizer_used.population'),
@@ -1965,6 +1986,42 @@ begin
       Res.GetValue<string>('files.calculated'))), 'calc.dat');
     Assert.IsTrue(TFile.Exists(TPath.Combine(WorkDir.Root,
       Res.GetValue<string>('files.residual'))), 'residual.dat');
+  finally
+    Res.Free;
+  end;
+end;
+
+
+{ With no weight asked for, the weighted sum and the plain one are the same
+  arithmetic, so fit_xrr must report the same number twice. That is the check
+  that chi2_plain really is chi2 with the weights removed, and not some other
+  residual. }
+procedure TTestMCPFit.Fit_PlainChiSquared_IsTheUnweightedSum;
+var
+  Res: TJSONObject;
+  Chi2Recalc, Chi2Plain, Chi2Start, Chi2StartPlain: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON, '',
+                ',"chi2":{"theta_weight":0,"point_weight":false}');
+  try
+    Assert.IsNotNull(Res, 'the job produced no result');
+    Chi2Recalc := Res.GetValue<Double>('chi2_recalc');
+    Chi2Plain := Res.GetValue<Double>('chi2_plain');
+    Chi2Start := Res.GetValue<Double>('chi2_start');
+    Chi2StartPlain := Res.GetValue<Double>('chi2_start_plain');
+
+    Assert.AreEqual(Chi2Recalc, Chi2Plain, Abs(Chi2Recalc) * 1E-6 + 1E-12,
+      Format('unweighted, chi2_recalc %.9g and chi2_plain %.9g are one sum',
+             [Chi2Recalc, Chi2Plain]));
+    Assert.AreEqual(Chi2Start, Chi2StartPlain, Abs(Chi2Start) * 1E-6 + 1E-12,
+      Format('unweighted, chi2_start %.9g and chi2_start_plain %.9g are one sum',
+             [Chi2Start, Chi2StartPlain]));
   finally
     Res.Free;
   end;
