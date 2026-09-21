@@ -12,7 +12,7 @@ unit unit_CalcOrchestrator;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.JSON, System.DateUtils,
+  System.SysUtils, System.Classes, System.JSON, System.DateUtils, System.Diagnostics,
   Winapi.Messages, Vcl.Forms, Vcl.Dialogs,
   unit_Types, unit_calc, unit_materials, unit_LFPSO_Base, unit_ProfilesManager,
   unit_ChartManager, unit_XRCStructure,
@@ -28,13 +28,15 @@ type
     { Owned state - moved from frm_Main }
     FLFPSO: TLFPSO_Base;
     FFitThread: TThread;
-    FStartTime, FFitStartTime: TDateTime;
+    FCalcWatch, FFitWatch: TStopwatch;
     FCalc: TCalc;
     FCalcThreadParams: TCalcThreadParams;
     FFitStructure: TFitStructure;
     FLastChiSquare, FABestChiSquare: Single;
     FBenchmarkMode, FFirstUpdate, FKeepExtensions: Boolean;
     FFitDuration: string;
+    FFitSeconds: Double;
+    FFitDevice: string;          // what evaluated the last fit: 'CPU' or the GPU's name
     FHasFitResults: Boolean;
 
     { Dependencies - not owned }
@@ -93,7 +95,7 @@ uses
   Vcl.Controls,
   unit_DataProcessing, unit_SeriesIO,
   unit_LFPSO_Periodic, unit_LFPSO_Irregular, unit_LFPSO_Poly,
-  unit_config, unit_SmartLimits,
+  unit_config, unit_SmartLimits, unit_sys_helpers, System.Math,
   frm_Limits;
 
 type
@@ -170,7 +172,7 @@ end;
 
 procedure TCalcOrchestrator.GetThreadParams;
 begin
-  FStartTime := Now;
+  FCalcWatch := TStopwatch.StartNew;
 
   FProjectPanel.ActiveModelSeries.BeginUpdate;
 
@@ -178,14 +180,11 @@ begin
 end;
 
 procedure TCalcOrchestrator.FinalizeCalc(Calc: TCalc);
-var
-  Hour, Min, Sec, MSec: Word;
 begin
   FProjectPanel.RescaleChart;
   FChartMgr.PlotResults(FProjectPanel.Project.ActiveModel.CurveID, Calc.Results);
-  DecodeTime(Now - FStartTime, Hour, Min, Sec, MSec);
   if Assigned(FOnCalcTimeUpdate) then
-    FOnCalcTimeUpdate(Format('Time: %d.%3.3d s.', [60 * Min + Sec, MSec]));
+    FOnCalcTimeUpdate('Time: ' + FormatDuration(FCalcWatch.Elapsed.TotalSeconds));
   FProjectPanel.ActiveModelSeries.EndUpdate;
   FProjectPanel.ActiveModelSeries.Repaint;
   FChartInfo.SetPeriod(Structure.Period);
@@ -281,6 +280,7 @@ begin
 
   FLFPSO.Params := FProjectPanel.FitParams;
   FLFPSO.Limit := FChartInfo.MinLimit;
+  FLFPSO.UseGPU := TConfig.Section<TCalcOptions>.UseGPU;
 
   if (FProjectPanel.Project.LinkedData <> nil) and FProjectPanel.ActiveModelSeries.Visible then
   begin
@@ -376,7 +376,7 @@ begin
   FProjectPanel.GenerateAutosaveName;
   if Assigned(FOnEnableControls) then
     FOnEnableControls(False);
-  FFitStartTime := Now;
+  FFitWatch := TStopwatch.StartNew;
   FFirstUpdate := not FKeepExtensions;
   FABestChiSquare := 1e32;
   { The plain chi-squared belongs to a full curve, and the fit reports only the
@@ -436,11 +436,14 @@ begin
     end;
 
     FProjectPanel.Project.ActiveModel.Data := Structure.ToString;
-    DecodeTime(Now - FFitStartTime, Hour, Min, Sec, MSec);
-    FFitDuration := Format('%2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
+    FFitSeconds := FFitWatch.Elapsed.TotalSeconds;
+    DecodeTime(FFitSeconds / SecsPerDay, Hour, Min, Sec, MSec);
+    FFitDuration := Format('%2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);   // the export's hh:mm:ss
+    FFitDevice := FLFPSO.DeviceUsed;
     FHasFitResults := True;
     if Assigned(FOnFitTimeUpdate) then
-      FOnFitTimeUpdate(Format('Fitting Time: %s sec', [FFitDuration]));
+      FOnFitTimeUpdate(Format('Fitting time: %s on %s',
+        [FormatDuration(FFitSeconds), FFitDevice]));
     RunCalc(False);
     FChartInfo.SetChiSquare(FABestChiSquare, FABestChiSquare);
     FProjectPanel.AutoSave;
@@ -480,7 +483,6 @@ end;
 procedure TCalcOrchestrator.HandleFitUpdate(var Msg: TMessage);
 var
   msg_prm: PUpdateFitProgressMsg;
-  Hour, Min, Sec, MSec: Word;
   NeedsSaving: Boolean;
 begin
   msg_prm := PUpdateFitProgressMsg(Msg.WParam);
@@ -513,9 +515,8 @@ begin
     msg_prm.LayeredModel.Free;
   end;
   Dispose(msg_prm);
-  DecodeTime(Now - FFitStartTime, Hour, Min, Sec, MSec);
   if Assigned(FOnFitTimeUpdate) then
-    FOnFitTimeUpdate(Format('Fitting Time: %2.2d:%2.2d:%2.2d sec', [Hour, Min, Sec]));
+    FOnFitTimeUpdate('Fitting time: ' + FormatDuration(FFitWatch.Elapsed.TotalSeconds));
 end;
 
 procedure TCalcOrchestrator.ExportFitResultsToJSON(const FileName: string);
@@ -543,6 +544,8 @@ begin
     Root.AddPair('application', 'X-RayCalc3');
     Root.AddPair('exportDate', DateToISO8601(Now, False));
     Root.AddPair('fittingDuration', FFitDuration);
+    Root.AddPair('fittingSeconds', TJSONNumber.Create(RoundTo(FFitSeconds, -3)));
+    Root.AddPair('fittingDevice', FFitDevice);
     Root.AddPair('chiSquared', TJSONNumber.Create(FABestChiSquare));
     Root.AddPair('fittingMode', FittingModeNames[FCalcSettings.FittingMode]);
 

@@ -143,6 +143,8 @@
         <DCCReference Include="TestAxisLimit.pas"/>
         <DCCReference Include="TestProjectTreeNodeIO.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
+        <DCCReference Include="..\..\Shared\Math\unit_gpu_calc.pas"/>
+        <DCCReference Include="TestGpuCalc.pas"/>
         <DCCReference Include="..\LFPSO\unit_LFPSO_Poly.pas"/>
         <DCCReference Include="TestLFPSOPoly.pas"/>
         <BuildConfiguration Include="Release">

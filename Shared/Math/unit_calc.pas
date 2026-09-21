@@ -28,6 +28,18 @@ uses
 
 type
 
+  { What a GPU evaluator needs to compute the same chi-squared CalcChiSquare
+    does, for every particle at once, from raw (unconvolved) curves. }
+  TGpuEvalInputs = record
+    Theta: TArray<Single>;        // measured angles, as the engine uses them
+    LogData: TArray<Single>;      // log10 of the measured intensities
+    PointWeight: TArray<Single>;  // peak weight x theta weight of each point
+    ConvWeights: TArray<Single>;  // [1] when there is no resolution
+    ConvN: Integer;               // half-window of the convolution, 0 when none
+    ChiFirst, ChiLast: Integer;   // inclusive range of points chi2 sums over
+    ChiNorm: Single;              // 1000 / High(data)
+  end;
+
   TCalcParams = record
                   StartTeta, EndTeta, Step: single;
                   N: integer;
@@ -59,7 +71,7 @@ type
       NThreads : integer;
 
       FTail: Integer;
-      FConvWeights: array of Single;
+      FConvWeights: TArray<Single>;
       FConvN: Integer;
       FWorkersReady: Boolean;
       FMaxThreads: Integer;
@@ -80,6 +92,13 @@ type
       destructor Destroy; override;
       procedure Run;
       function CalcChiSquare(const ThetaWieght: integer): single;
+      /// <summary>The inputs of a GPU evaluation that reproduces Run followed
+      /// by CalcChiSquare(ThetaWeight) on ExpValues. Theta mode only.</summary>
+      function GpuInputs(const ThetaWeight: Integer): TGpuEvalInputs;
+      /// <summary>Takes a raw reflectivity curve on ExpValues' angles (already
+      /// clamped to Limit, as CalcTet leaves it) and finishes it the way Run
+      /// does, so that Results and CalcChiSquare read as after a Run.</summary>
+      procedure FinishRawCurve(const Raw: TArray<Single>);
       property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
       property MovAvg: TDataArray read FMovAvg write FMovAvg;
@@ -102,6 +121,9 @@ const
   FWHMToGaussianWidth = 0.849;            // 1/sqrt(2*ln(2)), FWHM to Gaussian width
 
   { TCalc }
+
+function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Integer;
+  Width: Single; out N: Integer): TArray<Single>; forward;
 
 procedure ClearArray(var A: TDataArray); inline;
 begin
@@ -174,6 +196,81 @@ begin
   Result := FChiSQR;
 end;
 
+
+function TCalc.GpuInputs(const ThetaWeight: Integer): TGpuEvalInputs;
+var
+  i, Size: Integer;
+  Width, t, w, Ratio: Single;
+  UseWeight: Boolean;
+begin
+  Size := Length(FData);
+  if Size < 2 then
+    raise Exception.Create('TCalc.GpuInputs needs measured data (ExpValues)');
+
+  SetLength(Result.Theta, Size);
+  SetLength(Result.LogData, Size);
+  SetLength(Result.PointWeight, Size);
+  UseWeight := Length(FMovAvg) > 1;
+  for i := 0 to Size - 1 do
+  begin
+    t := FData[i].t;
+    Result.Theta[i] := t;
+    { A true log10. The unit's own Log10 carries a different constant, which
+      CalcChiSquare never sees because it only takes ratios of two of them;
+      the GPU takes the log of its curve with a true log10, so the data must
+      be on the same scale. }
+    if not (FData[i].r > 0) then
+      raise Exception.CreateFmt('Measured intensity %g at %g deg is not ' +
+        'positive: the chi-squared takes its logarithm', [FData[i].r, t]);
+    Result.LogData[i] := Ln(FData[i].r) / Ln(10);
+    { CalcChiSquare's weights, folded into one factor per point }
+    w := 1;
+    if UseWeight then
+    begin
+      Ratio := FData[i].r / FMovAvg[i].r;
+      if Ratio > 3 then
+        w := Ratio;
+    end;
+    case ThetaWeight of
+      1: w := w * sqr(t);
+      2: w := w * t;
+      3: w := w * sqrt(t);
+      4: w := w / sqr(t);
+      5: w := w / sqrt(t);
+    end;
+    Result.PointWeight[i] := w;
+  end;
+
+  Width := FParams.DT * FParams.K;
+  if Width = 0 then
+  begin
+    Result.ConvWeights := [1];
+    Result.ConvN := 0;
+  end
+  else
+    Result.ConvWeights := ConvolutionWeights(FData[0].t, FData[Size - 1].t, Size,
+      Width, Result.ConvN);
+
+  Result.ChiFirst := Result.ConvN;
+  Result.ChiLast  := Size - 1 - Result.ConvN - 1;
+  Result.ChiNorm  := 1000 / (Size - 1);
+end;
+
+procedure TCalc.FinishRawCurve(const Raw: TArray<Single>);
+var
+  i: Integer;
+begin
+  if Length(Raw) <> Length(FData) then
+    raise Exception.CreateFmt('TCalc.FinishRawCurve: %d points for %d angles',
+      [Length(Raw), Length(FData)]);
+  SetLength(FResult, Length(FData));
+  for i := 0 to High(FData) do
+  begin
+    FResult[i].t := FData[i].t;
+    FResult[i].r := Raw[i];
+  end;
+  Convolute(FParams.DT * FParams.K);
+end;
 
 procedure TCalc.PrepareWorkers;
 var
@@ -557,11 +654,38 @@ begin
   Result := c * FastExp(-2 * sqr(x) / sqr_Width);
 end;
 
+{ The Gaussian resolution window over +/-0.1 degree for a scan of Size points
+  from T0 to T1: FWHM Width, half-window N (odd). Shared by Convolute and the
+  GPU path so that both convolve with the very same weights. }
+function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Integer;
+  Width: Single; out N: Integer): TArray<Single>;
+var
+  delta, t1, c, sqr_Width: Single;
+  k, WinSize: Integer;
+begin
+  Width := Width * FWHMToGaussianWidth;
+  sqr_Width := sqr(Width);
+  c := 1 / (Width * sqrt(Pi/2));
+
+  delta := (ThetaLast - ThetaFirst)/Size;
+  N := Round(0.1/ delta);
+  if frac(N / 2) = 0 then
+    N := N - 1;
+
+  WinSize := 2 * N + 1;
+  SetLength(Result, WinSize);
+  t1 := -0.1;
+  for k := 0 to WinSize - 1 do
+  begin
+    Result[k] := Gauss(c, t1, sqr_Width) * delta;
+    t1 := t1 + delta;
+  end;
+end;
+
 procedure TCalc.Convolute(Width: single);
 var
-  Sum, delta, t1, c: single;
+  Sum: single;
   i, N, k, Size, WinSize: integer;
-  sqr_Width: Single;
 begin
   FTail := 0;
   if Width = 0 then Exit;
@@ -570,26 +694,8 @@ begin
 
   // Compute Gaussian weights once — reuse across all subsequent calls
   if Length(FConvWeights) = 0 then
-  begin
-    Width := Width * FWHMToGaussianWidth;
-    sqr_Width := sqr(Width);
-    c := 1 / (Width * sqrt(Pi/2));
-
-    delta := (FResult[Size - 1].t - FResult[0].t)/Size;
-    N := Round(0.1/ delta);
-    if frac(N / 2) = 0 then
-      N := N - 1;
-
-    WinSize := 2 * N + 1;
-    SetLength(FConvWeights, WinSize);
-    t1 := -0.1;
-    for k := 0 to WinSize - 1 do
-    begin
-      FConvWeights[k] := Gauss(c, t1, sqr_Width) * delta;
-      t1 := t1 + delta;
-    end;
-    FConvN := N;
-  end;
+    FConvWeights := ConvolutionWeights(FResult[0].t, FResult[Size - 1].t, Size,
+      Width, FConvN);
 
   N := FConvN;
   WinSize := Length(FConvWeights);

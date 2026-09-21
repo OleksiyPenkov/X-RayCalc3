@@ -44,7 +44,7 @@ uses
   System.SysUtils, System.JSON,
   unit_universal_types, unit_universal_templates,
   unit_MCPVersion, unit_MCPErrors, unit_MCPUnits, unit_MCPSandbox,
-  unit_MCPMaterials, unit_MCPUniversal, unit_MCPFit;
+  unit_MCPMaterials, unit_MCPUniversal, unit_MCPFit, unit_gpu_calc;
 
 const
   // Reported by describe_server.limits. The values are the requirements'
@@ -117,6 +117,8 @@ end;
 { ---------------- describe_server ---------------- }
 
 function ServerSection: TJSONObject;
+var
+  GpuName, GpuErr: string;
 begin
   Result := TJSONObject.Create;
   try
@@ -125,6 +127,15 @@ begin
     Result.AddPair('git_revision', GitRevision);
     Result.AddPair('engine', ENGINE_DESCRIPTION);
     Result.AddPair('xraycalc3_exe_version', EngineVersionString);
+    { The GPU fit_xrr's optimizer.device "auto" and "gpu" would use: its name,
+      or null and the reason there is none. }
+    if TGpuEvaluator.Available(GpuName, GpuErr) then
+      Result.AddPair('gpu', GpuName)
+    else
+    begin
+      Result.AddPair('gpu', TJSONNull.Create);
+      Result.AddPair('gpu_error', GpuErr);
+    end;
   except
     Result.Free;
     raise;

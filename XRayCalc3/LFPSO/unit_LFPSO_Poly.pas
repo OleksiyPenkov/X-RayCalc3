@@ -273,17 +273,26 @@ end;
 
 procedure TLFPSO_Poly.FillModel(Model: TLayeredModel; const Solution: TSolution);
 var
-  i, k, j, p, LayerIndex: Integer;
+  i, k, j, p, LayerIndex, StackLen: Integer;
   Data: TLayersData;
 begin
+  { The model's scratch, sized for the longest stack (and the substrate), so
+    that refilling a worker's model allocates nothing }
+  StackLen := 1;
+  for I := 0 to High(FStructure.Stacks) do
+    if Length(FStructure.Stacks[i].Layers) > StackLen then
+      StackLen := Length(FStructure.Stacks[i].Layers);
+  if Length(Model.FillScratch) < StackLen then
+    SetLength(Model.FillScratch, StackLen);
+  Data := Model.FillScratch;
+
   LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
   begin
-    SetLength(Data, 0);
-    SetLength(Data, Length(FStructure.Stacks[i].Layers));
-    for k := 0 to High(FStructure.Stacks[i].Layers) do
+    StackLen := Length(FStructure.Stacks[i].Layers);
+    for k := 0 to StackLen - 1 do
     begin
-      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
+      SetMaterial(Data[k], FStructure.Stacks[i].Layers[k].Material);
       Data[k].Index    := LayerIndex;                              // Layer index accross Solution
 
       Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
@@ -302,15 +311,14 @@ begin
             Data[k].P[p].V := Poly(j, Solution[Data[k].Index][p]);
         end;
 
-      Model.AddLayers(-1, Data);
+      Model.AddLayers(-1, Data, StackLen);
     end;
   end;
 
-  SetLength(Data, 1);
-  Data[0].Material := FStructure.Subs.Material;
+  SetMaterial(Data[0], FStructure.Subs.Material);
   Data[0].P :=FStructure.Subs.P;
 
-  Model.AddSubstrate(Data);
+  Model.AddSubstrate(Data);    // reads Data[0] only
 end;
 
 function TLFPSO_Poly.FitModelToLayer(const Solution: TSolution): TLayeredModel;

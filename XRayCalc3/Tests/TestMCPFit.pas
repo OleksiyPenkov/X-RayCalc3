@@ -30,6 +30,8 @@ type
   private
     FTemp: string;
     FSavedWorkDir: TWorkDir;
+    FOptimizerExtra: string;   // spliced into SubmitOn's "optimizer" object
+    FDeviceOverride: string;   // replaces RunRequest's optimizer.device when set
     /// <summary>ParseFitRequest over a JSON literal. The caller owns nothing.</summary>
     function Parse(const JSONText: string): TFitRequest;
     /// <summary>The range one layer parameter came out with.</summary>
@@ -168,6 +170,11 @@ type
     [Test] procedure ProfileFit_UnpairedSigmaAndDensity_ReportTheirProfiles;
     [Test] procedure ProfileFit_UnrolledIntoSinglePeriods_ReproducesTheFit;
 
+    [Test] procedure Device_Default_IsAuto;
+    [Test] procedure Device_Unknown_Refused;
+    [Test] procedure Device_Cpu_IsEchoedAndUsed;
+    [Test] procedure Device_Auto_UsesTheGpuTheServerNames;
+
     [Test] procedure Report_IsInTheResultAndInTheJobFolder;
     [Test] procedure Report_OrdersAndStart_AreBothThere;
     [Test] procedure Report_WideBounds_LeaveNearBoundsEmpty;
@@ -183,7 +190,7 @@ uses
   System.IOUtils, System.Classes, System.Diagnostics, System.Math,
   System.Zip, System.IniFiles, unit_MCPTools, unit_ToolsFiles,
   unit_Config, unit_MCPErrors, unit_MCPCalc, unit_MCPProjectFile,
-  unit_DataProcessing, unit_ToolsJobs;
+  unit_DataProcessing, unit_ToolsJobs, unit_gpu_calc;
 
 const
   { The reference sample: a 10-period Ru/C multilayer on Si, the same materials
@@ -521,10 +528,10 @@ begin
   { Extra is spliced in verbatim, so it starts with a comma: ',"profile":true' }
   Args := Format(
     '{"structure":%s,"curve":%s,"lambda":%.6f,"free":%s,' +
-    '"optimizer":{"population":%d,"iterations":%d,"tolerance":%g},' +
+    '"optimizer":{"population":%d,"iterations":%d,"tolerance":%g%s},' +
     '"resolution":0,"points_inline_max":0%s}',
     [Start, CurveJSON, CU_K_ALPHA, FreeList, Population, Iterations,
-     FIT_TOLERANCE, Extra], TFormatSettings.Invariant);
+     FIT_TOLERANCE, FOptimizerExtra, Extra], TFormatSettings.Invariant);
 
   Req := Parse(Args);
 
@@ -703,6 +710,8 @@ begin
   try
     Seed := J.GetValue<Integer>('seed');
     Req := ParseFitRequest(J);
+    if FDeviceOverride <> '' then
+      Req.Device := FDeviceOverride;
     Mgr := TJobManager.Create(WorkDir);
     try
       Job := Mgr.Submit(jkFit, Seed,
@@ -1820,7 +1829,10 @@ end;
   numbers below are what that revision answers (captured 2026-09-17, before
   "smooth" existed) to the synthetic fit with seed 7, 12 x 8, and to the
   paper-2 request c3d5 on the measured P2-02 curve, which is scaled, trimmed,
-  noisy and does not end on a round answer. }
+  noisy and does not end on a round answer. Those are the CPU engine's
+  answers, so both fits run with optimizer.device "cpu": the GPU (3.9.0)
+  minimises the same chi-squared to single precision and takes a different
+  path through the swarm. }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
   CHI2_06035DE = '0.000413109';
@@ -1842,7 +1854,12 @@ begin
     Exit;
   end;
 
-  Res := RunFit(7, SyntheticCurveJSON);
+  FOptimizerExtra := ',"device":"cpu"';
+  try
+    Res := RunFit(7, SyntheticCurveJSON);
+  finally
+    FOptimizerExtra := '';
+  end;
   try
     Assert.AreEqual(CHI2_06035DE, Res.GetValue('chi2').ToJSON, 'chi2');
     Assert.AreEqual(FITTED_06035DE, Res.GetValue('fitted_structure').ToJSON,
@@ -1855,7 +1872,12 @@ begin
      not TFile.Exists(HenkePath + 'SiO2.bin') then
     Exit;
   StageP2Inbox;
-  Res := RunRequest(P2_REQUEST_C3D5);
+  FDeviceOverride := 'cpu';
+  try
+    Res := RunRequest(P2_REQUEST_C3D5);
+  finally
+    FDeviceOverride := '';
+  end;
   try
     Assert.AreEqual(P2_CHI2_06035DE, Res.GetValue('chi2').ToJSON, 'P2-02 chi2');
     Assert.AreEqual(P2_FITTED_06035DE, Res.GetValue('fitted_structure').ToJSON,
@@ -2903,6 +2925,81 @@ begin
   Assert.AreEqual(Chi2, Chi2Rebuilt, 1E-3 * Chi2,
     Format('the unrolled structure has the fit''s chi2: %.6g against %.6g',
       [Chi2Rebuilt, Chi2]));
+end;
+
+{ ------------------------------------------------------ optimizer.device -- }
+
+procedure TTestMCPFit.Device_Default_IsAuto;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('auto', Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])).Device);
+end;
+
+procedure TTestMCPFit.Device_Unknown_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}],' +
+    '"optimizer":{"device":"tpu"}}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Device_Cpu_IsEchoedAndUsed;
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  FOptimizerExtra := ',"device":"cpu"';
+  try
+    Res := RunFit(3, SyntheticCurveJSON, '', '', FIT_POPULATION, 2);
+  finally
+    FOptimizerExtra := '';
+  end;
+  try
+    Assert.AreEqual('cpu', Res.GetValue<string>('optimizer_used.device'));
+    Assert.AreEqual('CPU', Res.GetValue<string>('device_used'));
+    Assert.IsNull(Res.GetValue('gpu_error'), 'no GPU was asked for');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Device_Auto_UsesTheGpuTheServerNames;
+var
+  Res: TJSONObject;
+  Name, Err: string;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Res := RunFit(3, SyntheticCurveJSON);
+  try
+    Assert.AreEqual('auto', Res.GetValue<string>('optimizer_used.device'));
+    if TGpuEvaluator.Available(Name, Err) then
+      Assert.AreEqual(Name, Res.GetValue<string>('device_used'))
+    else
+      Assert.AreEqual('CPU', Res.GetValue<string>('device_used'));
+  finally
+    Res.Free;
+  end;
 end;
 
 { ---------------------------------------------------------- the report -- }

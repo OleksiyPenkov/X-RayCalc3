@@ -202,6 +202,7 @@ type
     PeriodRefs: TArray<TPeriodRef>;     // repeating stacks whose period is free
     PairedParams: TArray<TFitParamRef>; // layer parameters held constant over
                                         // the periods of a profile fit
+    Device: string;                     // 'auto', 'cpu' or 'gpu' (optimizer.device)
   end;
 
 /// <summary>Parses and validates one fit_xrr argument object. Raises
@@ -219,7 +220,7 @@ implementation
 
 uses
   System.SysUtils, System.Math, System.IOUtils,
-  unit_materials, unit_calc, unit_DataProcessing,
+  unit_materials, unit_calc, unit_gpu_calc, unit_DataProcessing,
   unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly,
   unit_MCPCalc, unit_MCPErrors, unit_MCPFitReport, unit_MCPInbox,
   unit_MCPProjectFile, unit_MCPSandbox, unit_MCPUnits;
@@ -1147,6 +1148,22 @@ begin
       '"optimizer.poly_factor" must be at least 1', IntToStr(Result.PolyFactor));
 end;
 
+/// optimizer.device: where the population is evaluated. "gpu" is refused
+/// here, not discovered in the job, when this machine has no usable GPU.
+function ParseDevice(const Params: TJSONObject): string;
+var
+  Name, Err: string;
+begin
+  Result := LowerCase(JSONArgs.OptStr(JSONArgs.OptObj(Params, 'optimizer'),
+    'device', 'auto'));
+  if (Result <> 'auto') and (Result <> 'cpu') and (Result <> 'gpu') then
+    raise EMCPError.Create('invalid_argument',
+      '"optimizer.device" must be "auto", "cpu" or "gpu"', Result);
+  if (Result = 'gpu') and not TGpuEvaluator.Available(Name, Err) then
+    raise EMCPError.Create('invalid_argument',
+      '"optimizer.device" is "gpu" but this machine has no usable GPU', Err);
+end;
+
 { ------------------------------------------------------------ the request -- }
 
 /// TLFPSO_Poly gives every non-paired parameter of a repeating stack a
@@ -1376,6 +1393,7 @@ begin
   Result.Fit := ParseFitParams(Params);
   Result.PointWeight := JSONArgs.OptBool(JSONArgs.OptObj(Params, 'chi2'),
                                          'point_weight', True);
+  Result.Device := ParseDevice(Params);
 end;
 
 { ------------------------------------------------------- running the fit -- }
@@ -2003,6 +2021,7 @@ begin
     Result.AddPair('ksxr', JSONArgs.Num(FromSingle(Req.Fit.Ksxr)));
     Result.AddPair('poly_factor', TJSONNumber.Create(Req.Fit.PolyFactor));
     Result.AddPair('poly_order', TJSONNumber.Create(Req.Fit.MaxPOrder));
+    Result.AddPair('device', Req.Device);
   except
     Result.Free;
     raise;
@@ -2096,6 +2115,7 @@ var
   Chi2, Chi2Recalc, Chi2Start, Scale: Double;
   Chi2Plain, Chi2StartPlain: Double;
   IterationsRun: Integer;
+  DeviceUsed, GpuError: string;
   MeasuredPath, CalcPath, ResidualPath, XRCXPath, ReportPath: string;
   Res, JFiles, JSmooth, Report: TJSONObject;
   RepInp: TFitReportInput;
@@ -2150,6 +2170,7 @@ begin
     try
       Runner.Engine := L;
       L.Seed       := Job.Seed;
+      L.UseGPU     := Req.Device <> 'cpu';
       L.Params     := Req.Fit;          // before Structure: it sizes the swarm
       L.Limit      := Req.RMin;
       L.ExpValues  := Req.Data;
@@ -2179,6 +2200,8 @@ begin
       Chi2 := L.BestChiSquare;
       Model := L.Result;                // a fresh model; ScanOnData frees it
       IterationsRun := Runner.LastIteration;
+      DeviceUsed := L.DeviceUsed;
+      GpuError := L.GpuError;
     finally
       Runner.Free;
     end;
@@ -2247,6 +2270,9 @@ begin
     Res.AddPair('resolution_deg', JSONArgs.Num(Req.Resolution));
     Res.AddPair('polarization', Req.PolarizationName);
     Res.AddPair('engine', EngineName);
+    Res.AddPair('device_used', DeviceUsed);
+    if GpuError <> '' then
+      Res.AddPair('gpu_error', GpuError);
     Res.AddPair('start_structure', StructureToJSON(StartFS, Req.Info));
     Res.AddPair('fitted_structure',
       FittedStructureJSON(Fitted, Req.Info, Profiles));

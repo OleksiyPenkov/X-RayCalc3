@@ -41,7 +41,7 @@ object frmMain: TfrmMain
     object spnFitTime: TRzStatusPane
       Left = 100
       Top = 0
-      Width = 150
+      Width = 380
       Height = 19
       Align = alLeft
       Caption = ''

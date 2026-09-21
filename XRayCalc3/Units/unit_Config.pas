@@ -106,6 +106,9 @@ type
       property NumberOfThreads : integer index 0 read getIntegerValue write SetIntegerValue;
       [DefaultValue(20)]
       property BenchmarkRuns   : integer index 1 read getIntegerValue write SetIntegerValue;
+      { Evaluate the fitting population on the GPU when one is usable. }
+      [DefaultValue(True)]
+      property UseGPU          : boolean index 2 read getBooleanValue write SetBooleanValue;
     end;
 
     [Section('Graphics')]

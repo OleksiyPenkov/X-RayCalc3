@@ -58,6 +58,7 @@ type
     RzPanel1: TRzPanel;
     Label1: TLabel;
     cbbCPUCores: TComboBox;
+    chkUseGPU: TCheckBox;
     RzPanel2: TRzPanel;
     Label2: TLabel;
     seLineWidth: TSpinEdit;
@@ -130,6 +131,7 @@ begin
     else
       cbbCPUCores.Text := IntToStr(NumberOfThreads);
     seBenchRuns.Value := BenchmarkRuns;
+    chkUseGPU.Checked := UseGPU;
   end;
 
   with TConfig.Section<TGraphOptions> do
@@ -164,6 +166,7 @@ begin
     else
       NumberOfThreads := StrToInt(cbbCPUCores.Text);
     BenchmarkRuns := seBenchRuns.Value;
+    UseGPU := chkUseGPU.Checked;
   end;
 
   with TConfig.Section<TGraphOptions> do

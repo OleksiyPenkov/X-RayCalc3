@@ -35,14 +35,35 @@ type
 
     { ManualMerge }
     [Test] procedure Test_ManualMerge;
+
+    { FormatDuration }
+    [Test]
+    [TestCase('zero',          '0,0.00 s')]
+    [TestCase('negative',      '-3,0.00 s')]
+    [TestCase('sub-second',    '0.844,0.84 s')]
+    [TestCase('two seconds',   '2.37,2.37 s')]
+    [TestCase('rounds to 10',  '9.996,10.0 s')]
+    [TestCase('tens',          '12.34,12.3 s')]
+    [TestCase('rounds to min', '59.97,1 min 00.0 s')]
+    [TestCase('minutes',       '445.3,7 min 25.3 s')]
+    [TestCase('padded secs',   '425.3,7 min 05.3 s')]
+    [TestCase('rounds to hour','3599.97,1 h 00 min 00 s')]
+    [TestCase('hours',         '3725.4,1 h 02 min 05 s')]
+    procedure Test_FormatDuration(const Seconds: Double; const Expected: string);
   end;
 
 implementation
 
 uses
-  unit_SeriesIO, unit_DataProcessing, System.SysUtils, System.Math, VclTee.Series;
+  unit_SeriesIO, unit_DataProcessing, System.SysUtils, System.Math, VclTee.Series,
+  unit_sys_helpers;
 
 { TTestHelpers }
+
+procedure TTestHelpers.Test_FormatDuration(const Seconds: Double; const Expected: string);
+begin
+  Assert.AreEqual(Expected, FormatDuration(Seconds, TFormatSettings.Invariant));
+end;
 
 function TTestHelpers.MakeData(const Values: array of Single): TDataArray;
 var

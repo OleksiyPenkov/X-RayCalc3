@@ -103,6 +103,11 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
 - `unit_consts.pas` — App constants: `CURRENT_PROJECT_VERSION = 7`, file extensions (`.xrcx` project, `.dsc` params), `WM_RECALC`/`WM_STARTEDITING` custom messages
 - `unit_Types.pas` — Core types: `TFloatArray`, `TSolution = array of TLayer`, `TPopulation = array of TSolution`, `TProjectData` (variant record)
 - `unit_calc.pas` — Main calculation engine
+- `unit_gpu_calc.pas` — `TGpuEvaluator`: the LFPSO population's Parratt + convolution + χ² as D3D11 compute
+  shaders (HLSL embedded, Win32 and Win64, no extra runtime). `TLFPSO_BASE.UseGPU` opts in; the GUI's
+  `TCalcOptions.UseGPU` and `fit_xrr` `optimizer.device` set it. The GPU searches, the CPU rescores the
+  answer (`RescoreBestOnCpu`), so reported χ² equals `TCalc`'s. Keep the cancellation-free
+  `(eps.re - 1) + sin²θ` form in the shader: the naive `eps - sin²t` halves the accuracy.
 - `frm_Main.pas` — Primary window; logic being extracted into orchestrators and frames
 
 ## Dependencies

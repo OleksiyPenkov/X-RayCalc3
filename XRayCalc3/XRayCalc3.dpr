@@ -24,6 +24,7 @@ uses
   unit_SMessages in 'Components\unit_SMessages.pas',
   editor_Stack in 'Components\editor_Stack.pas' {edtrStack},
   unit_calc in '..\Shared\Math\unit_calc.pas',
+  unit_gpu_calc in '..\Shared\Math\unit_gpu_calc.pas',
   unit_materials in '..\Shared\Math\unit_materials.pas',
   math_globals in '..\Shared\Math\math_globals.pas',
   unit_XRCProjectTree in 'Components\unit_XRCProjectTree.pas',

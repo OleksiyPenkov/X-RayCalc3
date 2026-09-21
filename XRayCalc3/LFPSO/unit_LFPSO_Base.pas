@@ -12,7 +12,7 @@ unit unit_LFPSO_Base;
 interface
 
 uses
-  unit_materials, unit_Types, unit_calc, unit_SMessages, Windows;
+  unit_materials, unit_Types, unit_calc, unit_gpu_calc, unit_SMessages, Windows;
 
 const
   WM_CHI_UPDATE = WM_STR_BASE + 100;
@@ -112,7 +112,26 @@ type
       FWorkers: array of TCalcWorker;
       FNWorkers: Integer;
 
+      { GPU evaluation of the population (UseGPU): nil when the CPU evaluates }
+      FUseGPU: Boolean;
+      FGpu: TGpuEvaluator;
+      FGpuReady: Boolean;          // Setup done for this run's sizes
+      FGpuLayers: TArray<Single>;  // every particle's packed model
+      FGpuChi: TArray<Single>;
+      FGpuBestIdx: Integer;        // best particle of the last GPU evaluation, -1 if none
+      FGpuUsed: Boolean;           // at least one iteration of this run was on the GPU
+      FTolCheckedChi: Single;      // the GPU chi2 whose incumbent the CPU last checked
+      FDeviceUsed: string;
+      FGpuError: string;
+
       function FindTheBest: Boolean;
+      procedure EvaluateOnCpu(out BestIdx: Integer);
+      function EvaluateOnGpu(out BestIdx: Integer): Boolean;
+      procedure StartGpu;
+      procedure StopGpu(const Why: string);
+      procedure RescoreBestOnCpu;
+      function CpuCurveOf(const Solution: TSolution; out Chi: Single): TDataArray;
+      function ToleranceMetOnCpu: Boolean;
       function GetResult: TLayeredModel; virtual;
 
       function LevyWalk(const X, gBest: single): single;
@@ -165,6 +184,15 @@ type
         them only after Run has returned. }
       property BestChiSquare: single read FAbsoluteBestChiSqr;
       property BestCurve: TDataArray read FBestCurve;
+      { Evaluate the population on the GPU when one is usable (theta scans
+        only). Off by default: the GUI and the MCP server opt in. A GPU that
+        cannot start or fails mid-run hands the work back to the CPU. }
+      property UseGPU: Boolean read FUseGPU write FUseGPU;
+      { After Run: 'CPU', or the name of the GPU that evaluated the last
+        iteration. GpuError says why the GPU was not used, '' when it was or
+        was not asked for. }
+      property DeviceUsed: string read FDeviceUsed;
+      property GpuError: string read FGpuError;
 
       procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
@@ -175,11 +203,16 @@ type
   procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulation);
   function CopySolution(const Src: TSolution): TSolution;
   function RS: integer;
+  { Data.Material := Name, skipped when it already is that very string: the
+    names come from the one structure every worker thread shares, and
+    reassigning bumps a reference count all of them write to. }
+  procedure SetMaterial(var Data: TLayerData; const Name: string); inline;
 implementation
 
 uses
   Forms,
   System.SysUtils,
+  System.SyncObjs,
   Neslib.FastMath,
   OtlParallel,
   unit_Config,
@@ -272,6 +305,7 @@ constructor TLFPSO_BASE.Create;
 begin
   inherited ;
   FSeed := -1;
+  FDeviceUsed := 'CPU';
 end;
 
 procedure ClearArray(var A: TPopulation); inline;
@@ -283,6 +317,36 @@ procedure ClearSolution(var A: TSolution); inline;
 begin
 //  SetLength(A, 0);
   Finalize(A);
+end;
+
+{ OmniThreadLibrary's Parallel.For does not hand an exception raised in the
+  loop body back to the caller: the worker never signals completion and the
+  caller waits for ever (OtlParallel.pas, WaitForSingleObject(..., INFINITE)).
+  Every loop body therefore catches, keeps the first exception here, and the
+  caller raises it once the loop is over. }
+procedure KeepFirstError(var Slot: Pointer);
+var
+  E: Pointer;
+begin
+  E := AcquireExceptionObject;
+  if TInterlocked.CompareExchange(Slot, E, nil) <> nil then
+    TObject(E).Free;
+end;
+
+procedure RaiseKept(var Slot: Pointer);
+var
+  E: Pointer;
+begin
+  E := Slot;
+  Slot := nil;
+  if E <> nil then
+    raise TObject(E);
+end;
+
+procedure SetMaterial(var Data: TLayerData; const Name: string);
+begin
+  if Pointer(Data.Material) <> Pointer(Name) then
+    Data.Material := Name;
 end;
 
 function CopySolution(const Src: TSolution): TSolution;
@@ -316,12 +380,14 @@ var
   i, k, j, p, LayerIndex, StackLen, MaxStackLen: Integer;
   Data: TLayersData;
 begin
-  // Find max stack layer count — allocate Data once to max size
+  // Find max stack layer count — the model's scratch holds the longest stack
   MaxStackLen := 1;  // at least 1 for substrate
   for I := 0 to High(FStructure.Stacks) do
     if Length(FStructure.Stacks[i].Layers) > MaxStackLen then
       MaxStackLen := Length(FStructure.Stacks[i].Layers);
-  SetLength(Data, MaxStackLen);
+  if Length(Model.FillScratch) < MaxStackLen then
+    SetLength(Model.FillScratch, MaxStackLen);
+  Data := Model.FillScratch;
 
   LayerIndex := 0;
   for I := 0 to High(FStructure.Stacks) do
@@ -329,7 +395,7 @@ begin
     StackLen := Length(FStructure.Stacks[i].Layers);
     for k := 0 to StackLen - 1 do
     begin
-      Data[k].Material := FStructure.Stacks[i].Layers[k].Material;
+      SetMaterial(Data[k], FStructure.Stacks[i].Layers[k].Material);
       for p := 1 to 3 do
         Data[k].P[p].V := Solution[LayerIndex][p][0];
 
@@ -342,10 +408,10 @@ begin
       Model.AddLayers(-1, Data, StackLen);
   end;
 
-  Data[0].Material := FStructure.Subs.Material;
+  SetMaterial(Data[0], FStructure.Subs.Material);
   Data[0].P :=FStructure.Subs.P;
 
-  Model.AddSubstrate(Copy(Data, 0, 1));
+  Model.AddSubstrate(Data);    // reads Data[0] only
 end;
 
 function TLFPSO_BASE.FitModelToLayer(const Solution: TSolution): TLayeredModel;
@@ -505,14 +571,14 @@ begin
 end;
 
 
-function TLFPSO_BASE.FindTheBest: boolean;
+procedure TLFPSO_BASE.EvaluateOnCpu(out BestIdx: Integer);
 var
-  i, bestIdx: integer;
+  i: integer;
   WorkerBests: array of TWorkerBest;
   ThreadMsg: TMsg;
+  Err: Pointer;
 begin
-  Result := False;
-
+  Err := nil;
   // Initialize per-worker tracking
   SetLength(WorkerBests, FNWorkers);
   for i := 0 to FNWorkers - 1 do
@@ -530,24 +596,29 @@ begin
       W: TCalcWorker;
       Chi: Single;
     begin
-      W := FWorkers[taskIndex];
-      W.Model.Reset;
-      FillModel(W.Model, X[particleIndex]);
-      W.Calc.Model := W.Model;
+      if Err <> nil then Exit;          // a sibling failed; the loop is lost anyway
+      try
+        W := FWorkers[taskIndex];
+        W.Model.Reset;
+        FillModel(W.Model, X[particleIndex]);
+        W.Calc.Model := W.Model;
 
-      W.Calc.Run;
+        W.Calc.Run;
 
-      Chi := W.Calc.CalcChiSquare(FFitParams.ThetaWeight);
+        Chi := W.Calc.CalcChiSquare(FFitParams.ThetaWeight);
 
-      // Track per-worker best (no synchronization needed)
-      if Chi < WorkerBests[taskIndex].Chi then
-      begin
-        WorkerBests[taskIndex].Chi := Chi;
-        WorkerBests[taskIndex].ParticleIdx := particleIndex;
-        WorkerBests[taskIndex].Curve := Copy(W.Calc.Results);
+        // Track per-worker best (no synchronization needed)
+        if Chi < WorkerBests[taskIndex].Chi then
+        begin
+          WorkerBests[taskIndex].Chi := Chi;
+          WorkerBests[taskIndex].ParticleIdx := particleIndex;
+          WorkerBests[taskIndex].Curve := Copy(W.Calc.Results);
+        end;
+        if Chi > WorkerBests[taskIndex].WorstChi then
+          WorkerBests[taskIndex].WorstChi := Chi;
+      except
+        KeepFirstError(Err);
       end;
-      if Chi > WorkerBests[taskIndex].WorstChi then
-        WorkerBests[taskIndex].WorstChi := Chi;
     end);
 
   // Drain OTL task-completion messages from this thread's queue
@@ -556,11 +627,12 @@ begin
     TranslateMessage(ThreadMsg);
     DispatchMessage(ThreadMsg);
   end;
+  RaiseKept(Err);
 
   // Sequential reduction — merge per-worker results
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
-  bestIdx := -1;
+  BestIdx := -1;
 
   for i := 0 to FNWorkers - 1 do
   begin
@@ -568,10 +640,209 @@ begin
     begin
       FLastBestChiSqr := WorkerBests[i].Chi;
       FResultingCurve := WorkerBests[i].Curve;
-      bestIdx := WorkerBests[i].ParticleIdx;
+      BestIdx := WorkerBests[i].ParticleIdx;
     end;
     if WorkerBests[i].WorstChi > FLastWorseChiSQR then
       FLastWorseChiSQR := WorkerBests[i].WorstChi;
+  end;
+end;
+
+{ The GPU evaluation of the whole population: every particle's model is built
+  on the CPU workers in parallel (Reset, FillModel, Generate - what TCalc.Run
+  does before CalcTet) and packed side by side, then one GPU call returns every
+  chi-squared. The best particle's curve is not fetched here: FindTheBest asks
+  for it only when that particle improves on the global best. False when the
+  GPU failed; it has then been shut down and the CPU takes over. }
+function TLFPSO_BASE.EvaluateOnGpu(out BestIdx: Integer): Boolean;
+var
+  i, NLay: Integer;
+  ThreadMsg: TMsg;
+  Err: Pointer;
+begin
+  Result := False;
+  BestIdx := -1;
+  Err := nil;
+  try
+    { The layer count comes from the first particle; every particle of a fit
+      expands to the same count, and the packing below checks that it does. }
+    if not FGpuReady then
+    begin
+      FWorkers[0].Model.Reset;
+      FillModel(FWorkers[0].Model, X[0]);
+      NLay := Length(FWorkers[0].Model.LayersDirect);
+      FGpu.Setup(FCalc.GpuInputs(FFitParams.ThetaWeight), NLay, Length(X),
+        FCalcParams.P, FCalcParams.RF, FCalcParams.Lambda, FCalcParams.K, FLimit);
+      SetLength(FGpuLayers, 4 * NLay * Length(X));
+      FGpuReady := True;
+    end;
+    NLay := FGpu.LayerCount;
+
+    Parallel.&For(0, High(X))
+      .NumTasks(FNWorkers)
+      .Execute(procedure(taskIndex, particleIndex: integer)
+      var
+        M: TLayeredModel;
+        L: TCalcLayers;
+        k, Base: Integer;
+      begin
+        if Err <> nil then Exit;
+        try
+          M := FWorkers[taskIndex].Model;
+          M.Reset;
+          FillModel(M, X[particleIndex]);
+          M.Generate(FCalcParams.Lambda);
+          { The model's arrays only ever grow (Reset keeps them), so this
+            catches a particle that needs more layers than the first did;
+            TCalc.CalcTet reads the same LayersDirect length. }
+          L := M.LayersDirect;
+          if Length(L) <> NLay then
+            raise EGpuError.CreateFmt('particle %d expands to %d layers, not %d',
+              [particleIndex, Length(L), NLay]);
+          Base := 4 * NLay * particleIndex;
+          for k := 0 to NLay - 1 do
+          begin
+            FGpuLayers[Base + 4 * k]     := L[k].e.Re;
+            FGpuLayers[Base + 4 * k + 1] := L[k].e.Im;
+            FGpuLayers[Base + 4 * k + 2] := L[k].L;
+            FGpuLayers[Base + 4 * k + 3] := L[k].s;
+          end;
+        except
+          KeepFirstError(Err);
+        end;
+      end);
+
+    while PeekMessage(ThreadMsg, 0, 0, 0, PM_REMOVE) do
+    begin
+      TranslateMessage(ThreadMsg);
+      DispatchMessage(ThreadMsg);
+    end;
+    RaiseKept(Err);
+
+    FGpu.Evaluate(FGpuLayers, FGpuChi);
+  except
+    on E: Exception do
+    begin
+      StopGpu(E.Message);
+      Exit;
+    end;
+  end;
+
+  FLastBestChiSqr  := 1e12;
+  FLastWorseChiSQR := 0;
+  for i := 0 to High(FGpuChi) do
+  begin
+    if FGpuChi[i] < FLastBestChiSqr then
+    begin
+      FLastBestChiSqr := FGpuChi[i];
+      BestIdx := i;
+    end;
+    if FGpuChi[i] > FLastWorseChiSQR then
+      FLastWorseChiSQR := FGpuChi[i];
+  end;
+  SetLength(FResultingCurve, 0);   // fetched by FindTheBest when it is needed
+  FGpuBestIdx := BestIdx;
+  FGpuUsed := True;
+  Result := True;
+end;
+
+{ The GPU searches, the CPU reports. The GPU's chi-squared agrees with the CPU
+  engine's to single precision (well under 1% on a real fit), which is all
+  the search needs; but the number a fit reports, and the curve beside it,
+  are the ones every other part of the program recomputes with TCalc. So the
+  answer is scored once more on the CPU. }
+procedure TLFPSO_BASE.RescoreBestOnCpu;
+var
+  Chi: Single;
+  Curve: TDataArray;
+begin
+  { The CPU engine can refuse a model the GPU scored (rfLinear with a zero
+    sigma divides 0 by 0 in TCalc). The GPU's own answer then stands. }
+  try
+    Curve := CpuCurveOf(abest, Chi);
+  except
+    on E: Exception do
+    begin
+      FGpuError := 'The CPU could not rescore the GPU''s answer: ' + E.Message;
+      Exit;
+    end;
+  end;
+  FAbsoluteBestChiSqr := Chi;
+  FGlobalBestChiSqr := Chi;
+  abest_val := Chi;
+  FBestCurve := Curve;
+  FResultingCurve := Copy(Curve);
+end;
+
+function TLFPSO_BASE.ToleranceMetOnCpu: Boolean;
+var
+  Chi: Single;
+begin
+  Result := False;
+  { once per incumbent: gbest only changes when the GPU chi2 does }
+  if (Length(gbest) = 0) or (FTolCheckedChi = FGlobalBestChiSqr) then
+    Exit;
+  FTolCheckedChi := FGlobalBestChiSqr;
+  try
+    CpuCurveOf(gbest, Chi);
+    Result := Chi < FFitParams.Tolerance;
+  except
+    // the CPU refused the model; keep searching on the GPU's numbers
+  end;
+end;
+
+{ Solution's curve and chi-squared from the CPU engine, one thread, as the MCP
+  server's chi2_recalc scores a model. }
+function TLFPSO_BASE.CpuCurveOf(const Solution: TSolution; out Chi: Single): TDataArray;
+begin
+  FCalcModel.Reset;
+  FillModel(FCalcModel, Solution);
+  FCalc.Model := FCalcModel;
+  FCalc.MaxThreads := 1;
+  FCalc.Run;
+  Chi := FCalc.CalcChiSquare(FFitParams.ThetaWeight);
+  Result := Copy(FCalc.Results);
+end;
+
+procedure TLFPSO_BASE.StartGpu;
+begin
+  FGpuReady := False;
+  FGpuBestIdx := -1;
+  if not FUseGPU then
+    Exit;
+  if FCalcParams.Mode <> cmTheta then
+  begin
+    FGpuError := 'Only theta scans are evaluated on the GPU';
+    Exit;
+  end;
+  try
+    FGpu := TGpuEvaluator.Create;
+    FDeviceUsed := FGpu.AdapterName;
+  except
+    on E: Exception do
+      StopGpu(E.Message);
+  end;
+end;
+
+procedure TLFPSO_BASE.StopGpu(const Why: string);
+begin
+  FreeAndNil(FGpu);
+  FGpuReady := False;
+  FDeviceUsed := 'CPU';
+  if Why <> '' then
+    FGpuError := Why;
+end;
+
+function TLFPSO_BASE.FindTheBest: boolean;
+var
+  i, bestIdx: integer;
+  UnusedChi: Single;
+begin
+  Result := False;
+
+  if (FGpu = nil) or not EvaluateOnGpu(bestIdx) then
+  begin
+    FGpuBestIdx := -1;
+    EvaluateOnCpu(bestIdx);
   end;
 
   if bestIdx >= 0 then
@@ -589,6 +860,20 @@ begin
 
   if FLastBestChiSqr <  FGlobalBestChiSqr then
   begin
+    { The GPU returns only chi-squareds; the one curve anybody looks at is
+      read back and convolved now, as Run would have left it. }
+    if (FGpuBestIdx >= 0) and (FGpu <> nil) then
+    try
+      FCalc.FinishRawCurve(FGpu.RawCurve(FGpuBestIdx));
+      FResultingCurve := Copy(FCalc.Results);
+    except
+      on E: Exception do
+      begin
+        StopGpu(E.Message);
+        FResultingCurve := CpuCurveOf(pbest, UnusedChi);
+      end;
+    end;
+
     FGlobalBestChiSqr := FLastBestChiSqr;
     gbest := CopySolution(pbest);
     gbest_val := FLastBestChiSqr;
@@ -657,6 +942,7 @@ procedure TLFPSO_BASE.Run(CalcConditions: TCalcThreadParams);
 const
   levy_beta = 1.5;
   CONSTR_PHI = 4.1;  // Clerc-Kennedy total phi (2.05 + 2.05)
+  GPU_CHI_FLOOR = 0.01;
 var
   i, t: integer;
   switch, LevyProb: double;
@@ -719,6 +1005,12 @@ begin
       FWorkers[i].Calc.Limit     := FLimit;
     end;
 
+    FGpuError := '';
+    FDeviceUsed := 'CPU';
+    FGpuUsed := False;
+    FTolCheckedChi := -1;
+    StartGpu;
+
     Init(0);
 
     for t := 1 to FTMax do
@@ -757,6 +1049,11 @@ begin
         SendUpdateStep(t);
 
       if FGlobalBestChiSqr < FFitParams.Tolerance then Break;
+      { The GPU's chi-squared has a floor of a few 1e-3 where the CPU's reaches
+        0 (a curve the CPU engine generated itself). Near it, ask the CPU
+        whether the tolerance is met; the search keeps using GPU numbers. }
+      if (FGpu <> nil) and (FGlobalBestChiSqr < FFitParams.Tolerance + GPU_CHI_FLOOR) and
+         ToleranceMetOnCpu then Break;
 
       if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
       begin
@@ -786,10 +1083,14 @@ begin
       unconditionally - GetPolynomes reads abest[n][p] and faults. }
     if Length(abest) > 0 then
     begin
+      if FGpuUsed then
+        RescoreBestOnCpu;
       UpdateStructure(abest);
       SendUpdateMessage(t);
     end;
   finally
+    FreeAndNil(FGpu);
+    FGpuReady := False;
     for i := 0 to High(FWorkers) do
     begin
       FWorkers[i].Calc.Model := nil;

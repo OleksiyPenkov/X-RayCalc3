@@ -788,6 +788,7 @@ Theta    Reflectivity
     <li><a href="#fit-params">Basic Fitting Parameters</a></li>
     <li><a href="#fit-advanced">Advanced Fitting Settings</a></li>
     <li><a href="#running-a-fit">Running a Fit</a></li>
+    <li><a href="#gpu">GPU Acceleration</a></li>
     <li><a href="#staged-fitting">Staged Fitting</a></li>
     <li><a href="#convergence-enhancements">Convergence Enhancements</a></li>
     <li><a href="#understanding-the-cost-function">Understanding the Cost Function</a></li>
@@ -981,7 +982,7 @@ Theta    Reflectivity
     <ul>
       <li>The main chart updates in real time, showing the best-fit curve converging toward the experimental data.</li>
       <li>The <strong>Fitting Progress</strong> chart page shows the &chi;&sup2; convergence curve.</li>
-      <li>The status bar displays elapsed fitting time.</li>
+      <li>The status bar displays elapsed fitting time, and at the end the device the fit ran on (see <a href="#gpu">GPU Acceleration</a>).</li>
       <li>If <strong>Live Update</strong> is enabled (in Settings), the structure editor updates to show current best-fit parameters.</li>
     </ul>
   </li>
@@ -993,6 +994,17 @@ Theta    Reflectivity
     </ul>
   </li>
 </ol>
+
+<h2 id="gpu">GPU Acceleration <span class="badge">v3.9.0</span></h2>
+<p>Each iteration of the fit scores every particle of the swarm, and almost all of that time goes into the Parratt recursion over every layer at every measured angle. When the computer has a graphics card, X-Ray Calc 3 hands the whole swarm to it in one piece: every particle at every angle is computed at once, together with the resolution convolution and the &chi;&sup2;. The models themselves are still built on the CPU, in parallel.</p>
+<ul>
+  <li>On a modern graphics card an iteration runs one to two orders of magnitude faster than on all CPU cores (for a 150-period W/B<sub>4</sub>C multilayer measured at 2000 points, about 70&times; with 500 particles and 170&times; with 5000, against all 32 threads of a Ryzen 9 9950X3D on an RTX 5080). That makes much larger swarms practical.</li>
+  <li>Small models gain less: with a few layers and a few hundred points the fixed cost of each iteration dominates.</li>
+  <li>The GPU computes in single precision, like the CPU engine, and its accuracy against a double-precision reference is at least as good. Its &chi;&sup2; agrees with the CPU's well within 1&nbsp;%, so the search behaves the same; it follows a different path through the swarm, so a GPU fit and a CPU fit with the same seed do not end on identical numbers.</li>
+  <li>The &chi;&sup2; and the curve reported at the end of a fit are always recomputed on the CPU, so they are exactly what <strong>Calc</strong> gives for the fitted model.</li>
+  <li>Wavelength scans are fitted on the CPU. If the graphics card is missing or fails, the fit continues on the CPU.</li>
+</ul>
+<p>The option is <strong>Use the GPU for fitting</strong> in <a href="#calc-fit">Settings &gt; Calc &amp; Fit</a>, on by default. When a fit ends, the status bar shows how long it took and the device it ran on (for example <em>Fitting time: 2.14 s on NVIDIA GeForce RTX 5080</em>), and <strong>Export fit results</strong> records them as <code>fittingSeconds</code> and <code>fittingDevice</code>. Any graphics card with Direct3D 11 works; nothing extra needs installing.</p>
 
 <h2 id="staged-fitting">Staged Fitting <span class="badge">v3.8.2</span></h2>
 <p>A complex model rarely fits well in one pass. Staged fitting lets you settle part of it, hold that part still, and concentrate the search on what remains &mdash; typically fitting the periodic stack first, then freezing it and working on the top and bottom stacks with a different weighting.</p>
@@ -1355,6 +1367,7 @@ Theta    Reflectivity
 <table>
   <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Number of CPU cores to use</strong></td><td>Thread count for parallel computation</td><td>Auto (Use all)</td></tr>
+  <tr><td><strong>Use the GPU for fitting</strong></td><td>Evaluate the fitting swarm on the graphics card when one is usable (theta scans); see <a href="#gpu">GPU Acceleration</a></td><td>On</td></tr>
   <tr><td><strong>Number of runs</strong> (Benchmark)</td><td>How many benchmark iterations to perform</td><td>10</td></tr>
 </table>
 
@@ -1937,7 +1950,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>lambda</code> or <code>energy</code>, <code>theta_range</code></td><td>The wavelength (or photon energy) of the measurement and the &theta; interval to fit.</td></tr>
   <tr><td><code>scale</code></td><td>A fixed multiplier applied to the measured intensities before the fit (the manual's Normalize step), default 1. Not fitted.</td></tr>
   <tr><td><code>smooth</code></td><td><code>{"passes": n}</code>, 0 to 10, runs the GUI's <strong>Data &gt; Smooth</strong> on the measured curve before the fit. Order: scale, then smooth, then the <code>theta_range</code> trim, as in <a href="#data-conditioning-walkthrough">Data Conditioning</a>.</td></tr>
-  <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), tolerance. The result carries <code>optimizer_used</code> with every default filled in.</td></tr>
+  <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), tolerance, and <code>device</code>: <code>"auto"</code> (default, the GPU when <code>describe_server</code> names one in <code>server.gpu</code>), <code>"cpu"</code> or <code>"gpu"</code> (refused without a usable GPU). The result carries <code>optimizer_used</code> with every default filled in, and <code>device_used</code>. The reported &chi;&sup2; is always recomputed on the CPU; see <a href="#gpu">GPU Acceleration</a>.</td></tr>
   <tr><td><code>profile</code>, <code>seed</code></td><td>Allow per-period thickness polynomials (the GUI's polynomial mode), and the random seed.</td></tr>
   <tr><td><code>polarization</code>, <code>resolution</code>, <code>chi2</code>, <code>r_min</code></td><td>Polarization (<code>s</code>, <code>p</code>, <code>sp</code>), the instrumental resolution width, the &chi;&sup2; weighting options of the GUI's fit dialog, and the reflectivity floor below which points are ignored.</td></tr>
 </table>

@@ -36,13 +36,28 @@ type
     FTotalD: single;
     FProfiles: TProfileFunctions;
     FProfileIndex: TDictionary<Cardinal, TArray<Integer>>;
+    { PrepareLayers' memo of AddMaterial: layer i's name string and the
+      material index it resolved to. A fit refills the model with the same
+      name strings for every particle, so the dictionary lookup per layer is
+      needed once. The string itself is kept, not only its address, so the
+      address cannot be reused by a different name while it is remembered. }
+    FMatName: TArray<string>;
+    FMatIdx: TArray<Integer>;
 
     procedure PrepareLayers;
+    procedure SetName(Index: Integer; const Name: string); inline;
     procedure AddMaterial(const AName: string; Lambda: single);
+    procedure UseLayerMaterial(Index: Integer);
     function GetLayers: TCalcLayers;
     procedure GrowParallel(NewLen: Integer);
     procedure SetProfiles(const Value: TProfileFunctions);
   public
+    { The layer records a fitting engine's FillModel builds this model from.
+      Kept with the model so that refilling it for every particle of every
+      iteration allocates nothing: with one model per worker thread, a fresh
+      array per call made the threads queue on the memory manager. }
+    FillScratch: TLayersData;
+
     constructor Create;
     destructor Destroy; override;
     procedure Init;
@@ -104,12 +119,41 @@ begin
       FStackIDs[CurrentLayer + i] := Data[i].StackID;
     end;
 
-    FLayerNames[CurrentLayer + i] := Data[i].Material;
+    SetName(CurrentLayer + i, Data[i].Material);
     FLayers[CurrentLayer + i].L    := Data[i].P[1].V;
     FLayers[CurrentLayer + i].s    := Data[i].P[2].V;
     FLayers[CurrentLayer + i].ro   := Data[i].P[3].V;
   end;
   inc(CurrentLayer, Count);
+end;
+
+{ A model refilled for every particle of a fit gets the same name strings
+  again and again. Assigning one anyway bumps the reference count of a string
+  every worker thread shares - an interlocked write to one cache line from all
+  of them - and that alone kept the parallel model build from scaling. The
+  name is only replaced when it is a different string. }
+procedure TLayeredModel.SetName(Index: Integer; const Name: string);
+begin
+  if Pointer(FLayerNames[Index]) <> Pointer(Name) then
+    FLayerNames[Index] := Name;
+end;
+
+procedure TLayeredModel.UseLayerMaterial(Index: Integer);
+begin
+  if (Index < Length(FMatName)) and
+     (Pointer(FMatName[Index]) = Pointer(FLayerNames[Index])) then
+  begin
+    CurrentMaterial := FMatIdx[Index];
+    Exit;
+  end;
+  AddMaterial(FLayerNames[Index], FLambda);
+  if Length(FMatName) <= Index then
+  begin
+    SetLength(FMatName, Length(FLayerNames));
+    SetLength(FMatIdx, Length(FLayerNames));
+  end;
+  FMatName[Index] := FLayerNames[Index];
+  FMatIdx[Index] := CurrentMaterial;
 end;
 
 procedure TLayeredModel.AddMaterial(const AName: string; Lambda: single);
@@ -141,7 +185,7 @@ begin
     GrowParallel(NewLen);
   end;
   idx := CurrentLayer;
-  FLayerNames[idx] := Data[0].Material;
+  SetName(idx, Data[0].Material);
   FLayers[idx].L   := 1E8;
   FLayers[idx].s   := Data[0].P[2].V;
   FLayers[idx].ro  := Data[0].P[3].V;
@@ -170,7 +214,7 @@ var
 begin
   for I := 1 to High(FLayers) - 1 do
   begin
-    AddMaterial(FLayerNames[i], FLambda);
+    UseLayerMaterial(i);
     if FLayers[i].ro <> 0 then
       l_ro := FLayers[i].ro
     else
@@ -193,7 +237,7 @@ begin
     FLayers[i].e.im := FMaterials[CurrentMaterial].f.im * c;
   end;
 
-  AddMaterial(FLayerNames[High(FLayers)], FLambda);
+  UseLayerMaterial(High(FLayers));
   c := ClassicalElectronRadius * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
   FLayers[High(FLayers)].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
   FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
@@ -291,6 +335,8 @@ begin
   SetLength(FLayerIDs, 1);
   SetLength(FStackIDs, 0);
   SetLength(FStackIDs, 1);
+  SetLength(FMatName, 0);
+  SetLength(FMatIdx, 0);
 
   FLayers[0].L := 1E10;
   FLayers[0].e.re := 1;

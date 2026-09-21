@@ -530,6 +530,16 @@ begin
   AddProp(Result, 'poly_order', 'integer',
     Format('Order of the per-period polynomial in a "profile" fit (default %d).',
       [DEF_POLY_ORDER]));
+  AddEnumProp(Result, 'device',
+    'Where the swarm is evaluated (default "auto"): "auto" uses the GPU when ' +
+    'describe_server.server.gpu names one and the CPU otherwise, "cpu" never ' +
+    'uses the GPU, "gpu" is refused with "invalid_argument" on a machine ' +
+    'without one. The GPU evaluates a large swarm one to two orders of ' +
+    'magnitude faster and minimises the same chi-squared to single-precision ' +
+    'agreement (typically well under 1%), so the same seed gives the same ' +
+    'answer on the same device but not to the last digit across devices. ' +
+    'The result reports "device_used", and "gpu_error" when a GPU was asked ' +
+    'for and the run fell back to the CPU.', ['auto', 'cpu', 'gpu']);
 end;
 
 function FitChi2Schema: TJSONObject;

@@ -46,6 +46,7 @@ uses
   unit_Config in '..\XRayCalc3\Units\unit_Config.pas',
   unit_materials in '..\Shared\Math\unit_materials.pas',
   unit_calc in '..\Shared\Math\unit_calc.pas',
+  unit_gpu_calc in '..\Shared\Math\unit_gpu_calc.pas',
   unit_MCPStructure in 'units\unit_MCPStructure.pas',
   // universal engine units: the template library and the XRF line table
   cmd_unit_types in '..\XRC_CMD\Units\cmd_unit_types.pas',

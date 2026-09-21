@@ -419,7 +419,7 @@ object frmSettings: TfrmSettings
       object Label11: TLabel
         AlignWithMargins = True
         Left = 3
-        Top = 63
+        Top = 88
         Width = 437
         Height = 13
         Align = alTop
@@ -438,7 +438,7 @@ object frmSettings: TfrmSettings
         Left = 3
         Top = 22
         Width = 437
-        Height = 35
+        Height = 60
         Align = alTop
         BorderOuter = fsFlatRounded
         Color = 15987699
@@ -468,11 +468,19 @@ object frmSettings: TfrmSettings
             '32'
             '64')
         end
+        object chkUseGPU: TCheckBox
+          Left = 8
+          Top = 36
+          Width = 412
+          Height = 17
+          Caption = 'Use the GPU for fitting when one is available (theta scans)'
+          TabOrder = 1
+        end
       end
       object RzPanel7: TRzPanel
         AlignWithMargins = True
         Left = 3
-        Top = 82
+        Top = 107
         Width = 437
         Height = 35
         Align = alTop
