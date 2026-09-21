@@ -440,7 +440,9 @@ object frmProjectPanel: TfrmProjectPanel
   end
   object dlgLoadData: TOpenDialog
     DefaultExt = 'dat'
-    Filter = 'ASCII data|*.txt;*.csv;*.tet|Counter files|*.dat|All files|*.*'
+    Filter = 
+      'ASCII data|*.txt;*.csv;*.tet|Counter files|*.dat|XRDML (PANalytical)|*.' +
+      'xrdml|All files|*.*'
     Title = 'Load curve from file'
     Left = 208
     Top = 176

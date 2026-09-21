@@ -63,6 +63,9 @@ type
     [Test] procedure GetMeasurementJSON_MaxPointsTwo_ReturnsBothEnds;
     [Test] procedure GetMeasurementJSON_BadMetaSpecimen_StillRaises;
     [Test] procedure Inbox_SHA256_Unchanged_AfterListAndGet;
+    [Test] procedure LoadMeasurement_XRDML_AxisAndLambdaFromFile;
+    [Test] procedure LoadMeasurement_XRDML_Malformed_RaisesInvalidArgument;
+    [Test] procedure ListMeasurements_ListsXRDML;
   end;
 
 implementation
@@ -711,6 +714,79 @@ begin
     end;
   finally
     Before.Free;
+  end;
+end;
+
+{ ---------------------------------------------------------------- XRDML -- }
+
+const
+  INBOX_XRDML =
+    '<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.6" status="Completed">' +
+    '<sample><id>S1</id></sample><xrdMeasurement>' +
+    '<usedWavelength><kAlpha1 unit="Angstrom">1.5405980</kAlpha1></usedWavelength>' +
+    '<scan scanAxis="2Theta-Omega" mode="Continuous"><dataPoints>' +
+    '<positions axis="2Theta" unit="deg"><startPosition>1.0</startPosition><endPosition>2.0</endPosition></positions>' +
+    '<commonCountingTime unit="seconds">0.5</commonCountingTime>' +
+    '<intensities unit="counts">100 50 0</intensities>' +
+    '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
+
+procedure TTestMCPInbox.LoadMeasurement_XRDML_AxisAndLambdaFromFile;
+var
+  M: TMeasurement;
+begin
+  WriteInboxFile('S1', 'xrr.xrdml', INBOX_XRDML);
+  // a meta.json that disagrees: the file's own axis and wavelength win
+  WriteInboxFile('S1', 'meta.json', '{"lambda": 0.71, "theta_unit": "theta", "instrument": "Empyrean"}');
+  M := LoadMeasurement('S1/xrr.xrdml', 0);
+  try
+    Assert.IsTrue(M.Converted2Theta, 'an Empyrean scan is in 2Theta and is converted');
+    Assert.IsTrue(M.Meta.ThetaUnitDeclared, 'declared by the file, not assumed');
+    Assert.AreEqual('2theta', M.Meta.ThetaUnit);
+    Assert.AreEqual('2theta,intensity', M.Columns);
+    Assert.AreEqual(3, M.Points);
+    Assert.AreEqual(Double(0.5), Double(M.Curve[0].t), 1E-6, '2Theta 1.0 -> theta 0.5');
+    Assert.AreEqual(Double(1.0), Double(M.Curve[2].t), 1E-6);
+    Assert.AreEqual(Double(200.0), Double(M.Curve[0].r), 1E-6, 'counts / 0.5 s');
+    Assert.AreEqual(Double(100.0), Double(M.Curve[2].r), 1E-6,
+      'a zero count is floored to the smallest positive intensity before it, as for text files');
+    Assert.AreEqual(Double(1.540598), M.Meta.Lambda, 1E-9, 'kAlpha1 from the file');
+    Assert.IsTrue(M.Meta.Present, 'meta.json is still read for the rest');
+    Assert.IsTrue(Length(M.HeaderLines) >= 3, 'the file facts are the header');
+  finally
+    M.Meta.Raw.Free;
+  end;
+end;
+
+procedure TTestMCPInbox.LoadMeasurement_XRDML_Malformed_RaisesInvalidArgument;
+begin
+  WriteInboxFile('S1', 'bad.xrdml', '<xrdMeasurements><xrdMeasurement><scan/></xrdMeasurement></xrdMeasurements>');
+  try
+    LoadMeasurement('S1/bad.xrdml', 0);
+    Assert.Fail('a scan without dataPoints must be refused');
+  except
+    on E: EMCPError do
+    begin
+      Assert.AreEqual('invalid_argument', E.Code);
+      Assert.IsTrue(Pos('dataPoints', E.Message) > 0, 'the message names the element: ' + E.Message);
+    end;
+  end;
+end;
+
+procedure TTestMCPInbox.ListMeasurements_ListsXRDML;
+var
+  A: TJSONArray;
+  Files: TJSONArray;
+begin
+  WriteInboxFile('S1', 'xrr.xrdml', INBOX_XRDML);
+  WriteInboxFile('S1', 'notes.md', '# not a measurement');
+  A := ListMeasurements('');
+  try
+    Assert.AreEqual(1, A.Count);
+    Files := (A.Items[0] as TJSONObject).GetValue<TJSONArray>('files');
+    Assert.AreEqual(1, Files.Count, 'the .xrdml is listed, the .md is not');
+    Assert.AreEqual('S1/xrr.xrdml', (Files.Items[0] as TJSONObject).GetValue<string>('id'));
+  finally
+    A.Free;
   end;
 end;
 

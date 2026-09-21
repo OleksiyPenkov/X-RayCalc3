@@ -206,6 +206,7 @@
         <DCCReference Include="Units\unit_Types.pas"/>
         <DCCReference Include="..\Shared\Math\math_complex.pas"/>
         <DCCReference Include="Units\unit_SeriesIO.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_xrdml.pas"/>
         <DCCReference Include="Units\unit_DataProcessing.pas"/>
         <DCCReference Include="Units\unit_FileUtils.pas"/>
         <DCCReference Include="Units\unit_helpers.pas"/>

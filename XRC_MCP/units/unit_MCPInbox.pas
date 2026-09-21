@@ -114,7 +114,7 @@ type
 const
   /// <summary>The extensions a measurement_id may carry. Anything else in a
   /// specimen folder (meta.json included) is not a measurement.</summary>
-  MEASUREMENT_EXTENSIONS: array [0 .. 2] of string = ('.dat', '.txt', '.xy');
+  MEASUREMENT_EXTENSIONS: array [0 .. 3] of string = ('.dat', '.txt', '.xy', '.xrdml');
   DEFAULT_MAX_POINTS = 2000;
 
 /// <summary>Parses two numeric columns out of Lines. Returns the number of
@@ -161,7 +161,7 @@ implementation
 uses
   System.Character, System.Math, System.IOUtils, System.StrUtils,
   System.Generics.Collections, System.Generics.Defaults,
-  unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits;
+  unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits, unit_xrdml;
 
 { ------------------------------------------------------------------ helpers -- }
 
@@ -447,6 +447,8 @@ var
   Description, Parsed: TArray<string>;
   Full: unit_Types.TDataArray;
   I: Integer;
+  IsXRDML: Boolean;
+  Scan: TXRDMLScan;
 begin
   Result := Default(TMeasurement);
   SplitMeasurementId(Id, Specimen, FileName);
@@ -459,13 +461,33 @@ begin
       Format('No measurement "%s" in the inbox', [Result.Id]),
       WorkDir.RelativePath(Result.Path));
 
-  SL := TStringList.Create;
-  try
-    LoadTextShared(SL, Result.Path);
-    StripFileHeader(SL, Description);
-    ParseCurveText(SL, Full, Parsed);
-  finally
-    SL.Free;
+  { An XRDML file carries its curve, its angle axis and its wavelength itself;
+    a text file carries two columns and leaves the rest to meta.json. }
+  IsXRDML := IsXRDMLFile(Result.Path);
+  SetLength(Parsed, 0);
+  if IsXRDML then
+  begin
+    try
+      Scan := ReadXRDMLFile(Result.Path);
+    except
+      on E: EXRDMLError do
+        raise EMCPError.Create('invalid_argument',
+          'The XRDML file cannot be read: ' + E.Message, WorkDir.RelativePath(Result.Path));
+    end;
+    Full := Scan.Curve;
+    FloorNonPositive(Full);        // the rule ParseCurveText applies to text
+    Description := Scan.DescriptionLines;
+  end
+  else
+  begin
+    SL := TStringList.Create;
+    try
+      LoadTextShared(SL, Result.Path);
+      StripFileHeader(SL, Description);
+      ParseCurveText(SL, Full, Parsed);
+    finally
+      SL.Free;
+    end;
   end;
 
   Result.HeaderLines := Description;
@@ -479,6 +501,19 @@ begin
 
   ReadMeta(ExtractFileDir(Result.Path), Result.Meta);
   try
+    { The file's own facts win over meta.json: the axis it was scanned on is
+      declared by the file, and kAlpha1 is the wavelength it was measured at. A
+      meta.json beside it still supplies the date and the instrument. }
+    if IsXRDML then
+    begin
+      if SameText(Scan.XAxis, '2Theta') then
+        Result.Meta.ThetaUnit := '2theta'
+      else
+        Result.Meta.ThetaUnit := 'theta';
+      Result.Meta.ThetaUnitDeclared := True;
+      if Scan.Lambda > 0 then
+        Result.Meta.Lambda := Scan.Lambda;
+    end;
     Result.Converted2Theta := SameText(Result.Meta.ThetaUnit, '2theta');
     if Result.Converted2Theta then
     begin

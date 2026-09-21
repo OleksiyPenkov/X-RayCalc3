@@ -51,6 +51,8 @@ uses
   unit_universal_types in '..\..\Shared\Universal\unit_universal_types.pas',
   unit_universal_templates in '..\..\Shared\Universal\unit_universal_templates.pas',
   unit_universal_io in '..\..\Shared\Universal\unit_universal_io.pas',
+  unit_xrdml in '..\..\Shared\Universal\unit_xrdml.pas',
+  TestXRDML in 'TestXRDML.pas',
   unit_xrf_lines in '..\..\Shared\Universal\unit_xrf_lines.pas',
   unit_xrfx_package in '..\..\Shared\Universal\unit_xrfx_package.pas',
   TestXRFLines in 'TestXRFLines.pas',

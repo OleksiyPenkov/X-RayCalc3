@@ -128,6 +128,8 @@
         <DCCReference Include="..\..\Shared\Universal\unit_universal_optimizer.pas"/>
         <DCCReference Include="TestMCPUniversalJob.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPInbox.pas"/>
+        <DCCReference Include="..\..\Shared\Universal\unit_xrdml.pas"/>
+        <DCCReference Include="TestXRDML.pas"/>
         <DCCReference Include="TestMCPInbox.pas"/>
         <DCCReference Include="..\Components\unit_XRCProjectTree.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPProjectFile.pas"/>

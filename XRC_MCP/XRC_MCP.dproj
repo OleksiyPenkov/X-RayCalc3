@@ -144,6 +144,7 @@
         <DCCReference Include="..\Shared\Universal\unit_universal_refcalc.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_fitness.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_xrdml.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_pso.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_optimizer.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_xrfx_package.pas"/>

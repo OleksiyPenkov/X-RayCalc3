@@ -233,6 +233,7 @@ implementation
 
 uses
   System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
+  unit_xrdml,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
   editor_JSON, frm_ExtensionType;
 
@@ -1415,9 +1416,40 @@ var
   Data: PProjectData;
   Node: PVirtualNode;
   Parent: PVirtualNode;
+  IsXRDML: Boolean;
+  Scan: TXRDMLScan;
+  Curve: TDataArray;
+  Descr, L: string;
+  i: Integer;
 begin
   if not dlgLoadData.Execute then
     Exit;
+
+  { An XRDML file is parsed before any node exists, so an unreadable file
+    leaves nothing behind. The chart shows the unit the 2-theta switch says,
+    so the scanned axis is brought to it: an Empyrean 2Theta-Omega scan is in
+    2Theta, a rocking curve (Omega only) is in theta already. The wavelength
+    and the rest of what the file says go into the node's description. }
+  IsXRDML := IsXRDMLFile(dlgLoadData.FileName);
+  if IsXRDML then
+  begin
+    Scan := ReadXRDMLFile(dlgLoadData.FileName);
+    Curve := Scan.Curve;
+    FloorNonPositive(Curve);       // as SeriesFromText does for counter files
+    if SameText(Scan.XAxis, '2Theta') and not FCalcSettings.Is2Theta then
+      for i := 0 to High(Curve) do
+        Curve[i].t := Curve[i].t / 2
+    else if SameText(Scan.XAxis, 'Omega') and FCalcSettings.Is2Theta then
+      for i := 0 to High(Curve) do
+        Curve[i].t := Curve[i].t * 2;
+    Descr := '';
+    for L in Scan.DescriptionLines do
+      Descr := Descr + L + #13#10;
+    if FCalcSettings.Is2Theta then
+      Descr := Descr + '* Loaded as 2Theta' + #13#10
+    else
+      Descr := Descr + '* Loaded as theta (incidence angle)' + #13#10;
+  end;
 
   Node := FProject.GetFirstSelected;
   if Node = nil then
@@ -1430,7 +1462,13 @@ begin
     Parent := FDataRoot;
 
   Data := CreateDataNode(Parent, ExtractFileName(dlgLoadData.FileName));
-  SeriesFromFile(FChartMgr.Series[Data.CurveID], dlgLoadData.FileName, Data.Description);
+  if IsXRDML then
+  begin
+    DataToSeries(Curve, FChartMgr.Series[Data.CurveID]);
+    Data.Description := Descr;
+  end
+  else
+    SeriesFromFile(FChartMgr.Series[Data.CurveID], dlgLoadData.FileName, Data.Description);
   SeriesToFile(FChartMgr.Series[Data.CurveID], DataName(Data));
 
   FProject.ActiveData := Data;

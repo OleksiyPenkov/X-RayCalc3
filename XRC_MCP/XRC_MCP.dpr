@@ -58,6 +58,7 @@ uses
   unit_universal_refcalc in '..\Shared\Universal\unit_universal_refcalc.pas',
   unit_universal_fitness in '..\Shared\Universal\unit_universal_fitness.pas',
   unit_universal_io in '..\Shared\Universal\unit_universal_io.pas',
+  unit_xrdml in '..\Shared\Universal\unit_xrdml.pas',
   unit_universal_pso in '..\Shared\Universal\unit_universal_pso.pas',
   unit_universal_optimizer in '..\Shared\Universal\unit_universal_optimizer.pas',
   unit_xrfx_package in '..\Shared\Universal\unit_xrfx_package.pas',

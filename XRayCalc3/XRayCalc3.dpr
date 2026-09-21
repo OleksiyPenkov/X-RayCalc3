@@ -14,6 +14,7 @@ uses
   unit_Types in 'Units\unit_Types.pas',
   math_complex in '..\Shared\Math\math_complex.pas',
   unit_SeriesIO in 'Units\unit_SeriesIO.pas',
+  unit_xrdml in '..\Shared\Universal\unit_xrdml.pas',
   unit_DataProcessing in 'Units\unit_DataProcessing.pas',
   unit_FileUtils in 'Units\unit_FileUtils.pas',
   unit_helpers in 'Units\unit_helpers.pas',
