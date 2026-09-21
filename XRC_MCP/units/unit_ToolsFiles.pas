@@ -83,7 +83,8 @@ begin
     'reports it. The file extension must be .dat, .txt, .xy or .xrdml. A ' +
     '.xrdml file (PANalytical) is read directly: its angle axis (2Theta as ' +
     'scanned, converted to theta here) and its kAlpha1 wavelength come from the ' +
-    'file and override meta.json; counts are divided by the counting time.');
+    'file and override meta.json; counts are divided by the counting time and ' +
+    'the curve is normalised to 1 at its maximum.');
   AddProp(Schema, 'max_points', 'integer',
     'Decimate the curve to at most this many points before returning it ' +
     '(default 2000; minimum 2; first and last points are always kept). ' +

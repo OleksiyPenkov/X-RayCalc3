@@ -130,8 +130,9 @@ begin
   Assert.AreEqual(0.1, S.Curve[0].t, 1e-6);
   Assert.AreEqual(0.2, S.Curve[1].t, 1e-6);
   Assert.AreEqual(0.5, S.Curve[4].t, 1e-6);
-  Assert.AreEqual(200.0, S.Curve[0].r, 1e-6, 'counts / commonCountingTime');
-  Assert.AreEqual(1000.0, S.Curve[4].r, 1e-6);
+  Assert.AreEqual(0.2, S.Curve[0].r, 1e-6, '(100 / 0.5 s) / peak');
+  Assert.AreEqual(1.0, S.Curve[4].r, 1e-6, 'the maximum is 1');
+  Assert.AreEqual(1000.0, S.PeakRate, 1e-6, 'the peak in counts / s');
   Assert.AreEqual(1.540598, S.Lambda, 1e-9);
   Assert.AreEqual('Cu', S.Anode);
   Assert.AreEqual('C(260917B)-XRR', S.SampleId);
@@ -155,9 +156,10 @@ begin
   Assert.AreEqual(1.0, S.Curve[0].t, 1e-6);
   Assert.AreEqual(1.5, S.Curve[1].t, 1e-6);
   Assert.AreEqual(2.5, S.Curve[2].t, 1e-6);
-  Assert.AreEqual(10.0, S.Curve[0].r, 1e-6, '10 x 1 / 1 s');
-  Assert.AreEqual(10.0, S.Curve[1].r, 1e-6, '20 x 1 / 2 s');
-  Assert.AreEqual(750.0, S.Curve[2].r, 1e-6, '30 x 100 / 4 s');
+  Assert.AreEqual(750.0, S.PeakRate, 1e-6, '30 x 100 / 4 s');
+  Assert.AreEqual(10 / 750, S.Curve[0].r, 1e-6, '10 x 1 / 1 s, over the peak');
+  Assert.AreEqual(10 / 750, S.Curve[1].r, 1e-6, '20 x 1 / 2 s, over the peak');
+  Assert.AreEqual(1.0, S.Curve[2].r, 1e-6);
   Assert.AreEqual(0.0, S.CountingTime, 0, 'per-point times');
   Assert.IsFalse(S.Corrected);
   Assert.IsTrue(S.AttenuationApplied);
@@ -170,8 +172,9 @@ var
 begin
   // "intensities" are corrected already: the factors must not be applied twice
   S := ReadXRDMLText(XRDML_INTENSITIES_WITH_FACTORS);
-  Assert.AreEqual(5.0, S.Curve[0].r, 1e-6);
-  Assert.AreEqual(10.0, S.Curve[1].r, 1e-6);
+  Assert.AreEqual(10.0, S.PeakRate, 1e-6, '20 / 2 s, no factor');
+  Assert.AreEqual(0.5, S.Curve[0].r, 1e-6);
+  Assert.AreEqual(1.0, S.Curve[1].r, 1e-6);
   Assert.IsFalse(S.AttenuationApplied);
   Assert.AreEqual('1.5', S.SchemaVersion);
 end;
@@ -185,7 +188,8 @@ begin
   Assert.AreEqual(10.0, S.Curve[0].t, 1e-6);
   Assert.AreEqual(11.0, S.Curve[1].t, 1e-6);
   Assert.AreEqual(12.0, S.Curve[2].t, 1e-6);
-  Assert.AreEqual(3.0, S.Curve[2].r, 1e-6);
+  Assert.AreEqual(1.0, S.Curve[2].r, 1e-6);
+  Assert.AreEqual(1 / 3, S.Curve[0].r, 1e-6);
   Assert.AreEqual('1.3', S.SchemaVersion);
 end;
 
@@ -204,8 +208,9 @@ var
   S: TXRDMLScan;
 begin
   S := ReadXRDMLText(XRDML_NO_TIME);
-  Assert.AreEqual(7.0, S.Curve[0].r, 1e-6);
-  Assert.AreEqual(9.0, S.Curve[1].r, 1e-6);
+  Assert.AreEqual(9.0, S.PeakRate, 1e-6, 'raw counts, no time to divide by');
+  Assert.AreEqual(7 / 9, S.Curve[0].r, 1e-6);
+  Assert.AreEqual(1.0, S.Curve[1].r, 1e-6);
   Assert.AreEqual(0.0, S.CountingTime, 0);
 end;
 
@@ -251,6 +256,7 @@ begin
     Assert.IsTrue((L <> '') and (L[1] = '*'), 'a header line starts with *: ' + L);
   Assert.IsTrue(Pos('1.540598', string.Join(#10, Lines)) > 0, 'the wavelength is in the header');
   Assert.IsTrue(Pos('2Theta', string.Join(#10, Lines)) > 0, 'the angle axis is in the header');
+  Assert.IsTrue(Pos('normalised to 1', string.Join(#10, Lines)) > 0, 'the normalisation is in the header');
 end;
 
 procedure TTestXRDML.IsXRDMLFile_ByExtension;
@@ -292,7 +298,9 @@ begin
   Assert.AreEqual(S.Points, Length(S.Curve));
   Assert.AreEqual(0.0955, S.Curve[0].t, 1e-5);
   Assert.AreEqual(8.7655, S.Curve[High(S.Curve)].t, 1e-4);
-  Assert.AreEqual(338638 / 0.176, S.Curve[0].r, 0.5, 'first point in counts per second');
+  Assert.AreEqual(927993 / 0.176, S.PeakRate, 1.0, 'the plateau maximum in counts per second');
+  Assert.AreEqual(338638 / 927993, S.Curve[0].r, 1e-5, 'the first point over the peak');
+  Assert.IsTrue(S.Curve[High(S.Curve)].r > 0, 'the tail zero is floored');
   Assert.AreEqual(1.540598, S.Lambda, 1e-6);
   Assert.AreEqual('C(260917B)-XRR', S.SampleId);
   Assert.AreEqual('1.6', S.SchemaVersion);

@@ -475,7 +475,6 @@ begin
           'The XRDML file cannot be read: ' + E.Message, WorkDir.RelativePath(Result.Path));
     end;
     Full := Scan.Curve;
-    FloorNonPositive(Full);        // the rule ParseCurveText applies to text
     Description := Scan.DescriptionLines;
   end
   else

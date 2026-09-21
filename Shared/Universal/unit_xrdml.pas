@@ -35,7 +35,9 @@
 ///     (equidistant), or an explicit "listPositions", or a single
 ///     "commonPosition" (a fixed axis, never the curve's abscissa).
 ///   - Counting time is "commonCountingTime" or a per-point "countingTimes"
-///     list. Intensity is always reported in counts per second.
+///     list. Intensity is counts per second, then normalised to 1 at the
+///     maximum (PeakRate keeps the counts per second that 1 stands for); a
+///     zero count is floored the way the text importers floor it.
 ///   - The abscissa is the "2Theta" positions element wherever it appears among
 ///     the positions; a scan without one (a rocking curve) uses "Omega" and
 ///     says so in XAxis.
@@ -55,7 +57,8 @@ type
   EXRDMLError = class(Exception);
 
   TXRDMLScan = record
-    Curve: TDataArray;         // t = angle on XAxis (deg), r = counts per second
+    Curve: TDataArray;         // t = angle on XAxis (deg), r = intensity normalised to 1 at the maximum
+    PeakRate: Double;          // counts per second at the maximum, the value r = 1 stands for
     XAxis: string;             // '2Theta' or 'Omega'
     ScanAxis: string;          // the scan element's scanAxis: '2Theta-Omega', 'Omega', ...
     ScanMode: string;          // 'Continuous', 'Pre-set time', ...
@@ -365,6 +368,16 @@ begin
     Result.Curve[I].r := T;
   end;
   Result.Points := N;
+
+  { the curve a reflectivity fit wants: floored, then 1 at the maximum }
+  FloorNonPositive(Result.Curve);
+  Result.PeakRate := 0;
+  for I := 0 to N - 1 do
+    if Result.Curve[I].r > Result.PeakRate then
+      Result.PeakRate := Result.Curve[I].r;
+  if Result.PeakRate > 0 then
+    for I := 0 to N - 1 do
+      Result.Curve[I].r := Result.Curve[I].r / Result.PeakRate;
 end;
 
 /// MSXML lives on COM. The GUI has initialised it; a console server or a test
@@ -464,12 +477,14 @@ begin
   else
     S := '* Counting time: per point';
   if Corrected then
-    S := S + '; intensity = corrected counts / s'
+    S := S + '; corrected counts / s'
   else if AttenuationApplied then
-    S := S + '; intensity = counts x attenuation factor / s'
+    S := S + '; counts x attenuation factor / s'
   else
-    S := S + '; intensity = counts / s';
+    S := S + '; counts / s';
   Result := Result + [S];
+  Result := Result + ['* Intensity normalised to 1 at the maximum, ' +
+    FormatFloat('0.###', PeakRate, TFormatSettings.Invariant) + ' counts / s'];
   Result := Result + ['* Angle column: ' + XAxis + ' as scanned, ' + IntToStr(Points) + ' points'];
 end;
 

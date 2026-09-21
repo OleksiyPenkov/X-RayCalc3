@@ -746,8 +746,9 @@ begin
     Assert.AreEqual(3, M.Points);
     Assert.AreEqual(Double(0.5), Double(M.Curve[0].t), 1E-6, '2Theta 1.0 -> theta 0.5');
     Assert.AreEqual(Double(1.0), Double(M.Curve[2].t), 1E-6);
-    Assert.AreEqual(Double(200.0), Double(M.Curve[0].r), 1E-6, 'counts / 0.5 s');
-    Assert.AreEqual(Double(100.0), Double(M.Curve[2].r), 1E-6,
+    Assert.AreEqual(Double(1.0), Double(M.Curve[0].r), 1E-6, 'normalised to 1 at the maximum');
+    Assert.AreEqual(Double(0.5), Double(M.Curve[1].r), 1E-6);
+    Assert.AreEqual(Double(0.5), Double(M.Curve[2].r), 1E-6,
       'a zero count is floored to the smallest positive intensity before it, as for text files');
     Assert.AreEqual(Double(1.540598), M.Meta.Lambda, 1E-9, 'kAlpha1 from the file');
     Assert.IsTrue(M.Meta.Present, 'meta.json is still read for the rest');

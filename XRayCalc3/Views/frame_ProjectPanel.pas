@@ -1435,7 +1435,6 @@ begin
   begin
     Scan := ReadXRDMLFile(dlgLoadData.FileName);
     Curve := Scan.Curve;
-    FloorNonPositive(Curve);       // as SeriesFromText does for counter files
     if SameText(Scan.XAxis, '2Theta') and not FCalcSettings.Is2Theta then
       for i := 0 to High(Curve) do
         Curve[i].t := Curve[i].t / 2
