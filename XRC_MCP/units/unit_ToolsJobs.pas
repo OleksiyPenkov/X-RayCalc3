@@ -766,8 +766,15 @@ begin
     'Fit a polynomial profile of each parameter over the periods of the ' +
     'repeating stack (TLFPSO_Poly) instead of one value per layer (default ' +
     'false). It needs exactly one stack with N > 1, and reports the ' +
-    'coefficients in "profiles" and the per-period thicknesses in ' +
-    '"fitted_structure".');
+    'coefficients in "profiles" and, on each layer of "fitted_structure", ' +
+    'the per-period values: "thickness_profile" always, "sigma_profile" and ' +
+    '"density_profile" where those vary over the periods (not paired). Each ' +
+    'array has N entries and runs from the SURFACE end of the stack: entry 0 ' +
+    'is period 1, the period nearest the surface; the last entry is the ' +
+    'period nearest the substrate. "stacks" runs the other way (substrate ' +
+    'up), so to rebuild the fitted multilayer as N stacks of N = 1 list them ' +
+    'from the last array entry to the first; that structure gives back the ' +
+    'fit''s curve and chi2.');
   AddEnumProp(Schema, 'polarization',
     'Polarization of the incident beam (default "sp"). The engine has no ' +
     'pure-p path, so "p" is computed as "sp" and the result echoes "sp".',

@@ -85,6 +85,11 @@ type
     /// <summary>The file the result names under "files", read back as JSON.
     /// Caller frees.</summary>
     function ReadResultFile(const Res: TJSONObject; const Key: string): TJSONValue;
+    /// <summary>The two-column curve file the result names under Key.</summary>
+    function ReadResultCurve(const Res: TJSONObject; const Key: string): TDataArray;
+    /// <summary>A profile fit with thickness, sigma and density free and
+    /// unpaired in both layers. The result is the caller's to free.</summary>
+    function RunUnpairedProfileFit: TJSONObject;
   public
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
@@ -160,6 +165,8 @@ type
     [Test] procedure Paired_UnknownParameter_Refused;
     [Test] procedure Paired_Absent_LeavesEveryParameterFree;
     [Test] procedure ProfileFit_SigmaAndDensityPaired_HaveNoPolynomial;
+    [Test] procedure ProfileFit_UnpairedSigmaAndDensity_ReportTheirProfiles;
+    [Test] procedure ProfileFit_UnrolledIntoSinglePeriods_ReproducesTheFit;
 
     [Test] procedure Report_IsInTheResultAndInTheJobFolder;
     [Test] procedure Report_OrdersAndStart_AreBothThere;
@@ -656,6 +663,31 @@ begin
   Assert.IsTrue(TFile.Exists(Full), 'the job folder holds ' + Rel);
   Result := TJSONObject.ParseJSONValue(TFile.ReadAllText(Full));
   Assert.IsNotNull(Result, Rel + ' is JSON');
+end;
+
+function TTestMCPFit.ReadResultCurve(const Res: TJSONObject;
+  const Key: string): TDataArray;
+var
+  Lines, Cols: TArray<string>;
+  i, n: Integer;
+  Full: string;
+begin
+  Full := TPath.Combine(FTemp,
+    (Res.GetValue('files') as TJSONObject).GetValue<string>(Key));
+  Assert.IsTrue(TFile.Exists(Full), 'the job folder holds ' + Full);
+  Lines := TFile.ReadAllLines(Full);
+  SetLength(Result, Length(Lines));
+  n := 0;
+  for i := 1 to High(Lines) do           // line 0 is the column header
+  begin
+    Cols := Lines[i].Split([#9]);
+    if Length(Cols) < 2 then
+      Continue;
+    Result[n].t := StrToFloat(Cols[0], TFormatSettings.Invariant);
+    Result[n].r := StrToFloat(Cols[1], TFormatSettings.Invariant);
+    Inc(n);
+  end;
+  SetLength(Result, n);
 end;
 
 function TTestMCPFit.RunRequest(const RequestJSON: string): TJSONObject;
@@ -2621,7 +2653,7 @@ end;
 procedure TTestMCPFit.ProfileFit_SigmaAndDensityPaired_HaveNoPolynomial;
 var
   Res: TJSONObject;
-  Profiles, Paired: TJSONArray;
+  Profiles, Paired, Layers: TJSONArray;
   i: Integer;
 begin
   if not HenkeTablesPresent then
@@ -2644,9 +2676,233 @@ begin
       Assert.AreEqual('thickness',
         (Profiles.Items[i] as TJSONObject).GetValue<string>('parameter'),
         'no paired parameter has a polynomial');
+
+    Layers := Res.GetValue<TJSONArray>('fitted_structure.stacks[0].layers');
+    for i := 0 to Layers.Count - 1 do
+    begin
+      Assert.IsNotNull((Layers.Items[i] as TJSONObject).GetValue('thickness_profile'),
+        'the thicknesses still vary over the periods');
+      Assert.IsNull((Layers.Items[i] as TJSONObject).GetValue('sigma_profile'),
+        'a paired sigma is one value, not a profile');
+      Assert.IsNull((Layers.Items[i] as TJSONObject).GetValue('density_profile'),
+        'a paired density is one value, not a profile');
+    end;
   finally
     Res.Free;
   end;
+end;
+
+{ Rewrites a fitted_structure with per-period profiles as the same multilayer
+  written out period by period: every repeating stack becomes N stacks of
+  N = 1 whose layers take the i-th value of thickness_profile, sigma_profile
+  and density_profile where the layer has one, and its single value otherwise.
+  The profiles run from the surface end (period 1) down, the JSON stacks from
+  the substrate up, so the periods are emitted last profile entry first;
+  WrongWay emits them in array order, the mistake the rebuild must not make. }
+function UnrollProfiles(const Fitted: TJSONObject; WrongWay: Boolean): string;
+
+  function Pick(const L: TJSONObject; const ProfileKey, Key: string;
+    j: Integer): Double;
+  var
+    Arr: TJSONArray;
+  begin
+    Arr := L.GetValue(ProfileKey) as TJSONArray;
+    if Arr <> nil then
+      Result := (Arr.Items[j] as TJSONNumber).AsDouble
+    else
+      Result := L.GetValue<Double>(Key);
+  end;
+
+var
+  Out, JStack, JL, NewL: TJSONObject;
+  Stacks, OutStacks, Layers, NewLayers: TJSONArray;
+  k, step, j, i, N: Integer;
+begin
+  Out := TJSONObject.Create;
+  try
+    Out.AddPair('substrate', Fitted.GetValue('substrate').Clone as TJSONValue);
+    if Fitted.GetValue('cap') <> nil then
+      Out.AddPair('cap', Fitted.GetValue('cap').Clone as TJSONValue);
+    if Fitted.GetValue('buffer') <> nil then
+      Out.AddPair('buffer', Fitted.GetValue('buffer').Clone as TJSONValue);
+
+    OutStacks := TJSONArray.Create;
+    Out.AddPair('stacks', OutStacks);
+    Stacks := Fitted.GetValue('stacks') as TJSONArray;
+    for k := 0 to Stacks.Count - 1 do
+    begin
+      JStack := Stacks.Items[k] as TJSONObject;
+      N := JStack.GetValue<Integer>('N');
+      if N = 1 then
+      begin
+        OutStacks.AddElement(JStack.Clone as TJSONValue);
+        Continue;
+      end;
+      Layers := JStack.GetValue('layers') as TJSONArray;
+      for step := 0 to N - 1 do
+      begin
+        if WrongWay then
+          j := step
+        else
+          j := N - 1 - step;           // substrate end first
+        NewLayers := TJSONArray.Create;
+        for i := 0 to Layers.Count - 1 do
+        begin
+          JL := Layers.Items[i] as TJSONObject;
+          NewL := TJSONObject.Create;
+          NewLayers.AddElement(NewL);
+          NewL.AddPair('material', JL.GetValue<string>('material'));
+          NewL.AddPair('thickness', TJSONNumber.Create(Pick(JL, 'thickness_profile', 'thickness', j)));
+          NewL.AddPair('sigma', TJSONNumber.Create(Pick(JL, 'sigma_profile', 'sigma', j)));
+          NewL.AddPair('density', TJSONNumber.Create(Pick(JL, 'density_profile', 'density', j)));
+        end;
+        OutStacks.AddElement(TJSONObject.Create
+          .AddPair('N', TJSONNumber.Create(1))
+          .AddPair('layers', NewLayers));
+      end;
+    end;
+    Result := Out.ToJSON;
+  finally
+    Out.Free;
+  end;
+end;
+
+function TTestMCPFit.RunUnpairedProfileFit: TJSONObject;
+const
+  { START_STRUCTURE with the densities written out, so that a free density has
+    a start value to take its default bounds from. }
+  START_WITH_DENSITIES =
+    '{"substrate":{"material":"Si","sigma":3},' +
+    '"stacks":[{"N":10,"layers":[' +
+    '{"material":"C","thickness":55.5,"sigma":3,"density":2.2},' +
+    '{"material":"Ru","thickness":13.0,"sigma":3,"density":12.0}]}]}';
+begin
+  Result := RunFit(5, SyntheticCurveJSON,
+    '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness","sigma","density"]},' +
+    '{"target":"layer","stack":0,"layer":1,"parameters":["thickness","sigma","density"]}]',
+    ',"profile":true', PROFILE_POPULATION, PROFILE_ITERATIONS, START_WITH_DENSITIES);
+end;
+
+{ A sigma or density with a polynomial of its own varies over the periods, so
+  the result must carry its per-period values the way it carries the
+  thicknesses; otherwise the fitted curve cannot be rebuilt from the result. }
+procedure TTestMCPFit.ProfileFit_UnpairedSigmaAndDensity_ReportTheirProfiles;
+const
+  KEYS: array [0..2] of string = ('thickness_profile', 'sigma_profile', 'density_profile');
+var
+  Res: TJSONObject;
+  Layers, Arr: TJSONArray;
+  i, k, c: Integer;
+  Varies: Boolean;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunUnpairedProfileFit;
+  try
+    Layers := Res.GetValue<TJSONArray>('fitted_structure.stacks[0].layers');
+    for i := 0 to Layers.Count - 1 do
+      for k := 0 to High(KEYS) do
+      begin
+        Arr := (Layers.Items[i] as TJSONObject).GetValue(KEYS[k]) as TJSONArray;
+        Assert.IsNotNull(Arr, Format('layer %d reports %s', [i, KEYS[k]]));
+        Assert.AreEqual(10, Arr.Count, Format('layer %d: one %s value per period', [i, KEYS[k]]));
+        Varies := False;
+        for c := 1 to Arr.Count - 1 do
+          Varies := Varies or ((Arr.Items[c] as TJSONNumber).AsDouble <>
+                               (Arr.Items[0] as TJSONNumber).AsDouble);
+        Assert.IsTrue(Varies, Format('layer %d: %s varies over the periods', [i, KEYS[k]]));
+      end;
+  finally
+    Res.Free;
+  end;
+end;
+
+{ The acceptance test of the 2026-09-21 spec: a profile fit written out period
+  by period from the reported arrays gives back the fit's own curve (through
+  the calc_reflectivity engine path) and the fit's own chi2 (as the chi2_start
+  of a second fit that starts from it). Emitting the periods in array order
+  instead turns the gradient upside down, and the curve must then differ. }
+procedure TTestMCPFit.ProfileFit_UnrolledIntoSinglePeriods_ReproducesTheFit;
+
+  function CalcOn(const StructureJSON: string; const Grid: TDataArray): TDataArray;
+  var
+    Req: TCalcRequest;
+    Used: TFitStructure;
+    J: TJSONObject;
+  begin
+    Req := Default(TCalcRequest);
+    J := TJSONObject.ParseJSONValue(StructureJSON) as TJSONObject;
+    try
+      Req.Structure := StructureFromJSON(J, Req.Info);
+    finally
+      J.Free;
+    end;
+    Req.Lambda := CU_K_ALPHA;
+    Req.ThetaMin := Grid[0].t;
+    Req.ThetaMax := Grid[High(Grid)].t;
+    Req.Points := Length(Grid);
+    Req.Polarization := cmSP;          // fit_xrr's default, which the fit ran with
+    Req.RMin := 1E-7;
+    Result := RunCalc(Req, Used);
+  end;
+
+  { Mean rather than maximum: the result reports every number to six
+    significant digits, and at the deepest minimum of this curve that alone
+    moves R by a few percent while chi2 moves by about 1e-4 of itself. }
+  function MeanRelDiff(const A, B: TDataArray): Double;
+  var
+    i: Integer;
+  begin
+    Result := 0;
+    for i := 0 to High(A) do
+      Result := Result + Abs(A[i].r - B[i].r) / B[i].r;
+    Result := Result / Length(A);
+  end;
+
+var
+  Res, Res2: TJSONObject;
+  Unrolled, WrongWay: string;
+  FitCurve: TDataArray;
+  Chi2, Chi2Rebuilt, Right, Wrong: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunUnpairedProfileFit;
+  try
+    Chi2 := Res.GetValue<Double>('chi2');
+    Unrolled := UnrollProfiles(Res.GetValue('fitted_structure') as TJSONObject, False);
+    WrongWay := UnrollProfiles(Res.GetValue('fitted_structure') as TJSONObject, True);
+    FitCurve := ReadResultCurve(Res, 'calculated');
+  finally
+    Res.Free;
+  end;
+
+  Right := MeanRelDiff(CalcOn(Unrolled, FitCurve), FitCurve);
+  Wrong := MeanRelDiff(CalcOn(WrongWay, FitCurve), FitCurve);
+  Assert.IsTrue(Right < 1E-3,
+    Format('the unrolled structure gives the fit''s curve: mean relative ' +
+      'difference %.3g', [Right]));
+  Assert.IsTrue(Wrong > 1E-2,
+    Format('periods emitted surface end first must not give the same curve: ' +
+      'mean relative difference %.3g', [Wrong]));
+
+  Res2 := RunFit(1, SyntheticCurveJSON, '', '', FIT_POPULATION, 1, Unrolled);
+  try
+    Chi2Rebuilt := Res2.GetValue<Double>('chi2_start');
+  finally
+    Res2.Free;
+  end;
+  Assert.AreEqual(Chi2, Chi2Rebuilt, 1E-3 * Chi2,
+    Format('the unrolled structure has the fit''s chi2: %.6g against %.6g',
+      [Chi2Rebuilt, Chi2]));
 end;
 
 { ---------------------------------------------------------- the report -- }

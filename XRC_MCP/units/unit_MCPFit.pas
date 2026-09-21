@@ -1547,11 +1547,12 @@ end;
 { ------------------------------------------------------- result assembly -- }
 
 type
-  /// <summary>One layer of a repeating stack and its thickness in each period,
-  /// which is what a gradient fit produces and a plain fit does not.</summary>
-  TLayerThickness = record
+  /// <summary>One layer of a repeating stack and its thickness, sigma and
+  /// density in each period, surface end first, which is what a gradient fit
+  /// produces and a plain fit does not.</summary>
+  TLayerProfile = record
     GUIStack, GUILayer: Integer;
-    Thickness: TArray<Single>;
+    Thickness, Sigma, Density: TArray<Single>;
   end;
 
 function BoundsUsedJSON(const Refs: TArray<TFitParamRef>;
@@ -1837,12 +1838,15 @@ begin
   end;
 end;
 
-/// One layer's thickness in each of the periods it occurs in, lifted out of the
-/// expanded model before that model is handed to a TCalc that will free it.
-/// Model layer 0 is the ambient and the last one is the substrate; the rest
-/// carry the stack and layer index FillModel copied from the structure. Layers
-/// that occur once have no profile and are not listed.
-function CollectThicknessProfiles(Model: TLayeredModel): TArray<TLayerThickness>;
+/// One layer's thickness, sigma and density in each of the periods it occurs
+/// in, lifted out of the expanded model before that model is handed to a TCalc
+/// that will free it. TLFPSO_Poly.FillModel writes every period's value into
+/// the model itself (Poly(j, ...) for period j = 1..N, added from the ambient
+/// down), so the arrays run from the surface end of the stack to the substrate
+/// end. Model layer 0 is the ambient and the last one is the substrate; the
+/// rest carry the stack and layer index FillModel copied from the structure.
+/// Layers that occur once have no profile and are not listed.
+function CollectLayerProfiles(Model: TLayeredModel): TArray<TLayerProfile>;
 var
   i, n, Found: Integer;
   Layers: TCalcLayers;
@@ -1866,6 +1870,8 @@ begin
       Result[Found].GUILayer := Model.LayerIDs[i];
     end;
     Result[Found].Thickness := Result[Found].Thickness + [Layers[i].L];
+    Result[Found].Sigma     := Result[Found].Sigma + [Layers[i].s];
+    Result[Found].Density   := Result[Found].Density + [Layers[i].ro];
   end;
 
   n := 0;
@@ -1878,13 +1884,38 @@ begin
   SetLength(Result, n);
 end;
 
-/// The fitted structure in the requirements' section 3 shape, with each layer's
-/// per-period thickness added when the fit produced a gradient.
-function FittedStructureJSON(const S: TFitStructure; const Info: TStructureInfo;
-  const Profiles: TArray<TLayerThickness>): TJSONObject;
+/// True when not every period holds the same value: a paired parameter is one
+/// value copied into each period and has no profile worth reporting.
+function VariesOverPeriods(const V: TArray<Single>): Boolean;
 var
-  JStacks, JLayers, Prof: TJSONArray;
-  k, i, c, n, Idx: Integer;
+  c: Integer;
+begin
+  Result := False;
+  for c := 1 to High(V) do
+    if V[c] <> V[0] then
+      Exit(True);
+end;
+
+procedure AddProfile(JLayer: TJSONObject; const Key: string; const V: TArray<Single>);
+var
+  Prof: TJSONArray;
+  c: Integer;
+begin
+  Prof := TJSONArray.Create;
+  JLayer.AddPair(Key, Prof);
+  for c := 0 to High(V) do
+    Prof.AddElement(JSONArgs.Num(V[c]));
+end;
+
+/// The fitted structure in the requirements' section 3 shape, with each layer's
+/// per-period thickness added when the fit produced a gradient, and its
+/// per-period sigma and density where those vary too (not paired).
+function FittedStructureJSON(const S: TFitStructure; const Info: TStructureInfo;
+  const Profiles: TArray<TLayerProfile>): TJSONObject;
+var
+  JStacks, JLayers: TJSONArray;
+  JLayer: TJSONObject;
+  k, i, n, Idx: Integer;
 begin
   Result := StructureToJSON(S, Info);
   if Length(Profiles) = 0 then
@@ -1901,10 +1932,12 @@ begin
         for n := 0 to High(Profiles) do
           if (Profiles[n].GUIStack = Idx) and (Profiles[n].GUILayer = i) then
           begin
-            Prof := TJSONArray.Create;
-            (JLayers.Items[i] as TJSONObject).AddPair('thickness_profile', Prof);
-            for c := 0 to High(Profiles[n].Thickness) do
-              Prof.AddElement(JSONArgs.Num(Profiles[n].Thickness[c]));
+            JLayer := JLayers.Items[i] as TJSONObject;
+            AddProfile(JLayer, 'thickness_profile', Profiles[n].Thickness);
+            if VariesOverPeriods(Profiles[n].Sigma) then
+              AddProfile(JLayer, 'sigma_profile', Profiles[n].Sigma);
+            if VariesOverPeriods(Profiles[n].Density) then
+              AddProfile(JLayer, 'density_profile', Profiles[n].Density);
           end;
     end;
   except
@@ -2058,7 +2091,7 @@ var
   FS, StartFS, Fitted: TFitStructure;
   Poly: TProfileFunctions;
   Model: TLayeredModel;
-  Profiles: TArray<TLayerThickness>;
+  Profiles: TArray<TLayerProfile>;
   MovAvgCurve, CalcCurve, StartCalcCurve, Residual: unit_Types.TDataArray;
   Chi2, Chi2Recalc, Chi2Start, Scale: Double;
   Chi2Plain, Chi2StartPlain: Double;
@@ -2156,7 +2189,7 @@ begin
         the per-period thicknesses nowhere else. A plain periodic fit repeats
         one thickness per period and has no profile to report. }
       if Req.Profile then
-        Profiles := CollectThicknessProfiles(Model);
+        Profiles := CollectLayerProfiles(Model);
     except
       Model.Free;
       raise;
