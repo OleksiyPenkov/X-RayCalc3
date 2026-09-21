@@ -30,6 +30,9 @@ type
     { WriteHenkeTable + ReadHenkeTable roundtrip }
     [Test] procedure Test_WriteRead_Roundtrip;
     [Test] procedure Test_WriteRead_Roundtrip_ReadHenke;
+    { B4C.bin, normalised 2026-09-21 - real DB }
+    [Test] procedure Test_B4C_HeaderIsOnPerAtomScale;
+    [Test] procedure Test_B4C_DeltaUnchangedByNormalisation;
   end;
 
 const
@@ -217,6 +220,43 @@ begin
   Assert.AreEqual(Single(11.5), f.Re, 0.01, 'f1 interpolated');
   // f2 = 2 + (1-2)/(1000-100) * (550-100) = 2 - 1/900 * 450 = 1.5
   Assert.AreEqual(Single(1.5), f.Im, 0.01, 'f2 interpolated');
+end;
+
+{ B4C.bin was written by hand in 2020 with mass 9.24855 and f1/f2 on that
+  same reduced scale (0.837 of per-atom); the engine divides f by the header
+  mass, so the ratio was right and every pure-B4C layer scored correctly, but
+  material mixing weights components by the header mass and under-weighted
+  B4C by 0.837. On 2026-09-21 the mass and both f columns were multiplied by
+  11.051 / 9.24855 together, and the bulk density set to CXRO's 2.52. }
+procedure TTestHenke.Test_B4C_HeaderIsOnPerAtomScale;
+var
+  f: TComplex;
+  Na, Nro: Single;
+begin
+  TConfig.SystemDir[sdHenke] := HENKE_DB_PATH;
+  ReadHenke('B4C', 0, 1.54187, f, Na, Nro);
+  Assert.AreEqual(11.051, Na, 0.002, '(4 * 10.811 + 12.011) / 5');
+  Assert.AreEqual(2.52, Nro, 0.001, 'CXRO bulk density');
+  Assert.AreEqual(5.15, f.Re, 0.05, 'per-atom f1 near 8 keV: about 0.99 * (4*5 + 6) / 5');
+end;
+
+{ delta and beta depend on f / mass only, so the normalisation must leave a
+  layer of given density exactly where it was. The reference numbers are
+  optical_constants("B4C", lambda 1.54187, density 2.37) on the 2020 table. }
+procedure TTestHenke.Test_B4C_DeltaUnchangedByNormalisation;
+const
+  CER = 0.54014E-5;   // r_e N_A / (2 pi) in CGS, times 2: eps = 1 - 2 delta
+var
+  f: TComplex;
+  Na, Nro, c, Delta, Beta: Single;
+begin
+  TConfig.SystemDir[sdHenke] := HENKE_DB_PATH;
+  ReadHenke('B4C', 0, 1.54187, f, Na, Nro);
+  c := CER * 2.37 / Na * Sqr(1.54187);
+  Delta := 0.5 * f.Re * c;
+  Beta  := 0.5 * f.Im * c;
+  Assert.AreEqual(7.08907E-6, Delta, 7.1E-9, 'delta at 2.37 within 0.1 %');
+  Assert.AreEqual(6.16635E-9, Beta, 6.2E-12, 'beta at 2.37 within 0.1 %');
 end;
 
 end.

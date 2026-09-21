@@ -35,6 +35,8 @@ type
 
     [Test]
     procedure TestDensityFactorScaling;
+    [Test]
+    procedure TestB4CMixWeightsByPerAtomMass;
   end;
 
 implementation
@@ -155,6 +157,58 @@ begin
   FMixer.CalcMixedEpsilon(Fractions, 0.5, 0, Eps05, Dens05);
   Assert.AreEqual(Double(Dens1 * 0.5), Double(Dens05), 0.01,
     'Half density factor -> half density');
+end;
+
+{ The mixer weights each component's f and mass by atom fraction, so every
+  header mass has to be on the per-atom scale. B4C.bin was not until
+  2026-09-21 (mass 9.24855 against 11.051): a 20/80 W/B4C mix then behaved as
+  a mix with 3 % less B4C. The expected epsilon here uses the formula masses,
+  not the headers, so a table on the wrong scale fails it. }
+procedure TTestMaterialMix.TestB4CMixWeightsByPerAtomMass;
+const
+  LAMBDA = 1.54187;
+  A_W    = 183.84;
+  A_B4C  = (4 * 10.811 + 12.011) / 5;
+var
+  M: TMaterialMixer;
+  Elements: array of string;
+  Lambdas: array of Single;
+  Fr: array[0..1] of Single;
+  Eps: TComplex;
+  Dens: Single;
+  fW, fB: TComplex;
+  NaW, NroW, NaB, NroB: Single;
+  c, Expected: Double;
+  SavedDir: string;
+begin
+  M := TMaterialMixer.Create;
+  try
+    SetLength(Elements, 2);
+    Elements[0] := 'W';
+    Elements[1] := 'B4C';
+    SetLength(Lambdas, 1);
+    Lambdas[0] := LAMBDA;
+    M.Initialize(Elements, Lambdas, 'Si', FHenkePath);
+
+    Fr[0] := 0.2; Fr[1] := 0.8;
+    M.CalcMixedEpsilon(Fr, 1.0, 0, Eps, Dens);
+
+    SavedDir := GetCurrentDir;
+    try
+      SetCurrentDir(ExtractFilePath(ExcludeTrailingPathDelimiter(FHenkePath)));
+      ReadHenke('W', 0, LAMBDA, fW, NaW, NroW);
+      ReadHenke('B4C', 0, LAMBDA, fB, NaB, NroB);
+    finally
+      SetCurrentDir(SavedDir);
+    end;
+
+    c := ClassicalElectronRadius * (0.2 * NroW + 0.8 * NroB) / (0.2 * A_W + 0.8 * A_B4C) * Sqr(LAMBDA);
+    Expected := (0.2 * fW.re + 0.8 * fB.re) * c;      // 1 - eps.re
+    Assert.AreEqual(Expected, Double(1 - Eps.re), Expected * 0.01,
+      '1 - eps.re of a 20/80 W/B4C mix, per-atom weighting (1 %)');
+  finally
+    M.Free;
+  end;
 end;
 
 initialization
