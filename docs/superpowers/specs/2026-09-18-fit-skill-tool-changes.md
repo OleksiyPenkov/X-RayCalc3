@@ -79,3 +79,8 @@ qualification test on the exp-03 launcher (300 turns)._
 
 Auto-trim, automatic Δθ, freeing the substrate (the author varies it by hand and the skill holds it fixed), any change to
 the GUI.
+
+## Registered binaries
+
+- `dbee34c` — registered 2026-09-18 for exp-03 segments 16–19 (the loop) and the 12 Ru/C transfer sessions ran on `2021a9e`.
+- `a413b7b` — registered 2026-09-20 for exp-03 segment 21 on (rebuilt 09:16 from a tree whose only uncommitted files were untracked; `describe_server` reports `a413b7b-dirty`, exe 3.8.1.890). Since dbee34c: 2021a9e `scale_auto`, 7a590aa fit write-back keeps stack/layer index, 16a9135 `chi2_plain` beside the weighted chi2 in result and report, e04902c gradient from a fit marked, a413b7b project loader FLastModel.
