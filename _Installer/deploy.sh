@@ -40,6 +40,7 @@ echo "Checking source files..."
 check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"
 check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe"
 check_file "$PROJECT_DIR/_Out/BIN/XRC_MCP.exe"
+check_file "$PROJECT_DIR/Shared/Universal/xrf_lines.json"
 check_file "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/UserManual.html"
 check_file "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/style.css"
 check_dir  "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/images"
@@ -74,6 +75,9 @@ echo "Copying executables..."
 cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
 cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
 cp "$PROJECT_DIR/_Out/BIN/XRC_MCP.exe"     "$DEPLOY_DIR/Win64/"
+# XRC_MCP.exe will not start without the XRF line table; installed beside it,
+# it is found as "xrf_lines.json beside the exe" (unit_MCPMaterials).
+cp "$PROJECT_DIR/Shared/Universal/xrf_lines.json" "$DEPLOY_DIR/Win64/"
 
 
 echo "Copying icons..."
