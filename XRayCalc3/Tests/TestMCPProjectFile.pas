@@ -28,7 +28,7 @@ uses
   VirtualTrees, VirtualTrees.Types,
   unit_Types, unit_XRCProjectTree,
   unit_MCPSandbox, unit_MCPErrors, unit_MCPTools, unit_MCPStructure,
-  unit_MCPProjectFile, unit_ToolsFiles, unit_Config;
+  unit_MCPProjectFile, unit_ToolsFiles, unit_Config, unit_consts;
 
 type
   [TestFixture]
@@ -65,7 +65,7 @@ type
 
     [Test] procedure HeadlessTree_SaveLoad_RoundTrip;
     [Test] procedure WriteXRCX_ContainsExpectedEntries;
-    [Test] procedure WriteXRCX_ParamsVersion7_ThetaNot2Theta;
+    [Test] procedure WriteXRCX_ParamsCurrentVersion_ThetaNot2Theta;
     [Test] procedure WriteXRCX_Overwrite_IsAtomicAndLeavesNoTmpFile;
     [Test] procedure ReadXRCX_RoundTrip_Structure;
     [Test] procedure ReadXRCX_RoundTrip_Extension;
@@ -358,7 +358,7 @@ begin
   Tree := TXRCProjectTree.Create(nil, 96);
   try
     Tree.NodeDataSize := SizeOf(TProjectData);
-    Tree.Version := 7;
+    Tree.Version := CURRENT_PROJECT_VERSION;   // what the writer wrote
     Tree.LoadFromFile(FileName);
 
     Titles := [];
@@ -416,7 +416,7 @@ begin
   end;
 end;
 
-procedure TTestMCPProjectFile.WriteXRCX_ParamsVersion7_ThetaNot2Theta;
+procedure TTestMCPProjectFile.WriteXRCX_ParamsCurrentVersion_ThetaNot2Theta;
 var
   Path, ParamsFile: string;
   INF: TMemIniFile;
@@ -429,7 +429,7 @@ begin
   ParamsFile := ExtractMember(Path, 'params.dsc');
   INF := TMemIniFile.Create(ParamsFile);
   try
-    Assert.AreEqual(7, INF.ReadInteger('INFO', 'Version', 0), '[INFO] Version');
+    Assert.AreEqual(CURRENT_PROJECT_VERSION, INF.ReadInteger('INFO', 'Version', 0), '[INFO] Version');
     Assert.IsFalse(INF.ReadBool('ANGLE', '2teta', True),
       '[ANGLE] 2teta must be 0: the stored angles are theta');
     Assert.AreEqual('0.05', INF.ReadString('ANGLE', 'Start', ''), '[ANGLE] Start');
@@ -490,7 +490,7 @@ begin
 
   Read_ := ReadXRCX(Path);
 
-  Assert.AreEqual(7, Read_.Version, 'version');
+  Assert.AreEqual(CURRENT_PROJECT_VERSION, Read_.Version, 'version');
   Assert.AreEqual(Written.ModelTitle, Read_.ModelTitle, 'model title');
   Assert.AreEqual(Written.Note, Read_.Note, 'description');
   Assert.AreEqual(Written.XRCData, Read_.XRCData, 'structure string');

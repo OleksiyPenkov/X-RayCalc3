@@ -30,7 +30,7 @@ type
     [Test] procedure FromJSON_NonFiniteN_Raises;
     [Test] procedure XRCData_MultiLayerCapStaysAStack;
     [Test] procedure ToJSON_BadCapIndex_RaisesInternal;
-    [Test] procedure FillDefaultDensities_SubstrateAlwaysBulk;
+    [Test] procedure FillDefaultDensities_SubstrateFollowsTheLayerRule;
     [Test] procedure ValidateMaterials_EmptyNameIsReported;
   end;
 
@@ -530,7 +530,7 @@ begin
   end;
 end;
 
-procedure TTestMCPStructure.FillDefaultDensities_SubstrateAlwaysBulk;
+procedure TTestMCPStructure.FillDefaultDensities_SubstrateFollowsTheLayerRule;
 var
   J: TJSONObject;
   S: TFitStructure;
@@ -562,14 +562,26 @@ begin
     M.Free;
   end;
 
-  // the engine ignores a supplied substrate density, so the echo must be bulk
-  Assert.AreEqual(2.65, Double(S.Subs.P[3].V), 1E-4,
-    'the substrate density is always the bulk value the engine used');
+  // since 3.9.1 the engine uses a given substrate density, so it is echoed
+  Assert.AreEqual(2.2, Double(S.Subs.P[3].V), 1E-4,
+    'a given substrate density is the one the engine used');
   // a layer that asked for bulk gets it
   Assert.AreEqual(2.26, Double(S.Stacks[1].Layers[1].P[3].V), 1E-4);
   // a layer that supplied one keeps it
   Assert.AreEqual(12.4, Double(S.Stacks[1].Layers[0].P[3].V), 1E-4);
   Assert.AreEqual(12.4, Double(S.Stacks[0].Layers[0].P[3].V), 1E-4, 'cap keeps its density');
+
+  // an omitted substrate density is the bulk value
+  S.Subs.P[3].V := 0;
+  M := TLayeredModel.Create;
+  try
+    M.Materials := Mats;
+    FillDefaultDensities(S, M);
+  finally
+    M.Free;
+  end;
+  Assert.AreEqual(2.65, Double(S.Subs.P[3].V), 1E-4,
+    'a substrate that asked for bulk gets the bulk value');
 end;
 
 procedure TTestMCPStructure.ValidateMaterials_EmptyNameIsReported;

@@ -73,7 +73,17 @@ type
 
   end;
 
+  { A model's structure string from a project saved before version 8, with the
+    substrate density set to 0 - "use the Henke bulk density". The engine
+    ignored the substrate density until then, whatever the file said, so this
+    is the value those models were always computed with. Anything that is not
+    such a structure comes back unchanged. }
+  function LegacySubstrateDensity(const StructureData: string): string;
+
 implementation
+
+uses
+  System.JSON;
 
 const
   DefaultDPI = 96;
@@ -502,7 +512,7 @@ begin
           if (Data.Group = gtModel) and (Data.RowType = prItem) then
             Data.Data := GetString;
        end;
-    6, 7: begin
+    6, 7, 8: begin
           Stream.Read(LEnabled, SizeOf(LEnabled));
           Stream.Read(LExtType, SizeOf(LExtType));
           Stream.Read(LLayerID, SizeOf(Integer));
@@ -560,8 +570,35 @@ begin
   if p <> Length(Data.Data) - 1 then
       Data.Data := copy(Data.Data, 1, p + 1);
 
+  if (FProjectVersion < 8) and (Data.Group = gtModel) and (Data.RowType = prItem) then
+    Data.Data := LegacySubstrateDensity(Data.Data);
+
   if pos('Models', Data.Title) > 0 then Data.Title := 'Models';
   if pos('Data', Data.Title) > 0 then Data.Title := 'Data';
+end;
+
+function LegacySubstrateDensity(const StructureData: string): string;
+var
+  J: TJSONValue;
+  Subs: TJSONObject;
+  R: TJSONPair;
+begin
+  Result := StructureData;
+  J := TJSONObject.ParseJSONValue(StructureData);
+  try
+    if not (J is TJSONObject) then
+      Exit;
+    Subs := TJSONObject(J).GetValue('Subs') as TJSONObject;
+    if Subs = nil then
+      Exit;
+    R := Subs.Get('r');
+    if R = nil then
+      Exit;
+    R.JsonValue := TJSONNumber.Create(0);    // frees the old value
+    Result := J.ToJSON;
+  finally
+    J.Free;
+  end;
 end;
 
 procedure TXRCProjectTree.ProjectMeasureItem(Sender: TBaseVirtualTree;

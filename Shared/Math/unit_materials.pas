@@ -237,8 +237,17 @@ begin
     FLayers[i].e.im := FMaterials[CurrentMaterial].f.im * c;
   end;
 
+  { The substrate follows the layers' rule: its own density when one is
+    given, the Henke bulk density when it is 0. Until 3.9.1 the substrate
+    density was ignored and the bulk value always used; projects saved before
+    then are loaded with it reset to 0 (TXRCProjectTree.ProjectLoadNode), so
+    they compute as they always did. }
   UseLayerMaterial(High(FLayers));
-  c := ClassicalElectronRadius * FMaterials[CurrentMaterial].ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
+  if FLayers[High(FLayers)].ro <> 0 then
+    l_ro := FLayers[High(FLayers)].ro
+  else
+    l_ro := FMaterials[CurrentMaterial].ro;
+  c := ClassicalElectronRadius * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
   FLayers[High(FLayers)].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
   FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
 end;

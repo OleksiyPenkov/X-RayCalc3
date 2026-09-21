@@ -16,7 +16,7 @@ uses
 
 const
 
-  CURRENT_PROJECT_VERSION = 7;
+  CURRENT_PROJECT_VERSION = 8;   // 8: the substrate density is honoured (3.9.1)
 
   PARAMETERS_FILE_NAME = 'params.dsc';
   PROJECT_FILE_NAME = 'project.dsc';

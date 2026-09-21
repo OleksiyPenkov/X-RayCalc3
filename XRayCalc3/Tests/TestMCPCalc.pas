@@ -46,6 +46,7 @@ type
     [Test] procedure RunCalc_RuC_FirstBraggPeak;
     [Test] procedure RunCalc_Convolved_KeepsPointCountAndLowersPeak;
     [Test] procedure RunCalc_CCo_PeaksAreTheOrdersAndNotTheSatellites;
+    [Test] procedure RunCalc_SubstrateDensity_IsHonoured;
   end;
 
 implementation
@@ -331,6 +332,69 @@ begin
   Result.DeltaTheta := DeltaTheta;
   Result.Polarization := cmSP;
   Result.RMin := 1E-7;
+end;
+
+{ Since 3.9.1 the substrate density is used as given (before, the engine took
+  the Henke bulk value whatever was given): 1.0 and 5.0 g/cm3 give different
+  curves, the critical angle moves up with the density, the echo is the given
+  value, and an omitted density is the bulk value - the same curve as giving
+  that bulk value explicitly. }
+procedure TTestMCPCalc.RunCalc_SubstrateDensity_IsHonoured;
+
+  function CalcWith(Density: Double; out Used: TFitStructure): TDataArray;
+  var
+    Req: TCalcRequest;
+  begin
+    Req := RuCRequest(0.05, 1.0, 400, 0);
+    Req.Structure.Subs.P[3].V := Density;
+    Result := RunCalc(Req, Used);
+  end;
+
+  function MaxRelDiff(const A, B: TDataArray): Double;
+  var
+    i: Integer;
+  begin
+    Result := 0;
+    for i := 0 to High(A) do
+      Result := Max(Result, Abs(A[i].r - B[i].r) / B[i].r);
+  end;
+
+  { the first angle where R falls below half its plateau }
+  function EdgeOf(const C: TDataArray): Double;
+  var
+    i: Integer;
+  begin
+    Result := C[High(C)].t;
+    for i := 0 to High(C) do
+      if C[i].r < 0.5 * C[0].r then
+        Exit(C[i].t);
+  end;
+
+var
+  Low, High_, Omitted, Bulk: TDataArray;
+  UsedLow, UsedHigh, UsedOmitted, UsedBulk: TFitStructure;
+begin
+  if not (HenkeAvailable('Ru') and HenkeAvailable('C') and HenkeAvailable('SiO2')) then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Low := CalcWith(1.0, UsedLow);
+  High_ := CalcWith(5.0, UsedHigh);
+  Omitted := CalcWith(0, UsedOmitted);
+  Bulk := CalcWith(UsedOmitted.Subs.P[3].V, UsedBulk);
+
+  Assert.IsTrue(MaxRelDiff(Low, High_) > 0.05,
+    'substrate densities of 1.0 and 5.0 must give different curves');
+  Assert.IsTrue(EdgeOf(High_) >= EdgeOf(Low),
+    Format('a denser substrate cannot lower the edge: %g at 5.0 against %g at 1.0',
+      [EdgeOf(High_), EdgeOf(Low)]));
+  Assert.AreEqual(1.0, Double(UsedLow.Subs.P[3].V), 1E-6, 'the given density is echoed');
+  Assert.AreEqual(5.0, Double(UsedHigh.Subs.P[3].V), 1E-6, 'the given density is echoed');
+  Assert.IsTrue(UsedOmitted.Subs.P[3].V > 2, 'an omitted density is echoed as the bulk value');
+  Assert.IsTrue(MaxRelDiff(Omitted, Bulk) < 1E-5,
+    'an omitted density is the bulk value: the same curve as giving it');
 end;
 
 { The largest reflectivity between T1 and T2 degrees. }

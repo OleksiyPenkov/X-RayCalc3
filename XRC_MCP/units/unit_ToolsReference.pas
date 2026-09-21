@@ -78,9 +78,9 @@ const
   FIT_FREE_PARAMETERS =
     'layer thickness/sigma/density only. The GUI engine keeps the substrate fixed ' +
     '(TLFPSO_BASE.FillModel copies Subs.P verbatim; only stack layers are in the ' +
-    'particle vector), so substrate sigma and density cannot be fitted - and the ' +
-    'substrate density is ALWAYS the Henke bulk value, because TLayeredModel computes ' +
-    'the substrate permittivity from the table and ignores a density supplied for it. ' +
+    'particle vector), so substrate sigma and density cannot be fitted. The substrate ' +
+    'density is used as given, or the Henke bulk value when it is omitted (since ' +
+    '3.9.1; before, a given substrate density was ignored). ' +
     'The engine has no scale, background or resolution parameters either; asking for ' +
     'any of them is refused with error not_fittable.';
 

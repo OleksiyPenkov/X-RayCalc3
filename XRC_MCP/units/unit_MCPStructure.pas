@@ -105,11 +105,9 @@ function StructureFromXRCData(const Data: string; out Info: TStructureInfo): TFi
 function BuildLayeredModel(const S: TFitStructure): TLayeredModel;
 
 /// <summary>After Model.Generate, copy the Henke bulk density back into every
-/// layer that asked for it (r = 0), so the server can echo the value used.
-/// The substrate density is overwritten <b>always</b>, not only when 0: the GUI
-/// engine ignores a user-supplied substrate density. TLayeredModel.PrepareLayers
-/// builds the substrate permittivity from the material's bulk density and never
-/// reads the substrate layer's ro, so the bulk value is the value used.</summary>
+/// layer - the substrate included - that asked for it (r = 0), so the server
+/// can echo the value used. A density that was given is used as given (the
+/// substrate's too, since 3.9.1) and is left alone.</summary>
 procedure FillDefaultDensities(var S: TFitStructure; Model: TLayeredModel);
 
 /// <summary>'' when every material has a Henke table, otherwise the name of the
@@ -769,13 +767,11 @@ begin
         if BulkOf(S.Stacks[i].Layers[j].Material, Ro) then
           S.Stacks[i].Layers[j].P[3].V := Ro;
 
-  // The substrate is not a "when 0" case. TLayeredModel.PrepareLayers computes
-  // the substrate permittivity from FMaterials[..].ro unconditionally and never
-  // looks at FLayers[High].ro, so a substrate density the client supplied was
-  // not used by the calculation. Echoing it back would be a lie; echo the bulk
-  // value the engine actually used.
-  if BulkOf(S.Subs.Material, Ro) then
-    S.Subs.P[3].V := Ro;
+  // Since 3.9.1 the substrate follows the same rule: TLayeredModel.PrepareLayers
+  // uses a given substrate density and the bulk value only for 0.
+  if S.Subs.P[3].V = 0 then
+    if BulkOf(S.Subs.Material, Ro) then
+      S.Subs.P[3].V := Ro;
 end;
 
 function ValidateMaterials(const S: TFitStructure): string;

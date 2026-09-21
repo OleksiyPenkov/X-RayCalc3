@@ -36,6 +36,11 @@ type
 
     [Test] procedure DataItem_SurvivesForeignExtensionSlots;
     [Test] procedure Extension_KeepsItsOwnFields;
+    [Test] procedure ModelFromVersion7_LoadsWithBulkSubstrateDensity;
+    [Test] procedure ModelFromVersion8_KeepsItsSubstrateDensity;
+    [Test] procedure LegacySubstrateDensity_LeavesOtherTextAlone;
+  private
+    function LoadModelData(const FileName: string; Version: Integer): string;
   end;
 
 implementation
@@ -182,6 +187,66 @@ begin
   PInteger(@Bytes[Ofs + 6])^ := SENTINEL_STACKID;
 
   TFile.WriteAllBytes(AFileName, Bytes);
+end;
+
+function TTestProjectTreeNodeIO.LoadModelData(const FileName: string;
+  Version: Integer): string;
+var
+  Tree: TXRCProjectTree;
+  Node: PVirtualNode;
+  PD: PProjectData;
+begin
+  Result := '';
+  Tree := TXRCProjectTree.Create(nil, 96);
+  try
+    Tree.NodeDataSize := SizeOf(TProjectData);
+    Tree.Version := Version;
+    Tree.LoadFromFile(FileName);
+    Node := Tree.GetFirst;
+    while Node <> nil do
+    begin
+      PD := Tree.GetNodeData(Node);
+      if (PD.Group = gtModel) and (PD.RowType = prItem) then
+        Exit(PD.Data);
+      Node := Tree.GetNext(Node);
+    end;
+  finally
+    Tree.Free;
+  end;
+end;
+
+{ Until 3.9.1 the engine ignored the substrate density and used the Henke bulk
+  value. A project saved before then must keep computing what it always did,
+  so its substrate density loads as 0 - "bulk" - whatever the file says. }
+procedure TTestProjectTreeNodeIO.ModelFromVersion7_LoadsWithBulkSubstrateDensity;
+var
+  Data: string;
+begin
+  Data := LoadModelData(WriteProject(DATA_ID), 7);
+  Assert.Contains(Data, '"r":0', 'the substrate density is reset to bulk');
+  Assert.DoesNotContain(Data, '2.33', 'the stored density is gone');
+  Assert.Contains(Data, '"M":"Si"', 'the substrate material is kept');
+  Assert.Contains(Data, '"s":1', 'the substrate roughness is kept');
+end;
+
+procedure TTestProjectTreeNodeIO.ModelFromVersion8_KeepsItsSubstrateDensity;
+begin
+  Assert.AreEqual('{"Stacks":[],"Subs":{"M":"Si","s":1,"r":2.33}}',
+    LoadModelData(WriteProject(DATA_ID), 8),
+    'a version 8 project keeps the density it was saved with');
+end;
+
+procedure TTestProjectTreeNodeIO.LegacySubstrateDensity_LeavesOtherTextAlone;
+const
+  S = '{"Stacks":[{"T":"ML","N":10,"Layers":[{"M":"W","H":25.5,"r":19.3}]}],' +
+      '"Subs":{"M":"SiO2","s":3.8,"r":2.2}}';
+begin
+  Assert.AreEqual(
+    '{"Stacks":[{"T":"ML","N":10,"Layers":[{"M":"W","H":25.5,"r":19.3}]}],' +
+    '"Subs":{"M":"SiO2","s":3.8,"r":0}}',
+    LegacySubstrateDensity(S), 'only the substrate density changes');
+  Assert.AreEqual('not a structure', LegacySubstrateDensity('not a structure'));
+  Assert.AreEqual('', LegacySubstrateDensity(''));
 end;
 
 procedure TTestProjectTreeNodeIO.DataItem_SurvivesForeignExtensionSlots;

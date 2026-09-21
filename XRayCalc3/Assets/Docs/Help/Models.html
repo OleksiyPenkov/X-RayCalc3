@@ -103,6 +103,10 @@
 
 <p>Additionally, each layer has a <strong>material</strong> assignment that links it to an entry in the Henke atomic form factor database.</p>
 
+<h3>Density 0 and the substrate density <span class="badge">v3.9.1</span></h3>
+<p>A density of <strong>0</strong> means &ldquo;use the bulk density from the Henke table&rdquo;. This holds for every layer and, since version 3.9.1, for the substrate too: a substrate density you enter is now used in the calculation. Earlier versions always used the bulk density for the substrate and silently ignored the value shown.</p>
+<p>So that old results do not change, a project saved by an earlier version opens with its substrate density set to 0 (bulk), which is what those models were always computed with. To use a specific substrate density, for example 2.2&nbsp;g/cm&sup3; for fused silica or 2.5 for soda-lime glass, enter it and save the project.</p>
+
 <h3>Adding a layer</h3>
 <ol>
   <li>Select a stack or model in the structure editor.</li>
