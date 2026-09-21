@@ -99,6 +99,12 @@ function StructureToXRCData(const S: TFitStructure; const Info: TStructureInfo):
 /// Info from the stack headers.</summary>
 function StructureFromXRCData(const Data: string; out Info: TStructureInfo): TFitStructure;
 
+/// <summary>Every layer fit range in S whose min exceeds its max, as
+/// load_project reports them: {stack, stack_title, layer, material, parameter,
+/// fixed, min, max, message}. stack and layer are GUI indices, as in
+/// "profiles". Empty when the ranges are sane. The caller owns the result.</summary>
+function InvertedRangesJSON(const S: TFitStructure): TJSONArray;
+
 /// <summary>The expanded physical model TCalc consumes: the same layers
 /// TXRCStructure.Model(False) and TLFPSO_BASE.FillModel produce. Caller frees.
 /// Per-period profiles (TLayerData.PP) are applied by the caller.</summary>
@@ -428,6 +434,34 @@ begin
   Result.AddPair('thickness', JSONArgs.Num(L.P[1].V));
   Result.AddPair('sigma', JSONArgs.Num(L.P[2].V));
   Result.AddPair('density', JSONArgs.Num(L.P[3].V));
+end;
+
+function InvertedRangesJSON(const S: TFitStructure): TJSONArray;
+var
+  R: TInvertedRange;
+  Obj: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  try
+    for R in InvertedRanges(S) do
+    begin
+      Obj := TJSONObject.Create;
+      Result.AddElement(Obj);
+      Obj.AddPair('stack', TJSONNumber.Create(R.StackIdx));
+      Obj.AddPair('stack_title', S.Stacks[R.StackIdx].Header);
+      Obj.AddPair('layer', TJSONNumber.Create(R.LayerIdx));
+      Obj.AddPair('material', S.Stacks[R.StackIdx].Layers[R.LayerIdx].Material);
+      Obj.AddPair('parameter', FIT_PARAM_NAMES[R.Param]);
+      Obj.AddPair('fixed',
+        TJSONBool.Create(S.Stacks[R.StackIdx].Layers[R.LayerIdx].P[R.Param].Fixed));
+      Obj.AddPair('min', JSONArgs.Num(R.RangeMin));
+      Obj.AddPair('max', JSONArgs.Num(R.RangeMax));
+      Obj.AddPair('message', InvertedRangeText(S, R));
+    end;
+  except
+    Result.Free;
+    raise;
+  end;
 end;
 
 /// The JSON has no room for a multi-layer or repeated cap or buffer: it is one

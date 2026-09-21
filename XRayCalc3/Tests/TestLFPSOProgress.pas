@@ -68,6 +68,7 @@ type
     [Test] procedure Test_OnProgress_ThatRaises_LeaksNothing;
     [Test] procedure Test_BestCurve_IsNotEmptyAfterARun;
     [Test] procedure Test_StopBeforeFirstBest_DoesNotRaise;
+    [Test] procedure Test_Run_InvertedRange_RaisesBeforeFitting;
   end;
 
 implementation
@@ -451,6 +452,48 @@ begin
     PSO.Run(CalcParams);
 
     Assert.Pass('Run returned without raising');
+  finally
+    PSO.Free;
+  end;
+end;
+
+{ A range with min > max has no inside. Run must refuse it up front, naming
+  the layer and the parameter, rather than fit a value that only ever bounces
+  between the two bounds. No Henke table is touched before the check. }
+procedure TTestLFPSOProgress.Test_Run_InvertedRange_RaisesBeforeFitting;
+var
+  PSO: TLFPSO_Periodic;
+  CalcParams: TCalcThreadParams;
+  S: TFitStructure;
+  Data: TDataArray;
+  Msg: string;
+begin
+  CalcParams := MakeCalcParams;
+  SetLength(Data, 3);
+  Data[0].t := 0.5; Data[0].r := 1;
+  Data[1].t := 1.0; Data[1].r := 0.1;
+  Data[2].t := 1.5; Data[2].r := 0.01;
+  S := MakeStructure;
+  S.Stacks[0].Layers[1].P[3].min := 12.0;   // Mo density: min > max
+  S.Stacks[0].Layers[1].P[3].max := 8.0;
+  PSO := TLFPSO_Periodic.Create;
+  try
+    PSO.Params    := MakeFitParams;
+    PSO.Limit     := 1E-7;
+    PSO.ExpValues := Data;
+    PSO.Seed      := 1;
+    PSO.Structure := S;
+    Msg := '';
+    try
+      PSO.Run(CalcParams);
+      Assert.Fail('Run accepted an inverted density range');
+    except
+      on E: EInvertedRange do
+        Msg := E.Message;
+    end;
+    Assert.IsTrue(Pos('Mo', Msg) > 0, 'the message names the layer: ' + Msg);
+    Assert.IsTrue(Pos('density', Msg) > 0, 'the message names the parameter: ' + Msg);
+    Assert.IsTrue(Pos('12', Msg) > 0, 'the message quotes the bounds: ' + Msg);
   finally
     PSO.Free;
   end;

@@ -228,7 +228,31 @@ type
     procedure CopyContent(var Dest: TFitStructure);
   end;
 
+const
+  /// TFitValue index -> the name the fit engines and the MCP report it under.
+  FIT_PARAM_NAMES: array[1..3] of string = ('thickness', 'sigma', 'density');
 
+type
+  /// Raised by TLFPSO_BASE.Run for a structure with an inverted fit range.
+  EInvertedRange = class(Exception);
+
+  /// One layer parameter whose fit range is inverted (min > max). Indices are
+  /// the GUI's: stack, layer within the stack, and P[1..3].
+  TInvertedRange = record
+    StackIdx, LayerIdx, Param: Integer;
+    RangeMin, RangeMax: Single;
+  end;
+
+/// Every layer parameter of S whose range is inverted (min > max), in GUI
+/// order. A pinned parameter (min = max) is not inverted. Frozen parameters
+/// are listed too: the periodic engine does not read Fixed, so their range is
+/// what it would fit. The substrate is not listed; the engines do not fit it.
+/// The GUI stores ranges without checking them, so a project file can carry
+/// one (a density range pasted onto the wrong layer, say).
+function InvertedRanges(const S: TFitStructure): TArray<TInvertedRange>;
+
+/// 'stack "W-B4C" (0) layer 1 "B4C": the density range is inverted, min 14 > max 2.5'
+function InvertedRangeText(const S: TFitStructure; const R: TInvertedRange): string;
 
 implementation
 
@@ -369,6 +393,35 @@ begin
 end;
 
 { TFitPeriodicStructure }
+
+function InvertedRanges(const S: TFitStructure): TArray<TInvertedRange>;
+var
+  i, j, p, n: Integer;
+begin
+  SetLength(Result, 0);
+  n := 0;
+  for i := 0 to High(S.Stacks) do
+    for j := 0 to High(S.Stacks[i].Layers) do
+      for p := 1 to 3 do
+        if S.Stacks[i].Layers[j].P[p].min > S.Stacks[i].Layers[j].P[p].max then
+        begin
+          SetLength(Result, n + 1);
+          Result[n].StackIdx := i;
+          Result[n].LayerIdx := j;
+          Result[n].Param    := p;
+          Result[n].RangeMin := S.Stacks[i].Layers[j].P[p].min;
+          Result[n].RangeMax := S.Stacks[i].Layers[j].P[p].max;
+          Inc(n);
+        end;
+end;
+
+function InvertedRangeText(const S: TFitStructure; const R: TInvertedRange): string;
+begin
+  Result := Format('stack "%s" (%d) layer %d "%s": the %s range is inverted, min %.6g > max %.6g',
+    [S.Stacks[R.StackIdx].Header, R.StackIdx, R.LayerIdx,
+     S.Stacks[R.StackIdx].Layers[R.LayerIdx].Material, FIT_PARAM_NAMES[R.Param],
+     R.RangeMin, R.RangeMax], TFormatSettings.Invariant);
+end;
 
 function TFitStructure.Total: Word;
 var

@@ -398,6 +398,7 @@ begin
     Result.AddPair('model_title', Proj.ModelTitle);
     Result.AddPair('note', Proj.Note);
     Result.AddPair('structure', StructureToJSON(S, Info));
+    Result.AddPair('inverted_ranges', InvertedRangesJSON(S));
 
     { Every child JSON value is attached to its parent immediately after it is
       created, before anything that could raise (a float conversion, a file
@@ -566,7 +567,12 @@ begin
     'points the stored calculated and measured curves have, and the file''s ' +
     'SHA-256. A project old enough to keep its model in a separate model_N.bin ' +
     'rather than in the project tree is reported as "unsupported_project": ' +
-    'open and re-save it in XRayCalc3 first.',
+    'open and re-save it in XRayCalc3 first. A profile''s coefficients are ' +
+    'reported as stored: the file does not keep the constant term, so ' +
+    'coefficients[0] is always 0 and the layer''s own value is the real ' +
+    'C[0]. "inverted_ranges" lists every fit range in the file whose min ' +
+    'exceeds its max (the GUI stores ranges unchecked); the fit engine ' +
+    'refuses to start on such a layer until the range is corrected.',
     Schema,
     function(const Params: TJSONObject): TJSONObject
     begin

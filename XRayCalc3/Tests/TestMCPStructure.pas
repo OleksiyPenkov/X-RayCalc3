@@ -32,6 +32,11 @@ type
     [Test] procedure ToJSON_BadCapIndex_RaisesInternal;
     [Test] procedure FillDefaultDensities_SubstrateFollowsTheLayerRule;
     [Test] procedure ValidateMaterials_EmptyNameIsReported;
+    // inverted fit ranges (min > max) in a project file
+    [Test] procedure InvertedRanges_FindsSwappedDensityRange;
+    [Test] procedure InvertedRanges_FrozenParameterIsListedToo;
+    [Test] procedure InvertedRanges_EmptyRangeIsNotInverted;
+    [Test] procedure InvertedRangesJSON_NamesLayerAndParameter;
   end;
 
 implementation
@@ -53,6 +58,17 @@ const
     '{"M":"Ru","H":10.0,"s":3.0,"r":12.4},' +
     '{"M":"C","H":20.0,"s":3.0,"r":2.2}]}],' +
     '"Subs":{"M":"Si","s":2.0,"r":0.0}}';
+
+  // the RFIS-III 260201B case: a WC density range pasted onto a B4C layer,
+  // so Rmin 14 > Rmax 2.5, with the density free (RF false)
+  INVERTED_XRCDATA_JSON = '{"Stacks":[{"T":"W-B4C","N":30,"Layers":[' +
+    '{"M":"W","H":5.0,"HP":false,"HF":false,"Hmin":0.0,"Hmax":20.0,"ProfileH":"",' +
+    '"s":2.7,"SP":true,"SF":false,"Smin":0.0,"Smax":8.8,"ProfileS":"",' +
+    '"r":17.4,"RP":true,"RF":false,"Rmin":16.4,"Rmax":18.3,"ProfileR":""},' +
+    '{"M":"B4C","H":42.1,"HP":false,"HF":false,"Hmin":6.2,"Hmax":78.0,"ProfileH":"",' +
+    '"s":2.7,"SP":true,"SF":false,"Smin":0.0,"Smax":8.5,"ProfileS":"",' +
+    '"r":2.5,"RP":true,"RF":false,"Rmin":14.0,"Rmax":2.5,"ProfileR":""}]}],' +
+    '"Subs":{"M":"SiO2","s":3.8,"r":2.5}}';
 
   // a project written before the Fixed flag existed: H/HP/Hmin/Hmax (and the
   // s/r equivalents) are all present, but there is no HF/SF/RF anywhere.
@@ -600,6 +616,75 @@ begin
 
   // '' would be indistinguishable from "every material is known"
   Assert.AreEqual('<empty>', ValidateMaterials(S));
+end;
+
+procedure TTestMCPStructure.InvertedRanges_FindsSwappedDensityRange;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+  R: TArray<TInvertedRange>;
+begin
+  S := StructureFromXRCData(INVERTED_XRCDATA_JSON, Info);
+  R := InvertedRanges(S);
+  Assert.AreEqual(1, Length(R), 'exactly the B4C density range is inverted');
+  Assert.AreEqual(0, R[0].StackIdx);
+  Assert.AreEqual(1, R[0].LayerIdx);
+  Assert.AreEqual(3, R[0].Param, 'parameter 3 is the density');
+  Assert.AreEqual(14.0, R[0].RangeMin, 1e-6);
+  Assert.AreEqual(2.5, R[0].RangeMax, 1e-6);
+  Assert.IsTrue(Pos('W-B4C', InvertedRangeText(S, R[0])) > 0, 'the text names the stack');
+  Assert.IsTrue(Pos('B4C', InvertedRangeText(S, R[0])) > 0, 'the text names the layer');
+  Assert.IsTrue(Pos('density', InvertedRangeText(S, R[0])) > 0, 'the text names the parameter');
+end;
+
+procedure TTestMCPStructure.InvertedRanges_FrozenParameterIsListedToo;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+begin
+  // The periodic engine does not read Fixed, so a frozen parameter with an
+  // inverted range is still a fit that cannot be trusted.
+  S := StructureFromXRCData(INVERTED_XRCDATA_JSON, Info);
+  S.Stacks[0].Layers[1].P[3].Fixed := True;
+  Assert.AreEqual(1, Length(InvertedRanges(S)));
+end;
+
+procedure TTestMCPStructure.InvertedRanges_EmptyRangeIsNotInverted;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+begin
+  S := StructureFromXRCData(INVERTED_XRCDATA_JSON, Info);
+  S.Stacks[0].Layers[1].P[3].min := 2.5;     // min = max: pinned, not inverted
+  Assert.AreEqual(0, Length(InvertedRanges(S)));
+  S.Stacks[0].Layers[1].P[3].min := 2.0;     // an ordinary range
+  Assert.AreEqual(0, Length(InvertedRanges(S)));
+end;
+
+procedure TTestMCPStructure.InvertedRangesJSON_NamesLayerAndParameter;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+  A: TJSONArray;
+  O: TJSONObject;
+begin
+  S := StructureFromXRCData(INVERTED_XRCDATA_JSON, Info);
+  A := InvertedRangesJSON(S);
+  try
+    Assert.AreEqual(1, A.Count);
+    O := A.Items[0] as TJSONObject;
+    Assert.AreEqual(0, O.GetValue<Integer>('stack'));
+    Assert.AreEqual('W-B4C', O.GetValue<string>('stack_title'));
+    Assert.AreEqual(1, O.GetValue<Integer>('layer'));
+    Assert.AreEqual('B4C', O.GetValue<string>('material'));
+    Assert.AreEqual('density', O.GetValue<string>('parameter'));
+    Assert.IsFalse(O.GetValue<Boolean>('fixed'));
+    Assert.AreEqual(14.0, O.GetValue<Double>('min'), 1e-6);
+    Assert.AreEqual(2.5, O.GetValue<Double>('max'), 1e-6);
+    Assert.IsTrue(O.GetValue<string>('message') <> '');
+  finally
+    A.Free;
+  end;
 end;
 
 initialization

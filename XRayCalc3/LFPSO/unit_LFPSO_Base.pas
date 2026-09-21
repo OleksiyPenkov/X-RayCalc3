@@ -950,7 +950,19 @@ var
   Vmax0, Ksxr0: single;
   SuccessCount: integer;
   num, den: double;
+  Inverted: TArray<TInvertedRange>;
 begin
+  { An inverted range (min > max) has no inside: CheckLimits reflects a
+    particle off one wall straight past the other and pins it there, so the
+    parameter comes out of the fit as whichever bound it hit last, and the
+    rest of the fit is scored against that. Refuse the run before anything is
+    allocated, naming the layer, so that the GUI (FatalException), xrccmd and
+    the MCP all report it. }
+  Inverted := InvertedRanges(FStructure);
+  if Length(Inverted) > 0 then
+    raise EInvertedRange.Create(InvertedRangeText(FStructure, Inverted[0]) +
+      '. Correct the range before fitting.');
+
   if FSeed < 0 then
     Randomize
   else
