@@ -149,18 +149,18 @@ end;
 
 class function JSONArgs.Num(const V: Double): TJSONNumber;
 var
-  R: Double; Mag, Digits: Integer;
+  R: Double;
 begin
   if IsNan(V) or IsInfinite(V) then Exit(TJSONNumber.Create(0));
   if (Frac(V) = 0) and (Abs(V) < 1e15) then Exit(TJSONNumber.Create(Int64(Round(V))));
   if V = 0 then Exit(TJSONNumber.Create(0));
-  Mag := Floor(Log10(Abs(V)));
-  // RoundTo takes a TRoundToRange (-37..37); a very large or very small V would
-  // otherwise pass an out-of-range digit count.
-  Digits := Mag - 5;
-  if Digits < -37 then Digits := -37
-  else if Digits > 37 then Digits := 37;
-  R := RoundTo(V, Digits);
+  // Six significant digits through the formatter, which takes any finite
+  // magnitude. This used to be RoundTo(V, Floor(Log10(Abs(V))) - 5): its digit
+  // argument is declared -37..37 but implemented -20..20, so every value below
+  // 1e-15 (a cubic profile coefficient, say) raised a bare EArgumentException
+  // 'Invalid argument' out of the fit result assembly and failed the job.
+  R := StrToFloat(Format('%.6g', [V], TFormatSettings.Invariant),
+                  TFormatSettings.Invariant);
   Result := TJSONNumber.Create(R);
 end;
 
