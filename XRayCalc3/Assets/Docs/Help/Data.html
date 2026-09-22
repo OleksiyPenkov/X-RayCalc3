@@ -99,7 +99,7 @@ Theta    Reflectivity
 <h2 id="data-conditioning-walkthrough">Data Conditioning Walkthrough</h2>
 <p>Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:</p>
 
-<p><strong>Step 1 &mdash; Normalize.</strong> Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via <strong>Data &gt; Normalize</strong>. For example, if the experimental intensity at 0.4&deg; is 0.099, divide by 0.099 to bring the curve to unit reflectivity.</p>
+<p><strong>Step 1 &mdash; Normalize.</strong> Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via <strong>Data &gt; Normalize</strong>. For example, if the experimental intensity at 0.4&deg; is 0.099, divide by 0.099 to bring the curve to unit reflectivity. The fit need not take this factor as final: with <strong>Solve scale in &chi;&sup2;</strong> (on by default) it solves the scale within a window around it, since a single point rarely fixes the absolute level to better than several per cent (see <a href="Fitting.html#solved-scale">Solving the Measured Scale</a>).</p>
 
 <p><strong>Step 2 &mdash; Smooth.</strong> Apply smoothing to reduce noise: <strong>Data &gt; Smooth</strong>. This uses a Savitzky-Golay filter that preserves peak shapes while reducing point-to-point scatter.</p>
 

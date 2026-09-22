@@ -34,6 +34,7 @@
     <li><a href="#staged-fitting">Staged Fitting</a></li>
     <li><a href="#convergence-enhancements">Convergence Enhancements</a></li>
     <li><a href="#understanding-the-cost-function">Understanding the Cost Function</a></li>
+    <li><a href="#solved-scale">Solving the Measured Scale</a></li>
   </ul>
 </div>
 
@@ -166,6 +167,8 @@
   <tr><td><strong>Smooth</strong></td><td>Apply smoothing to fitted parameter profiles</td><td>Unchecked</td></tr>
   <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square calculation</td><td>Checked</td></tr>
   <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
+  <tr><td><strong>Solve scale in &chi;&sup2;</strong></td><td>Score every candidate structure at the measured scale that suits it best, within the window, instead of at the anchored scale (see <a href="#solved-scale">Solving the Measured Scale</a>)</td><td>Checked</td></tr>
+  <tr><td><strong>Window</strong></td><td>How far the solved scale may move from the anchored one, as a fraction: the scale stays between 1/(1&nbsp;+&nbsp;w) and (1&nbsp;+&nbsp;w) times the anchor; 0 pins it</td><td>0.2</td></tr>
 </table>
 
 <h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
@@ -225,6 +228,7 @@
       <li>The main chart updates in real time, showing the best-fit curve converging toward the experimental data.</li>
       <li>The <strong>Fitting Progress</strong> chart page shows the &chi;&sup2; convergence curve.</li>
       <li>The status bar displays elapsed fitting time, and at the end the device the fit ran on (see <a href="#gpu">GPU Acceleration</a>).</li>
+      <li>The <strong>scale</strong> pane of the Chart Info bar reads <em>solved</em> or <em>anchored</em>; when the fit ends it shows the solved ratio (see <a href="#solved-scale">Solving the Measured Scale</a>).</li>
       <li>If <strong>Live Update</strong> is enabled (in Settings), the structure editor updates to show current best-fit parameters.</li>
     </ul>
   </li>
@@ -327,9 +331,43 @@
 <p>Key properties of the cost function:</p>
 <ul>
   <li><strong>Lower is better</strong> &mdash; E = 0 means a perfect fit</li>
-  <li>Displayed in the Chart Info bar as both current and best values</li>
+  <li>Displayed in the Chart Info bar as both current and best values, beside the scale it was taken at</li>
   <li>Calculated on a logarithmic scale to give equal weight to both high and low reflectivity regions</li>
 </ul>
+
+<h2 id="solved-scale">Solving the Measured Scale</h2>
+<p>A reflectometer does not measure reflectivity. It counts reflected photons, and the reflectivity is that count divided by the intensity of the incident beam, R(&theta;)&nbsp;=&nbsp;I(&theta;)&nbsp;/&nbsp;I<sub>0</sub>. I<sub>0</sub> is seldom known to better than several per cent: it comes from a separate direct-beam scan through attenuators whose factors are themselves calibrated, the source drifts between that scan and the measurement, and the detector loses counts at high rates. What reaches the detector at small angles also depends on the specimen:</p>
+<ul>
+  <li><strong>Footprint.</strong> A beam of height b illuminates a length b&nbsp;/&nbsp;sin&nbsp;&theta; of the specimen. Below the angle at which that length equals the specimen's, part of the beam misses the specimen, and the measured plateau of total external reflection is lower than the true one.</li>
+  <li><strong>Alignment and curvature.</strong> An error in the &omega; zero, or a bowed substrate, lowers and reshapes the region around the critical angle, where the curve is steepest.</li>
+  <li><strong>Normalisation.</strong> <a href="Data.html#data-conditioning-walkthrough">Normalize</a> sets the scale from a single point &mdash; in the automatic variant the largest measured intensity below 0.5&deg;, matched to the model. The anchor inherits whatever error that one point carries, and depends on the model it was matched to.</li>
+</ul>
+<p>All of these multiply the whole curve by one factor s: I<sub>meas</sub>(&theta;)&nbsp;=&nbsp;s&nbsp;&middot;&nbsp;R(&theta;). On the logarithmic scale the fit works on, a factor is a constant offset, log&nbsp;I<sub>meas</sub>&nbsp;=&nbsp;log&nbsp;R&nbsp;+&nbsp;log&nbsp;s: the measured curve moves up or down without changing shape. That does not move a Bragg peak or change the spacing of the Kiessig fringes, which the thicknesses set, but it changes every absolute intensity &mdash; the height of the plateau, the reflectivity of the Bragg peaks, the rate at which the curve falls &mdash; and those are what the fit reads roughness and density from. A fit held at a wrong scale reaches for the parameters that can raise or lower the whole curve: a scale that is too low is typically absorbed as extra roughness, one that is too high as extra density contrast. The structure comes out biased, and its &chi;&sup2; is higher than the structure deserves.</p>
+
+<h3>What the option does</h3>
+<p>With <strong>Solve scale in &chi;&sup2;</strong> checked, the scale is treated as a <em>nuisance parameter</em>: a quantity the &chi;&sup2; needs but which is not itself a result. Every candidate structure the swarm tries is scored at the scale that suits it best. Write a&nbsp;=&nbsp;log<sub>10</sub>(s&nbsp;/&nbsp;s<sub>anchor</sub>) for the offset from the anchored scale, and d for a point's residual log&nbsp;I<sub>meas</sub>&nbsp;&minus;&nbsp;log&nbsp;I<sub>calc</sub>. The offset turns every residual into d&nbsp;+&nbsp;a, and because the &chi;&sup2; is a weighted sum of squared residuals it is a parabola in a:</p>
+<div class="note">
+  <strong>&chi;&sup2;(a) = S<sub>2</sub> + 2a&thinsp;S<sub>1</sub> + a&sup2;&thinsp;S<sub>0</sub>, &emsp; a* = &minus;S<sub>1</sub> / S<sub>0</sub></strong>
+</div>
+<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and TW weights, and the division by log&nbsp;I<sub>calc</sub> that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
+<p>The weight explains why the scale matters so much. Because each residual is divided by log&nbsp;I<sub>calc</sub>, the points near and below the critical angle, where the reflectivity is close to 1 and its logarithm close to 0, weigh the most &mdash; and they are also the points that footprint and alignment errors affect most.</p>
+
+<h3>The window</h3>
+<p>A free scale is not harmless. A structure with the wrong density throughout, or a wrong top layer, can look acceptable if the scale is allowed to carry the whole curve to it: the scale would then absorb physics. The <strong>Window</strong> w says how far you trust the normalisation. The offset is held within &plusmn;log<sub>10</sub>(1&nbsp;+&nbsp;w), so the solved scale lies between 1/(1&nbsp;+&nbsp;w) and (1&nbsp;+&nbsp;w) times the anchored one: the default 0.2 allows a factor of 1.2 either way. A window of 0 pins the scale to the anchor and gives the same &chi;&sup2; as unchecking the option.</p>
+<ul>
+  <li>Widen it when the absolute level is poorly known: no direct-beam measurement, a specimen shorter than the beam footprint at the lowest angles, a curve normalised against a start model far from the answer.</li>
+  <li>Narrow it when I<sub>0</sub> was measured carefully and the specimen is larger than the footprint: the window then keeps the scale from covering for a wrong model.</li>
+</ul>
+
+<h3>Reading the result</h3>
+<ul>
+  <li>The <strong>scale</strong> pane of the Chart Info bar shows the scale the &chi;&sup2; beside it was taken at. <em>solved &times;1.0831</em> means the measured curve fits best at 1.0831 times its anchored scale, i.e. about 8&nbsp;% higher; <em>anchored</em> means the option is off. <strong>Calc</strong> shows it for the model on screen, and at the end of a fit for the fitted model.</li>
+  <li><em>at bound</em> means the best scale lies outside the window and was held at its edge. Either the normalisation is off by more than the window allows &mdash; renormalise, or widen the window if you have a reason to &mdash; or the model cannot reproduce the curve's absolute level and the scale was being asked to make up for it. Look at the model before using the numbers of a fit that ends at the bound.</li>
+  <li>A ratio well away from 1 but inside the window says the anchor is poor. Applying the ratio with <a href="Data.html#data-processing">Data &gt; Normalize</a> and fitting again brings the anchored and the solved numbers together.</li>
+  <li>The chart and the saved data stay at the anchored scale: the measured curve is not redrawn at the solved one, so the model can sit visibly above or below the data by the ratio while the &chi;&sup2; counts it at the solved scale. The plain &chi;&sup2; is taken at the same scale as the &chi;&sup2;.</li>
+  <li>A solved &chi;&sup2; is never higher than the anchored &chi;&sup2; of the same structure, since a&nbsp;=&nbsp;0 is always inside the window, so the two kinds of number cannot be compared with each other. Compare fits made with the same setting; uncheck the option to reproduce the numbers of versions that did not have it.</li>
+</ul>
+<p>The option and the window are saved with the project; a project saved before the option existed opens with it checked at 0.2. <strong>Export fit results</strong> records them as <code>solveScale</code> and <code>scaleSolveWindow</code> under <code>fitParams</code>, together with <code>chi2Scale</code> (<code>"solved"</code> or <code>"anchored"</code>), <code>scaleRatio</code> and <code>scaleClamped</code>. The MCP server's <a href="MCPServer.html#fitting"><code>scale_solve</code> and <code>scale_solve_window</code></a> are the same option with the same defaults: a fit made in the program and one made through the server on the same settings are the same fit.</p>
 
 <h3>See Also</h3>
 <ul>
