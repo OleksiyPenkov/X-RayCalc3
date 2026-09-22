@@ -38,6 +38,9 @@ type
     FFitSeconds: Double;
     FFitDevice: string;          // what evaluated the last fit: 'CPU' or the GPU's name
     FHasFitResults: Boolean;
+    { The scale the last chi-squared shown was taken at (RunCalc) }
+    FLastSolveScale, FLastScaleClamped: Boolean;
+    FLastScaleLog: Single;
 
     { Dependencies - not owned }
     FCalcSettings: TfrmCalcSettings;
@@ -160,6 +163,10 @@ begin
     FCalc.ExpValues := SeriesToData(FChartMgr.Series[FProjectPanel.Project.LinkedData.CurveID]);
     if FCalcSettings.IsPWChiSqr then
       FCalc.MovAvg := MovAvg(FCalc.ExpValues, FProjectPanel.FitParams.MovAvgWindow);
+    { The chi-squared shown is taken at the scale a fit with these settings
+      would score it at, so the number after a fit is the fit's own. }
+    FCalc.SolveScale := FCalcSettings.SolveScale;
+    FCalc.ScaleWindowLog := TfrmCalcSettings.ScaleWindowToLog(FCalcSettings.ScaleWindowOrDefault);
   end;
 
   GetThreadParams;
@@ -205,9 +212,14 @@ begin
         FCalc.CalcChiSquare(FCalcSettings.ThetaWeightIndex);
         FChartInfo.SetChiSquare(FCalc.ChiSQR, FCalc.ChiSQR);
         FChartInfo.SetChiSquarePlain(FCalc.ChiSQRPlain);
+        FLastSolveScale := FCalc.SolveScale;
+        FLastScaleLog := FCalc.ScaleLog;
+        FLastScaleClamped := FCalc.ScaleClamped;
+        FChartInfo.SetChiScale(FLastSolveScale, FLastScaleLog, FLastScaleClamped);
       end
       else begin
         FChartInfo.ClearChiSquare;
+        FChartInfo.ClearChiScale;
         FLastChiSquare := 0;
       end;
 
@@ -392,6 +404,7 @@ begin
     weighted one it minimises. Blank it until FinalizeFitting recalculates the
     model the fit ended on, rather than leave the pre-fit number standing. }
   FChartInfo.ClearChiSquarePlain;
+  FChartInfo.SetChiScalePending(FProjectPanel.FitParams.SolveScale);
 
   FitThread := TFittingThread.Create(True);
   FitThread.FLFPSO := FLFPSO;
@@ -556,6 +569,17 @@ begin
     Root.AddPair('fittingSeconds', TJSONNumber.Create(RoundTo(FFitSeconds, -3)));
     Root.AddPair('fittingDevice', FFitDevice);
     Root.AddPair('chiSquared', TJSONNumber.Create(FABestChiSquare));
+    { As fit_xrr reports it: chi2_scale, scale_ratio, scale_clamped. The
+      ratio is the one the model the fit ended on was rescored at. }
+    if FitParams.SolveScale then
+      Root.AddPair('chi2Scale', 'solved')
+    else
+      Root.AddPair('chi2Scale', 'anchored');
+    if FLastSolveScale then
+    begin
+      Root.AddPair('scaleRatio', TJSONNumber.Create(RoundTo(Power(10, FLastScaleLog), -6)));
+      Root.AddPair('scaleClamped', TJSONBool.Create(FLastScaleClamped));
+    end;
     Root.AddPair('fittingMode', FittingModeNames[FCalcSettings.FittingMode]);
 
     // fitParams
@@ -574,6 +598,10 @@ begin
     JFitParams.AddPair('adaptVel', TJSONBool.Create(FitParams.AdaptVel));
     JFitParams.AddPair('useConstriction', TJSONBool.Create(FitParams.UseConstriction));
     JFitParams.AddPair('rangeSeed', TJSONBool.Create(FitParams.RangeSeed));
+    JFitParams.AddPair('solveScale', TJSONBool.Create(FitParams.SolveScale));
+    { the fraction typed, back from the log10(1 + w) the engine holds }
+    JFitParams.AddPair('scaleSolveWindow',
+      TJSONNumber.Create(RoundTo(Power(10, FitParams.ScaleWindowLog) - 1, -6)));
     Root.AddPair('fitParams', JFitParams);
 
     // calcParams

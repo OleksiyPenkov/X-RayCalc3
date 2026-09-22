@@ -251,6 +251,46 @@
       Alignment = taCenter
       Caption = '0.00'
     end
+    object RzStatusPane9: TRzStatusPane
+      Left = 645
+      Top = 15
+      Width = 40
+      Hint = 
+        'The measured scale the '#967'2 is taken at. solved x r: the scale th' +
+        'at minimises '#967'2, r times the anchored one, within the window (' +
+        'Fitting - Solve scale in '#967'2); "at bound" when the window stopp' +
+        'ed it. anchored: the scale as measured'
+      ParentShowHint = False
+      ShowHint = True
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Alignment = taRightJustify
+      Caption = 'scale'
+    end
+    object spChiScale: TRzStatusPane
+      Left = 689
+      Top = 15
+      Width = 190
+      Hint = 
+        'The measured scale the '#967'2 is taken at. solved x r: the scale th' +
+        'at minimises '#967'2, r times the anchored one, within the window (' +
+        'Fitting - Solve scale in '#967'2); "at bound" when the window stopp' +
+        'ed it. anchored: the scale as measured'
+      ParentShowHint = False
+      ShowHint = True
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Alignment = taCenter
+      Caption = ''
+    end
     object btnChartScale: TRzBitBtn
       Left = 887
       Top = 13

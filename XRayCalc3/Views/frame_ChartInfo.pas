@@ -45,6 +45,8 @@ type
     spChiBest: TRzStatusPane;
     RzStatusPane8: TRzStatusPane;
     spChiPlain: TRzStatusPane;
+    RzStatusPane9: TRzStatusPane;
+    spChiScale: TRzStatusPane;
     btnChartScale: TRzBitBtn;
     cbMinLimit: TRzComboBox;
     dlgSaveResult: TSaveDialog;
@@ -89,6 +91,14 @@ type
     procedure SetChiSquarePlain(const Value: Single);
     procedure ClearChiSquare;
     procedure ClearChiSquarePlain;
+    /// <summary>The scale the chi-squared shown was taken at: solved (the
+    /// ratio 10^ScaleLog to the anchored scale, and whether the window
+    /// clamped it) or anchored.</summary>
+    procedure SetChiScale(const Solved: Boolean; const ScaleLog: Single;
+      const Clamped: Boolean);
+    /// <summary>A fit is running: solved or anchored, ratio still to come.</summary>
+    procedure SetChiScalePending(const Solved: Boolean);
+    procedure ClearChiScale;
     procedure SetPeriod(const D: Single);
     procedure SetScaleCaption(const Caption: string);
     procedure UpdateAxisFormat;
@@ -298,6 +308,30 @@ end;
 procedure TfrmChartInfo.ClearChiSquarePlain;
 begin
   spChiPlain.Caption := '';
+end;
+
+procedure TfrmChartInfo.SetChiScale(const Solved: Boolean;
+  const ScaleLog: Single; const Clamped: Boolean);
+begin
+  if not Solved then
+    spChiScale.Caption := 'anchored'
+  else if Clamped then
+    spChiScale.Caption := 'solved x' + FloatToStrF(Power(10, ScaleLog), ffFixed, 8, 4) + ' at bound'
+  else
+    spChiScale.Caption := 'solved x' + FloatToStrF(Power(10, ScaleLog), ffFixed, 8, 4);
+end;
+
+procedure TfrmChartInfo.SetChiScalePending(const Solved: Boolean);
+begin
+  if Solved then
+    spChiScale.Caption := 'solved'
+  else
+    spChiScale.Caption := 'anchored';
+end;
+
+procedure TfrmChartInfo.ClearChiScale;
+begin
+  spChiScale.Caption := '';
 end;
 
 procedure TfrmChartInfo.SetPeriod(const D: Single);

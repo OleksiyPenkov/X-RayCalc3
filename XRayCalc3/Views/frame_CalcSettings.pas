@@ -8,6 +8,12 @@ uses
   RzPanel, RzRadGrp, RzRadChk, RzButton,
   unit_Types;
 
+const
+  { The solved-scale window the MCP server uses when a request gives none
+    (DEF_SCALE_SOLVE_WINDOW in unit_MCPFit), so a GUI fit and a server fit on
+    the same settings are the same fit. }
+  DEF_SCALE_SOLVE_WINDOW = 0.2;
+
 type
   TAdvancedSettingsEvent = procedure(Sender: TObject; var Params: TFitParams) of object;
 
@@ -51,6 +57,9 @@ type
     rgCalcMode: TRzRadioGroup;
     RzGroupBox2: TRzGroupBox;
     edN: TEdit;
+    cbSolveScale: TRzCheckBox;
+    lblScaleWindow: TLabel;
+    edScaleWindow: TEdit;
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
       var AllowChange: Boolean);
     procedure rgCalcModeClick(Sender: TObject);
@@ -69,7 +78,14 @@ type
     function GetThetaWeightIndex: Integer;
     function GetLambda: Double;
     function GetResolution: Double;
+    function GetSolveScale: Boolean;
+    function GetScaleWindow: Double;
   public
+    /// <summary>The engine's window from the fraction the operator types:
+    /// log10(1 + w), the conversion unit_MCPFit.ParseFitParams makes for
+    /// "scale_solve_window", so the same number means the same fit.</summary>
+    class function ScaleWindowToLog(const Window: Double): Single; static;
+
     procedure LoadFromINI(INF: TMemIniFile);
     procedure ApplyModeSettings;
     procedure SaveToINI(INF: TMemIniFile);
@@ -92,6 +108,15 @@ type
     property Resolution: Double read GetResolution;
     property IsPWChiSqr: Boolean read GetIsPWChiSqr;
     property ThetaWeightIndex: Integer read GetThetaWeightIndex;
+    /// <summary>Solve the measured scale inside the chi-squared.</summary>
+    property SolveScale: Boolean read GetSolveScale;
+    /// <summary>The solved-scale window as a fraction (0.2 = within x1.2 of
+    /// the anchor; 0 pins it). Raises when the field is not a number >= 0.</summary>
+    property ScaleWindow: Double read GetScaleWindow;
+    /// <summary>ScaleWindow, or DEF_SCALE_SOLVE_WINDOW when the field is not
+    /// a number >= 0: for a save or a recalculation, which must not fail on
+    /// a field only a fit is refused for.</summary>
+    function ScaleWindowOrDefault: Double;
 
     property OnCalcModeChange: TNotifyEvent read FOnCalcModeChange write FOnCalcModeChange;
     property OnFittingModeChange: TNotifyEvent read FOnFittingModeChange write FOnFittingModeChange;
@@ -100,7 +125,25 @@ type
 
 implementation
 
+uses
+  System.Math;
+
 {$R *.dfm}
+
+const
+  { The window is kept in the INI in the invariant format, so a project
+    saved under one locale reads back under another. }
+  INI_SECTION_SCALE = 'FIT';
+  INI_SOLVE_SCALE   = 'SolveScale';
+  INI_SCALE_WINDOW  = 'ScaleWindow';
+
+function ReadScaleWindow(INF: TMemIniFile): Double;
+begin
+  Result := StrToFloatDef(INF.ReadString(INI_SECTION_SCALE, INI_SCALE_WINDOW, ''),
+    DEF_SCALE_SOLVE_WINDOW, TFormatSettings.Invariant);
+  if Result < 0 then
+    Result := DEF_SCALE_SOLVE_WINDOW;
+end;
 
 { TfrmCalcSettings }
 
@@ -140,6 +183,32 @@ end;
 function TfrmCalcSettings.GetResolution: Double;
 begin
   Result := StrToFloatDef(edWidth.Text, 0);
+end;
+
+class function TfrmCalcSettings.ScaleWindowToLog(const Window: Double): Single;
+begin
+  Result := System.Math.Log10(1 + Window);
+end;
+
+function TfrmCalcSettings.GetSolveScale: Boolean;
+begin
+  Result := cbSolveScale.Checked;
+end;
+
+function TfrmCalcSettings.GetScaleWindow: Double;
+begin
+  { the system locale, as every other number field of the frame }
+  Result := StrToFloat(Trim(edScaleWindow.Text));
+  if Result < 0 then
+    raise EConvertError.CreateFmt('The scale window cannot be negative (%s): ' +
+      'it is the fraction the solved scale may differ from the anchored one',
+      [edScaleWindow.Text]);
+end;
+
+function TfrmCalcSettings.ScaleWindowOrDefault: Double;
+begin
+  if not TryStrToFloat(Trim(edScaleWindow.Text), Result) or (Result < 0) then
+    Result := DEF_SCALE_SOLVE_WINDOW;
 end;
 
 function TfrmCalcSettings.GetIsPWChiSqr: Boolean;
@@ -240,6 +309,10 @@ begin
   cbSeedRange.Checked := INF.ReadBool('LFPSO', 'SeedRange', False);
   cbLFPSOShake.Checked := INF.ReadBool('LFPSO', 'Shake', True);
   cbSmooth.Checked := INF.ReadBool('LFPSO', 'Smooth', False);
+  { A project saved before the option existed opens with the server's
+    defaults: solved, window 0.2. }
+  cbSolveScale.Checked := INF.ReadBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, True);
+  edScaleWindow.Text := FloatToStr(ReadScaleWindow(INF));
 
   ApplyModeSettings;
 end;
@@ -297,6 +370,12 @@ begin
   INF.WriteBool('LFPSO', 'Shake', cbLFPSOShake.Checked);
   INF.WriteBool('LFPSO', 'SeedRange', cbSeedRange.Checked);
   INF.WriteBool('LFPSO', 'Smooth', cbSmooth.Checked);
+
+  { A field that does not parse is saved as the default rather than failing
+    the save; the next fit refuses it in ReadFitParams. }
+  INF.WriteBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, cbSolveScale.Checked);
+  INF.WriteString(INI_SECTION_SCALE, INI_SCALE_WINDOW,
+    FloatToStr(ScaleWindowOrDefault, TFormatSettings.Invariant));
 end;
 
 procedure TfrmCalcSettings.ReadFitParams(var Params: TFitParams);
@@ -308,6 +387,8 @@ begin
   Params.RangeSeed := cbSeedRange.Checked;
   Params.MaxPOrder := StrToInt(edPolyOrder.Text);
   Params.Smooth := cbSmooth.Checked;
+  Params.SolveScale := SolveScale;
+  Params.ScaleWindowLog := ScaleWindowToLog(ScaleWindow);
 end;
 
 procedure TfrmCalcSettings.FillCalcThreadParams(var Params: TCalcThreadParams);
@@ -378,6 +459,10 @@ begin
   Params.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
   Params.Ksxr := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
   Params.PolyFactor := INF.ReadInteger('LFPSO', 'PolyFactor', 10);
+  { The same keys LoadFromINI puts in the checkbox and the field; the
+    frame's controls own them and SaveToINI writes them. }
+  Params.SolveScale := INF.ReadBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, True);
+  Params.ScaleWindowLog := ScaleWindowToLog(ReadScaleWindow(INF));
 end;
 
 procedure TfrmCalcSettings.SaveAdvancedParams(INF: TMemIniFile; const Params: TFitParams);
@@ -396,6 +481,8 @@ begin
   INF.WriteInteger('LFPSO', 'SmoothWindow', Params.SmoothWindow);
   INF.WriteString('LFPSO', 'Ksxr', Params.Ksxr.ToString);
   INF.WriteInteger('LFPSO', 'PolyFactor', Params.PolyFactor);
+  { SolveScale and the scale window are not written here: SaveToINI writes
+    them from the controls, which a stored Params may lag until the next fit. }
 end;
 
 end.

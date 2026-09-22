@@ -258,6 +258,59 @@ object frmCalcSettings: TfrmCalcSettings
       State = cbUnchecked
       TabOrder = 9
     end
+    object cbSolveScale: TRzCheckBox
+      Left = 460
+      Top = 25
+      Width = 112
+      Height = 18
+      Hint = 
+        'Score every candidate at the measured scale that minimises '#967'2 (' +
+        'within the window), as the MCP server'#39's scale_solve does. Off: t' +
+        'he scale stays anchored'
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      AutoSizeWidth = 112
+      Caption = 'Solve scale in '#967'2'
+      Checked = True
+      ParentShowHint = False
+      ShowHint = True
+      State = cbChecked
+      TabOrder = 10
+    end
+    object lblScaleWindow: TLabel
+      Left = 460
+      Top = 57
+      Width = 39
+      Height = 14
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      Caption = 'Window'
+      StyleElements = [seFont, seClient, seBorder]
+    end
+    object edScaleWindow: TEdit
+      Left = 510
+      Top = 53
+      Width = 50
+      Height = 18
+      Hint = 
+        'How far the solved scale may move from the anchored one, as a fr' +
+        'action: 0.2 = within x1.2 either way, 0 pins it (scale_solve_win' +
+        'dow)'
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      Alignment = taRightJustify
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 11
+      Text = '0.2'
+      StyleElements = [seFont, seClient, seBorder]
+    end
   end
   object RzPanel7: TRzPanel
     AlignWithMargins = True

@@ -107,7 +107,9 @@ uses
   editor_Stack in '..\Components\editor_Stack.pas' {edtrStack},
   unit_XRCStackControl in '..\Components\unit_XRCStackControl.pas',
   unit_XRCStructure in '..\Components\unit_XRCStructure.pas',
-  TestStructureWriteBack in 'TestStructureWriteBack.pas';
+  TestStructureWriteBack in 'TestStructureWriteBack.pas',
+  frame_CalcSettings in '..\Views\frame_CalcSettings.pas' {frmCalcSettings: TFrame},
+  TestCalcSettingsScale in 'TestCalcSettingsScale.pas';
 
 {$R *.res}
 
