@@ -59,12 +59,17 @@
   <li><strong>Enable Shake</strong> &mdash; this helps escape local minima.</li>
   <li><strong>Check initial model</strong> &mdash; a better starting guess leads to faster convergence.</li>
   <li><strong>Try a different fitting mode</strong> &mdash; Periodic mode may work better than Irregular for regular multilayers, and vice versa.</li>
+  <li><strong>Check the Bragg peak positions first</strong> &mdash; a Periodic fit holds the period D of every repeating stack at its start value, so it cannot move the peaks. Set the period so the peaks line up, or fit in Irregular or Polynomial mode (see <a href="Fitting.html#fit-modes">Fitting Modes</a>).</li>
+  <li><strong>Look at the scale pane</strong> &mdash; if it reads <em>at bound</em>, the normalisation is off by more than the Window allows: renormalise, or widen the Window (see <a href="Fitting.html#solved-scale">Solving the Measured Scale</a>).</li>
+  <li><strong>Check the chart's lower reflectivity limit</strong> &mdash; the calculated curve is floored at it, so measured points below it are compared with that limit.</li>
+  <li><strong>Link the data</strong> &mdash; the fit needs the measured curve linked to the model and visible; otherwise it stops with <em>Measured curve is not linked!</em></li>
 </ul>
 
 <h2 id="calculation-is-slow">Calculation is slow</h2>
 <ul>
   <li>Ensure multi-threading is enabled (<strong>Settings &gt; Calc &amp; Fit &gt; Auto (Use all)</strong>).</li>
-  <li>Reduce the number of calculation points (N) for preliminary calculations.</li>
+  <li>Reduce the number of calculation points (N) for preliminary calculations. N is used only when no measured curve is linked (or it is hidden); with linked data the model is calculated at the measured angles.</li>
+  <li>For fitting, turn on <strong>Settings &gt; Calc &amp; Fit &gt; Use the GPU for fitting</strong> (see <a href="Fitting.html#gpu">GPU Acceleration</a>).</li>
   <li>Use the <strong>x32 version</strong> for small-to-medium models &mdash; it is approximately 2&times; faster than x64.</li>
   <li>Use the <strong>x64 version</strong> only when the model is too large for x32 (memory limit).</li>
 </ul>

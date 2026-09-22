@@ -50,9 +50,9 @@
 <h2 id="behavior">Behavior</h2>
 <table>
   <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Automatically calculate when opening project</strong></td><td>Run calculation on all models when a project is opened</td><td>On</td></tr>
+  <tr><td><strong>Automatically calculate when opening project</strong></td><td>Calculate the active model when a project is opened</td><td>On</td></tr>
   <tr><td><strong>Live update structure panel during fitting</strong></td><td>Show real-time parameter changes in the structure editor during fitting</td><td>Off</td></tr>
-  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save fitting results to the Output directory automatically</td><td>Off</td></tr>
+  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save the project as &lt;name&gt;-fitted.xrcx in the Fitting Output folder (or next to the project when that folder is not set) when a fit ends, and at each improvement during the fit if Live update is on</td><td>Off</td></tr>
   <tr><td><strong>Automatically check for updates</strong></td><td>Check for new versions on launch</td><td>Off</td></tr>
 </table>
 
@@ -64,7 +64,7 @@
   <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Number of CPU cores to use</strong></td><td>Thread count for parallel computation</td><td>Auto (Use all)</td></tr>
   <tr><td><strong>Use the GPU for fitting</strong></td><td>Evaluate the fitting swarm on the graphics card when one is usable (theta scans); see <a href="Fitting.html#gpu">GPU Acceleration</a></td><td>On</td></tr>
-  <tr><td><strong>Number of runs</strong> (Benchmark)</td><td>How many benchmark iterations to perform</td><td>10</td></tr>
+  <tr><td><strong>Number of runs</strong> (Benchmark)</td><td>How many times each benchmark project is fitted (1&ndash;100)</td><td>20</td></tr>
 </table>
 
 <h2 id="graphics">Graphics</h2>

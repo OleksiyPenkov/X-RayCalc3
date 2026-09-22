@@ -38,12 +38,12 @@
 
 <p>The <strong>Universal Mirror Optimizer</strong> is a command-line tool that designs periodic multilayer mirrors (PMMs) optimized for <em>multiple characteristic wavelengths simultaneously</em>. Given a set of target elements (e.g. C&nbsp;K&alpha; and O&nbsp;K&alpha;), the optimizer searches for the best combination of materials, period thickness, layer ratio, number of periods, and interface roughness to maximize reflectivity across all targets at once.</p>
 
-<p>This tool is part of the <code>xrccmd</code> command-line interface and uses the same Fresnel reflectivity engine and Henke optical constants database as the main X-Ray Calc 3 GUI application.</p>
+<p>This tool is part of the <code>xrccmd</code> command-line interface and uses the Henke optical constants database of the main X-Ray Calc 3 GUI application. Its reflectivity is a standalone single-precision port of the GUI's Parratt recursion with N&eacute;vot&ndash;Croce roughness (the same 0.50299&thinsp;&sigma;&sup2; coefficient as the GUI engine); the substrate is a semi-infinite layer at bulk density.</p>
 
 <h2 id="concept">Concept</h2>
 <p>Traditional multilayer mirror design targets a single wavelength. When an analytical instrument (e.g. an electron microprobe or X-ray fluorescence spectrometer) needs to measure multiple characteristic lines, the standard approach is to use separate mirrors for each element. The Universal Mirror Optimizer explores whether a single bilayer structure can provide useful reflectivity at two or more wavelengths simultaneously, even if it compromises peak performance at any single wavelength.</p>
 
-<p>The optimizer uses the <strong>Virtual Crystal Approximation</strong> (VCA) to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from a user-defined pool (e.g. W, Si, C). The dielectric constant of the mixed material is computed as a weighted average of the constituents&rsquo; optical constants from the Henke database.</p>
+<p>The optimizer uses the <strong>Virtual Crystal Approximation</strong> (VCA) to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from a user-defined pool (e.g. W, Si, C). The atomic scattering factors f<sub>1</sub>, f<sub>2</sub>, the atomic mass and the bulk density of the constituents are each averaged with the layer fractions, and the dielectric constant is computed from these mixed values &mdash; not by averaging the constituents&rsquo; dielectric constants.</p>
 
 <h3>Search Space</h3>
 <p>The optimizer searches over the following parameters:</p>
@@ -51,45 +51,48 @@
   <tr><th>Parameter</th><th>Description</th></tr>
   <tr><td><strong>Composition</strong> (per layer)</td><td>Element fractions for each layer in the bilayer period. Fractions are normalized to sum to 1.0.</td></tr>
   <tr><td><strong>d</strong></td><td>Period thickness in &Aring;ngstr&ouml;ms</td></tr>
-  <tr><td><strong>&gamma;</strong> (gamma)</td><td>Ratio of the reflector layer thickness to the full period (0&ndash;1)</td></tr>
+  <tr><td><strong>&gamma;</strong> (gamma)</td><td>Fraction of the period taken by layer 1, the upper layer of each period, whatever its material (0&ndash;1)</td></tr>
   <tr><td><strong>N</strong></td><td>Number of periods (rounded to integer for evaluation)</td></tr>
-  <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms (shared by all interfaces)</td></tr>
-  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer (0.7&ndash;1.3 typical), accounting for thin-film density deviations</td></tr>
+  <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms. In bilayer mode it is shared by all interfaces, the substrate's included; in template mode the template's per-layer &sigma; is used and this one applies to the substrate interface only</td></tr>
+  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer. It is searched and stored in the checkpoint, but the current fitness code builds every layer at bulk density (factor 1.0), so <strong>at present it has no effect</strong> on the reflectivity</td></tr>
 </table>
 
 <h3>Optimization Algorithm</h3>
-<p>The optimizer uses <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO) with the same adaptive enhancements as the GUI fitting engine (see <a href="Fitting.html#convergence-enhancements">Chapter 9: Convergence Enhancements</a>). Key features include:</p>
+<p>The optimizer uses its own implementation of <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO), modelled on the GUI fitting engine (see <a href="Fitting.html#convergence-enhancements">Chapter 9: Convergence Enhancements</a>) but not identical to it: c<sub>1</sub>&nbsp;=&nbsp;c<sub>2</sub>&nbsp;=&nbsp;2.05 with the linear inertia w<sub>1</sub>&nbsp;+&nbsp;w<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T) and no constriction factor, a L&eacute;vy scale falling from 0.1 to 0.01, and 30&nbsp;% of the L&eacute;vy flights aimed at a random peer instead of the global best. Key features include:</p>
 <ul>
-  <li>Adaptive PSO/L&eacute;vy flight switching (more exploration early, more exploitation late)</li>
+  <li>Adaptive PSO/L&eacute;vy flight switching: the probability of a L&eacute;vy step falls from 0.7 to 0.3 over the run, raised by 0.05 per stagnant iteration (at most +0.2, capped at 0.9)</li>
   <li>Reflective boundary handling with velocity damping</li>
   <li>Composition normalization (fractions always sum to 1.0)</li>
-  <li>Diversity-aware shake mechanism for stagnation escape</li>
+  <li>Window-based shake when the best FoM stalls: if it gains less than 1&nbsp;% over <code>jamming_max</code> iterations, every particle but one is re-seeded around the global best</li>
   <li>Parallel fitness evaluation using all available CPU cores</li>
 </ul>
+<p>The result reported at the end is the best solution found over the whole run, not the final position of the swarm.</p>
 
 <h2 id="usage">CLI Usage</h2>
 <p>The Universal Mirror Optimizer is invoked via the <code>xrccmd</code> command-line tool with the <code>-u</code> switch:</p>
-<pre><code>xrccmd -u config.json [-v]</code></pre>
+<pre><code>xrccmd -u config.json [-l xrf_lines.json] [-v]</code></pre>
 <table>
   <tr><th>Switch</th><th>Description</th></tr>
   <tr><td><code>-u config.json</code></td><td>Run the Universal Mirror Optimizer with the specified JSON configuration file</td></tr>
-  <tr><td><code>-v</code></td><td>Verbose mode &mdash; prints checkpoint saves and shake events during optimization</td></tr>
+  <tr><td><code>-l xrf_lines.json</code></td><td>XRF line table (shipped as <code>Shared\Universal\xrf_lines.json</code>). Required when a target is given by name or element range, or as an object without <code>lambda</code>; without it such a run stops with &ldquo;XRF lines not loaded&rdquo;.</td></tr>
+  <tr><td><code>-v</code></td><td>Verbose mode &mdash; prints a line at every checkpoint save, and waits for &lt;Enter&gt; before exiting (do not use it in scripts). Shake events are not printed.</td></tr>
 </table>
+<p>The <code>-pop</code> and <code>-iter</code> switches of the other <code>xrccmd</code> modes do not affect <code>-u</code>; the configuration file sets both.</p>
 
 <h3>Console Output</h3>
 <p>During optimization, the console displays a progress table updated every iteration:</p>
 <pre><code>Universal Mirror Optimizer v1.0
-Targets: C(44.7A) O(23.6A)
+Lines: C(44.7A) O(23.6A)
 Pool: W Si C
 Structure: bilayer, d=[20..80], N=[20..100]
+Mode: mixed compositions
 Population: 100, Max iterations: 500
 ---
- Iter       FoM   R_C   R_O    Div
-    0    0.0124  0.012  0.003  0.438
-    1    0.0298  0.031  0.009  0.412
-    2    0.0356  0.037  0.015  0.391
+ Iter       FoM    R_C    R_O    Div  Best                    Time
+    0    0.0124  0.012  0.003  0.288  ...                     0:01
+    1    0.0298  0.031  0.009  0.271  ...                     0:02
   ...
-  500    0.1823  0.187  0.044  0.003
+  500    0.1823  0.187  0.044  0.003  ...                     3:12
 ---
 Optimization complete.
 Best FoM: 0.182300
@@ -97,28 +100,29 @@ Period d=54.94 A, gamma=0.697, N=36, sigma=0.72 A
 Layer 1: C=100.0%
 Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 
-<p>Columns: <strong>Iter</strong> = iteration number, <strong>FoM</strong> = figure of merit (higher is better), <strong>R_<em>X</em></strong> = peak reflectivity for each target element, <strong>Div</strong> = population diversity (0&ndash;1, lower = more converged).</p>
+<p>The banner also shows <code>Excluded:</code>, <code>Beam divergence:</code> and <code>Theta min:</code> lines when those options are set, and <code>Mode: pure elements (no mixing)</code> in pure-element mode. Columns: <strong>Iter</strong> = iteration number, <strong>FoM</strong> = figure of merit of the best solution so far (higher is better; it includes penalties, so it can be negative), <strong>R_<em>X</em></strong> = peak reflectivity of that solution for each target, <strong>Div</strong> = normalised RMS spread of the swarm (about 0.3 for a random swarm, 0.5 at most; lower = more converged), <strong>Best</strong> = the layer pair and period of the best solution, <strong>Time</strong> = elapsed m:ss. A <code>Converged at iteration&hellip;</code> line appears if the stagnation limit stops the run, and <code>Package saved: &hellip;</code> when the <code>.xrfx</code> package is written.</p>
 
 <h2 id="config">Configuration File</h2>
-<p>The optimizer is configured via a JSON file with the following sections:</p>
+<p>The optimizer is configured via a JSON file with the following sections. Every key shown is <strong>required</strong> unless it is listed as optional: a missing required key stops the run with an error. The optional keys and their defaults are <code>pure_elements</code> (false), <code>density_factor</code> (1.0), <code>delta_theta</code> (0), <code>theta_min</code> (0), <code>w_purity</code> (1.0), <code>polarization</code> (<code>"sp"</code>), <code>scan_points</code> (200), <code>scan_half_range</code> (0 = adaptive), <code>n_ref</code> (50), <code>excluded_pairs</code> and <code>template_file</code> (none).</p>
 
 <h3>Targets</h3>
-<p>An array of target characteristic lines to optimize for:</p>
+<p>An array of target characteristic lines to optimize for, under the key <code>"lines"</code> or, for older files, <code>"targets"</code> (<code>"lines"</code> wins when both are present). An item is either an object, or a string: an element name such as <code>"O"</code>, or an element range such as <code>"B-Mg"</code>, whose wavelengths are looked up in the XRF line table (<code>-l</code>) with weight 1.</p>
 <pre><code>"targets": [
   {"element": "C",  "lambda": 44.7, "weight": 1.0},
   {"element": "O",  "lambda": 23.6, "weight": 1.0}
 ]</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>element</code></td><td>string</td><td>Element name (used for labeling output)</td></tr>
-  <tr><td><code>lambda</code></td><td>number</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms (e.g. C&nbsp;K&alpha; = 44.7&nbsp;&Aring;)</td></tr>
-  <tr><td><code>weight</code></td><td>number</td><td>Relative weight in the figure of merit. Use higher values to prioritize specific targets.</td></tr>
+  <tr><td><code>element</code></td><td>string</td><td>Element name: labels the output, names the curve file and the <code>per_element</code> key, and finds the wavelength in the line table when <code>lambda</code> is omitted</td></tr>
+  <tr><td><code>lambda</code></td><td>number</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms (e.g. C&nbsp;K&alpha; = 44.7&nbsp;&Aring;). Optional: taken from the line table (<code>-l</code>) when omitted</td></tr>
+  <tr><td><code>weight</code></td><td>number</td><td>Relative weight in the figure of merit (optional, default 1). Use higher values to prioritize specific targets.</td></tr>
 </table>
 
 <h3>Element Pool</h3>
 <p>The set of materials available for layer composition:</p>
 <pre><code>"element_pool": ["W", "Si", "C"]</code></pre>
 <p>Each element must have a corresponding Henke database file (<code>.bin</code>) in the Henke data directory. The optimizer can mix any combination of these elements in each layer.</p>
+<p>Optional <code>"excluded_pairs": ["Mo/Si", &hellip;]</code> forbids the listed layer pairs, in either order; it applies in pure-element mode only. Each name must be in the pool.</p>
 
 <h3>Structure</h3>
 <p>Defines the mirror topology and parameter search ranges:</p>
@@ -134,17 +138,17 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 }</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>type</code></td><td>string</td><td>Structure type. Currently only <code>"bilayer"</code> is supported (two layers per period).</td></tr>
-  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Must be <code>2</code> for bilayer mode.</td></tr>
-  <tr><td><code>pure_elements</code></td><td>boolean</td><td>When <code>true</code>, each layer is forced to use a single material from the pool (the dominant component). When <code>false</code>, layers can be arbitrary mixtures. Pure-element mode is recommended for most practical applications.</td></tr>
+  <tr><td><code>type</code></td><td>string</td><td>Required but not checked: the structure is always a two-layer period.</td></tr>
+  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Required but not checked: the structure is always a two-layer period.</td></tr>
+  <tr><td><code>pure_elements</code></td><td>boolean</td><td>Optional, default <code>false</code>. When <code>true</code>, each layer is forced to use a single material from the pool (the dominant component). When <code>false</code>, layers can be arbitrary mixtures. Pure-element mode is recommended for most practical applications, and is required for <code>excluded_pairs</code> and templates.</td></tr>
   <tr><td><code>d</code></td><td>range</td><td>Period thickness search range in &Aring;. Ensure the range accommodates all target wavelengths (d &gt; &lambda;/2 for a valid Bragg condition).</td></tr>
-  <tr><td><code>gamma</code></td><td>range</td><td>Reflector/period thickness ratio (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
+  <tr><td><code>gamma</code></td><td>range</td><td>Fraction of the period taken by layer 1, the upper layer of each period (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
   <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
-  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;. Shared by all interfaces in the structure.</td></tr>
-  <tr><td><code>density_factor</code></td><td>range</td><td>Density multiplier range for each layer. 1.0 = bulk density. Values &lt; 1 model porous or amorphous films; values &gt; 1 model compressive stress.</td></tr>
+  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;: a range object, or a single number to fix the value. Shared by all interfaces in bilayer mode, the substrate's included.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Optional: a range object, or a single number to fix the value (default 1.0 = bulk density). The value is carried in the search, but <strong>the current fitness code ignores it</strong> and builds every layer at bulk density; omit it or give a fixed number.</td></tr>
 </table>
 
-<div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;.</div>
+<div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;. A target without a Bragg condition contributes zero to the FoM and is <em>not</em> penalised, so check the range yourself.</div>
 
 <h3>Fitness</h3>
 <p>Controls the figure of merit calculation:</p>
@@ -159,16 +163,18 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 }</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>w_R</code></td><td>number</td><td>Weight for peak reflectivity in the FoM. Higher values emphasize maximizing R<sub>peak</sub>.</td></tr>
-  <tr><td><code>w_FWHM</code></td><td>number</td><td>Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
-  <tr><td><code>R_min_threshold</code></td><td>number</td><td>Minimum acceptable peak reflectivity. Particles below this threshold receive a heavy penalty (100.0) to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
-  <tr><td><code>polarization</code></td><td>string</td><td>Polarization mode: <code>"sp"</code> for averaged S+P (recommended for most applications).</td></tr>
-  <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian of this width before extracting R<sub>peak</sub> and FWHM.</td></tr>
-  <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees. Targets whose Bragg angle falls below this value receive a heavy penalty. Prevents solutions at impractically low grazing angles.</td></tr>
+  <tr><td><code>w_R</code></td><td>number</td><td>Required. Weight for peak reflectivity in the FoM. Higher values emphasize maximizing R<sub>peak</sub>.</td></tr>
+  <tr><td><code>w_FWHM</code></td><td>number</td><td>Required. Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
+  <tr><td><code>R_min_threshold</code></td><td>number</td><td>Required. Minimum acceptable peak reflectivity (after the divergence convolution). Each target below it subtracts 100 from the FoM to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
+  <tr><td><code>polarization</code></td><td>string</td><td><code>"s"</code> = s-polarisation; <code>"sp"</code> (the default, and any other value) = unpolarised average (R<sub>s</sub>&nbsp;+&nbsp;R<sub>p</sub>)/2.</td></tr>
+  <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian whose FWHM is <code>delta_theta</code> before extracting R<sub>peak</sub> and FWHM. Default 0 = no convolution.</td></tr>
+  <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees (default 0 = none). A target whose Bragg angle falls below it subtracts 100 from the FoM and is left out of the FoM sum and of the purity. Prevents solutions at impractically low grazing angles.</td></tr>
   <tr><td><code>w_purity</code></td><td>number</td><td>Weight for the spectral purity penalty (0&ndash;1). Controls how strongly higher-order Bragg peak contamination between targets is penalized. 0 = no purity penalty, 1 = full penalty. Default: 1.0. See <a href="#purity">Spectral Purity</a>.</td></tr>
-  <tr><td><code>scan_points</code></td><td>integer</td><td>Number of points in the reflectivity scan around each Bragg peak. Higher values give finer theta resolution in output curves. Default: 200.</td></tr>
-  <tr><td><code>scan_half_range</code></td><td>number</td><td>Half-range of the reflectivity scan in degrees, centered on the Bragg peak. The scan covers [&theta;<sub>Bragg</sub> &minus; half_range, &theta;<sub>Bragg</sub> + half_range]. Default: 5.0.</td></tr>
+  <tr><td><code>scan_points</code></td><td>integer</td><td>Minimum number of points in the scan around each Bragg peak; the grid is refined to at least 10 points per kinematic peak width, at most 20000. Default: 200.</td></tr>
+  <tr><td><code>scan_half_range</code></td><td>number</td><td>Fixed half-range of the scan in degrees. Default 0 = adaptive: &plusmn;max(0.5&deg;, 4 kinematic widths) around both the kinematic Bragg angle and the refraction-corrected one (sin&sup2;&theta;&prime; = sin&sup2;&theta;<sub>B</sub> + 2&delta;, &delta; averaged over the stack), never starting below 1.15&thinsp;&theta;<sub>c</sub> or <code>theta_min</code>&nbsp;+&nbsp;0.1&deg;, and widened once (up to &plusmn;5&deg;) if the peak is clipped. The kinematic width uses the structure's own N.</td></tr>
+  <tr><td><code>n_ref</code></td><td>integer</td><td>Number of periods of the reference width FWHM<sub>ref</sub> in the FoM (see <a href="#fom">Figure of Merit</a>). Default: 50.</td></tr>
 </table>
+<p>R<sub>peak</sub> is the highest first-order local maximum inside the scan of the convolved curve, and the FWHM is measured between the linearly interpolated half-maximum crossings.</p>
 
 <h3>Optimizer</h3>
 <p>LFPSO algorithm parameters:</p>
@@ -183,15 +189,15 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   "checkpoint_every": 50
 }</code></pre>
 <table>
-  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
-  <tr><td><code>population</code></td><td>integer</td><td>&mdash;</td><td>Number of particles (candidate solutions) in the swarm. Larger populations explore more broadly but run slower per iteration.</td></tr>
-  <tr><td><code>iterations</code></td><td>integer</td><td>&mdash;</td><td>Maximum number of optimization iterations.</td></tr>
-  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>Target FoM threshold (not actively used for early stopping; kept for future use).</td></tr>
-  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Number of iterations without improvement before the optimizer declares convergence and stops.</td></tr>
+  <tr><th>Field</th><th>Type</th><th>Example</th><th>Description</th></tr>
+  <tr><td><code>population</code></td><td>integer</td><td>100</td><td>Number of particles (candidate solutions) in the swarm. Larger populations explore more broadly but run slower per iteration.</td></tr>
+  <tr><td><code>iterations</code></td><td>integer</td><td>500</td><td>Maximum number of optimization iterations.</td></tr>
+  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>Required, but not used by the optimizer.</td></tr>
+  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Stop after this many consecutive iterations without improvement of the best solution. A shake resets that counter, so this takes effect only when <code>jamming_max</code> &ge; <code>stagnation_limit</code>; with the example values the run always goes to <code>iterations</code>.</td></tr>
   <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight (permanent velocity component).</td></tr>
   <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia reducing factor (decays over iterations).</td></tr>
-  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Iterations without improvement before a shake event is considered (subject to diversity check).</td></tr>
-  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Set to 0 to disable periodic checkpoints.</td></tr>
+  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Length of the stagnation window. At the end of each window, if the best FoM improved by less than 1&nbsp;%, the swarm is shaken: all particles but one are re-seeded within &plusmn;10&nbsp;% of each range around the global best (in pure mode each layer also has a 50&nbsp;% chance of a random element), and their velocities are reset.</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Must be &ge; 1 (0 stops the run with a division-by-zero error after the first iteration). To effectively disable periodic checkpoints, set it larger than <code>iterations</code>; a final checkpoint is always written.</td></tr>
 </table>
 
 <div class="tip"><strong>Recommended settings:</strong> For a 3-element pool with 2 targets, <code>population: 100</code> and <code>iterations: 500</code> is a good starting point. Increase population for larger element pools. Reduce iterations for quick exploratory runs.</div>
@@ -203,45 +209,53 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 "resume_from": null</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>substrate</code></td><td>string</td><td>Substrate material (used for the bottom layer of the mirror structure).</td></tr>
-  <tr><td><code>henke_path</code></td><td>string or null</td><td>Path to the Henke database directory. <code>null</code> uses the default location next to the executable (<code>Henke/</code>).</td></tr>
-  <tr><td><code>output_dir</code></td><td>string</td><td>Directory where all output files are written. Created automatically if it does not exist.</td></tr>
-  <tr><td><code>resume_from</code></td><td>string or null</td><td>Path to a checkpoint file to resume from. <code>null</code> starts a fresh optimization. See <a href="#resume">Checkpoint &amp; Resume</a>.</td></tr>
+  <tr><td><code>substrate</code></td><td>string</td><td>Required. Substrate material: a semi-infinite layer at bulk density under the mirror.</td></tr>
+  <tr><td><code>henke_path</code></td><td>string or null</td><td>Required (<code>null</code> allowed). Path to a directory named <code>Henke</code>: only the parent of this path is used, and the files are read from its <code>Henke</code> subfolder, so the folder must have that name. <code>null</code> uses <code>Henke\</code> next to the executable.</td></tr>
+  <tr><td><code>output_dir</code></td><td>string</td><td>Required. Directory where all output files are written. Created automatically if it does not exist.</td></tr>
+  <tr><td><code>resume_from</code></td><td>string or null</td><td>Required (<code>null</code> allowed). Path to a checkpoint file to resume from. <code>null</code> starts a fresh optimization. See <a href="#resume">Checkpoint &amp; Resume</a>.</td></tr>
+  <tr><td><code>template_file</code></td><td>string or null</td><td>Optional. A template file of period definitions keyed by layer pair, such as <code>"Mo/Si"</code> (see below).</td></tr>
 </table>
+
+<h3>Period Templates</h3>
+<p>With <code>template_file</code> set, in pure-element mode, a period whose layer-1/layer-2 pair matches a template key is built from the template instead of as a plain bilayer. Each template layer gives a <code>material</code>, a <code>thickness</code> (<code>"gamma"</code>, <code>"1-gamma"</code> or a fixed value in &Aring;), a <code>sigma</code> and a <code>density</code>; fixed interlayers are subtracted from the nearest main layer, and a period whose interlayers would need a negative main-layer thickness is penalised by 1. Optional <code>caps</code>/<code>cap</code> add a capping layer whose thickness and variant are searched. Template materials are loaded in addition to the pool.</p>
 
 <h2 id="output">Output Files</h2>
 <p>The optimizer writes several files to the <code>output_dir</code> upon completion:</p>
+<div class="warn"><strong>Note:</strong> a fresh run (<code>resume_from</code> null) first deletes <code>best_curves/</code>, <code>best_structure.json</code>, <code>best_structure_xrc.json</code>, <code>population.json</code>, <code>progress.log</code> and <code>checkpoint.json</code> in <code>output_dir</code>. Use a new directory to keep an earlier result.</div>
 
 <table>
   <tr><th>File</th><th>Description</th></tr>
-  <tr><td><code>best_structure.json</code></td><td>The optimized mirror structure in XRC3-compatible JSON format, including the full genome (composition, period, gamma, N, sigma), per-target reflectivity results (R<sub>peak</sub>, FWHM, &theta;<sub>Bragg</sub>), and a structure definition that can be imported into the GUI.</td></tr>
-  <tr><td><code>best_curves/<em>Element</em>.dat</code></td><td>Tab-separated reflectivity curves for each target element. Two columns: angle (degrees) and reflectivity. One file per target.</td></tr>
-  <tr><td><code>population.json</code></td><td>The top 10 solutions ranked by FoM. Useful for comparing alternative mirror designs that may trade off performance between targets differently.</td></tr>
+  <tr><td><code>best_structure.json</code></td><td>The optimized design: FoM, composition, period, gamma, N, sigma, and per-target R<sub>peak</sub> and FWHM, plus a summary structure. Not importable into the GUI.</td></tr>
+  <tr><td><code>best_structure_xrc.json</code></td><td>The same design as an X-Ray Calc 3 structure (<code>Stacks</code>/<code>Subs</code>): the file to open with the GUI's <strong>Import structure&hellip;</strong>.</td></tr>
+  <tr><td><code>best_curves/<em>Element</em>.dat</code></td><td>Tab-separated reflectivity curves for each target element, with a header line. Two columns: angle (degrees) and reflectivity, convolved with <code>delta_theta</code>. One file per target.</td></tr>
+  <tr><td><code>population.json</code></td><td>The 10 best particles' personal bests, ranked by FoM (FoM, composition, d, &gamma;, N, &sigma;). They are not deduplicated: late in a run they can be near-identical.</td></tr>
   <tr><td><code>checkpoint.json</code></td><td>Full optimizer state (all particle positions, velocities, and personal bests). Used for resuming interrupted runs.</td></tr>
-  <tr><td><code>progress.log</code></td><td>Plain text log of every iteration&rsquo;s FoM, per-target R<sub>peak</sub>, and population diversity. Matches the console output.</td></tr>
+  <tr><td><code>progress.log</code></td><td>Plain text log of every iteration&rsquo;s FoM, per-target R<sub>peak</sub>, and population diversity, from iteration 0. Matches the console output. Rewritten from scratch on resume.</td></tr>
+  <tr><td><code>config.json</code>, <code>manifest.json</code></td><td>A copy of the configuration and a manifest of the results, for the package.</td></tr>
+  <tr><td><code><em>config</em>.xrfx</code></td><td>Written next to the configuration file: a zip of <code>output_dir</code> without the checkpoint.</td></tr>
 </table>
 
 <h3>best_structure.json Format</h3>
 <p>The output structure file contains two sections:</p>
 <ul>
-  <li><strong><code>optimizer_result</code></strong> &mdash; numerical results: FoM, structural parameters (d, &gamma;, N, &sigma;), layer compositions, and per-element reflectivity metrics.</li>
-  <li><strong><code>structure</code></strong> &mdash; the mirror definition in a format compatible with the X-Ray Calc 3 project file. Contains the periodic bilayer stack and substrate definition with layer thickness, roughness, and density factor values.</li>
+  <li><strong><code>optimizer_result</code></strong> &mdash; numerical results: FoM, structural parameters (d, &gamma;, N, &sigma;), layer compositions, and per-element <code>R_peak</code> and <code>FWHM</code>.</li>
+  <li><strong><code>structure</code></strong> &mdash; a summary of the stack: the periodic bilayer with layer thickness and roughness (the third value is always 1.0), and the substrate written as <code>[0, 1, 8.0]</code>. For the GUI use <code>best_structure_xrc.json</code>.</li>
 </ul>
 
 <h3>Reflectivity Curve Files</h3>
-<p>Each <code>.dat</code> file in the <code>best_curves/</code> subdirectory contains a 200-point reflectivity scan centered on the Bragg angle &plusmn; 5&deg; for that target wavelength. The data is tab-separated with columns:</p>
-<pre><code>  angle(deg)    reflectivity
-  3.2400        1.23456789e-03
-  3.2900        2.34567890e-03
-  ...</code></pre>
+<p>Each <code>.dat</code> file in the <code>best_curves/</code> subdirectory contains the reflectivity for that target wavelength over the same window the figure of merit used (see <code>scan_half_range</code>), without the re-scan of a clipped peak; its length varies, and the convolution trims points at each end. The data is tab-separated:</p>
+<pre><code>Theta(deg)	Reflectivity
+3.2400	1.23456789e-03
+3.2900	2.34567890e-03
+...</code></pre>
 
 <h2 id="resume">Checkpoint &amp; Resume</h2>
 <p>Long optimization runs can be interrupted (Ctrl+C) and resumed later. The optimizer handles this gracefully:</p>
 
 <ol>
   <li><strong>Automatic checkpoints</strong> &mdash; saved every <code>checkpoint_every</code> iterations to <code>checkpoint.json</code> in the output directory.</li>
-  <li><strong>Ctrl+C handling</strong> &mdash; when the user presses Ctrl+C, the optimizer saves a final checkpoint before exiting. No data is lost.</li>
-  <li><strong>Resume</strong> &mdash; set <code>"resume_from"</code> in the configuration file to the path of a checkpoint file. The optimizer restores all particle positions, velocities, personal bests, and the global/all-time best, then continues from where it left off.</li>
+  <li><strong>Ctrl+C handling</strong> &mdash; Ctrl+C lets the current iteration finish, then the optimizer writes all the normal result files, the <code>.xrfx</code> package and a final checkpoint.</li>
+  <li><strong>Resume</strong> &mdash; set <code>"resume_from"</code> in the configuration file to the path of a checkpoint file. The optimizer restores all particle positions, velocities, personal bests, and the global/all-time best. Every final checkpoint is stamped with the configured <code>iterations</code>, even after Ctrl+C or an early stop, and the run resumes after that stamp: to continue you must <strong>raise</strong> <code>iterations</code>, otherwise nothing more is run.</li>
 </ol>
 
 <p>Example resume configuration:</p>
@@ -258,7 +272,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   "resume_from": "./results/checkpoint.json"
 }</code></pre>
 
-<div class="warn"><strong>Important:</strong> When resuming, the <code>population</code> size and <code>element_pool</code> must match the checkpoint. The <code>iterations</code> count can be increased to allow more optimization cycles.</div>
+<div class="warn"><strong>Important:</strong> When resuming, the swarm size comes from the checkpoint (the <code>population</code> value is ignored), and the <code>element_pool</code> must match it. <code>iterations</code> must be larger than the checkpoint's stamp. <code>progress.log</code> restarts.</div>
 
 <h2 id="fom">Figure of Merit</h2>
 <p>The figure of merit (FoM) combines peak reflectivity and angular bandwidth for all target wavelengths:</p>
@@ -270,14 +284,14 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <p>where:</p>
 <ul>
   <li><strong>R<sub>eff,i</sub></strong> &mdash; effective reflectivity for target <em>i</em>, which equals R<sub>peak,i</sub> when <code>w_purity</code> is 0, or purity-adjusted reflectivity when <code>w_purity</code> &gt; 0 (see <a href="#purity">Spectral Purity</a>)</li>
-  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, extracted from a 200-point scan around the Bragg angle</li>
+  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, the first-order maximum of the convolved curve in the scan window (see <code>scan_half_range</code>)</li>
   <li><strong>FWHM<sub>i</sub></strong> &mdash; angular full width at half maximum (degrees) of the Bragg peak</li>
-  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; theoretical minimum FWHM = &lambda; / (N&middot;d&middot;cos&theta;<sub>B</sub>), converted to degrees. Normalizes the FWHM penalty so it is comparable across targets.</li>
+  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; reference width &lambda;<sub>i</sub> / (N<sub>ref</sub>&middot;d&middot;cos&theta;<sub>B,i</sub>), converted to degrees, with &theta;<sub>B</sub> = asin(&lambda;/2d) and N<sub>ref</sub> = <code>n_ref</code> (default 50), <em>not</em> the structure's N: a reference tied to N would penalise adding periods, which only raises the reflectivity. It normalizes the FWHM penalty so it is comparable across targets.</li>
   <li><strong>weight<sub>i</sub></strong> &mdash; per-target weight from the configuration</li>
   <li><strong>w<sub>R</sub></strong>, <strong>w<sub>FWHM</sub></strong> &mdash; global weights for reflectivity and bandwidth terms</li>
 </ul>
 
-<p>Higher FoM is better. Particles with R<sub>peak</sub> below <code>R_min_threshold</code> for any target receive a heavy penalty (100.0 per dark target) to steer the swarm toward functional solutions.</p>
+<p>Higher FoM is better. Each target with R<sub>peak</sub> below <code>R_min_threshold</code>, or with &theta;<sub>B</sub> below <code>theta_min</code>, subtracts 100 from the FoM to steer the swarm toward functional solutions; the reported FoM includes these penalties, so it can be negative. A target without a Bragg condition (&lambda; &ge; 2d) contributes zero and is not penalised.</p>
 
 <h2 id="purity">Spectral Purity</h2>
 <p>When optimizing a mirror for multiple characteristic wavelengths, higher-order Bragg reflections can cause <strong>cross-contamination</strong> between measurement channels. For example, a mirror tuned to O&nbsp;K&alpha; (23.6&nbsp;&Aring;) at its first-order Bragg angle will also reflect wavelengths at &lambda;/2 = 11.8&nbsp;&Aring; via the second order &mdash; which nearly coincides with Na&nbsp;K&alpha; (11.9&nbsp;&Aring;). When both O and Na are among the target elements, any Na fluorescence reaching the detector at the O measurement angle is misattributed to O.</p>
@@ -289,14 +303,14 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <div class="note">
   <strong>CrossR[j, i] = R(&theta;<sub>j</sub>, &lambda;<sub>i</sub>)</strong>
 </div>
-<p>This is the reflectivity of light with wavelength &lambda;<sub>i</sub> hitting the mirror at the Bragg angle of target <em>j</em>. A high value of CrossR[j, i] means that when the spectrometer measures target <em>j</em>, it also picks up signal from target <em>i</em>&rsquo;s wavelength via higher-order reflection. The calculation uses the full multilayer reflectivity at each (&theta;, &lambda;) point &mdash; all Bragg orders are naturally included.</p>
+<p>This is the reflectivity of light with wavelength &lambda;<sub>i</sub> hitting the mirror at the Bragg angle of target <em>j</em>. A high value of CrossR[j, i] means that when the spectrometer measures target <em>j</em>, it also picks up signal from target <em>i</em>&rsquo;s wavelength via higher-order reflection. The calculation uses the full multilayer reflectivity at each (&theta;, &lambda;) point &mdash; all Bragg orders are naturally included. CrossR is a single-point value at the kinematic Bragg angle of target <em>j</em>, &theta;<sub>j</sub> = asin(&lambda;<sub>j</sub>/2d), without refraction correction or divergence convolution; it is computed only when <code>w_purity</code> &gt; 0 and only between targets that have a valid Bragg angle, and every line counts equally regardless of its source intensity.</p>
 
 <h3>Purity and Effective Reflectivity</h3>
 <p>For each target <em>j</em>, the <strong>purity</strong> is defined as:</p>
 <div class="note">
   <strong>Purity<sub>j</sub> = R<sub>peak,j</sub> / ( R<sub>peak,j</sub> + &Sigma;<sub>i&ne;j</sub> CrossR[j, i] )</strong>
 </div>
-<p>Purity ranges from 0 (entirely contaminated) to 1 (no contamination). The effective reflectivity used in the FoM is then:</p>
+<p>Purity ranges from 0 (entirely contaminated) to 1 (no contamination); it is set to 0 when R<sub>peak,j</sub> and the contamination sum are both 0. The effective reflectivity used in the FoM is then:</p>
 <div class="note">
   <strong>R<sub>eff,j</sub> = R<sub>peak,j</sub> &times; ( 1 + w<sub>purity</sub> &times; ( Purity<sub>j</sub> &minus; 1 ) )</strong>
 </div>
@@ -305,8 +319,8 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <h3>Physical Background</h3>
 <p>Higher-order contamination depends on two structural factors:</p>
 <ul>
-  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls which orders are suppressed. &gamma; = 0.5 completely eliminates all even-order reflections (2nd, 4th, &hellip;). Values far from 0.5 produce strong even-order peaks. Second-order contamination is typically the most significant.</li>
-  <li><strong>&sigma; (roughness)</strong> &mdash; interfacial roughness attenuates higher orders via the Debye-Waller factor, which decays exponentially with order number. Orders above 4&ndash;5 are generally negligible for typical roughness values.</li>
+  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls which orders are suppressed. &gamma; = 0.5 suppresses the even-order reflections (2nd, 4th, &hellip;); they vanish exactly only in the kinematic limit with ideal, non-absorbing interfaces, and in the full dynamical calculation they are strongly reduced rather than zero. Values far from 0.5 produce strong even-order peaks. Second-order contamination is typically the most significant.</li>
+  <li><strong>&sigma; (roughness)</strong> &mdash; interfacial roughness attenuates order m by roughly exp[&minus;(2&pi;m&sigma;/d)&sup2;], a Debye&ndash;Waller-like factor that is Gaussian in m, so high orders die quickly once &sigma; is a sizeable fraction of d/m. Orders above 4&ndash;5 are generally negligible for typical roughness values.</li>
 </ul>
 
 <div class="tip"><strong>Practical note:</strong> The overlap pattern is inherent to the target wavelength set &mdash; second-order overlap at &lambda;/2 is independent of the period <em>d</em>. The optimizer can only mitigate overlaps through &gamma; (order suppression), material choice (absorption edges), and roughness. For large element pools with many close-spaced wavelengths, use <code>w_purity = 1.0</code> and a population &ge; 500 to give the optimizer enough room to find purity-optimized solutions.</div>
@@ -355,7 +369,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 
 <h3>Step 2: Run the optimizer</h3>
 <pre><code>xrccmd -u dual_mirror.json -v</code></pre>
-<p>The <code>-v</code> flag enables verbose output, showing checkpoint saves and shake events. A typical run with population 100 and 500 iterations takes a few minutes on a modern multi-core CPU.</p>
+<p>The <code>-v</code> flag enables verbose output, showing checkpoint saves, and waits for &lt;Enter&gt; at the end. A typical run with population 100 and 500 iterations takes a few minutes on a modern multi-core CPU.</p>
 
 <h3>Step 3: Review results</h3>
 <p>After completion, examine the output directory:</p>
@@ -364,6 +378,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <li><code>dual_mirror_results/best_curves/C.dat</code> &mdash; reflectivity curve at C&nbsp;K&alpha; (44.7&nbsp;&Aring;)</li>
   <li><code>dual_mirror_results/best_curves/O.dat</code> &mdash; reflectivity curve at O&nbsp;K&alpha; (23.6&nbsp;&Aring;)</li>
   <li><code>dual_mirror_results/population.json</code> &mdash; top 10 alternative solutions</li>
+  <li><code>dual_mirror_results/best_structure_xrc.json</code> &mdash; the design to open with the GUI's <strong>Import structure&hellip;</strong></li>
 </ul>
 <p>The reflectivity curve files can be plotted in any graphing tool (Origin, gnuplot, Python/matplotlib) or imported into the X-Ray Calc 3 GUI for comparison with experimental data.</p>
 
@@ -386,8 +401,8 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <li><strong>Element pool size.</strong> Each additional element adds composition dimensions for each layer. Pools of 3&ndash;5 elements work well. Very large pools may require larger populations.</li>
   <li><strong>Period range.</strong> Ensure d<sub>min</sub> &gt; &lambda;<sub>max</sub>/2 so all targets have valid Bragg conditions. A generous range (e.g. 20&ndash;80 &Aring;) allows the optimizer to find the best compromise period.</li>
   <li><strong>Weighting targets.</strong> If one target is more important, increase its <code>weight</code> in the configuration. The optimizer will prioritize that target&rsquo;s reflectivity at the expense of the others.</li>
-  <li><strong>Interpreting diversity.</strong> A diversity value near zero means all particles have converged to similar solutions. If diversity drops quickly but FoM is still low, consider increasing the population or widening the search ranges.</li>
-  <li><strong>Population JSON.</strong> The <code>population.json</code> file contains up to 10 distinct solutions. These often reveal physically different mirror designs (different compositions or periods) with similar overall FoM. Examining them can provide insight into the design trade-space.</li>
+  <li><strong>Interpreting diversity.</strong> A random swarm starts near 0.3. A diversity value near zero means all particles have converged to similar solutions. If diversity drops quickly but FoM is still low, consider increasing the population or widening the search ranges.</li>
+  <li><strong>Population JSON.</strong> The <code>population.json</code> file contains the 10 best personal bests; they are not deduplicated, so late in a run several may be near-identical. Early or diverse runs often reveal physically different mirror designs (different compositions or periods) with similar overall FoM. Examining them can provide insight into the design trade-space.</li>
 </ul>
 
 <h3>See Also</h3>

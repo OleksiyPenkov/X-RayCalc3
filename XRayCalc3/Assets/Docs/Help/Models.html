@@ -54,11 +54,11 @@
 
 <p>The structure editor is a visual panel in the middle column that displays the current model&rsquo;s layer structure. It shows:</p>
 <ul>
-  <li><strong>Ambient</strong> (top) &mdash; the medium above the structure (typically vacuum or air)</li>
   <li><strong>Stacks</strong> &mdash; repeating periodic units containing one or more layers</li>
-  <li><strong>Individual Layers</strong> &mdash; single layers outside of stacks</li>
+  <li><strong>Single layers</strong> &mdash; stacks with N = 1; every layer belongs to a stack</li>
   <li><strong>Substrate</strong> (bottom) &mdash; the base material</li>
 </ul>
+<p>The medium above the structure is always vacuum (&epsilon; = 1); it is not shown and cannot be edited.</p>
 <p>Each element in the structure is displayed as a colored block with its parameters.</p>
 
 <h2 id="terminology">Terminology</h2>
@@ -97,7 +97,7 @@
 <table>
   <tr><th>Parameter</th><th>Symbol</th><th>Unit</th><th>Description</th></tr>
   <tr><td>Thickness</td><td>H</td><td>&#8491; (Angstrom)</td><td>Physical thickness of the layer</td></tr>
-  <tr><td>Roughness</td><td>&sigma;</td><td>&#8491; (Angstrom)</td><td>Interface roughness (RMS)</td></tr>
+  <tr><td>Roughness</td><td>&sigma;</td><td>&#8491; (Angstrom)</td><td>RMS roughness (Gaussian &sigma;) of the layer&rsquo;s <em>upper</em> interface; for the top layer it is the surface roughness, for the substrate the roughness of the substrate surface (see <a href="Calculation.html#algorithm">Algorithm</a>)</td></tr>
   <tr><td>Density</td><td>&rho;</td><td>g/cm&sup3;</td><td>Material density</td></tr>
 </table>
 
@@ -105,6 +105,7 @@
 
 <h3>Density 0 and the substrate density <span class="badge">v3.9.1</span></h3>
 <p>A density of <strong>0</strong> means &ldquo;use the bulk density from the Henke table&rdquo;. This holds for every layer and, since version 3.9.1, for the substrate too: a substrate density you enter is now used in the calculation. Earlier versions always used the bulk density for the substrate and silently ignored the value shown.</p>
+<p>A density gradient (<a href="Profiles.html">function profile</a> on &rho;) takes the layer&rsquo;s entered density as its constant term. With &rho; = 0 it therefore starts from zero, not from the bulk value, and the layer is empty in the first period: enter an explicit density before adding a density gradient.</p>
 <p>So that old results do not change, a project saved by an earlier version opens with its substrate density set to 0 (bulk), which is what those models were always computed with. To use a specific substrate density, for example 2.2&nbsp;g/cm&sup3; for fused silica or 2.5 for soda-lime glass, enter it and save the project.</p>
 
 <h3>Adding a layer</h3>
@@ -113,7 +114,7 @@
   <li>Choose <strong>Structure &gt; Add Layer</strong> or use the <img src="images/icons/add_layer.png" alt="Add Layer" class="icon"> toolbar.</li>
   <li>The Layer Properties dialog opens with fields for:
     <ul>
-      <li><strong>Layer material:</strong> Select or type a chemical formula (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;)</li>
+      <li><strong>Layer material:</strong> Select or type the name of a material in the materials database (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;). The name is not parsed as a formula: it must match a Henke table, otherwise the calculation stops with &ldquo;Material &hellip; not found in the database&rdquo;. Add new compounds with <a href="Tools.html">Tools &gt; Create New Material</a> first.</li>
       <li><strong>H (&#8491;):</strong> Thickness in Angstroms</li>
       <li><strong>&sigma; (&#8491;):</strong> Roughness in Angstroms</li>
       <li><strong>&rho; (g/cm&sup3;):</strong> Density in g/cm&sup3;</li>

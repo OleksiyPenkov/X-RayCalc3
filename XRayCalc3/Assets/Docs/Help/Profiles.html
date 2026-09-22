@@ -30,31 +30,28 @@
   </ul>
 </div>
 
-<p>Profile extensions allow you to define how layer parameters (H, &sigma;, &rho;) vary across a periodic structure. They model parameter gradients &mdash; for example, when layer thickness gradually increases or density changes with depth.</p>
+<p>Profile extensions let layer parameters (H, &sigma;, &rho;) vary from period to period of a periodic stack &mdash; for example a thickness that drifts during deposition. Both kinds of profile are indexed by the period number <em>n</em>, counting from the surface (n = 1 is the period nearest the surface), not by depth.</p>
 
 <h2 id="adding-a-profile-extension">Adding a Profile Extension</h2>
 <ol>
   <li>Select a model in the project tree.</li>
   <li>Click the <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon"> <strong>Add Extension</strong> toolbar button or choose the extension option from the project toolbar.</li>
-  <li>The Extension Type Selector dialog opens with available profile types.</li>
+  <li>The Extension Type Selector dialog opens. <strong>Function</strong> adds a function profile; the other choices are not available in this version (a table profile is created by a fit, see below).</li>
 </ol>
 
 <h2 id="profile-types">Profile Types</h2>
 
 <h3>Function Profile</h3>
-<p>Defines parameter variation using an analytical function:</p>
-<table>
-  <tr><th>Function</th><th>Formula</th><th>Use Case</th></tr>
-  <tr><td><strong>Polynomial</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x&sup2; + &hellip;</td><td>General-purpose gradient</td></tr>
-  <tr><td><strong>Exponential</strong></td><td>a<sub>0</sub> &middot; e<sup>a<sub>1</sub>x</sup></td><td>Exponential growth/decay</td></tr>
-  <tr><td><strong>Parabolic</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x&sup2;</td><td>Symmetric variation</td></tr>
-  <tr><td><strong>SQRT</strong></td><td>a<sub>0</sub> + a<sub>1</sub>&radic;x</td><td>Gradual initial change</td></tr>
-</table>
-<p>The Profile Function editor lets you set the coefficients and preview the resulting profile.</p>
+<p>A function profile varies one parameter (H, &sigma; or &rho;) of one layer of a periodic stack as a polynomial in the period number <em>n</em>:</p>
+<div class="note">
+  <strong>v(n) = c<sub>0</sub> + c<sub>1</sub>(n &minus; 1) + c<sub>2</sub>(n &minus; 1)&sup2; + &hellip; + c<sub>K</sub>(n &minus; 1)<sup>K</sup>, &emsp; K &le; 9</strong>
+</div>
+<p>c<sub>0</sub> is always the layer&rsquo;s own value in the structure, so the period nearest the surface keeps the value you entered; you set c<sub>1</sub>&hellip;c<sub>K</sub> in the Profile Function editor, which previews the resulting profile. A new gradient starts with order 1 and c<sub>1</sub> = 0.14. The values are not clamped, so a steep polynomial can drive a thickness, roughness or density negative. Other function forms are not implemented in this version: the function list in the editor is fixed to the polynomial.</p>
+<p>A density gradient on a layer with &rho; = 0 starts from zero, not from the bulk density (see <a href="Models.html#layers">Layers</a>). The <a href="Fitting.html#fit-modes">Polynomial fitting mode</a> fits these coefficients.</p>
 
 <h3>Table Profile</h3>
-<p>Defines parameter variation as a set of (position, value) data points. The application interpolates between points. This allows arbitrary profile shapes that cannot be described by simple functions.</p>
-<p>The Profile Table editor provides a grid where you enter depth positions and corresponding parameter values.</p>
+<p>A table profile holds an individual value of H, &sigma; and &rho; for every period of each periodic stack (period 1 = nearest the surface). It is created by an <strong>Irregular</strong> fit of a periodic structure and shows the fitted values per period as a table and a step chart, which you can copy or save; the values cannot be edited in the table. A model has at most one table profile.</p>
+<p>The table is used in calculations only while the Fitting mode is <strong>Irregular</strong> or <strong>Polynomial</strong>; in <strong>Periodic</strong> mode every period uses the stack&rsquo;s own values.</p>
 
 <h2 id="enabling-disabling-extensions">Enabling / Disabling Extensions</h2>
 <p>Each extension can be individually enabled or disabled without deleting it. This lets you quickly compare results with and without a particular profile applied.</p>

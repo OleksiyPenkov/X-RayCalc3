@@ -80,7 +80,7 @@
   <li>Load experimental reflectivity data and compare it with theoretical predictions</li>
   <li>Automatically fit model parameters to experimental data using the Shake LFPSO (L&eacute;vy Flight Particle Swarm Optimization) algorithm</li>
   <li>Visualize results through interactive charts with logarithmic/linear scaling</li>
-  <li>Define parameter profiles (polynomial, exponential, tabulated) across periodic structures</li>
+  <li>Define parameter profiles (polynomial or tabulated) across periodic structures</li>
   <li>Manage materials via the built-in Henke atomic form factor database</li>
 </ul>
 
@@ -146,9 +146,9 @@
 <h2 id="calculation-settings">Calculation Settings</h2>
 <ul>
   <li><strong>Mode:</strong> Reflectivity can be calculated as a function of grazing angle or wavelength.</li>
-  <li><strong>Polarization:</strong> Use <strong>s-polarization</strong> for hard X-rays at low grazing angles (below 20&deg;) &mdash; this is significantly faster. Use <strong>sp-polarization</strong> for larger angles or softer radiation.</li>
+  <li><strong>Polarization:</strong> <strong>sp</strong> is the unpolarized average (R<sub>s</sub>&nbsp;+&nbsp;R<sub>p</sub>)/2 and takes about twice as long as <strong>s</strong>. At small grazing angles the two differ little (sp is lower than s by about 1.5&nbsp;% at 5&deg; and 6&nbsp;% at 10&deg;), so <strong>s</strong> is the usual choice for hard X-ray XRR; use <strong>sp</strong> for an unpolarized source at larger grazing angles.</li>
   <li><strong>Number of points (N):</strong> Controls calculation precision. Calculation time scales linearly with N.</li>
-  <li><strong>Angle range:</strong> Set with &theta;<sub>1</sub> and &theta;<sub>2</sub>. Check <strong>2&theta;</strong> for &theta;-2&theta; geometry. <strong>d&theta;</strong> sets the instrumental beam divergence.</li>
+  <li><strong>Angle range:</strong> Set with &theta;<sub>1</sub> and &theta;<sub>2</sub>. Check <strong>2&theta;</strong> for &theta;-2&theta; geometry. <strong>d&theta;</strong> is the angular resolution: the FWHM (degrees, in &theta;) of the Gaussian the calculated curve is convolved with (0 = none).</li>
   <li><strong>Scale:</strong> Toggle between <strong>Linear</strong> and <strong>Log</strong> scale using the toolbar button. Set a <strong>background level</strong> if needed.</li>
   <li><strong>Legend:</strong> Click items in the chart legend to toggle curve visibility.</li>
 </ul>
@@ -482,11 +482,11 @@
 
 <p>The structure editor is a visual panel in the middle column that displays the current model&rsquo;s layer structure. It shows:</p>
 <ul>
-  <li><strong>Ambient</strong> (top) &mdash; the medium above the structure (typically vacuum or air)</li>
   <li><strong>Stacks</strong> &mdash; repeating periodic units containing one or more layers</li>
-  <li><strong>Individual Layers</strong> &mdash; single layers outside of stacks</li>
+  <li><strong>Single layers</strong> &mdash; stacks with N = 1; every layer belongs to a stack</li>
   <li><strong>Substrate</strong> (bottom) &mdash; the base material</li>
 </ul>
+<p>The medium above the structure is always vacuum (&epsilon; = 1); it is not shown and cannot be edited.</p>
 <p>Each element in the structure is displayed as a colored block with its parameters.</p>
 
 <h2 id="terminology">Terminology</h2>
@@ -525,7 +525,7 @@
 <table>
   <tr><th>Parameter</th><th>Symbol</th><th>Unit</th><th>Description</th></tr>
   <tr><td>Thickness</td><td>H</td><td>&#8491; (Angstrom)</td><td>Physical thickness of the layer</td></tr>
-  <tr><td>Roughness</td><td>&sigma;</td><td>&#8491; (Angstrom)</td><td>Interface roughness (RMS)</td></tr>
+  <tr><td>Roughness</td><td>&sigma;</td><td>&#8491; (Angstrom)</td><td>RMS roughness (Gaussian &sigma;) of the layer&rsquo;s <em>upper</em> interface; for the top layer it is the surface roughness, for the substrate the roughness of the substrate surface (see <a href="#algorithm">Algorithm</a>)</td></tr>
   <tr><td>Density</td><td>&rho;</td><td>g/cm&sup3;</td><td>Material density</td></tr>
 </table>
 
@@ -533,6 +533,7 @@
 
 <h3>Density 0 and the substrate density <span class="badge">v3.9.1</span></h3>
 <p>A density of <strong>0</strong> means &ldquo;use the bulk density from the Henke table&rdquo;. This holds for every layer and, since version 3.9.1, for the substrate too: a substrate density you enter is now used in the calculation. Earlier versions always used the bulk density for the substrate and silently ignored the value shown.</p>
+<p>A density gradient (<a href="#Profiles">function profile</a> on &rho;) takes the layer&rsquo;s entered density as its constant term. With &rho; = 0 it therefore starts from zero, not from the bulk value, and the layer is empty in the first period: enter an explicit density before adding a density gradient.</p>
 <p>So that old results do not change, a project saved by an earlier version opens with its substrate density set to 0 (bulk), which is what those models were always computed with. To use a specific substrate density, for example 2.2&nbsp;g/cm&sup3; for fused silica or 2.5 for soda-lime glass, enter it and save the project.</p>
 
 <h3>Adding a layer</h3>
@@ -541,7 +542,7 @@
   <li>Choose <strong>Structure &gt; Add Layer</strong> or use the <img src="images/icons/add_layer.png" alt="Add Layer" class="icon"> toolbar.</li>
   <li>The Layer Properties dialog opens with fields for:
     <ul>
-      <li><strong>Layer material:</strong> Select or type a chemical formula (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;)</li>
+      <li><strong>Layer material:</strong> Select or type the name of a material in the materials database (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;). The name is not parsed as a formula: it must match a Henke table, otherwise the calculation stops with &ldquo;Material &hellip; not found in the database&rdquo;. Add new compounds with <a href="#Tools">Tools &gt; Create New Material</a> first.</li>
       <li><strong>H (&#8491;):</strong> Thickness in Angstroms</li>
       <li><strong>&sigma; (&#8491;):</strong> Roughness in Angstroms</li>
       <li><strong>&rho; (g/cm&sup3;):</strong> Density in g/cm&sup3;</li>
@@ -610,15 +611,15 @@
 <ol>
   <li>Select a model or data item in the project tree.</li>
   <li>Choose <strong>Data &gt; Load ...</strong> or click the <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> <strong>Load Data</strong> toolbar button.</li>
-  <li>Pick the file. The dialog opens on <strong>XRDML (PANalytical)</strong>; the other filters are ASCII data (<code>.txt</code>, <code>.csv</code>, <code>.tet</code>), counter files (<code>.dat</code>) and all files. A text file holds two columns (angle or wavelength, and reflectivity); an <code>.xrdml</code> file is read as described below.</li>
-  <li>The data appears as a series on the main chart, and the file's header lines appear in the data item's description.</li>
+  <li>Pick the file. The dialog opens on <strong>XRDML (PANalytical)</strong>; the other filters are ASCII data (<code>.txt</code>, <code>.csv</code>, <code>.tet</code>), counter files (<code>.dat</code>) and all files. A text file holds two columns (angle or wavelength, and reflectivity; see <a href="#data-format">Data Format</a>); an <code>.xrdml</code> file is read as described below.</li>
+  <li>The data become a new item under the selected data folder (or the Data root) and appear as a series on the main chart. The header lines at the top of a text file that start with <code>*</code> are copied into the item's description.</li>
 </ol>
 
 <h2 id="loading-xrdml-files">Loading XRDML Files</h2>
 <p>A PANalytical / Malvern <code>.xrdml</code> file (schema 1.0 to 2.x) is read directly, and the file's own facts are used rather than typed in:</p>
 <ul>
   <li><strong>Angle axis.</strong> A 2Theta&ndash;Omega scan is in 2&theta;, a rocking curve in &omega;. The curve is brought to the unit the <strong>2-theta</strong> switch of the calculation settings says, so the chart and the fit see the same angle whichever way the file was scanned.</li>
-  <li><strong>Intensity.</strong> Counts are divided by the counting time (beam attenuation factors, when the file has them, are multiplied in) and the curve is normalised to 1 at its maximum. A zero count is replaced by the smallest positive value before it, as a log chart needs. The raw peak count rate, the counting time, the detector and the number of zero counts are written into the item's description, so one count and the detector's range stay recoverable.</li>
+  <li><strong>Intensity.</strong> Counts are divided by the counting time (beam attenuation factors, when the file has them, are multiplied in) and the curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it), as a log chart needs. The peak count rate of the corrected curve (attenuation factors included), the counting time, the detector and the number of floored counts are written into the item's description; the rate the detector itself saw is re-read from the file by <a href="#assessing-a-measurement">Assess XRR quality</a>.</li>
   <li><strong>Wavelength.</strong> The wavelength the file implies is written into the calculation settings: for a K&alpha; measurement through an optic that passes both lines it is the doublet weighted by the file's K&alpha;<sub>2</sub>/K&alpha;<sub>1</sub> ratio (1.541874&nbsp;&Aring; for Cu), for a monochromator or a hybrid mirror it is K&alpha;<sub>1</sub>. A period fitted at K&alpha;<sub>1</sub> when the doublet was measured comes out 0.08&nbsp;% short.</li>
   <li><strong>Source file.</strong> The path of the file is kept in the description as <code>* Source file:</code>, and <a href="#assessing-a-measurement">Assess XRR quality</a> reads the file again for the count rates the chart no longer carries.</li>
 </ul>
@@ -628,51 +629,55 @@
 <ol>
   <li>Copy two-column data from another application (e.g., a spreadsheet).</li>
   <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> <strong>Paste Data</strong> toolbar button.</li>
-  <li>The data is imported into the current model.</li>
+  <li>The data become a new item <em>Data N.dat</em> in the Data folder. The same rules as for a text file apply (see <a href="#data-format">Data Format</a>); a spreadsheet copy is TAB-separated and reads directly.</li>
 </ol>
 
 <h2 id="data-format">Data Format</h2>
-<p>The expected data format is a two-column ASCII text file:</p>
+<p>A text file holds one point per line, in two columns:</p>
 <ul>
-  <li><strong>2 columns</strong> with TAB as the column separator</li>
-  <li><strong>3-row header</strong> (non-numeric lines are skipped automatically)</li>
-  <li>Column 1: Angle (degrees) or wavelength (Angstroms)</li>
-  <li>Column 2: Reflectivity (typically 0 to 1)</li>
+  <li>Column 1: the angle in degrees, in the unit the <strong>2&theta;</strong> switch of the calculation settings shows (2&theta; when it is checked, the default; &theta; when it is not), or the wavelength in &Aring; in wavelength mode. A text file is not converted, and toggling the switch later does not convert data already loaded.</li>
+  <li>Column 2: the reflectivity (or an intensity to be normalised afterwards).</li>
 </ul>
-<p>Example:</p>
-<pre><code>Sample: Mo/Si multilayer
-Date: 2024-01-15
-Theta    Reflectivity
-0.100   1.000000
-0.200   0.999850
-0.300   0.998200
-0.500   0.956300
-1.000   0.523100
-2.000   0.012450
-5.000   0.000023</code></pre>
-
-<p>Lines starting with <code>#</code> or other non-numeric characters are treated as comments and ignored.</p>
+<p>The reader is strict:</p>
+<ul>
+  <li>The two numbers are separated by <strong>one TAB</strong> (or, in a file without TABs, by one space). A line with a third column, or with several spaces between the numbers, is skipped.</li>
+  <li>The first line without a TAB switches the reader to space-separated columns for the rest of the file, so a TAB-separated file must not contain a header line without a TAB.</li>
+  <li>Both numbers must start with a digit: a leading blank, a sign or a leading point makes the line skipped, so negative values are not read. A comma is accepted as the decimal separator.</li>
+  <li>Lines that are not two such numbers are skipped. A zero reflectivity is replaced by the smallest positive value before it (1000 when none precedes it).</li>
+  <li>Lines at the top that start with <code>*</code> are copied into the item's description. A first line containing <code>Sample</code> removes the first 21 lines (the header of the old counter files).</li>
+</ul>
+<p>Example (the gaps are single TABs):</p>
+<pre><code>* Mo/Si multilayer, 2024-01-15
+0.100	1.000000
+0.200	0.999850
+0.300	0.998200
+0.500	0.956300
+1.000	0.523100
+2.000	0.012450
+5.000	0.000023</code></pre>
 
 <div class="tip"><strong>Tip:</strong> You can also copy and paste table data directly from <strong>OriginLab Origin</strong>. The recommended workflow is to import your raw data into Origin first, then copy-paste the two-column table into X-Ray Calc.</div>
 
 <h2 id="data-processing">Data Processing</h2>
 
 <h3>Normalize</h3>
-<p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> opens a dialog where you can manually set the normalization factor. This scales the reflectivity values so the maximum equals 1.0 (or another chosen value).</p>
-<p><strong>Data &gt; Normalize (Auto)</strong> automatically normalizes the data by dividing all reflectivity values by the maximum value.</p>
+<p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> asks for a coefficient and divides every reflectivity value of the active data item by it: 0.099 turns a plateau read at 0.099 into 1.</p>
+<p><strong>Data &gt; Normalize (Auto)</strong> scales the data so that their maximum lies on the active model's calculated curve: the data are divided by D<sub>max</sub>&nbsp;/&nbsp;R<sub>model</sub>, where D<sub>max</sub> is the largest measured value and R<sub>model</sub> the model's value at the first calculated point at or above its angle. Calculate the model first, over a range that covers the angle of the data maximum.</p>
 
 <h3>Smooth</h3>
-<p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> applies a Savitzky-Golay smoothing filter to reduce noise in the experimental data while preserving peak shapes.</p>
+<p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> replaces each point by the plain mean of six neighbouring points (three below it, itself and two above), computed on the linear reflectivity. The first three points are left unchanged and the last three take the mean of the last six. On a logarithmic curve this fills Kiessig minima and broadens sharp Bragg peaks, so use it on noisy tails, not on the features the fit reads the structure from. Each click smooths again.</p>
 
 <h3>Trim</h3>
-<p><img src="images/icons/Menu_Trim.png" alt="Trim" class="icon"> <strong>Data &gt; Trim</strong> removes the low-reflectivity tail of the data (values below a threshold), which can improve fitting convergence by eliminating noisy data points at high angles.</p>
+<p><img src="images/icons/Menu_Trim.png" alt="Trim" class="icon"> <strong>Data &gt; Trim</strong> deletes the data points that lie outside the calculation range (&theta;<sub>1</sub>&ndash;&theta;<sub>2</sub>, or &lambda;<sub>1</sub>&ndash;&lambda;<sub>2</sub> in wavelength mode), at both ends. Set the range first. If no point lies inside it, the data are left unchanged.</p>
+
+<div class="note"><strong>Note:</strong> Normalize, Smooth and Trim change the data item itself and are saved with it at once; <strong>Undo</strong> covers the structure only. The file you loaded is not touched, so to undo, load it again.</div>
 
 <h2 id="data-conditioning-walkthrough">Data Conditioning Walkthrough</h2>
 <p>Raw experimental data often requires conditioning before fitting. Common issues include a long noisy tail, shadowed regions at low angles, noise, and unnormalized intensity. Here is a typical conditioning workflow:</p>
 
 <p><strong>Step 1 &mdash; Normalize.</strong> Compare the experimental and calculated intensities at a known point (e.g., the total reflection region). Determine the normalization factor and apply it via <strong>Data &gt; Normalize</strong>. For example, if the experimental intensity at 0.4&deg; is 0.099, divide by 0.099 to bring the curve to unit reflectivity. The fit need not take this factor as final: with <strong>Solve scale in &chi;&sup2;</strong> (on by default) it solves the scale within a window around it, since a single point rarely fixes the absolute level to better than several per cent (see <a href="#solved-scale">Solving the Measured Scale</a>).</p>
 
-<p><strong>Step 2 &mdash; Smooth.</strong> Apply smoothing to reduce noise: <strong>Data &gt; Smooth</strong>. This uses a Savitzky-Golay filter that preserves peak shapes while reducing point-to-point scatter.</p>
+<p><strong>Step 2 &mdash; Smooth.</strong> If the tail is noisy, apply <strong>Data &gt; Smooth</strong>. It is a six-point moving average, so it also rounds the fringes and peaks: use it sparingly (see <a href="#data-processing">Smooth</a>).</p>
 
 <p><strong>Step 3 &mdash; Trim.</strong> Remove data points outside the useful range:</p>
 <ol>
@@ -691,24 +696,28 @@ Theta    Reflectivity
   <tr><th style="width:190px">Check</th><th>What it looks at</th></tr>
   <tr><td>Counting</td><td>The highest count rate the detector saw, against its linear limit. The rate comes from the <code>.xrdml</code> behind the item; a curve loaded from a text file has none.</td></tr>
   <tr><td>Plateau vs first order</td><td>The first Bragg order over the low-angle maximum. Above 1 is impossible for a true reflectivity and fails; with a design, a ratio above what the design's own model gives warns. On a single film or a bare substrate the maximum after the plateau is a Kiessig fringe, and the row says so.</td></tr>
-  <tr><td>Total reflection</td><td>Whether the scan starts below the design's critical angle and rises to a plateau. A curve whose maximum is its first point started on the way down and fails.</td></tr>
+  <tr><td>Total reflection</td><td>Whether the scan starts below the design's critical angle and rises to a plateau. A curve whose maximum is its first point started on the way down and fails; so does a scan that starts at or above the design's critical angle.</td></tr>
   <tr><td>Orders visible</td><td>How many of the Bragg orders the design puts inside the range stand above the background, against how many the design's model, scaled to the measured plateau, puts there. Fewer measured than expected is a measurement problem, not a fitting one.</td></tr>
   <tr><td>Range below background</td><td>The fraction of the points at or below the background, and where the useful range ends: the part of the scan that bought nothing. Reported without a verdict.</td></tr>
   <tr><td>Sampling</td><td>Points per Kiessig fringe, from the design's total thickness, and per order, from its period. Under two points per fringe the fringes are aliased and no fit will see them (fail); under the number in the window (default 3) it warns.</td></tr>
-  <tr><td>Footprint</td><td>The knee asin(beam width / sample length) below which the beam overfills the specimen, and whether the plateau maximum lies below it.</td></tr>
-  <tr><td>Zeros</td><td>How many points have a non-positive count, their fraction, and where they start.</td></tr>
+  <tr><td>Footprint</td><td>The knee asin(beam width / sample length) below which the beam overfills the specimen, and whether the plateau maximum lies below it (warn) or not (pass).</td></tr>
+  <tr><td>Zeros</td><td>How many points have a non-positive count, their fraction, and where they start. Any zero warns; a curve from a text file carries no counts and is unknown.</td></tr>
 </table>
 
-<p>The window holds the numbers nobody records in a file: the detector's linear limit in counts per second, the specimen length and the beam width in millimetres, the resolution the design is convolved with (taken from the calculation settings), the factor above the background an order must stand to count as visible, and the minimum points per fringe. Change any of them and click <strong>Assess</strong> to re-run. A number left empty leaves its check <strong>unknown</strong>: the program never invents a threshold. <strong>Use the current structure as the design</strong> feeds the structure editor's model, including a bare substrate for a glass reference, to the checks that need a period, a thickness or a critical angle.</p>
+<p>The background is the median of the last 100 points. An order counts as visible when it stands more than the visible factor (default 3) times above it; the useful range ends at the last point above that level.</p>
 
-<p>The text block under the table is one line per check, ready to be filed with the specimen; <strong>Copy summary</strong> puts it on the clipboard. The overall verdict in the window's title is the worst of the checks.</p>
+<p>The window holds the numbers nobody records in a file: the detector's linear limit in counts per second, the specimen length and the beam width in millimetres, the resolution the design is convolved with (taken from the calculation settings), the factor above the background an order must stand to count as visible, and the minimum points per fringe. Change any of them and click <strong>Assess</strong> to re-run. An empty detector limit, specimen length or beam width leaves its check <strong>unknown</strong>: the program never invents those. An empty visible factor or points-per-fringe returns to 3, an empty resolution to the calculation setting. <strong>Use the current structure as the design</strong> feeds the structure editor's model, including a bare substrate for a glass reference, to the checks that need a period, a thickness or a critical angle.</p>
+
+<p>The text block under the table is one line per check, ready to be filed with the specimen; <strong>Copy summary</strong> puts it on the clipboard. The overall verdict in the window's title is the worst of pass, warn and fail; unknown checks do not count, and the verdict is unknown only when every check is.</p>
+
+<p>When the item came from an <code>.xrdml</code> that is still where it was loaded from, the checks run on the curve as the file holds it: a Normalize, Smooth or Trim done here is not seen. The wavelength is the calculation settings' value in either case.</p>
 
 <div class="tip"><strong>Tip:</strong> the counting and zero-count checks need the raw file. Load the measurement from its <code>.xrdml</code> rather than from a converted text file, and keep the file where it was loaded from: the assessment re-reads it through the <code>* Source file:</code> line of the item's description.</div>
 
 <h2 id="exporting-data">Exporting Data</h2>
 <ul>
-  <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copy data in tab-separated format for pasting into other applications</li>
-  <li><strong>Data &gt; Export to File</strong> &mdash; save processed data to a text file</li>
+  <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copies the active data item as TAB-separated text under a three-line header (column names, units, a blank line), the angle to 0.001 and the reflectivity to five significant digits</li>
+  <li><strong>Data &gt; Export to File</strong> &mdash; not wired to an action in this version: the menu item does nothing. Use Copy to Clipboard.</li>
 </ul>
 
 <h3>See Also</h3>
@@ -742,42 +751,52 @@ Theta    Reflectivity
 </div>
 
 <h2 id="algorithm">Algorithm</h2>
-<p>XRC3 uses the Parratt exact recursive method for simulating specular X-ray reflectivity. A Gaussian distribution is assumed for interface roughness. The refractive indices of materials are calculated using the Henke tables of X-ray scattering factors (Henke <em>et al.</em>, 1993). Reflectivity calculations can be performed as functions of either incidence angle or wavelength.</p>
+<p>XRC3 uses the exact Parratt recursion for specular X-ray reflectivity. The medium above the structure is vacuum (&epsilon; = 1) and the substrate is semi-infinite. The dielectric constant of each layer is &epsilon; = 1 &minus; 2&delta; + 2i&beta;, with &delta; and &beta; proportional to &rho;&lambda;&sup2;f<sub>1</sub>/A and &rho;&lambda;&sup2;f<sub>2</sub>/A (&rho; the density, A the molar mass). The atomic scattering factors f<sub>1</sub>, f<sub>2</sub> come from the Henke tables (Henke <em>et al.</em>, 1993), linearly interpolated in photon energy, E = 12398.6/&lambda; eV (&lambda; in &#8491;).</p>
+<p>Interface roughness is Gaussian. The Fresnel coefficient of every interface is multiplied by a N&eacute;vot&ndash;Croce-type factor exp(&minus;q<sub>0</sub>q&prime;&sigma;&sup2;/2), where q<sub>0</sub> = 4&pi; sin&theta;/&lambda; is the wave-vector transfer in vacuum and q&prime; the one refracted across the interface; the same factor is applied to s and p. The &sigma; of a layer is the roughness of its <em>upper</em> interface (see <a href="#layers">Layers</a>).</p>
+<p>Reflectivity can be calculated as a function of either the grazing angle or the wavelength. Calculated values below the chart's minimum-limit setting (the reflectivity floor in the Chart Info bar, default 10<sup>&minus;7</sup>) are raised to it; the floor applies to the &chi;&sup2; too.</p>
 
 <h2 id="calc-modes">Calculation Modes</h2>
 <p>X-Ray Calc 3 supports two calculation modes:</p>
 
 <h3>Theta Mode (by angle)</h3>
-<p>Calculates reflectivity as a function of incidence angle at a fixed wavelength.</p>
+<p>Calculates reflectivity as a function of the grazing angle (measured from the surface) at a fixed wavelength.</p>
 <table>
   <tr><th>Parameter</th><th>Description</th></tr>
   <tr><td><strong>&theta;<sub>1</sub></strong></td><td>Start angle (degrees)</td></tr>
-  <tr><td><strong>&theta;<sub>2</sub></strong></td><td>End angle (degrees)</td></tr>
-  <tr><td><strong>&lambda; (&#8491;)</strong></td><td>Fixed wavelength in Angstroms (default: 1.54043 &#8491;, Cu K&alpha;)</td></tr>
-  <tr><td><strong>&Delta;&theta;</strong></td><td>Angular resolution / step size (degrees)</td></tr>
-  <tr><td><strong>2&theta;</strong></td><td>When checked, angles are in 2&theta; (double angle) convention</td></tr>
+  <tr><td><strong>&theta;<sub>2</sub></strong></td><td>End angle (degrees). The calculated points are &theta;<sub>1</sub> + i&middot;(&theta;<sub>2</sub> &minus; &theta;<sub>1</sub>)/N, so &theta;<sub>2</sub> itself is not calculated.</td></tr>
+  <tr><td><strong>&lambda; (&#8491;)</strong></td><td>Fixed wavelength in Angstroms (default: 1.54043 &#8491;, close to Cu K&alpha;<sub>1</sub>, 1.5406 &#8491;)</td></tr>
+  <tr><td><strong>&Delta;&theta;</strong></td><td>Instrumental angular resolution: the FWHM, in degrees &theta;, of the Gaussian the calculated curve is convolved with (default 0.015; 0 = no convolution). It is not the step. The Gaussian is cut off at &plusmn;0.1&deg; on the chart axis, so a resolution wider than about 0.08&deg; (0.04&deg; with 2&theta; ticked) is under-represented.</td></tr>
+  <tr><td><strong>2&theta;</strong></td><td>When checked, &theta;<sub>1</sub>, &theta;<sub>2</sub> and the chart axis are in 2&theta; (the calculation divides by 2). &Delta;&theta; is always entered in &theta;.</td></tr>
 </table>
+<div class="note"><strong>Convolution edges:</strong> the convolution needs 0.1&deg; of curve on each side of a point. The first points of the curve (0.1&deg; worth) are left unconvolved and the last ones are replaced by a short trailing moving average; the &chi;&sup2; leaves out these end points (see <a href="#understanding-the-cost-function">Understanding the Cost Function</a>). The convolution assumes evenly spaced points.</div>
 
 <h3>Lambda Mode (by wavelength)</h3>
-<p>Calculates reflectivity as a function of wavelength at a fixed incidence angle.</p>
+<p>Calculates reflectivity as a function of wavelength at a fixed grazing angle.</p>
 <table>
   <tr><th>Parameter</th><th>Description</th></tr>
   <tr><td><strong>&lambda;<sub>1</sub></strong></td><td>Start wavelength (Angstroms)</td></tr>
-  <tr><td><strong>&lambda;<sub>2</sub></strong></td><td>End wavelength (Angstroms)</td></tr>
-  <tr><td><strong>&theta;</strong></td><td>Fixed incidence angle (degrees)</td></tr>
-  <tr><td><strong>&Delta;&lambda;</strong></td><td>Wavelength step size (Angstroms)</td></tr>
+  <tr><td><strong>&lambda;<sub>2</sub></strong></td><td>End wavelength (Angstroms). The step is (&lambda;<sub>2</sub> &minus; &lambda;<sub>1</sub>)/N.</td></tr>
+  <tr><td><strong>&theta;</strong></td><td>Fixed grazing angle in degrees, measured from the surface (90&deg; = normal incidence; default 85&deg;). The 2&theta; box does not apply here.</td></tr>
+  <tr><td><strong>&Delta;&lambda;</strong></td><td>Spectral resolution: the FWHM (&#8491;) of the Gaussian the curve is convolved with (default 0 = none; cut off at &plusmn;0.1&nbsp;&#8491;). It is not the step.</td></tr>
 </table>
+<div class="note"><strong>Limitations of Lambda mode in this version:</strong>
+<ul>
+  <li>The atomic scattering factors f<sub>1</sub>, f<sub>2</sub> of every material are read once, at &lambda;<sub>1</sub>, and kept for the whole scan. Across the scan &delta; and &beta; therefore scale only as &lambda;&sup2;: the energy dependence of f<sub>1</sub>, f<sub>2</sub>, absorption edges included, is not followed. Keep the scan narrow and away from the absorption edges of the materials in the structure (for example the Si L edge near 124&nbsp;&#8491; for Mo/Si), or calculate the region in several short scans.</li>
+  <li>A function (gradient) profile is applied correctly only at &lambda;<sub>1</sub>, unless it is attached to the first layer of the top stack; at later wavelengths its period count runs on instead of restarting.</li>
+  <li>Lambda mode runs on a single thread.</li>
+</ul></div>
 
 <h2 id="polarization">Polarization</h2>
 <ul>
   <li><strong>s-type:</strong> S-polarization (TE mode, electric field perpendicular to the plane of incidence)</li>
-  <li><strong>sp-type:</strong> Mixed &sigma;/&pi; polarization</li>
+  <li><strong>sp-type:</strong> unpolarized beam, R = (R<sub>s</sub> + R<sub>p</sub>)/2, with the same roughness factor applied to both components</li>
 </ul>
 
-<div class="tip"><strong>Guidance:</strong> Use <strong>s-polarization</strong> when calculating at hard X-rays and low grazing angles (below 20&deg;) &mdash; in this regime the difference from sp is negligible and calculation speed is significantly faster. Use <strong>sp-polarization</strong> for larger angles and softer radiation where both polarization components contribute.</div>
+<div class="tip"><strong>Guidance:</strong> What decides is the grazing angle, not the photon energy. Away from the critical angle R<sub>p</sub> &asymp; R<sub>s</sub>&thinsp;cos&sup2;2&theta;, so sp is lower than s by the fraction (1 &minus; cos&sup2;2&theta;)/2: under 0.5&nbsp;% below &theta; &asymp; 3&deg;, about 1.5&nbsp;% at 5&deg;, 6&nbsp;% at 10&deg; and 20&nbsp;% at 20&deg;. Use <strong>s-polarization</strong> at small grazing angles, where the difference is negligible and the calculation is faster. Use <strong>sp-polarization</strong> for an unpolarized source at larger angles, for example near-normal EUV and soft X-ray geometries; R<sub>p</sub> falls to nearly zero near the Brewster angle, &theta; &asymp; 45&deg;.</div>
 
 <h2 id="number-of-points-n">Number of Points (N)</h2>
-<p>The <strong>N</strong> parameter controls the number of calculation points (default: 2000). More points give smoother curves but take longer to compute.</p>
+<p>The <strong>N</strong> parameter sets the number of calculated points (default 2000 in a new session; a project that stores none opens with 1000). More points give smoother curves but take longer to compute. In Theta mode N is rounded down to a multiple of the number of threads.</p>
+<p>When a measured curve is linked to the model and the model curve is visible, N is not used: the model is calculated at the measured angles.</p>
 
 <h2 id="running-a-calculation">Running a Calculation</h2>
 <ol>
@@ -786,15 +805,16 @@ Theta    Reflectivity
   <li>Choose <strong>Calc &gt; Calculate</strong> or click the <img src="images/icons/40_Play.png" alt="Calculate" class="icon"> <strong>Calc Run</strong> toolbar button.</li>
   <li>The calculated reflectivity curve appears on the main chart.</li>
 </ol>
+<p>When a measured curve is linked, <strong>Calculate</strong> also reports the &chi;&sup2; against it, and the plain &chi;&sup2;, in the Chart Info bar, at the scale shown in the <strong>scale</strong> pane (see <a href="#understanding-the-cost-function">Understanding the Cost Function</a> and <a href="#solved-scale">Solving the Measured Scale</a>).</p>
 <p><strong>Calculate All</strong> (<strong>Calc &gt; Calculate All</strong>) calculates reflectivity for every model in the project.</p>
 
 <h2 id="auto-calculation">Auto-Calculation</h2>
 <div class="note"><strong>Auto-Calc:</strong> When enabled in Settings, the reflectivity is recalculated automatically whenever you modify the structure. This provides real-time feedback as you adjust layer parameters.</div>
 
 <h2 id="multi-thread">Multi-Threading</h2>
-<p>The complete angular data range is divided into segments matching the number of available CPU cores, and each segment is computed in parallel. Configure the number of cores in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>:</p>
+<p>In Theta mode the calculated points are divided into as many contiguous segments as there are threads, and the segments are computed in parallel (with a linked measured curve, its points are divided the same way). Lambda mode runs on a single thread. Configure the number of threads in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>:</p>
 <ul>
-  <li><strong>Auto (Use all)</strong> &mdash; use all available CPU cores (default)</li>
+  <li><strong>Auto (Use all)</strong> &mdash; one thread per logical processor available to the process (default)</li>
   <li><strong>2, 4, 8, 12, 16, 32, 64</strong> &mdash; limit to a specific number of threads</li>
 </ul>
 <div class="tip"><strong>Performance:</strong> With a 16-core CPU, the typical simulation time for XRR ranges from 0.05 to 0.25 s for a periodic multilayer model consisting of 300 stacks of 4 layers each (3000-point curve). This speed enables real-time manual curve fitting.</div>
@@ -846,14 +866,14 @@ Theta    Reflectivity
 
 <figure>
   <img src="images/fig4.jpg" alt="Shake LFPSO concept">
-  <figcaption><strong>Figure 4.</strong> The Shake concept. (a) All particles trapped in a local minimum. (b) Shaking event: locations and velocities are randomized based on P<sub>gbest</sub>; V<sub>max</sub> is multiplied by k<sub>1</sub> and the cost function threshold is lifted by k<sub>2</sub>. (c) After LFPSO leap, a new best solution is found. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+  <figcaption><strong>Figure 4.</strong> The Shake concept. (a) All particles trapped in a local minimum. (b) Shaking event: locations and velocities are randomized based on P<sub>gbest</sub>; V<sub>max</sub> is multiplied by k<sub>1</sub> and the cost function threshold is lifted by k<sub>2</sub>. (c) After LFPSO leap, a new best solution is found. (From Penkov <em>et al.</em>, 2024.) The Advanced Settings dialog labels these coefficients the other way round: there <strong>k<sub>1</sub></strong> lifts the threshold and <strong>k<sub>2</sub></strong> multiplies V<sub>max</sub> (see <a href="#fit-advanced">Advanced Fitting Settings</a>).</figcaption>
 </figure>
 
 <h2 id="prerequisites-for-fitting">Prerequisites for Fitting</h2>
 <p>Before starting a fit, you need:</p>
 <ol>
   <li><strong>A defined model</strong> with initial parameter estimates</li>
-  <li><strong>Experimental data</strong> loaded into the project</li>
+  <li><strong>Experimental data</strong> loaded into the project, linked to the model and visible on the chart (otherwise the fit stops with <em>Measured curve is not linked!</em>)</li>
   <li><strong>Fit limits</strong> set for each adjustable parameter</li>
 </ol>
 
@@ -882,7 +902,7 @@ Theta    Reflectivity
 <p>The dialog provides action buttons for batch operations on limits:</p>
 <table>
   <tr><th>Button</th><th>Action</th></tr>
-  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; percentages. For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
+  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; fractions (0.25 = &plusmn;25&nbsp;%): Min&nbsp;=&nbsp;V(1&nbsp;&minus;&nbsp;&Delta;), Max&nbsp;=&nbsp;V(1&nbsp;+&nbsp;&Delta;). For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
   <tr><td><strong>Narrow</strong></td><td>Shrinks all unlocked limits toward the current fitted value by 50%, reducing the search space. Useful after a successful fit to refine results.</td></tr>
   <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 1% of the range edge). Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range.</td></tr>
   <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling. Despite the name, this is unrelated to the <strong>Fix</strong> columns &mdash; it repairs limits, it does not freeze anything.</td></tr>
@@ -922,31 +942,35 @@ Theta    Reflectivity
 <p>The software provides several structure-representation methods. The user chooses the most suitable depending on the nature of the coating:</p>
 
 <table>
-  <tr><th>Structure Representation</th><th>Applicability</th><th>Computation Time</th></tr>
-  <tr><td>Regular (Irregular)</td><td>Regular non-periodic coatings</td><td>Long</td></tr>
-  <tr><td>Periodic</td><td>Periodic multilayer mirrors (PMMs)</td><td>Short</td></tr>
-  <tr><td>Periodic with arbitrary deviations</td><td>Supermirrors, PMMs with arbitrary distributions</td><td>Long</td></tr>
-  <tr><td>Polynomial distributions</td><td>PMMs with gradual change of parameters</td><td>Moderate</td></tr>
+  <tr><th>Structure Representation</th><th>Mode</th><th>Applicability</th><th>Computation Time</th></tr>
+  <tr><td>Non-periodic coating</td><td>Irregular</td><td>Regular non-periodic coatings</td><td>Long</td></tr>
+  <tr><td>Periodic</td><td>Periodic</td><td>Periodic multilayer mirrors (PMMs)</td><td>Short</td></tr>
+  <tr><td>Periodic with arbitrary deviations</td><td>Irregular, applied to a periodic stack</td><td>Supermirrors, PMMs with arbitrary distributions</td><td>Long</td></tr>
+  <tr><td>Polynomial distributions</td><td>Polynomial</td><td>PMMs with gradual change of parameters</td><td>Moderate</td></tr>
 </table>
+<p>The Fitting panel offers three modes: <strong>Irregular</strong>, <strong>Periodic</strong> and <strong>Polynomial</strong>.</p>
 
 <h3>Irregular Mode</h3>
 <p>Every parameter of each layer is treated independently. This mode is used for non-periodic coatings consisting of several layers. At the start of fitting, the software expands each periodic stack into individual layers. Once fitting is complete, distribution charts are generated for each parameter of every material type (thickness, roughness, density).</p>
 <ul>
   <li>Each layer has its own fitted thickness, roughness, and density.</li>
-  <li>The <strong>Smoothing window</strong> parameter (in Advanced Settings) applies spatial smoothing to prevent unphysical oscillations.</li>
+  <li>With <strong>Smooth</strong> checked, each particle's period-to-period profile of every parameter is smoothed with a moving average over the <strong>Smoothing window</strong> (Advanced Settings) after every update. This is a constraint during the search, not a smoothing of the result; it applies to stacks with N&nbsp;&gt;&nbsp;1 and to parameters that are not paired.</li>
   <li>Specific parameters can be &ldquo;stack-locked&rdquo; (paired) &mdash; e.g. roughness and density remain constant while thickness varies across the stack.</li>
 </ul>
 <div class="note"><strong>Example:</strong> A Mo/Si PMM with 60 repeated stacks would require 726 variables if treated individually. Using the periodic mode, this reduces to just 18 variables.</div>
 
 <h3>Periodic Mode</h3>
-<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. A periodicity keeper normalizes layer thicknesses to maintain the total period D of each stack.</p>
+<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. After every move a periodicity keeper rescales the layer thicknesses of each stack with N&nbsp;&gt;&nbsp;1, in proportion to each layer's thickness and within its bounds, so that the period D keeps its value.</p>
+<div class="note"><strong>The period is fixed.</strong> A Periodic fit in the program holds the period D of every repeating stack at its value in the start model: it changes the ratio of the layer thicknesses (and &sigma;, &rho;), not D, so it cannot move the Bragg peaks. Set the period first &mdash; the peak positions must already match &mdash; or use Irregular or Polynomial mode to let it move. (The MCP server can free the period; see <a href="#fitting">MCP Server &gt; Fitting</a>.)</div>
 <ul>
   <li>Suitable for structures with consistent periodicity.</li>
   <li>Dramatically reduces the number of fitting variables for PMMs.</li>
 </ul>
 
 <h3>Polynomial Mode</h3>
-<p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of depth. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>. The user can select the polynomial order from 1 to 20.</p>
+<p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of the period number. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>:</p>
+<div class="note"><strong>x(j) = x<sub>0</sub> + a<sub>1</sub>(j&nbsp;&minus;&nbsp;1) + a<sub>2</sub>(j&nbsp;&minus;&nbsp;1)&sup2; + &hellip; + a<sub>k</sub>(j&nbsp;&minus;&nbsp;1)<sup>k</sup></strong>, j = 1, 2, &hellip; the period number, x<sub>0</sub> the first period's value.</div>
+<p>Only repeating stacks (N&nbsp;&gt;&nbsp;1) and parameters that are not paired get coefficients; the others keep a single value. The period is not held, so the Bragg peaks can move. Keep the order low (&le;&nbsp;5 in practice): high powers of the period number grow very fast, and the order field is not range-checked.</p>
 <ul>
   <li><strong>Order:</strong> Maximum polynomial order (1 = linear, 2 = quadratic, etc.)</li>
   <li>Useful for smooth, continuous parameter gradients (e.g. graded-period supermirrors, PMMs with unstable deposition rate).</li>
@@ -956,10 +980,10 @@ Theta    Reflectivity
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Iterations</strong></td><td>Maximum number of optimization iterations</td><td>100</td></tr>
-  <tr><td><strong>Population</strong></td><td>Number of particles (candidate solutions) in the swarm</td><td>100</td></tr>
+  <tr><td><strong>Population</strong></td><td>Number of particles (candidate solutions) in the swarm</td><td>100 (a project from a version that did not store it opens with 1000)</td></tr>
   <tr><td><strong>Shake</strong></td><td>Enable random perturbation to escape local minima</td><td>Checked</td></tr>
-  <tr><td><strong>SeedR</strong></td><td>Seed particles from the parameter range</td><td>Checked</td></tr>
-  <tr><td><strong>Smooth</strong></td><td>Apply smoothing to fitted parameter profiles</td><td>Unchecked</td></tr>
+  <tr><td><strong>SeedR</strong></td><td>Start the swarm spread uniformly over each parameter's [Min, Max] instead of scattered around the start model (&plusmn;Ksxr of the range). Applies only at the start of a fit; no effect in Polynomial mode</td><td>Checked (unchecked for a project that did not store it)</td></tr>
+  <tr><td><strong>Smooth</strong></td><td>Irregular mode only: keep each parameter's period-to-period profile smooth (moving average over the Smoothing window) during the search</td><td>Unchecked</td></tr>
   <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square calculation</td><td>Checked</td></tr>
   <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
   <tr><td><strong>Solve scale in &chi;&sup2;</strong></td><td>Score every candidate structure at the measured scale that suits it best, within the window, instead of at the anchored scale (see <a href="#solved-scale">Solving the Measured Scale</a>)</td><td>Checked</td></tr>
@@ -967,7 +991,7 @@ Theta    Reflectivity
 </table>
 
 <h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
-<p>Controls how the chi-square metric weights different angular regions:</p>
+<p>Controls how the chi-square metric weights different angular regions. &theta; here is the value on the chart axis &mdash; 2&theta; when the 2&theta; box is checked &mdash; so the absolute &chi;&sup2; with a TW weight differs by a constant factor between the two axes:</p>
 <table>
   <tr><th>Option</th><th>Effect</th></tr>
   <tr><td>None</td><td>Equal weight across all angles</td></tr>
@@ -984,33 +1008,35 @@ Theta    Reflectivity
 <h3>General</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Tolerance</strong></td><td>Target cost function value; fitting stops when reached</td><td>0.005</td></tr>
+  <tr><td><strong>Tolerance</strong></td><td>Fitting stops when the best weighted &chi;&sup2; (as shown, with the PW, TW and scale settings) falls below this value</td><td>0.005</td></tr>
   <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
 </table>
 
 <h3>LFPSO Parameters</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>SHmax</strong></td><td>Maximum number of consecutive shakes</td><td>3</td></tr>
-  <tr><td><strong>Jmax</strong></td><td>Number of iterations without improvement before shake</td><td>1</td></tr>
-  <tr><td><strong>Vmax</strong></td><td>Maximum particle velocity factor</td><td>0.3</td></tr>
-  <tr><td><strong>&omega;<sub>1</sub></strong></td><td>Velocity scale factor (permanent component)</td><td>0.3</td></tr>
-  <tr><td><strong>&omega;<sub>2</sub></strong></td><td>Velocity reducing factor</td><td>0.1</td></tr>
-  <tr><td><strong>k<sub>1</sub></strong></td><td>Velocity shake coefficient</td><td>1.41</td></tr>
-  <tr><td><strong>k<sub>2</sub></strong></td><td>Best cost function shake coefficient</td><td>1.41</td></tr>
+  <tr><td><strong>SHmax</strong></td><td>Shakes do not stop the fit. The first SHmax&nbsp;+&nbsp;1 shakes each lift the threshold (k<sub>1</sub>) and enlarge V<sub>max</sub> and Ksxr (k<sub>2</sub>); the next one instead returns the swarm to the best solution found so far and restores V<sub>max</sub> and Ksxr, and the cycle repeats</td><td>3</td></tr>
+  <tr><td><strong>Jmax</strong></td><td>A shake is due once more than Jmax iterations since the start or the last shake have failed to improve the current best (not necessarily consecutive ones)</td><td>1</td></tr>
+  <tr><td><strong>Vmax</strong></td><td>Largest step a particle may take per iteration, as a fraction of each parameter's range (Max&nbsp;&minus;&nbsp;Min); velocities are clipped to &plusmn;V<sub>max</sub></td><td>0.3 (0.1 for a project that did not store it)</td></tr>
+  <tr><td><strong>&omega;<sub>1</sub></strong></td><td>Constant part of the inertia weight &omega; = &omega;<sub>1</sub> + &omega;<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T). Ignored when Constriction factor is on</td><td>0.3</td></tr>
+  <tr><td><strong>&omega;<sub>2</sub></strong></td><td>Decaying part of the inertia weight: &omega; falls from &omega;<sub>1</sub>&nbsp;+&nbsp;&omega;<sub>2</sub> to &omega;<sub>1</sub> over the run. Ignored when Constriction factor is on</td><td>0.3</td></tr>
+  <tr><td><strong>k<sub>1</sub></strong></td><td>Shake lift of the best cost: at a shake the current best &chi;&sup2; threshold is multiplied by k<sub>1</sub>, so the new swarm can accept worse solutions</td><td>1.41</td></tr>
+  <tr><td><strong>k<sub>2</sub></strong></td><td>Shake enlargement: at a shake V<sub>max</sub> and Ksxr are multiplied by k<sub>2</sub></td><td>1.41</td></tr>
+  <tr><td><strong>Ad.V</strong></td><td>Scale the attraction coefficients c<sub>1</sub>, c<sub>2</sub> with the same decaying schedule as the inertia, &omega;<sub>1</sub> + &omega;<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T), instead of 1. Ignored when Constriction factor is on</td><td>Unchecked</td></tr>
+  <tr><td><strong>Ksxr</strong></td><td>Re-seeding spread, in all modes: after a shake (and at the start when SeedR is off, always in Polynomial mode) particles are scattered within &plusmn;Ksxr of each parameter's range around the best solution</td><td>0.2</td></tr>
 </table>
+<p>The coefficient the paper calls k<sub>1</sub> is the dialog's k<sub>2</sub> and vice versa (see Figure&nbsp;4).</p>
 
 <h3>Irregular Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Smoothing window</strong></td><td>Width of the smoothing window (set &minus;1 for automatic)</td><td>3</td></tr>
+  <tr><td><strong>Smoothing window</strong></td><td>Number of neighbouring periods averaged when Smooth is checked (a window W averages W&nbsp;+&nbsp;1 consecutive periods); &minus;1 = automatic, one tenth of the periods (at least 1)</td><td>&minus;1</td></tr>
 </table>
 
 <h3>Polynomial Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Polynomial factor</strong></td><td>Scale factor for polynomial parameter space</td><td>10</td></tr>
-  <tr><td><strong>Ksxr</strong></td><td>Velocity scale factor for polynomial coefficients</td><td>0.2</td></tr>
+  <tr><td><strong>Polynomial factor</strong></td><td>Divisor per order: the order-p coefficient is searched within (Max&nbsp;&minus;&nbsp;Min)/F<sup>p</sup> with velocity limit V<sub>max</sub>/F<sup>p</sup> (1&ndash;15)</td><td>10</td></tr>
 </table>
 
 <h2 id="running-a-fit">Running a Fit</h2>
@@ -1074,7 +1100,7 @@ Theta    Reflectivity
   <tr><th>Enhancement</th><th>Description</th></tr>
   <tr>
     <td><strong>Reflective boundaries</strong></td>
-    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search.</td>
+    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search. (Irregular and Periodic modes; in Polynomial mode x<sub>0</sub> is clamped, and higher-order coefficients are zeroed from the top order down until the profile fits within the limits.)</td>
   </tr>
   <tr>
     <td><strong>Adaptive L&eacute;vy scale</strong></td>
@@ -1082,7 +1108,7 @@ Theta    Reflectivity
   </tr>
   <tr>
     <td><strong>Adaptive PSO/L&eacute;vy switching</strong></td>
-    <td>Early iterations favor L&eacute;vy flights (70%) for exploration; later iterations favor PSO updates (70%) for exploitation. When the algorithm stagnates, L&eacute;vy probability increases automatically to escape local minima. Previously, a fixed 50/50 split was used.</td>
+    <td>Each iteration the whole swarm takes either a L&eacute;vy or a PSO step, chosen by one random draw. The L&eacute;vy probability falls from 70% to 30% over the run and rises by 5 points for every non-improving iteration since the last shake (at most 90%). Previously, a fixed 50/50 split was used.</td>
   </tr>
   <tr>
     <td><strong>Random-peer L&eacute;vy targets</strong></td>
@@ -1105,6 +1131,7 @@ Theta    Reflectivity
   <strong>V = &chi; &times; (V + &phi;<sub>1</sub>r<sub>1</sub>(p<sub>best</sub> &minus; X) + &phi;<sub>2</sub>r<sub>2</sub>(g<sub>best</sub> &minus; X))</strong><br>
   where &phi; = &phi;<sub>1</sub> + &phi;<sub>2</sub> = 4.1, &ensp; &chi; = 2 / |2 &minus; &phi; &minus; &radic;(&phi;&sup2; &minus; 4&phi;)| &asymp; 0.7298
 </div>
+<p>p<sub>best</sub> is the best particle of the current iteration: the swarm keeps no per-particle memory. In a L&eacute;vy iteration the previous velocity is replaced by the L&eacute;vy step, aimed at g<sub>best</sub> or, 30% of the time, at a random peer.</p>
 
 <p>Unlike the empirical linear schedule, the constriction coefficient is mathematically proven to guarantee convergence while maintaining effective exploration. The higher cognitive and social coefficients (&phi;<sub>1</sub> = &phi;<sub>2</sub> = 2.05 vs. the previous c<sub>1</sub> = c<sub>2</sub> = 1) give particles stronger attraction to good solutions, while the constriction factor prevents velocity explosion.</p>
 
@@ -1115,10 +1142,10 @@ Theta    Reflectivity
 <div class="note">
   <strong>&chi;&sup2; = (1000 / (N &minus; 1)) &times; &Sigma;<sub>i</sub> [ (log I<sub>exp,i</sub> &minus; log I<sub>calc,i</sub>) / log I<sub>calc,i</sub> ]&sup2; &times; &omega;<sub>peak,i</sub> &times; &omega;<sub>&theta;,i</sub></strong>
 </div>
-<p>where I<sub>exp,i</sub> and I<sub>calc,i</sub> are the measured and computed intensities at the i-th measured angle, N is the number of measured points, &omega;<sub>peak</sub> is the peak weight and &omega;<sub>&theta;</sub> the incidence-angle weight. The sum runs over the measured points except those at either end of the curve that the resolution convolution cannot compute in full (half the convolution window on each side), and points where the calculated intensity is zero. With <a href="#solved-scale">Solve scale in &chi;&sup2;</a> checked, log&nbsp;I<sub>exp,i</sub> carries the solved offset a.</p>
+<p>where I<sub>exp,i</sub> and I<sub>calc,i</sub> are the measured and computed intensities at the i-th measured angle, N is the number of measured points, &omega;<sub>peak</sub> is the peak weight and &omega;<sub>&theta;</sub> the incidence-angle weight. The sum runs over the measured points except half the resolution-convolution window at the start (the points within about 0.1&deg; of it) and that many plus one at the end &mdash; the last point is always excluded. The calculated curve is floored at the lower limit of the chart's reflectivity axis (1E-7 by default), so that setting also affects &chi;&sup2; wherever the data fall below it. With <a href="#solved-scale">Solve scale in &chi;&sup2;</a> checked, log&nbsp;I<sub>exp,i</sub> carries the solved offset a.</p>
 
 <h3>Peak Weight Function (PW &chi;&sup2;)</h3>
-<p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight concentrates the fit on the primary features of the curve. The measured curve is averaged over a moving window of 5&nbsp;% of its points; a point that stands more than three times above that average &mdash; a Bragg peak &mdash; gets the weight &omega;<sub>peak</sub>&nbsp;=&nbsp;I<sub>exp</sub>&nbsp;/&nbsp;average, every other point the weight 1. Unchecked, &omega;<sub>peak</sub>&nbsp;=&nbsp;1 everywhere.</p>
+<p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight concentrates the fit on the primary features of the curve. The measured curve is averaged over a moving window of 5&nbsp;% of its points (stored in the project, not editable in the program; the first half-window of points always gets weight 1); a point that stands more than three times above that average &mdash; a Bragg peak &mdash; gets the weight &omega;<sub>peak</sub>&nbsp;=&nbsp;I<sub>exp</sub>&nbsp;/&nbsp;average, every other point the weight 1. Unchecked, &omega;<sub>peak</sub>&nbsp;=&nbsp;1 everywhere.</p>
 
 <h3>Incidence-Angle Weight Function (TW &chi;&sup2;)</h3>
 <p>Allows concentration of the fitting process on distinct segments of the XRR curve by weighting different angular regions differently: &omega;<sub>&theta;</sub> is 1, &theta;&sup2;, &theta;, &radic;&theta;, 1/&theta;&sup2; or 1/&radic;&theta; as set in the <a href="#fit-params">TW &chi;&sup2; list</a>.</p>
@@ -1140,7 +1167,7 @@ Theta    Reflectivity
 <ul>
   <li><strong>Footprint.</strong> A beam of height b illuminates a length b&nbsp;/&nbsp;sin&nbsp;&theta; of the specimen. Below the angle at which that length equals the specimen's, part of the beam misses the specimen, and the measured plateau of total external reflection is lower than the true one.</li>
   <li><strong>Alignment and curvature.</strong> An error in the &omega; zero, or a bowed substrate, lowers and reshapes the region around the critical angle, where the curve is steepest.</li>
-  <li><strong>Normalisation.</strong> <a href="#data-conditioning-walkthrough">Normalize</a> sets the scale from a single point &mdash; in the automatic variant the largest measured intensity below 0.5&deg;, matched to the model. The anchor inherits whatever error that one point carries, and depends on the model it was matched to.</li>
+  <li><strong>Normalisation.</strong> <a href="#data-conditioning-walkthrough">Normalize</a> sets the scale from a single point &mdash; in the automatic variant the largest measured intensity of the curve, matched to the model at that angle. The anchor inherits whatever error that one point carries, and depends on the model it was matched to.</li>
 </ul>
 <p>All of these multiply the whole curve by one factor s: I<sub>meas</sub>(&theta;)&nbsp;=&nbsp;s&nbsp;&middot;&nbsp;R(&theta;). On the logarithmic scale the fit works on, a factor is a constant offset, log&nbsp;I<sub>meas</sub>&nbsp;=&nbsp;log&nbsp;R&nbsp;+&nbsp;log&nbsp;s: the measured curve moves up or down without changing shape. That does not move a Bragg peak or change the spacing of the Kiessig fringes, which the thicknesses set, but it changes every absolute intensity &mdash; the height of the plateau, the reflectivity of the Bragg peaks, the rate at which the curve falls &mdash; and those are what the fit reads roughness and density from. A fit held at a wrong scale reaches for the parameters that can raise or lower the whole curve: a scale that is too low is typically absorbed as extra roughness, one that is too high as extra density contrast. The structure comes out biased, and its &chi;&sup2; is higher than the structure deserves.</p>
 
@@ -1149,7 +1176,7 @@ Theta    Reflectivity
 <div class="note">
   <strong>&chi;&sup2;(a) = S<sub>2</sub> + 2a&thinsp;S<sub>1</sub> + a&sup2;&thinsp;S<sub>0</sub>, &emsp; a* = &minus;S<sub>1</sub> / S<sub>0</sub></strong>
 </div>
-<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and TW weights, and the division by log&nbsp;I<sub>calc</sub> that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
+<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and TW weights, and the factor 1/(log&nbsp;I<sub>calc</sub>)&sup2; that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
 <p>The weight explains why the scale matters so much. Because each residual is divided by log&nbsp;I<sub>calc</sub>, the points near and below the critical angle, where the reflectivity is close to 1 and its logarithm close to 0, weigh the most &mdash; and they are also the points that footprint and alignment errors affect most.</p>
 
 <h3>The window</h3>
@@ -1318,31 +1345,28 @@ Theta    Reflectivity
   </ul>
 </div>
 
-<p>Profile extensions allow you to define how layer parameters (H, &sigma;, &rho;) vary across a periodic structure. They model parameter gradients &mdash; for example, when layer thickness gradually increases or density changes with depth.</p>
+<p>Profile extensions let layer parameters (H, &sigma;, &rho;) vary from period to period of a periodic stack &mdash; for example a thickness that drifts during deposition. Both kinds of profile are indexed by the period number <em>n</em>, counting from the surface (n = 1 is the period nearest the surface), not by depth.</p>
 
 <h2 id="adding-a-profile-extension">Adding a Profile Extension</h2>
 <ol>
   <li>Select a model in the project tree.</li>
   <li>Click the <img src="images/icons/11_AddExtension.png" alt="Add Extension" class="icon"> <strong>Add Extension</strong> toolbar button or choose the extension option from the project toolbar.</li>
-  <li>The Extension Type Selector dialog opens with available profile types.</li>
+  <li>The Extension Type Selector dialog opens. <strong>Function</strong> adds a function profile; the other choices are not available in this version (a table profile is created by a fit, see below).</li>
 </ol>
 
 <h2 id="profile-types">Profile Types</h2>
 
 <h3>Function Profile</h3>
-<p>Defines parameter variation using an analytical function:</p>
-<table>
-  <tr><th>Function</th><th>Formula</th><th>Use Case</th></tr>
-  <tr><td><strong>Polynomial</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x&sup2; + &hellip;</td><td>General-purpose gradient</td></tr>
-  <tr><td><strong>Exponential</strong></td><td>a<sub>0</sub> &middot; e<sup>a<sub>1</sub>x</sup></td><td>Exponential growth/decay</td></tr>
-  <tr><td><strong>Parabolic</strong></td><td>a<sub>0</sub> + a<sub>1</sub>x&sup2;</td><td>Symmetric variation</td></tr>
-  <tr><td><strong>SQRT</strong></td><td>a<sub>0</sub> + a<sub>1</sub>&radic;x</td><td>Gradual initial change</td></tr>
-</table>
-<p>The Profile Function editor lets you set the coefficients and preview the resulting profile.</p>
+<p>A function profile varies one parameter (H, &sigma; or &rho;) of one layer of a periodic stack as a polynomial in the period number <em>n</em>:</p>
+<div class="note">
+  <strong>v(n) = c<sub>0</sub> + c<sub>1</sub>(n &minus; 1) + c<sub>2</sub>(n &minus; 1)&sup2; + &hellip; + c<sub>K</sub>(n &minus; 1)<sup>K</sup>, &emsp; K &le; 9</strong>
+</div>
+<p>c<sub>0</sub> is always the layer&rsquo;s own value in the structure, so the period nearest the surface keeps the value you entered; you set c<sub>1</sub>&hellip;c<sub>K</sub> in the Profile Function editor, which previews the resulting profile. A new gradient starts with order 1 and c<sub>1</sub> = 0.14. The values are not clamped, so a steep polynomial can drive a thickness, roughness or density negative. Other function forms are not implemented in this version: the function list in the editor is fixed to the polynomial.</p>
+<p>A density gradient on a layer with &rho; = 0 starts from zero, not from the bulk density (see <a href="#layers">Layers</a>). The <a href="#fit-modes">Polynomial fitting mode</a> fits these coefficients.</p>
 
 <h3>Table Profile</h3>
-<p>Defines parameter variation as a set of (position, value) data points. The application interpolates between points. This allows arbitrary profile shapes that cannot be described by simple functions.</p>
-<p>The Profile Table editor provides a grid where you enter depth positions and corresponding parameter values.</p>
+<p>A table profile holds an individual value of H, &sigma; and &rho; for every period of each periodic stack (period 1 = nearest the surface). It is created by an <strong>Irregular</strong> fit of a periodic structure and shows the fitted values per period as a table and a step chart, which you can copy or save; the values cannot be edited in the table. A model has at most one table profile.</p>
+<p>The table is used in calculations only while the Fitting mode is <strong>Irregular</strong> or <strong>Polynomial</strong>; in <strong>Periodic</strong> mode every period uses the stack&rsquo;s own values.</p>
 
 <h2 id="enabling-disabling-extensions">Enabling / Disabling Extensions</h2>
 <p>Each extension can be individually enabled or disabled without deleting it. This lets you quickly compare results with and without a particular profile applied.</p>
@@ -1374,20 +1398,22 @@ Theta    Reflectivity
 
 <h2 id="create-new-material">Create New Material</h2>
 <p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create New Material</strong> opens a dialog to add a custom material to the Henke database.</p>
-<p>Enter the chemical formula and the application calculates the atomic form factors from the constituent elements. This is useful for compounds not already in the database.</p>
+<p>Choose the number of components, pick each one (an element or an existing material) and give its concentration in atomic per cent, then a name and a density (g/cm&sup3;). The program writes <code>Henke\&lt;Name&gt;.bin</code> with f<sub>1</sub>, f<sub>2</sub> and the molar mass averaged per atom with the atomic fractions, f&nbsp;=&nbsp;&Sigma;&nbsp;c<sub>i</sub>f<sub>i</sub>, on the energy grid of the first component (the others are interpolated onto it). The density you enter becomes the bulk density used when a layer's density is 0.</p>
+<div class="note"><strong>Note:</strong> the percentages must add up to 100; the dialog does not check this. An existing file of the same name is overwritten without asking.</div>
 
 <h2 id="edit-henke-table">Edit Henke Table</h2>
 <p><img src="images/icons/Menu_EditTable.png" alt="Edit Table" class="icon"> <strong>Tools &gt; Edit Henke Table</strong> opens the Henke Table Editor, which allows you to view and modify the atomic scattering factor tables used for reflectivity calculations.</p>
-<p>The Henke tables contain wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These are the fundamental optical constants used in the Fresnel equation calculations.</p>
+<p>A Henke table holds the atomic scattering factors f<sub>1</sub> and f<sub>2</sub> of one material against photon energy E (the &lambda; column is 12398.6&nbsp;/&nbsp;E, in &Aring;), together with the molar mass and the bulk density. The optical constants &delta; and &beta; are proportional to (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>1</sub> and (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>2</sub>. The f<sub>1</sub> and f<sub>2</sub> cells, the molar mass and the density can be edited; <strong>Save</strong> overwrites the file. A value shown as <em>N/A</em> is not tabulated.</p>
+<div class="note"><strong>Note:</strong> f<sub>1</sub>, f<sub>2</sub> and the molar mass are per formula unit and enter the optical constants as a ratio. Change the mass only together with f<sub>1</sub> and f<sub>2</sub>, or every layer of that material changes its optical constants.</div>
 
 <h2 id="benchmark">Benchmark</h2>
-<p><img src="images/icons/Menu_Benchmark.png" alt="Benchmark" class="icon"> <strong>Calc &gt; Benchmark</strong> opens the Benchmark dialog, which measures the calculation performance of your system:</p>
+<p><img src="images/icons/Menu_Benchmark.png" alt="Benchmark" class="icon"> <strong>Calc &gt; Benchmark</strong> measures how reliably the optimizer converges, not how fast it runs:</p>
 <ul>
-  <li>Runs a standard reflectivity calculation multiple times</li>
-  <li>Reports average execution time</li>
-  <li>Useful for comparing performance across different hardware or thread configurations</li>
+  <li>Every project (<code>.xrcx</code>) in the <code>Benchmark</code> folder is reopened and fitted N times, with the fit settings stored in it.</li>
+  <li>The final &chi;&sup2; of each run is tabulated with statistics, and the table is saved to <code>BenchResults\benchmark-&lt;date&gt;.dat</code>.</li>
+  <li>A spread of final &chi;&sup2; values shows how often the swarm finds the same minimum; compare optimizer settings this way.</li>
 </ul>
-<p>Configure the number of benchmark runs in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>.</p>
+<p>Configure the number of runs N (default 20) in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>. For the time a fit takes, see the fitting time in the status bar.</p>
 
 <h3>See Also</h3>
 <ul>
@@ -1434,9 +1460,9 @@ Theta    Reflectivity
 <h2 id="behavior">Behavior</h2>
 <table>
   <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Automatically calculate when opening project</strong></td><td>Run calculation on all models when a project is opened</td><td>On</td></tr>
+  <tr><td><strong>Automatically calculate when opening project</strong></td><td>Calculate the active model when a project is opened</td><td>On</td></tr>
   <tr><td><strong>Live update structure panel during fitting</strong></td><td>Show real-time parameter changes in the structure editor during fitting</td><td>Off</td></tr>
-  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save fitting results to the Output directory automatically</td><td>Off</td></tr>
+  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save the project as &lt;name&gt;-fitted.xrcx in the Fitting Output folder (or next to the project when that folder is not set) when a fit ends, and at each improvement during the fit if Live update is on</td><td>Off</td></tr>
   <tr><td><strong>Automatically check for updates</strong></td><td>Check for new versions on launch</td><td>Off</td></tr>
 </table>
 
@@ -1448,7 +1474,7 @@ Theta    Reflectivity
   <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Number of CPU cores to use</strong></td><td>Thread count for parallel computation</td><td>Auto (Use all)</td></tr>
   <tr><td><strong>Use the GPU for fitting</strong></td><td>Evaluate the fitting swarm on the graphics card when one is usable (theta scans); see <a href="#gpu">GPU Acceleration</a></td><td>On</td></tr>
-  <tr><td><strong>Number of runs</strong> (Benchmark)</td><td>How many benchmark iterations to perform</td><td>10</td></tr>
+  <tr><td><strong>Number of runs</strong> (Benchmark)</td><td>How many times each benchmark project is fitted (1&ndash;100)</td><td>20</td></tr>
 </table>
 
 <h2 id="graphics">Graphics</h2>
@@ -1490,12 +1516,12 @@ Theta    Reflectivity
 
 <p>The <strong>Universal Mirror Optimizer</strong> is a command-line tool that designs periodic multilayer mirrors (PMMs) optimized for <em>multiple characteristic wavelengths simultaneously</em>. Given a set of target elements (e.g. C&nbsp;K&alpha; and O&nbsp;K&alpha;), the optimizer searches for the best combination of materials, period thickness, layer ratio, number of periods, and interface roughness to maximize reflectivity across all targets at once.</p>
 
-<p>This tool is part of the <code>xrccmd</code> command-line interface and uses the same Fresnel reflectivity engine and Henke optical constants database as the main X-Ray Calc 3 GUI application.</p>
+<p>This tool is part of the <code>xrccmd</code> command-line interface and uses the Henke optical constants database of the main X-Ray Calc 3 GUI application. Its reflectivity is a standalone single-precision port of the GUI's Parratt recursion with N&eacute;vot&ndash;Croce roughness (the same 0.50299&thinsp;&sigma;&sup2; coefficient as the GUI engine); the substrate is a semi-infinite layer at bulk density.</p>
 
 <h2 id="concept">Concept</h2>
 <p>Traditional multilayer mirror design targets a single wavelength. When an analytical instrument (e.g. an electron microprobe or X-ray fluorescence spectrometer) needs to measure multiple characteristic lines, the standard approach is to use separate mirrors for each element. The Universal Mirror Optimizer explores whether a single bilayer structure can provide useful reflectivity at two or more wavelengths simultaneously, even if it compromises peak performance at any single wavelength.</p>
 
-<p>The optimizer uses the <strong>Virtual Crystal Approximation</strong> (VCA) to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from a user-defined pool (e.g. W, Si, C). The dielectric constant of the mixed material is computed as a weighted average of the constituents&rsquo; optical constants from the Henke database.</p>
+<p>The optimizer uses the <strong>Virtual Crystal Approximation</strong> (VCA) to model mixed-material layers. Each layer&rsquo;s composition is defined as a weighted mixture of elements from a user-defined pool (e.g. W, Si, C). The atomic scattering factors f<sub>1</sub>, f<sub>2</sub>, the atomic mass and the bulk density of the constituents are each averaged with the layer fractions, and the dielectric constant is computed from these mixed values &mdash; not by averaging the constituents&rsquo; dielectric constants.</p>
 
 <h3>Search Space</h3>
 <p>The optimizer searches over the following parameters:</p>
@@ -1503,45 +1529,48 @@ Theta    Reflectivity
   <tr><th>Parameter</th><th>Description</th></tr>
   <tr><td><strong>Composition</strong> (per layer)</td><td>Element fractions for each layer in the bilayer period. Fractions are normalized to sum to 1.0.</td></tr>
   <tr><td><strong>d</strong></td><td>Period thickness in &Aring;ngstr&ouml;ms</td></tr>
-  <tr><td><strong>&gamma;</strong> (gamma)</td><td>Ratio of the reflector layer thickness to the full period (0&ndash;1)</td></tr>
+  <tr><td><strong>&gamma;</strong> (gamma)</td><td>Fraction of the period taken by layer 1, the upper layer of each period, whatever its material (0&ndash;1)</td></tr>
   <tr><td><strong>N</strong></td><td>Number of periods (rounded to integer for evaluation)</td></tr>
-  <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms (shared by all interfaces)</td></tr>
-  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer (0.7&ndash;1.3 typical), accounting for thin-film density deviations</td></tr>
+  <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms. In bilayer mode it is shared by all interfaces, the substrate's included; in template mode the template's per-layer &sigma; is used and this one applies to the substrate interface only</td></tr>
+  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer. It is searched and stored in the checkpoint, but the current fitness code builds every layer at bulk density (factor 1.0), so <strong>at present it has no effect</strong> on the reflectivity</td></tr>
 </table>
 
 <h3>Optimization Algorithm</h3>
-<p>The optimizer uses <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO) with the same adaptive enhancements as the GUI fitting engine (see <a href="#convergence-enhancements">Chapter 9: Convergence Enhancements</a>). Key features include:</p>
+<p>The optimizer uses its own implementation of <strong>L&eacute;vy Flight Particle Swarm Optimization</strong> (LFPSO), modelled on the GUI fitting engine (see <a href="#convergence-enhancements">Chapter 9: Convergence Enhancements</a>) but not identical to it: c<sub>1</sub>&nbsp;=&nbsp;c<sub>2</sub>&nbsp;=&nbsp;2.05 with the linear inertia w<sub>1</sub>&nbsp;+&nbsp;w<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T) and no constriction factor, a L&eacute;vy scale falling from 0.1 to 0.01, and 30&nbsp;% of the L&eacute;vy flights aimed at a random peer instead of the global best. Key features include:</p>
 <ul>
-  <li>Adaptive PSO/L&eacute;vy flight switching (more exploration early, more exploitation late)</li>
+  <li>Adaptive PSO/L&eacute;vy flight switching: the probability of a L&eacute;vy step falls from 0.7 to 0.3 over the run, raised by 0.05 per stagnant iteration (at most +0.2, capped at 0.9)</li>
   <li>Reflective boundary handling with velocity damping</li>
   <li>Composition normalization (fractions always sum to 1.0)</li>
-  <li>Diversity-aware shake mechanism for stagnation escape</li>
+  <li>Window-based shake when the best FoM stalls: if it gains less than 1&nbsp;% over <code>jamming_max</code> iterations, every particle but one is re-seeded around the global best</li>
   <li>Parallel fitness evaluation using all available CPU cores</li>
 </ul>
+<p>The result reported at the end is the best solution found over the whole run, not the final position of the swarm.</p>
 
 <h2 id="usage">CLI Usage</h2>
 <p>The Universal Mirror Optimizer is invoked via the <code>xrccmd</code> command-line tool with the <code>-u</code> switch:</p>
-<pre><code>xrccmd -u config.json [-v]</code></pre>
+<pre><code>xrccmd -u config.json [-l xrf_lines.json] [-v]</code></pre>
 <table>
   <tr><th>Switch</th><th>Description</th></tr>
   <tr><td><code>-u config.json</code></td><td>Run the Universal Mirror Optimizer with the specified JSON configuration file</td></tr>
-  <tr><td><code>-v</code></td><td>Verbose mode &mdash; prints checkpoint saves and shake events during optimization</td></tr>
+  <tr><td><code>-l xrf_lines.json</code></td><td>XRF line table (shipped as <code>Shared\Universal\xrf_lines.json</code>). Required when a target is given by name or element range, or as an object without <code>lambda</code>; without it such a run stops with &ldquo;XRF lines not loaded&rdquo;.</td></tr>
+  <tr><td><code>-v</code></td><td>Verbose mode &mdash; prints a line at every checkpoint save, and waits for &lt;Enter&gt; before exiting (do not use it in scripts). Shake events are not printed.</td></tr>
 </table>
+<p>The <code>-pop</code> and <code>-iter</code> switches of the other <code>xrccmd</code> modes do not affect <code>-u</code>; the configuration file sets both.</p>
 
 <h3>Console Output</h3>
 <p>During optimization, the console displays a progress table updated every iteration:</p>
 <pre><code>Universal Mirror Optimizer v1.0
-Targets: C(44.7A) O(23.6A)
+Lines: C(44.7A) O(23.6A)
 Pool: W Si C
 Structure: bilayer, d=[20..80], N=[20..100]
+Mode: mixed compositions
 Population: 100, Max iterations: 500
 ---
- Iter       FoM   R_C   R_O    Div
-    0    0.0124  0.012  0.003  0.438
-    1    0.0298  0.031  0.009  0.412
-    2    0.0356  0.037  0.015  0.391
+ Iter       FoM    R_C    R_O    Div  Best                    Time
+    0    0.0124  0.012  0.003  0.288  ...                     0:01
+    1    0.0298  0.031  0.009  0.271  ...                     0:02
   ...
-  500    0.1823  0.187  0.044  0.003
+  500    0.1823  0.187  0.044  0.003  ...                     3:12
 ---
 Optimization complete.
 Best FoM: 0.182300
@@ -1549,28 +1578,29 @@ Period d=54.94 A, gamma=0.697, N=36, sigma=0.72 A
 Layer 1: C=100.0%
 Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 
-<p>Columns: <strong>Iter</strong> = iteration number, <strong>FoM</strong> = figure of merit (higher is better), <strong>R_<em>X</em></strong> = peak reflectivity for each target element, <strong>Div</strong> = population diversity (0&ndash;1, lower = more converged).</p>
+<p>The banner also shows <code>Excluded:</code>, <code>Beam divergence:</code> and <code>Theta min:</code> lines when those options are set, and <code>Mode: pure elements (no mixing)</code> in pure-element mode. Columns: <strong>Iter</strong> = iteration number, <strong>FoM</strong> = figure of merit of the best solution so far (higher is better; it includes penalties, so it can be negative), <strong>R_<em>X</em></strong> = peak reflectivity of that solution for each target, <strong>Div</strong> = normalised RMS spread of the swarm (about 0.3 for a random swarm, 0.5 at most; lower = more converged), <strong>Best</strong> = the layer pair and period of the best solution, <strong>Time</strong> = elapsed m:ss. A <code>Converged at iteration&hellip;</code> line appears if the stagnation limit stops the run, and <code>Package saved: &hellip;</code> when the <code>.xrfx</code> package is written.</p>
 
 <h2 id="config">Configuration File</h2>
-<p>The optimizer is configured via a JSON file with the following sections:</p>
+<p>The optimizer is configured via a JSON file with the following sections. Every key shown is <strong>required</strong> unless it is listed as optional: a missing required key stops the run with an error. The optional keys and their defaults are <code>pure_elements</code> (false), <code>density_factor</code> (1.0), <code>delta_theta</code> (0), <code>theta_min</code> (0), <code>w_purity</code> (1.0), <code>polarization</code> (<code>"sp"</code>), <code>scan_points</code> (200), <code>scan_half_range</code> (0 = adaptive), <code>n_ref</code> (50), <code>excluded_pairs</code> and <code>template_file</code> (none).</p>
 
 <h3>Targets</h3>
-<p>An array of target characteristic lines to optimize for:</p>
+<p>An array of target characteristic lines to optimize for, under the key <code>"lines"</code> or, for older files, <code>"targets"</code> (<code>"lines"</code> wins when both are present). An item is either an object, or a string: an element name such as <code>"O"</code>, or an element range such as <code>"B-Mg"</code>, whose wavelengths are looked up in the XRF line table (<code>-l</code>) with weight 1.</p>
 <pre><code>"targets": [
   {"element": "C",  "lambda": 44.7, "weight": 1.0},
   {"element": "O",  "lambda": 23.6, "weight": 1.0}
 ]</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>element</code></td><td>string</td><td>Element name (used for labeling output)</td></tr>
-  <tr><td><code>lambda</code></td><td>number</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms (e.g. C&nbsp;K&alpha; = 44.7&nbsp;&Aring;)</td></tr>
-  <tr><td><code>weight</code></td><td>number</td><td>Relative weight in the figure of merit. Use higher values to prioritize specific targets.</td></tr>
+  <tr><td><code>element</code></td><td>string</td><td>Element name: labels the output, names the curve file and the <code>per_element</code> key, and finds the wavelength in the line table when <code>lambda</code> is omitted</td></tr>
+  <tr><td><code>lambda</code></td><td>number</td><td>Characteristic wavelength in &Aring;ngstr&ouml;ms (e.g. C&nbsp;K&alpha; = 44.7&nbsp;&Aring;). Optional: taken from the line table (<code>-l</code>) when omitted</td></tr>
+  <tr><td><code>weight</code></td><td>number</td><td>Relative weight in the figure of merit (optional, default 1). Use higher values to prioritize specific targets.</td></tr>
 </table>
 
 <h3>Element Pool</h3>
 <p>The set of materials available for layer composition:</p>
 <pre><code>"element_pool": ["W", "Si", "C"]</code></pre>
 <p>Each element must have a corresponding Henke database file (<code>.bin</code>) in the Henke data directory. The optimizer can mix any combination of these elements in each layer.</p>
+<p>Optional <code>"excluded_pairs": ["Mo/Si", &hellip;]</code> forbids the listed layer pairs, in either order; it applies in pure-element mode only. Each name must be in the pool.</p>
 
 <h3>Structure</h3>
 <p>Defines the mirror topology and parameter search ranges:</p>
@@ -1586,17 +1616,17 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 }</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>type</code></td><td>string</td><td>Structure type. Currently only <code>"bilayer"</code> is supported (two layers per period).</td></tr>
-  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Must be <code>2</code> for bilayer mode.</td></tr>
-  <tr><td><code>pure_elements</code></td><td>boolean</td><td>When <code>true</code>, each layer is forced to use a single material from the pool (the dominant component). When <code>false</code>, layers can be arbitrary mixtures. Pure-element mode is recommended for most practical applications.</td></tr>
+  <tr><td><code>type</code></td><td>string</td><td>Required but not checked: the structure is always a two-layer period.</td></tr>
+  <tr><td><code>layers_per_period</code></td><td>integer</td><td>Required but not checked: the structure is always a two-layer period.</td></tr>
+  <tr><td><code>pure_elements</code></td><td>boolean</td><td>Optional, default <code>false</code>. When <code>true</code>, each layer is forced to use a single material from the pool (the dominant component). When <code>false</code>, layers can be arbitrary mixtures. Pure-element mode is recommended for most practical applications, and is required for <code>excluded_pairs</code> and templates.</td></tr>
   <tr><td><code>d</code></td><td>range</td><td>Period thickness search range in &Aring;. Ensure the range accommodates all target wavelengths (d &gt; &lambda;/2 for a valid Bragg condition).</td></tr>
-  <tr><td><code>gamma</code></td><td>range</td><td>Reflector/period thickness ratio (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
+  <tr><td><code>gamma</code></td><td>range</td><td>Fraction of the period taken by layer 1, the upper layer of each period (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
   <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
-  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;. Shared by all interfaces in the structure.</td></tr>
-  <tr><td><code>density_factor</code></td><td>range</td><td>Density multiplier range for each layer. 1.0 = bulk density. Values &lt; 1 model porous or amorphous films; values &gt; 1 model compressive stress.</td></tr>
+  <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;: a range object, or a single number to fix the value. Shared by all interfaces in bilayer mode, the substrate's included.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Optional: a range object, or a single number to fix the value (default 1.0 = bulk density). The value is carried in the search, but <strong>the current fitness code ignores it</strong> and builds every layer at bulk density; omit it or give a fixed number.</td></tr>
 </table>
 
-<div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;.</div>
+<div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;. A target without a Bragg condition contributes zero to the FoM and is <em>not</em> penalised, so check the range yourself.</div>
 
 <h3>Fitness</h3>
 <p>Controls the figure of merit calculation:</p>
@@ -1611,16 +1641,18 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 }</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>w_R</code></td><td>number</td><td>Weight for peak reflectivity in the FoM. Higher values emphasize maximizing R<sub>peak</sub>.</td></tr>
-  <tr><td><code>w_FWHM</code></td><td>number</td><td>Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
-  <tr><td><code>R_min_threshold</code></td><td>number</td><td>Minimum acceptable peak reflectivity. Particles below this threshold receive a heavy penalty (100.0) to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
-  <tr><td><code>polarization</code></td><td>string</td><td>Polarization mode: <code>"sp"</code> for averaged S+P (recommended for most applications).</td></tr>
-  <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian of this width before extracting R<sub>peak</sub> and FWHM.</td></tr>
-  <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees. Targets whose Bragg angle falls below this value receive a heavy penalty. Prevents solutions at impractically low grazing angles.</td></tr>
+  <tr><td><code>w_R</code></td><td>number</td><td>Required. Weight for peak reflectivity in the FoM. Higher values emphasize maximizing R<sub>peak</sub>.</td></tr>
+  <tr><td><code>w_FWHM</code></td><td>number</td><td>Required. Weight for the FWHM penalty. Higher values penalize broad peaks. Set to 0 to ignore bandwidth.</td></tr>
+  <tr><td><code>R_min_threshold</code></td><td>number</td><td>Required. Minimum acceptable peak reflectivity (after the divergence convolution). Each target below it subtracts 100 from the FoM to drive the swarm away from &ldquo;dark&rdquo; solutions.</td></tr>
+  <tr><td><code>polarization</code></td><td>string</td><td><code>"s"</code> = s-polarisation; <code>"sp"</code> (the default, and any other value) = unpolarised average (R<sub>s</sub>&nbsp;+&nbsp;R<sub>p</sub>)/2.</td></tr>
+  <tr><td><code>delta_theta</code></td><td>number</td><td>Instrumental angular resolution in degrees. The calculated reflectivity curve is convolved with a Gaussian whose FWHM is <code>delta_theta</code> before extracting R<sub>peak</sub> and FWHM. Default 0 = no convolution.</td></tr>
+  <tr><td><code>theta_min</code></td><td>number</td><td>Minimum acceptable Bragg angle in degrees (default 0 = none). A target whose Bragg angle falls below it subtracts 100 from the FoM and is left out of the FoM sum and of the purity. Prevents solutions at impractically low grazing angles.</td></tr>
   <tr><td><code>w_purity</code></td><td>number</td><td>Weight for the spectral purity penalty (0&ndash;1). Controls how strongly higher-order Bragg peak contamination between targets is penalized. 0 = no purity penalty, 1 = full penalty. Default: 1.0. See <a href="#purity">Spectral Purity</a>.</td></tr>
-  <tr><td><code>scan_points</code></td><td>integer</td><td>Number of points in the reflectivity scan around each Bragg peak. Higher values give finer theta resolution in output curves. Default: 200.</td></tr>
-  <tr><td><code>scan_half_range</code></td><td>number</td><td>Half-range of the reflectivity scan in degrees, centered on the Bragg peak. The scan covers [&theta;<sub>Bragg</sub> &minus; half_range, &theta;<sub>Bragg</sub> + half_range]. Default: 5.0.</td></tr>
+  <tr><td><code>scan_points</code></td><td>integer</td><td>Minimum number of points in the scan around each Bragg peak; the grid is refined to at least 10 points per kinematic peak width, at most 20000. Default: 200.</td></tr>
+  <tr><td><code>scan_half_range</code></td><td>number</td><td>Fixed half-range of the scan in degrees. Default 0 = adaptive: &plusmn;max(0.5&deg;, 4 kinematic widths) around both the kinematic Bragg angle and the refraction-corrected one (sin&sup2;&theta;&prime; = sin&sup2;&theta;<sub>B</sub> + 2&delta;, &delta; averaged over the stack), never starting below 1.15&thinsp;&theta;<sub>c</sub> or <code>theta_min</code>&nbsp;+&nbsp;0.1&deg;, and widened once (up to &plusmn;5&deg;) if the peak is clipped. The kinematic width uses the structure's own N.</td></tr>
+  <tr><td><code>n_ref</code></td><td>integer</td><td>Number of periods of the reference width FWHM<sub>ref</sub> in the FoM (see <a href="#fom">Figure of Merit</a>). Default: 50.</td></tr>
 </table>
+<p>R<sub>peak</sub> is the highest first-order local maximum inside the scan of the convolved curve, and the FWHM is measured between the linearly interpolated half-maximum crossings.</p>
 
 <h3>Optimizer</h3>
 <p>LFPSO algorithm parameters:</p>
@@ -1635,15 +1667,15 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   "checkpoint_every": 50
 }</code></pre>
 <table>
-  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
-  <tr><td><code>population</code></td><td>integer</td><td>&mdash;</td><td>Number of particles (candidate solutions) in the swarm. Larger populations explore more broadly but run slower per iteration.</td></tr>
-  <tr><td><code>iterations</code></td><td>integer</td><td>&mdash;</td><td>Maximum number of optimization iterations.</td></tr>
-  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>Target FoM threshold (not actively used for early stopping; kept for future use).</td></tr>
-  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Number of iterations without improvement before the optimizer declares convergence and stops.</td></tr>
+  <tr><th>Field</th><th>Type</th><th>Example</th><th>Description</th></tr>
+  <tr><td><code>population</code></td><td>integer</td><td>100</td><td>Number of particles (candidate solutions) in the swarm. Larger populations explore more broadly but run slower per iteration.</td></tr>
+  <tr><td><code>iterations</code></td><td>integer</td><td>500</td><td>Maximum number of optimization iterations.</td></tr>
+  <tr><td><code>tolerance</code></td><td>number</td><td>1e-8</td><td>Required, but not used by the optimizer.</td></tr>
+  <tr><td><code>stagnation_limit</code></td><td>integer</td><td>50</td><td>Stop after this many consecutive iterations without improvement of the best solution. A shake resets that counter, so this takes effect only when <code>jamming_max</code> &ge; <code>stagnation_limit</code>; with the example values the run always goes to <code>iterations</code>.</td></tr>
   <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight (permanent velocity component).</td></tr>
   <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia reducing factor (decays over iterations).</td></tr>
-  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Iterations without improvement before a shake event is considered (subject to diversity check).</td></tr>
-  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Set to 0 to disable periodic checkpoints.</td></tr>
+  <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Length of the stagnation window. At the end of each window, if the best FoM improved by less than 1&nbsp;%, the swarm is shaken: all particles but one are re-seeded within &plusmn;10&nbsp;% of each range around the global best (in pure mode each layer also has a 50&nbsp;% chance of a random element), and their velocities are reset.</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Must be &ge; 1 (0 stops the run with a division-by-zero error after the first iteration). To effectively disable periodic checkpoints, set it larger than <code>iterations</code>; a final checkpoint is always written.</td></tr>
 </table>
 
 <div class="tip"><strong>Recommended settings:</strong> For a 3-element pool with 2 targets, <code>population: 100</code> and <code>iterations: 500</code> is a good starting point. Increase population for larger element pools. Reduce iterations for quick exploratory runs.</div>
@@ -1655,45 +1687,53 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 "resume_from": null</code></pre>
 <table>
   <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-  <tr><td><code>substrate</code></td><td>string</td><td>Substrate material (used for the bottom layer of the mirror structure).</td></tr>
-  <tr><td><code>henke_path</code></td><td>string or null</td><td>Path to the Henke database directory. <code>null</code> uses the default location next to the executable (<code>Henke/</code>).</td></tr>
-  <tr><td><code>output_dir</code></td><td>string</td><td>Directory where all output files are written. Created automatically if it does not exist.</td></tr>
-  <tr><td><code>resume_from</code></td><td>string or null</td><td>Path to a checkpoint file to resume from. <code>null</code> starts a fresh optimization. See <a href="#resume">Checkpoint &amp; Resume</a>.</td></tr>
+  <tr><td><code>substrate</code></td><td>string</td><td>Required. Substrate material: a semi-infinite layer at bulk density under the mirror.</td></tr>
+  <tr><td><code>henke_path</code></td><td>string or null</td><td>Required (<code>null</code> allowed). Path to a directory named <code>Henke</code>: only the parent of this path is used, and the files are read from its <code>Henke</code> subfolder, so the folder must have that name. <code>null</code> uses <code>Henke\</code> next to the executable.</td></tr>
+  <tr><td><code>output_dir</code></td><td>string</td><td>Required. Directory where all output files are written. Created automatically if it does not exist.</td></tr>
+  <tr><td><code>resume_from</code></td><td>string or null</td><td>Required (<code>null</code> allowed). Path to a checkpoint file to resume from. <code>null</code> starts a fresh optimization. See <a href="#resume">Checkpoint &amp; Resume</a>.</td></tr>
+  <tr><td><code>template_file</code></td><td>string or null</td><td>Optional. A template file of period definitions keyed by layer pair, such as <code>"Mo/Si"</code> (see below).</td></tr>
 </table>
+
+<h3>Period Templates</h3>
+<p>With <code>template_file</code> set, in pure-element mode, a period whose layer-1/layer-2 pair matches a template key is built from the template instead of as a plain bilayer. Each template layer gives a <code>material</code>, a <code>thickness</code> (<code>"gamma"</code>, <code>"1-gamma"</code> or a fixed value in &Aring;), a <code>sigma</code> and a <code>density</code>; fixed interlayers are subtracted from the nearest main layer, and a period whose interlayers would need a negative main-layer thickness is penalised by 1. Optional <code>caps</code>/<code>cap</code> add a capping layer whose thickness and variant are searched. Template materials are loaded in addition to the pool.</p>
 
 <h2 id="output">Output Files</h2>
 <p>The optimizer writes several files to the <code>output_dir</code> upon completion:</p>
+<div class="warn"><strong>Note:</strong> a fresh run (<code>resume_from</code> null) first deletes <code>best_curves/</code>, <code>best_structure.json</code>, <code>best_structure_xrc.json</code>, <code>population.json</code>, <code>progress.log</code> and <code>checkpoint.json</code> in <code>output_dir</code>. Use a new directory to keep an earlier result.</div>
 
 <table>
   <tr><th>File</th><th>Description</th></tr>
-  <tr><td><code>best_structure.json</code></td><td>The optimized mirror structure in XRC3-compatible JSON format, including the full genome (composition, period, gamma, N, sigma), per-target reflectivity results (R<sub>peak</sub>, FWHM, &theta;<sub>Bragg</sub>), and a structure definition that can be imported into the GUI.</td></tr>
-  <tr><td><code>best_curves/<em>Element</em>.dat</code></td><td>Tab-separated reflectivity curves for each target element. Two columns: angle (degrees) and reflectivity. One file per target.</td></tr>
-  <tr><td><code>population.json</code></td><td>The top 10 solutions ranked by FoM. Useful for comparing alternative mirror designs that may trade off performance between targets differently.</td></tr>
+  <tr><td><code>best_structure.json</code></td><td>The optimized design: FoM, composition, period, gamma, N, sigma, and per-target R<sub>peak</sub> and FWHM, plus a summary structure. Not importable into the GUI.</td></tr>
+  <tr><td><code>best_structure_xrc.json</code></td><td>The same design as an X-Ray Calc 3 structure (<code>Stacks</code>/<code>Subs</code>): the file to open with the GUI's <strong>Import structure&hellip;</strong>.</td></tr>
+  <tr><td><code>best_curves/<em>Element</em>.dat</code></td><td>Tab-separated reflectivity curves for each target element, with a header line. Two columns: angle (degrees) and reflectivity, convolved with <code>delta_theta</code>. One file per target.</td></tr>
+  <tr><td><code>population.json</code></td><td>The 10 best particles' personal bests, ranked by FoM (FoM, composition, d, &gamma;, N, &sigma;). They are not deduplicated: late in a run they can be near-identical.</td></tr>
   <tr><td><code>checkpoint.json</code></td><td>Full optimizer state (all particle positions, velocities, and personal bests). Used for resuming interrupted runs.</td></tr>
-  <tr><td><code>progress.log</code></td><td>Plain text log of every iteration&rsquo;s FoM, per-target R<sub>peak</sub>, and population diversity. Matches the console output.</td></tr>
+  <tr><td><code>progress.log</code></td><td>Plain text log of every iteration&rsquo;s FoM, per-target R<sub>peak</sub>, and population diversity, from iteration 0. Matches the console output. Rewritten from scratch on resume.</td></tr>
+  <tr><td><code>config.json</code>, <code>manifest.json</code></td><td>A copy of the configuration and a manifest of the results, for the package.</td></tr>
+  <tr><td><code><em>config</em>.xrfx</code></td><td>Written next to the configuration file: a zip of <code>output_dir</code> without the checkpoint.</td></tr>
 </table>
 
 <h3>best_structure.json Format</h3>
 <p>The output structure file contains two sections:</p>
 <ul>
-  <li><strong><code>optimizer_result</code></strong> &mdash; numerical results: FoM, structural parameters (d, &gamma;, N, &sigma;), layer compositions, and per-element reflectivity metrics.</li>
-  <li><strong><code>structure</code></strong> &mdash; the mirror definition in a format compatible with the X-Ray Calc 3 project file. Contains the periodic bilayer stack and substrate definition with layer thickness, roughness, and density factor values.</li>
+  <li><strong><code>optimizer_result</code></strong> &mdash; numerical results: FoM, structural parameters (d, &gamma;, N, &sigma;), layer compositions, and per-element <code>R_peak</code> and <code>FWHM</code>.</li>
+  <li><strong><code>structure</code></strong> &mdash; a summary of the stack: the periodic bilayer with layer thickness and roughness (the third value is always 1.0), and the substrate written as <code>[0, 1, 8.0]</code>. For the GUI use <code>best_structure_xrc.json</code>.</li>
 </ul>
 
 <h3>Reflectivity Curve Files</h3>
-<p>Each <code>.dat</code> file in the <code>best_curves/</code> subdirectory contains a 200-point reflectivity scan centered on the Bragg angle &plusmn; 5&deg; for that target wavelength. The data is tab-separated with columns:</p>
-<pre><code>  angle(deg)    reflectivity
-  3.2400        1.23456789e-03
-  3.2900        2.34567890e-03
-  ...</code></pre>
+<p>Each <code>.dat</code> file in the <code>best_curves/</code> subdirectory contains the reflectivity for that target wavelength over the same window the figure of merit used (see <code>scan_half_range</code>), without the re-scan of a clipped peak; its length varies, and the convolution trims points at each end. The data is tab-separated:</p>
+<pre><code>Theta(deg)	Reflectivity
+3.2400	1.23456789e-03
+3.2900	2.34567890e-03
+...</code></pre>
 
 <h2 id="resume">Checkpoint &amp; Resume</h2>
 <p>Long optimization runs can be interrupted (Ctrl+C) and resumed later. The optimizer handles this gracefully:</p>
 
 <ol>
   <li><strong>Automatic checkpoints</strong> &mdash; saved every <code>checkpoint_every</code> iterations to <code>checkpoint.json</code> in the output directory.</li>
-  <li><strong>Ctrl+C handling</strong> &mdash; when the user presses Ctrl+C, the optimizer saves a final checkpoint before exiting. No data is lost.</li>
-  <li><strong>Resume</strong> &mdash; set <code>"resume_from"</code> in the configuration file to the path of a checkpoint file. The optimizer restores all particle positions, velocities, personal bests, and the global/all-time best, then continues from where it left off.</li>
+  <li><strong>Ctrl+C handling</strong> &mdash; Ctrl+C lets the current iteration finish, then the optimizer writes all the normal result files, the <code>.xrfx</code> package and a final checkpoint.</li>
+  <li><strong>Resume</strong> &mdash; set <code>"resume_from"</code> in the configuration file to the path of a checkpoint file. The optimizer restores all particle positions, velocities, personal bests, and the global/all-time best. Every final checkpoint is stamped with the configured <code>iterations</code>, even after Ctrl+C or an early stop, and the run resumes after that stamp: to continue you must <strong>raise</strong> <code>iterations</code>, otherwise nothing more is run.</li>
 </ol>
 
 <p>Example resume configuration:</p>
@@ -1710,7 +1750,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   "resume_from": "./results/checkpoint.json"
 }</code></pre>
 
-<div class="warn"><strong>Important:</strong> When resuming, the <code>population</code> size and <code>element_pool</code> must match the checkpoint. The <code>iterations</code> count can be increased to allow more optimization cycles.</div>
+<div class="warn"><strong>Important:</strong> When resuming, the swarm size comes from the checkpoint (the <code>population</code> value is ignored), and the <code>element_pool</code> must match it. <code>iterations</code> must be larger than the checkpoint's stamp. <code>progress.log</code> restarts.</div>
 
 <h2 id="fom">Figure of Merit</h2>
 <p>The figure of merit (FoM) combines peak reflectivity and angular bandwidth for all target wavelengths:</p>
@@ -1722,14 +1762,14 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <p>where:</p>
 <ul>
   <li><strong>R<sub>eff,i</sub></strong> &mdash; effective reflectivity for target <em>i</em>, which equals R<sub>peak,i</sub> when <code>w_purity</code> is 0, or purity-adjusted reflectivity when <code>w_purity</code> &gt; 0 (see <a href="#purity">Spectral Purity</a>)</li>
-  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, extracted from a 200-point scan around the Bragg angle</li>
+  <li><strong>R<sub>peak,i</sub></strong> &mdash; peak reflectivity (0&ndash;1) for target <em>i</em>, the first-order maximum of the convolved curve in the scan window (see <code>scan_half_range</code>)</li>
   <li><strong>FWHM<sub>i</sub></strong> &mdash; angular full width at half maximum (degrees) of the Bragg peak</li>
-  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; theoretical minimum FWHM = &lambda; / (N&middot;d&middot;cos&theta;<sub>B</sub>), converted to degrees. Normalizes the FWHM penalty so it is comparable across targets.</li>
+  <li><strong>FWHM<sub>ref,i</sub></strong> &mdash; reference width &lambda;<sub>i</sub> / (N<sub>ref</sub>&middot;d&middot;cos&theta;<sub>B,i</sub>), converted to degrees, with &theta;<sub>B</sub> = asin(&lambda;/2d) and N<sub>ref</sub> = <code>n_ref</code> (default 50), <em>not</em> the structure's N: a reference tied to N would penalise adding periods, which only raises the reflectivity. It normalizes the FWHM penalty so it is comparable across targets.</li>
   <li><strong>weight<sub>i</sub></strong> &mdash; per-target weight from the configuration</li>
   <li><strong>w<sub>R</sub></strong>, <strong>w<sub>FWHM</sub></strong> &mdash; global weights for reflectivity and bandwidth terms</li>
 </ul>
 
-<p>Higher FoM is better. Particles with R<sub>peak</sub> below <code>R_min_threshold</code> for any target receive a heavy penalty (100.0 per dark target) to steer the swarm toward functional solutions.</p>
+<p>Higher FoM is better. Each target with R<sub>peak</sub> below <code>R_min_threshold</code>, or with &theta;<sub>B</sub> below <code>theta_min</code>, subtracts 100 from the FoM to steer the swarm toward functional solutions; the reported FoM includes these penalties, so it can be negative. A target without a Bragg condition (&lambda; &ge; 2d) contributes zero and is not penalised.</p>
 
 <h2 id="purity">Spectral Purity</h2>
 <p>When optimizing a mirror for multiple characteristic wavelengths, higher-order Bragg reflections can cause <strong>cross-contamination</strong> between measurement channels. For example, a mirror tuned to O&nbsp;K&alpha; (23.6&nbsp;&Aring;) at its first-order Bragg angle will also reflect wavelengths at &lambda;/2 = 11.8&nbsp;&Aring; via the second order &mdash; which nearly coincides with Na&nbsp;K&alpha; (11.9&nbsp;&Aring;). When both O and Na are among the target elements, any Na fluorescence reaching the detector at the O measurement angle is misattributed to O.</p>
@@ -1741,14 +1781,14 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <div class="note">
   <strong>CrossR[j, i] = R(&theta;<sub>j</sub>, &lambda;<sub>i</sub>)</strong>
 </div>
-<p>This is the reflectivity of light with wavelength &lambda;<sub>i</sub> hitting the mirror at the Bragg angle of target <em>j</em>. A high value of CrossR[j, i] means that when the spectrometer measures target <em>j</em>, it also picks up signal from target <em>i</em>&rsquo;s wavelength via higher-order reflection. The calculation uses the full multilayer reflectivity at each (&theta;, &lambda;) point &mdash; all Bragg orders are naturally included.</p>
+<p>This is the reflectivity of light with wavelength &lambda;<sub>i</sub> hitting the mirror at the Bragg angle of target <em>j</em>. A high value of CrossR[j, i] means that when the spectrometer measures target <em>j</em>, it also picks up signal from target <em>i</em>&rsquo;s wavelength via higher-order reflection. The calculation uses the full multilayer reflectivity at each (&theta;, &lambda;) point &mdash; all Bragg orders are naturally included. CrossR is a single-point value at the kinematic Bragg angle of target <em>j</em>, &theta;<sub>j</sub> = asin(&lambda;<sub>j</sub>/2d), without refraction correction or divergence convolution; it is computed only when <code>w_purity</code> &gt; 0 and only between targets that have a valid Bragg angle, and every line counts equally regardless of its source intensity.</p>
 
 <h3>Purity and Effective Reflectivity</h3>
 <p>For each target <em>j</em>, the <strong>purity</strong> is defined as:</p>
 <div class="note">
   <strong>Purity<sub>j</sub> = R<sub>peak,j</sub> / ( R<sub>peak,j</sub> + &Sigma;<sub>i&ne;j</sub> CrossR[j, i] )</strong>
 </div>
-<p>Purity ranges from 0 (entirely contaminated) to 1 (no contamination). The effective reflectivity used in the FoM is then:</p>
+<p>Purity ranges from 0 (entirely contaminated) to 1 (no contamination); it is set to 0 when R<sub>peak,j</sub> and the contamination sum are both 0. The effective reflectivity used in the FoM is then:</p>
 <div class="note">
   <strong>R<sub>eff,j</sub> = R<sub>peak,j</sub> &times; ( 1 + w<sub>purity</sub> &times; ( Purity<sub>j</sub> &minus; 1 ) )</strong>
 </div>
@@ -1757,8 +1797,8 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <h3>Physical Background</h3>
 <p>Higher-order contamination depends on two structural factors:</p>
 <ul>
-  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls which orders are suppressed. &gamma; = 0.5 completely eliminates all even-order reflections (2nd, 4th, &hellip;). Values far from 0.5 produce strong even-order peaks. Second-order contamination is typically the most significant.</li>
-  <li><strong>&sigma; (roughness)</strong> &mdash; interfacial roughness attenuates higher orders via the Debye-Waller factor, which decays exponentially with order number. Orders above 4&ndash;5 are generally negligible for typical roughness values.</li>
+  <li><strong>&gamma; (layer ratio)</strong> &mdash; controls which orders are suppressed. &gamma; = 0.5 suppresses the even-order reflections (2nd, 4th, &hellip;); they vanish exactly only in the kinematic limit with ideal, non-absorbing interfaces, and in the full dynamical calculation they are strongly reduced rather than zero. Values far from 0.5 produce strong even-order peaks. Second-order contamination is typically the most significant.</li>
+  <li><strong>&sigma; (roughness)</strong> &mdash; interfacial roughness attenuates order m by roughly exp[&minus;(2&pi;m&sigma;/d)&sup2;], a Debye&ndash;Waller-like factor that is Gaussian in m, so high orders die quickly once &sigma; is a sizeable fraction of d/m. Orders above 4&ndash;5 are generally negligible for typical roughness values.</li>
 </ul>
 
 <div class="tip"><strong>Practical note:</strong> The overlap pattern is inherent to the target wavelength set &mdash; second-order overlap at &lambda;/2 is independent of the period <em>d</em>. The optimizer can only mitigate overlaps through &gamma; (order suppression), material choice (absorption edges), and roughness. For large element pools with many close-spaced wavelengths, use <code>w_purity = 1.0</code> and a population &ge; 500 to give the optimizer enough room to find purity-optimized solutions.</div>
@@ -1807,7 +1847,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 
 <h3>Step 2: Run the optimizer</h3>
 <pre><code>xrccmd -u dual_mirror.json -v</code></pre>
-<p>The <code>-v</code> flag enables verbose output, showing checkpoint saves and shake events. A typical run with population 100 and 500 iterations takes a few minutes on a modern multi-core CPU.</p>
+<p>The <code>-v</code> flag enables verbose output, showing checkpoint saves, and waits for &lt;Enter&gt; at the end. A typical run with population 100 and 500 iterations takes a few minutes on a modern multi-core CPU.</p>
 
 <h3>Step 3: Review results</h3>
 <p>After completion, examine the output directory:</p>
@@ -1816,6 +1856,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <li><code>dual_mirror_results/best_curves/C.dat</code> &mdash; reflectivity curve at C&nbsp;K&alpha; (44.7&nbsp;&Aring;)</li>
   <li><code>dual_mirror_results/best_curves/O.dat</code> &mdash; reflectivity curve at O&nbsp;K&alpha; (23.6&nbsp;&Aring;)</li>
   <li><code>dual_mirror_results/population.json</code> &mdash; top 10 alternative solutions</li>
+  <li><code>dual_mirror_results/best_structure_xrc.json</code> &mdash; the design to open with the GUI's <strong>Import structure&hellip;</strong></li>
 </ul>
 <p>The reflectivity curve files can be plotted in any graphing tool (Origin, gnuplot, Python/matplotlib) or imported into the X-Ray Calc 3 GUI for comparison with experimental data.</p>
 
@@ -1838,8 +1879,8 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <li><strong>Element pool size.</strong> Each additional element adds composition dimensions for each layer. Pools of 3&ndash;5 elements work well. Very large pools may require larger populations.</li>
   <li><strong>Period range.</strong> Ensure d<sub>min</sub> &gt; &lambda;<sub>max</sub>/2 so all targets have valid Bragg conditions. A generous range (e.g. 20&ndash;80 &Aring;) allows the optimizer to find the best compromise period.</li>
   <li><strong>Weighting targets.</strong> If one target is more important, increase its <code>weight</code> in the configuration. The optimizer will prioritize that target&rsquo;s reflectivity at the expense of the others.</li>
-  <li><strong>Interpreting diversity.</strong> A diversity value near zero means all particles have converged to similar solutions. If diversity drops quickly but FoM is still low, consider increasing the population or widening the search ranges.</li>
-  <li><strong>Population JSON.</strong> The <code>population.json</code> file contains up to 10 distinct solutions. These often reveal physically different mirror designs (different compositions or periods) with similar overall FoM. Examining them can provide insight into the design trade-space.</li>
+  <li><strong>Interpreting diversity.</strong> A random swarm starts near 0.3. A diversity value near zero means all particles have converged to similar solutions. If diversity drops quickly but FoM is still low, consider increasing the population or widening the search ranges.</li>
+  <li><strong>Population JSON.</strong> The <code>population.json</code> file contains the 10 best personal bests; they are not deduplicated, so late in a run several may be near-identical. Early or diverse runs often reveal physically different mirror designs (different compositions or periods) with similar overall FoM. Examining them can provide insight into the design trade-space.</li>
 </ul>
 
 <h3>See Also</h3>
@@ -1937,7 +1978,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <!-- =============================== -->
 <h2 id="conventions">Units and the Structure JSON</h2>
 
-<p>The conventions are the program's: thickness, roughness &sigma; and wavelength in <strong>&aring;ngstr&ouml;m</strong>, density in <strong>g/cm&sup3;</strong>, angles as the grazing angle <strong>&theta; in degrees</strong> (not 2&theta;). Wherever a wavelength is expected, a photon energy in eV is accepted instead and converted with &lambda;[&Aring;] = 12398.42 / E[eV]; the wavelength actually used is echoed back.</p>
+<p>The conventions are the program's: thickness, roughness &sigma; and wavelength in <strong>&aring;ngstr&ouml;m</strong>, density in <strong>g/cm&sup3;</strong>, angles as the grazing angle <strong>&theta; in degrees</strong> (not 2&theta;). Wherever a wavelength is expected, a photon energy in eV is accepted instead and converted with &lambda;[&Aring;] = 12398.42 / E[eV]; the wavelength actually used is echoed back. (The engine itself looks the Henke tables up with 12398.6; <code>describe_server</code> reports both constants.)</p>
 
 <p>Every tool that takes or returns a layered structure uses one JSON form, listed from the substrate to the surface:</p>
 
@@ -1955,9 +1996,9 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 
 <ul>
   <li><code>material</code> is a Henke table name, matched case-insensitively (<code>list_materials</code> gives the valid names).</li>
-  <li><code>density</code> is optional and defaults to the bulk value from the table; the value used is echoed.</li>
+  <li><code>density</code> is optional and defaults to the bulk value from the table; the value used is echoed. <code>thickness</code> is required; <code>sigma</code> defaults to 0 and <code>N</code> to 1.</li>
   <li><code>buffer</code> (between substrate and first stack) and <code>cap</code> (on top) are optional. Several stacks are allowed.</li>
-  <li>Numeric results are rounded to 6 significant digits.</li>
+  <li>Numbers in the JSON replies are rounded to 6 significant digits; the curve files keep full precision (&theta; to 7 digits, R as <code>%.8e</code>).</li>
 </ul>
 
 <!-- =============================== -->
@@ -1982,14 +2023,15 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
     <th style="width:170px">Tool</th>
     <th>Description</th>
   </tr>
-  <tr><td><code>calc_reflectivity</code></td><td>Specular reflectivity of a structure over a &theta; range at one wavelength: <code>theta_min</code>, <code>theta_max</code>, <code>points</code>, <code>polarization</code> (<code>s</code>, <code>p</code>, <code>sp</code>) and an optional beam divergence <code>delta_theta</code>. Returns the curve inline when short enough and always as <code>jobs\&lt;id&gt;\curve.dat</code>, the Bragg peaks (order, &theta;<sub>B</sub>, R<sub>peak</sub>, FWHM) and the critical angle. This is the GUI's curve for the same structure (see <a href="#Calculation">Calculation</a>).</td></tr>
-  <tr><td><code>evaluate_lines</code></td><td>Scores a structure against a set of X-ray emission lines (<code>name</code>, <code>lambda</code> or <code>energy</code>, <code>weight</code>) with the universal optimizer's own figure of merit; optional <code>fitness</code> overrides. The number is directly comparable with what <code>optimize_mirror</code> reports (see <a href="#fom">Universal Mirror &gt; Figure of Merit</a>).</td></tr>
+  <tr><td><code>calc_reflectivity</code></td><td>Specular reflectivity of a structure over a &theta; range at one wavelength: <code>theta_min</code> (default 0.05&deg;), <code>theta_max</code> (default 5&deg;, at most 90&deg;), <code>points</code> (default 2000, at most 100&nbsp;000), <code>polarization</code> (below) and an optional beam divergence <code>delta_theta</code> (default 0; when set, the FWHM in degrees of the Gaussian the curve is convolved with &mdash; a width the &plusmn;0.1&deg; kernel cannot represent on the grid is refused with <code>invalid_argument</code>). The calculated R is clamped from below to <code>r_min</code> (default 10<sup>&minus;7</sup>). Returns the curve inline when short enough and always as <code>jobs\&lt;id&gt;\curve.dat</code>; <code>period_A</code>, <code>n_periods</code> and <code>structure_used</code> (densities filled in); the Bragg peaks as <code>{order, theta_deg, r_peak, fwhm_deg}</code>; and <code>critical_angle_deg</code>. <code>theta_deg</code> is the calculated maximum, refraction shift included, not the kinematic &theta;<sub>B</sub>: each order of the period of the first repeating stack (counted from the surface) is looked for between &theta;<sub>B</sub>&nbsp;&minus;&nbsp;0.06&deg; and the refraction-corrected angle +&nbsp;0.06&deg;, must lie more than 0.05&deg; above &theta;<sub>c</sub> and stand more than three times above the window minimum, and is left out otherwise. FWHM is taken between the interpolated half-maximum crossings, 0 when the curve does not fall to half on both sides. <code>critical_angle_deg</code> is estimated as &radic;(2&lang;&delta;&rang;) from the thickness-weighted &delta; of the top 500&nbsp;&Aring; (substrate included where the film is thinner), not read off the curve. This is the GUI's curve for the same structure (see <a href="#Calculation">Calculation</a>).</td></tr>
+  <tr><td><code>polarization</code></td><td>In every tool that takes it: <code>"sp"</code> (default, the unpolarized average (R<sub>s</sub>&nbsp;+&nbsp;R<sub>p</sub>)/2) or <code>"s"</code>. The engine has no pure-p path, so <code>"p"</code> is computed as <code>"sp"</code> and echoed as such.</td></tr>
+  <tr><td><code>evaluate_lines</code></td><td>Scores a structure against a set of X-ray emission lines (<code>name</code>, <code>lambda</code> or <code>energy</code>, <code>weight</code>) with the universal optimizer's own figure of merit; optional <code>fitness</code> overrides. A line may also be a bare symbol or a range such as <code>"B-Si"</code>; at most 16 lines, and exactly one stack must repeat. Refused with <code>server_busy</code> while <code>optimize_mirror</code> runs. The number is directly comparable with what <code>optimize_mirror</code> reports (see <a href="#fom">Universal Mirror &gt; Figure of Merit</a>).</td></tr>
 </table>
 
 <!-- =============================== -->
 <h2 id="optimisation-and-jobs">Optimisation and Jobs</h2>
 
-<p>Two tools take longer than a request should wait for. They return a <code>job_id</code> at once and run in a background thread; the client polls.</p>
+<p>Two tools take longer than a request should wait for. They return a <code>job_id</code> at once and run in a background thread; the client waits with <code>job_wait</code> or polls <code>job_status</code>. One job runs at a time, and up to 16 more can queue behind it.</p>
 
 <table>
   <tr>
@@ -1998,12 +2040,13 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   </tr>
   <tr><td><code>optimize_mirror</code></td><td>Searches for the periodic multilayer that best serves a set of emission lines with the XRFCalc particle swarm. Takes the optimizer configuration (lines, <code>element_pool</code>, excluded pairs, structure ranges, fitness, optimizer settings, substrate, template), a <code>seed</code> and <code>top_k</code> (default 5). The result holds the <code>top_k</code> distinct structures with genome, figure of merit, per-line results and the <code>.xrfx</code> package written for each.</td></tr>
   <tr><td><code>job_status</code></td><td>State of a job without waiting: <code>queued</code>, <code>running</code>, <code>finished</code>, <code>failed</code>, <code>cancelled</code> or <code>unknown</code>, with the current iteration and budget, the best value so far, elapsed seconds and the last message.</td></tr>
+  <tr><td><code>job_wait</code></td><td>Waits for a job and returns the <code>job_status</code> object plus <code>waited_s</code>. It returns as soon as the job is <code>finished</code>, <code>failed</code> or <code>cancelled</code>, or after <code>wait_s</code> seconds (default 300, at most 900). While it waits the server answers nothing else, so <code>cancel_job</code> cannot reach it; keep <code>wait_s</code> below the client's tool timeout.</td></tr>
   <tr><td><code>job_result</code></td><td>The result of a finished job. Fails with <code>job_not_finished</code> while it runs, <code>job_failed</code> when it ended in an error, <code>job_cancelled</code> when it was stopped.</td></tr>
   <tr><td><code>cancel_job</code></td><td>Asks a job to stop and returns its state. A running job usually stops within a second or two; poll <code>job_status</code> to see it become <code>cancelled</code>.</td></tr>
 </table>
 
 <div class="note">
-  <strong>Determinism and lifetime:</strong> With the same <code>seed</code> and inputs, <code>optimize_mirror</code> and <code>fit_xrr</code> give identical results; the seed used is echoed. Jobs do not survive the server: if the process ends, running jobs are lost and <code>job_status</code> reports <code>unknown</code> after a restart. Each job's folder <code>jobs\&lt;job_id&gt;\</code> keeps its request, progress log and outputs.
+  <strong>Determinism and lifetime:</strong> With the same <code>seed</code> and inputs, <code>optimize_mirror</code> and <code>fit_xrr</code> give identical results on the same device; the seed used is echoed. With <code>device: "auto"</code> a machine with a GPU and one without can differ in the last digits, so pin <code>"cpu"</code> or <code>"gpu"</code> for bit-for-bit repeats. Jobs do not survive the server: if the process ends, running jobs are lost and <code>job_status</code> reports <code>unknown</code> after a restart. Each job's folder <code>jobs\&lt;job_id&gt;\</code> keeps its request, progress log and outputs.
 </div>
 
 <!-- =============================== -->
@@ -2023,20 +2066,20 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
     <th style="width:170px">Argument</th>
     <th>Meaning</th>
   </tr>
-  <tr><td><code>measurement_id</code> or <code>curve</code></td><td>The measured data: an inbox id such as <code>"RuC-07/xrr.dat"</code>, or the curve inline.</td></tr>
+  <tr><td><code>measurement_id</code> or <code>curve</code></td><td>The measured data: an inbox id such as <code>"RuC-07/xrr.dat"</code>, or the curve inline. Every measured intensity must be positive, since the &chi;&sup2; takes its logarithm.</td></tr>
   <tr><td><code>structure</code></td><td>The start model in the structure JSON.</td></tr>
-  <tr><td><code>free</code></td><td>Which values may vary. Each entry addresses one layer by its <code>stack</code> index (from the substrate up, or <code>"cap"</code> / <code>"buffer"</code>) and <code>layer</code> index, and lists the <code>parameters</code> that take part: <code>"thickness"</code>, <code>"sigma"</code>, <code>"density"</code>. An entry <code>{"target":"period","stack":k}</code> frees the period of repeating stack <em>k</em> instead; at least one thickness of that stack must be free too. Scale, background and resolution are not free parameters; asking for them is answered with <code>not_fittable</code> (the scale is solved inside the objective instead, see <code>scale_solve</code> below).</td></tr>
-  <tr><td><code>bounds</code></td><td>One <code>min</code> / <code>max</code> pair per free parameter (<code>stack</code>, <code>layer</code>, <code>parameter</code>), or per free period (<code>target: "period"</code>). Omitted bounds default to the start value &plusmn;30&nbsp;%; the start value must lie inside the range. Every fitted value stays inside its bounds, and the result's <code>bounds_used</code> lists the ranges that applied.</td></tr>
-  <tr><td><code>lambda</code> or <code>energy</code>, <code>theta_range</code></td><td>The wavelength (or photon energy) of the measurement and the &theta; interval to fit.</td></tr>
+  <tr><td><code>free</code></td><td>Which values may vary. Each entry addresses one layer by its <code>stack</code> index (from the substrate up, or <code>"cap"</code> / <code>"buffer"</code>) and <code>layer</code> index, and lists the <code>parameters</code> that take part: <code>"thickness"</code>, <code>"sigma"</code>, <code>"density"</code>. By default a repeating stack keeps the start model's period, so freeing its thicknesses fits only their ratio. Add <code>{"target":"period","stack":k}</code> to fit the period d of repeating stack <em>k</em> as well; at least one thickness of that stack must also be free, and it cannot be combined with <code>profile</code>. The substrate, scale, background and resolution are not free parameters; asking for them is answered with <code>not_fittable</code> (the scale is solved inside the objective instead, see <code>scale_solve</code> below). <code>period_mode</code> in the result says how each stack was treated.</td></tr>
+  <tr><td><code>bounds</code></td><td>One <code>min</code> / <code>max</code> pair per free parameter (<code>stack</code>, <code>layer</code>, <code>parameter</code>), or per free period (<code>target: "period"</code>). Omitted bounds default to the start value &plusmn;30&nbsp;% (a period too); the start value must lie inside the range. A parameter that starts at 0 (for example an omitted <code>sigma</code>) has no default range and needs explicit bounds; an omitted density is first replaced by the bulk value. Sigma and density bounds are clamped at 0; thickness and period bounds must be above 0. Every fitted value stays inside its bounds, and the result's <code>bounds_used</code> lists the ranges that applied.</td></tr>
+  <tr><td><code>lambda</code> or <code>energy</code>, <code>theta_range</code></td><td>The wavelength (or photon energy) of the measurement: required with an inline <code>curve</code>; with <code>measurement_id</code> it defaults to the <code>.xrdml</code> file's own wavelength (the weighted K&alpha; doublet, 1.541874&nbsp;&Aring; for Cu) or else <code>meta.json</code>'s <code>lambda</code>, and an explicit value overrides both. <code>theta_range</code> is an object <code>{"min", "max"}</code> in degrees &theta; (never 2&theta;); default the whole curve.</td></tr>
   <tr><td><code>scale</code>, <code>scale_auto</code></td><td>The anchored multiplier applied to the measured intensities before the fit (the manual's Normalize step), default 1, stored with the curve in <code>measured.dat</code> and <code>fit.xrcx</code>. <code>"scale_auto": true</code> (or <code>"scale": "auto"</code>) is the GUI's <strong>Normalize (Auto)</strong>: the largest measured intensity below <code>auto_theta_max</code> (default 0.5&deg;) is set equal to the start model's reflectivity at that angle.</td></tr>
-  <tr><td><code>scale_solve</code>, <code>scale_solve_window</code></td><td>Default <code>true</code>: the measured scale is treated as a nuisance parameter and solved in closed form for every candidate structure, held between 1/(1&nbsp;+&nbsp;<code>scale_solve_window</code>) and (1&nbsp;+&nbsp;<code>scale_solve_window</code>) times the anchored scale (default 0.2, a fraction: a factor of 1.2 either way), so the &chi;&sup2; is the best any scale in that window can give. The result reports <code>chi2_scale</code> (<code>"solved"</code> or <code>"anchored"</code>), <code>scale_ratio</code> (the solved factor over the anchor), <code>scale_solved</code>, <code>scale_clamped</code> and <code>chi2_scale_definition</code>; the files and the <code>.xrcx</code> keep the anchored scale, and <code>residual.dat</code> says in its header which scale it is at. With <code>"scale_solve": false</code> the &chi;&sup2; is the anchored one of every earlier version. The GUI's <strong>Solve scale in &chi;&sup2;</strong> and <strong>Window</strong> are the same option with the same defaults; the physics is in <a href="#solved-scale">Solving the Measured Scale</a>.</td></tr>
-  <tr><td><code>smooth</code></td><td><code>{"passes": n}</code>, 0 to 10, runs the GUI's <strong>Data &gt; Smooth</strong> on the measured curve before the fit. Order: scale, then smooth, then the <code>theta_range</code> trim, as in <a href="#data-conditioning-walkthrough">Data Conditioning</a>.</td></tr>
-  <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), tolerance, and <code>device</code>: <code>"auto"</code> (default, the GPU when <code>describe_server</code> names one in <code>server.gpu</code>), <code>"cpu"</code> or <code>"gpu"</code> (refused without a usable GPU). The result carries <code>optimizer_used</code> with every default filled in, and <code>device_used</code>. The reported &chi;&sup2; is always recomputed on the CPU; see <a href="#gpu">GPU Acceleration</a>.</td></tr>
-  <tr><td><code>profile</code>, <code>seed</code></td><td>Allow per-period thickness polynomials (the GUI's polynomial mode), and the random seed.</td></tr>
-  <tr><td><code>polarization</code>, <code>resolution</code>, <code>chi2</code>, <code>r_min</code></td><td>Polarization (<code>s</code>, <code>p</code>, <code>sp</code>), the instrumental resolution width, the &chi;&sup2; weighting options of the GUI's fit dialog, and the reflectivity floor below which points are ignored.</td></tr>
+  <tr><td><code>scale_solve</code>, <code>scale_solve_window</code></td><td>Default <code>true</code>: the measured scale is treated as a nuisance parameter and solved in closed form for every candidate structure, held between 1/(1&nbsp;+&nbsp;<code>scale_solve_window</code>) and (1&nbsp;+&nbsp;<code>scale_solve_window</code>) times the anchored scale (default 0.2, a fraction: a factor of 1.2 either way), so the &chi;&sup2; is the best any scale in that window can give. The result reports <code>chi2_scale</code> (<code>"solved"</code> or <code>"anchored"</code>), <code>scale_ratio</code> (the solved factor over the anchor), <code>scale_solved</code>, <code>scale_clamped</code> and <code>chi2_scale_definition</code>; the files and the <code>.xrcx</code> keep the anchored scale, and <code>residual.dat</code> says in its header which scale it is at. <code>"scale_solve_window": 0</code> pins the solved scale to the anchor. With <code>"scale_solve": false</code> the &chi;&sup2; is the anchored one of every earlier version. The GUI's <strong>Solve scale in &chi;&sup2;</strong> and <strong>Window</strong> are the same option with the same defaults; the physics is in <a href="#solved-scale">Solving the Measured Scale</a>.</td></tr>
+  <tr><td><code>smooth</code></td><td><code>{"passes": n}</code>, 0 to 10, runs the GUI's <strong>Data &gt; Smooth</strong> on the measured curve before the fit: each pass is a moving average of window 5 on the linear intensities, which leaves the first points as they are and flattens the last few, so trim the ends with <code>theta_range</code>. Order: scale, then smooth, then the <code>theta_range</code> trim, as in <a href="#data-conditioning-walkthrough">Data Conditioning</a>.</td></tr>
+  <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), <code>tolerance</code> (default 0.005: the run stops early once &chi;&sup2; falls below it), <code>shake</code>, <code>range_seed</code> and <code>use_constriction</code> (all default true), and <code>device</code>: <code>"auto"</code> (default, the GPU when <code>describe_server</code> names one in <code>server.gpu</code>), <code>"cpu"</code> or <code>"gpu"</code> (refused without a usable GPU). The result carries <code>optimizer_used</code> with every default filled in, and <code>device_used</code>. The reported &chi;&sup2; is always recomputed on the CPU (<code>chi2_recalc</code>, with <code>consistency_warning</code> when the two disagree); <code>gpu_error</code> says why a run asked to use a GPU fell back to the CPU. See <a href="#gpu">GPU Acceleration</a>.</td></tr>
+  <tr><td><code>profile</code>, <code>paired</code>, <code>seed</code></td><td><code>profile</code> fits a polynomial (order <code>optimizer.poly_order</code>, default 1) of each free parameter &mdash; thickness, sigma and density alike &mdash; over the periods of the one repeating stack (the GUI's polynomial mode; exactly one stack must have N&nbsp;&gt;&nbsp;1). <code>paired</code> (for example <code>["sigma","density"]</code>) keeps chosen parameters at one value per layer. The per-period arrays start at the period nearest the surface. <code>seed</code> is the random seed.</td></tr>
+  <tr><td><code>polarization</code>, <code>resolution</code>, <code>chi2</code>, <code>r_min</code></td><td><code>polarization</code> as in <code>calc_reflectivity</code> (default <code>"sp"</code>). <code>resolution</code>: FWHM in degrees &theta; of the Gaussian the calculated curve is convolved with (default 0.015, held fixed); the kernel stops at &plusmn;0.1&deg;, &chi;&sup2; leaves out the points within about 0.1&deg; of each end of the fitted range, and a grid too coarse or too short for the kernel is refused. <code>chi2</code>: <code>theta_weight</code> 0&ndash;5 (default 0), <code>point_weight</code> (default true: a point more than 3&times; its moving average is weighted by that ratio) and <code>movavg_window</code> (default 0.05 of the points); the sum is 1000/(n&minus;1)&nbsp;&Sigma;[(log&nbsp;I&nbsp;&minus;&nbsp;log&nbsp;R)/log&nbsp;R]&sup2;&middot;w (see <a href="#understanding-the-cost-function">the cost function</a>). <code>r_min</code> (default 10<sup>&minus;7</sup>): the floor the calculated reflectivity is clamped to; no measured point is dropped. It is also the chart minimum stored in the <code>.xrcx</code>.</td></tr>
 </table>
 
-<p>The result holds the fitted structure (with the expanded per-period profile when <code>profile</code> was set), &chi;&sup2; beside <code>chi2_start</code> and the unweighted <code>chi2_plain</code>, the scale mode and values, the start model, a <code>report</code> (the Bragg orders measured against calculated, the plateau edge, the Kiessig fringe contrast, the residual by band, values near their bounds; also written as <code>report.json</code> with the scale mode beside every &chi;&sup2; it holds), the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit. Open that file in the GUI to check the fit yourself.</p>
+<p>The result holds the fitted structure (with the expanded per-period profile when <code>profile</code> was set), &chi;&sup2; beside <code>chi2_start</code> and <code>chi2_plain</code> (the same sum without point and &theta; weights, at the scale solved for <code>chi2</code>; reported, never minimised; <code>chi2_start</code> is scored at the start model's own solved scale, <code>scale_start_ratio</code>), the scale mode and values, <code>period_mode</code>, <code>out_of_bounds</code>, <code>iterations_run</code>, <code>elapsed_s</code>, <code>background</code> (always 0), the start model, a <code>report</code> (the Bragg orders measured against calculated, the plateau edge, the Kiessig fringe contrast, the residual by band, values within 5&nbsp;% of the range from a bound; also written as <code>report.json</code> with the scale mode beside every &chi;&sup2; it holds; the report compares the model with the <em>anchored</em> measured curve, so with <code>scale_solve</code> its ratios and bands differ from <code>residual.dat</code> by log<sub>10</sub>(<code>scale_ratio</code>)), the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit. Open that file in the GUI to check the fit yourself.</p>
 
 <!-- =============================== -->
 <h2 id="inbox">Inbox: Measured Curves</h2>
@@ -2049,7 +2092,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
     <th>Description</th>
   </tr>
   <tr><td><code>list_measurements</code></td><td>Every file in the inbox, optionally filtered by specimen, with its id <code>"&lt;specimen&gt;/&lt;file&gt;"</code>, size, SHA-256, modified time, and the specimen's metadata file if present.</td></tr>
-  <tr><td><code>get_measurement</code></td><td>One curve as [&theta;, intensity] pairs, parsed the way the GUI parses a data file (see <a href="#experimental-data-files">File Formats</a>): two columns separated by tab or space, comma accepted as the decimal mark, non-numeric lines reported as the header. An <code>.xrdml</code> file is read raw, as <strong>Data &gt; Load</strong> reads it: its 2&theta; axis is brought to &theta;, its counts to counts per second normalised to 1 at the maximum, and the wavelength the file implies overrides <code>meta.json</code> (<code>lambda_source</code> says which). <code>max_points</code> decimates a long curve for inline return; the file stays raw.</td></tr>
+  <tr><td><code>get_measurement</code></td><td>One curve as [&theta;, intensity] pairs, parsed the way the GUI parses a data file (see <a href="#experimental-data-files">File Formats</a>): two columns separated by tab or space, comma accepted as the decimal mark, non-numeric lines reported as the header. An <code>.xrdml</code> file is read raw, as <strong>Data &gt; Load</strong> reads it: its 2&theta; axis is brought to &theta;, its counts to counts per second normalised to 1 at the maximum, and the wavelength the file implies overrides <code>meta.json</code> (<code>lambda_source</code> says which). A non-positive intensity is replaced by the smallest positive one before it, and <code>"theta_unit": "2theta"</code> in <code>meta.json</code> halves the angles of a two-column file. <code>max_points</code> (default 2000) decimates a long curve for inline return; the file stays raw.</td></tr>
 </table>
 
 <h3 id="assess">assess_xrr: is this curve worth fitting?</h3>
@@ -2066,7 +2109,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>sample_length_mm</code>, <code>beam_width_mm</code></td><td>Place the footprint knee asin(beam / length).</td></tr>
   <tr><td><code>order_visible_factor</code>, <code>min_points_per_fringe</code></td><td>An order counts as visible this many times above the background (default 3); the sampling check warns below this many points per Kiessig fringe (default 3) and fails below 2 whatever is given.</td></tr>
 </table>
-<p>The result carries <code>checks</code> &mdash; <code>counting</code>, <code>plateau_vs_first_order</code>, <code>total_reflection</code>, <code>orders_visible</code>, <code>range_below_background</code>, <code>sampling</code>, <code>footprint</code>, <code>zeros</code>, each <code>{value, threshold, verdict, why}</code> with the numbers behind it &mdash; the background, the design's period, thickness and critical angle, the overall <code>verdict</code> (the worst check) and <code>summary_text</code>, one line per check for the client to file with the specimen. Every angle is <code>theta_deg</code> with the file's <code>two_theta_deg</code> beside it. The only thresholds the tool brings of its own are physical: a first order above the plateau fails, and fewer than two points per fringe fails.</p>
+<p>The result carries <code>checks</code> &mdash; <code>counting</code>, <code>plateau_vs_first_order</code>, <code>total_reflection</code>, <code>orders_visible</code>, <code>range_below_background</code>, <code>sampling</code>, <code>footprint</code>, <code>zeros</code>, each <code>{value, threshold, verdict, why}</code> with the numbers behind it &mdash; the background, the design's period, thickness and critical angle, the overall <code>verdict</code> (the worst check) and <code>summary_text</code>, one line per check for the client to file with the specimen. Every angle is <code>theta_deg</code> with the file's <code>two_theta_deg</code> beside it. No count-rate or fraction limit is built in. The fixed rules are: a first order above the plateau fails; a scan that starts at its own maximum, or at or above the design's critical angle, fails; fewer than two points per fringe fails. The warnings compare the measurement with the design scaled to the measured plateau (a plateau-to-first-order ratio above the design's; fewer visible orders than it predicts), with the footprint knee (the low-angle maximum below it), or flag any zero or negative count. <code>range_below_background</code> only reports the fraction and is always <code>"unknown"</code>. The background is the median of the last 100 points; the fringe spacing is &lambda;/(2&thinsp;&times;&thinsp;total thickness) and the order spacing &lambda;/(2d), converted to degrees; the design is always computed unpolarized (<code>sp</code>).</p>
 
 <!-- =============================== -->
 <h2 id="projects">Projects</h2>
@@ -2076,7 +2119,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
     <th style="width:170px">Tool</th>
     <th>Description</th>
   </tr>
-  <tr><td><code>save_project</code></td><td>Writes <code>projects\&lt;name&gt;.xrcx</code> that opens in the GUI with no conversion: the structure as the active model, the calculated curve beside it, and optionally a measured curve (an inbox id or a job's curves via <code>curves.job_id</code>). A project saved from a fit job carries the job's own fit settings, so it opens as the fit that ran. Refuses to overwrite unless <code>overwrite: true</code>.</td></tr>
+  <tr><td><code>save_project</code></td><td>Writes <code>projects\&lt;name&gt;.xrcx</code> that opens in the GUI with no conversion: the structure as the active model, the calculated curve beside it (without a job: &lambda; = 1.54043&nbsp;&Aring; unless given, &theta; 0.05&ndash;5&deg;, 2000 points, <strong>s</strong> polarization as the GUI's <code>params.dsc</code> has it &mdash; so it can differ from a default <code>calc_reflectivity</code> curve, which is <code>sp</code>), and optionally a measured curve (an inbox id or a job's curves via <code>curves.job_id</code>). A project saved from a fit job carries the job's own fit settings, so it opens as the fit that ran. Refuses to overwrite unless <code>overwrite: true</code>.</td></tr>
   <tr><td><code>load_project</code></td><td>Reads a project back: the active model's structure in the structure JSON, its profile extensions, the calculation parameters (angles always as &theta;), and a summary of the embedded curves.</td></tr>
   <tr><td><code>list_projects</code></td><td>The <code>.xrcx</code> files in <code>projects\</code> with size, SHA-256 and modified time. Nothing is written.</td></tr>
 </table>
@@ -2091,14 +2134,14 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <li><code>list_measurements</code> &rarr; finds <code>"RuC-07/xrr.dat"</code>; <code>get_measurement</code> with <code>max_points: 200</code> to look at the curve.</li>
   <li><code>assess_xrr</code> with the nominal structure &mdash; is the curve worth fitting: the plateau against the first order, the orders visible, the points per fringe, the zero counts.</li>
   <li><code>calc_reflectivity</code> with the nominal Ru/C structure (30 periods, d = 68.5&nbsp;&Aring;) at &lambda; = 1.5406&nbsp;&Aring; &mdash; compare the Bragg peak position with the measurement.</li>
-  <li><code>fit_xrr</code> with the period of stack 0 and both layer thicknesses free, <code>smooth: {"passes": 1}</code>, <code>theta_range: [0.3, 4.0]</code>, <code>seed: 1</code> &rarr; <code>job_id: "fit-000003"</code>.</li>
-  <li><code>job_status</code> every few seconds until <code>finished</code> (about 25&nbsp;s for a 1000-point curve with the default population of 500).</li>
-  <li><code>job_result</code> &rarr; fitted d, &Gamma;, &chi;&sup2;, and the path of <code>fit.xrcx</code>.</li>
-  <li><code>save_project</code> with <code>name: "RuC-07-fit"</code> and <code>curves.job_id: "fit-000003"</code> &rarr; <code>projects\RuC-07-fit.xrcx</code>, which you open in X-Ray Calc 3 to inspect and refit.</li>
+  <li><code>fit_xrr</code> with the period of stack 0 and both layer thicknesses free, <code>smooth: {"passes": 1}</code>, <code>theta_range: {"min": 0.3, "max": 4.0}</code>, <code>seed: 1</code> &rarr; <code>job_id: "fit-20260922-143012-a1b2"</code>.</li>
+  <li><code>job_wait</code> until <code>finished</code> (tens of seconds on the CPU, much less on a GPU; the result's <code>elapsed_s</code> and <code>iterations_run</code> give the real cost).</li>
+  <li><code>job_result</code> &rarr; <code>fitted_structure</code> (d is <code>report.period_A</code>; &Gamma; follows from the layer thicknesses), <code>chi2</code>, and the path of <code>fit.xrcx</code>.</li>
+  <li><code>save_project</code> with <code>name: "RuC-07-fit"</code> and <code>curves.job_id: "fit-20260922-143012-a1b2"</code> &rarr; <code>projects\RuC-07-fit.xrcx</code>, which you open in X-Ray Calc 3 to inspect and refit.</li>
 </ol>
 
 <div class="tip">
-  <strong>Practice:</strong> The lab's rule of thumb for the LFPSO is 100 iterations with 500 to 1000 particles: population wins over iterations. These are the server's defaults, so a request that names neither reproduces the GUI's usual fit.
+  <strong>Practice:</strong> The lab's rule of thumb for the LFPSO is 100 iterations with 500 to 1000 particles: population wins over iterations. The server's defaults are 500 particles and 100 iterations, the lower end of that rule. They are not the GUI's defaults (the GUI's own population is 1000); the result's <code>optimizer_used</code> lists every value the run used.
 </div>
 
 <!-- =============================== -->
@@ -2150,43 +2193,53 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 </div>
 
 <h2 id="project-file-xrcx">Project File (.xrcx)</h2>
-<p>A ZIP archive containing:</p>
+<p>A ZIP archive of the project's working folder:</p>
 <ul>
-  <li><code>project.dsc</code> &mdash; project metadata (title, descriptions)</li>
-  <li><code>params.dsc</code> &mdash; complete model definitions in text format (layers, stacks, parameters, calculation settings)</li>
-  <li>Embedded experimental data files</li>
+  <li><code>project.dsc</code> &mdash; the project tree (binary): every model's structure (stacks, layers, substrate) as JSON, the titles and descriptions of the data items, and the profile extensions with their coefficients.</li>
+  <li><code>params.dsc</code> &mdash; an INI file with the calculation and fitting settings, no layers: <code>[PARAMS]</code> (N, mode, polarisation, chart minimum), <code>[ANGLE]</code> and <code>[WAVE]</code> (ranges, wavelength, resolution, the 2&theta; switch), <code>[FIT]</code> and <code>[LFPSO]</code> (fit settings, including <code>SolveScale</code> and <code>ScaleWindow</code>), <code>[INFO] Version</code>, and <code>[STATE]</code> (linked data, active model, log scale).</li>
+  <li><code>data_&lt;ID&gt;.dat</code> &mdash; one text file per data item, in the clipboard layout (three header lines, then angle and reflectivity).</li>
+  <li><code>calc.dat</code> &mdash; the active model's calculated curve.</li>
 </ul>
+<p>Data curves are stored with the angle rounded to 0.001&deg; and the reflectivity to five significant digits; Load, Normalize, Smooth and Trim all write through this, so a finer angle step than 0.001&deg; is rounded and can produce repeated angles.</p>
+<p>The current project version is 8. A project of version 7 or earlier opens with the substrate density reset to 0 (bulk), because earlier versions ignored the substrate density.</p>
 
 <h2 id="experimental-data-files">Experimental Data Files</h2>
-<p>Plain text, two columns separated by tabs or spaces:</p>
-<pre><code># Optional comment lines starting with #
-0.100   1.000000
-0.200   0.999850
+<p>Plain text, one point per line: angle (or wavelength), a single TAB, reflectivity:</p>
+<pre><code>* Optional description lines starting with *
+0.100	1.000000
+0.200	0.999850
 ...</code></pre>
-<p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
-Column 2: Reflectivity (typically 0 to 1)</p>
+<p>Column 1: the angle in degrees, 2&theta; when the calculation's 2&theta; switch is on and &theta; when it is off (a text file is not converted), or the wavelength in &Aring; in wavelength mode.<br>
+Column 2: reflectivity.</p>
+<p>Use exactly one separator (one TAB, or one space in a file without TABs) and no third column; both numbers must start with a digit. Other lines are skipped. The full rules are in <a href="#data-format">Experimental Data &gt; Data Format</a>.</p>
 
 <h3>XRDML (PANalytical)</h3>
 <p>A PANalytical / Malvern <code>.xrdml</code> file, schema 1.0 to 2.x, is read without conversion by <strong>Data &gt; Load</strong> and by the MCP server's inbox. What is read:</p>
 <ul>
-  <li>the first <code>scan</code> of the file, its <code>2Theta</code> positions (start/end, a position list, or <code>Omega</code> for a rocking curve);</li>
-  <li><code>counts</code> (raw, with <code>beamAttenuationFactors</code> multiplied in when present) or <code>intensities</code> (already corrected), divided by <code>commonCountingTime</code> or the per-point <code>countingTimes</code>;</li>
+  <li>the first <code>scan</code> of the file that has data points, its <code>2Theta</code> positions (start/end, a position list, or <code>Omega</code> for a rocking curve; a file whose 2&theta; does not move and has no Omega positions is refused);</li>
+  <li><code>counts</code> (raw, with <code>beamAttenuationFactors</code> multiplied in when present) or <code>intensities</code> (already corrected), divided by <code>commonCountingTime</code> or the per-point <code>countingTimes</code> (left undivided when the file has neither);</li>
   <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
   <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
 </ul>
-<p>The curve is normalised to 1 at its maximum and non-positive counts are floored as for a text file; the raw peak count rate is kept in the header. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
+<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it); a text file floors only exact zeros and skips negative values. The peak count rate of the corrected curve is kept in the description. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
 
 <h2 id="henke-tables">Henke Tables</h2>
-<p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>
+<p>One binary file per material, element or compound, <code>Henke\&lt;Name&gt;.bin</code> (the <code>Henke</code> folder beside the program, or under the storage folder set in <a href="#Settings">Settings</a>). A layer's material name must match a file name. Each file holds:</p>
+<ul>
+  <li>the material name, the molar mass A (g/mol, per formula unit) and the bulk density (g/cm&sup3;);</li>
+  <li>records of (photon energy E in eV, f<sub>1</sub>, f<sub>2</sub>) on an energy grid. The wavelength is &lambda;&nbsp;=&nbsp;12398.6&nbsp;/&nbsp;E (&Aring;); f<sub>1</sub> and f<sub>2</sub> are interpolated linearly in E.</li>
+</ul>
+<p>The optical constants follow from these: &delta; and &beta; are proportional to (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>1</sub> and (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>2</sub>, with &rho; the layer's density, or the bulk density from the file when the layer's is 0. For a compound, f<sub>1</sub>, f<sub>2</sub> and A are all per formula unit, so they must be changed together (see <a href="#edit-henke-table">Edit Henke Table</a>). The tables are included with the application.</p>
 
 <h2 id="settings-file-xrc3-ini">Settings File (xrc3.ini)</h2>
-<p>Standard Windows INI file format. Sections include:</p>
+<p>A standard Windows INI file, <code>%APPDATA%\X-RayCalc3\xrc3.ini</code>, or next to the program when a file named <code>uselocaldata</code> sits there. Sections:</p>
 <ul>
-  <li><code>[Path]</code> &mdash; directory paths</li>
-  <li><code>[Window]</code> &mdash; window position and size</li>
-  <li><code>[Options]</code> &mdash; behavior flags</li>
-  <li><code>[Graphics]</code> &mdash; chart display settings</li>
-  <li><code>[Calc]</code> &mdash; calculation settings</li>
+  <li><code>[Path]</code> &mdash; the Henke, storage, benchmark, project, output and jobs folders</li>
+  <li><code>[Window]</code> &mdash; window state, position and size</li>
+  <li><code>[Options]</code> &mdash; CheckForUpdates, UpdateInfoURL, AutoCalc, AutoSave, LiveUpdate</li>
+  <li><code>[Graphics]</code> &mdash; LineWidth</li>
+  <li><code>[Calc]</code> &mdash; NumberOfThreads (0 = all), BenchmarkRuns (20), UseGPU (on). The calculation parameters themselves (range, wavelength, resolution, fit settings) are stored in each project's <code>params.dsc</code>, not here.</li>
+  <li><code>[Recent]</code> &mdash; the recent-projects list</li>
 </ul>
 
 <h3>See Also</h3>
@@ -2304,12 +2357,17 @@ Column 2: Reflectivity (typically 0 to 1)</p>
   <li><strong>Enable Shake</strong> &mdash; this helps escape local minima.</li>
   <li><strong>Check initial model</strong> &mdash; a better starting guess leads to faster convergence.</li>
   <li><strong>Try a different fitting mode</strong> &mdash; Periodic mode may work better than Irregular for regular multilayers, and vice versa.</li>
+  <li><strong>Check the Bragg peak positions first</strong> &mdash; a Periodic fit holds the period D of every repeating stack at its start value, so it cannot move the peaks. Set the period so the peaks line up, or fit in Irregular or Polynomial mode (see <a href="#fit-modes">Fitting Modes</a>).</li>
+  <li><strong>Look at the scale pane</strong> &mdash; if it reads <em>at bound</em>, the normalisation is off by more than the Window allows: renormalise, or widen the Window (see <a href="#solved-scale">Solving the Measured Scale</a>).</li>
+  <li><strong>Check the chart's lower reflectivity limit</strong> &mdash; the calculated curve is floored at it, so measured points below it are compared with that limit.</li>
+  <li><strong>Link the data</strong> &mdash; the fit needs the measured curve linked to the model and visible; otherwise it stops with <em>Measured curve is not linked!</em></li>
 </ul>
 
 <h2 id="calculation-is-slow">Calculation is slow</h2>
 <ul>
   <li>Ensure multi-threading is enabled (<strong>Settings &gt; Calc &amp; Fit &gt; Auto (Use all)</strong>).</li>
-  <li>Reduce the number of calculation points (N) for preliminary calculations.</li>
+  <li>Reduce the number of calculation points (N) for preliminary calculations. N is used only when no measured curve is linked (or it is hidden); with linked data the model is calculated at the measured angles.</li>
+  <li>For fitting, turn on <strong>Settings &gt; Calc &amp; Fit &gt; Use the GPU for fitting</strong> (see <a href="#gpu">GPU Acceleration</a>).</li>
   <li>Use the <strong>x32 version</strong> for small-to-medium models &mdash; it is approximately 2&times; faster than x64.</li>
   <li>Use the <strong>x64 version</strong> only when the model is too large for x32 (memory limit).</li>
 </ul>

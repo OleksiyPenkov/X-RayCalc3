@@ -51,14 +51,14 @@
 
 <figure>
   <img src="images/fig4.jpg" alt="Shake LFPSO concept">
-  <figcaption><strong>Figure 4.</strong> The Shake concept. (a) All particles trapped in a local minimum. (b) Shaking event: locations and velocities are randomized based on P<sub>gbest</sub>; V<sub>max</sub> is multiplied by k<sub>1</sub> and the cost function threshold is lifted by k<sub>2</sub>. (c) After LFPSO leap, a new best solution is found. (From Penkov <em>et al.</em>, 2024.)</figcaption>
+  <figcaption><strong>Figure 4.</strong> The Shake concept. (a) All particles trapped in a local minimum. (b) Shaking event: locations and velocities are randomized based on P<sub>gbest</sub>; V<sub>max</sub> is multiplied by k<sub>1</sub> and the cost function threshold is lifted by k<sub>2</sub>. (c) After LFPSO leap, a new best solution is found. (From Penkov <em>et al.</em>, 2024.) The Advanced Settings dialog labels these coefficients the other way round: there <strong>k<sub>1</sub></strong> lifts the threshold and <strong>k<sub>2</sub></strong> multiplies V<sub>max</sub> (see <a href="#fit-advanced">Advanced Fitting Settings</a>).</figcaption>
 </figure>
 
 <h2 id="prerequisites-for-fitting">Prerequisites for Fitting</h2>
 <p>Before starting a fit, you need:</p>
 <ol>
   <li><strong>A defined model</strong> with initial parameter estimates</li>
-  <li><strong>Experimental data</strong> loaded into the project</li>
+  <li><strong>Experimental data</strong> loaded into the project, linked to the model and visible on the chart (otherwise the fit stops with <em>Measured curve is not linked!</em>)</li>
   <li><strong>Fit limits</strong> set for each adjustable parameter</li>
 </ol>
 
@@ -87,7 +87,7 @@
 <p>The dialog provides action buttons for batch operations on limits:</p>
 <table>
   <tr><th>Button</th><th>Action</th></tr>
-  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; percentages. For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
+  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; fractions (0.25 = &plusmn;25&nbsp;%): Min&nbsp;=&nbsp;V(1&nbsp;&minus;&nbsp;&Delta;), Max&nbsp;=&nbsp;V(1&nbsp;+&nbsp;&Delta;). For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
   <tr><td><strong>Narrow</strong></td><td>Shrinks all unlocked limits toward the current fitted value by 50%, reducing the search space. Useful after a successful fit to refine results.</td></tr>
   <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 1% of the range edge). Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range.</td></tr>
   <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling. Despite the name, this is unrelated to the <strong>Fix</strong> columns &mdash; it repairs limits, it does not freeze anything.</td></tr>
@@ -127,31 +127,35 @@
 <p>The software provides several structure-representation methods. The user chooses the most suitable depending on the nature of the coating:</p>
 
 <table>
-  <tr><th>Structure Representation</th><th>Applicability</th><th>Computation Time</th></tr>
-  <tr><td>Regular (Irregular)</td><td>Regular non-periodic coatings</td><td>Long</td></tr>
-  <tr><td>Periodic</td><td>Periodic multilayer mirrors (PMMs)</td><td>Short</td></tr>
-  <tr><td>Periodic with arbitrary deviations</td><td>Supermirrors, PMMs with arbitrary distributions</td><td>Long</td></tr>
-  <tr><td>Polynomial distributions</td><td>PMMs with gradual change of parameters</td><td>Moderate</td></tr>
+  <tr><th>Structure Representation</th><th>Mode</th><th>Applicability</th><th>Computation Time</th></tr>
+  <tr><td>Non-periodic coating</td><td>Irregular</td><td>Regular non-periodic coatings</td><td>Long</td></tr>
+  <tr><td>Periodic</td><td>Periodic</td><td>Periodic multilayer mirrors (PMMs)</td><td>Short</td></tr>
+  <tr><td>Periodic with arbitrary deviations</td><td>Irregular, applied to a periodic stack</td><td>Supermirrors, PMMs with arbitrary distributions</td><td>Long</td></tr>
+  <tr><td>Polynomial distributions</td><td>Polynomial</td><td>PMMs with gradual change of parameters</td><td>Moderate</td></tr>
 </table>
+<p>The Fitting panel offers three modes: <strong>Irregular</strong>, <strong>Periodic</strong> and <strong>Polynomial</strong>.</p>
 
 <h3>Irregular Mode</h3>
 <p>Every parameter of each layer is treated independently. This mode is used for non-periodic coatings consisting of several layers. At the start of fitting, the software expands each periodic stack into individual layers. Once fitting is complete, distribution charts are generated for each parameter of every material type (thickness, roughness, density).</p>
 <ul>
   <li>Each layer has its own fitted thickness, roughness, and density.</li>
-  <li>The <strong>Smoothing window</strong> parameter (in Advanced Settings) applies spatial smoothing to prevent unphysical oscillations.</li>
+  <li>With <strong>Smooth</strong> checked, each particle's period-to-period profile of every parameter is smoothed with a moving average over the <strong>Smoothing window</strong> (Advanced Settings) after every update. This is a constraint during the search, not a smoothing of the result; it applies to stacks with N&nbsp;&gt;&nbsp;1 and to parameters that are not paired.</li>
   <li>Specific parameters can be &ldquo;stack-locked&rdquo; (paired) &mdash; e.g. roughness and density remain constant while thickness varies across the stack.</li>
 </ul>
 <div class="note"><strong>Example:</strong> A Mo/Si PMM with 60 repeated stacks would require 726 variables if treated individually. Using the periodic mode, this reduces to just 18 variables.</div>
 
 <h3>Periodic Mode</h3>
-<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. A periodicity keeper normalizes layer thicknesses to maintain the total period D of each stack.</p>
+<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. After every move a periodicity keeper rescales the layer thicknesses of each stack with N&nbsp;&gt;&nbsp;1, in proportion to each layer's thickness and within its bounds, so that the period D keeps its value.</p>
+<div class="note"><strong>The period is fixed.</strong> A Periodic fit in the program holds the period D of every repeating stack at its value in the start model: it changes the ratio of the layer thicknesses (and &sigma;, &rho;), not D, so it cannot move the Bragg peaks. Set the period first &mdash; the peak positions must already match &mdash; or use Irregular or Polynomial mode to let it move. (The MCP server can free the period; see <a href="MCPServer.html#fitting">MCP Server &gt; Fitting</a>.)</div>
 <ul>
   <li>Suitable for structures with consistent periodicity.</li>
   <li>Dramatically reduces the number of fitting variables for PMMs.</li>
 </ul>
 
 <h3>Polynomial Mode</h3>
-<p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of depth. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>. The user can select the polynomial order from 1 to 20.</p>
+<p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of the period number. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>:</p>
+<div class="note"><strong>x(j) = x<sub>0</sub> + a<sub>1</sub>(j&nbsp;&minus;&nbsp;1) + a<sub>2</sub>(j&nbsp;&minus;&nbsp;1)&sup2; + &hellip; + a<sub>k</sub>(j&nbsp;&minus;&nbsp;1)<sup>k</sup></strong>, j = 1, 2, &hellip; the period number, x<sub>0</sub> the first period's value.</div>
+<p>Only repeating stacks (N&nbsp;&gt;&nbsp;1) and parameters that are not paired get coefficients; the others keep a single value. The period is not held, so the Bragg peaks can move. Keep the order low (&le;&nbsp;5 in practice): high powers of the period number grow very fast, and the order field is not range-checked.</p>
 <ul>
   <li><strong>Order:</strong> Maximum polynomial order (1 = linear, 2 = quadratic, etc.)</li>
   <li>Useful for smooth, continuous parameter gradients (e.g. graded-period supermirrors, PMMs with unstable deposition rate).</li>
@@ -161,10 +165,10 @@
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Iterations</strong></td><td>Maximum number of optimization iterations</td><td>100</td></tr>
-  <tr><td><strong>Population</strong></td><td>Number of particles (candidate solutions) in the swarm</td><td>100</td></tr>
+  <tr><td><strong>Population</strong></td><td>Number of particles (candidate solutions) in the swarm</td><td>100 (a project from a version that did not store it opens with 1000)</td></tr>
   <tr><td><strong>Shake</strong></td><td>Enable random perturbation to escape local minima</td><td>Checked</td></tr>
-  <tr><td><strong>SeedR</strong></td><td>Seed particles from the parameter range</td><td>Checked</td></tr>
-  <tr><td><strong>Smooth</strong></td><td>Apply smoothing to fitted parameter profiles</td><td>Unchecked</td></tr>
+  <tr><td><strong>SeedR</strong></td><td>Start the swarm spread uniformly over each parameter's [Min, Max] instead of scattered around the start model (&plusmn;Ksxr of the range). Applies only at the start of a fit; no effect in Polynomial mode</td><td>Checked (unchecked for a project that did not store it)</td></tr>
+  <tr><td><strong>Smooth</strong></td><td>Irregular mode only: keep each parameter's period-to-period profile smooth (moving average over the Smoothing window) during the search</td><td>Unchecked</td></tr>
   <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square calculation</td><td>Checked</td></tr>
   <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
   <tr><td><strong>Solve scale in &chi;&sup2;</strong></td><td>Score every candidate structure at the measured scale that suits it best, within the window, instead of at the anchored scale (see <a href="#solved-scale">Solving the Measured Scale</a>)</td><td>Checked</td></tr>
@@ -172,7 +176,7 @@
 </table>
 
 <h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
-<p>Controls how the chi-square metric weights different angular regions:</p>
+<p>Controls how the chi-square metric weights different angular regions. &theta; here is the value on the chart axis &mdash; 2&theta; when the 2&theta; box is checked &mdash; so the absolute &chi;&sup2; with a TW weight differs by a constant factor between the two axes:</p>
 <table>
   <tr><th>Option</th><th>Effect</th></tr>
   <tr><td>None</td><td>Equal weight across all angles</td></tr>
@@ -189,33 +193,35 @@
 <h3>General</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Tolerance</strong></td><td>Target cost function value; fitting stops when reached</td><td>0.005</td></tr>
+  <tr><td><strong>Tolerance</strong></td><td>Fitting stops when the best weighted &chi;&sup2; (as shown, with the PW, TW and scale settings) falls below this value</td><td>0.005</td></tr>
   <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
 </table>
 
 <h3>LFPSO Parameters</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>SHmax</strong></td><td>Maximum number of consecutive shakes</td><td>3</td></tr>
-  <tr><td><strong>Jmax</strong></td><td>Number of iterations without improvement before shake</td><td>1</td></tr>
-  <tr><td><strong>Vmax</strong></td><td>Maximum particle velocity factor</td><td>0.3</td></tr>
-  <tr><td><strong>&omega;<sub>1</sub></strong></td><td>Velocity scale factor (permanent component)</td><td>0.3</td></tr>
-  <tr><td><strong>&omega;<sub>2</sub></strong></td><td>Velocity reducing factor</td><td>0.1</td></tr>
-  <tr><td><strong>k<sub>1</sub></strong></td><td>Velocity shake coefficient</td><td>1.41</td></tr>
-  <tr><td><strong>k<sub>2</sub></strong></td><td>Best cost function shake coefficient</td><td>1.41</td></tr>
+  <tr><td><strong>SHmax</strong></td><td>Shakes do not stop the fit. The first SHmax&nbsp;+&nbsp;1 shakes each lift the threshold (k<sub>1</sub>) and enlarge V<sub>max</sub> and Ksxr (k<sub>2</sub>); the next one instead returns the swarm to the best solution found so far and restores V<sub>max</sub> and Ksxr, and the cycle repeats</td><td>3</td></tr>
+  <tr><td><strong>Jmax</strong></td><td>A shake is due once more than Jmax iterations since the start or the last shake have failed to improve the current best (not necessarily consecutive ones)</td><td>1</td></tr>
+  <tr><td><strong>Vmax</strong></td><td>Largest step a particle may take per iteration, as a fraction of each parameter's range (Max&nbsp;&minus;&nbsp;Min); velocities are clipped to &plusmn;V<sub>max</sub></td><td>0.3 (0.1 for a project that did not store it)</td></tr>
+  <tr><td><strong>&omega;<sub>1</sub></strong></td><td>Constant part of the inertia weight &omega; = &omega;<sub>1</sub> + &omega;<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T). Ignored when Constriction factor is on</td><td>0.3</td></tr>
+  <tr><td><strong>&omega;<sub>2</sub></strong></td><td>Decaying part of the inertia weight: &omega; falls from &omega;<sub>1</sub>&nbsp;+&nbsp;&omega;<sub>2</sub> to &omega;<sub>1</sub> over the run. Ignored when Constriction factor is on</td><td>0.3</td></tr>
+  <tr><td><strong>k<sub>1</sub></strong></td><td>Shake lift of the best cost: at a shake the current best &chi;&sup2; threshold is multiplied by k<sub>1</sub>, so the new swarm can accept worse solutions</td><td>1.41</td></tr>
+  <tr><td><strong>k<sub>2</sub></strong></td><td>Shake enlargement: at a shake V<sub>max</sub> and Ksxr are multiplied by k<sub>2</sub></td><td>1.41</td></tr>
+  <tr><td><strong>Ad.V</strong></td><td>Scale the attraction coefficients c<sub>1</sub>, c<sub>2</sub> with the same decaying schedule as the inertia, &omega;<sub>1</sub> + &omega;<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T), instead of 1. Ignored when Constriction factor is on</td><td>Unchecked</td></tr>
+  <tr><td><strong>Ksxr</strong></td><td>Re-seeding spread, in all modes: after a shake (and at the start when SeedR is off, always in Polynomial mode) particles are scattered within &plusmn;Ksxr of each parameter's range around the best solution</td><td>0.2</td></tr>
 </table>
+<p>The coefficient the paper calls k<sub>1</sub> is the dialog's k<sub>2</sub> and vice versa (see Figure&nbsp;4).</p>
 
 <h3>Irregular Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Smoothing window</strong></td><td>Width of the smoothing window (set &minus;1 for automatic)</td><td>3</td></tr>
+  <tr><td><strong>Smoothing window</strong></td><td>Number of neighbouring periods averaged when Smooth is checked (a window W averages W&nbsp;+&nbsp;1 consecutive periods); &minus;1 = automatic, one tenth of the periods (at least 1)</td><td>&minus;1</td></tr>
 </table>
 
 <h3>Polynomial Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Polynomial factor</strong></td><td>Scale factor for polynomial parameter space</td><td>10</td></tr>
-  <tr><td><strong>Ksxr</strong></td><td>Velocity scale factor for polynomial coefficients</td><td>0.2</td></tr>
+  <tr><td><strong>Polynomial factor</strong></td><td>Divisor per order: the order-p coefficient is searched within (Max&nbsp;&minus;&nbsp;Min)/F<sup>p</sup> with velocity limit V<sub>max</sub>/F<sup>p</sup> (1&ndash;15)</td><td>10</td></tr>
 </table>
 
 <h2 id="running-a-fit">Running a Fit</h2>
@@ -279,7 +285,7 @@
   <tr><th>Enhancement</th><th>Description</th></tr>
   <tr>
     <td><strong>Reflective boundaries</strong></td>
-    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search.</td>
+    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search. (Irregular and Periodic modes; in Polynomial mode x<sub>0</sub> is clamped, and higher-order coefficients are zeroed from the top order down until the profile fits within the limits.)</td>
   </tr>
   <tr>
     <td><strong>Adaptive L&eacute;vy scale</strong></td>
@@ -287,7 +293,7 @@
   </tr>
   <tr>
     <td><strong>Adaptive PSO/L&eacute;vy switching</strong></td>
-    <td>Early iterations favor L&eacute;vy flights (70%) for exploration; later iterations favor PSO updates (70%) for exploitation. When the algorithm stagnates, L&eacute;vy probability increases automatically to escape local minima. Previously, a fixed 50/50 split was used.</td>
+    <td>Each iteration the whole swarm takes either a L&eacute;vy or a PSO step, chosen by one random draw. The L&eacute;vy probability falls from 70% to 30% over the run and rises by 5 points for every non-improving iteration since the last shake (at most 90%). Previously, a fixed 50/50 split was used.</td>
   </tr>
   <tr>
     <td><strong>Random-peer L&eacute;vy targets</strong></td>
@@ -310,6 +316,7 @@
   <strong>V = &chi; &times; (V + &phi;<sub>1</sub>r<sub>1</sub>(p<sub>best</sub> &minus; X) + &phi;<sub>2</sub>r<sub>2</sub>(g<sub>best</sub> &minus; X))</strong><br>
   where &phi; = &phi;<sub>1</sub> + &phi;<sub>2</sub> = 4.1, &ensp; &chi; = 2 / |2 &minus; &phi; &minus; &radic;(&phi;&sup2; &minus; 4&phi;)| &asymp; 0.7298
 </div>
+<p>p<sub>best</sub> is the best particle of the current iteration: the swarm keeps no per-particle memory. In a L&eacute;vy iteration the previous velocity is replaced by the L&eacute;vy step, aimed at g<sub>best</sub> or, 30% of the time, at a random peer.</p>
 
 <p>Unlike the empirical linear schedule, the constriction coefficient is mathematically proven to guarantee convergence while maintaining effective exploration. The higher cognitive and social coefficients (&phi;<sub>1</sub> = &phi;<sub>2</sub> = 2.05 vs. the previous c<sub>1</sub> = c<sub>2</sub> = 1) give particles stronger attraction to good solutions, while the constriction factor prevents velocity explosion.</p>
 
@@ -320,10 +327,10 @@
 <div class="note">
   <strong>&chi;&sup2; = (1000 / (N &minus; 1)) &times; &Sigma;<sub>i</sub> [ (log I<sub>exp,i</sub> &minus; log I<sub>calc,i</sub>) / log I<sub>calc,i</sub> ]&sup2; &times; &omega;<sub>peak,i</sub> &times; &omega;<sub>&theta;,i</sub></strong>
 </div>
-<p>where I<sub>exp,i</sub> and I<sub>calc,i</sub> are the measured and computed intensities at the i-th measured angle, N is the number of measured points, &omega;<sub>peak</sub> is the peak weight and &omega;<sub>&theta;</sub> the incidence-angle weight. The sum runs over the measured points except those at either end of the curve that the resolution convolution cannot compute in full (half the convolution window on each side), and points where the calculated intensity is zero. With <a href="#solved-scale">Solve scale in &chi;&sup2;</a> checked, log&nbsp;I<sub>exp,i</sub> carries the solved offset a.</p>
+<p>where I<sub>exp,i</sub> and I<sub>calc,i</sub> are the measured and computed intensities at the i-th measured angle, N is the number of measured points, &omega;<sub>peak</sub> is the peak weight and &omega;<sub>&theta;</sub> the incidence-angle weight. The sum runs over the measured points except half the resolution-convolution window at the start (the points within about 0.1&deg; of it) and that many plus one at the end &mdash; the last point is always excluded. The calculated curve is floored at the lower limit of the chart's reflectivity axis (1E-7 by default), so that setting also affects &chi;&sup2; wherever the data fall below it. With <a href="#solved-scale">Solve scale in &chi;&sup2;</a> checked, log&nbsp;I<sub>exp,i</sub> carries the solved offset a.</p>
 
 <h3>Peak Weight Function (PW &chi;&sup2;)</h3>
-<p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight concentrates the fit on the primary features of the curve. The measured curve is averaged over a moving window of 5&nbsp;% of its points; a point that stands more than three times above that average &mdash; a Bragg peak &mdash; gets the weight &omega;<sub>peak</sub>&nbsp;=&nbsp;I<sub>exp</sub>&nbsp;/&nbsp;average, every other point the weight 1. Unchecked, &omega;<sub>peak</sub>&nbsp;=&nbsp;1 everywhere.</p>
+<p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight concentrates the fit on the primary features of the curve. The measured curve is averaged over a moving window of 5&nbsp;% of its points (stored in the project, not editable in the program; the first half-window of points always gets weight 1); a point that stands more than three times above that average &mdash; a Bragg peak &mdash; gets the weight &omega;<sub>peak</sub>&nbsp;=&nbsp;I<sub>exp</sub>&nbsp;/&nbsp;average, every other point the weight 1. Unchecked, &omega;<sub>peak</sub>&nbsp;=&nbsp;1 everywhere.</p>
 
 <h3>Incidence-Angle Weight Function (TW &chi;&sup2;)</h3>
 <p>Allows concentration of the fitting process on distinct segments of the XRR curve by weighting different angular regions differently: &omega;<sub>&theta;</sub> is 1, &theta;&sup2;, &theta;, &radic;&theta;, 1/&theta;&sup2; or 1/&radic;&theta; as set in the <a href="#fit-params">TW &chi;&sup2; list</a>.</p>
@@ -345,7 +352,7 @@
 <ul>
   <li><strong>Footprint.</strong> A beam of height b illuminates a length b&nbsp;/&nbsp;sin&nbsp;&theta; of the specimen. Below the angle at which that length equals the specimen's, part of the beam misses the specimen, and the measured plateau of total external reflection is lower than the true one.</li>
   <li><strong>Alignment and curvature.</strong> An error in the &omega; zero, or a bowed substrate, lowers and reshapes the region around the critical angle, where the curve is steepest.</li>
-  <li><strong>Normalisation.</strong> <a href="Data.html#data-conditioning-walkthrough">Normalize</a> sets the scale from a single point &mdash; in the automatic variant the largest measured intensity below 0.5&deg;, matched to the model. The anchor inherits whatever error that one point carries, and depends on the model it was matched to.</li>
+  <li><strong>Normalisation.</strong> <a href="Data.html#data-conditioning-walkthrough">Normalize</a> sets the scale from a single point &mdash; in the automatic variant the largest measured intensity of the curve, matched to the model at that angle. The anchor inherits whatever error that one point carries, and depends on the model it was matched to.</li>
 </ul>
 <p>All of these multiply the whole curve by one factor s: I<sub>meas</sub>(&theta;)&nbsp;=&nbsp;s&nbsp;&middot;&nbsp;R(&theta;). On the logarithmic scale the fit works on, a factor is a constant offset, log&nbsp;I<sub>meas</sub>&nbsp;=&nbsp;log&nbsp;R&nbsp;+&nbsp;log&nbsp;s: the measured curve moves up or down without changing shape. That does not move a Bragg peak or change the spacing of the Kiessig fringes, which the thicknesses set, but it changes every absolute intensity &mdash; the height of the plateau, the reflectivity of the Bragg peaks, the rate at which the curve falls &mdash; and those are what the fit reads roughness and density from. A fit held at a wrong scale reaches for the parameters that can raise or lower the whole curve: a scale that is too low is typically absorbed as extra roughness, one that is too high as extra density contrast. The structure comes out biased, and its &chi;&sup2; is higher than the structure deserves.</p>
 
@@ -354,7 +361,7 @@
 <div class="note">
   <strong>&chi;&sup2;(a) = S<sub>2</sub> + 2a&thinsp;S<sub>1</sub> + a&sup2;&thinsp;S<sub>0</sub>, &emsp; a* = &minus;S<sub>1</sub> / S<sub>0</sub></strong>
 </div>
-<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and TW weights, and the division by log&nbsp;I<sub>calc</sub> that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
+<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and TW weights, and the factor 1/(log&nbsp;I<sub>calc</sub>)&sup2; that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
 <p>The weight explains why the scale matters so much. Because each residual is divided by log&nbsp;I<sub>calc</sub>, the points near and below the critical angle, where the reflectivity is close to 1 and its logarithm close to 0, weigh the most &mdash; and they are also the points that footprint and alignment errors affect most.</p>
 
 <h3>The window</h3>

@@ -35,42 +35,52 @@
 </div>
 
 <h2 id="algorithm">Algorithm</h2>
-<p>XRC3 uses the Parratt exact recursive method for simulating specular X-ray reflectivity. A Gaussian distribution is assumed for interface roughness. The refractive indices of materials are calculated using the Henke tables of X-ray scattering factors (Henke <em>et al.</em>, 1993). Reflectivity calculations can be performed as functions of either incidence angle or wavelength.</p>
+<p>XRC3 uses the exact Parratt recursion for specular X-ray reflectivity. The medium above the structure is vacuum (&epsilon; = 1) and the substrate is semi-infinite. The dielectric constant of each layer is &epsilon; = 1 &minus; 2&delta; + 2i&beta;, with &delta; and &beta; proportional to &rho;&lambda;&sup2;f<sub>1</sub>/A and &rho;&lambda;&sup2;f<sub>2</sub>/A (&rho; the density, A the molar mass). The atomic scattering factors f<sub>1</sub>, f<sub>2</sub> come from the Henke tables (Henke <em>et al.</em>, 1993), linearly interpolated in photon energy, E = 12398.6/&lambda; eV (&lambda; in &#8491;).</p>
+<p>Interface roughness is Gaussian. The Fresnel coefficient of every interface is multiplied by a N&eacute;vot&ndash;Croce-type factor exp(&minus;q<sub>0</sub>q&prime;&sigma;&sup2;/2), where q<sub>0</sub> = 4&pi; sin&theta;/&lambda; is the wave-vector transfer in vacuum and q&prime; the one refracted across the interface; the same factor is applied to s and p. The &sigma; of a layer is the roughness of its <em>upper</em> interface (see <a href="Models.html#layers">Layers</a>).</p>
+<p>Reflectivity can be calculated as a function of either the grazing angle or the wavelength. Calculated values below the chart's minimum-limit setting (the reflectivity floor in the Chart Info bar, default 10<sup>&minus;7</sup>) are raised to it; the floor applies to the &chi;&sup2; too.</p>
 
 <h2 id="calc-modes">Calculation Modes</h2>
 <p>X-Ray Calc 3 supports two calculation modes:</p>
 
 <h3>Theta Mode (by angle)</h3>
-<p>Calculates reflectivity as a function of incidence angle at a fixed wavelength.</p>
+<p>Calculates reflectivity as a function of the grazing angle (measured from the surface) at a fixed wavelength.</p>
 <table>
   <tr><th>Parameter</th><th>Description</th></tr>
   <tr><td><strong>&theta;<sub>1</sub></strong></td><td>Start angle (degrees)</td></tr>
-  <tr><td><strong>&theta;<sub>2</sub></strong></td><td>End angle (degrees)</td></tr>
-  <tr><td><strong>&lambda; (&#8491;)</strong></td><td>Fixed wavelength in Angstroms (default: 1.54043 &#8491;, Cu K&alpha;)</td></tr>
-  <tr><td><strong>&Delta;&theta;</strong></td><td>Angular resolution / step size (degrees)</td></tr>
-  <tr><td><strong>2&theta;</strong></td><td>When checked, angles are in 2&theta; (double angle) convention</td></tr>
+  <tr><td><strong>&theta;<sub>2</sub></strong></td><td>End angle (degrees). The calculated points are &theta;<sub>1</sub> + i&middot;(&theta;<sub>2</sub> &minus; &theta;<sub>1</sub>)/N, so &theta;<sub>2</sub> itself is not calculated.</td></tr>
+  <tr><td><strong>&lambda; (&#8491;)</strong></td><td>Fixed wavelength in Angstroms (default: 1.54043 &#8491;, close to Cu K&alpha;<sub>1</sub>, 1.5406 &#8491;)</td></tr>
+  <tr><td><strong>&Delta;&theta;</strong></td><td>Instrumental angular resolution: the FWHM, in degrees &theta;, of the Gaussian the calculated curve is convolved with (default 0.015; 0 = no convolution). It is not the step. The Gaussian is cut off at &plusmn;0.1&deg; on the chart axis, so a resolution wider than about 0.08&deg; (0.04&deg; with 2&theta; ticked) is under-represented.</td></tr>
+  <tr><td><strong>2&theta;</strong></td><td>When checked, &theta;<sub>1</sub>, &theta;<sub>2</sub> and the chart axis are in 2&theta; (the calculation divides by 2). &Delta;&theta; is always entered in &theta;.</td></tr>
 </table>
+<div class="note"><strong>Convolution edges:</strong> the convolution needs 0.1&deg; of curve on each side of a point. The first points of the curve (0.1&deg; worth) are left unconvolved and the last ones are replaced by a short trailing moving average; the &chi;&sup2; leaves out these end points (see <a href="Fitting.html#understanding-the-cost-function">Understanding the Cost Function</a>). The convolution assumes evenly spaced points.</div>
 
 <h3>Lambda Mode (by wavelength)</h3>
-<p>Calculates reflectivity as a function of wavelength at a fixed incidence angle.</p>
+<p>Calculates reflectivity as a function of wavelength at a fixed grazing angle.</p>
 <table>
   <tr><th>Parameter</th><th>Description</th></tr>
   <tr><td><strong>&lambda;<sub>1</sub></strong></td><td>Start wavelength (Angstroms)</td></tr>
-  <tr><td><strong>&lambda;<sub>2</sub></strong></td><td>End wavelength (Angstroms)</td></tr>
-  <tr><td><strong>&theta;</strong></td><td>Fixed incidence angle (degrees)</td></tr>
-  <tr><td><strong>&Delta;&lambda;</strong></td><td>Wavelength step size (Angstroms)</td></tr>
+  <tr><td><strong>&lambda;<sub>2</sub></strong></td><td>End wavelength (Angstroms). The step is (&lambda;<sub>2</sub> &minus; &lambda;<sub>1</sub>)/N.</td></tr>
+  <tr><td><strong>&theta;</strong></td><td>Fixed grazing angle in degrees, measured from the surface (90&deg; = normal incidence; default 85&deg;). The 2&theta; box does not apply here.</td></tr>
+  <tr><td><strong>&Delta;&lambda;</strong></td><td>Spectral resolution: the FWHM (&#8491;) of the Gaussian the curve is convolved with (default 0 = none; cut off at &plusmn;0.1&nbsp;&#8491;). It is not the step.</td></tr>
 </table>
+<div class="note"><strong>Limitations of Lambda mode in this version:</strong>
+<ul>
+  <li>The atomic scattering factors f<sub>1</sub>, f<sub>2</sub> of every material are read once, at &lambda;<sub>1</sub>, and kept for the whole scan. Across the scan &delta; and &beta; therefore scale only as &lambda;&sup2;: the energy dependence of f<sub>1</sub>, f<sub>2</sub>, absorption edges included, is not followed. Keep the scan narrow and away from the absorption edges of the materials in the structure (for example the Si L edge near 124&nbsp;&#8491; for Mo/Si), or calculate the region in several short scans.</li>
+  <li>A function (gradient) profile is applied correctly only at &lambda;<sub>1</sub>, unless it is attached to the first layer of the top stack; at later wavelengths its period count runs on instead of restarting.</li>
+  <li>Lambda mode runs on a single thread.</li>
+</ul></div>
 
 <h2 id="polarization">Polarization</h2>
 <ul>
   <li><strong>s-type:</strong> S-polarization (TE mode, electric field perpendicular to the plane of incidence)</li>
-  <li><strong>sp-type:</strong> Mixed &sigma;/&pi; polarization</li>
+  <li><strong>sp-type:</strong> unpolarized beam, R = (R<sub>s</sub> + R<sub>p</sub>)/2, with the same roughness factor applied to both components</li>
 </ul>
 
-<div class="tip"><strong>Guidance:</strong> Use <strong>s-polarization</strong> when calculating at hard X-rays and low grazing angles (below 20&deg;) &mdash; in this regime the difference from sp is negligible and calculation speed is significantly faster. Use <strong>sp-polarization</strong> for larger angles and softer radiation where both polarization components contribute.</div>
+<div class="tip"><strong>Guidance:</strong> What decides is the grazing angle, not the photon energy. Away from the critical angle R<sub>p</sub> &asymp; R<sub>s</sub>&thinsp;cos&sup2;2&theta;, so sp is lower than s by the fraction (1 &minus; cos&sup2;2&theta;)/2: under 0.5&nbsp;% below &theta; &asymp; 3&deg;, about 1.5&nbsp;% at 5&deg;, 6&nbsp;% at 10&deg; and 20&nbsp;% at 20&deg;. Use <strong>s-polarization</strong> at small grazing angles, where the difference is negligible and the calculation is faster. Use <strong>sp-polarization</strong> for an unpolarized source at larger angles, for example near-normal EUV and soft X-ray geometries; R<sub>p</sub> falls to nearly zero near the Brewster angle, &theta; &asymp; 45&deg;.</div>
 
 <h2 id="number-of-points-n">Number of Points (N)</h2>
-<p>The <strong>N</strong> parameter controls the number of calculation points (default: 2000). More points give smoother curves but take longer to compute.</p>
+<p>The <strong>N</strong> parameter sets the number of calculated points (default 2000 in a new session; a project that stores none opens with 1000). More points give smoother curves but take longer to compute. In Theta mode N is rounded down to a multiple of the number of threads.</p>
+<p>When a measured curve is linked to the model and the model curve is visible, N is not used: the model is calculated at the measured angles.</p>
 
 <h2 id="running-a-calculation">Running a Calculation</h2>
 <ol>
@@ -79,15 +89,16 @@
   <li>Choose <strong>Calc &gt; Calculate</strong> or click the <img src="images/icons/40_Play.png" alt="Calculate" class="icon"> <strong>Calc Run</strong> toolbar button.</li>
   <li>The calculated reflectivity curve appears on the main chart.</li>
 </ol>
+<p>When a measured curve is linked, <strong>Calculate</strong> also reports the &chi;&sup2; against it, and the plain &chi;&sup2;, in the Chart Info bar, at the scale shown in the <strong>scale</strong> pane (see <a href="Fitting.html#understanding-the-cost-function">Understanding the Cost Function</a> and <a href="Fitting.html#solved-scale">Solving the Measured Scale</a>).</p>
 <p><strong>Calculate All</strong> (<strong>Calc &gt; Calculate All</strong>) calculates reflectivity for every model in the project.</p>
 
 <h2 id="auto-calculation">Auto-Calculation</h2>
 <div class="note"><strong>Auto-Calc:</strong> When enabled in Settings, the reflectivity is recalculated automatically whenever you modify the structure. This provides real-time feedback as you adjust layer parameters.</div>
 
 <h2 id="multi-thread">Multi-Threading</h2>
-<p>The complete angular data range is divided into segments matching the number of available CPU cores, and each segment is computed in parallel. Configure the number of cores in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>:</p>
+<p>In Theta mode the calculated points are divided into as many contiguous segments as there are threads, and the segments are computed in parallel (with a linked measured curve, its points are divided the same way). Lambda mode runs on a single thread. Configure the number of threads in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>:</p>
 <ul>
-  <li><strong>Auto (Use all)</strong> &mdash; use all available CPU cores (default)</li>
+  <li><strong>Auto (Use all)</strong> &mdash; one thread per logical processor available to the process (default)</li>
   <li><strong>2, 4, 8, 12, 16, 32, 64</strong> &mdash; limit to a specific number of threads</li>
 </ul>
 <div class="tip"><strong>Performance:</strong> With a 16-core CPU, the typical simulation time for XRR ranges from 0.05 to 0.25 s for a periodic multilayer model consisting of 300 stacks of 4 layers each (3000-point curve). This speed enables real-time manual curve fitting.</div>

@@ -62,9 +62,9 @@
 <h2 id="calculation-settings">Calculation Settings</h2>
 <ul>
   <li><strong>Mode:</strong> Reflectivity can be calculated as a function of grazing angle or wavelength.</li>
-  <li><strong>Polarization:</strong> Use <strong>s-polarization</strong> for hard X-rays at low grazing angles (below 20&deg;) &mdash; this is significantly faster. Use <strong>sp-polarization</strong> for larger angles or softer radiation.</li>
+  <li><strong>Polarization:</strong> <strong>sp</strong> is the unpolarized average (R<sub>s</sub>&nbsp;+&nbsp;R<sub>p</sub>)/2 and takes about twice as long as <strong>s</strong>. At small grazing angles the two differ little (sp is lower than s by about 1.5&nbsp;% at 5&deg; and 6&nbsp;% at 10&deg;), so <strong>s</strong> is the usual choice for hard X-ray XRR; use <strong>sp</strong> for an unpolarized source at larger grazing angles.</li>
   <li><strong>Number of points (N):</strong> Controls calculation precision. Calculation time scales linearly with N.</li>
-  <li><strong>Angle range:</strong> Set with &theta;<sub>1</sub> and &theta;<sub>2</sub>. Check <strong>2&theta;</strong> for &theta;-2&theta; geometry. <strong>d&theta;</strong> sets the instrumental beam divergence.</li>
+  <li><strong>Angle range:</strong> Set with &theta;<sub>1</sub> and &theta;<sub>2</sub>. Check <strong>2&theta;</strong> for &theta;-2&theta; geometry. <strong>d&theta;</strong> is the angular resolution: the FWHM (degrees, in &theta;) of the Gaussian the calculated curve is convolved with (0 = none).</li>
   <li><strong>Scale:</strong> Toggle between <strong>Linear</strong> and <strong>Log</strong> scale using the toolbar button. Set a <strong>background level</strong> if needed.</li>
   <li><strong>Legend:</strong> Click items in the chart legend to toggle curve visibility.</li>
 </ul>

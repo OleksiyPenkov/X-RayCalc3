@@ -32,43 +32,53 @@
 </div>
 
 <h2 id="project-file-xrcx">Project File (.xrcx)</h2>
-<p>A ZIP archive containing:</p>
+<p>A ZIP archive of the project's working folder:</p>
 <ul>
-  <li><code>project.dsc</code> &mdash; project metadata (title, descriptions)</li>
-  <li><code>params.dsc</code> &mdash; complete model definitions in text format (layers, stacks, parameters, calculation settings)</li>
-  <li>Embedded experimental data files</li>
+  <li><code>project.dsc</code> &mdash; the project tree (binary): every model's structure (stacks, layers, substrate) as JSON, the titles and descriptions of the data items, and the profile extensions with their coefficients.</li>
+  <li><code>params.dsc</code> &mdash; an INI file with the calculation and fitting settings, no layers: <code>[PARAMS]</code> (N, mode, polarisation, chart minimum), <code>[ANGLE]</code> and <code>[WAVE]</code> (ranges, wavelength, resolution, the 2&theta; switch), <code>[FIT]</code> and <code>[LFPSO]</code> (fit settings, including <code>SolveScale</code> and <code>ScaleWindow</code>), <code>[INFO] Version</code>, and <code>[STATE]</code> (linked data, active model, log scale).</li>
+  <li><code>data_&lt;ID&gt;.dat</code> &mdash; one text file per data item, in the clipboard layout (three header lines, then angle and reflectivity).</li>
+  <li><code>calc.dat</code> &mdash; the active model's calculated curve.</li>
 </ul>
+<p>Data curves are stored with the angle rounded to 0.001&deg; and the reflectivity to five significant digits; Load, Normalize, Smooth and Trim all write through this, so a finer angle step than 0.001&deg; is rounded and can produce repeated angles.</p>
+<p>The current project version is 8. A project of version 7 or earlier opens with the substrate density reset to 0 (bulk), because earlier versions ignored the substrate density.</p>
 
 <h2 id="experimental-data-files">Experimental Data Files</h2>
-<p>Plain text, two columns separated by tabs or spaces:</p>
-<pre><code># Optional comment lines starting with #
-0.100   1.000000
-0.200   0.999850
+<p>Plain text, one point per line: angle (or wavelength), a single TAB, reflectivity:</p>
+<pre><code>* Optional description lines starting with *
+0.100	1.000000
+0.200	0.999850
 ...</code></pre>
-<p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
-Column 2: Reflectivity (typically 0 to 1)</p>
+<p>Column 1: the angle in degrees, 2&theta; when the calculation's 2&theta; switch is on and &theta; when it is off (a text file is not converted), or the wavelength in &Aring; in wavelength mode.<br>
+Column 2: reflectivity.</p>
+<p>Use exactly one separator (one TAB, or one space in a file without TABs) and no third column; both numbers must start with a digit. Other lines are skipped. The full rules are in <a href="Data.html#data-format">Experimental Data &gt; Data Format</a>.</p>
 
 <h3>XRDML (PANalytical)</h3>
 <p>A PANalytical / Malvern <code>.xrdml</code> file, schema 1.0 to 2.x, is read without conversion by <strong>Data &gt; Load</strong> and by the MCP server's inbox. What is read:</p>
 <ul>
-  <li>the first <code>scan</code> of the file, its <code>2Theta</code> positions (start/end, a position list, or <code>Omega</code> for a rocking curve);</li>
-  <li><code>counts</code> (raw, with <code>beamAttenuationFactors</code> multiplied in when present) or <code>intensities</code> (already corrected), divided by <code>commonCountingTime</code> or the per-point <code>countingTimes</code>;</li>
+  <li>the first <code>scan</code> of the file that has data points, its <code>2Theta</code> positions (start/end, a position list, or <code>Omega</code> for a rocking curve; a file whose 2&theta; does not move and has no Omega positions is refused);</li>
+  <li><code>counts</code> (raw, with <code>beamAttenuationFactors</code> multiplied in when present) or <code>intensities</code> (already corrected), divided by <code>commonCountingTime</code> or the per-point <code>countingTimes</code> (left undivided when the file has neither);</li>
   <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
   <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
 </ul>
-<p>The curve is normalised to 1 at its maximum and non-positive counts are floored as for a text file; the raw peak count rate is kept in the header. See <a href="Data.html#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
+<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it); a text file floors only exact zeros and skips negative values. The peak count rate of the corrected curve is kept in the description. See <a href="Data.html#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
 
 <h2 id="henke-tables">Henke Tables</h2>
-<p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>
+<p>One binary file per material, element or compound, <code>Henke\&lt;Name&gt;.bin</code> (the <code>Henke</code> folder beside the program, or under the storage folder set in <a href="Settings.html">Settings</a>). A layer's material name must match a file name. Each file holds:</p>
+<ul>
+  <li>the material name, the molar mass A (g/mol, per formula unit) and the bulk density (g/cm&sup3;);</li>
+  <li>records of (photon energy E in eV, f<sub>1</sub>, f<sub>2</sub>) on an energy grid. The wavelength is &lambda;&nbsp;=&nbsp;12398.6&nbsp;/&nbsp;E (&Aring;); f<sub>1</sub> and f<sub>2</sub> are interpolated linearly in E.</li>
+</ul>
+<p>The optical constants follow from these: &delta; and &beta; are proportional to (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>1</sub> and (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>2</sub>, with &rho; the layer's density, or the bulk density from the file when the layer's is 0. For a compound, f<sub>1</sub>, f<sub>2</sub> and A are all per formula unit, so they must be changed together (see <a href="Tools.html#edit-henke-table">Edit Henke Table</a>). The tables are included with the application.</p>
 
 <h2 id="settings-file-xrc3-ini">Settings File (xrc3.ini)</h2>
-<p>Standard Windows INI file format. Sections include:</p>
+<p>A standard Windows INI file, <code>%APPDATA%\X-RayCalc3\xrc3.ini</code>, or next to the program when a file named <code>uselocaldata</code> sits there. Sections:</p>
 <ul>
-  <li><code>[Path]</code> &mdash; directory paths</li>
-  <li><code>[Window]</code> &mdash; window position and size</li>
-  <li><code>[Options]</code> &mdash; behavior flags</li>
-  <li><code>[Graphics]</code> &mdash; chart display settings</li>
-  <li><code>[Calc]</code> &mdash; calculation settings</li>
+  <li><code>[Path]</code> &mdash; the Henke, storage, benchmark, project, output and jobs folders</li>
+  <li><code>[Window]</code> &mdash; window state, position and size</li>
+  <li><code>[Options]</code> &mdash; CheckForUpdates, UpdateInfoURL, AutoCalc, AutoSave, LiveUpdate</li>
+  <li><code>[Graphics]</code> &mdash; LineWidth</li>
+  <li><code>[Calc]</code> &mdash; NumberOfThreads (0 = all), BenchmarkRuns (20), UseGPU (on). The calculation parameters themselves (range, wavelength, resolution, fit settings) are stored in each project's <code>params.dsc</code>, not here.</li>
+  <li><code>[Recent]</code> &mdash; the recent-projects list</li>
 </ul>
 
 <h3>See Also</h3>

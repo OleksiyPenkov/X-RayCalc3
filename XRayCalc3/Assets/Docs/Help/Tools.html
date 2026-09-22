@@ -32,20 +32,22 @@
 
 <h2 id="create-new-material">Create New Material</h2>
 <p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create New Material</strong> opens a dialog to add a custom material to the Henke database.</p>
-<p>Enter the chemical formula and the application calculates the atomic form factors from the constituent elements. This is useful for compounds not already in the database.</p>
+<p>Choose the number of components, pick each one (an element or an existing material) and give its concentration in atomic per cent, then a name and a density (g/cm&sup3;). The program writes <code>Henke\&lt;Name&gt;.bin</code> with f<sub>1</sub>, f<sub>2</sub> and the molar mass averaged per atom with the atomic fractions, f&nbsp;=&nbsp;&Sigma;&nbsp;c<sub>i</sub>f<sub>i</sub>, on the energy grid of the first component (the others are interpolated onto it). The density you enter becomes the bulk density used when a layer's density is 0.</p>
+<div class="note"><strong>Note:</strong> the percentages must add up to 100; the dialog does not check this. An existing file of the same name is overwritten without asking.</div>
 
 <h2 id="edit-henke-table">Edit Henke Table</h2>
 <p><img src="images/icons/Menu_EditTable.png" alt="Edit Table" class="icon"> <strong>Tools &gt; Edit Henke Table</strong> opens the Henke Table Editor, which allows you to view and modify the atomic scattering factor tables used for reflectivity calculations.</p>
-<p>The Henke tables contain wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These are the fundamental optical constants used in the Fresnel equation calculations.</p>
+<p>A Henke table holds the atomic scattering factors f<sub>1</sub> and f<sub>2</sub> of one material against photon energy E (the &lambda; column is 12398.6&nbsp;/&nbsp;E, in &Aring;), together with the molar mass and the bulk density. The optical constants &delta; and &beta; are proportional to (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>1</sub> and (&rho;&nbsp;/&nbsp;A)&nbsp;&lambda;&sup2; f<sub>2</sub>. The f<sub>1</sub> and f<sub>2</sub> cells, the molar mass and the density can be edited; <strong>Save</strong> overwrites the file. A value shown as <em>N/A</em> is not tabulated.</p>
+<div class="note"><strong>Note:</strong> f<sub>1</sub>, f<sub>2</sub> and the molar mass are per formula unit and enter the optical constants as a ratio. Change the mass only together with f<sub>1</sub> and f<sub>2</sub>, or every layer of that material changes its optical constants.</div>
 
 <h2 id="benchmark">Benchmark</h2>
-<p><img src="images/icons/Menu_Benchmark.png" alt="Benchmark" class="icon"> <strong>Calc &gt; Benchmark</strong> opens the Benchmark dialog, which measures the calculation performance of your system:</p>
+<p><img src="images/icons/Menu_Benchmark.png" alt="Benchmark" class="icon"> <strong>Calc &gt; Benchmark</strong> measures how reliably the optimizer converges, not how fast it runs:</p>
 <ul>
-  <li>Runs a standard reflectivity calculation multiple times</li>
-  <li>Reports average execution time</li>
-  <li>Useful for comparing performance across different hardware or thread configurations</li>
+  <li>Every project (<code>.xrcx</code>) in the <code>Benchmark</code> folder is reopened and fitted N times, with the fit settings stored in it.</li>
+  <li>The final &chi;&sup2; of each run is tabulated with statistics, and the table is saved to <code>BenchResults\benchmark-&lt;date&gt;.dat</code>.</li>
+  <li>A spread of final &chi;&sup2; values shows how often the swarm finds the same minimum; compare optimizer settings this way.</li>
 </ul>
-<p>Configure the number of benchmark runs in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>.</p>
+<p>Configure the number of runs N (default 20) in <strong>File &gt; Settings &gt; Calc &amp; Fit</strong>. For the time a fit takes, see the fitting time in the status bar.</p>
 
 <h3>See Also</h3>
 <ul>
