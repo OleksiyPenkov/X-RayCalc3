@@ -81,8 +81,12 @@ type
     Detector: string;          // diffractedBeamPath/detector@name
     ReadOutPeriod: Double;     // the detector's readOutPeriod in s; 0 when absent
     ZerosFloored: Integer;     // points with a non-positive count, floored
-    FirstNonPositive: Integer; // index in Curve of the first of them; -1 when there is none
-    PeakCounts: Double;        // the value written in the file at the maximum: raw counts (x attenuation factor)
+    FirstNonPositive: Integer; // index in Curve of the one at the lowest angle; -1 when there is none
+    PeakIndex: Integer;        // index in Curve of the maximum (r = 1)
+    PeakCounts: Double;        // the number in the file at the maximum, x attenuation factor when there is one
+    RawPeakRate: Double;       // counts per second the detector itself saw at most: no attenuation factor
+    RawPeakCounts: Double;     // the number in the file at that point
+    RawPeakIndex: Integer;     // index in Curve of that point (= PeakIndex without attenuation factors)
     IntensityUnit: string;     // the counts/intensities element's unit attribute, '' when absent
     CountingTime: Double;      // the common counting time in s; 0 when per-point
     StartTime: string;         // the scan header's startTimeStamp, as written
@@ -430,22 +434,47 @@ begin
     if Result.Curve[I].r <= 0 then
     begin
       Inc(Result.ZerosFloored);
-      if Result.FirstNonPositive < 0 then
+      { the one at the lowest angle, whichever way the file was scanned }
+      if (Result.FirstNonPositive < 0) or (Angles[I] < Angles[Result.FirstNonPositive]) then
         Result.FirstNonPositive := I;
     end;
   FloorNonPositive(Result.Curve);
+
+  { The maximum of the curve as a fit sees it (attenuation factors in), and
+    the maximum the detector itself saw (factors out): with an attenuator in
+    the beam the two are different points, and it is the second that a
+    saturation check must judge. }
   Result.PeakRate := 0;
   Result.PeakCounts := 0;
+  Result.PeakIndex := -1;
+  Result.RawPeakRate := 0;
+  Result.RawPeakCounts := 0;
+  Result.RawPeakIndex := -1;
   for I := 0 to N - 1 do
+  begin
     if Result.Curve[I].r > Result.PeakRate then
     begin
       Result.PeakRate := Result.Curve[I].r;
-      { the number in the file at that point, before the counting time:
-        with the attenuation factor in, as the detector never saw it }
+      Result.PeakIndex := I;
       Result.PeakCounts := Values[I];
       if Result.AttenuationApplied then
         Result.PeakCounts := Result.PeakCounts * Factors[I];
     end;
+    T := Values[I];
+    if Length(Times) > 0 then
+    begin
+      if Times[I] > 0 then
+        T := T / Times[I];
+    end
+    else if Result.CountingTime > 0 then
+      T := T / Result.CountingTime;
+    if T > Result.RawPeakRate then
+    begin
+      Result.RawPeakRate := T;
+      Result.RawPeakCounts := Values[I];
+      Result.RawPeakIndex := I;
+    end;
+  end;
   if Result.PeakRate > 0 then
     for I := 0 to N - 1 do
       Result.Curve[I].r := Result.Curve[I].r / Result.PeakRate;

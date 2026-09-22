@@ -38,19 +38,95 @@ unit unit_ToolsFiles;
 
 interface
 
-uses unit_MCPTools;
+uses System.JSON, unit_MCPTools;
 
 procedure RegisterFileTools(Registry: TToolRegistry);
+
+/// <summary>The assess_xrr tool: reads the measurement from the inbox, the
+/// design and the instrument numbers from Params, and returns the assessment
+/// (unit_MCPAssess) with the measurement's identity in front of it. Caller
+/// frees. Here rather than in unit_MCPAssess so that the assessment itself
+/// stays free of the inbox and the sandbox, and the GUI can share it.</summary>
+function AssessMeasurementJSON(const Params: TJSONObject): TJSONObject;
 
 implementation
 
 uses
-  System.JSON, System.SysUtils, System.IOUtils, System.Types,
+  System.SysUtils, System.IOUtils, System.Types, System.StrUtils,
   System.Generics.Collections, System.Generics.Defaults,
   unit_Types,
   unit_MCPErrors, unit_MCPInbox, unit_MCPSandbox, unit_MCPUnits,
   unit_MCPStructure, unit_MCPCalc, unit_MCPProjectFile, unit_MCPAssess,
-  unit_consts;
+  unit_MCPFit, unit_consts;
+
+{ ----------------------------------------------------------- assess_xrr -- }
+
+function AssessMeasurementJSON(const Params: TJSONObject): TJSONObject;
+var
+  M: TMeasurement;
+  Inp: TAssessInput;
+  JS: TJSONObject;
+  Bad: string;
+  i: Integer;
+begin
+  M := LoadMeasurement(JSONArgs.ReqStr(Params, 'measurement_id'), 0);
+  try
+    if M.IsXRDML then
+      Inp := AssessInputFromScan(M.XRDML)     // the raw facts, the curve in theta
+    else
+    begin
+      Inp := DefaultAssessInput;
+      Inp.Curve := M.Curve;
+      Inp.TwoThetaScan := M.Converted2Theta;
+    end;
+
+    { the same rule as fit_xrr: "lambda" or "energy" from the arguments,
+      the measurement's own wavelength (the file's, else meta.json's) when
+      neither is given }
+    Inp.Lambda := GetLambdaArg(Params, 'lambda', 'energy', True, M.Meta.Lambda);
+    if (Params.GetValue('lambda') <> nil) or (Params.GetValue('energy') <> nil) then
+      Inp.LambdaSource := 'argument'
+    else
+      Inp.LambdaSource := M.LambdaSource;
+
+    JS := JSONArgs.OptObj(Params, 'structure');
+    if JS <> nil then
+    begin
+      Inp.Structure := StructureFromJSON(JS, Inp.Info);
+      Bad := ValidateMaterials(Inp.Structure);
+      if Bad <> '' then
+        raise EMCPError.Create('unknown_material',
+          Format('No Henke table for material "%s"', [Bad]),
+          'list_materials enumerates the names this server knows');
+      Inp.HasStructure := True;
+    end;
+
+    Inp.Resolution := JSONArgs.OptFloat(Params, 'resolution', DEF_RESOLUTION);
+    Inp.DetectorMaxCps := JSONArgs.OptFloat(Params, 'detector_max_cps', 0);
+    Inp.SampleLengthMm := JSONArgs.OptFloat(Params, 'sample_length_mm', 0);
+    Inp.BeamWidthMm := JSONArgs.OptFloat(Params, 'beam_width_mm', 0);
+    if (Inp.Resolution < 0) or (Inp.DetectorMaxCps < 0) or (Inp.SampleLengthMm < 0) or
+       (Inp.BeamWidthMm < 0) then
+      raise EMCPError.Create('invalid_argument',
+        '"resolution", "detector_max_cps", "sample_length_mm" and "beam_width_mm" cannot be negative');
+    Inp.VisibleFactor := JSONArgs.OptFloat(Params, 'order_visible_factor', Inp.VisibleFactor);
+    Inp.MinPointsPerFringe := JSONArgs.OptFloat(Params, 'min_points_per_fringe',
+                                                Inp.MinPointsPerFringe);
+
+    Result := TJSONObject.Create;
+    try
+      Result.AddPair('measurement_id', M.Id);
+      Result.AddPair('file', WorkDir.RelativePath(M.Path));
+      Result.AddPair('format', IfThen(M.IsXRDML, 'xrdml', 'text'));
+      AssessInto(Inp, Result);
+    except
+      Result.Free;
+      raise;
+    end;
+  finally
+    M.Meta.Raw.Free;
+  end;
+end;
 
 procedure RegisterInboxTools(Registry: TToolRegistry);
 var
@@ -129,10 +205,16 @@ begin
     'measurement could have shown.', StructureSchema);
   AddProp(Schema, 'lambda', 'number',
     'Wavelength in Angstrom for the design; defaults to the file''s (an .xrdml) or ' +
-    'meta.json''s. Required with "structure" when neither has one.');
+    'meta.json''s. Required with "structure" when neither has one. "energy" in eV ' +
+    'is accepted instead, as in fit_xrr.');
+  AddProp(Schema, 'energy', 'number', 'Photon energy in eV, in place of "lambda".');
+  AddProp(Schema, 'resolution', 'number',
+    'Theta FWHM in degrees the design''s model is convolved with, so that it is the ' +
+    'curve a fit would compare against (default fit_xrr''s 0.015). 0 for none.');
   AddProp(Schema, 'detector_max_cps', 'number',
-    'The detector''s linear count-rate limit in counts per second. Without it the ' +
-    'counting check reports the peak rate and says "unknown"; no limit is built in.');
+    'The detector''s linear count-rate limit in counts per second, judged against the ' +
+    'rate the detector itself saw (attenuation factors out). Without it the counting ' +
+    'check reports the peak rate and says "unknown"; no limit is built in.');
   AddProp(Schema, 'sample_length_mm', 'number',
     'The specimen''s length along the beam, mm. With beam_width_mm it places the ' +
     'footprint knee asin(beam / length).');

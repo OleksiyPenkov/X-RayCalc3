@@ -22,15 +22,20 @@
 
 unit unit_MCPAssess;
 
-(* assess_xrr: is this curve worth fitting?
+(* Is this measured curve worth fitting?
 
    The fitting procedure's first section turned around and pointed at the
    measurement instead of at the model: before anyone fits, say whether the
    scan can carry a fit at all. The decisive checks are count RATES, and the
-   counting time per step exists only in the raw .xrdml, which is why this
-   tool reads the inbox file itself rather than the two-column form
-   get_measurement hands out. A two-column file still works: every check that
-   needs a fact the file does not carry answers "unknown".
+   counting time per step exists only in the raw .xrdml, which is why the
+   assessment wants the parsed scan and not the two columns a chart holds. A
+   two-column curve still works: every check that needs a fact the file does
+   not carry answers "unknown".
+
+   This unit is the assessment itself, shared by the MCP tool assess_xrr
+   (unit_ToolsFiles) and the GUI's Data - Assess XRR quality (frm_XRRAssess):
+   a TAssessInput in, one JSON object out, nothing read from disk and nothing
+   written anywhere.
 
    Eight checks, each {value, threshold, verdict, why} plus the numbers it was
    made from, and a text block ready to paste into the specimen's record:
@@ -57,27 +62,34 @@ unit unit_MCPAssess;
      the text block.
 
    Where a design is given, the checks that need a period, a total thickness
-   or a critical angle read them from it, and the model reflectivity of the
-   design on the measured range says what the measurement could have shown:
-   an order the model puts below the background was never going to be seen,
-   and a first order the model puts at half the plateau cannot measure 96 %
-   of it. Without a design the same checks report the number and say
-   "unknown".
+   or a critical angle read them from it, and the design's reflectivity on
+   the measured range - convolved with the same resolution a fit would use,
+   so that the two tools describe the same design - says what the measurement
+   could have shown: an order the model puts below the background was never
+   going to be seen, and a first order the model puts at half the plateau
+   cannot measure 96 % of it. Without a design the same checks report the
+   number and say "unknown".
+
+   The counting check judges the rate the DETECTOR saw. A file with beam
+   attenuation factors carries corrected counts on the plateau, up to a
+   hundred times what the detector counted; unit_xrdml keeps both maxima and
+   the check reads the raw one, reporting the corrected one beside it.
 
    Angles: every angle here is theta in degrees, the engine's own axis; the
    scan's own axis is reported beside it as two_theta_deg wherever a person
-   would look the number up in the file. *)
+   would look the number up in the file. The curve is sorted ascending in
+   theta before anything reads it, whichever way the file was scanned. *)
 
 interface
 
 uses
   System.JSON,
-  unit_Types, unit_MCPStructure;
+  unit_Types, unit_xrdml, unit_MCPStructure;
 
 type
-  /// <summary>Everything one assessment reads. Curve is the inbox's curve:
-  /// theta in degrees ascending, non-positive intensities already replaced,
-  /// normalised to 1 at the maximum when it came from an .xrdml. The raw
+  /// <summary>Everything one assessment reads. Curve is theta in degrees,
+  /// non-positive intensities already replaced, normalised to 1 at the
+  /// maximum when it came from an .xrdml; it need not be sorted. The raw
   /// facts are known (HasRaw) for an .xrdml only. Zero means "not given"
   /// for every optional number.</summary>
   TAssessInput = record
@@ -89,18 +101,23 @@ type
     HasRaw: Boolean;
     IntensityUnit: string;        // 'counts', 'cps', '' ...
     CountingTime: Double;         // s per point; 0 when per-point or absent
-    PeakRate: Double;             // counts per second at the maximum
-    PeakCounts: Double;           // the number in the file at the maximum
+    PeakRate: Double;             // counts per second at the curve's maximum (attenuation factors in)
+    PeakCounts: Double;           // the number in the file there, factors in
+    PeakIndex: Integer;           // index into Curve of that maximum; -1 when unknown
+    RawPeakRate: Double;          // counts per second the detector saw at most (factors out)
+    RawPeakCounts: Double;        // the number in the file at that point
+    RawPeakIndex: Integer;        // index into Curve of that point; -1 when unknown
     AttenuationApplied: Boolean;
     Detector: string;
     ReadOutPeriod: Double;
     ZerosFloored: Integer;
-    FirstNonPositive: Integer;    // index into Curve; -1 when none
+    FirstNonPositive: Integer;    // index into Curve of the lowest-angle zero; -1 when none
 
     HasStructure: Boolean;
     Structure: TFitStructure;
-    Info: TStructureInfo;
+    Info: TStructureInfo;         // may be Default: the assessment finds the periodic stack itself
 
+    Resolution: Double;           // theta FWHM (deg) the design is convolved with; 0 = none
     DetectorMaxCps: Double;       // the detector's linear limit; 0 = not given
     SampleLengthMm: Double;       // 0 = not given
     BeamWidthMm: Double;          // 0 = not given
@@ -117,25 +134,30 @@ const
   ASSESS_NYQUIST_POINTS_PER_FRINGE = 2;
 
 /// <summary>An input with the defaults filled in: VisibleFactor and
-/// MinPointsPerFringe set, everything else empty or zero.</summary>
+/// MinPointsPerFringe set, every index -1, everything else empty or zero.</summary>
 function DefaultAssessInput: TAssessInput;
+
+/// <summary>The input an .xrdml scan gives: the curve brought to theta (a
+/// 2Theta scan halved, an Omega scan as it is), the wavelength the file
+/// implies, and every raw fact. The design and the instrument numbers are
+/// left for the caller.</summary>
+function AssessInputFromScan(const Scan: TXRDMLScan): TAssessInput;
 
 /// <summary>The assessment of one curve. Caller frees. Raises
 /// EMCPError('invalid_argument') for a curve of fewer than three points, or
 /// a design without a wavelength to place it at.</summary>
 function AssessJSON(const Inp: TAssessInput): TJSONObject;
 
-/// <summary>The assess_xrr tool: reads the measurement from the inbox, the
-/// design and the instrument numbers from Params, and returns AssessJSON
-/// with the measurement's identity in front of it. Caller frees.</summary>
-function AssessMeasurementJSON(const Params: TJSONObject): TJSONObject;
+/// <summary>AssessJSON into an object the caller has already started (the
+/// measurement's identity in front of the checks).</summary>
+procedure AssessInto(const Inp: TAssessInput; Res: TJSONObject);
 
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, System.Math, System.Generics.Collections,
-  unit_MCPErrors, unit_MCPCalc, unit_MCPFitReport, unit_MCPInbox,
-  unit_MCPSandbox;
+  System.SysUtils, System.Math, System.Generics.Collections,
+  System.Generics.Defaults,
+  unit_MCPErrors, unit_MCPCalc, unit_MCPFitReport;
 
 const
   VERDICT_UNKNOWN = 'unknown';
@@ -144,14 +166,6 @@ const
   VERDICT_FAIL    = 'fail';
 
 { ------------------------------------------------------------- helpers -- }
-
-function NumOrNull(Value: Double; Valid: Boolean): TJSONValue;
-begin
-  if Valid then
-    Result := JSONArgs.Num(Value)
-  else
-    Result := TJSONNull.Create;
-end;
 
 function StrOrNull(const S: string): TJSONValue;
 begin
@@ -191,6 +205,13 @@ procedure AddAngle(Obj: TJSONObject; const Prefix: string; Theta: Double);
 begin
   Obj.AddPair(Prefix + 'theta_deg', JSONArgs.Num(Theta));
   Obj.AddPair(Prefix + 'two_theta_deg', JSONArgs.Num(2 * Theta));
+end;
+
+/// The same two keys as null, where there is no angle to give.
+procedure AddNoAngle(Obj: TJSONObject; const Prefix: string);
+begin
+  Obj.AddPair(Prefix + 'theta_deg', TJSONNull.Create);
+  Obj.AddPair(Prefix + 'two_theta_deg', TJSONNull.Create);
 end;
 
 { --------------------------------------------------------- curve reading -- }
@@ -271,33 +292,91 @@ end;
 function MedianStep(const C: unit_Types.TDataArray): Double;
 var
   D: TArray<Double>;
-  i, n: Integer;
+  i: Integer;
 begin
-  n := Length(C) - 1;
-  if n < 1 then
+  if Length(C) < 2 then
     Exit(0);
-  SetLength(D, n);
-  for i := 0 to n - 1 do
+  SetLength(D, Length(C) - 1);
+  for i := 0 to High(D) do
     D[i] := Abs(C[i + 1].t - C[i].t);
-  TArray.Sort<Double>(D);
-  if Odd(n) then
-    Result := D[n div 2]
-  else
-    Result := (D[n div 2 - 1] + D[n div 2]) / 2;
+  Result := MedianOf(D);
+end;
+
+/// The curve ascending in theta, and the three indices that point into it
+/// carried along. A scan written high-to-low, or a text file in any order,
+/// reads the same as one written low-to-high.
+procedure SortAscending(var Inp: TAssessInput);
+var
+  C, Sorted: unit_Types.TDataArray;
+  Idx, Inverse: TArray<Integer>;
+  i, n: Integer;
+  InOrder: Boolean;
+begin
+  C := Inp.Curve;
+  n := Length(C);
+  InOrder := True;
+  for i := 1 to n - 1 do
+    if C[i].t < C[i - 1].t then
+    begin
+      InOrder := False;
+      Break;
+    end;
+  if InOrder then
+    Exit;
+
+  SetLength(Idx, n);
+  for i := 0 to n - 1 do
+    Idx[i] := i;
+  TArray.Sort<Integer>(Idx, TComparer<Integer>.Construct(
+    function(const A, B: Integer): Integer
+    begin
+      Result := CompareValue(C[A].t, C[B].t);
+      if Result = 0 then
+        Result := CompareValue(A, B);      // stable: equal angles keep their file order
+    end));
+
+  SetLength(Sorted, n);
+  SetLength(Inverse, n);
+  for i := 0 to n - 1 do
+  begin
+    Sorted[i] := C[Idx[i]];
+    Inverse[Idx[i]] := i;
+  end;
+  Inp.Curve := Sorted;
+  if Inp.PeakIndex >= 0 then
+    Inp.PeakIndex := Inverse[Inp.PeakIndex];
+  if Inp.RawPeakIndex >= 0 then
+    Inp.RawPeakIndex := Inverse[Inp.RawPeakIndex];
+  if Inp.FirstNonPositive >= 0 then
+    Inp.FirstNonPositive := Inverse[Inp.FirstNonPositive];
 end;
 
 { --------------------------------------------------------------- design -- }
 
-/// The period of the design's repeating stack, 0 when it has none.
-function DesignPeriod(const S: TFitStructure; const Info: TStructureInfo): Double;
+/// The first stack with more than one period: the rule unit_MCPStructure
+/// applies, repeated here so that a structure the GUI built (no
+/// TStructureInfo) reads the same. -1 when there is none.
+function PeriodicStackIndex(const S: TFitStructure): Integer;
 var
-  k: Integer;
+  j: Integer;
+begin
+  for j := 0 to High(S.Stacks) do
+    if S.Stacks[j].N > 1 then
+      Exit(j);
+  Result := -1;
+end;
+
+/// The period of the design's repeating stack, 0 when it has none.
+function DesignPeriod(const S: TFitStructure): Double;
+var
+  j, k: Integer;
 begin
   Result := 0;
-  if (Info.PeriodicStackIndex < 0) or (Info.PeriodicStackIndex > High(S.Stacks)) then
+  j := PeriodicStackIndex(S);
+  if j < 0 then
     Exit;
-  for k := 0 to High(S.Stacks[Info.PeriodicStackIndex].Layers) do
-    Result := Result + S.Stacks[Info.PeriodicStackIndex].Layers[k].P[1].V;
+  for k := 0 to High(S.Stacks[j].Layers) do
+    Result := Result + S.Stacks[j].Layers[k].P[1].V;
 end;
 
 /// Every layer of every stack, N times over: the film's whole thickness, which
@@ -318,8 +397,11 @@ begin
 end;
 
 /// The design's reflectivity on the measured range, on a grid of as many
-/// points as the measurement (capped at what one calculation may take).
-function DesignCurve(const Inp: TAssessInput): unit_Types.TDataArray;
+/// points as the measurement (capped at what one calculation may take),
+/// convolved with the caller's resolution. The floor R is clamped to sits
+/// under the measured background, so that the clamp itself can never pass
+/// for an order the design predicts.
+function DesignCurve(const Inp: TAssessInput; Background: Double): unit_Types.TDataArray;
 var
   Req: TCalcRequest;
   Used: TFitStructure;
@@ -330,10 +412,10 @@ begin
   Req.Lambda := Inp.Lambda;
   Req.ThetaMin := Inp.Curve[0].t;
   Req.ThetaMax := Inp.Curve[High(Inp.Curve)].t;
-  Req.DeltaTheta := 0;
+  Req.DeltaTheta := Max(0, Inp.Resolution);
   Req.Points := Max(2, Min(Length(Inp.Curve), MAX_CALC_POINTS));
   Req.Polarization := cmSP;
-  Req.RMin := 1E-7;
+  Req.RMin := Max(1E-12, Min(1E-7, Background / 10));
   Result := RunCalc(Req, Used);
 end;
 
@@ -353,6 +435,7 @@ type
     FirstOrderHow: string;          // how IFirst was chosen
     Order1Lo, Order1Hi, Order1Theta: Double;
     HasOrder1Window: Boolean;
+    Extrema: TArray<TExtremum>;     // the turning points after the plateau, walked once
   end;
 
 procedure ReadCurve(var Ctx: TAssessContext);
@@ -369,14 +452,16 @@ begin
     Period := 0;
     TotalThickness := 0;
     ThetaC := 0;
+    SetLength(Model, 0);
 
     if Inp.HasStructure then
     begin
-      Period := DesignPeriod(Inp.Structure, Inp.Info);
+      Period := DesignPeriod(Inp.Structure);
       TotalThickness := DesignTotalThickness(Inp.Structure);
       ThetaC := CriticalAngleDeg(Inp.Structure, Inp.Lambda);
       HasOrder1Window := (Period > 0) and
         BraggSearchWindow(1, Inp.Lambda, Period, ThetaC, Order1Lo, Order1Hi, Order1Theta);
+      Model := DesignCurve(Inp, Background);
     end;
 
     { The plateau maximum: below the first order's window when the design
@@ -400,6 +485,9 @@ begin
     if ILow < 0 then
       ILow := IndexOfMax(Inp.Curve);
 
+    { walked once from the plateau; the orders check reads it again }
+    Extrema := HysteresisExtrema(Inp.Curve, ILow);
+
     { The first order: the largest point inside the design's window, or, with
       no design, the highest maximum after the plateau has fallen to its
       first minimum. }
@@ -413,16 +501,15 @@ begin
     end
     else
     begin
-      Ext := HysteresisExtrema(Inp.Curve, ILow);
       FirstMin := -1;
       Best := -1;
-      for n := 0 to High(Ext) do
+      for n := 0 to High(Extrema) do
       begin
-        if (FirstMin < 0) and not Ext[n].IsMax then
+        if (FirstMin < 0) and not Extrema[n].IsMax then
           FirstMin := n
-        else if (FirstMin >= 0) and Ext[n].IsMax then
-          if (Best < 0) or (Inp.Curve[Ext[n].Idx].r > Inp.Curve[Best].r) then
-            Best := Ext[n].Idx;
+        else if (FirstMin >= 0) and Extrema[n].IsMax then
+          if (Best < 0) or (Inp.Curve[Extrema[n].Idx].r > Inp.Curve[Best].r) then
+            Best := Extrema[n].Idx;
       end;
       IFirst := Best;
       if IFirst >= 0 then
@@ -435,7 +522,7 @@ end;
 
 function CountingCheck(const Ctx: TAssessContext): TJSONObject;
 var
-  Verdict, Why: string;
+  Verdict, Why, Att: string;
 begin
   with Ctx.Inp do
   begin
@@ -443,34 +530,51 @@ begin
     begin
       Result := CheckJSON(TJSONNull.Create, NumOrNull(DetectorMaxCps, DetectorMaxCps > 0),
         VERDICT_UNKNOWN,
-        'a two-column file carries no counting time, so no count rate can be formed');
+        'a two-column curve carries no counting time, so no count rate can be formed');
       Exit;
     end;
+    if AttenuationApplied then
+      Att := Fmt(' (attenuation factors in the file: the corrected curve peaks at %.4g counts/s)',
+                 [PeakRate])
+    else
+      Att := '';
     if DetectorMaxCps <= 0 then
     begin
       Verdict := VERDICT_UNKNOWN;
-      Why := Fmt('peak rate %.4g counts/s; no detector_max_cps given to judge it against', [PeakRate]);
+      Why := Fmt('the detector saw at most %.4g counts/s%s; no detector_max_cps given to judge it against',
+                 [RawPeakRate, Att]);
     end
-    else if PeakRate > DetectorMaxCps then
+    else if RawPeakRate > DetectorMaxCps then
     begin
       Verdict := VERDICT_FAIL;
-      Why := Fmt('peak rate %.4g counts/s exceeds the detector''s linear limit %.4g counts/s: ' +
-                 'the plateau and any feature at that rate are clipped', [PeakRate, DetectorMaxCps]);
+      Why := Fmt('the detector saw %.4g counts/s%s, above its linear limit %.4g counts/s: ' +
+                 'the plateau and any feature at that rate are clipped', [RawPeakRate, Att, DetectorMaxCps]);
     end
     else
     begin
       Verdict := VERDICT_PASS;
-      Why := Fmt('peak rate %.4g counts/s is within the detector''s linear limit %.4g counts/s',
-                 [PeakRate, DetectorMaxCps]);
+      Why := Fmt('the detector saw at most %.4g counts/s%s, within its linear limit %.4g counts/s',
+                 [RawPeakRate, Att, DetectorMaxCps]);
     end;
-    Result := CheckJSON(JSONArgs.Num(PeakRate), NumOrNull(DetectorMaxCps, DetectorMaxCps > 0),
+    Result := CheckJSON(JSONArgs.Num(RawPeakRate), NumOrNull(DetectorMaxCps, DetectorMaxCps > 0),
                         Verdict, Why);
     Result.AddPair('unit', StrOrNull(IntensityUnit));
     Result.AddPair('counting_time_s', NumOrNull(CountingTime, CountingTime > 0));
-    Result.AddPair('peak_counts', JSONArgs.Num(PeakCounts));
-    Result.AddPair('peak_rate_cps', JSONArgs.Num(PeakRate));
-    AddAngle(Result, 'peak_', Curve[Ctx.ILow].t);
+    { the rate the detector saw, at the point where it saw it }
+    Result.AddPair('peak_counts', JSONArgs.Num(RawPeakCounts));
+    Result.AddPair('peak_rate_cps', JSONArgs.Num(RawPeakRate));
+    if RawPeakIndex >= 0 then
+      AddAngle(Result, 'peak_', Curve[RawPeakIndex].t)
+    else
+      AddNoAngle(Result, 'peak_');
     Result.AddPair('attenuation_factors', TJSONBool.Create(AttenuationApplied));
+    { the curve's maximum as a fit sees it; the same point when no factors }
+    Result.AddPair('corrected_peak_counts', JSONArgs.Num(PeakCounts));
+    Result.AddPair('corrected_peak_rate_cps', JSONArgs.Num(PeakRate));
+    if PeakIndex >= 0 then
+      AddAngle(Result, 'corrected_peak_', Curve[PeakIndex].t)
+    else
+      AddNoAngle(Result, 'corrected_peak_');
     Result.AddPair('detector', StrOrNull(Detector));
     Result.AddPair('readout_period_s', NumOrNull(ReadOutPeriod, ReadOutPeriod > 0));
   end;
@@ -478,7 +582,7 @@ end;
 
 function PlateauVsFirstOrderCheck(const Ctx: TAssessContext): TJSONObject;
 var
-  Ratio, ModelRatio, ModelLow, ModelFirst: Double;
+  Ratio, ModelRatio: Double;
   IMLow, IMFirst: Integer;
   HaveModel: Boolean;
   Verdict, Why: string;
@@ -503,9 +607,7 @@ begin
     IMFirst := MaxIndexInRange(Ctx.Model, Ctx.Order1Lo, Ctx.Order1Hi);
     if (IMLow >= 0) and (IMFirst >= 0) and (Ctx.Model[IMLow].r > 0) then
     begin
-      ModelLow := Ctx.Model[IMLow].r;
-      ModelFirst := Ctx.Model[IMFirst].r;
-      ModelRatio := ModelFirst / ModelLow;
+      ModelRatio := Ctx.Model[IMFirst].r / Ctx.Model[IMLow].r;
       HaveModel := True;
     end;
   end;
@@ -588,8 +690,7 @@ begin
   AddAngle(Result, 'scan_start_', StartT);
   AddAngle(Result, 'max_', Ctx.Inp.Curve[Ctx.ILow].t);
   Result.AddPair('points_before_max', TJSONNumber.Create(Ctx.ILow));
-  Result.AddPair('i_start_over_i_max',
-    NumOrNull(Ctx.Inp.Curve[0].r / Ctx.Inp.Curve[Ctx.ILow].r, Ctx.Inp.Curve[Ctx.ILow].r > 0));
+  Result.AddPair('i_start_over_i_max', RatioOrNull(Ctx.Inp.Curve[0].r, Ctx.Inp.Curve[Ctx.ILow].r));
 end;
 
 function OrdersVisibleCheck(const Ctx: TAssessContext): TJSONObject;
@@ -598,7 +699,6 @@ var
   Lo, Hi, Theta, FirstT, LastT, Floor, ModelScale: Double;
   Arr: TJSONArray;
   Obj: TJSONObject;
-  Ext: TArray<TExtremum>;
   n: Integer;
   Verdict, Why: string;
   ModelVisible: Boolean;
@@ -607,10 +707,9 @@ begin
 
   { Without a design: the maxima that stand above the background, orders and
     fringes alike, which is all that can be counted. }
-  Ext := HysteresisExtrema(Ctx.Inp.Curve, Ctx.ILow);
   Peaks := 0;
-  for n := 0 to High(Ext) do
-    if Ext[n].IsMax and (Ctx.Inp.Curve[Ext[n].Idx].r > Floor) then
+  for n := 0 to High(Ctx.Extrema) do
+    if Ctx.Extrema[n].IsMax and (Ctx.Inp.Curve[Ctx.Extrema[n].Idx].r > Floor) then
       Inc(Peaks);
 
   if not (Ctx.Inp.HasStructure and (Ctx.Period > 0)) then
@@ -755,17 +854,11 @@ begin
   if FirstIdx >= 0 then
     AddAngle(Result, 'first_at_background_', Ctx.Inp.Curve[FirstIdx].t)
   else
-  begin
-    Result.AddPair('first_at_background_theta_deg', TJSONNull.Create);
-    Result.AddPair('first_at_background_two_theta_deg', TJSONNull.Create);
-  end;
+    AddNoAngle(Result, 'first_at_background_');
   if LastAbove >= 0 then
     AddAngle(Result, 'last_above_background_', Ctx.Inp.Curve[LastAbove].t)
   else
-  begin
-    Result.AddPair('last_above_background_theta_deg', TJSONNull.Create);
-    Result.AddPair('last_above_background_two_theta_deg', TJSONNull.Create);
-  end;
+    AddNoAngle(Result, 'last_above_background_');
   AddAngle(Result, 'scan_end_', Ctx.Inp.Curve[High(Ctx.Inp.Curve)].t);
 end;
 
@@ -891,7 +984,7 @@ begin
       Verdict := VERDICT_PASS;
       Why := 'every point has a positive count';
     end
-    else
+    else if FirstNonPositive >= 0 then
     begin
       Verdict := VERDICT_WARN;
       Why := Fmt('%d of %d points (%.1f %%) have a non-positive count, the first at %.4f deg ' +
@@ -899,16 +992,19 @@ begin
                  'before them and any background taken there is a floor, not a measurement',
                  [ZerosFloored, Length(Curve), 100 * Fraction,
                   Curve[FirstNonPositive].t, 2 * Curve[FirstNonPositive].t]);
+    end
+    else
+    begin
+      Verdict := VERDICT_WARN;
+      Why := Fmt('%d of %d points (%.1f %%) have a non-positive count; they were replaced by the ' +
+                 'smallest positive count before them', [ZerosFloored, Length(Curve), 100 * Fraction]);
     end;
     Result := CheckJSON(TJSONNumber.Create(ZerosFloored), TJSONNull.Create, Verdict, Why);
     Result.AddPair('fraction', JSONArgs.Num(Fraction));
     if FirstNonPositive >= 0 then
       AddAngle(Result, 'first_', Curve[FirstNonPositive].t)
     else
-    begin
-      Result.AddPair('first_theta_deg', TJSONNull.Create);
-      Result.AddPair('first_two_theta_deg', TJSONNull.Create);
-    end;
+      AddNoAngle(Result, 'first_');
   end;
 end;
 
@@ -917,24 +1013,59 @@ end;
 function DefaultAssessInput: TAssessInput;
 begin
   Result := Default(TAssessInput);
+  Result.PeakIndex := -1;
+  Result.RawPeakIndex := -1;
   Result.FirstNonPositive := -1;
   Result.VisibleFactor := REPORT_VISIBLE_FACTOR;
   Result.MinPointsPerFringe := ASSESS_MIN_POINTS_PER_FRINGE;
 end;
 
+function AssessInputFromScan(const Scan: TXRDMLScan): TAssessInput;
+var
+  i: Integer;
+begin
+  Result := DefaultAssessInput;
+  Result.TwoThetaScan := SameText(Scan.XAxis, '2Theta');
+  SetLength(Result.Curve, Length(Scan.Curve));
+  for i := 0 to High(Scan.Curve) do
+  begin
+    Result.Curve[i].r := Scan.Curve[i].r;
+    if Result.TwoThetaScan then
+      Result.Curve[i].t := Scan.Curve[i].t / 2
+    else
+      Result.Curve[i].t := Scan.Curve[i].t;
+  end;
+  Result.Lambda := Scan.Lambda;
+  if Scan.Lambda > 0 then
+    Result.LambdaSource := 'file: ' + Scan.LambdaRule;
+  Result.HasRaw := True;
+  Result.IntensityUnit := Scan.IntensityUnit;
+  Result.CountingTime := Scan.CountingTime;
+  Result.PeakRate := Scan.PeakRate;
+  Result.PeakCounts := Scan.PeakCounts;
+  Result.PeakIndex := Scan.PeakIndex;
+  Result.RawPeakRate := Scan.RawPeakRate;
+  Result.RawPeakCounts := Scan.RawPeakCounts;
+  Result.RawPeakIndex := Scan.RawPeakIndex;
+  Result.AttenuationApplied := Scan.AttenuationApplied;
+  Result.Detector := Scan.Detector;
+  Result.ReadOutPeriod := Scan.ReadOutPeriod;
+  Result.ZerosFloored := Scan.ZerosFloored;
+  Result.FirstNonPositive := Scan.FirstNonPositive;
+end;
+
 procedure AssessInto(const Inp: TAssessInput; Res: TJSONObject);
 var
   Ctx: TAssessContext;
-  Checks, Design, Bg: TJSONObject;
-  Names: TArray<string>;
-  n, Worst: Integer;
+  Checks, Design, Bg, Check: TJSONObject;
+  Pair: TJSONPair;
+  Worst: Integer;
   Verdict: string;
   SB: TStringBuilder;
-  Check: TJSONObject;
 begin
   if Length(Inp.Curve) < 3 then
     raise EMCPError.Create('invalid_argument',
-      'assess_xrr needs a curve of at least three points', IntToStr(Length(Inp.Curve)));
+      'the assessment needs a curve of at least three points', IntToStr(Length(Inp.Curve)));
   if Inp.HasStructure and (Inp.Lambda <= 0) then
     raise EMCPError.Create('invalid_argument',
       'a "structure" needs a wavelength to be placed at: the file carries none and no ' +
@@ -946,15 +1077,14 @@ begin
 
   Ctx := Default(TAssessContext);
   Ctx.Inp := Inp;
-  if Inp.HasStructure then
-    Ctx.Model := DesignCurve(Inp);
+  SortAscending(Ctx.Inp);
   ReadCurve(Ctx);
 
-  Res.AddPair('points', TJSONNumber.Create(Length(Inp.Curve)));
+  Res.AddPair('points', TJSONNumber.Create(Length(Ctx.Inp.Curve)));
   Res.AddPair('theta_range_deg', JSONArgs.NumArr(
-    TArray<Double>.Create(Inp.Curve[0].t, Inp.Curve[High(Inp.Curve)].t)));
+    TArray<Double>.Create(Ctx.Inp.Curve[0].t, Ctx.Inp.Curve[High(Ctx.Inp.Curve)].t)));
   Res.AddPair('two_theta_range_deg', JSONArgs.NumArr(
-    TArray<Double>.Create(2 * Inp.Curve[0].t, 2 * Inp.Curve[High(Inp.Curve)].t)));
+    TArray<Double>.Create(2 * Ctx.Inp.Curve[0].t, 2 * Ctx.Inp.Curve[High(Ctx.Inp.Curve)].t)));
   Res.AddPair('two_theta_scan', TJSONBool.Create(Inp.TwoThetaScan));
   Res.AddPair('lambda', NumOrNull(Inp.Lambda, Inp.Lambda > 0));
   Res.AddPair('lambda_source', StrOrNull(Inp.LambdaSource));
@@ -984,6 +1114,7 @@ begin
     Design.AddPair('period_A', NumOrNull(Ctx.Period, Ctx.Period > 0));
     Design.AddPair('total_thickness_A', JSONArgs.Num(Ctx.TotalThickness));
     Design.AddPair('theta_c_deg', JSONArgs.Num(Ctx.ThetaC));
+    Design.AddPair('resolution_deg', JSONArgs.Num(Max(0, Inp.Resolution)));
     Design.AddPair('model_points', TJSONNumber.Create(Length(Ctx.Model)));
   end
   else
@@ -1001,18 +1132,16 @@ begin
   Checks.AddPair('zeros', ZerosCheck(Ctx));
 
   { The overall verdict is the worst of the checks; unknown only when every
-    check is. The text block is one line per check, in this order. }
-  Names := TArray<string>.Create('counting', 'plateau_vs_first_order', 'total_reflection',
-    'orders_visible', 'range_below_background', 'sampling', 'footprint', 'zeros');
+    check is. The text block is one line per check, in the order above. }
   Worst := 0;
   SB := TStringBuilder.Create;
   try
-    for n := 0 to High(Names) do
+    for Pair in Checks do
     begin
-      Check := Checks.GetValue(Names[n]) as TJSONObject;
+      Check := Pair.JsonValue as TJSONObject;
       Verdict := Check.GetValue<string>('verdict');
       Worst := Max(Worst, Rank(Verdict));
-      SB.Append(Names[n]).Append(': ').Append(Verdict).Append(' - ')
+      SB.Append(Pair.JsonString.Value).Append(': ').Append(Verdict).Append(' - ')
         .Append(Check.GetValue<string>('why')).Append(sLineBreak);
     end;
     case Worst of
@@ -1037,85 +1166,6 @@ begin
   except
     Result.Free;
     raise;
-  end;
-end;
-
-function AssessMeasurementJSON(const Params: TJSONObject): TJSONObject;
-var
-  M: TMeasurement;
-  Inp: TAssessInput;
-  JS: TJSONObject;
-  Bad: string;
-  Lambda: Double;
-begin
-  M := LoadMeasurement(JSONArgs.ReqStr(Params, 'measurement_id'), 0);
-  try
-    Inp := DefaultAssessInput;
-    Inp.Curve := M.Curve;
-    Inp.TwoThetaScan := M.Converted2Theta;
-
-    Lambda := JSONArgs.OptFloat(Params, 'lambda', 0);
-    if Lambda < 0 then
-      raise EMCPError.Create('invalid_argument', '"lambda" must be positive');
-    if Lambda > 0 then
-    begin
-      Inp.Lambda := Lambda;
-      Inp.LambdaSource := 'argument';
-    end
-    else
-    begin
-      Inp.Lambda := M.Meta.Lambda;
-      Inp.LambdaSource := M.LambdaSource;
-    end;
-
-    if M.IsXRDML then
-    begin
-      Inp.HasRaw := True;
-      Inp.IntensityUnit := M.XRDML.IntensityUnit;
-      Inp.CountingTime := M.XRDML.CountingTime;
-      Inp.PeakRate := M.XRDML.PeakRate;
-      Inp.PeakCounts := M.XRDML.PeakCounts;
-      Inp.AttenuationApplied := M.XRDML.AttenuationApplied;
-      Inp.Detector := M.XRDML.Detector;
-      Inp.ReadOutPeriod := M.XRDML.ReadOutPeriod;
-      Inp.ZerosFloored := M.XRDML.ZerosFloored;
-      Inp.FirstNonPositive := M.XRDML.FirstNonPositive;
-    end;
-
-    JS := JSONArgs.OptObj(Params, 'structure');
-    if JS <> nil then
-    begin
-      Inp.Structure := StructureFromJSON(JS, Inp.Info);
-      Bad := ValidateMaterials(Inp.Structure);
-      if Bad <> '' then
-        raise EMCPError.Create('unknown_material',
-          Format('No Henke table for material "%s"', [Bad]),
-          'list_materials enumerates the names this server knows');
-      Inp.HasStructure := True;
-    end;
-
-    Inp.DetectorMaxCps := JSONArgs.OptFloat(Params, 'detector_max_cps', 0);
-    Inp.SampleLengthMm := JSONArgs.OptFloat(Params, 'sample_length_mm', 0);
-    Inp.BeamWidthMm := JSONArgs.OptFloat(Params, 'beam_width_mm', 0);
-    if (Inp.DetectorMaxCps < 0) or (Inp.SampleLengthMm < 0) or (Inp.BeamWidthMm < 0) then
-      raise EMCPError.Create('invalid_argument',
-        '"detector_max_cps", "sample_length_mm" and "beam_width_mm" cannot be negative');
-    Inp.VisibleFactor := JSONArgs.OptFloat(Params, 'order_visible_factor', REPORT_VISIBLE_FACTOR);
-    Inp.MinPointsPerFringe := JSONArgs.OptFloat(Params, 'min_points_per_fringe',
-                                                ASSESS_MIN_POINTS_PER_FRINGE);
-
-    Result := TJSONObject.Create;
-    try
-      Result.AddPair('measurement_id', M.Id);
-      Result.AddPair('file', WorkDir.RelativePath(M.Path));
-      Result.AddPair('format', IfThen(M.IsXRDML, 'xrdml', 'text'));
-      AssessInto(Inp, Result);
-    except
-      Result.Free;
-      raise;
-    end;
-  finally
-    M.Meta.Raw.Free;
   end;
 end;
 

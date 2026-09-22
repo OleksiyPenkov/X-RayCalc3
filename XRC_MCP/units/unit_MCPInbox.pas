@@ -481,6 +481,9 @@ begin
     Description := Scan.DescriptionLines;
     Result.IsXRDML := True;
     Result.XRDML := Scan;
+    { its own copy: Full is converted to theta in place below, and the record
+      promises the file's axis }
+    Result.XRDML.Curve := Copy(Scan.Curve);
   end
   else
   begin

@@ -95,6 +95,19 @@ function FitReportJSON(const Inp: TFitReportInput): TJSONObject;
 /// visible against. 0 for an empty curve.</summary>
 function ReportBackground(const C: unit_Types.TDataArray): Double;
 
+/// <summary>The median of A, which is sorted in place. 0 for an empty array.</summary>
+function MedianOf(var A: TArray<Double>): Double;
+
+/// <summary>A number, or JSON null when it cannot be formed (a ratio against
+/// zero, an average of nothing). A null says "not computable here", where a 0
+/// would be read as a measurement. Shared with the assessment, so that the
+/// two report "not computable" the same way.</summary>
+function NumOrNull(Value: Double; Valid: Boolean): TJSONValue;
+
+/// <summary>Num / Den, or JSON null when Den is not positive. The division is
+/// never performed on a zero.</summary>
+function RatioOrNull(Num, Den: Double): TJSONValue;
+
 implementation
 
 uses
@@ -103,9 +116,6 @@ uses
 
 { ------------------------------------------------------------- helpers -- }
 
-/// A number, or JSON null when it cannot be formed (a ratio against zero, an
-/// average of nothing). A null says "not computable here", where a 0 would be
-/// read as a measurement.
 function NumOrNull(Value: Double; Valid: Boolean): TJSONValue;
 begin
   if Valid then
@@ -122,6 +132,20 @@ begin
     Result := TJSONNull.Create;
 end;
 
+function MedianOf(var A: TArray<Double>): Double;
+var
+  n: Integer;
+begin
+  n := Length(A);
+  if n = 0 then
+    Exit(0);
+  TArray.Sort<Double>(A);
+  if Odd(n) then
+    Result := A[n div 2]
+  else
+    Result := (A[n div 2 - 1] + A[n div 2]) / 2;
+end;
+
 function ReportBackground(const C: unit_Types.TDataArray): Double;
 var
   Tail: TArray<Double>;
@@ -136,13 +160,7 @@ begin
   SetLength(Tail, n - First);
   for i := First to n - 1 do
     Tail[i - First] := C[i].r;
-  TArray.Sort<Double>(Tail);
-
-  n := Length(Tail);
-  if Odd(n) then
-    Result := Tail[n div 2]
-  else
-    Result := (Tail[n div 2 - 1] + Tail[n div 2]) / 2;
+  Result := MedianOf(Tail);
 end;
 
 /// Index of the point nearest Theta. -1 for an empty curve.

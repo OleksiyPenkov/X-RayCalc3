@@ -25,7 +25,7 @@ uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
   System.JSON, System.Math,
   unit_Types, unit_xrdml, unit_MCPAssess, unit_MCPStructure, unit_MCPSandbox,
-  unit_MCPErrors;
+  unit_MCPErrors, unit_ToolsFiles;
 
 type
   [TestFixture]
@@ -61,6 +61,9 @@ type
     [Test] procedure TextInput_RateChecksAreUnknown;
     [Test] procedure Verdict_IsTheWorstCheck_AndSummaryHasOneLinePerCheck;
     [Test] procedure Design_OrdersSamplingCriticalAngleAndModelRatio;
+    [Test] procedure Descending_Curve_ReadsTheSameAsAscending;
+    [Test] procedure Attenuation_CountingJudgesTheRateTheDetectorSaw;
+    [Test] procedure AllZeroCurve_DoesNotDivideByZero;
     [Test] procedure Tool_ReadsTheInboxFile_RawAndText;
     [Test] procedure Tool_UnknownMeasurement_RaisesNotFound;
   end;
@@ -122,32 +125,8 @@ begin
 end;
 
 function TTestMCPAssess.InputFromScan(const Scan: TXRDMLScan): TAssessInput;
-var
-  i: Integer;
 begin
-  Result := DefaultAssessInput;
-  SetLength(Result.Curve, Length(Scan.Curve));
-  for i := 0 to High(Scan.Curve) do
-  begin
-    Result.Curve[i].r := Scan.Curve[i].r;
-    if SameText(Scan.XAxis, '2Theta') then
-      Result.Curve[i].t := Scan.Curve[i].t / 2
-    else
-      Result.Curve[i].t := Scan.Curve[i].t;
-  end;
-  Result.TwoThetaScan := SameText(Scan.XAxis, '2Theta');
-  Result.Lambda := Scan.Lambda;
-  Result.LambdaSource := 'file: ' + Scan.LambdaRule;
-  Result.HasRaw := True;
-  Result.IntensityUnit := Scan.IntensityUnit;
-  Result.CountingTime := Scan.CountingTime;
-  Result.PeakRate := Scan.PeakRate;
-  Result.PeakCounts := Scan.PeakCounts;
-  Result.AttenuationApplied := Scan.AttenuationApplied;
-  Result.Detector := Scan.Detector;
-  Result.ReadOutPeriod := Scan.ReadOutPeriod;
-  Result.ZerosFloored := Scan.ZerosFloored;
-  Result.FirstNonPositive := Scan.FirstNonPositive;
+  Result := AssessInputFromScan(Scan);
 end;
 
 function TTestMCPAssess.CheckOf(Res: TJSONObject; const Name: string): TJSONObject;
@@ -509,12 +488,14 @@ begin
     J.Free;
   end;
   Inp.HasStructure := True;
+  Inp.Resolution := 0.015;                 // what fit_xrr convolves with
 
   Res := AssessJSON(Inp);
   try
     D := Res.GetValue('design') as TJSONObject;
     Assert.AreEqual(53.0, D.GetValue<Double>('period_A'), 1E-6);
     Assert.AreEqual(530.0, D.GetValue<Double>('total_thickness_A'), 1E-6);
+    Assert.AreEqual(0.015, D.GetValue<Double>('resolution_deg'), 1E-9);
     Assert.IsTrue(InRange(D.GetValue<Double>('theta_c_deg'), 0.2, 0.6),
       'W/B4C critical angle at Cu K-alpha: ' + D.GetValue<string>('theta_c_deg'));
 
@@ -541,6 +522,115 @@ begin
     Assert.IsTrue(C.GetValue<Double>('model_ratio') < EX_FIRST_ORDER_R,
       'model ratio: ' + C.GetValue<string>('model_ratio'));
     Assert.AreEqual('warn', C.GetValue<string>('verdict'), 'measured above what the design can give');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPAssess.Descending_Curve_ReadsTheSameAsAscending;
+var
+  Up, Down: TAssessInput;
+  ResUp, ResDown: TJSONObject;
+  i, n: Integer;
+
+  function Num(Res: TJSONObject; const Check, Key: string): Double;
+  begin
+    Result := CheckOf(Res, Check).GetValue<Double>(Key);
+  end;
+
+begin
+  Up := InputFromScan(FScan);
+  { the same scan written high-to-low, its indices pointing where they did }
+  Down := Up;
+  n := Length(Up.Curve);
+  SetLength(Down.Curve, n);
+  for i := 0 to n - 1 do
+    Down.Curve[i] := Up.Curve[n - 1 - i];
+  Down.PeakIndex := n - 1 - Up.PeakIndex;
+  Down.RawPeakIndex := n - 1 - Up.RawPeakIndex;
+  Down.FirstNonPositive := n - 1 - Up.FirstNonPositive;
+
+  ResUp := AssessJSON(Up);
+  ResDown := AssessJSON(Down);
+  try
+    Assert.AreEqual(Num(ResUp, 'plateau_vs_first_order', 'value'),
+                    Num(ResDown, 'plateau_vs_first_order', 'value'), 1E-12);
+    Assert.AreEqual(Num(ResUp, 'plateau_vs_first_order', 'first_order_two_theta_deg'),
+                    Num(ResDown, 'plateau_vs_first_order', 'first_order_two_theta_deg'), 1E-9);
+    Assert.AreEqual(77, CheckOf(ResDown, 'total_reflection').GetValue<Integer>('points_before_max'));
+    Assert.AreEqual(Num(ResUp, 'zeros', 'first_two_theta_deg'),
+                    Num(ResDown, 'zeros', 'first_two_theta_deg'), 1E-9);
+    Assert.AreEqual(Num(ResUp, 'counting', 'peak_two_theta_deg'),
+                    Num(ResDown, 'counting', 'peak_two_theta_deg'), 1E-9);
+    Assert.AreEqual(ResUp.GetValue<string>('summary_text'), ResDown.GetValue<string>('summary_text'));
+  finally
+    ResUp.Free;
+    ResDown.Free;
+  end;
+end;
+
+procedure TTestMCPAssess.Attenuation_CountingJudgesTheRateTheDetectorSaw;
+const
+  { an attenuator (factor 100) in the beam over the first point: the file's
+    corrected curve peaks there at 10000/s, but the detector saw 100/s there
+    and its own maximum, 1000/s, one point later }
+  XRDML_ATT =
+    '<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.6">' +
+    '<xrdMeasurement><scan scanAxis="2Theta-Omega"><dataPoints>' +
+    '<positions axis="2Theta" unit="deg"><startPosition>1</startPosition><endPosition>5</endPosition></positions>' +
+    '<commonCountingTime unit="seconds">1</commonCountingTime>' +
+    '<beamAttenuationFactors>100 1 1 1 1</beamAttenuationFactors>' +
+    '<counts unit="counts">100 1000 50 20 10</counts>' +
+    '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
+var
+  Scan: TXRDMLScan;
+  Inp: TAssessInput;
+  Res, C: TJSONObject;
+begin
+  Scan := ReadXRDMLText(XRDML_ATT);
+  Assert.IsTrue(Scan.AttenuationApplied);
+  Assert.AreEqual(10000.0, Scan.PeakRate, 1E-9, 'the corrected curve peaks at the first point');
+  Assert.AreEqual(0, Scan.PeakIndex);
+  Assert.AreEqual(1000.0, Scan.RawPeakRate, 1E-9, 'the detector saw 1000/s at most');
+  Assert.AreEqual(1, Scan.RawPeakIndex);
+  Assert.AreEqual(1000.0, Scan.RawPeakCounts, 1E-9);
+
+  Inp := AssessInputFromScan(Scan);
+  Inp.DetectorMaxCps := 5000;
+  Res := AssessJSON(Inp);
+  try
+    C := CheckOf(Res, 'counting');
+    Assert.AreEqual('pass', C.GetValue<string>('verdict'),
+      'judged on the 1000/s the detector saw, not the corrected 10000/s');
+    Assert.AreEqual(1000.0, C.GetValue<Double>('value'), 1E-9);
+    Assert.AreEqual(1000.0, C.GetValue<Double>('peak_rate_cps'), 1E-9);
+    Assert.AreEqual(1.0, C.GetValue<Double>('peak_theta_deg'), 1E-9, 'the raw maximum sits at 2theta 2');
+    Assert.AreEqual(10000.0, C.GetValue<Double>('corrected_peak_rate_cps'), 1E-9);
+    Assert.AreEqual(0.5, C.GetValue<Double>('corrected_peak_theta_deg'), 1E-9);
+    Assert.IsTrue(C.GetValue<Boolean>('attenuation_factors'));
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPAssess.AllZeroCurve_DoesNotDivideByZero;
+var
+  Inp: TAssessInput;
+  Res, C: TJSONObject;
+  i: Integer;
+begin
+  Inp := DefaultAssessInput;
+  SetLength(Inp.Curve, 10);
+  for i := 0 to 9 do
+  begin
+    Inp.Curve[i].t := 0.1 + 0.1 * i;
+    Inp.Curve[i].r := 0;
+  end;
+  Res := AssessJSON(Inp);
+  try
+    C := CheckOf(Res, 'total_reflection');
+    Assert.IsTrue(C.GetValue('i_start_over_i_max') is TJSONNull, 'no ratio against a zero maximum');
+    Assert.AreEqual('unknown', CheckOf(Res, 'plateau_vs_first_order').GetValue<string>('verdict'));
   finally
     Res.Free;
   end;
