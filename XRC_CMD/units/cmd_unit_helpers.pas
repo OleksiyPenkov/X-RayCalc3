@@ -315,7 +315,9 @@ begin
   Writeln('-a <file.name> : auto-fitting based on the input structure');
   Writeln('-n :  Number of files in the folder to process. Default: 50');
   Writeln('-iter :  Number of iterations for AF');
-  Writeln('-pop  :  Popultion size for AF');
+  Writeln('-pop  :  Population size for AF');
+  Writeln('-u <config.json> : universal multi-wavelength mirror optimizer');
+  Writeln('-l <xrf_lines.json> : XRF line table; needed by -u when a target has no lambda');
   Writeln('-v : verbose mode');
   Writeln('-h : this help');
   Readln;

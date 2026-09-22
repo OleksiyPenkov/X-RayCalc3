@@ -100,7 +100,7 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
 
 ## Key Files & Types
 
-- `unit_consts.pas` — App constants: `CURRENT_PROJECT_VERSION = 7`, file extensions (`.xrcx` project, `.dsc` params), `WM_RECALC`/`WM_STARTEDITING` custom messages
+- `unit_consts.pas` — App constants: `CURRENT_PROJECT_VERSION = 8`, file extensions (`.xrcx` project, `.dsc` params), `WM_RECALC`/`WM_STARTEDITING` custom messages
 - `unit_Types.pas` — Core types: `TFloatArray`, `TSolution = array of TLayer`, `TPopulation = array of TSolution`, `TProjectData` (variant record)
 - `unit_calc.pas` — Main calculation engine
 - `unit_gpu_calc.pas` — `TGpuEvaluator`: the LFPSO population's Parratt + convolution + χ² as D3D11 compute

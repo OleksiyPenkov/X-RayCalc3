@@ -70,7 +70,7 @@
 <ul>
   <li>The two numbers are separated by <strong>one TAB</strong> (or, in a file without TABs, by one space). A line with a third column, or with several spaces between the numbers, is skipped.</li>
   <li>The first line without a TAB switches the reader to space-separated columns for the rest of the file, so a TAB-separated file must not contain a header line without a TAB.</li>
-  <li>Both numbers must start with a digit: a leading blank, a sign or a leading point makes the line skipped, so negative values are not read. A comma is accepted as the decimal separator.</li>
+  <li>The angle must start with a digit; the intensity may also carry a sign. A leading blank or a leading point makes the line skipped. A zero or negative intensity (background-subtracted data) is replaced by the smallest positive value before it, as for an XRDML file. A comma is accepted as the decimal separator.</li>
   <li>Lines that are not two such numbers are skipped. A zero reflectivity is replaced by the smallest positive value before it (1000 when none precedes it).</li>
   <li>Lines at the top that start with <code>*</code> are copied into the item's description. A first line containing <code>Sample</code> removes the first 21 lines (the header of the old counter files).</li>
 </ul>
@@ -90,7 +90,7 @@
 
 <h3>Normalize</h3>
 <p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> asks for a coefficient and divides every reflectivity value of the active data item by it: 0.099 turns a plateau read at 0.099 into 1.</p>
-<p><strong>Data &gt; Normalize (Auto)</strong> scales the data so that their maximum lies on the active model's calculated curve: the data are divided by D<sub>max</sub>&nbsp;/&nbsp;R<sub>model</sub>, where D<sub>max</sub> is the largest measured value and R<sub>model</sub> the model's value at the first calculated point at or above its angle. Calculate the model first, over a range that covers the angle of the data maximum.</p>
+<p><strong>Data &gt; Normalize (Auto)</strong> scales the data so that their maximum lies on the active model's calculated curve: the data are divided by D<sub>max</sub>&nbsp;/&nbsp;R<sub>model</sub>, where D<sub>max</sub> is the largest measured value and R<sub>model</sub> the model's value at the first calculated point at or above its angle. Calculate the model first, over a range that covers the angle of the data maximum; if it does not, the command says so and leaves the data unchanged.</p>
 
 <h3>Smooth</h3>
 <p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> replaces each point by the plain mean of six neighbouring points (three below it, itself and two above), computed on the linear reflectivity. The first three points are left unchanged and the last three take the mean of the last six. On a logarithmic curve this fills Kiessig minima and broadens sharp Bragg peaks, so use it on noisy tails, not on the features the fit reads the structure from. Each click smooths again.</p>
@@ -145,7 +145,7 @@
 <h2 id="exporting-data">Exporting Data</h2>
 <ul>
   <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copies the active data item as TAB-separated text under a three-line header (column names, units, a blank line), the angle to 0.001 and the reflectivity to five significant digits</li>
-  <li><strong>Data &gt; Export to File</strong> &mdash; not wired to an action in this version: the menu item does nothing. Use Copy to Clipboard.</li>
+  <li><strong>Data &gt; Export to File</strong> &mdash; saves the active data item to a text file, in the same layout as Copy to Clipboard (the project tree&rsquo;s <strong>Export Data</strong> does the same). The calculated curve is saved with <strong>Result &gt; Save</strong>.</li>
 </ul>
 
 <h3>See Also</h3>

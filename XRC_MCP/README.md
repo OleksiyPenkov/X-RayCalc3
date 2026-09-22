@@ -150,8 +150,8 @@ ratio unless a monochromator or a hybrid mirror selects K-alpha1) overrides `met
 detector, its readOutPeriod and the zero count.
 
 **`fit_xrr` since 2026-09-22 (`scale_solve`):** the measured scale is a nuisance parameter solved in
-closed form inside the objective for every candidate, held within +/- `scale_solve_window` (default
-0.2) of the anchored scale; default on. The result carries `chi2_scale` (`solved` / `anchored`),
+closed form inside the objective for every candidate, held between 1/(1 + w) and (1 + w) times the
+anchored scale, w = `scale_solve_window` (default 0.2); default on. The result carries `chi2_scale` (`solved` / `anchored`),
 `scale_ratio`, `scale_solved`, `scale_clamped`, `scale_start_ratio` and `chi2_scale_definition`, and
 `report.json` carries the same scale fields beside every chi2 it holds. `measured.dat`, `calc.dat`
 and `fit.xrcx` stay at the anchored scale; `residual.dat` is at the solved one and its header says so.

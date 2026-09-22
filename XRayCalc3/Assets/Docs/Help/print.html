@@ -642,7 +642,7 @@
 <ul>
   <li>The two numbers are separated by <strong>one TAB</strong> (or, in a file without TABs, by one space). A line with a third column, or with several spaces between the numbers, is skipped.</li>
   <li>The first line without a TAB switches the reader to space-separated columns for the rest of the file, so a TAB-separated file must not contain a header line without a TAB.</li>
-  <li>Both numbers must start with a digit: a leading blank, a sign or a leading point makes the line skipped, so negative values are not read. A comma is accepted as the decimal separator.</li>
+  <li>The angle must start with a digit; the intensity may also carry a sign. A leading blank or a leading point makes the line skipped. A zero or negative intensity (background-subtracted data) is replaced by the smallest positive value before it, as for an XRDML file. A comma is accepted as the decimal separator.</li>
   <li>Lines that are not two such numbers are skipped. A zero reflectivity is replaced by the smallest positive value before it (1000 when none precedes it).</li>
   <li>Lines at the top that start with <code>*</code> are copied into the item's description. A first line containing <code>Sample</code> removes the first 21 lines (the header of the old counter files).</li>
 </ul>
@@ -662,7 +662,7 @@
 
 <h3>Normalize</h3>
 <p><img src="images/icons/Menu_Normalize.png" alt="Normalize" class="icon"> <strong>Data &gt; Normalize</strong> asks for a coefficient and divides every reflectivity value of the active data item by it: 0.099 turns a plateau read at 0.099 into 1.</p>
-<p><strong>Data &gt; Normalize (Auto)</strong> scales the data so that their maximum lies on the active model's calculated curve: the data are divided by D<sub>max</sub>&nbsp;/&nbsp;R<sub>model</sub>, where D<sub>max</sub> is the largest measured value and R<sub>model</sub> the model's value at the first calculated point at or above its angle. Calculate the model first, over a range that covers the angle of the data maximum.</p>
+<p><strong>Data &gt; Normalize (Auto)</strong> scales the data so that their maximum lies on the active model's calculated curve: the data are divided by D<sub>max</sub>&nbsp;/&nbsp;R<sub>model</sub>, where D<sub>max</sub> is the largest measured value and R<sub>model</sub> the model's value at the first calculated point at or above its angle. Calculate the model first, over a range that covers the angle of the data maximum; if it does not, the command says so and leaves the data unchanged.</p>
 
 <h3>Smooth</h3>
 <p><img src="images/icons/Menu_Smooth.png" alt="Smooth" class="icon"> <strong>Data &gt; Smooth</strong> replaces each point by the plain mean of six neighbouring points (three below it, itself and two above), computed on the linear reflectivity. The first three points are left unchanged and the last three take the mean of the last six. On a logarithmic curve this fills Kiessig minima and broadens sharp Bragg peaks, so use it on noisy tails, not on the features the fit reads the structure from. Each click smooths again.</p>
@@ -717,7 +717,7 @@
 <h2 id="exporting-data">Exporting Data</h2>
 <ul>
   <li><strong>Data &gt; Copy to Clipboard</strong> &mdash; copies the active data item as TAB-separated text under a three-line header (column names, units, a blank line), the angle to 0.001 and the reflectivity to five significant digits</li>
-  <li><strong>Data &gt; Export to File</strong> &mdash; not wired to an action in this version: the menu item does nothing. Use Copy to Clipboard.</li>
+  <li><strong>Data &gt; Export to File</strong> &mdash; saves the active data item to a text file, in the same layout as Copy to Clipboard (the project tree&rsquo;s <strong>Export Data</strong> does the same). The calculated curve is saved with <strong>Result &gt; Save</strong>.</li>
 </ul>
 
 <h3>See Also</h3>
@@ -779,12 +779,7 @@
   <tr><td><strong>&theta;</strong></td><td>Fixed grazing angle in degrees, measured from the surface (90&deg; = normal incidence; default 85&deg;). The 2&theta; box does not apply here.</td></tr>
   <tr><td><strong>&Delta;&lambda;</strong></td><td>Spectral resolution: the FWHM (&#8491;) of the Gaussian the curve is convolved with (default 0 = none; cut off at &plusmn;0.1&nbsp;&#8491;). It is not the step.</td></tr>
 </table>
-<div class="note"><strong>Limitations of Lambda mode in this version:</strong>
-<ul>
-  <li>The atomic scattering factors f<sub>1</sub>, f<sub>2</sub> of every material are read once, at &lambda;<sub>1</sub>, and kept for the whole scan. Across the scan &delta; and &beta; therefore scale only as &lambda;&sup2;: the energy dependence of f<sub>1</sub>, f<sub>2</sub>, absorption edges included, is not followed. Keep the scan narrow and away from the absorption edges of the materials in the structure (for example the Si L edge near 124&nbsp;&#8491; for Mo/Si), or calculate the region in several short scans.</li>
-  <li>A function (gradient) profile is applied correctly only at &lambda;<sub>1</sub>, unless it is attached to the first layer of the top stack; at later wavelengths its period count runs on instead of restarting.</li>
-  <li>Lambda mode runs on a single thread.</li>
-</ul></div>
+<div class="note"><strong>Lambda mode</strong> reads the atomic scattering factors f<sub>1</sub>, f<sub>2</sub> at every wavelength of the scan, so the energy dependence of &delta; and &beta;, absorption edges included, is followed; a function (gradient) profile counts its periods from the surface at every wavelength. (Before 3.9.3 f<sub>1</sub>, f<sub>2</sub> were read once, at &lambda;<sub>1</sub>, and a profile off the top layer was mis-indexed after the first wavelength.) Lambda mode runs on a single thread.</div>
 
 <h2 id="polarization">Polarization</h2>
 <ul>
@@ -1399,7 +1394,7 @@
 <h2 id="create-new-material">Create New Material</h2>
 <p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create New Material</strong> opens a dialog to add a custom material to the Henke database.</p>
 <p>Choose the number of components, pick each one (an element or an existing material) and give its concentration in atomic per cent, then a name and a density (g/cm&sup3;). The program writes <code>Henke\&lt;Name&gt;.bin</code> with f<sub>1</sub>, f<sub>2</sub> and the molar mass averaged per atom with the atomic fractions, f&nbsp;=&nbsp;&Sigma;&nbsp;c<sub>i</sub>f<sub>i</sub>, on the energy grid of the first component (the others are interpolated onto it). The density you enter becomes the bulk density used when a layer's density is 0.</p>
-<div class="note"><strong>Note:</strong> the percentages must add up to 100; the dialog does not check this. An existing file of the same name is overwritten without asking.</div>
+<div class="note"><strong>Note:</strong> the percentages must add up to 100&nbsp;at.%; the dialog refuses to save otherwise, and asks before replacing an existing material of the same name.</div>
 
 <h2 id="edit-henke-table">Edit Henke Table</h2>
 <p><img src="images/icons/Menu_EditTable.png" alt="Edit Table" class="icon"> <strong>Tools &gt; Edit Henke Table</strong> opens the Henke Table Editor, which allows you to view and modify the atomic scattering factor tables used for reflectivity calculations.</p>
@@ -1532,7 +1527,7 @@
   <tr><td><strong>&gamma;</strong> (gamma)</td><td>Fraction of the period taken by layer 1, the upper layer of each period, whatever its material (0&ndash;1)</td></tr>
   <tr><td><strong>N</strong></td><td>Number of periods (rounded to integer for evaluation)</td></tr>
   <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms. In bilayer mode it is shared by all interfaces, the substrate's included; in template mode the template's per-layer &sigma; is used and this one applies to the substrate interface only</td></tr>
-  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer. It is searched and stored in the checkpoint, but the current fitness code builds every layer at bulk density (factor 1.0), so <strong>at present it has no effect</strong> on the reflectivity</td></tr>
+  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer. Each layer is built at this factor times its mixed bulk density (it had no effect before 3.9.3, when every layer was built at bulk density)</td></tr>
 </table>
 
 <h3>Optimization Algorithm</h3>
@@ -1623,7 +1618,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>gamma</code></td><td>range</td><td>Fraction of the period taken by layer 1, the upper layer of each period (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
   <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
   <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;: a range object, or a single number to fix the value. Shared by all interfaces in bilayer mode, the substrate's included.</td></tr>
-  <tr><td><code>density_factor</code></td><td>range</td><td>Optional: a range object, or a single number to fix the value (default 1.0 = bulk density). The value is carried in the search, but <strong>the current fitness code ignores it</strong> and builds every layer at bulk density; omit it or give a fixed number.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Optional: a range object, or a single number to fix the value (default 1.0 = bulk density). Each layer is built at the factor times its mixed bulk density, and <code>best_structure_xrc.json</code> carries the resulting density (before 3.9.3 the factor was searched but ignored).</td></tr>
 </table>
 
 <div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;. A target without a Bragg condition contributes zero to the FoM and is <em>not</em> penalised, so check the range yourself.</div>
@@ -1675,7 +1670,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight (permanent velocity component).</td></tr>
   <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia reducing factor (decays over iterations).</td></tr>
   <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Length of the stagnation window. At the end of each window, if the best FoM improved by less than 1&nbsp;%, the swarm is shaken: all particles but one are re-seeded within &plusmn;10&nbsp;% of each range around the global best (in pure mode each layer also has a 50&nbsp;% chance of a random element), and their velocities are reset.</td></tr>
-  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Must be &ge; 1 (0 stops the run with a division-by-zero error after the first iteration). To effectively disable periodic checkpoints, set it larger than <code>iterations</code>; a final checkpoint is always written.</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. 0 turns periodic checkpoints off (before 3.9.3 it stopped the run with a division-by-zero error); a final checkpoint is always written.</td></tr>
 </table>
 
 <div class="tip"><strong>Recommended settings:</strong> For a 3-element pool with 2 targets, <code>population: 100</code> and <code>iterations: 500</code> is a good starting point. Increase population for larger element pools. Reduce iterations for quick exploratory runs.</div>
@@ -2221,7 +2216,7 @@ Column 2: reflectivity.</p>
   <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
   <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
 </ul>
-<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it); a text file floors only exact zeros and skips negative values. The peak count rate of the corrected curve is kept in the description. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
+<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it); a text file is floored the same way. The peak count rate of the corrected curve is kept in the description. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
 
 <h2 id="henke-tables">Henke Tables</h2>
 <p>One binary file per material, element or compound, <code>Henke\&lt;Name&gt;.bin</code> (the <code>Henke</code> folder beside the program, or under the storage folder set in <a href="#Settings">Settings</a>). A layer's material name must match a file name. Each file holds:</p>

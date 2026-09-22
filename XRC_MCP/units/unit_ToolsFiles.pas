@@ -689,9 +689,9 @@ begin
     'structure has a repeating stack, irregular otherwise; or the fit ' +
     'settings of the job named in "curves"), and the densities stored are the ' +
     'ones the engine used rather than the ones asked for: a layer whose ' +
-    'density was omitted gets the Henke bulk value, and the substrate always ' +
-    'does, because the engine builds the substrate from its bulk density and ' +
-    'ignores any other. The file ' +
+    'density was omitted gets the Henke bulk value, and so does a substrate ' +
+    'whose density was omitted; a substrate density that is given is kept ' +
+    'and used, as it has been since 3.9.1. The file ' +
     'lands in projects\<name>.xrcx and its SHA-256 and size are reported.',
     Schema,
     function(const Params: TJSONObject): TJSONObject

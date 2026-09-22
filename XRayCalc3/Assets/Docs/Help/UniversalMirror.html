@@ -54,7 +54,7 @@
   <tr><td><strong>&gamma;</strong> (gamma)</td><td>Fraction of the period taken by layer 1, the upper layer of each period, whatever its material (0&ndash;1)</td></tr>
   <tr><td><strong>N</strong></td><td>Number of periods (rounded to integer for evaluation)</td></tr>
   <tr><td><strong>&sigma;</strong> (sigma)</td><td>Interface roughness in &Aring;ngstr&ouml;ms. In bilayer mode it is shared by all interfaces, the substrate's included; in template mode the template's per-layer &sigma; is used and this one applies to the substrate interface only</td></tr>
-  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer. It is searched and stored in the checkpoint, but the current fitness code builds every layer at bulk density (factor 1.0), so <strong>at present it has no effect</strong> on the reflectivity</td></tr>
+  <tr><td><strong>Density factor</strong> (per layer)</td><td>Multiplier on the bulk density of each layer. Each layer is built at this factor times its mixed bulk density (it had no effect before 3.9.3, when every layer was built at bulk density)</td></tr>
 </table>
 
 <h3>Optimization Algorithm</h3>
@@ -145,7 +145,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>gamma</code></td><td>range</td><td>Fraction of the period taken by layer 1, the upper layer of each period (0&ndash;1). Layer 1 thickness = d&times;&gamma;, Layer 2 = d&times;(1&minus;&gamma;).</td></tr>
   <tr><td><code>N</code></td><td>range</td><td>Number of bilayer periods. More periods give sharper peaks but tighter angular tolerance.</td></tr>
   <tr><td><code>sigma</code></td><td>range</td><td>Interface roughness in &Aring;: a range object, or a single number to fix the value. Shared by all interfaces in bilayer mode, the substrate's included.</td></tr>
-  <tr><td><code>density_factor</code></td><td>range</td><td>Optional: a range object, or a single number to fix the value (default 1.0 = bulk density). The value is carried in the search, but <strong>the current fitness code ignores it</strong> and builds every layer at bulk density; omit it or give a fixed number.</td></tr>
+  <tr><td><code>density_factor</code></td><td>range</td><td>Optional: a range object, or a single number to fix the value (default 1.0 = bulk density). Each layer is built at the factor times its mixed bulk density, and <code>best_structure_xrc.json</code> carries the resulting density (before 3.9.3 the factor was searched but ignored).</td></tr>
 </table>
 
 <div class="note"><strong>Bragg condition:</strong> The period d must satisfy &lambda;/(2d) &lt; 1 for each target wavelength, otherwise no Bragg peak exists. For a target at &lambda; = 44.7 &Aring;, the minimum period is d &gt; 22.35 &Aring;. A target without a Bragg condition contributes zero to the FoM and is <em>not</em> penalised, so check the range yourself.</div>
@@ -197,7 +197,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>w1</code></td><td>number</td><td>0.4</td><td>PSO inertia weight (permanent velocity component).</td></tr>
   <tr><td><code>w2</code></td><td>number</td><td>0.5</td><td>PSO inertia reducing factor (decays over iterations).</td></tr>
   <tr><td><code>jamming_max</code></td><td>integer</td><td>5</td><td>Length of the stagnation window. At the end of each window, if the best FoM improved by less than 1&nbsp;%, the swarm is shaken: all particles but one are re-seeded within &plusmn;10&nbsp;% of each range around the global best (in pure mode each layer also has a 50&nbsp;% chance of a random element), and their velocities are reset.</td></tr>
-  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. Must be &ge; 1 (0 stops the run with a division-by-zero error after the first iteration). To effectively disable periodic checkpoints, set it larger than <code>iterations</code>; a final checkpoint is always written.</td></tr>
+  <tr><td><code>checkpoint_every</code></td><td>integer</td><td>50</td><td>Save a checkpoint file every N iterations. 0 turns periodic checkpoints off (before 3.9.3 it stopped the run with a division-by-zero error); a final checkpoint is always written.</td></tr>
 </table>
 
 <div class="tip"><strong>Recommended settings:</strong> For a 3-element pool with 2 targets, <code>population: 100</code> and <code>iterations: 500</code> is a good starting point. Increase population for larger element pools. Reduce iterations for quick exploratory runs.</div>

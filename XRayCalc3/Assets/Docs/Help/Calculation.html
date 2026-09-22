@@ -63,12 +63,7 @@
   <tr><td><strong>&theta;</strong></td><td>Fixed grazing angle in degrees, measured from the surface (90&deg; = normal incidence; default 85&deg;). The 2&theta; box does not apply here.</td></tr>
   <tr><td><strong>&Delta;&lambda;</strong></td><td>Spectral resolution: the FWHM (&#8491;) of the Gaussian the curve is convolved with (default 0 = none; cut off at &plusmn;0.1&nbsp;&#8491;). It is not the step.</td></tr>
 </table>
-<div class="note"><strong>Limitations of Lambda mode in this version:</strong>
-<ul>
-  <li>The atomic scattering factors f<sub>1</sub>, f<sub>2</sub> of every material are read once, at &lambda;<sub>1</sub>, and kept for the whole scan. Across the scan &delta; and &beta; therefore scale only as &lambda;&sup2;: the energy dependence of f<sub>1</sub>, f<sub>2</sub>, absorption edges included, is not followed. Keep the scan narrow and away from the absorption edges of the materials in the structure (for example the Si L edge near 124&nbsp;&#8491; for Mo/Si), or calculate the region in several short scans.</li>
-  <li>A function (gradient) profile is applied correctly only at &lambda;<sub>1</sub>, unless it is attached to the first layer of the top stack; at later wavelengths its period count runs on instead of restarting.</li>
-  <li>Lambda mode runs on a single thread.</li>
-</ul></div>
+<div class="note"><strong>Lambda mode</strong> reads the atomic scattering factors f<sub>1</sub>, f<sub>2</sub> at every wavelength of the scan, so the energy dependence of &delta; and &beta;, absorption edges included, is followed; a function (gradient) profile counts its periods from the surface at every wavelength. (Before 3.9.3 f<sub>1</sub>, f<sub>2</sub> were read once, at &lambda;<sub>1</sub>, and a profile off the top layer was mis-indexed after the first wavelength.) Lambda mode runs on a single thread.</div>
 
 <h2 id="polarization">Polarization</h2>
 <ul>
