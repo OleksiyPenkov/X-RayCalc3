@@ -49,7 +49,7 @@ uses
   System.Generics.Collections, System.Generics.Defaults,
   unit_Types,
   unit_MCPErrors, unit_MCPInbox, unit_MCPSandbox, unit_MCPUnits,
-  unit_MCPStructure, unit_MCPCalc, unit_MCPProjectFile,
+  unit_MCPStructure, unit_MCPCalc, unit_MCPProjectFile, unit_MCPAssess,
   unit_consts;
 
 procedure RegisterInboxTools(Registry: TToolRegistry);
@@ -113,6 +113,53 @@ begin
     begin
       Result := GetMeasurementJSON(JSONArgs.ReqStr(Params, 'measurement_id'),
         JSONArgs.OptInt(Params, 'max_points', DEFAULT_MAX_POINTS));
+    end);
+
+  Schema := SchemaObject(['measurement_id']);
+  AddProp(Schema, 'measurement_id', 'string',
+    'The measurement to assess, as "<specimen>/<file>" exactly as list_measurements ' +
+    'reports it. An .xrdml is read raw, so the counting time, the peak count rate, ' +
+    'the detector and the zero counts are known; a two-column .dat/.txt/.xy ' +
+    'answers "unknown" for every check that needs one of those.');
+  AddRefProp(Schema, 'structure',
+    'The design (optional): the same structure object calc_reflectivity takes. With it, ' +
+    'the checks that need a period (orders, points per order), a total thickness ' +
+    '(points per Kiessig fringe) or a critical angle (total reflection) can answer, ' +
+    'and the design''s own reflectivity on the measured range says what the ' +
+    'measurement could have shown.', StructureSchema);
+  AddProp(Schema, 'lambda', 'number',
+    'Wavelength in Angstrom for the design; defaults to the file''s (an .xrdml) or ' +
+    'meta.json''s. Required with "structure" when neither has one.');
+  AddProp(Schema, 'detector_max_cps', 'number',
+    'The detector''s linear count-rate limit in counts per second. Without it the ' +
+    'counting check reports the peak rate and says "unknown"; no limit is built in.');
+  AddProp(Schema, 'sample_length_mm', 'number',
+    'The specimen''s length along the beam, mm. With beam_width_mm it places the ' +
+    'footprint knee asin(beam / length).');
+  AddProp(Schema, 'beam_width_mm', 'number', 'The incident beam''s width, mm.');
+  AddProp(Schema, 'order_visible_factor', 'number',
+    'An order is visible when it stands this many times above the background ' +
+    '(default 3, the fit report''s).');
+  AddProp(Schema, 'min_points_per_fringe', 'number',
+    'The sampling check warns below this many points per Kiessig fringe (default 3) ' +
+    'and fails below 2 whatever is given.');
+  Registry.Register('assess_xrr',
+    'Says whether a measured XRR curve is worth fitting, before anyone fits it: eight ' +
+    'checks on the measurement itself - the peak count rate against the detector''s ' +
+    'linear limit, the first Bragg order against the low-angle maximum, whether the ' +
+    'scan started below the critical angle, how many orders stand above the ' +
+    'background against the design, how much of the scan sits at the background, ' +
+    'points per Kiessig fringe and per order, the footprint knee, and the zero counts. ' +
+    'Every check is {value, threshold, verdict, why} with the numbers it was made ' +
+    'from; the verdict is "unknown" whenever the input it needs is missing (no ' +
+    'detector limit, no design, no raw file) and never falls back on a threshold ' +
+    'invented here. "summary_text" is one line per check, ready to be filed with the ' +
+    'specimen by the client. Every angle is theta in degrees with the file''s 2theta ' +
+    'beside it. The file is opened read-only; nothing is written anywhere.',
+    Schema,
+    function(const Params: TJSONObject): TJSONObject
+    begin
+      Result := AssessMeasurementJSON(Params);
     end);
 end;
 

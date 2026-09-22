@@ -141,6 +141,8 @@
         <DCCReference Include="..\..\XRC_MCP\units\unit_ToolsJobs.pas"/>
         <DCCReference Include="TestMCPFit.pas"/>
         <DCCReference Include="TestMCPFitReport.pas"/>
+        <DCCReference Include="..\..\XRC_MCP\units\unit_MCPAssess.pas"/>
+        <DCCReference Include="TestMCPAssess.pas"/>
         <DCCReference Include="..\..\Shared\Math\unit_AxisLimit.pas"/>
         <DCCReference Include="TestAxisLimit.pas"/>
         <DCCReference Include="TestProjectTreeNodeIO.pas"/>

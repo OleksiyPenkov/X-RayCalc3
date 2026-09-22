@@ -56,7 +56,7 @@ XRayCalc3/          Main GUI application
 XRC_CMD/            Command-line interface variant
 XRFCalc/            XRF calculation GUI app
 XRC_MCP/            MCP server for LLM agents; spec in docs/superpowers/specs/2026-09-09-xrc-mcp-design.md
-                    smoke/session.ps1 drives all 16 tools end to end (exit 0 = pass)
+                    smoke/session.ps1 drives all 18 tools end to end (exit 0 = pass)
 Shared/
   Math/             Calculation engine, complex math, materials database
   Universal/        Universal mirror types, IO, templates, XRF lines

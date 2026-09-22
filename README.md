@@ -29,7 +29,7 @@ and 64-bit GUI, the Henke optical-constant tables and example projects.
 XRayCalc3/     GUI application (Forms, Views, Units, LFPSO, Components, Editors, Assets, Tests)
 XRC_CMD/       xrccmd, command-line calculation, fitting and universal-mirror optimisation
 XRFCalc/       XRF mirror design GUI (universal-mirror optimiser)
-XRC_MCP/       MCP server for LLM agents (JSON-RPC 2.0 over stdio, 16 tools)
+XRC_MCP/       MCP server for LLM agents (JSON-RPC 2.0 over stdio, 18 tools)
 Shared/Math/       Calculation engine, complex math, materials database
 Shared/Universal/  Universal-mirror types, fitness, templates, XRF lines, .xrfx packages
 _Installer/    Inno Setup script and deployment

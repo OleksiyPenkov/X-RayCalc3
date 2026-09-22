@@ -92,6 +92,8 @@ uses
   unit_ToolsJobs in '..\..\XRC_MCP\units\unit_ToolsJobs.pas',
   TestMCPFit in 'TestMCPFit.pas',
   TestMCPFitReport in 'TestMCPFitReport.pas',
+  unit_MCPAssess in '..\..\XRC_MCP\units\unit_MCPAssess.pas',
+  TestMCPAssess in 'TestMCPAssess.pas',
   unit_AxisLimit in '..\..\Shared\Math\unit_AxisLimit.pas',
   TestAxisLimit in 'TestAxisLimit.pas',
   TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas',

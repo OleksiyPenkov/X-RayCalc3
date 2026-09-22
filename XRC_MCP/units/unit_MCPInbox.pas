@@ -81,7 +81,7 @@ interface
 
 uses
   System.Classes, System.SysUtils, System.JSON,
-  unit_Types;
+  unit_Types, unit_xrdml;
 
 type
   /// <summary>meta.json beside the curve. Raw is the whole file and is owned by
@@ -110,6 +110,8 @@ type
     HeaderLines: TArray<string>;
     Meta: TInboxMeta;
     LambdaSource: string;           // 'meta.json', 'file: <rule>' or '' when there is none
+    IsXRDML: Boolean;               // the file was an .xrdml: XRDML holds its raw facts
+    XRDML: TXRDMLScan;              // counting time, peak rate, zeros ... (Curve is in the file's axis)
   end;
 
 const
@@ -162,7 +164,7 @@ implementation
 uses
   System.Character, System.Math, System.IOUtils, System.StrUtils,
   System.Generics.Collections, System.Generics.Defaults,
-  unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits, unit_xrdml;
+  unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits;
 
 { ------------------------------------------------------------------ helpers -- }
 
@@ -477,6 +479,8 @@ begin
     end;
     Full := Scan.Curve;
     Description := Scan.DescriptionLines;
+    Result.IsXRDML := True;
+    Result.XRDML := Scan;
   end
   else
   begin

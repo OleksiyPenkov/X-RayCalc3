@@ -81,6 +81,9 @@ type
     Detector: string;          // diffractedBeamPath/detector@name
     ReadOutPeriod: Double;     // the detector's readOutPeriod in s; 0 when absent
     ZerosFloored: Integer;     // points with a non-positive count, floored
+    FirstNonPositive: Integer; // index in Curve of the first of them; -1 when there is none
+    PeakCounts: Double;        // the value written in the file at the maximum: raw counts (x attenuation factor)
+    IntensityUnit: string;     // the counts/intensities element's unit attribute, '' when absent
     CountingTime: Double;      // the common counting time in s; 0 when per-point
     StartTime: string;         // the scan header's startTimeStamp, as written
     SchemaVersion: string;     // '1.6' from the namespace, or the root's version attribute
@@ -334,6 +337,7 @@ begin
   end;
   if CountsNode = nil then
     raise EXRDMLError.Create('dataPoints has neither a counts nor an intensities element');
+  Result.IntensityUnit := Attr(CountsNode, 'unit');
   Values := ParseList(VarToStr(CountsNode.NodeValue), 'counts');
   N := Length(Values);
   if N = 0 then
@@ -421,14 +425,27 @@ begin
     peak rate is taken before the normalisation, so it is the raw counts per
     second the detector saw, the number a saturation check needs. }
   Result.ZerosFloored := 0;
+  Result.FirstNonPositive := -1;
   for I := 0 to N - 1 do
     if Result.Curve[I].r <= 0 then
+    begin
       Inc(Result.ZerosFloored);
+      if Result.FirstNonPositive < 0 then
+        Result.FirstNonPositive := I;
+    end;
   FloorNonPositive(Result.Curve);
   Result.PeakRate := 0;
+  Result.PeakCounts := 0;
   for I := 0 to N - 1 do
     if Result.Curve[I].r > Result.PeakRate then
+    begin
       Result.PeakRate := Result.Curve[I].r;
+      { the number in the file at that point, before the counting time:
+        with the attenuation factor in, as the detector never saw it }
+      Result.PeakCounts := Values[I];
+      if Result.AttenuationApplied then
+        Result.PeakCounts := Result.PeakCounts * Factors[I];
+    end;
   if Result.PeakRate > 0 then
     for I := 0 to N - 1 do
       Result.Curve[I].r := Result.Curve[I].r / Result.PeakRate;
