@@ -7,12 +7,17 @@
       <stop offset="0%" stop-color="#D8E6F2"/>
       <stop offset="100%" stop-color="#B4C8DC"/>
     </linearGradient>
+    <linearGradient id="tabG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C0D0E2"/>
+      <stop offset="100%" stop-color="#96AABE"/>
+    </linearGradient>
   </defs>
-  <g filter="url(#sh)" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7 16v18h26V16" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
-    <line x1="7" y1="16" x2="14" y2="10" stroke="#19375F" stroke-width="2"/>
-    <line x1="33" y1="16" x2="26" y2="10" stroke="#19375F" stroke-width="2"/>
+  <!-- the Open Project folder, carrying a measured curve instead of a document's lines -->
+  <g stroke-linecap="round" stroke-linejoin="round" filter="url(#sh)">
+    <rect x="4" y="15" width="32" height="20" rx="2" fill="url(#bodyG)" stroke="#19375F" stroke-width="2"/>
+    <path d="M4 17v-5a2 2 0 0 1 2-2h10l3 5z" fill="url(#tabG)" stroke="#19375F" stroke-width="2"/>
   </g>
-  <line x1="20" y1="4" x2="20" y2="26" stroke="#3CB4DC" stroke-width="2.5" stroke-linecap="round"/>
-  <polygon points="20 30 14 22 26 22" fill="#3CB4DC"/>
+  <!-- a reflectivity curve: plateau, fall, two fringes -->
+  <path d="M8 21 h5 c2 0 3 4 4.5 6 s2.5 2 4 0 s3-3 4.5-1.5 s3 1.5 6 1"
+        fill="none" stroke="#3CB4DC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
