@@ -573,8 +573,13 @@ begin
   if (FProjectVersion < 8) and (Data.Group = gtModel) and (Data.RowType = prItem) then
     Data.Data := LegacySubstrateDensity(Data.Data);
 
-  if pos('Models', Data.Title) > 0 then Data.Title := 'Models';
-  if pos('Data', Data.Title) > 0 then Data.Title := 'Data';
+  { the two root groups get their canonical names back; an item or a folder
+    whose title merely contains the word ("Data 3.dat") keeps its own }
+  if Data.RowType = prGroup then
+  begin
+    if pos('Models', Data.Title) > 0 then Data.Title := 'Models';
+    if pos('Data', Data.Title) > 0 then Data.Title := 'Data';
+  end;
 end;
 
 function LegacySubstrateDensity(const StructureData: string): string;

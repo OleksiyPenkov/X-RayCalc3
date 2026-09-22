@@ -473,7 +473,9 @@ procedure TfrmChartInfo.ExportDataToFile;
 var
   Series: TFastLineSeries;
 begin
-  Series := FGetActiveModelSeries;
+  { the active data item, as Data - Export and the tree's Export Data say;
+    the model curve is Result - Save }
+  Series := FGetActiveDataSeries;
   if Series = nil then Exit;
   if dlgSaveResult.Execute then
     SeriesToFile(Series, dlgSaveResult.FileName);

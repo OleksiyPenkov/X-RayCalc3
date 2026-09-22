@@ -83,7 +83,24 @@ uses
 
 
 procedure TfrmNewMaterial.bntSaveClick(Sender: TObject);
+var
+  i: Integer;
+  Sum: Double;
 begin
+  Sum := 0;
+  for i := 1 to SpinEdit1.Value do
+    Sum := Sum + StrToFloatDef(Grid.Cells[1, i], 0);
+  if Abs(Sum - 100) > 0.01 then
+  begin
+    MessageDlg(Format('The concentrations add up to %g at.%%, not 100.', [Sum]),
+      mtError, [mbOK], 0);
+    Exit;
+  end;
+  if FileExists(TConfig.SystemDir[sdHenke] + Edit1.Text + '.bin') and
+     (MessageDlg(Format('Material %s already exists. Replace it?', [Edit1.Text]),
+       mtConfirmation, [mbYes, mbNo], 0) <> mrYes) then
+    Exit;
+
   if NewElement then
     ShowMessage('Material ' + Edit1.Text + ' was created succefully.');
 end;

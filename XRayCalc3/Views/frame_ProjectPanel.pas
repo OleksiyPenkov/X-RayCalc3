@@ -1607,6 +1607,7 @@ begin
   FFitParams.w1           := 0.3;
   FFitParams.w2           := 0.3;
   FFitParams.AdaptVel     := False;
+  FFitParams.UseConstriction := True;   // as LoadAdvancedParams' default; was left False
   FFitParams.SmoothWindow := -1;
   FFitParams.Ksxr         := 0.2;
   FFitParams.PolyFactor   := 10;

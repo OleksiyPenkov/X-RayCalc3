@@ -20,6 +20,9 @@ type
     [Test] procedure Test_SeriesFromFile_Roundtrip;
     [Test] procedure Test_SeriesFromFile_SkipsCommentLines;
     [Test] procedure Test_SeriesFromFile_SkipsSampleHeader;
+    { A negative intensity (background-subtracted data) is floored like a
+      zero - to the smallest positive value before it - not dropped. }
+    [Test] procedure Test_SeriesFromFile_FloorsNegativeIntensity;
 
     { SeriesToString }
     [Test] procedure Test_SeriesToString_ContainsData;
@@ -162,6 +165,34 @@ begin
     Assert.AreEqual(2, S.Count, 'Should read 2 data points after skipping header');
     Assert.AreEqual(Double(1.0), S.XValue[0], 0.01, 'X[0]');
     Assert.AreEqual(Double(0.5), S.YValue[0], 0.01, 'Y[0]');
+  finally
+    SL.Free;
+    S.Free;
+  end;
+end;
+
+procedure TTestSeriesIO.Test_SeriesFromFile_FloorsNegativeIntensity;
+var
+  SL: TStringList;
+  S: TLineSeries;
+  fn, Descr: string;
+begin
+  SL := TStringList.Create;
+  S := TLineSeries.Create(nil);
+  try
+    SL.Add('1.0' + #9 + '0.5');
+    SL.Add('2.0' + #9 + '0.002');
+    SL.Add('3.0' + #9 + '-0.001');
+    SL.Add('4.0' + #9 + '0');
+    SL.Add('5.0' + #9 + '0.004');
+    fn := TempFile('negative.dat');
+    SL.SaveToFile(fn);
+    Descr := '';
+    SeriesFromFile(S, fn, Descr);
+    Assert.AreEqual(5, S.Count, 'no point is dropped');
+    Assert.AreEqual(Double(0.002), S.YValue[2], 1E-9, 'a negative is floored');
+    Assert.AreEqual(Double(0.002), S.YValue[3], 1E-9, 'a zero is floored');
+    Assert.AreEqual(Double(0.004), S.YValue[4], 1E-9);
   finally
     SL.Free;
     S.Free;

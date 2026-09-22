@@ -859,6 +859,7 @@ object frmMain: TfrmMain
       object Exporttofile1: TMenuItem
         ImageIndex = 6
         Caption = 'Export to file ...'
+        OnClick = DataExportExecute
       end
     end
     object Calc1: TMenuItem

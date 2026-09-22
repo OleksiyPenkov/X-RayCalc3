@@ -32,6 +32,8 @@ type
     { Normalize }
     [Test] procedure Test_Normalize;
     [Test] procedure Test_NormalizeAuto;
+    { the model stops short of the measured maximum: refused, data untouched }
+    [Test] procedure Test_NormalizeAuto_ModelShortOfTheMaximum;
 
     { ManualMerge }
     [Test] procedure Test_ManualMerge;
@@ -250,6 +252,29 @@ begin
     Assert.AreEqual(Double(3.0), S.YValue[2], 1E-5);
   finally
     S.Free;
+  end;
+end;
+
+procedure TTestHelpers.Test_NormalizeAuto_ModelShortOfTheMaximum;
+var
+  Calc, Exp: TLineSeries;
+begin
+  Calc := TLineSeries.Create(nil);
+  Exp := TLineSeries.Create(nil);
+  try
+    Calc.AddXY(1, 5);
+    Calc.AddXY(2, 10);
+    Exp.AddXY(1, 50);
+    Exp.AddXY(3, 100);    // the maximum lies beyond the calculated range
+    Assert.WillRaise(
+      procedure
+      begin
+        NormalizeAuto(Calc, Exp);
+      end, Exception, 'the model does not reach the angle of the maximum');
+    Assert.AreEqual(Double(100), Exp.YValue[1], 0, 'the data are left as they are');
+  finally
+    Calc.Free;
+    Exp.Free;
   end;
 end;
 

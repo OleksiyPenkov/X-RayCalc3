@@ -122,14 +122,18 @@ begin
 
     s1 := Copy(s2, 1, p - 1);
     delete(s2, 1, p);
-    if (s1 <> '') and (s2 <> '') and s1[1].IsNumber and s2[1].IsNumber then
+    { the intensity may carry a sign: a negative one (background-subtracted
+      data) is floored like a zero below, as the MCP inbox does, instead of
+      the whole line being skipped }
+    if (s1 <> '') and (s2 <> '') and s1[1].IsNumber and
+       (s2[1].IsNumber or ((Length(s2) > 1) and CharInSet(s2[1], ['-', '+']) and s2[2].IsNumber)) then
     try
       FixDecimaPoint(s1);
       FixDecimaPoint(s2);
       x := StrToFloat(s1);
       y := StrToFloat(s2);
       if (y < min) and (y > 0) then min := y;
-      if y = 0 then y := min;
+      if y <= 0 then y := min;
       Series.AddXY(x, y);
     except
       on EConvertError do;

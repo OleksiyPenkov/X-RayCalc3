@@ -67,18 +67,18 @@ end;
 
 procedure TfrmFitSettings.ShowSettings(var Params: TFitParams);
 begin
-  edFVmax.Text            := Params.Vmax.ToString(ffFixed, 2, 2);
+  edFVmax.Text            := FloatToStrF(Params.Vmax, ffGeneral, 7, 0);
   edLFPSOSkip.Text        := Params.JammingMax.ToString;
   edLFPSORImax.Text       := Params.ReInitMax.ToString;
-  edLFPSOChiFactor.Text   := Params.KChiSqr.ToString(ffFixed, 2, 2);
-  edLFPSOkVmax.Text       := Params.KVmax.ToString(ffFixed, 2, 2);
-  edLFPSOOmega1.Text      := Params.w1.ToString(ffFixed, 2, 2);
-  edLFPSOOmega2.Text      := Params.w2.ToString(ffFixed, 2, 2);
-  edFitTolerance.Text     := Params.Tolerance.ToString(ffFixed, 2, 3);
+  edLFPSOChiFactor.Text   := FloatToStrF(Params.KChiSqr, ffGeneral, 7, 0);
+  edLFPSOkVmax.Text       := FloatToStrF(Params.KVmax, ffGeneral, 7, 0);
+  edLFPSOOmega1.Text      := FloatToStrF(Params.w1, ffGeneral, 7, 0);
+  edLFPSOOmega2.Text      := FloatToStrF(Params.w2, ffGeneral, 7, 0);
+  edFitTolerance.Text     := FloatToStrF(Params.Tolerance, ffGeneral, 7, 0);
   edIrrSmoothWindow.Text  := Params.SmoothWindow.ToString;
 
   sePolyFactor.Value      := Params.PolyFactor;
-  edKsxr.Text             := Params.Ksxr.ToString(ffFixed, 2, 2);
+  edKsxr.Text             := FloatToStrF(Params.Ksxr, ffGeneral, 7, 0);
 
   cbAdaptiveVelocity.Checked := Params.AdaptVel;
   cbConstriction.Checked     := Params.UseConstriction;

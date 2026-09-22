@@ -268,7 +268,7 @@ object frmFitSettings: TfrmFitSettings
         Top = 19
         Width = 50
         Height = 22
-        Hint = 'Max. number of consequent shakes'
+        Hint = 'Shakes that lift the threshold before one returns the swarm to the best solution'
         Alignment = taRightJustify
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
@@ -285,7 +285,7 @@ object frmFitSettings: TfrmFitSettings
         Top = 70
         Width = 50
         Height = 22
-        Hint = 'Velocity shake coefficient'
+        Hint = 'k1: at a shake the best cost threshold is multiplied by k1'
         Alignment = taRightJustify
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
@@ -302,7 +302,7 @@ object frmFitSettings: TfrmFitSettings
         Top = 70
         Width = 50
         Height = 22
-        Hint = 'Best cost functuion shake coefficient'
+        Hint = 'k2: at a shake Vmax and Ksxr are multiplied by k2'
         Alignment = taRightJustify
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
@@ -398,7 +398,7 @@ object frmFitSettings: TfrmFitSettings
         Top = 23
         Width = 49
         Height = 23
-        Hint = 'Velocity scale factor for polynomes'
+        Hint = 'Re-seeding spread around the best solution, as a fraction of each range'
         NumbersOnly = True
         TabOrder = 1
         Text = '0.2'

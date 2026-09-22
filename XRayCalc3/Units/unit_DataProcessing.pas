@@ -25,6 +25,9 @@ function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
 
 implementation
 
+uses
+  System.SysUtils;
+
 function Smooth(const Inp: TDataArray; W: ShortInt): TDataArray;
 var
   i, j, Max: word;
@@ -114,8 +117,13 @@ begin
   i := Exp.YValues.Locate(Max);
   MaxX := Exp.XValue[i];
 
+  { the first calculated point at or above the data maximum's angle; none
+    (the model stops short of it) or a zero there leaves the data as they are }
   i := 0;
-  while (Calc.XValues[i] < MaxX) and (i < Calc.XValues.Count)  do inc(i);
+  while (i < Calc.XValues.Count) and (Calc.XValues[i] < MaxX) do inc(i);
+  if (i >= Calc.XValues.Count) or (Calc.YValues[i] <= 0) then
+    raise Exception.CreateFmt('Normalize (Auto): the calculated curve does not reach %g, ' +
+      'the angle of the measured maximum. Calculate the model over a range that covers it.', [MaxX]);
 
   Min := Calc.YValues[i];
   Max := Max/Min;

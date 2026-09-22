@@ -39,6 +39,9 @@ type
     [Test] procedure ModelFromVersion7_LoadsWithBulkSubstrateDensity;
     [Test] procedure ModelFromVersion8_KeepsItsSubstrateDensity;
     [Test] procedure LegacySubstrateDensity_LeavesOtherTextAlone;
+    { Only the two root groups are renamed on load; an item called
+      "Data 3.dat" or "Models compared" keeps its title. }
+    [Test] procedure ItemTitles_WithDataOrModels_SurviveLoad;
   private
     function LoadModelData(const FileName: string; Version: Integer): string;
   end;
@@ -247,6 +250,57 @@ begin
     LegacySubstrateDensity(S), 'only the substrate density changes');
   Assert.AreEqual('not a structure', LegacySubstrateDensity('not a structure'));
   Assert.AreEqual('', LegacySubstrateDensity(''));
+end;
+
+procedure TTestProjectTreeNodeIO.ItemTitles_WithDataOrModels_SurviveLoad;
+var
+  FileName: string;
+  Tree: TXRCProjectTree;
+  Root, Node: PVirtualNode;
+  PD: PProjectData;
+  Titles: TStringList;
+begin
+  FileName := TPath.Combine(FTemp, 'titles.dsc');
+  Tree := TXRCProjectTree.Create(nil, 96);
+  try
+    Tree.NodeDataSize := SizeOf(TProjectData);
+    Root := Tree.AddChild(nil, nil);
+    PD := Tree.GetNodeData(Root);
+    PD.Title := 'Models (legacy name)'; PD.Group := gtModel; PD.RowType := prGroup;
+    Node := Tree.AddChild(Root, nil);
+    PD := Tree.GetNodeData(Node);
+    PD.Title := 'Models compared'; PD.Group := gtModel; PD.RowType := prItem;
+    PD.Data := '{"Stacks":[],"Subs":{"M":"Si","s":1,"r":0}}';
+    Root := Tree.AddChild(nil, nil);
+    PD := Tree.GetNodeData(Root);
+    PD.Title := 'Data'; PD.Group := gtData; PD.RowType := prGroup;
+    Node := Tree.AddChild(Root, nil);
+    PD := Tree.GetNodeData(Node);
+    PD.Title := 'Data 3.dat'; PD.Group := gtData; PD.RowType := prItem; PD.ID := 7;
+    Tree.SaveToFile(FileName);
+  finally
+    Tree.Free;
+  end;
+
+  Titles := TStringList.Create;
+  Tree := TXRCProjectTree.Create(nil, 96);
+  try
+    Tree.NodeDataSize := SizeOf(TProjectData);
+    Tree.Version := 8;
+    Tree.LoadFromFile(FileName);
+    Node := Tree.GetFirst;
+    while Node <> nil do
+    begin
+      PD := Tree.GetNodeData(Node);
+      Titles.Add(PD.Title);
+      Node := Tree.GetNext(Node);
+    end;
+    Assert.AreEqual('Models,Models compared,Data,Data 3.dat', Titles.CommaText.Replace('"', ''),
+      'groups get their canonical names, items keep theirs');
+  finally
+    Tree.Free;
+    Titles.Free;
+  end;
 end;
 
 procedure TTestProjectTreeNodeIO.DataItem_SurvivesForeignExtensionSlots;
