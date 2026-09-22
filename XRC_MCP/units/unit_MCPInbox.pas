@@ -109,6 +109,7 @@ type
     Converted2Theta: Boolean;
     HeaderLines: TArray<string>;
     Meta: TInboxMeta;
+    LambdaSource: string;           // 'meta.json', 'file: <rule>' or '' when there is none
   end;
 
 const
@@ -500,9 +501,13 @@ begin
 
   ReadMeta(ExtractFileDir(Result.Path), Result.Meta);
   try
-    { The file's own facts win over meta.json: the axis it was scanned on is
-      declared by the file, and kAlpha1 is the wavelength it was measured at. A
-      meta.json beside it still supplies the date and the instrument. }
+    if Result.Meta.Lambda > 0 then
+      Result.LambdaSource := 'meta.json';
+    { The axis the file was scanned on is a fact of the file and wins. The
+      wavelength is the caller's choice: a meta.json that declares one keeps
+      it, and the file's own value (the doublet weighted by its ratio when the
+      optic passes both lines, kAlpha1 otherwise) fills in when meta.json is
+      silent. Either way the header says what the file implied. }
     if IsXRDML then
     begin
       if SameText(Scan.XAxis, '2Theta') then
@@ -511,7 +516,17 @@ begin
         Result.Meta.ThetaUnit := 'theta';
       Result.Meta.ThetaUnitDeclared := True;
       if Scan.Lambda > 0 then
-        Result.Meta.Lambda := Scan.Lambda;
+      begin
+        if Result.Meta.Lambda > 0 then
+          AppendStr(Result.HeaderLines, Format('* meta.json lambda %s A is used; the file implies %s A (%s)',
+            [FloatToStr(Result.Meta.Lambda, TFormatSettings.Invariant),
+             FormatFloat('0.000000', Scan.Lambda, TFormatSettings.Invariant), Scan.LambdaRule]))
+        else
+        begin
+          Result.Meta.Lambda := Scan.Lambda;
+          Result.LambdaSource := 'file: ' + Scan.LambdaRule;
+        end;
+      end;
     end;
     Result.Converted2Theta := SameText(Result.Meta.ThetaUnit, '2theta');
     if Result.Converted2Theta then
@@ -687,9 +702,15 @@ begin
       Result.AddPair('theta_unit_assumed', TJSONBool.Create(not M.Meta.ThetaUnitDeclared));
 
       if M.Meta.Lambda > 0 then
-        Result.AddPair('lambda', JSONArgs.Num(M.Meta.Lambda))
+      begin
+        Result.AddPair('lambda', JSONArgs.Num(M.Meta.Lambda));
+        Result.AddPair('lambda_source', M.LambdaSource);
+      end
       else
+      begin
         Result.AddPair('lambda', TJSONNull.Create);
+        Result.AddPair('lambda_source', TJSONNull.Create);
+      end;
 
       if M.Meta.Present then
       begin

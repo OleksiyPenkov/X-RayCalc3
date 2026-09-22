@@ -38,6 +38,13 @@
 ///     list. Intensity is counts per second, then normalised to 1 at the
 ///     maximum (PeakRate keeps the counts per second that 1 stands for); a
 ///     zero count is floored the way the text importers floor it.
+///   - The wavelength: a file measured with the K-Alpha doublet through an
+///     optic that passes both lines (no monochromator, mirror not hybrid)
+///     implies the ratio-weighted pair, (kAlpha1 + r kAlpha2) / (1 + r), not
+///     kAlpha1: with r = 0.5 that is 1.541874 A for Cu, and a period fitted at
+///     1.540598 would be 0.08 % short. Lambda is that value when the file says
+///     "K-Alpha" and gives the ratio, kAlpha1 otherwise, and LambdaRule says
+///     which. The caller may still prefer its own wavelength.
 ///   - The abscissa is the "2Theta" positions element wherever it appears among
 ///     the positions; a scan without one (a rocking curve) uses "Omega" and
 ///     says so in XAxis.
@@ -64,8 +71,16 @@ type
     ScanMode: string;          // 'Continuous', 'Pre-set time', ...
     Status: string;            // 'Completed', 'Aborted', '' when the file does not say
     SampleId: string;
-    Lambda: Double;            // kAlpha1 in Angstrom; 0 when the file has none
+    Lambda: Double;            // the wavelength the file implies, Angstrom; 0 when it has none
+    LambdaRule: string;        // how Lambda was chosen, for the header and the caller
+    KAlpha1, KAlpha2: Double;  // as written; 0 when absent
+    Ratio: Double;             // ratioKAlpha2KAlpha1; 0 when absent
+    Intended: string;          // usedWavelength@intended: 'K-Alpha', 'K-Alpha1', ...
+    Monochromatic: Boolean;    // a monochromator or a hybrid mirror in the incident path
     Anode: string;
+    Detector: string;          // diffractedBeamPath/detector@name
+    ReadOutPeriod: Double;     // the detector's readOutPeriod in s; 0 when absent
+    ZerosFloored: Integer;     // points with a non-positive count, floored
     CountingTime: Double;      // the common counting time in s; 0 when per-point
     StartTime: string;         // the scan header's startTimeStamp, as written
     SchemaVersion: string;     // '1.6' from the namespace, or the root's version attribute
@@ -240,8 +255,13 @@ begin
   Wave := Child(Measurement, 'usedWavelength');
   if Wave <> nil then
   begin
+    Result.Intended := Attr(Wave, 'intended');
     if ChildText(Wave, 'kAlpha1') <> '' then
-      Result.Lambda := ParseNumber(ChildText(Wave, 'kAlpha1'), 'kAlpha1');
+      Result.KAlpha1 := ParseNumber(ChildText(Wave, 'kAlpha1'), 'kAlpha1');
+    if ChildText(Wave, 'kAlpha2') <> '' then
+      Result.KAlpha2 := ParseNumber(ChildText(Wave, 'kAlpha2'), 'kAlpha2');
+    if ChildText(Wave, 'ratioKAlpha2KAlpha1') <> '' then
+      Result.Ratio := ParseNumber(ChildText(Wave, 'ratioKAlpha2KAlpha1'), 'ratioKAlpha2KAlpha1');
   end;
   Beam := Child(Measurement, 'incidentBeamPath');
   if Beam <> nil then
@@ -249,6 +269,34 @@ begin
     Tube := Child(Beam, 'xRayTube');
     if Tube <> nil then
       Result.Anode := ChildText(Tube, 'anodeMaterial');
+    Result.Monochromatic := Child(Beam, 'monochromator') <> nil;
+    if (Child(Beam, 'xRayMirror') <> nil) and SameText(Attr(Child(Beam, 'xRayMirror'), 'hybrid'), 'true') then
+      Result.Monochromatic := True;
+  end;
+  { the wavelength the file implies }
+  if (Result.KAlpha1 > 0) and (Result.KAlpha2 > 0) and (Result.Ratio > 0) and
+     SameText(Result.Intended, 'K-Alpha') and not Result.Monochromatic then
+  begin
+    Result.Lambda := (Result.KAlpha1 + Result.Ratio * Result.KAlpha2) / (1 + Result.Ratio);
+    Result.LambdaRule := 'K-Alpha doublet weighted by ratioKAlpha2KAlpha1 ' +
+      FormatFloat('0.####', Result.Ratio, TFormatSettings.Invariant);
+  end
+  else if Result.KAlpha1 > 0 then
+  begin
+    Result.Lambda := Result.KAlpha1;
+    if Result.Monochromatic then
+      Result.LambdaRule := 'kAlpha1 (monochromatic incident optic)'
+    else if not SameText(Result.Intended, 'K-Alpha') then
+      Result.LambdaRule := 'kAlpha1 (intended ' + Result.Intended + ')'
+    else
+      Result.LambdaRule := 'kAlpha1 (no kAlpha2 ratio in the file)';
+  end;
+  Beam := Child(Measurement, 'diffractedBeamPath');
+  if (Beam <> nil) and (Child(Beam, 'detector') <> nil) then
+  begin
+    Result.Detector := Attr(Child(Beam, 'detector'), 'name');
+    if ChildText(Child(Beam, 'detector'), 'readOutPeriod') <> '' then
+      Result.ReadOutPeriod := ParseNumber(ChildText(Child(Beam, 'detector'), 'readOutPeriod'), 'readOutPeriod');
   end;
 
   { the first scan that carries data points; a batch file holds several }
@@ -369,7 +417,13 @@ begin
   end;
   Result.Points := N;
 
-  { the curve a reflectivity fit wants: floored, then 1 at the maximum }
+  { the curve a reflectivity fit wants: floored, then 1 at the maximum. The
+    peak rate is taken before the normalisation, so it is the raw counts per
+    second the detector saw, the number a saturation check needs. }
+  Result.ZerosFloored := 0;
+  for I := 0 to N - 1 do
+    if Result.Curve[I].r <= 0 then
+      Inc(Result.ZerosFloored);
   FloorNonPositive(Result.Curve);
   Result.PeakRate := 0;
   for I := 0 to N - 1 do
@@ -465,9 +519,20 @@ begin
     Result := Result + ['* Sample: ' + SampleId];
   if Lambda > 0 then
   begin
-    S := '* Wavelength kAlpha1: ' + FormatFloat('0.000000', Lambda, TFormatSettings.Invariant) + ' A';
+    S := '* Wavelength: ' + FormatFloat('0.000000', Lambda, TFormatSettings.Invariant) + ' A';
     if Anode <> '' then
       S := S + ' (' + Anode + ')';
+    S := S + ', ' + LambdaRule;
+    if (KAlpha1 > 0) and (KAlpha2 > 0) then
+      S := S + '; kAlpha1 ' + FormatFloat('0.000000', KAlpha1, TFormatSettings.Invariant) +
+           ', kAlpha2 ' + FormatFloat('0.000000', KAlpha2, TFormatSettings.Invariant);
+    Result := Result + [S];
+  end;
+  if Detector <> '' then
+  begin
+    S := '* Detector: ' + Detector;
+    if ReadOutPeriod > 0 then
+      S := S + ', readOutPeriod ' + FormatFloat('0.###', ReadOutPeriod, TFormatSettings.Invariant) + ' s';
     Result := Result + [S];
   end;
   if StartTime <> '' then
@@ -483,8 +548,12 @@ begin
   else
     S := S + '; counts / s';
   Result := Result + [S];
-  Result := Result + ['* Intensity normalised to 1 at the maximum, ' +
-    FormatFloat('0.###', PeakRate, TFormatSettings.Invariant) + ' counts / s'];
+  Result := Result + ['* Intensity normalised to 1 at the maximum; raw peak rate ' +
+    FormatFloat('0.###', PeakRate, TFormatSettings.Invariant) +
+    ' counts / s (counts / counting time, before normalisation)'];
+  if ZerosFloored > 0 then
+    Result := Result + ['* Zero counts: ' + IntToStr(ZerosFloored) + ' of ' + IntToStr(Points) +
+      ' points floored to the smallest positive intensity before each (1000 counts / s when none)'];
   Result := Result + ['* Angle column: ' + XAxis + ' as scanned, ' + IntToStr(Points) + ' points'];
 end;
 

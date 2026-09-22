@@ -31,6 +31,10 @@ type
     [Test] procedure IsXRDMLFile_ByExtension;
     [Test] procedure FloorNonPositive_UsesTheRunningMinimum;
     [Test] procedure Read_RealEmpyreanFile_WhenPresent;
+    [Test] procedure Lambda_KAlpha1Only_IsKAlpha1;
+    [Test] procedure Lambda_HybridMirror_IsKAlpha1;
+    [Test] procedure Lambda_Monochromator_IsKAlpha1;
+    [Test] procedure ZerosFloored_AreCountedAndInTheHeader;
   end;
 
 const
@@ -42,9 +46,11 @@ const
     '<sample type="To be analyzed"><id>C(260917B)-XRR</id><name></name></sample>' +
     '<xrdMeasurement measurementType="Scan" status="Aborted" sampleMode="Reflection">' +
     '<usedWavelength intended="K-Alpha"><kAlpha1 unit="Angstrom">1.5405980</kAlpha1>' +
-    '<kAlpha2 unit="Angstrom">1.5444260</kAlpha2></usedWavelength>' +
+    '<kAlpha2 unit="Angstrom">1.5444260</kAlpha2><ratioKAlpha2KAlpha1>0.5000</ratioKAlpha2KAlpha1></usedWavelength>' +
     '<incidentBeamPath><xRayTube id="1" name="Cu LFF"><tension unit="kV">40.0</tension>' +
-    '<anodeMaterial>Cu</anodeMaterial></xRayTube></incidentBeamPath>' +
+    '<anodeMaterial>Cu</anodeMaterial></xRayTube>' +
+    '<xRayMirror id="2" name="Parallel beam mirror" hybrid="false"><crystal>W/Si</crystal></xRayMirror></incidentBeamPath>' +
+    '<diffractedBeamPath><detector id="7" name="PIXcel3D-Medipix3 1x1 detector"><readOutPeriod unit="seconds">0.050</readOutPeriod></detector></diffractedBeamPath>' +
     '<scan appendNumber="0" mode="Continuous" scanAxis="2Theta-Omega" status="Aborted">' +
     '<header><startTimeStamp>2026-09-17T10:11:12+08:00</startTimeStamp></header>' +
     '<dataPoints>' +
@@ -115,6 +121,33 @@ const
     '<counts unit="counts">1 2 3</counts>' +
     '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
 
+  XRDML_HYBRID =
+    '<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.6"><xrdMeasurement>' +
+    '<usedWavelength intended="K-Alpha"><kAlpha1 unit="Angstrom">1.5405980</kAlpha1>' +
+    '<kAlpha2 unit="Angstrom">1.5444260</kAlpha2><ratioKAlpha2KAlpha1>0.5000</ratioKAlpha2KAlpha1></usedWavelength>' +
+    '<incidentBeamPath><xRayMirror id="2" name="Hybrid" hybrid="true"/></incidentBeamPath>' +
+    '<scan scanAxis="2Theta-Omega"><dataPoints>' +
+    '<positions axis="2Theta" unit="deg"><startPosition>1</startPosition><endPosition>2</endPosition></positions>' +
+    '<commonCountingTime unit="seconds">1</commonCountingTime><counts unit="counts">1 2</counts>' +
+    '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
+
+  XRDML_MONO =
+    '<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.6"><xrdMeasurement>' +
+    '<usedWavelength intended="K-Alpha"><kAlpha1 unit="Angstrom">1.5405980</kAlpha1>' +
+    '<kAlpha2 unit="Angstrom">1.5444260</kAlpha2><ratioKAlpha2KAlpha1>0.5000</ratioKAlpha2KAlpha1></usedWavelength>' +
+    '<incidentBeamPath><monochromator id="3" name="Ge(220) 2-bounce"><crystal>Ge</crystal></monochromator></incidentBeamPath>' +
+    '<scan scanAxis="2Theta-Omega"><dataPoints>' +
+    '<positions axis="2Theta" unit="deg"><startPosition>1</startPosition><endPosition>2</endPosition></positions>' +
+    '<commonCountingTime unit="seconds">1</commonCountingTime><counts unit="counts">1 2</counts>' +
+    '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
+
+  XRDML_ZEROS =
+    '<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.6"><xrdMeasurement>' +
+    '<scan scanAxis="2Theta-Omega"><dataPoints>' +
+    '<positions axis="2Theta" unit="deg"><startPosition>1</startPosition><endPosition>5</endPosition></positions>' +
+    '<commonCountingTime unit="seconds">0.5</commonCountingTime><counts unit="counts">8 4 0 0 2</counts>' +
+    '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
+
   REAL_FILE = 'D:\MultilayerLab\Papers\LLM-XRay-Optics-Lab\experiments\runs\exp-03\raw\XRR 1_C(260917B)-XRR.xrdml';
 
 implementation
@@ -133,7 +166,15 @@ begin
   Assert.AreEqual(0.2, S.Curve[0].r, 1e-6, '(100 / 0.5 s) / peak');
   Assert.AreEqual(1.0, S.Curve[4].r, 1e-6, 'the maximum is 1');
   Assert.AreEqual(1000.0, S.PeakRate, 1e-6, 'the peak in counts / s');
-  Assert.AreEqual(1.540598, S.Lambda, 1e-9);
+  Assert.AreEqual(1.541874, S.Lambda, 1e-6, 'the doublet weighted by the ratio, not kAlpha1');
+  Assert.AreEqual(1.540598, S.KAlpha1, 1e-9);
+  Assert.AreEqual(1.544426, S.KAlpha2, 1e-9);
+  Assert.AreEqual(0.5, S.Ratio, 1e-9);
+  Assert.IsTrue(Pos('doublet', S.LambdaRule) > 0, S.LambdaRule);
+  Assert.IsFalse(S.Monochromatic);
+  Assert.AreEqual('PIXcel3D-Medipix3 1x1 detector', S.Detector);
+  Assert.AreEqual(0.05, S.ReadOutPeriod, 1e-9);
+  Assert.AreEqual(0, S.ZerosFloored);
   Assert.AreEqual('Cu', S.Anode);
   Assert.AreEqual('C(260917B)-XRR', S.SampleId);
   Assert.AreEqual('1.6', S.SchemaVersion, 'from the namespace');
@@ -301,11 +342,58 @@ begin
   Assert.AreEqual(927993 / 0.176, S.PeakRate, 1.0, 'the plateau maximum in counts per second');
   Assert.AreEqual(338638 / 927993, S.Curve[0].r, 1e-5, 'the first point over the peak');
   Assert.IsTrue(S.Curve[High(S.Curve)].r > 0, 'the tail zero is floored');
-  Assert.AreEqual(1.540598, S.Lambda, 1e-6);
+  Assert.AreEqual(1.541874, S.Lambda, 1e-6, 'K-Alpha through a non-hybrid mirror: the weighted doublet');
+  Assert.AreEqual('PIXcel3D-Medipix3 1x1 detector', S.Detector);
+  Assert.AreEqual(0.05, S.ReadOutPeriod, 1e-9);
+  Assert.IsTrue(S.ZerosFloored > 0, 'the tail of a real scan has zero counts');
   Assert.AreEqual('C(260917B)-XRR', S.SampleId);
   Assert.AreEqual('1.6', S.SchemaVersion);
   Assert.AreEqual('Aborted', S.Status);
   Assert.IsTrue(S.Corrected);
+end;
+
+procedure TTestXRDML.Lambda_KAlpha1Only_IsKAlpha1;
+var
+  S: TXRDMLScan;
+begin
+  S := ReadXRDMLText(XRDML_10);   // kAlpha1 only, no ratio
+  Assert.AreEqual(1.540598, S.Lambda, 1e-9);
+  Assert.IsTrue(Pos('kAlpha1', S.LambdaRule) > 0, S.LambdaRule);
+end;
+
+procedure TTestXRDML.Lambda_HybridMirror_IsKAlpha1;
+var
+  S: TXRDMLScan;
+begin
+  S := ReadXRDMLText(XRDML_HYBRID);
+  Assert.IsTrue(S.Monochromatic);
+  Assert.AreEqual(1.540598, S.Lambda, 1e-9, 'a hybrid mirror passes kAlpha1 only');
+  Assert.IsTrue(Pos('monochromatic', S.LambdaRule) > 0, S.LambdaRule);
+end;
+
+procedure TTestXRDML.Lambda_Monochromator_IsKAlpha1;
+var
+  S: TXRDMLScan;
+begin
+  S := ReadXRDMLText(XRDML_MONO);
+  Assert.IsTrue(S.Monochromatic);
+  Assert.AreEqual(1.540598, S.Lambda, 1e-9);
+end;
+
+procedure TTestXRDML.ZerosFloored_AreCountedAndInTheHeader;
+var
+  S: TXRDMLScan;
+  H: string;
+begin
+  S := ReadXRDMLText(XRDML_ZEROS);
+  Assert.AreEqual(2, S.ZerosFloored);
+  Assert.AreEqual(16.0, S.PeakRate, 1e-6, '8 / 0.5 s, raw, before normalisation');
+  Assert.AreEqual(0.5, S.Curve[2].r, 1e-6, 'floored to 4 / 0.5 s = 8, over the peak 16');
+  Assert.AreEqual(0.5, S.Curve[3].r, 1e-6);
+  Assert.AreEqual(0.25, S.Curve[4].r, 1e-6);
+  H := string.Join(#10, S.DescriptionLines);
+  Assert.IsTrue(Pos('Zero counts: 2 of 5', H) > 0, H);
+  Assert.IsTrue(Pos('raw peak rate 16', H) > 0, H);
 end;
 
 initialization

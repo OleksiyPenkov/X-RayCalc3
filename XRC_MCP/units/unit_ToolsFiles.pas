@@ -82,9 +82,16 @@ begin
     'The measurement to read, as "<specimen>/<file>" exactly as list_measurements ' +
     'reports it. The file extension must be .dat, .txt, .xy or .xrdml. A ' +
     '.xrdml file (PANalytical) is read directly: its angle axis (2Theta as ' +
-    'scanned, converted to theta here) and its kAlpha1 wavelength come from the ' +
-    'file and override meta.json; counts are divided by the counting time and ' +
-    'the curve is normalised to 1 at its maximum.');
+    'scanned, converted to theta here) comes from the file; its wavelength is ' +
+    'the one the file implies (the K-Alpha doublet weighted by the file''s ' +
+    'ratio when the incident optic passes both lines, 1.541874 A for Cu; ' +
+    'kAlpha1 when a monochromator or hybrid mirror selects it) unless meta.json ' +
+    'declares a lambda, which then wins; "lambda_source" says which. Counts are ' +
+    'divided by the counting time, a zero count becomes the smallest positive ' +
+    'intensity before it, and the curve is normalised to 1 at its maximum; the ' +
+    'raw peak rate, the counting time, the detector and its readOutPeriod are ' +
+    'in "header", so one count and the detector''s linear range stay ' +
+    'recoverable.');
   AddProp(Schema, 'max_points', 'integer',
     'Decimate the curve to at most this many points before returning it ' +
     '(default 2000; minimum 2; first and last points are always kept). ' +

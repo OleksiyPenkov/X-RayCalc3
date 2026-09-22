@@ -66,6 +66,7 @@ type
     [Test] procedure LoadMeasurement_XRDML_AxisAndLambdaFromFile;
     [Test] procedure LoadMeasurement_XRDML_Malformed_RaisesInvalidArgument;
     [Test] procedure ListMeasurements_ListsXRDML;
+    [Test] procedure LoadMeasurement_XRDML_NoMeta_LambdaFromFile;
   end;
 
 implementation
@@ -735,7 +736,7 @@ var
   M: TMeasurement;
 begin
   WriteInboxFile('S1', 'xrr.xrdml', INBOX_XRDML);
-  // a meta.json that disagrees: the file's own axis and wavelength win
+  // a meta.json that disagrees: the file's axis wins, the caller's lambda wins
   WriteInboxFile('S1', 'meta.json', '{"lambda": 0.71, "theta_unit": "theta", "instrument": "Empyrean"}');
   M := LoadMeasurement('S1/xrr.xrdml', 0);
   try
@@ -750,7 +751,10 @@ begin
     Assert.AreEqual(Double(0.5), Double(M.Curve[1].r), 1E-6);
     Assert.AreEqual(Double(0.5), Double(M.Curve[2].r), 1E-6,
       'a zero count is floored to the smallest positive intensity before it, as for text files');
-    Assert.AreEqual(Double(1.540598), M.Meta.Lambda, 1E-9, 'kAlpha1 from the file');
+    Assert.AreEqual(Double(0.71), M.Meta.Lambda, 1E-9, 'a declared meta.json lambda is the caller''s choice');
+    Assert.AreEqual('meta.json', M.LambdaSource);
+    Assert.IsTrue(Pos('the file implies 1.540598', string.Join(#10, M.HeaderLines)) > 0,
+      'the header says what the file implied');
     Assert.IsTrue(M.Meta.Present, 'meta.json is still read for the rest');
     Assert.IsTrue(Length(M.HeaderLines) >= 3, 'the file facts are the header');
   finally
@@ -788,6 +792,22 @@ begin
     Assert.AreEqual('S1/xrr.xrdml', (Files.Items[0] as TJSONObject).GetValue<string>('id'));
   finally
     A.Free;
+  end;
+end;
+
+procedure TTestMCPInbox.LoadMeasurement_XRDML_NoMeta_LambdaFromFile;
+var
+  M: TMeasurement;
+begin
+  WriteInboxFile('S1', 'xrr.xrdml', INBOX_XRDML);
+  M := LoadMeasurement('S1/xrr.xrdml', 0);
+  try
+    Assert.AreEqual(Double(1.540598), M.Meta.Lambda, 1E-9, 'kAlpha1: the fixture has no ratio');
+    Assert.IsTrue(Pos('file:', M.LambdaSource) = 1, M.LambdaSource);
+    Assert.IsTrue(M.Meta.ThetaUnitDeclared);
+    Assert.IsFalse(M.Meta.Present);
+  finally
+    M.Meta.Raw.Free;
   end;
 end;
 
