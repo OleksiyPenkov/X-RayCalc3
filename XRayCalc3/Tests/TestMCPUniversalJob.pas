@@ -17,7 +17,7 @@ interface
 
 uses
   DUnitX.TestFramework, System.SysUtils, System.JSON,
-  unit_MCPSandbox, unit_MCPJobs;
+  unit_MCPSandbox, unit_MCPJobs, unit_universal_types;
 
 type
   [TestFixture]
@@ -28,6 +28,7 @@ type
     /// <summary>One complete run through a manager of its own, so that two
     /// runs share nothing but the seed. The result is the caller's to free.</summary>
     function RunOnce(out JobDir: string): TJSONObject;
+    function RunConfig(const Config: TUniversalConfig; out JobDir: string): TJSONObject;
     /// <summary>Polls Job.State until it is Wanted or TimeoutMs elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
   public
@@ -36,6 +37,9 @@ type
 
     [Test] procedure SameSeedTwice_GivesTheSameAnswer;
     [Test] procedure Cancel_StopsTheRun_AndLeavesNoResult;
+    { checkpoint_every = 0 means no periodic checkpoint; until 3.9.3 it
+      divided by zero after the first iteration. }
+    [Test] procedure CheckpointEveryZero_RunsToTheEnd;
   end;
 
 implementation
@@ -43,7 +47,6 @@ implementation
 uses
   System.IOUtils, System.Math, System.Diagnostics, System.Zip,
   unit_Config,
-  unit_universal_types,
   unit_MCPUniversal;
 
 const
@@ -275,13 +278,17 @@ begin
 end;
 
 function TTestMCPUniversalJob.RunOnce(out JobDir: string): TJSONObject;
+begin
+  Result := RunConfig(TinyConfig(20, 3), JobDir);
+end;
+
+function TTestMCPUniversalJob.RunConfig(const Config: TUniversalConfig;
+  out JobDir: string): TJSONObject;
 var
   Mgr: TJobManager;
   Job: TJob;
   Request: TJSONObject;
-  Config: TUniversalConfig;
 begin
-  Config := TinyConfig(20, 3);
   Mgr := TJobManager.Create(WorkDir);
   try
     Request := TJSONObject.Create;
@@ -305,6 +312,29 @@ begin
     Assert.IsNotNull(Result, 'a finished job must have a result');
   finally
     Mgr.Free;     // joins the worker before the manager goes away
+  end;
+end;
+
+procedure TTestMCPUniversalJob.CheckpointEveryZero_RunsToTheEnd;
+var
+  Config: TUniversalConfig;
+  R: TJSONObject;
+  Dir: string;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables W/Mo/Si/B4C/Sc not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+  Config := TinyConfig(20, 3);
+  Config.Optimizer.CheckpointEvery := 0;
+  R := RunConfig(Config, Dir);
+  try
+    Assert.AreEqual(3, R.GetValue<Integer>('iterations_run'),
+      'all three iterations run with checkpoint_every = 0');
+  finally
+    R.Free;
   end;
 end;
 

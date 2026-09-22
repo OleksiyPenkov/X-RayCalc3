@@ -244,9 +244,11 @@ begin
     begin
       for Role := 0 to LAYERS_PER_PERIOD - 1 do
       begin
+        { the searched density factor; until 3.9.3 1.0 was passed here and
+          the factor never reached the reflectivity }
         FMixer.CalcMixedEpsilon(
           Genome.Composition[Role],
-          1.0,
+          Genome.DensityFactor[Role],
           TargetIdx,
           Eps, Dens
         );

@@ -282,20 +282,42 @@ var
   end;
 
   function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single;inline;
+  const
+    Sqrt3 = 1.7320508075688772;
+    SinusK = 2.2976031174871970;   // pi / sqrt(pi^2 - 8)
+  var
+    a: Single;
   begin
       case RF of
         rfError:
-          Result := exp(-1 * sqr(sigma) * sqr(s));
+          // Nevot-Croce, exp(-2 k_z^2 sigma^2) with s = 2 k_z: the coefficient
+          // is a half, 0.50299 as in unit_calc.pas and unit_universal_refcalc.
+          // Until 3.9.3 this was exp(-sigma^2 s^2): twice the exponent, every
+          // interface of an xrccmd calculation or fit sqrt(2) times rougher
+          // than the same sigma in the GUI.
+          Result := exp(-0.50299 * sqr(sigma) * sqr(s));
         rfExp:
           Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
         rfLinear:
-          if sigma < 0.5 then
-            Result := sin(sqrt(3) * sigma * s) /
-              (sqrt(3) * sigma * s)
-          else
-            Result := 1;
+          // until 3.9.3 this damped only below sigma = 0.5 A (and 0/0 at 0)
+          begin
+            a := Sqrt3 * sigma * s;
+            if Abs(a) < 1E-4 then
+              Result := 1
+            else
+              Result := sin(a) / a;
+          end;
         rfStep:
           Result := cos(sigma * s);
+        rfSinus:
+          // Stearns / IMD; the rms width is sigma. Undefined until 3.9.3.
+          begin
+            a := SinusK * sigma * s;
+            Result := Pi / 4 * (sin(a - Pi / 2) / (a - Pi / 2) +
+                                sin(a + Pi / 2) / (a + Pi / 2));
+          end;
+        else
+          Result := 1;
       end;
   end;
 

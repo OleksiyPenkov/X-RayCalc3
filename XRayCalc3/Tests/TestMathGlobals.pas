@@ -23,6 +23,8 @@ type
     { Poly edge cases }
     [Test] procedure Test_Poly_AtX1;
     [Test] procedure Test_Poly_HighOrder;
+    { (x - 1)^k past the Int64 range (60^11 = 3.6E19): every overload }
+    [Test] procedure Test_Poly_PowerBeyondInt64;
 
     { CopyData }
     [Test] procedure Test_CopyData_Empty;
@@ -39,9 +41,24 @@ type
 implementation
 
 uses
-  math_globals;
+  System.Math, math_globals;
 
 { TTestMathGlobals }
+
+procedure TTestMathGlobals.Test_Poly_PowerBeyondInt64;
+var
+  C: TPolyArray;
+  R: TFuncProfileRec;
+  Expected: Double;
+begin
+  SetLength(C, 12);
+  C[11] := 1E-19;                    // order 11 at period 61
+  Expected := 1E-19 * Power(60, 11); // 3.6279...
+  Assert.AreEqual(Expected, Double(Poly(61, C)), Expected * 1E-6, 'Poly(x, C)');
+  Assert.AreEqual(Expected, Double(Poly(61, -1E30, 1E30, C)), Expected * 1E-6, 'Poly(x, Min, Max, C)');
+  R.C := C;
+  Assert.AreEqual(Expected, Double(Poly(61, R)), Expected * 1E-6, 'Poly(x, TFuncProfileRec)');
+end;
 
 procedure TTestMathGlobals.Test_Poly_Constant;
 var C: TPolyArray;

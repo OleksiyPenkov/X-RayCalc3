@@ -194,7 +194,18 @@ begin
 end;
 
 procedure TLayeredModel.Generate(const Lambda: Single);
+var
+  i: Integer;
+  Na, Nro: Single;
 begin
+  { The materials hold f1, f2 read at the wavelength of the first Generate.
+    A model generated again at another wavelength - the Lambda scan does it
+    once per point - reads them again at that one; until 3.9.3 the first
+    wavelength's f1, f2 were used for the whole scan and an absorption edge
+    inside it was missed. A fit generates at one wavelength and keeps them. }
+  if (Length(FMaterials) > 0) and (Lambda <> FLambda) then
+    for i := 0 to High(FMaterials) do
+      ReadHenke(FMaterials[i].Name, 0, Lambda, FMaterials[i].f, Na, Nro);
   FLambda := Lambda;
   PrepareLayers;
 end;
@@ -212,6 +223,9 @@ var
   Key: Cardinal;
   Indices: TArray<Integer>;
 begin
+  for g := 0 to High(FProfiles) do
+    FProfiles[g].ResetX;
+
   for I := 1 to High(FLayers) - 1 do
   begin
     UseLayerMaterial(i);

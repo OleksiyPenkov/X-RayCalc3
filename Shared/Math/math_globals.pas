@@ -51,7 +51,8 @@ uses
 
 function Poly(const x: Integer; const C: TPolyArray): Single; overload;
 var
-  i, Last: Int64;
+  i: Integer;
+  Last: Double;  // (x - 1)^i; Int64 wrapped silently past 9.2E18 (order 11 at 60 periods)
 begin
   Result := C[0]; Last := 1;
   for I := 1 to High(C) do
@@ -64,7 +65,8 @@ end;
 
 function Poly(const x: Integer; Min, Max: single; const C: TPolyArray): Single; overload;
 var
-  i, Last: Int64;
+  i: Integer;
+  Last: Double;  // (x - 1)^i; Int64 wrapped silently past 9.2E18 (order 11 at 60 periods)
 begin
   Result := C[0]; Last := 1;
   for I := 1 to High(C) do
@@ -77,7 +79,8 @@ end;
 
 function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
 var
-  i, Last: Int64;
+  i: Integer;
+  Last: Double;  // (x - 1)^i; Int64 wrapped silently past 9.2E18 (order 11 at 60 periods)
 begin
   Result := Polynome.C[0]; Last := 1;
   for I := 1 to High(Polynome.C) do

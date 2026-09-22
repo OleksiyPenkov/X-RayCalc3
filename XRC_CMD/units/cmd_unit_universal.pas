@@ -61,7 +61,7 @@ begin
   begin
     // Shake logging is handled by the optimizer's window-based detection
 
-    if (Data.Iteration > 0) and
+    if (Data.Iteration > 0) and (FConfig.Optimizer.CheckpointEvery > 0) and
        ((Data.Iteration mod FConfig.Optimizer.CheckpointEvery) = 0) then
       WriteLn(Format('  [Checkpoint saved at iteration %d]', [Data.Iteration]));
   end;

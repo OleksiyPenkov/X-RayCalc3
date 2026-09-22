@@ -11,6 +11,15 @@ type
   public
     [Test]
     procedure EvaluateLayers_MatchesEvaluate_ForSameGenome;
+    { The genome's density factor reaches the layers: Evaluate builds each
+      layer at factor x its mixed bulk density (until 3.9.3 it passed 1.0). }
+    [Test]
+    procedure Evaluate_AppliesTheDensityFactor;
+    { RefCalcStandalone's interface functions: 1 at sigma = 0, and the same
+      rms width as the Nevot-Croce factor (rfLinear damped only below
+      0.5 A and gave 0/0 at 0; rfSinus was undefined). }
+    [Test]
+    procedure RefCalcStandalone_RoughnessFunctions;
   end;
 
 implementation
@@ -23,7 +32,8 @@ uses
   unit_materials_mix,
   unit_universal_types,
   unit_universal_templates,
-  unit_universal_fitness;
+  unit_universal_fitness,
+  unit_universal_refcalc;
 
 const
   // d = 80 A keeps BOTH lines below the Bragg cut-off, so both targets are
@@ -34,6 +44,162 @@ const
   TEST_N = 60;
   TEST_GAMMA = 0.4;
   TEST_SIGMA = 3.0;
+
+procedure TTestUniversalFitnessLayers.RefCalcStandalone_RoughnessFunctions;
+const
+  Names: array[TRoughnessFunction] of string = ('Error', 'Exp', 'Linear', 'Step', 'Sinus');
+  LAMBDA = 1.5406;
+  THETA = 1.0;
+
+  function R(RF: TRoughnessFunction; Sigma: Single): Single;
+  var
+    L: TLayers;
+  begin
+    SetLength(L, 2);
+    L[0].e.re := 1; L[0].e.im := 0; L[0].H := 0; L[0].S := 0;
+    L[1].e.re := 1 - 1.52E-5; L[1].e.im := 3.5E-7;   // Si at Cu K-alpha
+    L[1].H := 1E8; L[1].S := Sigma;
+    Result := RefCalcStandalone(THETA, LAMBDA, L, cmS, RF);
+  end;
+
+var
+  RF: TRoughnessFunction;
+  R0, R3Error, R3: Single;
+begin
+  R0 := R(rfError, 0);
+  R3Error := R(rfError, 3);
+  for RF := Low(TRoughnessFunction) to High(TRoughnessFunction) do
+  begin
+    Assert.AreEqual(Double(R0), Double(R(RF, 0)), Double(R0) * 1E-4,
+      Names[RF] + ': sigma = 0 is a sharp interface');
+    R3 := R(RF, 3);
+    Assert.IsTrue(R3 < 0.99 * R0, Names[RF] + ': sigma = 3 A must damp R');
+    Assert.AreEqual(Double(R3Error), Double(R3), 0.1 * R3Error,
+      Names[RF] + ': sigma is the rms width, as for the error function');
+  end;
+end;
+
+{ The two-line W/Si configuration both tests use. }
+function MakeConfig(const HenkePath: string): TUniversalConfig;
+begin
+  Result := Default(TUniversalConfig);
+  SetLength(Result.Lines, 2);
+  Result.Lines[0].Name := 'Be';
+  Result.Lines[0].Lambda := 114.0;
+  Result.Lines[0].Weight := 1.0;
+  Result.Lines[1].Name := 'Mg';
+  Result.Lines[1].Lambda := 9.89;
+  Result.Lines[1].Weight := 1.0;
+  SetLength(Result.ElementPool, 2);
+  Result.ElementPool[0] := 'W';
+  Result.ElementPool[1] := 'Si';
+  Result.Structure.StructureType := 'bilayer';
+  Result.Structure.LayersPerPeriod := LAYERS_PER_PERIOD;
+  Result.Structure.PureElements := True;
+  Result.Fitness.wR := 1.0;
+  Result.Fitness.wFWHM := 0.5;
+  Result.Fitness.RMinThreshold := 0.001;
+  Result.Fitness.Polarization := cmSP;
+  Result.Fitness.DeltaTheta := 0;
+  Result.Fitness.ThetaMin := 0;
+  Result.Fitness.wPurity := 1.0;
+  Result.Fitness.ScanPoints := 200;
+  Result.Fitness.ScanHalfRange := 5.0;
+  Result.Substrate := 'Si';
+  Result.HenkePath := HenkePath;
+end;
+
+procedure TTestUniversalFitnessLayers.Evaluate_AppliesTheDensityFactor;
+const
+  DF: array[0..1] of Single = (0.8, 0.9);
+var
+  HenkePath: string;
+  Config: TUniversalConfig;
+  Templates: TTemplateLibrary;
+  Mixer: TMaterialMixer;
+  Fitness: TUniversalFitness;
+  G, GBulk: TGenome;
+  R1, R2, RBulk: TTargetResults;
+  F1, F2: Single;
+  Builder: TLayerSetBuilder;
+begin
+  HenkePath := TConfig.SystemDir[sdHenke];
+  if not TFile.Exists(IncludeTrailingPathDelimiter(HenkePath) + 'W.bin') then
+  begin
+    Assert.Pass('Henke table W.bin not found in ' + HenkePath + ' - test skipped');
+    Exit;
+  end;
+  Config := MakeConfig(HenkePath);
+  SetLength(Templates, 0);
+
+  Mixer := TMaterialMixer.Create;
+  try
+    Mixer.Initialize(['W', 'Si'], [114.0, 9.89], 'Si', HenkePath);
+    Fitness := TUniversalFitness.Create(Mixer, Config, Templates);
+    try
+      GBulk := CreateGenome(2);
+      GBulk.Composition[0][0] := 1.0; GBulk.Composition[0][1] := 0.0;
+      GBulk.Composition[1][0] := 0.0; GBulk.Composition[1][1] := 1.0;
+      GBulk.d := TEST_D; GBulk.Gamma := TEST_GAMMA; GBulk.N := TEST_N;
+      GBulk.Sigma := TEST_SIGMA; GBulk.CapH := 0; GBulk.CapVariant := 0;
+      G := CreateGenome(2);
+      G.Composition[0][0] := 1.0; G.Composition[0][1] := 0.0;
+      G.Composition[1][0] := 0.0; G.Composition[1][1] := 1.0;
+      G.d := TEST_D; G.Gamma := TEST_GAMMA; G.N := TEST_N;
+      G.Sigma := TEST_SIGMA; G.CapH := 0; G.CapVariant := 0;
+      G.DensityFactor[0] := DF[0];
+      G.DensityFactor[1] := DF[1];
+
+      SetLength(R1, Length(Config.Lines));
+      SetLength(R2, Length(Config.Lines));
+      SetLength(RBulk, Length(Config.Lines));
+
+      { The stack Evaluate should build: every layer at factor x bulk. }
+      Builder :=
+        procedure(TargetIdx: Integer; var Layers: TLayers)
+        var
+          Period, Role, LayerIdx: Integer;
+          Eps: TComplex;
+          Dens: Single;
+        begin
+          SetLength(Layers, 2 + TEST_N * LAYERS_PER_PERIOD);
+          Layers[0].e.re := 1.0; Layers[0].e.im := 0.0;
+          Layers[0].H := 0; Layers[0].S := 0;
+          LayerIdx := 1;
+          for Period := 0 to TEST_N - 1 do
+            for Role := 0 to LAYERS_PER_PERIOD - 1 do
+            begin
+              Mixer.CalcMixedEpsilon(G.Composition[Role], DF[Role], TargetIdx, Eps, Dens);
+              Layers[LayerIdx].e := Eps;
+              if Role = 0 then
+                Layers[LayerIdx].H := TEST_D * TEST_GAMMA
+              else
+                Layers[LayerIdx].H := TEST_D * (1 - TEST_GAMMA);
+              Layers[LayerIdx].S := TEST_SIGMA;
+              Layers[LayerIdx].Rho := Dens;
+              Inc(LayerIdx);
+            end;
+          Mixer.CalcSubstrateEpsilon(TargetIdx, Eps);
+          Layers[LayerIdx].e := Eps;
+          Layers[LayerIdx].H := 1e8;
+          Layers[LayerIdx].S := TEST_SIGMA;
+        end;
+
+      F2 := Fitness.EvaluateLayers(Builder, TEST_D, TEST_N, R2);
+      F1 := Fitness.Evaluate(G, R1);
+      Fitness.Evaluate(GBulk, RBulk);
+
+      Assert.AreEqual(Double(F2), Double(F1), 1e-6,
+        'Evaluate must build the layers at the genome''s density factor');
+      Assert.AreNotEqual(Double(RBulk[1].RPeak), Double(R1[1].RPeak),
+        'a density factor of 0.8 / 0.9 must change the reflectivity');
+    finally
+      Fitness.Free;
+    end;
+  finally
+    Mixer.Free;
+  end;
+end;
 
 procedure TTestUniversalFitnessLayers.EvaluateLayers_MatchesEvaluate_ForSameGenome;
 var

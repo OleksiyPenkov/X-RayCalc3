@@ -156,7 +156,14 @@ type
       StackID: Word;
       C: TPolyArray;
 
+      { The period number of the next layer this profile applies to: 1, 2,
+        3... in the order PrepareLayers walks the model (from the surface).
+        ResetX starts the count again; PrepareLayers calls it for every
+        profile before each pass, so a model generated more than once - a
+        Lambda scan generates it once per wavelength - counts from 1 every
+        time, whichever layer of the model the profile sits on. }
       function X(const i: Word): Word;
+      procedure ResetX;
       function Ord: Word;
       procedure Assign(const Data: PProjectData);
       function PIndex: Word;
@@ -501,6 +508,11 @@ begin
   Result := High(C);
 end;
 
+procedure TFuncProfileRec.ResetX;
+begin
+  IntX := 0;
+end;
+
 function TFuncProfileRec.PIndex: Word;
 begin
   Result := System.Ord(Subj) + 1;
@@ -508,7 +520,6 @@ end;
 
 function TFuncProfileRec.X(const i: Word): Word;
 begin
-  if i = 1 then IntX := 0;
   Inc(IntX);
   Result := IntX;
 end;

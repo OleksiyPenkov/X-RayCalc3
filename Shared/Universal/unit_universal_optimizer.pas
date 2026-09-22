@@ -381,7 +381,9 @@ begin
           Break;
 
         // Checkpoint
-        if ((t + 1) mod FConfig.Optimizer.CheckpointEvery = 0) then
+        // checkpoint_every <= 0: no periodic checkpoint (the final one is always written)
+        if (FConfig.Optimizer.CheckpointEvery > 0) and
+           ((t + 1) mod FConfig.Optimizer.CheckpointEvery = 0) then
         begin
           State := FPSO.GetState;
           State.Iteration := t + 1;

@@ -37,7 +37,7 @@ type
   TTestFuncProfileRec = class
   public
     [Test] procedure Test_X_Counter;
-    [Test] procedure Test_X_ResetOnFirst;
+    [Test] procedure Test_ResetX_StartsAgain;
     [Test] procedure Test_Ord;
     [Test] procedure Test_PIndex;
   end;
@@ -208,24 +208,25 @@ end;
 procedure TTestFuncProfileRec.Test_X_Counter;
 var FP: TFuncProfileRec;
 begin
-  // X(1) resets counter to 0, then increments -> returns 1
-  // X(2) increments -> returns 2
-  // X(3) increments -> returns 3
-  Assert.AreEqual(Word(1), FP.X(1));
-  Assert.AreEqual(Word(2), FP.X(2));
-  Assert.AreEqual(Word(3), FP.X(3));
+  // After ResetX each call returns the next period number, whatever the
+  // model layer index it is given (PrepareLayers resets before every pass)
+  FP.ResetX;
+  Assert.AreEqual(Word(1), FP.X(5));
+  Assert.AreEqual(Word(2), FP.X(7));
+  Assert.AreEqual(Word(3), FP.X(9));
 end;
 
-procedure TTestFuncProfileRec.Test_X_ResetOnFirst;
+procedure TTestFuncProfileRec.Test_ResetX_StartsAgain;
 var FP: TFuncProfileRec;
 begin
-  // Calling X(1) again should reset the counter
+  FP.ResetX;
   FP.X(1);
   FP.X(2);
-  FP.X(3);
-  // Reset
-  Assert.AreEqual(Word(1), FP.X(1));
-  Assert.AreEqual(Word(2), FP.X(2));
+  // X(1) no longer resets: a profile on model layer 1 counts on like any other
+  Assert.AreEqual(Word(3), FP.X(1));
+  FP.ResetX;
+  Assert.AreEqual(Word(1), FP.X(4));
+  Assert.AreEqual(Word(2), FP.X(6));
 end;
 
 procedure TTestFuncProfileRec.Test_Ord;

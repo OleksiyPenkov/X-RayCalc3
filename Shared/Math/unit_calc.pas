@@ -580,7 +580,17 @@ var
     Result := Sqr(AScratch.RRe[0]) + Sqr(AScratch.RIm[0]);
   end;
 
+  { The Fourier transform of the interface profile's derivative (Stearns;
+    the forms Windt's IMD uses), each 1 at sigma = 0. Until 3.9.3 rfLinear
+    damped only below sigma = 0.5 A (the test was the wrong way round, and
+    0/0 at sigma = 0) and rfSinus returned 0. The GUI, the MCP server and
+    fit_xrr use rfError only. }
   function Roughness(const RF: TRoughnessFunction; const sigma, s2, s: single): single; inline;
+  const
+    Sqrt3 = 1.7320508075688772;
+    SinusK = 2.2976031174871970;   // pi / sqrt(pi^2 - 8): rms width sigma
+  var
+    a: Single;
   begin
     case RF of
       rfError:
@@ -588,15 +598,23 @@ var
       rfExp:
         Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
       rfLinear:
-        if sigma < 0.5 then
-          Result := sin(sqrt(3) * sigma * s) /
-            (sqrt(3) * sigma * s)
-        else
-          Result := 1;
+        begin
+          a := Sqrt3 * sigma * s;
+          if Abs(a) < 1E-4 then
+            Result := 1
+          else
+            Result := sin(a) / a;
+        end;
       rfStep:
         Result := cos(sigma * s);
+      rfSinus:
+        begin
+          a := SinusK * sigma * s;
+          Result := Pi / 4 * (sin(a - Pi / 2) / (a - Pi / 2) +
+                              sin(a + Pi / 2) / (a + Pi / 2));
+        end;
       else
-        Result := 0;
+        Result := 1;
     end;
   end;
 

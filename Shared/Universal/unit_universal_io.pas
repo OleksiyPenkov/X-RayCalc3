@@ -610,7 +610,7 @@ begin
       else
         LayerValues.Add(RoundTo(H2, -3));
       LayerValues.Add(RoundTo(Best.Sigma, -2));
-      LayerValues.Add(1.0);
+      LayerValues.Add(RoundTo(Best.DensityFactor[i], -3));   // factor on the mixed bulk density
 
       JLayerObj := TJSONObject.Create;
       JLayerObj.AddPair(LayerName, LayerValues);
@@ -776,6 +776,7 @@ begin
         EffDensity := 0;
         for j := 0 to High(Config.ElementPool) do
           EffDensity := EffDensity + Best.Composition[i][j] * Mixer.GetElementDensity(j);
+        EffDensity := EffDensity * Best.DensityFactor[i];   // as the fitness built it
 
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', MatName);
