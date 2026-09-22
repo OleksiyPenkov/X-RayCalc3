@@ -503,11 +503,11 @@ begin
   try
     if Result.Meta.Lambda > 0 then
       Result.LambdaSource := 'meta.json';
-    { The axis the file was scanned on is a fact of the file and wins. The
-      wavelength is the caller's choice: a meta.json that declares one keeps
-      it, and the file's own value (the doublet weighted by its ratio when the
-      optic passes both lines, kAlpha1 otherwise) fills in when meta.json is
-      silent. Either way the header says what the file implied. }
+    { The file's facts win over meta.json: the axis it was scanned on, and the
+      wavelength it was measured at (the doublet weighted by its ratio when the
+      optic passes both lines, kAlpha1 otherwise). The author's rule: a
+      wavelength typed by hand is the operator error this import removes. A
+      meta.json that says otherwise is reported in the header, not used. }
     if IsXRDML then
     begin
       if SameText(Scan.XAxis, '2Theta') then
@@ -517,15 +517,12 @@ begin
       Result.Meta.ThetaUnitDeclared := True;
       if Scan.Lambda > 0 then
       begin
-        if Result.Meta.Lambda > 0 then
-          AppendStr(Result.HeaderLines, Format('* meta.json lambda %s A is used; the file implies %s A (%s)',
+        if (Result.Meta.Lambda > 0) and (Abs(Result.Meta.Lambda - Scan.Lambda) > 1E-6) then
+          AppendStr(Result.HeaderLines, Format('* meta.json lambda %s A is not used: the file implies %s A (%s)',
             [FloatToStr(Result.Meta.Lambda, TFormatSettings.Invariant),
-             FormatFloat('0.000000', Scan.Lambda, TFormatSettings.Invariant), Scan.LambdaRule]))
-        else
-        begin
-          Result.Meta.Lambda := Scan.Lambda;
-          Result.LambdaSource := 'file: ' + Scan.LambdaRule;
-        end;
+             FormatFloat('0.000000', Scan.Lambda, TFormatSettings.Invariant), Scan.LambdaRule]));
+        Result.Meta.Lambda := Scan.Lambda;
+        Result.LambdaSource := 'file: ' + Scan.LambdaRule;
       end;
     end;
     Result.Converted2Theta := SameText(Result.Meta.ThetaUnit, '2theta');

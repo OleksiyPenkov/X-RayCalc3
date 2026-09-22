@@ -1448,6 +1448,14 @@ begin
       Descr := Descr + '* Loaded as 2Theta' + #13#10
     else
       Descr := Descr + '* Loaded as theta (incidence angle)' + #13#10;
+    { the file states the wavelength it was measured at; taking it from there
+      removes one thing the operator can get wrong }
+    if Scan.Lambda > 0 then
+    begin
+      FCalcSettings.SetLambda(Scan.Lambda);
+      Descr := Descr + '* Wavelength set to ' +
+        FormatFloat('0.000000', Scan.Lambda, TFormatSettings.Invariant) + ' A from the file' + #13#10;
+    end;
   end;
 
   Node := FProject.GetFirstSelected;

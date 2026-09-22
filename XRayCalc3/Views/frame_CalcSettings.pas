@@ -76,6 +76,9 @@ type
     procedure GetAxisRange(var AMin, AMax: Single);
     procedure LoadAdvancedParams(INF: TMemIniFile; var Params: TFitParams);
     procedure SaveAdvancedParams(INF: TMemIniFile; const Params: TFitParams);
+    /// <summary>Sets the wavelength field (Angstrom), as an imported file that
+    /// states its own wavelength does, so the operator need not type it.</summary>
+    procedure SetLambda(const Value: Double);
 
     property CalcMode: Integer read GetCalcMode;
     property FittingMode: TFittingMode read GetFittingMode;
@@ -108,6 +111,13 @@ end;
 function TfrmCalcSettings.GetPolarisation: Integer;
 begin
   Result := rgPolarisation.ItemIndex;
+end;
+
+procedure TfrmCalcSettings.SetLambda(const Value: Double);
+begin
+  { FillCalcThreadParams reads the field back with StrToFloat in the system
+    locale, so it is written in the same locale }
+  edLambda.Text := FloatToStr(Value);
 end;
 
 function TfrmCalcSettings.GetIs2Theta: Boolean;

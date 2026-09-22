@@ -751,10 +751,11 @@ begin
     Assert.AreEqual(Double(0.5), Double(M.Curve[1].r), 1E-6);
     Assert.AreEqual(Double(0.5), Double(M.Curve[2].r), 1E-6,
       'a zero count is floored to the smallest positive intensity before it, as for text files');
-    Assert.AreEqual(Double(0.71), M.Meta.Lambda, 1E-9, 'a declared meta.json lambda is the caller''s choice');
-    Assert.AreEqual('meta.json', M.LambdaSource);
-    Assert.IsTrue(Pos('the file implies 1.540598', string.Join(#10, M.HeaderLines)) > 0,
-      'the header says what the file implied');
+    Assert.AreEqual(Double(1.540598), M.Meta.Lambda, 1E-9,
+      'the wavelength the file was measured at wins over a hand-written meta.json');
+    Assert.IsTrue(Pos('file:', M.LambdaSource) = 1, M.LambdaSource);
+    Assert.IsTrue(Pos('meta.json lambda 0.71 A is not used', string.Join(#10, M.HeaderLines)) > 0,
+      'the header reports the meta.json value that was set aside');
     Assert.IsTrue(M.Meta.Present, 'meta.json is still read for the rest');
     Assert.IsTrue(Length(M.HeaderLines) >= 3, 'the file facts are the header');
   finally

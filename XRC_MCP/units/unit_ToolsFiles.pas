@@ -85,8 +85,10 @@ begin
     'scanned, converted to theta here) comes from the file; its wavelength is ' +
     'the one the file implies (the K-Alpha doublet weighted by the file''s ' +
     'ratio when the incident optic passes both lines, 1.541874 A for Cu; ' +
-    'kAlpha1 when a monochromator or hybrid mirror selects it) unless meta.json ' +
-    'declares a lambda, which then wins; "lambda_source" says which. Counts are ' +
+    'kAlpha1 when a monochromator or hybrid mirror selects it); it overrides a ' +
+    'lambda in meta.json, which is then reported in "header" but not used, so ' +
+    'that a wavelength typed by hand cannot displace the measured one; ' +
+    '"lambda_source" says "file: <rule>". Counts are ' +
     'divided by the counting time, a zero count becomes the smallest positive ' +
     'intensity before it, and the curve is normalised to 1 at its maximum; the ' +
     'raw peak rate, the counting time, the detector and its readOutPeriod are ' +
