@@ -168,6 +168,23 @@ input is missing; no threshold is invented in code (only ratio > 1 and < 2 point
 Accepts a bare substrate, `"stacks": []`, as the design. The checks live in
 `units/unit_MCPAssess.pas` and are the GUI's Data - Assess XRR quality as well.
 
+**Release 3.9.2.970 (2026-09-22, e9ad011 engine):** the frozen public release the XRR fitting
+skill's campaign 3 runs on. Gate on the release candidate: identity, the 158-fit replay (158 of 158;
+the two Ru/C profile fits that fail on 3.9.1.950 now succeed), the 30-fit control against the study
+(chi2-identical), substrate density, glass tooling, presets and the Henke hash all pass. RECORDED, not
+waved through: with `"scale_solve": false` and `"smooth": {"passes": 1}`, two of the 156 campaign 1-2
+replays differ from 3.9.1.950 - `workdir-RuC-260910B-a fit-20260919-082647-b913` (single Ru film,
+chi2 2.61707 -> 2.61723, structure unchanged to 1e-3 A) and `workdir-T05c fit-20260918-222443-960a`
+(Co/C, theta_weight 1: a different, lower minimum). The drift is deterministic, present since the
+solved-scale commit 2f92b9b, and confined to the smoothing path: the same requests with
+`"smooth": {"passes": 0}` are bit-identical across builds. Procedure v5 (smoothing off) and the
+recovery benchmark are unaffected. "No silent numeric drift against 3.9.1.950" is therefore NOT
+claimed for smoothed fits on this release. Also found: with the solve on, a substrate-density scan
+on a glass edge has a flat chi2 profile (the solve absorbs the density-dependent edge amplitude);
+glass work needs `"scale_solve": false` or an anchored edge. `[FIT] Mode=1` stays as `fit_xrr` writes
+it - the engine that ran; the GUI's fit write-back was fixed the same day to follow the engine rather
+than the model's shape.
+
 **Smoke test:** `pwsh -File XRC_MCP\smoke\session.ps1` drives one live stdio session against
 `_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 18 tools (jobs are
 submitted, polled through `job_status`, waited for with `job_wait` and read with `job_result`; one is
