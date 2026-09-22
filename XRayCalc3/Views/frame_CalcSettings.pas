@@ -67,6 +67,8 @@ type
     function GetIs2Theta: Boolean;
     function GetIsPWChiSqr: Boolean;
     function GetThetaWeightIndex: Integer;
+    function GetLambda: Double;
+    function GetResolution: Double;
   public
     procedure LoadFromINI(INF: TMemIniFile);
     procedure ApplyModeSettings;
@@ -84,6 +86,10 @@ type
     property FittingMode: TFittingMode read GetFittingMode;
     property Polarisation: Integer read GetPolarisation;
     property Is2Theta: Boolean read GetIs2Theta;
+    /// <summary>The wavelength field (Angstrom), 0 when it does not parse.</summary>
+    property Lambda: Double read GetLambda;
+    /// <summary>The theta-scan resolution field (deg FWHM), 0 when it does not parse.</summary>
+    property Resolution: Double read GetResolution;
     property IsPWChiSqr: Boolean read GetIsPWChiSqr;
     property ThetaWeightIndex: Integer read GetThetaWeightIndex;
 
@@ -123,6 +129,17 @@ end;
 function TfrmCalcSettings.GetIs2Theta: Boolean;
 begin
   Result := cb2Theta.Checked;
+end;
+
+function TfrmCalcSettings.GetLambda: Double;
+begin
+  { the same locale FillCalcThreadParams reads the field in }
+  Result := StrToFloatDef(edLambda.Text, 0);
+end;
+
+function TfrmCalcSettings.GetResolution: Double;
+begin
+  Result := StrToFloatDef(edWidth.Text, 0);
 end;
 
 function TfrmCalcSettings.GetIsPWChiSqr: Boolean;

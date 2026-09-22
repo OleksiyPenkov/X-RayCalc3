@@ -188,6 +188,8 @@ type
     ilIcons: TImageList;
     actDataTrim: TAction;
     rim1: TMenuItem;
+    actDataAssess: TAction;
+    AssessXRRquality1: TMenuItem;
     actCalcFitJobs: TAction;
     FitExportJSON: TAction;
     dlgSaveFitJSON: TSaveDialog;
@@ -265,6 +267,7 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure actCopyStructureBitmapExecute(Sender: TObject);
     procedure actDataTrimExecute(Sender: TObject);
+    procedure actDataAssessExecute(Sender: TObject);
     procedure actCalcFitJobsExecute(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
@@ -347,6 +350,10 @@ uses
   unit_XRCStackControl,
   unit_sys_helpers,
   frm_FitSettings,
+  frm_XRRAssess,
+  unit_MCPAssess,
+  unit_xrdml,
+  unit_SeriesIO,
   Winapi.ShellAPI;
 
 {$R *.dfm}
@@ -519,6 +526,65 @@ end;
 procedure TfrmMain.actDataTrimExecute(Sender: TObject);
 begin
   FChartInfo.TrimData;
+end;
+
+{ Data - Assess XRR quality: the eight checks of unit_MCPAssess on the active
+  measured curve. An .xrdml behind the data node (Load Data writes its path
+  into the description) is read again for the raw facts - counting time,
+  count rates, zero counts - that the chart series no longer carries; any
+  other curve is assessed as two columns, and the checks that need those
+  facts say "unknown". The current structure is offered as the design. }
+procedure TfrmMain.actDataAssessExecute(Sender: TObject);
+const
+  SOURCE_TAG = '* Source file: ';
+var
+  Data: PProjectData;
+  Series: TFastLineSeries;
+  Inp: TAssessInput;
+  Path, L, Source: string;
+  i: Integer;
+begin
+  Data := FProjectPanel.Project.ActiveData;
+  Series := nil;
+  if Data <> nil then
+    Series := FProjectPanel.ActiveDataSeries;
+  if (Series = nil) or (Series.Count < 3) then
+  begin
+    MessageDlg('Load or select a measured curve first (Data - Load).', mtInformation, [mbOK], 0);
+    Exit;
+  end;
+
+  Path := '';
+  for L in Data.Description.Split([#13#10, #10]) do
+    if L.StartsWith(SOURCE_TAG) then
+      Path := L.Substring(Length(SOURCE_TAG)).Trim;
+
+  if (Path <> '') and IsXRDMLFile(Path) and FileExists(Path) then
+  begin
+    Inp := AssessInputFromScan(ReadXRDMLFile(Path));
+    Source := 'File: ' + Path;
+  end
+  else
+  begin
+    Inp := DefaultAssessInput;
+    Inp.Curve := SeriesToData(Series);
+    Inp.TwoThetaScan := FCalcSettings.Is2Theta;
+    if Inp.TwoThetaScan then
+      for i := 0 to High(Inp.Curve) do
+        Inp.Curve[i].t := Inp.Curve[i].t / 2;
+    Source := 'Chart data "' + Data.Title + '": no .xrdml behind it, so the count-rate ' +
+              'and zero-count checks are unknown';
+  end;
+
+  { the wavelength and the resolution the calculation settings hold, the
+    structure the editor shows: what a fit from this window would use }
+  Inp.Lambda := FCalcSettings.Lambda;
+  Inp.LambdaSource := 'calculation settings';
+  Inp.Resolution := FCalcSettings.Resolution;
+  Inp.Structure := Structure.ToFitStructure;
+  Inp.HasStructure := Length(Inp.Structure.Stacks) > 0;
+
+  frmXRRAssess.Assess(Inp, Source);
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);

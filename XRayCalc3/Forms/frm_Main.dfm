@@ -845,6 +845,9 @@ object frmMain: TfrmMain
         ImageIndex = 35
         Action = actDataTrim
       end
+      object AssessXRRquality1: TMenuItem
+        Action = actDataAssess
+      end
       object N7: TMenuItem
         Caption = '-'
       end
@@ -2092,6 +2095,12 @@ object frmMain: TfrmMain
       Category = 'Data'
       Caption = 'Trim'
       OnExecute = actDataTrimExecute
+    end
+    object actDataAssess: TAction
+      Category = 'Data'
+      Caption = 'Assess XRR quality ...'
+      Hint = 'Is this measured curve worth fitting? Eight checks on the measurement itself'
+      OnExecute = actDataAssessExecute
     end
     object actCalcFitJobs: TAction
       Category = 'Calc'

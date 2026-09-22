@@ -1444,6 +1444,9 @@ begin
     Descr := '';
     for L in Scan.DescriptionLines do
       Descr := Descr + L + #13#10;
+    { Data - Assess XRR quality re-reads the file for the raw facts (counting
+      time, count rates, zero counts) the chart series no longer carries }
+    Descr := Descr + '* Source file: ' + dlgLoadData.FileName + #13#10;
     if FCalcSettings.Is2Theta then
       Descr := Descr + '* Loaded as 2Theta' + #13#10
     else
