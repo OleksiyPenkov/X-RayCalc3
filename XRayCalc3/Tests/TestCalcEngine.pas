@@ -38,6 +38,24 @@ type
     [Test] procedure Test_Plain_IgnoresPeakWeight;
   end;
 
+  { TCalc.SolveScale: the measured scale solved in closed form inside the
+    chi-squared. The curves are the four points above with a peak weight and
+    an angle weight, so that every term of the derivation is exercised. }
+  [TestFixture]
+  TTestSolvedScale = class
+  private
+    function ChiFixed(const Data, Calc: TDataArray; ThetaW: Integer; LogScale: Double;
+      out Plain: Double): Double;
+  public
+    [Test] procedure Test_Off_IsTheLegacySum_AndWindowZeroMatchesIt;
+    [Test] procedure Test_Solved_IsNoWorseThanAnyFixedScale;
+    [Test] procedure Test_ClosedForm_MatchesAFineGrid;
+    [Test] procedure Test_Invariant_WhenDataAndAnchorMoveTogether;
+    [Test] procedure Test_Clamp_LandsOnTheBound_AndIsReported;
+    [Test] procedure Test_Plain_IsTakenAtTheSolvedScale;
+    [Test] procedure Test_GpuInputs_CarryTheMode;
+  end;
+
 implementation
 
 uses
@@ -376,6 +394,232 @@ begin
     Assert.IsTrue(C.ChiSQR > C.ChiSQRPlain * 5,
       Format('a peak weight of 10 should inflate the weighted sum: %.6g vs %.6g',
              [C.ChiSQR, C.ChiSQRPlain]));
+  finally
+    C.Free;
+  end;
+end;
+
+{ TTestSolvedScale }
+
+{ The legacy sum on a copy of Data multiplied by 10^LogScale, with a peaky
+  moving average so that the point weight is on. }
+function TTestSolvedScale.ChiFixed(const Data, Calc: TDataArray; ThetaW: Integer;
+  LogScale: Double; out Plain: Double): Double;
+var
+  C: TChiCalc;
+  D, Avg: TDataArray;
+  i: Integer;
+begin
+  D := Copy(Data);
+  SetLength(Avg, Length(D));
+  for i := 0 to High(D) do
+  begin
+    D[i].r := D[i].r * Power(10, LogScale);
+    Avg[i].t := D[i].t;
+    Avg[i].r := D[i].r / 4;        // every point is a "peak": weight = 4
+  end;
+  C := MakeChiCalc(D, Calc);
+  try
+    C.MovAvg := Avg;
+    Result := C.CalcChiSquare(ThetaW);
+    Plain := C.ChiSQRPlain;
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_Off_IsTheLegacySum_AndWindowZeroMatchesIt;
+var
+  Data, Calc, Avg: TDataArray;
+  C: TChiCalc;
+  Off, Pinned, PlainOff: Double;
+  i: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  Off := ChiFixed(Data, Calc, 1, 0, PlainOff);
+  SetLength(Avg, Length(Data));
+  for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.MovAvg := Avg;
+    Assert.IsFalse(C.SolveScale, 'off by default');
+    C.SolveScale := True;
+    C.ScaleWindowLog := 0;           // pinned: the same objective in Double
+    Pinned := C.CalcChiSquare(1);
+    Assert.AreEqual(Off, Pinned, 1E-5 * Off, 'window 0 reproduces the legacy sum');
+    Assert.AreEqual(0.0, Double(C.ScaleLog), 0);
+    Assert.AreEqual(PlainOff, Double(C.ChiSQRPlain), 1E-5 * PlainOff, 'and its plain sum');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_Solved_IsNoWorseThanAnyFixedScale;
+var
+  Data, Calc, Avg: TDataArray;
+  C: TChiCalc;
+  Solved, Fixed, Plain: Double;
+  i, k: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  SetLength(Avg, Length(Data));
+  for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.MovAvg := Avg;
+    C.SolveScale := True;
+    C.ScaleWindowLog := 1;           // a factor 10 either way: never the bound here
+    Solved := C.CalcChiSquare(1);
+    Assert.IsFalse(C.ScaleClamped);
+    for k := -6 to 6 do
+    begin
+      Fixed := ChiFixed(Data, Calc, 1, k * 0.05, Plain);
+      Assert.IsTrue(Fixed >= Solved * (1 - 1E-6),
+        Format('fixed at 10^%g: %.9g must not beat the solved %.9g', [k * 0.05, Fixed, Solved]));
+    end;
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_ClosedForm_MatchesAFineGrid;
+var
+  Data, Calc, Avg: TDataArray;
+  C: TChiCalc;
+  Solved, Fixed, Plain, BestFixed, BestA, A: Double;
+  i, k: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  SetLength(Avg, Length(Data));
+  for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.MovAvg := Avg;
+    C.SolveScale := True;
+    C.ScaleWindowLog := 1;
+    Solved := C.CalcChiSquare(1);
+    BestFixed := 1E300; BestA := 0;
+    for k := -300 to 300 do
+    begin
+      A := k * 0.001;
+      Fixed := ChiFixed(Data, Calc, 1, A, Plain);
+      if Fixed < BestFixed then begin BestFixed := Fixed; BestA := A; end;
+    end;
+    Assert.AreEqual(BestA, Double(C.ScaleLog), 0.0015, 'the grid minimum sits at the solved a');
+    Assert.IsTrue(BestFixed >= Solved * (1 - 1E-6), 'the grid never beats the closed form');
+    Assert.IsTrue(BestFixed - Solved <= 1E-4 * Solved, 'and reaches it within the grid step');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_Invariant_WhenDataAndAnchorMoveTogether;
+var
+  Data, Calc, Avg, Data2, Avg2: TDataArray;
+  C, C2: TChiCalc;
+  Chi1, Chi2: Double;
+  i: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  SetLength(Avg, Length(Data));
+  for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
+  Data2 := Copy(Data);
+  SetLength(Avg2, Length(Data));
+  for i := 0 to High(Data2) do begin Data2[i].r := Data2[i].r * 2; Avg2[i].t := Avg[i].t; Avg2[i].r := Avg[i].r * 2; end;
+  C := MakeChiCalc(Data, Calc);
+  C2 := MakeChiCalc(Data2, Calc);
+  try
+    C.MovAvg := Avg;   C.SolveScale := True;  C.ScaleWindowLog := 1;
+    C2.MovAvg := Avg2; C2.SolveScale := True; C2.ScaleWindowLog := 1;
+    Chi1 := C.CalcChiSquare(1);
+    Chi2 := C2.CalcChiSquare(1);
+    { Single-precision logs of the data round differently after the factor:
+      a relative 1e-4 is the precision the engine's sums have }
+    Assert.AreEqual(Chi1, Chi2, 1E-4 * Chi1, 'the point weights are scale-invariant, so is the solved chi2');
+    Assert.AreEqual(Double(C.ScaleLog) - Log10(2), Double(C2.ScaleLog), 1E-6, 'the solved scale absorbs the factor');
+  finally
+    C.Free;
+    C2.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_Clamp_LandsOnTheBound_AndIsReported;
+var
+  Data, Calc, Avg: TDataArray;
+  C: TChiCalc;
+  Solved, AtBound, Plain: Double;
+  i: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  for i := 0 to High(Data) do Data[i].r := Data[i].r * 3;   // the free a* is about -0.477
+  SetLength(Avg, Length(Data));
+  for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.MovAvg := Avg;
+    C.SolveScale := True;
+    C.ScaleWindowLog := Log10(1.05);
+    Solved := C.CalcChiSquare(1);
+    Assert.IsTrue(C.ScaleClamped, 'a* beyond the window is clamped');
+    Assert.AreEqual(-Log10(1.05), Double(C.ScaleLog), 1E-7, 'to the bound on the near side');
+    AtBound := ChiFixed(Data, Calc, 1, -Log10(1.05), Plain);
+    Assert.AreEqual(AtBound, Solved, 1E-5 * AtBound, 'and scored there');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_Plain_IsTakenAtTheSolvedScale;
+var
+  Data, Calc, Avg: TDataArray;
+  C: TChiCalc;
+  A, LogCalc, Expected: Double;
+  i: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  SetLength(Avg, Length(Data));
+  for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
+  C := MakeChiCalc(Data, Calc);
+  try
+    C.MovAvg := Avg;
+    C.SolveScale := True;
+    C.ScaleWindowLog := 1;
+    C.CalcChiSquare(1);
+    A := C.ScaleLog;
+    Assert.IsTrue(Abs(A) > 1E-4, 'the curves disagree in scale, so a* is not 0');
+    { The engine takes its logs with a fast approximation, so the reference is
+      the engine's own legacy plain sum on the data scaled by 10^a, not an exact
+      hand sum: the two agree to the rounding of the scaled data's logs. }
+    ChiFixed(Data, Calc, 1, A, Expected);
+    Assert.AreEqual(Expected, Double(C.ChiSQRPlain), 1E-3 * Expected, 'the plain sum at a*');
+    LogCalc := 0;
+    for i := 0 to High(Data) do
+      LogCalc := LogCalc + Sqr((Log10(Data[i].r) + A - Log10(Calc[i].r)) / Log10(Calc[i].r));
+    LogCalc := LogCalc / High(Data) * 1000;
+    Assert.AreEqual(LogCalc, Double(C.ChiSQRPlain), 0.05 * LogCalc,
+      'and an exact hand sum agrees to the fast-log tolerance');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestSolvedScale.Test_GpuInputs_CarryTheMode;
+var
+  Data, Calc: TDataArray;
+  C: TChiCalc;
+  P: TCalcThreadParams;
+begin
+  MakeChiCurves(Data, Calc);
+  C := MakeChiCalc(Data, Calc);
+  try
+    P := Default(TCalcThreadParams);
+    P.Mode := cmTheta; P.N := Length(Data); P.StartT := Data[0].t; P.EndT := Data[High(Data)].t;
+    P.Lambda := 1.54; P.K := 1;
+    C.Params := P;
+    C.SolveScale := True;
+    C.ScaleWindowLog := 0.25;
+    Assert.IsTrue(C.GpuInputs(0).SolveScale, 'the GPU scores the same objective');
+    Assert.AreEqual(0.25, Double(C.GpuInputs(0).ScaleWindow), 1E-7);
   finally
     C.Free;
   end;

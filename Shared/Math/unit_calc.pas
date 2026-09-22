@@ -38,6 +38,8 @@ type
     ConvN: Integer;               // half-window of the convolution, 0 when none
     ChiFirst, ChiLast: Integer;   // inclusive range of points chi2 sums over
     ChiNorm: Single;              // 1000 / High(data)
+    SolveScale: Boolean;          // score every particle at its own best scale
+    ScaleWindow: Single;          // |log10 scale| bound when solving; 0 pins it
   end;
 
   TCalcParams = record
@@ -77,6 +79,10 @@ type
       FMaxThreads: Integer;
       FLogData: array of Single;
       FLogDataReady: Boolean;
+      FSolveScale: Boolean;
+      FScaleWindowLog: Single;
+      FScaleLog: Single;
+      FScaleClamped: Boolean;
 
       function  RefCalc(const ATheta, c1, c2: single;
         const AModel: TCalcModelSoA; var AScratch: TCalcScratchSoA): single;
@@ -109,6 +115,16 @@ type
       property ChiSQRPlain: single read FChiSQRPlain;
       property Model: TLayeredModel read FLayeredModel write FLayeredModel;
       property MaxThreads: Integer read FMaxThreads write FMaxThreads;
+      /// <summary>Score the curve at the scale that minimises the chi-squared
+      /// for it, found in closed form (see CalcChiSquare). Off by default: the
+      /// legacy sum runs unchanged then.</summary>
+      property SolveScale: Boolean read FSolveScale write FSolveScale;
+      /// <summary>The solved log10 scale is held within +/- this; 0 pins it.</summary>
+      property ScaleWindowLog: Single read FScaleWindowLog write FScaleWindowLog;
+      /// <summary>log10 of the scale the last CalcChiSquare scored at (0 when
+      /// not solving).</summary>
+      property ScaleLog: Single read FScaleLog;
+      property ScaleClamped: Boolean read FScaleClamped;
   end;
 
 implementation
@@ -147,6 +163,10 @@ var
   UseWeight: boolean;
   Ratio: single;
 
+  { the solved-scale path }
+  D, W, Wp: Double;
+  S0, S1, S2, Q0, Q1, Q2, A, AFree: Double;
+
 begin
   // Pre-compute Log10 of experimental data once — FData never changes during fitting
   if not FLogDataReady then
@@ -158,6 +178,63 @@ begin
   end;
 
   UseWeight := Length(FMovAvg) > 1;
+  FScaleLog := 0;
+  FScaleClamped := False;
+
+  if FSolveScale then
+  begin
+    { A scale s on the measured curve adds a = log10 s to every log10 D. With
+      W = w_point w_theta / (log10 R)^2 and d = log10 D - log10 R the sum is
+      chi2(a) = S2 + 2 a S1 + a^2 S0, an exact quadratic: a* = -S1/S0, held
+      within the window. The plain sum (weights 1) is taken at the same a.
+      One pass, Double accumulators, the same points the legacy sum walks. }
+    S0 := 0; S1 := 0; S2 := 0;
+    Q0 := 0; Q1 := 0; Q2 := 0;
+    for I := FTail to High(FData) - FTail - 1 do
+    begin
+      if FResult[i].r = 0 then Continue;
+      LogResult := Log10(FResult[i].r);
+      D  := FLogData[i] - LogResult;
+      Wp := 1 / Sqr(Double(LogResult));
+      W  := Wp;
+      if UseWeight then
+      begin
+        Ratio := FData[i].r / FMovAvg[i].r;
+        if Ratio > 3 then
+          W := W * Ratio;
+      end;
+      case ThetaWieght of
+        0: ;
+        1: W := W * sqr(FResult[i].t);
+        2: W := W * FResult[i].t;
+        3: W := W * sqrt(FResult[i].t);
+        4: W := W / sqr(FResult[i].t);
+        5: W := W / sqrt(FResult[i].t);
+      end;
+      Q2 := Q2 + Wp * D * D;  Q1 := Q1 + Wp * D;  Q0 := Q0 + Wp;
+      S2 := S2 + W * D * D;   S1 := S1 + W * D;   S0 := S0 + W;
+    end;
+
+    { The unit's Log10 is ln / (2 ln 10): half of log10, which cancels in the
+      ratio the chi-squared is built on but not in a. So a here is half the
+      true log10 of the scale: the window is halved to match, and ScaleLog
+      reports the true value, the one the GPU kernel (true log10) uses. }
+    A := 0;
+    if S0 > 0 then
+    begin
+      AFree := -S1 / S0;
+      A := AFree;
+      if A > 0.5 * FScaleWindowLog then A := 0.5 * FScaleWindowLog;
+      if A < -0.5 * FScaleWindowLog then A := -0.5 * FScaleWindowLog;
+      FScaleClamped := A <> AFree;
+    end;
+    FScaleLog := 2 * A;
+
+    FChiSQRPlain := (Q2 + 2 * A * Q1 + A * A * Q0) / High(FData) * 1000;
+    FChiSQR := (S2 + 2 * A * S1 + A * A * S0) / High(FData) * 1000;
+    Result := FChiSQR;
+    Exit;
+  end;
 
   Result := 0;
   Plain := 0;
@@ -254,6 +331,8 @@ begin
   Result.ChiFirst := Result.ConvN;
   Result.ChiLast  := Size - 1 - Result.ConvN - 1;
   Result.ChiNorm  := 1000 / (Size - 1);
+  Result.SolveScale := FSolveScale;
+  Result.ScaleWindow := FScaleWindowLog;
 end;
 
 procedure TCalc.FinishRawCurve(const Raw: TArray<Single>);

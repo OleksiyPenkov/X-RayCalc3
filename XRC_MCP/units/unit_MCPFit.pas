@@ -96,6 +96,17 @@ const
   { The same sum with both weights dropped: what the fit is worth as a bare
     data-to-fit disagreement, on the same scale as chi2, so the two can be read
     side by side. It is reported, never minimised. }
+  FIT_CHI2_SOLVED_DEFINITION =
+    'With "scale_solve" (default true) log10 I_meas is replaced by log10 I_meas + a ' +
+    'in chi2 and chi2_plain, a being the value that minimises chi2 for the ' +
+    'candidate structure, found in closed form and held within +/- log10(1 + ' +
+    'scale_solve_window) of 0; every candidate is scored at its own a, so the ' +
+    'scale is profiled out rather than fitted. chi2, chi2_recalc and chi2_plain ' +
+    'are at the a of the fitted structure (scale_ratio = 10^a), chi2_start and ' +
+    'chi2_start_plain at the a of the start model (scale_start_ratio). r_min, ' +
+    'the files and the .xrcx stay at the anchored scale; residual.dat is at the ' +
+    'solved one. With "scale_solve": false a = 0 and the numbers are those of ' +
+    'every earlier version.';
   FIT_CHI2_PLAIN_DEFINITION =
     'chi2_plain and chi2_start_plain are the same sum as chi2 with w_point = ' +
     'w_theta = 1: 1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 ' +
@@ -135,6 +146,7 @@ const
   DEF_INLINE_MAX   = 2000;
   /// "scale": "auto" looks for the measured maximum below this angle.
   DEF_AUTO_THETA_MAX = 0.5;
+  DEF_SCALE_SOLVE_WINDOW = 0.2;   // the solved scale stays within x1.2 of the anchor
 
   { The range a free parameter gets when no explicit bound is given: the start
     value plus and minus this fraction of it. }
@@ -203,6 +215,7 @@ type
     PairedParams: TArray<TFitParamRef>; // layer parameters held constant over
                                         // the periods of a profile fit
     Device: string;                     // 'auto', 'cpu' or 'gpu' (optimizer.device)
+    ScaleSolveWindow: Double;           // "scale_solve_window" as given (Fit holds its log10)
   end;
 
 /// <summary>Parses and validates one fit_xrr argument object. Raises
@@ -380,7 +393,10 @@ end;
 procedure FillEngineDensities(var S: TFitStructure; Lambda: Double); forward;
 function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
   const MovAvgCurve: unit_Types.TDataArray;
-  out Chi2, Chi2Plain: Double): unit_Types.TDataArray; forward;
+  out Chi2, Chi2Plain: Double): unit_Types.TDataArray; overload; forward;
+function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
+  const MovAvgCurve: unit_Types.TDataArray;
+  out Chi2, Chi2Plain, ScaleLog: Double; out ScaleClamped: Boolean): unit_Types.TDataArray; overload; forward;
 
 procedure ReadMeasuredCurve(const Params: TJSONObject; var Req: TFitRequest);
 var
@@ -1093,6 +1109,7 @@ end;
 
 function ParseFitParams(const Params: TJSONObject): TFitParams;
 var
+  Win: Double;
   JOpt, JChi: TJSONObject;
 begin
   JOpt := JSONArgs.OptObj(Params, 'optimizer');
@@ -1119,6 +1136,16 @@ begin
 
   Result.ThetaWeight     := JSONArgs.OptInt(JChi, 'theta_weight', 0);
   Result.MovAvgWindow    := JSONArgs.OptFloat(JChi, 'movavg_window', DEF_MOVAVG);
+
+  { The measured scale as a nuisance parameter solved inside the objective;
+    see FIT_CHI2_SOLVED_DEFINITION. On by default, on the author's decision. }
+  Result.SolveScale := JSONArgs.OptBool(Params, 'scale_solve', True);
+  Win := JSONArgs.OptFloat(Params, 'scale_solve_window', DEF_SCALE_SOLVE_WINDOW);
+  if Win < 0 then
+    raise EMCPError.Create('invalid_argument',
+      '"scale_solve_window" cannot be negative: it is the fraction the solved ' +
+      'scale may differ from the anchored one', FloatToStr(Win, FitFmt));
+  Result.ScaleWindowLog := Log10(1 + Win);
 
   { TFitParams.Smooth makes the irregular engine smooth a parameter's profile
     over the layers (TLFPSO_Irregular.Smooth); neither engine run here reads
@@ -1391,6 +1418,7 @@ begin
               Result.PairedParams);
 
   Result.Fit := ParseFitParams(Params);
+  Result.ScaleSolveWindow := JSONArgs.OptFloat(Params, 'scale_solve_window', DEF_SCALE_SOLVE_WINDOW);
   Result.PointWeight := JSONArgs.OptBool(JSONArgs.OptObj(Params, 'chi2'),
                                          'point_weight', True);
   Result.Device := ParseDevice(Params);
@@ -1481,6 +1509,16 @@ function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
   const MovAvgCurve: unit_Types.TDataArray;
   out Chi2, Chi2Plain: Double): unit_Types.TDataArray;
 var
+  ScaleLog: Double;
+  Clamped: Boolean;
+begin
+  Result := ScanOnData(Req, Model, MovAvgCurve, Chi2, Chi2Plain, ScaleLog, Clamped);
+end;
+
+function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
+  const MovAvgCurve: unit_Types.TDataArray;
+  out Chi2, Chi2Plain, ScaleLog: Double; out ScaleClamped: Boolean): unit_Types.TDataArray;
+var
   Calc: TCalc;
 begin
   { Model is ours until TCalc owns it, and TCalc.Create can raise. }
@@ -1503,10 +1541,14 @@ begin
       of unit_MCPCalc. Without it the chi-squared of the start model would be
       the first thing a fit does and the first thing to hang. }
     Calc.MaxThreads := 1;
+    Calc.SolveScale     := Req.Fit.SolveScale;
+    Calc.ScaleWindowLog := Req.Fit.ScaleWindowLog;
     Calc.Model     := Model;          // TCalc.Destroy frees it from here on
     Calc.Run;
     Chi2 := Calc.CalcChiSquare(Req.Fit.ThetaWeight);
     Chi2Plain := Calc.ChiSQRPlain;
+    ScaleLog := Calc.ScaleLog;
+    ScaleClamped := Calc.ScaleClamped;
     Result := Copy(Calc.Results);
   finally
     Calc.Free;
@@ -1546,7 +1588,11 @@ begin
           end;
 end;
 
-function ResidualCurve(const Data, Calc: unit_Types.TDataArray): unit_Types.TDataArray;
+/// log10 I - log10 R per point, with the solved log10 scale added to the
+/// measured side when there is one, so the residual is the disagreement the
+/// fit minimised.
+function ResidualCurve(const Data, Calc: unit_Types.TDataArray;
+  const ScaleLog: Double = 0): unit_Types.TDataArray;
 var
   i, n: Integer;
 begin
@@ -1556,7 +1602,7 @@ begin
   begin
     Result[i].t := Data[i].t;
     if (Data[i].r > 0) and (Calc[i].r > 0) then
-      Result[i].r := Log10(Data[i].r) - Log10(Calc[i].r)
+      Result[i].r := Log10(Data[i].r) + ScaleLog - Log10(Calc[i].r)
     else
       Result[i].r := 0;
   end;
@@ -2116,6 +2162,8 @@ var
   Chi2Plain, Chi2StartPlain: Double;
   IterationsRun: Integer;
   DeviceUsed, GpuError: string;
+  ScaleLogStart, ScaleLogFit: Double;
+  ClampedStart, ClampedFit: Boolean;
   MeasuredPath, CalcPath, ResidualPath, XRCXPath, ReportPath: string;
   Res, JFiles, JSmooth, Report: TJSONObject;
   RepInp: TFitReportInput;
@@ -2145,7 +2193,8 @@ begin
     BuildLayeredModel makes the same expanded model TLFPSO_BASE.FillModel does,
     and ScanOnData hands it to a TCalc, which frees it. }
   StartCalcCurve := ScanOnData(Req, BuildLayeredModel(Req.Structure),
-                               MovAvgCurve, Chi2Start, Chi2StartPlain);
+                               MovAvgCurve, Chi2Start, Chi2StartPlain,
+                               ScaleLogStart, ClampedStart);
 
   if Job.CancelRequested then
     Exit;
@@ -2222,7 +2271,8 @@ begin
       recomputed rather than taken from BestCurve so that the chi-squared beside
       it comes from the structure the result reports. ScanOnData takes the
       model, raise or not, so Model must not be touched afterwards. }
-    CalcCurve := ScanOnData(Req, Model, MovAvgCurve, Chi2Recalc, Chi2Plain);
+    CalcCurve := ScanOnData(Req, Model, MovAvgCurve, Chi2Recalc, Chi2Plain,
+                            ScaleLogFit, ClampedFit);
   finally
     L.Free;
   end;
@@ -2244,7 +2294,7 @@ begin
   Req.Structure.CopyContent(StartFS);
   FillEngineDensities(StartFS, Req.Lambda);
 
-  Residual := ResidualCurve(Req.Data, CalcCurve);
+  Residual := ResidualCurve(Req.Data, CalcCurve, ScaleLogFit);
   WriteCurveFile(CalcPath, CalcCurve, 'theta_deg', 'R');
   WriteCurveFile(ResidualPath, Residual, 'theta_deg', 'log10_I_minus_log10_R');
   WriteFitProject(XRCXPath, Req, Fitted, Poly, CalcCurve, Job.Id);
@@ -2295,6 +2345,19 @@ begin
 
     Res.AddPair('scale', JSONArgs.Num(Req.Scale));
     Res.AddPair('scale_mode', Req.ScaleMode);
+    { The solved scale, on every result, so that a number from before and one
+      from after this feature can never be compared without noticing. }
+    Res.AddPair('scale_solve', TJSONBool.Create(Req.Fit.SolveScale));
+    if Req.Fit.SolveScale then
+      Res.AddPair('chi2_scale', 'solved')
+    else
+      Res.AddPair('chi2_scale', 'anchored');
+    Res.AddPair('scale_solve_window', JSONArgs.Num(Req.ScaleSolveWindow));
+    Res.AddPair('scale_ratio', JSONArgs.Num(Power(10, ScaleLogFit)));
+    Res.AddPair('scale_solved', JSONArgs.Num(Req.Scale * Power(10, ScaleLogFit)));
+    Res.AddPair('scale_clamped', TJSONBool.Create(ClampedFit));
+    Res.AddPair('scale_start_ratio', JSONArgs.Num(Power(10, ScaleLogStart)));
+    Res.AddPair('chi2_scale_definition', FIT_CHI2_SOLVED_DEFINITION);
     if Req.ScaleMode = 'auto' then
     begin
       Res.AddPair('scale_theta', JSONArgs.Num(Req.ScaleTheta));

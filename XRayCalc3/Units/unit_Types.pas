@@ -112,6 +112,8 @@ type
      PolyFactor: Integer;
          Smooth: Boolean;
    SmoothWindow: ShortInt;
+     SolveScale: Boolean;   // TCalc.SolveScale for every evaluation of the fit
+ ScaleWindowLog: Single;    // TCalc.ScaleWindowLog
   end;
 
   // Calculation data types

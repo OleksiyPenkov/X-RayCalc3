@@ -50,6 +50,7 @@ type
 
     [Test] procedure RawCurve_MatchesDoublePrecision_EveryRoughnessAndPolarisation;
     [Test] procedure Chi_MatchesTheCpuEngine_EveryWeighting;
+    [Test] procedure Chi_MatchesTheCpuEngine_WithTheScaleSolved;
     [Test] procedure SplitDispatches_GiveTheSameAnswer;
     [Test] procedure Fit_OnTheGpu_ImprovesAndNamesTheDevice;
     [Test] procedure Fit_WithoutUseGpu_StaysOnTheCpu;
@@ -964,6 +965,79 @@ begin
     Assert.AreEqual(Length(Data), Length(BestCurve));
   finally
     Best.Free;
+  end;
+end;
+
+{ The same population scored both ways with TCalc.SolveScale on: the
+  measured curve is 1.3 times the true one, so every particle's solved log10
+  scale is about -0.114, and the true model (particle 4) scores near zero
+  again because the solved scale takes the factor out. }
+procedure TTestGpuCalc.Chi_MatchesTheCpuEngine_WithTheScaleSolved;
+const
+  PARTICLES = 9;
+var
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Data, Avg: TDataArray;
+  Layers, Chi: TArray<Single>;
+  p, tw, NLay, i: Integer;
+  CpuChi: Single;
+begin
+  if not Ready then Exit;
+
+  Model := TLayeredModel.Create;
+  Model.Init;
+  try
+    Data := MakeData(0, cmS, rfError, 3);
+    for i := 0 to High(Data) do
+      Data[i].r := Data[i].r * 1.3;
+    Avg := PeakyMovAvg(Data);
+    for tw := 0 to 1 do
+    begin
+      Calc := NewCalc(Data, Avg, 0, cmS, rfError);
+      G := TGpuEvaluator.Create;
+      try
+        Calc.SolveScale := True;
+        Calc.ScaleWindowLog := Log10(1.5);
+        FillModel(Model, 0, 3);
+        Model.Generate(CU_KA);
+        NLay := Length(Model.LayersDirect);
+        G.Setup(Calc.GpuInputs(tw), NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
+        SetLength(Layers, 4 * NLay * PARTICLES);
+        for p := 0 to PARTICLES - 1 do
+        begin
+          FillModel(Model, Jitter(p), 3);
+          Model.Generate(CU_KA);
+          Pack(Model, Layers, p);
+        end;
+        G.Evaluate(Layers, Chi);
+
+        Calc.Model := Model;
+        for p := 0 to PARTICLES - 1 do
+        begin
+          FillModel(Model, Jitter(p), 3);
+          Calc.Run;
+          CpuChi := Calc.CalcChiSquare(tw);
+          if p = 4 then
+          begin
+            Assert.IsTrue(Chi[p] < 0.02 * Chi[0],
+              Format('the true model scores near zero once the scale is solved: %g (particle 0: %g)', [Chi[p], Chi[0]]));
+            Assert.AreEqual(-Log10(1.3), Double(Calc.ScaleLog), 0.01, 'the CPU solved the factor 1.3 away');
+          end
+          else
+            Assert.AreEqual(CpuChi, Chi[p], 0.03 * CpuChi,
+              Format('theta weight %d, particle %d', [tw, p]));
+        end;
+        Calc.Model := nil;
+      finally
+        G.Free;
+        Calc.Model := nil;
+        Calc.Free;
+      end;
+    end;
+  finally
+    Model.Free;
   end;
 end;
 

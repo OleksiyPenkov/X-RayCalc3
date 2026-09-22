@@ -46,6 +46,8 @@ type
       ConvN, WinSize, ChiFirst, ChiLast: UINT;
       RF, PartOffset: UINT;
       ChiNorm, Pad: Single;
+      SolveScale: UINT;
+      ScaleWindow, Pad2, Pad3: Single;
     end;
   private class var
     FLock: TCriticalSection;
@@ -143,6 +145,10 @@ const
         uint  PartOffset; // first particle of this dispatch
         float ChiNorm;    // 1000 / High(data)
         float Pad;
+        uint  SolveScale; // 1: score at the scale that minimises chi2 (TCalc.SolveScale)
+        float ScaleWindow;// |log10 scale| bound; 0 pins it
+        float Pad2;
+        float Pad3;
     };
 
     StructuredBuffer<float4> Layers      : register(t0);  // e.re, e.im, L, sigma
@@ -261,14 +267,20 @@ const
     }
 
     #define CHI_THREADS 256
-    groupshared float Partial[CHI_THREADS];
+    groupshared float P0[CHI_THREADS];
+    groupshared float P1[CHI_THREADS];
+    groupshared float P2[CHI_THREADS];
 
+    // The same sum TCalc.CalcChiSquare builds, as three partial sums so that
+    // the scale can be solved in closed form: with W = PointWeight / (log10 R)^2
+    // and d = log10 D - log10 R, chi2(a) = S2 + 2 a S1 + a^2 S0 for a scale
+    // 10^a on the data, and a* = -S1/S0. SolveScale = 0 leaves a = 0.
     [numthreads(CHI_THREADS, 1, 1)]
     void ChiSquare(uint3 gtid : SV_GroupThreadID, uint3 grp : SV_GroupID)
     {
         uint p = grp.x + PartOffset;
         uint base = p * NAng;
-        float sum = 0;
+        float s0 = 0, s1 = 0, s2 = 0;
         for (uint i = ChiFirst + gtid.x; i <= ChiLast; i += CHI_THREADS)
         {
             float r = 0;
@@ -277,19 +289,32 @@ const
             if (r != 0)
             {
                 float lr = 0.434294481903 * log(r);
-                float d = (LogData[i] - lr) / lr;
-                sum += d * d * PointWeight[i];
+                float w = PointWeight[i] / (lr * lr);
+                float d = LogData[i] - lr;
+                s2 += w * d * d;
+                s1 += w * d;
+                s0 += w;
             }
         }
-        Partial[gtid.x] = sum;
+        P0[gtid.x] = s0; P1[gtid.x] = s1; P2[gtid.x] = s2;
         GroupMemoryBarrierWithGroupSync();
         for (uint s = CHI_THREADS / 2; s > 0; s >>= 1)
         {
-            if (gtid.x < s) Partial[gtid.x] += Partial[gtid.x + s];
+            if (gtid.x < s)
+            {
+                P0[gtid.x] += P0[gtid.x + s];
+                P1[gtid.x] += P1[gtid.x + s];
+                P2[gtid.x] += P2[gtid.x + s];
+            }
             GroupMemoryBarrierWithGroupSync();
         }
         if (gtid.x == 0)
-            Chi[p] = Partial[0] * ChiNorm;
+        {
+            float a = 0;
+            if (SolveScale != 0 && P0[0] > 0)
+                a = clamp(-P1[0] / P0[0], -ScaleWindow, ScaleWindow);
+            Chi[p] = (P2[0] + 2 * a * P1[0] + a * a * P0[0]) * ChiNorm;
+        }
     }
     ''';
 
@@ -506,6 +531,8 @@ begin
   FParams.ChiLast := Inputs.ChiLast;
   FParams.RF := Ord(RF);
   FParams.ChiNorm := Inputs.ChiNorm;
+  FParams.SolveScale := Ord(Inputs.SolveScale);
+  FParams.ScaleWindow := Inputs.ScaleWindow;
 
   // particles per dispatch: bounded by the step budget and the group limit
   Steps := Int64(FNAng) * FNLay;

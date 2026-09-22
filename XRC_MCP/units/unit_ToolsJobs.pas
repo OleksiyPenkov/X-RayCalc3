@@ -695,6 +695,22 @@ begin
   AddRefProp(Schema, 'theta_range',
     'The part of the measured curve to fit (the manual''s "trim"), in degrees ' +
     'theta (never 2theta). Defaults to the whole curve.', FitThetaRangeSchema);
+  AddProp(Schema, 'scale_solve', 'boolean',
+    'Score every candidate structure at the measured-curve scale that ' +
+    'minimises its chi-squared, found in closed form inside the objective ' +
+    '(default true). The scale is then a nuisance parameter profiled out of ' +
+    'the fit rather than a fixed anchor: "scale" / "scale_auto" still set the ' +
+    'anchor, r_min, the files and the .xrcx stay at that anchor, and the ' +
+    'result reports scale_ratio (solved / anchored, the specimen''s alignment ' +
+    'or normalisation loss), scale_solved, scale_clamped and chi2_scale. A ' +
+    'solved scale can only lower chi-squared, so thresholds calibrated with ' +
+    '"scale_solve": false do not carry over; send false to reproduce numbers ' +
+    'from before this option existed.');
+  AddProp(Schema, 'scale_solve_window', 'number',
+    Format('How far the solved scale may go from the anchored one, as a ' +
+      'fraction either way: |log10(solved / anchored)| <= log10(1 + window) ' +
+      '(default %g). 0 pins the scale to the anchor; a fit whose scale ends ' +
+      'on the bound reports scale_clamped = true.', [DEF_SCALE_SOLVE_WINDOW]));
   AddProp(Schema, 'scale_auto', 'boolean',
     'Let the server normalize the measured curve, the way the GUI''s Data - ' +
     'Normalize Auto does (default false): the largest measured intensity ' +

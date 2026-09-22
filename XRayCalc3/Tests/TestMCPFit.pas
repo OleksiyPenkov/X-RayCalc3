@@ -93,6 +93,10 @@ type
     /// unpaired in both layers. The result is the caller's to free.</summary>
     function RunUnpairedProfileFit: TJSONObject;
   public
+    [Test] procedure Fit_SolvedScale_OnByDefault_ReportsTheMode;
+    [Test] procedure Fit_SolvedScale_Off_IsAnchored;
+    [Test] procedure Fit_SolvedScale_WindowNegative_Refused;
+    [Test] procedure Schema_Has_ScaleSolve;
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
 
@@ -346,7 +350,7 @@ const
     '"optimizer":{"iterations":300,"population":150,"range_seed":false,"ksxr":0.15},' +
     '"points_inline_max":0,"seed":940001}';
   P2_REQUEST_C3D5 =
-    '{"measurement_id":"P2-02/xrr.dat","structure":{"substrate":{"material":"SiO2","sigma":5},' +
+    '{"scale_solve":false,"measurement_id":"P2-02/xrr.dat","structure":{"substrate":{"material":"SiO2","sigma":5},' +
     '"stacks":[{"N":20,"layers":[{"material":"C","thickness":24.78,"sigma":10.3,"density":2.6},' +
     '{"material":"Co","thickness":3,"sigma":8.2,"density":8.8}]}]},"free":' + P2_FREE + ',' +
     '"bounds":[{"target":"period","stack":0,"min":27.5,"max":28.1},' +
@@ -1856,7 +1860,7 @@ begin
 
   FOptimizerExtra := ',"device":"cpu"';
   try
-    Res := RunFit(7, SyntheticCurveJSON);
+    Res := RunFit(7, SyntheticCurveJSON, '', ',"scale_solve":false');
   finally
     FOptimizerExtra := '';
   end;
@@ -3184,6 +3188,101 @@ begin
     Reg.Free;
   end;
   Assert.IsTrue(Found, 'job_wait is registered');
+end;
+
+{ ------------------------------------------------------- solved scale -- }
+
+procedure TTestMCPFit.Fit_SolvedScale_OnByDefault_ReportsTheMode;
+var
+  Res, ResOff: TJSONObject;
+  Ratio: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  FOptimizerExtra := ',"device":"cpu"';
+  try
+    Res := RunFit(7, SyntheticCurveJSON);
+    try
+      ResOff := RunFit(7, SyntheticCurveJSON, '', ',"scale_solve":false');
+      try
+        Assert.IsTrue(Res.GetValue<Boolean>('scale_solve'), 'on by default');
+        Assert.AreEqual('solved', Res.GetValue<string>('chi2_scale'));
+        Assert.AreEqual(Double(0.2), Res.GetValue<Double>('scale_solve_window'), 1E-9, 'the default window');
+        Ratio := Res.GetValue<Double>('scale_ratio');
+        Assert.IsTrue((Ratio >= 1 / 1.2) and (Ratio <= 1.2), Format('scale_ratio %.5f inside the window', [Ratio]));
+        Assert.IsTrue(Abs(Ratio - 1) < 0.05,
+          Format('a synthetic curve at its true scale solves near 1: %.5f', [Ratio]));
+        Assert.AreEqual(Res.GetValue<Double>('scale') * Ratio, Res.GetValue<Double>('scale_solved'),
+          1E-6 * Ratio, 'scale_solved = scale x ratio');
+        Assert.IsFalse(Res.GetValue<Boolean>('scale_clamped'));
+        Assert.IsTrue(Res.GetValue<Double>('scale_start_ratio') > 0);
+        Assert.AreEqual(Res.GetValue<Double>('chi2'), Res.GetValue<Double>('chi2_recalc'),
+          1E-6 * Res.GetValue<Double>('chi2'), 'the CPU rescore and the recalculation agree at the solved scale');
+        { the same start structure can only score better with its scale solved }
+        Assert.IsTrue(Res.GetValue<Double>('chi2_start') <= ResOff.GetValue<Double>('chi2_start') * (1 + 1E-9),
+          Format('chi2_start solved %.9g against anchored %.9g',
+            [Res.GetValue<Double>('chi2_start'), ResOff.GetValue<Double>('chi2_start')]));
+        Assert.IsTrue(Res.GetValue<string>('chi2_scale_definition') <> '');
+      finally
+        ResOff.Free;
+      end;
+    finally
+      Res.Free;
+    end;
+  finally
+    FOptimizerExtra := '';
+  end;
+end;
+
+procedure TTestMCPFit.Fit_SolvedScale_Off_IsAnchored;
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  FOptimizerExtra := ',"device":"cpu"';
+  try
+    Res := RunFit(7, SyntheticCurveJSON, '', ',"scale_solve":false,"scale_solve_window":0.5');
+  finally
+    FOptimizerExtra := '';
+  end;
+  try
+    Assert.IsFalse(Res.GetValue<Boolean>('scale_solve'));
+    Assert.AreEqual('anchored', Res.GetValue<string>('chi2_scale'));
+    Assert.AreEqual(Double(1), Res.GetValue<Double>('scale_ratio'), 1E-12, 'anchored: the ratio is 1');
+    Assert.AreEqual(Double(1), Res.GetValue<Double>('scale_start_ratio'), 1E-12);
+    Assert.AreEqual(Res.GetValue<Double>('scale'), Res.GetValue<Double>('scale_solved'), 1E-12);
+    Assert.AreEqual(Double(0.5), Res.GetValue<Double>('scale_solve_window'), 1E-9, 'echoed as given');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Fit_SolvedScale_WindowNegative_Refused;
+begin
+  try
+    Parse('{"structure":' + START_STRUCTURE + ',"curve":' + SyntheticCurveJSON +
+      ',"lambda":1.5406,"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}],' +
+      '"scale_solve_window":-0.1}');
+    Assert.Fail('a negative window must be refused');
+  except
+    on E: EMCPError do
+      Assert.AreEqual('invalid_argument', E.Code);
+  end;
+end;
+
+procedure TTestMCPFit.Schema_Has_ScaleSolve;
+begin
+  Assert.IsTrue(FitXrrSchemaValue('scale_solve.description').Contains('default true'),
+    'scale_solve is documented as on by default');
+  Assert.IsTrue(FitXrrSchemaValue('scale_solve_window.description').Contains('0.2'),
+    'the window default is documented');
 end;
 
 initialization
