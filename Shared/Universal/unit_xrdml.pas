@@ -541,12 +541,13 @@ begin
     S := '* Counting time: ' + FormatFloat('0.###', CountingTime, TFormatSettings.Invariant) + ' s per point'
   else
     S := '* Counting time: per point';
-  if Corrected then
-    S := S + '; corrected counts / s'
-  else if AttenuationApplied then
+  { keyed to what the file carries, not to the element's name: an
+    "intensities" element with no attenuation factors is plain counts, and
+    calling it corrected would hide a detector at its ceiling }
+  if AttenuationApplied then
     S := S + '; counts x attenuation factor / s'
   else
-    S := S + '; counts / s';
+    S := S + '; counts / s, no attenuation factors in the file';
   Result := Result + [S];
   Result := Result + ['* Intensity normalised to 1 at the maximum; raw peak rate ' +
     FormatFloat('0.###', PeakRate, TFormatSettings.Invariant) +
