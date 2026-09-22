@@ -91,11 +91,13 @@ const
     'convolution (0 when resolution = 0); w_point = I/movavg(I) where that ratio ' +
     'exceeds 3 and 1 otherwise (point_weight=true); w_theta from theta_weight ' +
     '0..5 as in the GUI. This is TCalc.CalcChiSquare, the number X-Ray Calc 3 ' +
-    'displays.';
+    'displays. With "scale_solve" true (the default) log10 I_meas carries the ' +
+    'solved offset a of chi2_scale_definition; with "scale_solve": false a = 0 ' +
+    'and this is the sum of every earlier version.';
 
-  { The same sum with both weights dropped: what the fit is worth as a bare
-    data-to-fit disagreement, on the same scale as chi2, so the two can be read
-    side by side. It is reported, never minimised. }
+  { The measured scale as a nuisance parameter solved inside the sum above:
+    what a, scale_ratio and chi2_scale mean on a result. Reported beside every
+    chi2 so that a solved number is never read as an anchored one. }
   FIT_CHI2_SOLVED_DEFINITION =
     'With "scale_solve" (default true) log10 I_meas is replaced by log10 I_meas + a ' +
     'in chi2 and chi2_plain, a being the value that minimises chi2 for the ' +
@@ -107,6 +109,10 @@ const
     'the files and the .xrcx stay at the anchored scale; residual.dat is at the ' +
     'solved one. With "scale_solve": false a = 0 and the numbers are those of ' +
     'every earlier version.';
+
+  { The same sum with both weights dropped: what the fit is worth as a bare
+    data-to-fit disagreement, on the same scale as chi2, so the two can be read
+    side by side. It is reported, never minimised. }
   FIT_CHI2_PLAIN_DEFINITION =
     'chi2_plain and chi2_start_plain are the same sum as chi2 with w_point = ' +
     'w_theta = 1: 1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 ' +
@@ -116,12 +122,14 @@ const
     'optimises it.';
 
   { Said in every result: the two parameters a client coming from another
-    refinement program looks for first, and does not have here. }
+    refinement program looks for first, and what became of them here. }
   FIT_NO_SCALE_NOTE =
-    'scale is a fixed multiplier the client chose ("scale" argument), applied ' +
-    'to the measured intensities before the fit and stored with them in ' +
-    'measured.dat and fit.xrcx; the GUI engine (v1) fits neither scale nor ' +
-    'background';
+    'scale is the anchored multiplier the client chose ("scale" argument), ' +
+    'applied to the measured intensities before the fit and stored with them ' +
+    'in measured.dat and fit.xrcx. With "scale_solve" (default true) the ' +
+    'chi-squared profiles a further factor out of the anchored curve ' +
+    '(scale_ratio, chi2_scale = "solved"); the files and the .xrcx keep the ' +
+    'anchored scale. Background is never fitted.';
 
   // Argument defaults, all of them the brief's - but for the population, which
   // was 100 until 2026-09-17. The lab fits with 100 iterations and 500 to 1000
@@ -495,8 +503,12 @@ end;
 /// manual's "normalize" step - default 1. It is asked for in one of two ways:
 /// "scale_auto": true, or the string "auto" in "scale". Both run
 /// ComputeAutoScale; a number in "scale" is used as it stands, and is ignored
-/// when "scale_auto" is true. It is never fitted; the scaled curve is what the
-/// chi-squared, the files and the .xrcx see, so the GUI shows the same data.
+/// when "scale_auto" is true. It is never fitted as a parameter; the scaled
+/// curve is what the files and the .xrcx hold, so the GUI shows the same data.
+/// The chi-squared sees it too, but with "scale_solve" (the default) at a
+/// further factor solved in closed form per candidate - scale_ratio on the
+/// result - so a chi2 cross-checked against the .xrcx is off by that factor
+/// unless "scale_solve" is false. See FIT_CHI2_SOLVED_DEFINITION.
 ///
 /// There are two spellings because one of them is hard for a client to write.
 /// An agent on the exp-03 run of 2026-09-18 sent "scale": auto unquoted fifteen
@@ -1107,7 +1119,10 @@ end;
 
 { ---------------------------------------------------------- the optimizer -- }
 
-function ParseFitParams(const Params: TJSONObject): TFitParams;
+/// ScaleSolveWindow is "scale_solve_window" as given, the value the result
+/// echoes; Result.ScaleWindowLog holds its log10(1 + w) for the engine.
+function ParseFitParams(const Params: TJSONObject;
+  out ScaleSolveWindow: Double): TFitParams;
 var
   Win: Double;
   JOpt, JChi: TJSONObject;
@@ -1146,6 +1161,7 @@ begin
       '"scale_solve_window" cannot be negative: it is the fraction the solved ' +
       'scale may differ from the anchored one', FloatToStr(Win, FitFmt));
   Result.ScaleWindowLog := Log10(1 + Win);
+  ScaleSolveWindow := Win;
 
   { TFitParams.Smooth makes the irregular engine smooth a parameter's profile
     over the layers (TLFPSO_Irregular.Smooth); neither engine run here reads
@@ -1417,8 +1433,7 @@ begin
   ParsePaired(Params, Result.Structure, Result.Info, Result.Profile,
               Result.PairedParams);
 
-  Result.Fit := ParseFitParams(Params);
-  Result.ScaleSolveWindow := JSONArgs.OptFloat(Params, 'scale_solve_window', DEF_SCALE_SOLVE_WINDOW);
+  Result.Fit := ParseFitParams(Params, Result.ScaleSolveWindow);
   Result.PointWeight := JSONArgs.OptBool(JSONArgs.OptObj(Params, 'chi2'),
                                          'point_weight', True);
   Result.Device := ParseDevice(Params);
@@ -2296,7 +2311,15 @@ begin
 
   Residual := ResidualCurve(Req.Data, CalcCurve, ScaleLogFit);
   WriteCurveFile(CalcPath, CalcCurve, 'theta_deg', 'R');
-  WriteCurveFile(ResidualPath, Residual, 'theta_deg', 'log10_I_minus_log10_R');
+  { The residual is at the solved scale while measured.dat and calc.dat are at
+    the anchored one, so its column says which factor was added: a reader who
+    recomputes it from the two siblings must add log10(scale_ratio). }
+  if ScaleLogFit = 0 then
+    WriteCurveFile(ResidualPath, Residual, 'theta_deg', 'log10_I_minus_log10_R')
+  else
+    WriteCurveFile(ResidualPath, Residual, 'theta_deg',
+      Format('log10_I_plus_log10_scale_ratio_minus_log10_R(scale_ratio=%.8g)',
+             [Power(10, ScaleLogFit)], FitFmt));
   WriteFitProject(XRCXPath, Req, Fitted, Poly, CalcCurve, Job.Id);
 
   Res := TJSONObject.Create;
@@ -2393,6 +2416,15 @@ begin
     Report.AddPair('chi2_start', JSONArgs.Num(Chi2Start));
     Report.AddPair('chi2_plain', JSONArgs.Num(Chi2Plain));
     Report.AddPair('chi2_start_plain', JSONArgs.Num(Chi2StartPlain));
+    { The scale mode beside every chi2 the file holds, so that report.json
+      read on its own, years later, still says what its numbers are. }
+    Report.AddPair('scale_solve', TJSONBool.Create(Req.Fit.SolveScale));
+    Report.AddPair('chi2_scale', Res.GetValue<string>('chi2_scale'));
+    Report.AddPair('scale_solve_window', JSONArgs.Num(Req.ScaleSolveWindow));
+    Report.AddPair('scale_ratio', JSONArgs.Num(Power(10, ScaleLogFit)));
+    Report.AddPair('scale_solved', JSONArgs.Num(Req.Scale * Power(10, ScaleLogFit)));
+    Report.AddPair('scale_clamped', TJSONBool.Create(ClampedFit));
+    Report.AddPair('scale_start_ratio', JSONArgs.Num(Power(10, ScaleLogStart)));
     Report.AddPair('near_bounds', NearBoundsJSON(Req, Fitted));
 
     RepInp.Calculated := StartCalcCurve;

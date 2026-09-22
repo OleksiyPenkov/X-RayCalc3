@@ -93,6 +93,15 @@ type
       procedure PrepareWorkers;
       procedure Restore(const N1, N2: integer); inline;
       procedure MVA(const N1, N2, W: integer); inline;
+      /// <summary>The point weight and the theta weight of measured point i,
+      /// multiplied into W in the order the chi-squared has always applied
+      /// them: w_point = I/movavg(I) where that ratio exceeds 3, then w_theta
+      /// from ThetaWeight 0..5. The one place the weighting lives: both CPU
+      /// sums and the GPU kernel's per-point factor come from here, so the
+      /// three can never disagree. Single throughout, so the legacy sum and
+      /// the GPU inputs stay bit-identical to what they were.</summary>
+      procedure ApplyPointWeights(var W: Single; const i: Integer;
+        const t: Single; const ThetaWeight: Integer); inline;
     public
       constructor Create;
       destructor Destroy; override;
@@ -152,6 +161,27 @@ begin
 end;
 
 
+procedure TCalc.ApplyPointWeights(var W: Single; const i: Integer;
+  const t: Single; const ThetaWeight: Integer);
+var
+  Ratio: Single;
+begin
+  if Length(FMovAvg) > 1 then
+  begin
+    Ratio := FData[i].r / FMovAvg[i].r;
+    if Ratio > 3 then
+      W := W * Ratio;
+  end;
+  case ThetaWeight of
+    0: ;
+    1: W := W * sqr(t);
+    2: W := W * t;
+    3: W := W * sqrt(t);
+    4: W := W / sqr(t);
+    5: W := W / sqrt(t);
+  end;
+end;
+
 function TCalc.CalcChiSquare(const ThetaWieght: integer): single;
 var
   i: Integer;
@@ -160,10 +190,8 @@ var
   Plain: single;
   LogResult: single;
 
-  UseWeight: boolean;
-  Ratio: single;
-
   { the solved-scale path }
+  Wt: Single;
   D, W, Wp: Double;
   S0, S1, S2, Q0, Q1, Q2, A, AFree: Double;
 
@@ -177,7 +205,6 @@ begin
     FLogDataReady := True;
   end;
 
-  UseWeight := Length(FMovAvg) > 1;
   FScaleLog := 0;
   FScaleClamped := False;
 
@@ -196,21 +223,9 @@ begin
       LogResult := Log10(FResult[i].r);
       D  := FLogData[i] - LogResult;
       Wp := 1 / Sqr(Double(LogResult));
-      W  := Wp;
-      if UseWeight then
-      begin
-        Ratio := FData[i].r / FMovAvg[i].r;
-        if Ratio > 3 then
-          W := W * Ratio;
-      end;
-      case ThetaWieght of
-        0: ;
-        1: W := W * sqr(FResult[i].t);
-        2: W := W * FResult[i].t;
-        3: W := W * sqrt(FResult[i].t);
-        4: W := W / sqr(FResult[i].t);
-        5: W := W / sqrt(FResult[i].t);
-      end;
+      Wt := 1;
+      ApplyPointWeights(Wt, i, FResult[i].t, ThetaWieght);
+      W  := Wp * Wt;
       Q2 := Q2 + Wp * D * D;  Q1 := Q1 + Wp * D;  Q0 := Q0 + Wp;
       S2 := S2 + W * D * D;   S1 := S1 + W * D;   S0 := S0 + W;
     end;
@@ -250,20 +265,7 @@ begin
     Plain := Plain + Bare;
 
     Chi := Bare;
-    if UseWeight  then
-    begin
-      Ratio := FData[i].r / FMovAvg[i].r;
-      if Ratio > 3 then
-        Chi := Chi * Ratio;
-    end;
-    case ThetaWieght of
-      0: ;
-      1: Chi := Chi * sqr (FResult[i].t);
-      2: Chi := Chi * FResult[i].t;
-      3: Chi := Chi * sqrt(FResult[i].t);
-      4: Chi := Chi / sqr(FResult[i].t);
-      5: Chi := Chi / sqrt(FResult[i].t);
-    end;
+    ApplyPointWeights(Chi, i, FResult[i].t, ThetaWieght);
 
     Result := Result + Chi;
   end;
@@ -277,8 +279,7 @@ end;
 function TCalc.GpuInputs(const ThetaWeight: Integer): TGpuEvalInputs;
 var
   i, Size: Integer;
-  Width, t, w, Ratio: Single;
-  UseWeight: Boolean;
+  Width, t, w: Single;
 begin
   Size := Length(FData);
   if Size < 2 then
@@ -287,7 +288,6 @@ begin
   SetLength(Result.Theta, Size);
   SetLength(Result.LogData, Size);
   SetLength(Result.PointWeight, Size);
-  UseWeight := Length(FMovAvg) > 1;
   for i := 0 to Size - 1 do
   begin
     t := FData[i].t;
@@ -302,19 +302,7 @@ begin
     Result.LogData[i] := Ln(FData[i].r) / Ln(10);
     { CalcChiSquare's weights, folded into one factor per point }
     w := 1;
-    if UseWeight then
-    begin
-      Ratio := FData[i].r / FMovAvg[i].r;
-      if Ratio > 3 then
-        w := Ratio;
-    end;
-    case ThetaWeight of
-      1: w := w * sqr(t);
-      2: w := w * t;
-      3: w := w * sqrt(t);
-      4: w := w / sqr(t);
-      5: w := w / sqrt(t);
-    end;
+    ApplyPointWeights(w, i, t, ThetaWeight);
     Result.PointWeight[i] := w;
   end;
 

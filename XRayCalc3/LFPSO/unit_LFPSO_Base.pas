@@ -123,7 +123,6 @@ type
       FTolCheckedChi: Single;      // the GPU chi2 whose incumbent the CPU last checked
       FDeviceUsed: string;
       FGpuError: string;
-      FBestScaleLog: Single;   // log10 of the solved scale the reported best was scored at
 
       function FindTheBest: Boolean;
       procedure EvaluateOnCpu(out BestIdx: Integer);
@@ -194,7 +193,6 @@ type
         was not asked for. }
       property DeviceUsed: string read FDeviceUsed;
       property GpuError: string read FGpuError;
-      property BestScaleLog: Single read FBestScaleLog;
 
       procedure Run(CalcConditions: TCalcThreadParams); virtual;
       procedure Terminate;
@@ -771,7 +769,6 @@ begin
   FAbsoluteBestChiSqr := Chi;
   FGlobalBestChiSqr := Chi;
   abest_val := Chi;
-  FBestScaleLog := FCalc.ScaleLog;
   FBestCurve := Curve;
   FResultingCurve := Copy(Curve);
 end;
