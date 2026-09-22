@@ -17,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 HELP = os.path.normpath(os.path.join(HERE, "..", "Help"))
 BROWSER = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 
-VERSION = "9"
+VERSION = "10"
 CHAPTERS = [
     "Introduction.html", "QuickStart.html", "Installation.html", "Overview.html",
     "QuickReference.html", "Projects.html", "Models.html", "Data.html",

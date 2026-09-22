@@ -31,7 +31,7 @@
 <div class="title-page">
   <h1>X-Ray Calc 3</h1>
   <div class="sub">User Manual</div>
-  <div class="meta">Version 9<br>Copyright &copy; 2001&ndash;2026 Oleksiy Penkov<br>
+  <div class="meta">Version 10<br>Copyright &copy; 2001&ndash;2026 Oleksiy Penkov<br>
   Penkov, O. V., Li, M., Mikki, S., Devizenko, A. &amp; Kopylets, I. (2024). <em>J. Appl. Cryst.</em> <strong>57</strong>, 555&ndash;566.</div>
 </div>
 
@@ -281,7 +281,7 @@
   <tr><td><strong>File</strong></td><td>Project management (New, Open, Save, Settings, Exit)</td></tr>
   <tr><td><strong>Project</strong></td><td>Model operations (New Model, Duplicate, Copy, Paste, Add Folder)</td></tr>
   <tr><td><strong>Structure</strong></td><td>Stack and layer editing (Add, Insert, Delete, Copy, Paste, Cut)</td></tr>
-  <tr><td><strong>Data</strong></td><td>Experimental data operations (Load, Paste, Normalize, Smooth, Trim, Export)</td></tr>
+  <tr><td><strong>Data</strong></td><td>Experimental data operations (Load, Paste, Normalize, Smooth, Trim, Assess XRR quality, Export)</td></tr>
   <tr><td><strong>Calc</strong></td><td>Calculation and fitting (Calculate, Calculate All, Auto Fitting, Batch Jobs, Benchmark)</td></tr>
   <tr><td><strong>Result</strong></td><td>Export results (Save, Copy to Clipboard, Copy as BMP/WMF)</td></tr>
   <tr><td><strong>Tools</strong></td><td>Material management (Create Material, Edit Henke Table)</td></tr>
@@ -590,16 +590,18 @@
 
 
 <h1><span class="num">8</span>Experimental Data</h1>
-<div class="subtitle">Loading and pasting measured curves, the data format, normalize, smooth, trim, and export</div>
+<div class="subtitle">Loading and pasting measured curves, the XRDML import, the data format, normalize, smooth, trim, the quality assessment, and export</div>
 
 <div class="page-toc">
   <div class="page-toc-title">On this page</div>
   <ul>
     <li><a href="#loading-data-from-file">Loading Data from File</a></li>
+    <li><a href="#loading-xrdml-files">Loading XRDML Files</a></li>
     <li><a href="#pasting-data-from-clipboard">Pasting Data from Clipboard</a></li>
     <li><a href="#data-format">Data Format</a></li>
     <li><a href="#data-processing">Data Processing</a></li>
     <li><a href="#data-conditioning-walkthrough">Data Conditioning Walkthrough</a></li>
+    <li><a href="#assessing-a-measurement">Assessing a Measurement</a></li>
     <li><a href="#exporting-data">Exporting Data</a></li>
   </ul>
 </div>
@@ -607,10 +609,20 @@
 <h2 id="loading-data-from-file">Loading Data from File</h2>
 <ol>
   <li>Select a model or data item in the project tree.</li>
-  <li>Choose <strong>Data &gt; Load from File</strong> or click the <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> <strong>Load Data</strong> toolbar button.</li>
-  <li>Browse for a text file containing two-column data (angle/wavelength and reflectivity).</li>
-  <li>The data appears as a series on the main chart.</li>
+  <li>Choose <strong>Data &gt; Load ...</strong> or click the <img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> <strong>Load Data</strong> toolbar button.</li>
+  <li>Pick the file. The dialog opens on <strong>XRDML (PANalytical)</strong>; the other filters are ASCII data (<code>.txt</code>, <code>.csv</code>, <code>.tet</code>), counter files (<code>.dat</code>) and all files. A text file holds two columns (angle or wavelength, and reflectivity); an <code>.xrdml</code> file is read as described below.</li>
+  <li>The data appears as a series on the main chart, and the file's header lines appear in the data item's description.</li>
 </ol>
+
+<h2 id="loading-xrdml-files">Loading XRDML Files</h2>
+<p>A PANalytical / Malvern <code>.xrdml</code> file (schema 1.0 to 2.x) is read directly, and the file's own facts are used rather than typed in:</p>
+<ul>
+  <li><strong>Angle axis.</strong> A 2Theta&ndash;Omega scan is in 2&theta;, a rocking curve in &omega;. The curve is brought to the unit the <strong>2-theta</strong> switch of the calculation settings says, so the chart and the fit see the same angle whichever way the file was scanned.</li>
+  <li><strong>Intensity.</strong> Counts are divided by the counting time (beam attenuation factors, when the file has them, are multiplied in) and the curve is normalised to 1 at its maximum. A zero count is replaced by the smallest positive value before it, as a log chart needs. The raw peak count rate, the counting time, the detector and the number of zero counts are written into the item's description, so one count and the detector's range stay recoverable.</li>
+  <li><strong>Wavelength.</strong> The wavelength the file implies is written into the calculation settings: for a K&alpha; measurement through an optic that passes both lines it is the doublet weighted by the file's K&alpha;<sub>2</sub>/K&alpha;<sub>1</sub> ratio (1.541874&nbsp;&Aring; for Cu), for a monochromator or a hybrid mirror it is K&alpha;<sub>1</sub>. A period fitted at K&alpha;<sub>1</sub> when the doublet was measured comes out 0.08&nbsp;% short.</li>
+  <li><strong>Source file.</strong> The path of the file is kept in the description as <code>* Source file:</code>, and <a href="#assessing-a-measurement">Assess XRR quality</a> reads the file again for the count rates the chart no longer carries.</li>
+</ul>
+<div class="note"><strong>Note:</strong> the normalisation to 1 at the maximum is a presentation scale, not a measurement: on a well-aligned specimen the maximum is the total-reflection plateau, on one whose plateau is depressed by alignment it is the first Bragg order. The <a href="#data-conditioning-walkthrough">Normalize</a> step still decides the scale a fit works at.</div>
 
 <h2 id="pasting-data-from-clipboard">Pasting Data from Clipboard</h2>
 <ol>
@@ -671,6 +683,27 @@ Theta    Reflectivity
 </ol>
 
 <p>After these steps, the experimental curve is ready for fitting.</p>
+
+<h2 id="assessing-a-measurement">Assessing a Measurement</h2>
+<p><strong>Data &gt; Assess XRR quality ...</strong> answers one question before any fitting: is this measured curve worth fitting? It runs eight checks on the active data item and shows one row per check with a verdict (<strong>pass</strong>, <strong>warn</strong>, <strong>fail</strong> or <strong>unknown</strong>), the value, the threshold it was judged against, and a sentence saying why. The same checks are the <code>assess_xrr</code> tool of the <a href="#assess">MCP server</a>.</p>
+
+<table>
+  <tr><th style="width:190px">Check</th><th>What it looks at</th></tr>
+  <tr><td>Counting</td><td>The highest count rate the detector saw, against its linear limit. The rate comes from the <code>.xrdml</code> behind the item; a curve loaded from a text file has none.</td></tr>
+  <tr><td>Plateau vs first order</td><td>The first Bragg order over the low-angle maximum. Above 1 is impossible for a true reflectivity and fails; with a design, a ratio above what the design's own model gives warns. On a single film or a bare substrate the maximum after the plateau is a Kiessig fringe, and the row says so.</td></tr>
+  <tr><td>Total reflection</td><td>Whether the scan starts below the design's critical angle and rises to a plateau. A curve whose maximum is its first point started on the way down and fails.</td></tr>
+  <tr><td>Orders visible</td><td>How many of the Bragg orders the design puts inside the range stand above the background, against how many the design's model, scaled to the measured plateau, puts there. Fewer measured than expected is a measurement problem, not a fitting one.</td></tr>
+  <tr><td>Range below background</td><td>The fraction of the points at or below the background, and where the useful range ends: the part of the scan that bought nothing. Reported without a verdict.</td></tr>
+  <tr><td>Sampling</td><td>Points per Kiessig fringe, from the design's total thickness, and per order, from its period. Under two points per fringe the fringes are aliased and no fit will see them (fail); under the number in the window (default 3) it warns.</td></tr>
+  <tr><td>Footprint</td><td>The knee asin(beam width / sample length) below which the beam overfills the specimen, and whether the plateau maximum lies below it.</td></tr>
+  <tr><td>Zeros</td><td>How many points have a non-positive count, their fraction, and where they start.</td></tr>
+</table>
+
+<p>The window holds the numbers nobody records in a file: the detector's linear limit in counts per second, the specimen length and the beam width in millimetres, the resolution the design is convolved with (taken from the calculation settings), the factor above the background an order must stand to count as visible, and the minimum points per fringe. Change any of them and click <strong>Assess</strong> to re-run. A number left empty leaves its check <strong>unknown</strong>: the program never invents a threshold. <strong>Use the current structure as the design</strong> feeds the structure editor's model, including a bare substrate for a glass reference, to the checks that need a period, a thickness or a critical angle.</p>
+
+<p>The text block under the table is one line per check, ready to be filed with the specimen; <strong>Copy summary</strong> puts it on the clipboard. The overall verdict in the window's title is the worst of the checks.</p>
+
+<div class="tip"><strong>Tip:</strong> the counting and zero-count checks need the raw file. Load the measurement from its <code>.xrdml</code> rather than from a converted text file, and keep the file where it was loaded from: the assessment re-reads it through the <code>* Source file:</code> line of the item's description.</div>
 
 <h2 id="exporting-data">Exporting Data</h2>
 <ul>
@@ -1815,7 +1848,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   </tr>
   <tr><td>Executable</td><td><code>XRC_MCP.exe</code>, 64-bit only, in the same folder as the GUI</td></tr>
   <tr><td>Transport</td><td>JSON-RPC 2.0 over stdio; one JSON object per line, UTF-8</td></tr>
-  <tr><td>Tools</td><td>16, grouped below</td></tr>
+  <tr><td>Tools</td><td>18, grouped below</td></tr>
   <tr><td>Long jobs</td><td><code>optimize_mirror</code> and <code>fit_xrr</code> run in the background and are polled</td></tr>
   <tr><td>Record</td><td>Every call and result appended to <code>log\calls.jsonl</code></td></tr>
 </table>
@@ -1949,17 +1982,18 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   </tr>
   <tr><td><code>measurement_id</code> or <code>curve</code></td><td>The measured data: an inbox id such as <code>"RuC-07/xrr.dat"</code>, or the curve inline.</td></tr>
   <tr><td><code>structure</code></td><td>The start model in the structure JSON.</td></tr>
-  <tr><td><code>free</code></td><td>Which values may vary. Each entry addresses one layer by its <code>stack</code> index (from the substrate up, or <code>"cap"</code> / <code>"buffer"</code>) and <code>layer</code> index, and lists the <code>parameters</code> that take part: <code>"thickness"</code>, <code>"sigma"</code>, <code>"density"</code>. An entry <code>{"target":"period","stack":k}</code> frees the period of repeating stack <em>k</em> instead; at least one thickness of that stack must be free too. Scale, background and resolution are not fitted; asking for them is answered with <code>not_fittable</code>.</td></tr>
+  <tr><td><code>free</code></td><td>Which values may vary. Each entry addresses one layer by its <code>stack</code> index (from the substrate up, or <code>"cap"</code> / <code>"buffer"</code>) and <code>layer</code> index, and lists the <code>parameters</code> that take part: <code>"thickness"</code>, <code>"sigma"</code>, <code>"density"</code>. An entry <code>{"target":"period","stack":k}</code> frees the period of repeating stack <em>k</em> instead; at least one thickness of that stack must be free too. Scale, background and resolution are not free parameters; asking for them is answered with <code>not_fittable</code> (the scale is solved inside the objective instead, see <code>scale_solve</code> below).</td></tr>
   <tr><td><code>bounds</code></td><td>One <code>min</code> / <code>max</code> pair per free parameter (<code>stack</code>, <code>layer</code>, <code>parameter</code>), or per free period (<code>target: "period"</code>). Omitted bounds default to the start value &plusmn;30&nbsp;%; the start value must lie inside the range. Every fitted value stays inside its bounds, and the result's <code>bounds_used</code> lists the ranges that applied.</td></tr>
   <tr><td><code>lambda</code> or <code>energy</code>, <code>theta_range</code></td><td>The wavelength (or photon energy) of the measurement and the &theta; interval to fit.</td></tr>
-  <tr><td><code>scale</code></td><td>A fixed multiplier applied to the measured intensities before the fit (the manual's Normalize step), default 1. Not fitted.</td></tr>
+  <tr><td><code>scale</code>, <code>scale_auto</code></td><td>The anchored multiplier applied to the measured intensities before the fit (the manual's Normalize step), default 1, stored with the curve in <code>measured.dat</code> and <code>fit.xrcx</code>. <code>"scale_auto": true</code> (or <code>"scale": "auto"</code>) is the GUI's <strong>Normalize (Auto)</strong>: the largest measured intensity below <code>auto_theta_max</code> (default 0.5&deg;) is set equal to the start model's reflectivity at that angle.</td></tr>
+  <tr><td><code>scale_solve</code>, <code>scale_solve_window</code></td><td>Default <code>true</code>: the measured scale is treated as a nuisance parameter and solved in closed form for every candidate structure, held within &plusmn;<code>scale_solve_window</code> (default 0.2, a fraction) of the anchored scale, so the &chi;&sup2; is the best any scale in that window can give. The result reports <code>chi2_scale</code> (<code>"solved"</code> or <code>"anchored"</code>), <code>scale_ratio</code> (the solved factor over the anchor), <code>scale_solved</code>, <code>scale_clamped</code> and <code>chi2_scale_definition</code>; the files and the <code>.xrcx</code> keep the anchored scale, and <code>residual.dat</code> says in its header which scale it is at. With <code>"scale_solve": false</code> the &chi;&sup2; is the anchored one of every earlier version.</td></tr>
   <tr><td><code>smooth</code></td><td><code>{"passes": n}</code>, 0 to 10, runs the GUI's <strong>Data &gt; Smooth</strong> on the measured curve before the fit. Order: scale, then smooth, then the <code>theta_range</code> trim, as in <a href="#data-conditioning-walkthrough">Data Conditioning</a>.</td></tr>
   <tr><td><code>optimizer</code></td><td><code>population</code> (default 500), <code>iterations</code> (default 100), tolerance, and <code>device</code>: <code>"auto"</code> (default, the GPU when <code>describe_server</code> names one in <code>server.gpu</code>), <code>"cpu"</code> or <code>"gpu"</code> (refused without a usable GPU). The result carries <code>optimizer_used</code> with every default filled in, and <code>device_used</code>. The reported &chi;&sup2; is always recomputed on the CPU; see <a href="#gpu">GPU Acceleration</a>.</td></tr>
   <tr><td><code>profile</code>, <code>seed</code></td><td>Allow per-period thickness polynomials (the GUI's polynomial mode), and the random seed.</td></tr>
   <tr><td><code>polarization</code>, <code>resolution</code>, <code>chi2</code>, <code>r_min</code></td><td>Polarization (<code>s</code>, <code>p</code>, <code>sp</code>), the instrumental resolution width, the &chi;&sup2; weighting options of the GUI's fit dialog, and the reflectivity floor below which points are ignored.</td></tr>
 </table>
 
-<p>The result holds the fitted structure (with the expanded per-period profile when <code>profile</code> was set), &chi;&sup2;, the scale, background and resolution values, the start model, the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit. Open that file in the GUI to check the fit yourself.</p>
+<p>The result holds the fitted structure (with the expanded per-period profile when <code>profile</code> was set), &chi;&sup2; beside <code>chi2_start</code> and the unweighted <code>chi2_plain</code>, the scale mode and values, the start model, a <code>report</code> (the Bragg orders measured against calculated, the plateau edge, the Kiessig fringe contrast, the residual by band, values near their bounds; also written as <code>report.json</code> with the scale mode beside every &chi;&sup2; it holds), the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit. Open that file in the GUI to check the fit yourself.</p>
 
 <!-- =============================== -->
 <h2 id="inbox">Inbox: Measured Curves</h2>
@@ -1972,8 +2006,24 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
     <th>Description</th>
   </tr>
   <tr><td><code>list_measurements</code></td><td>Every file in the inbox, optionally filtered by specimen, with its id <code>"&lt;specimen&gt;/&lt;file&gt;"</code>, size, SHA-256, modified time, and the specimen's metadata file if present.</td></tr>
-  <tr><td><code>get_measurement</code></td><td>One curve as [&theta;, intensity] pairs, parsed the way the GUI parses a data file (see <a href="#experimental-data-files">File Formats</a>): two columns separated by tab or space, comma accepted as the decimal mark, non-numeric lines reported as the header. <code>max_points</code> decimates a long curve for inline return; the file stays raw.</td></tr>
+  <tr><td><code>get_measurement</code></td><td>One curve as [&theta;, intensity] pairs, parsed the way the GUI parses a data file (see <a href="#experimental-data-files">File Formats</a>): two columns separated by tab or space, comma accepted as the decimal mark, non-numeric lines reported as the header. An <code>.xrdml</code> file is read raw, as <strong>Data &gt; Load</strong> reads it: its 2&theta; axis is brought to &theta;, its counts to counts per second normalised to 1 at the maximum, and the wavelength the file implies overrides <code>meta.json</code> (<code>lambda_source</code> says which). <code>max_points</code> decimates a long curve for inline return; the file stays raw.</td></tr>
 </table>
+
+<h3 id="assess">assess_xrr: is this curve worth fitting?</h3>
+<p><code>assess_xrr</code> runs the eight measurement checks of the GUI's <a href="#assessing-a-measurement">Data &gt; Assess XRR quality</a> on an inbox file, before anyone fits it. It reads the <code>.xrdml</code> itself, because the decisive checks are count rates and the counting time exists only there; a two-column file still works, and every check that needs a fact the file does not carry answers <code>"unknown"</code>. Nothing is written anywhere.</p>
+<table>
+  <tr>
+    <th style="width:170px">Argument</th>
+    <th>Meaning</th>
+  </tr>
+  <tr><td><code>measurement_id</code></td><td>The inbox file, as <code>list_measurements</code> reports it.</td></tr>
+  <tr><td><code>structure</code></td><td>The design, optional: the same structure object <code>calc_reflectivity</code> takes. Unlike the other tools this one accepts a bare substrate, <code>"stacks": []</code>, for a glass reference. With a design the checks that need a period, a total thickness or a critical angle can answer, and the design's reflectivity on the measured range, convolved with <code>resolution</code> (default <code>fit_xrr</code>'s 0.015&deg;), says what the measurement could have shown.</td></tr>
+  <tr><td><code>lambda</code> or <code>energy</code></td><td>For the design; defaults to the file's wavelength or <code>meta.json</code>'s.</td></tr>
+  <tr><td><code>detector_max_cps</code></td><td>The detector's linear count-rate limit, judged against the rate the detector itself saw (attenuation factors out). Without it the counting check reports the peak rate under <code>"unknown"</code>; no limit is built in.</td></tr>
+  <tr><td><code>sample_length_mm</code>, <code>beam_width_mm</code></td><td>Place the footprint knee asin(beam / length).</td></tr>
+  <tr><td><code>order_visible_factor</code>, <code>min_points_per_fringe</code></td><td>An order counts as visible this many times above the background (default 3); the sampling check warns below this many points per Kiessig fringe (default 3) and fails below 2 whatever is given.</td></tr>
+</table>
+<p>The result carries <code>checks</code> &mdash; <code>counting</code>, <code>plateau_vs_first_order</code>, <code>total_reflection</code>, <code>orders_visible</code>, <code>range_below_background</code>, <code>sampling</code>, <code>footprint</code>, <code>zeros</code>, each <code>{value, threshold, verdict, why}</code> with the numbers behind it &mdash; the background, the design's period, thickness and critical angle, the overall <code>verdict</code> (the worst check) and <code>summary_text</code>, one line per check for the client to file with the specimen. Every angle is <code>theta_deg</code> with the file's <code>two_theta_deg</code> beside it. The only thresholds the tool brings of its own are physical: a first order above the plateau fails, and fewer than two points per fringe fails.</p>
 
 <!-- =============================== -->
 <h2 id="projects">Projects</h2>
@@ -1996,6 +2046,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <ol>
   <li><code>describe_server</code> &mdash; confirm the revision and the Henke directory.</li>
   <li><code>list_measurements</code> &rarr; finds <code>"RuC-07/xrr.dat"</code>; <code>get_measurement</code> with <code>max_points: 200</code> to look at the curve.</li>
+  <li><code>assess_xrr</code> with the nominal structure &mdash; is the curve worth fitting: the plateau against the first order, the orders visible, the points per fringe, the zero counts.</li>
   <li><code>calc_reflectivity</code> with the nominal Ru/C structure (30 periods, d = 68.5&nbsp;&Aring;) at &lambda; = 1.5406&nbsp;&Aring; &mdash; compare the Bragg peak position with the measurement.</li>
   <li><code>fit_xrr</code> with the period of stack 0 and both layer thicknesses free, <code>smooth: {"passes": 1}</code>, <code>theta_range: [0.3, 4.0]</code>, <code>seed: 1</code> &rarr; <code>job_id: "fit-000003"</code>.</li>
   <li><code>job_status</code> every few seconds until <code>finished</code> (about 25&nbsp;s for a 1000-point curve with the default population of 500).</li>
@@ -2021,7 +2072,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 <!-- =============================== -->
 <h2 id="smoke-test">Smoke Test</h2>
 
-<p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 16 tools over one live stdio session (jobs are submitted, polled and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>
+<p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 18 tools over one live stdio session (jobs are submitted, polled, waited for with <code>job_wait</code> and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>
 
 <pre>pwsh -File XRC_MCP\smoke\session.ps1</pre>
 
@@ -2071,6 +2122,16 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
 ...</code></pre>
 <p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
 Column 2: Reflectivity (typically 0 to 1)</p>
+
+<h3>XRDML (PANalytical)</h3>
+<p>A PANalytical / Malvern <code>.xrdml</code> file, schema 1.0 to 2.x, is read without conversion by <strong>Data &gt; Load</strong> and by the MCP server's inbox. What is read:</p>
+<ul>
+  <li>the first <code>scan</code> of the file, its <code>2Theta</code> positions (start/end, a position list, or <code>Omega</code> for a rocking curve);</li>
+  <li><code>counts</code> (raw, with <code>beamAttenuationFactors</code> multiplied in when present) or <code>intensities</code> (already corrected), divided by <code>commonCountingTime</code> or the per-point <code>countingTimes</code>;</li>
+  <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
+  <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
+</ul>
+<p>The curve is normalised to 1 at its maximum and non-positive counts are floored as for a text file; the raw peak count rate is kept in the header. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
 
 <h2 id="henke-tables">Henke Tables</h2>
 <p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>

@@ -48,6 +48,16 @@
 <p>Column 1: Angle (degrees) or wavelength (Angstroms)<br>
 Column 2: Reflectivity (typically 0 to 1)</p>
 
+<h3>XRDML (PANalytical)</h3>
+<p>A PANalytical / Malvern <code>.xrdml</code> file, schema 1.0 to 2.x, is read without conversion by <strong>Data &gt; Load</strong> and by the MCP server's inbox. What is read:</p>
+<ul>
+  <li>the first <code>scan</code> of the file, its <code>2Theta</code> positions (start/end, a position list, or <code>Omega</code> for a rocking curve);</li>
+  <li><code>counts</code> (raw, with <code>beamAttenuationFactors</code> multiplied in when present) or <code>intensities</code> (already corrected), divided by <code>commonCountingTime</code> or the per-point <code>countingTimes</code>;</li>
+  <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
+  <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
+</ul>
+<p>The curve is normalised to 1 at its maximum and non-positive counts are floored as for a text file; the raw peak count rate is kept in the header. See <a href="Data.html#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
+
 <h2 id="henke-tables">Henke Tables</h2>
 <p>Binary or text files in the <code>Henke/</code> directory containing wavelength-dependent atomic form factors (f<sub>1</sub>, f<sub>2</sub>) for each element. These files are required for reflectivity calculations and are included with the application.</p>
 

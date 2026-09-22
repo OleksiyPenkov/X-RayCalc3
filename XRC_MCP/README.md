@@ -140,8 +140,36 @@ satellite beside it passed, which is how the summary of the C/Co mirror P2-05 ca
 order at 0.855 degrees with R = 0.015 instead of the real one at 0.915 with R = 0.203. Without a
 period (no repeating stack) the old running-index search is unchanged.
 
+**Inbox since 2026-09-21:** a `.xrdml` file (PANalytical, schema 1.0 to 2.x) in a specimen folder is
+a measurement. `get_measurement` reads it raw (`Shared/Universal/unit_xrdml.pas`, shared with the
+GUI's Data - Load): the 2Theta axis is brought to theta, counts (x attenuation factors when present)
+are divided by the counting time and normalised to 1 at the maximum, a zero count is floored as the
+text parser floors it, and the wavelength the file implies (the K-alpha doublet weighted by the file's
+ratio unless a monochromator or a hybrid mirror selects K-alpha1) overrides `meta.json`;
+`lambda_source` says `file: <rule>`. The header carries the raw peak rate, the counting time, the
+detector, its readOutPeriod and the zero count.
+
+**`fit_xrr` since 2026-09-22 (`scale_solve`):** the measured scale is a nuisance parameter solved in
+closed form inside the objective for every candidate, held within +/- `scale_solve_window` (default
+0.2) of the anchored scale; default on. The result carries `chi2_scale` (`solved` / `anchored`),
+`scale_ratio`, `scale_solved`, `scale_clamped`, `scale_start_ratio` and `chi2_scale_definition`, and
+`report.json` carries the same scale fields beside every chi2 it holds. `measured.dat`, `calc.dat`
+and `fit.xrcx` stay at the anchored scale; `residual.dat` is at the solved one and its header says so.
+`"scale_solve": false` gives the anchored chi2 of every earlier version, bit-identical. The request now
+carries `scale_solve`, so a request hash differs from one made before 2f92b9b even when the fit does
+not. Spec: `docs/superpowers/specs/2026-09-22-solved-scale-design.md`.
+
+**`assess_xrr` since 2026-09-22 (tool 18):** is this measured curve worth fitting? Eight checks on
+the raw `.xrdml` (counting rate against `detector_max_cps`, first order against the plateau, total
+reflection reached, orders visible against the design, range below background, points per fringe
+and per order, footprint knee, zero counts), each `{value, threshold, verdict, why}` plus the numbers
+behind it, `verdict` the worst of them, `summary_text` one line per check. `unknown` whenever an
+input is missing; no threshold is invented in code (only ratio > 1 and < 2 points per fringe fail).
+Accepts a bare substrate, `"stacks": []`, as the design. The checks live in
+`units/unit_MCPAssess.pas` and are the GUI's Data - Assess XRR quality as well.
+
 **Smoke test:** `pwsh -File XRC_MCP\smoke\session.ps1` drives one live stdio session against
-`_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 17 tools (jobs are
+`_Out\BIN\XRC_MCP.exe` in a throwaway work directory, calls every one of the 18 tools (jobs are
 submitted, polled through `job_status`, waited for with `job_wait` and read with `job_result`; one is
 stopped with `cancel_job`) and checks the Ru/C Bragg-peak angle, seed determinism of `optimize_mirror` and
 `fit_xrr`, the `path_outside_workdir` refusal, that the inbox is byte-identical afterwards, and
