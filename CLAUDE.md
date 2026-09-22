@@ -109,6 +109,10 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   answer (`RescoreBestOnCpu`), so reported χ² equals `TCalc`'s. Keep the cancellation-free
   `(eps.re - 1) + sin²θ` form in the shader: the naive `eps - sin²t` halves the accuracy.
 - `frm_Main.pas` — Primary window; logic being extracted into orchestrators and frames
+- `XRC_MCP/units/unit_MCPAssess.pas` — the XRR measurement-quality checks, shared by the MCP tool
+  `assess_xrr` (handler in `unit_ToolsFiles`) and the GUI's Data - Assess XRR quality (`frm_XRRAssess`).
+  The GUI links it and the MCP helpers it needs from `..\XRC_MCP\units` and `..\XRC_CMD\Units` on its
+  unit search path; keep those units free of the inbox, the sandbox and the server.
 
 ## Dependencies
 
