@@ -608,6 +608,14 @@ var
   Count: integer;
   Data: TLayerData;
 begin
+  { Only TLFPSO_Irregular's result fits here: one stack, every physical layer
+    in order, repeats expanded. Anything else would be indexed past its end
+    below - Release has no range check, so the layers would fill with garbage. }
+  if Length(Inp.Stacks) <> 1 then
+    raise EArgumentException.CreateFmt(
+      'UpdateInterfaceNP expects the irregular engine''s single flattened stack, got %d stacks',
+      [Length(Inp.Stacks)]);
+
   Count := 0;
   for I := 0 to High(FStacks) do
   begin

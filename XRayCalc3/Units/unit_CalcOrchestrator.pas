@@ -325,30 +325,39 @@ procedure TCalcOrchestrator.UpdateInterface(const FitStructure: TFitStructure;
   const Poly: TProfileFunctions; const Res: TLayeredModel;
   const CreateExtension: Boolean);
 begin
-  if Structure.IsPeriodic then
-  begin
-    if FCalcSettings.FittingMode = fmPeriodic then
-       Structure.UpdateInterfaceP(FitStructure, True)
-    else begin
-      if FCalcSettings.FittingMode = fmPoly then
+  { The write-back follows the ENGINE that ran, not the shape of the model.
+    TLFPSO_Irregular flattens the model into one stack of every physical layer
+    and UpdateInterfaceNP walks that; the periodic and poly engines return the
+    model in its own shape and UpdateInterfaceP walks it stack by stack. A
+    non-periodic model (every N = 1) fitted in periodic mode - the mode every
+    fit_xrr project opens in - came back in its own shape and used to be handed
+    to UpdateInterfaceNP, which read Stacks[0] past its single layer: an access
+    violation, or zeroed layers and a curve for the bare substrate. }
+  case FCalcSettings.FittingMode of
+    fmPeriodic:
+      Structure.UpdateInterfaceP(FitStructure, True);
+    fmPoly:
       begin
         Structure.UpdateInterfaceP(FitStructure, True);
-        if CreateExtension then
-          FProjectPanel.CreateFitGradientExtensions(Poly)
-        else
-          FProjectPanel.UpdateFitGradientExtensions(Poly)
-      end
-      else
+        if Structure.IsPeriodic then
+        begin
+          if CreateExtension then
+            FProjectPanel.CreateFitGradientExtensions(Poly)
+          else
+            FProjectPanel.UpdateFitGradientExtensions(Poly);
+        end;
+      end;
+    fmIrregular:
       begin
         Structure.UpdateInterfaceNP(FitStructure, True);
-        if CreateExtension then
-           FProjectPanel.CreateProfileExtension(True);
-        Structure.UpdateProfiles(Res);
+        if Structure.IsPeriodic then
+        begin
+          if CreateExtension then
+            FProjectPanel.CreateProfileExtension(True);
+          Structure.UpdateProfiles(Res);
+        end;
       end;
-    end;
-  end
-  else
-    Structure.UpdateInterfaceNP(FitStructure, True);
+  end;
 end;
 
 procedure TCalcOrchestrator.StartFitting(const Resume: Boolean);

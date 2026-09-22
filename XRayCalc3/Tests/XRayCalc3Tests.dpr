@@ -98,7 +98,16 @@ uses
   TestAxisLimit in 'TestAxisLimit.pas',
   TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas',
   unit_LFPSO_Poly in '..\LFPSO\unit_LFPSO_Poly.pas',
-  TestLFPSOPoly in 'TestLFPSOPoly.pas';
+  TestLFPSOPoly in 'TestLFPSOPoly.pas',
+  unit_XRCPanel in '..\Components\unit_XRCPanel.pas',
+  editor_Layer in '..\Components\editor_Layer.pas' {edtrLayer},
+  frm_MaterialSelector in '..\Forms\frm_MaterialSelector.pas' {frmMaterialSelector},
+  unit_XRCLayerControl in '..\Components\unit_XRCLayerControl.pas',
+  TestLayerControl in 'TestLayerControl.pas',
+  editor_Stack in '..\Components\editor_Stack.pas' {edtrStack},
+  unit_XRCStackControl in '..\Components\unit_XRCStackControl.pas',
+  unit_XRCStructure in '..\Components\unit_XRCStructure.pas',
+  TestStructureWriteBack in 'TestStructureWriteBack.pas';
 
 {$R *.res}
 

@@ -74,6 +74,8 @@ type
       destructor  Destroy; override;
       property Substrate: boolean read FSubstrate write SetSubstrate;
       procedure Edit;
+      { What the card shows as the layer's material. }
+      function MaterialCaption: string;
       class property MenuImages: TCustomImageList read FMenuImages write FMenuImages;
     published
       property Increment: Double write SetIncrement;
@@ -278,6 +280,11 @@ begin
   SetSlected(False);
 end;
 
+function TXRCLayerControl.MaterialCaption: string;
+begin
+  Result := Name.Caption;
+end;
+
 procedure TXRCLayerControl.SetCheckBox(const Value: TRzCheckBox);
 begin
   FLinkCheckBox := Value;
@@ -374,6 +381,10 @@ end;
 procedure TXRCLayerControl.SetLayerData(const Value: TLayerData);
 begin
   FData := Value;
+
+  { frmMain writes an edited layer back through here (Structure.LayerData /
+    SubstrateData), so the material caption has to follow the data as well. }
+  Name.Caption := FData.Material;
 
   Thickness.Value := FData.P[1].V;
   PairedH.Checked := FData.P[1].Paired;
