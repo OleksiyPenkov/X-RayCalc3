@@ -582,7 +582,10 @@ begin
   Inp.LambdaSource := 'calculation settings';
   Inp.Resolution := FCalcSettings.Resolution;
   Inp.Structure := Structure.ToFitStructure;
-  Inp.HasStructure := Length(Inp.Structure.Stacks) > 0;
+  { a bare substrate is a design too: a glass reference is measured for its
+    critical angle and its plateau }
+  Inp.HasStructure := (Length(Inp.Structure.Stacks) > 0) or
+                      (Trim(Inp.Structure.Subs.Material) <> '');
 
   frmXRRAssess.Assess(Inp, Source);
 end;

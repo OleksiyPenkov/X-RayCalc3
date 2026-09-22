@@ -83,8 +83,12 @@ function EmptyStructureInfo: TStructureInfo;
 
 /// <summary>Parse the requirements 3 structure JSON into the GUI order (surface
 /// first). Raises EMCPError('invalid_structure', ...) with the offending JSON
-/// path in Detail.</summary>
-function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo): TFitStructure;
+/// path in Detail. "stacks" must hold a stack unless AllowEmptyStacks: a bare
+/// substrate is a design for assess_xrr (a glass reference is exactly that)
+/// but not for the calculating and fitting tools, whose engines expect a
+/// film.</summary>
+function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo;
+  AllowEmptyStacks: Boolean = False): TFitStructure;
 
 /// <summary>Inverse of StructureFromJSON: GUI order -> requirements 3 JSON.
 /// Info labels cap and buffer; stacks are reported substrate->surface.
@@ -323,7 +327,8 @@ end;
 
 { ------------------------------------------------------------- JSON input -- }
 
-function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo): TFitStructure;
+function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo;
+  AllowEmptyStacks: Boolean): TFitStructure;
 var
   JSubs, JCap, JBuf, JStack: TJSONObject;
   JStacks, JLayers: TJSONArray;
@@ -340,7 +345,7 @@ begin
 
   JSubs := ObjAt(J, 'substrate', 'substrate', True);
   JStacks := ArrAt(J, 'stacks', 'stacks', True);
-  if JStacks.Count = 0 then
+  if (JStacks.Count = 0) and not AllowEmptyStacks then
     StructErr('"stacks" must hold at least one stack', 'stacks');
 
   JCap := ObjAt(J, 'cap', 'cap', False);
@@ -391,7 +396,7 @@ begin
     Inc(Idx);
   end;
 
-  if NonEmpty = 0 then
+  if (NonEmpty = 0) and not AllowEmptyStacks then
     StructErr('At least one stack must hold a layer', 'stacks');
 
   if JBuf <> nil then

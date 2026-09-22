@@ -92,7 +92,9 @@ begin
     JS := JSONArgs.OptObj(Params, 'structure');
     if JS <> nil then
     begin
-      Inp.Structure := StructureFromJSON(JS, Inp.Info);
+      { a bare substrate ("stacks": []) is a design here: a glass reference
+        is measured for its critical angle and its plateau }
+      Inp.Structure := StructureFromJSON(JS, Inp.Info, True);
       Bad := ValidateMaterials(Inp.Structure);
       if Bad <> '' then
         raise EMCPError.Create('unknown_material',
@@ -202,7 +204,9 @@ begin
     'the checks that need a period (orders, points per order), a total thickness ' +
     '(points per Kiessig fringe) or a critical angle (total reflection) can answer, ' +
     'and the design''s own reflectivity on the measured range says what the ' +
-    'measurement could have shown.', StructureSchema);
+    'measurement could have shown. Unlike the other tools this one accepts a bare ' +
+    'substrate, "stacks": [] - a glass reference - for its critical angle and plateau.',
+    StructureSchema);
   AddProp(Schema, 'lambda', 'number',
     'Wavelength in Angstrom for the design; defaults to the file''s (an .xrdml) or ' +
     'meta.json''s. Required with "structure" when neither has one. "energy" in eV ' +

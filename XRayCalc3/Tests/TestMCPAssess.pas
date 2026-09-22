@@ -61,6 +61,7 @@ type
     [Test] procedure TextInput_RateChecksAreUnknown;
     [Test] procedure Verdict_IsTheWorstCheck_AndSummaryHasOneLinePerCheck;
     [Test] procedure Design_OrdersSamplingCriticalAngleAndModelRatio;
+    [Test] procedure SubstrateOnly_IsADesignHere_AndNowhereElse;
     [Test] procedure Descending_Curve_ReadsTheSameAsAscending;
     [Test] procedure Attenuation_CountingJudgesTheRateTheDetectorSaw;
     [Test] procedure AllZeroCurve_DoesNotDivideByZero;
@@ -522,6 +523,56 @@ begin
     Assert.IsTrue(C.GetValue<Double>('model_ratio') < EX_FIRST_ORDER_R,
       'model ratio: ' + C.GetValue<string>('model_ratio'));
     Assert.AreEqual('warn', C.GetValue<string>('verdict'), 'measured above what the design can give');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPAssess.SubstrateOnly_IsADesignHere_AndNowhereElse;
+const
+  GLASS = '{"substrate":{"material":"SiO2","density":2.2},"stacks":[]}';
+var
+  J: TJSONObject;
+  Info: TStructureInfo;
+  Inp: TAssessInput;
+  Res, C, D: TJSONObject;
+  Code: string;
+begin
+  J := TJSONObject.ParseJSONValue(GLASS) as TJSONObject;
+  try
+    { the calculating and fitting tools keep refusing it }
+    Code := '';
+    try
+      StructureFromJSON(J, Info);
+    except
+      on E: EMCPError do
+        Code := E.Code;
+    end;
+    Assert.AreEqual('invalid_structure', Code, 'without the flag a bare substrate is still refused');
+
+    if not HenkePresent then
+    begin
+      Assert.Pass('Henke tables not installed on this machine');
+      Exit;
+    end;
+    Inp := InputFromScan(FScan);
+    Inp.Structure := StructureFromJSON(J, Inp.Info, True);
+  finally
+    J.Free;
+  end;
+  Inp.HasStructure := True;
+
+  Res := AssessJSON(Inp);
+  try
+    D := Res.GetValue('design') as TJSONObject;
+    Assert.IsTrue(D.GetValue('period_A') is TJSONNull, 'no repeating stack, no period');
+    Assert.AreEqual(0.0, D.GetValue<Double>('total_thickness_A'), 1E-9);
+    Assert.IsTrue(InRange(D.GetValue<Double>('theta_c_deg'), 0.15, 0.3),
+      'glass critical angle at Cu K-alpha: ' + D.GetValue<string>('theta_c_deg'));
+    C := CheckOf(Res, 'total_reflection');
+    Assert.AreEqual('pass', C.GetValue<string>('verdict'), 'the scan starts below the glass edge');
+    Assert.AreEqual('unknown', CheckOf(Res, 'orders_visible').GetValue<string>('verdict'));
+    Assert.AreEqual('unknown', CheckOf(Res, 'sampling').GetValue<string>('verdict'));
   finally
     Res.Free;
   end;

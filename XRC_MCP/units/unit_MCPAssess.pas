@@ -461,7 +461,10 @@ begin
       ThetaC := CriticalAngleDeg(Inp.Structure, Inp.Lambda);
       HasOrder1Window := (Period > 0) and
         BraggSearchWindow(1, Inp.Lambda, Period, ThetaC, Order1Lo, Order1Hi, Order1Theta);
-      Model := DesignCurve(Inp, Background);
+      { the model is only ever read at Bragg orders; a bare substrate has
+        none and its critical angle is all the design contributes }
+      if TotalThickness > 0 then
+        Model := DesignCurve(Inp, Background);
     end;
 
     { The plateau maximum: below the first order's window when the design
@@ -513,7 +516,9 @@ begin
       end;
       IFirst := Best;
       if IFirst >= 0 then
-        FirstOrderHow := 'highest maximum after the plateau''s first minimum (no design given)'
+        FirstOrderHow := 'highest maximum after the plateau''s first minimum (no design given: ' +
+                         'on a single film or a bare substrate this is a Kiessig fringe or noise, ' +
+                         'not a Bragg order)'
       else
         FirstOrderHow := 'no maximum found after the plateau''s first minimum (no design given)';
     end;
@@ -714,9 +719,15 @@ begin
 
   if not (Ctx.Inp.HasStructure and (Ctx.Period > 0)) then
   begin
-    Result := CheckJSON(TJSONNull.Create, TJSONNull.Create, VERDICT_UNKNOWN,
-      Fmt('%d maxima stand more than %.3g times above the background; without a design nothing ' +
-          'says how many orders they are or how many there should be', [Peaks, Ctx.Inp.VisibleFactor]));
+    if Ctx.Inp.HasStructure then
+      Why := Fmt('the design has no repeating stack, so it predicts no Bragg order; the %d maxima ' +
+                 'more than %.3g times above the background are fringes or noise',
+                 [Peaks, Ctx.Inp.VisibleFactor])
+    else
+      Why := Fmt('%d maxima stand more than %.3g times above the background; without a design ' +
+                 'nothing says how many orders they are or how many there should be (on a single ' +
+                 'film or a bare substrate they are fringes or noise)', [Peaks, Ctx.Inp.VisibleFactor]);
+    Result := CheckJSON(TJSONNull.Create, TJSONNull.Create, VERDICT_UNKNOWN, Why);
     Result.AddPair('peaks_above_background', TJSONNumber.Create(Peaks));
     Result.AddPair('background', JSONArgs.Num(Ctx.Background));
     Result.AddPair('orders', TJSONNull.Create);
