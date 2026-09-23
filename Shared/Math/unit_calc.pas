@@ -136,6 +136,12 @@ type
       property ScaleClamped: Boolean read FScaleClamped;
   end;
 
+/// <summary>The normalised Gaussian resolution kernel over +/-0.1 degree
+/// for a scan of Size points from ThetaFirst to ThetaLast: FWHM Width,
+/// half-window N. Convolute and the GPU path share it.</summary>
+function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Integer;
+  Width: Single; out N: Integer): TArray<Single>;
+
 implementation
 
 uses
@@ -146,9 +152,6 @@ const
   FWHMToGaussianWidth = 0.849;            // 1/sqrt(2*ln(2)), FWHM to Gaussian width
 
   { TCalc }
-
-function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Integer;
-  Width: Single; out N: Integer): TArray<Single>; forward;
 
 procedure ClearArray(var A: TDataArray); inline;
 begin
@@ -217,7 +220,7 @@ begin
       One pass, Double accumulators, the same points the legacy sum walks. }
     S0 := 0; S1 := 0; S2 := 0;
     Q0 := 0; Q1 := 0; Q2 := 0;
-    for I := FTail to High(FData) - FTail - 1 do
+    for I := FTail to High(FData) - FTail do
     begin
       if FResult[i].r = 0 then Continue;
       LogResult := Log10(FResult[i].r);
@@ -253,7 +256,7 @@ begin
 
   Result := 0;
   Plain := 0;
-  for I := FTail  to High(FData) - FTail - 1 do
+  for I := FTail to High(FData) - FTail do
   begin
     if FResult[i].r = 0 then Continue;
 
@@ -317,7 +320,7 @@ begin
       Width, Result.ConvN);
 
   Result.ChiFirst := Result.ConvN;
-  Result.ChiLast  := Size - 1 - Result.ConvN - 1;
+  Result.ChiLast  := Size - 1 - Result.ConvN;
   Result.ChiNorm  := 1000 / (Size - 1);
   Result.SolveScale := FSolveScale;
   Result.ScaleWindow := FScaleWindowLog;
@@ -746,6 +749,7 @@ function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Int
   Width: Single; out N: Integer): TArray<Single>;
 var
   delta, t1, c, sqr_Width: Single;
+  Sum: Double;
   k, WinSize: Integer;
 begin
   Width := Width * FWHMToGaussianWidth;
@@ -760,11 +764,22 @@ begin
   WinSize := 2 * N + 1;
   SetLength(Result, WinSize);
   t1 := -0.1;
+  Sum := 0;
   for k := 0 to WinSize - 1 do
   begin
     Result[k] := Gauss(c, t1, sqr_Width) * delta;
+    Sum := Sum + Result[k];
     t1 := t1 + delta;
   end;
+
+  { The weights are a sampled Gaussian, not an integral: on a grid that is
+    coarse against the FWHM their total drifts from 1 (at 0.01 deg per point
+    and FWHM 0.005 it was 1.88), and the convolved curve was scaled by that
+    amount. Normalising keeps the level whatever the step, and also removes
+    what the +/-0.1 deg truncation cuts off. }
+  if Sum > 0 then
+    for k := 0 to WinSize - 1 do
+      Result[k] := Result[k] / Sum;
 end;
 
 procedure TCalc.Convolute(Width: single);

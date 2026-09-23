@@ -36,6 +36,12 @@ type
     [Test] procedure Test_Plain_MatchesHandSum;
     [Test] procedure Test_Plain_IgnoresThetaWeight;
     [Test] procedure Test_Plain_IgnoresPeakWeight;
+    { Without a resolution convolution every measured point is summed; the
+      last one used to be dropped as well as the convolution tails. }
+    [Test] procedure Test_EveryPoint_IsSummed_WithoutConvolution;
+    { The convolution weights are a normalised kernel: their sum is 1, so a
+      curve convolved with them keeps its level whatever the grid step. }
+    [Test] procedure Test_ConvolutionWeights_SumToOne;
   end;
 
   { TCalc.SolveScale: the measured scale solved in closed form inside the
@@ -304,6 +310,54 @@ begin
   end;
 end;
 
+procedure TTestChiSquare.Test_EveryPoint_IsSummed_WithoutConvolution;
+var
+  C: TChiCalc;
+  Data, Calc: TDataArray;
+  Expected, d: Double;
+  i: Integer;
+begin
+  MakeChiCurves(Data, Calc);
+  Calc[3].r := 1.3E-4;          // the last point now misses its measurement
+  Expected := 0;
+  for i := 0 to High(Data) do
+  begin
+    d := (System.Math.Log10(Data[i].r) - System.Math.Log10(Calc[i].r)) /
+         System.Math.Log10(Calc[i].r);
+    Expected := Expected + Sqr(d);
+  end;
+  Expected := Expected / High(Data) * 1000;
+
+  C := MakeChiCalc(Data, Calc);
+  try
+    Assert.AreEqual(Expected, Double(C.CalcChiSquare(0)), 1E-3 * Expected,
+      'the sum runs over every point, the last one included');
+  finally
+    C.Free;
+  end;
+end;
+
+procedure TTestChiSquare.Test_ConvolutionWeights_SumToOne;
+const
+  T0 = 0.0; T1 = 5.0;
+var
+  W: TArray<Single>;
+  N, k, Size: Integer;
+  Sum: Double;
+  FWHM: Single;
+begin
+  for Size in [500, 1000, 5000] do
+    for FWHM in [Single(0.005), Single(0.013), Single(0.05)] do
+    begin
+      W := ConvolutionWeights(T0, T1, Size, FWHM, N);
+      Sum := 0;
+      for k := 0 to High(W) do
+        Sum := Sum + W[k];
+      Assert.AreEqual(1.0, Sum, 1E-5,
+        Format('%d points, FWHM %.3f: the kernel must sum to 1', [Size, FWHM]));
+    end;
+end;
+
 procedure TTestChiSquare.Test_Plain_MatchesHandSum;
 var
   C: TChiCalc;
@@ -499,9 +553,11 @@ begin
     C.ScaleWindowLog := 1;
     Solved := C.CalcChiSquare(1);
     BestFixed := 1E300; BestA := 0;
-    for k := -300 to 300 do
+    { a finer grid than the 0.001 of old: with every point summed the
+      parabola is steeper, so a coarse grid sits further above its minimum }
+    for k := -1500 to 1500 do
     begin
-      A := k * 0.001;
+      A := k * 0.0002;
       Fixed := ChiFixed(Data, Calc, 1, A, Plain);
       if Fixed < BestFixed then begin BestFixed := Fixed; BestA := A; end;
     end;

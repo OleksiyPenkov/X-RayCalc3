@@ -1836,7 +1836,16 @@ end;
   noisy and does not end on a round answer. Those are the CPU engine's
   answers, so both fits run with optimizer.device "cpu": the GPU (3.9.0)
   minimises the same chi-squared to single precision and takes a different
-  path through the swarm. }
+  path through the swarm.
+
+  The P2-02 numbers were recaptured for 3.9.4: the chi-squared now sums the
+  last measured point as well (it was dropped whether or not there was a
+  convolution) and the resolution kernel is normalised, which moved that
+  fit's chi2 from 2.16926 to 2.17153 and its layers in the fourth digit.
+  The synthetic fit, which has no resolution and whose last point carries no
+  residual, is unchanged. A number published before 3.9.4 reproduces on the
+  binary it was made with (D:\SoftwareStorage\X-RayCalc3\Releases), not on
+  this source. }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
   CHI2_06035DE = '0.000413109';
@@ -1844,11 +1853,11 @@ const
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
     '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
-  P2_CHI2_06035DE = '2.16926';
+  P2_CHI2_06035DE = '2.17153';
   P2_FITTED_06035DE =
     '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
-    '"layers":[{"material":"C","thickness":25.3872,"sigma":9.87462,"density":2.74266},' +
-    '{"material":"Co","thickness":2.40001,"sigma":7.79806,"density":8.89981}]}]}';
+    '"layers":[{"material":"C","thickness":25.3868,"sigma":9.87208,"density":2.74609},' +
+    '{"material":"Co","thickness":2.40001,"sigma":7.79898,"density":8.89977}]}]}';
 var
   Res: TJSONObject;
 begin
