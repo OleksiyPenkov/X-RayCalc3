@@ -223,11 +223,7 @@ begin
         FLastChiSquare := 0;
       end;
 
-      FProfileMgr.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
-      if FProjectPanel.IsNonPeriodicProfile then
-         FProfileMgr.PlotProfileNP(FChartPages.IsProfileActive)
-      else
-        FProfileMgr.PlotProfile(FProjectPanel.IsNonPeriodicProfile, FChartPages.IsProfileActive);
+      FProjectPanel.PlotProfiles;
     except
       on E: exception do
       begin
@@ -498,6 +494,7 @@ end;
 
 procedure TCalcOrchestrator.RecalcFromStructure;
 begin
+  FProfileMgr.Profiles := FProjectPanel.GetProfileFunctions;
   FProfileMgr.PlotProfile(FProjectPanel.IsNonPeriodicProfile, FChartPages.IsProfileActive);
   RunCalc(False);
 end;

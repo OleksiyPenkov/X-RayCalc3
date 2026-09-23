@@ -25,7 +25,7 @@ type
 
       procedure PlotProfile(const PlotNP, PlotD: boolean);
       procedure PlotProfileNP(const PlotD: boolean);
-      procedure PlotGradedProfile;
+      procedure PlotGradedProfile(const PlotNP: Boolean);
       procedure PlotSimpleProfile;
       procedure PlotDensityProfile;
       procedure ClearProfiles;
@@ -135,12 +135,21 @@ begin
   end;
 end;
 
-procedure TProfileManager.PlotGradedProfile;
+{ The per-period values the calculation uses when the model carries gradient
+  extensions. A gradient is evaluated as TLayeredModel.PrepareLayers does it:
+  Poly of the period number counted from 1 at the top of ITS OWN stack, whatever
+  the form, so the x passed in is PeriodIndex, never the chart position
+  PeriodIndex + shift. A parameter without a gradient takes the table profile
+  when one is enabled (PlotNP) and the parameter is not paired, as
+  TXRCStructure.Model(ExpandProfiles) does, and the layer's value otherwise. }
+procedure TProfileManager.PlotGradedProfile(const PlotNP: Boolean);
 var
   StackIndex, LayerIndex, PeriodIndex, gi, shift, d, p: integer;
   Profiled, HasProfiles: Boolean;
   Key: Cardinal;
   Indices: TArray<Integer>;
+  Data: TLayerData;
+  Val: Single;
 begin
   shift := 0; d := 0;
   for StackIndex := 0 to High(FStructure.Stacks) do
@@ -152,6 +161,7 @@ begin
       Key := Cardinal(FStructure.Stacks[StackIndex].Layers[LayerIndex].StackID) shl 16
            or FStructure.Stacks[StackIndex].Layers[LayerIndex].ID;
       HasProfiles := FProfileIndex.TryGetValue(Key, Indices);
+      Data := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data;
 
       for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
       begin
@@ -163,12 +173,17 @@ begin
               if FProfiles[Indices[gi]].PIndex = p then
               begin
                 FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                      FuncProfile(PeriodIndex + shift, FProfiles[Indices[gi]]));
+                                                      Poly(PeriodIndex, FProfiles[Indices[gi]]));
                 Profiled := True;
               end;
           if not Profiled then
-              FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                     FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V);
+          begin
+            if PlotNP and not Data.P[p].Paired and (PeriodIndex <= Length(Data.PP[p])) then
+              Val := Data.PP[p][PeriodIndex - 1]
+            else
+              Val := Data.P[p].V;
+            FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Val);
+          end;
         end;
       end;
     end;
@@ -259,7 +274,7 @@ begin
   ClearProfiles;
 
   if Length(FProfiles) > 0 then
-    PlotGradedProfile
+    PlotGradedProfile(PlotNP)
   else
       if PlotNP then
          PlotProfileNP(false)

@@ -193,6 +193,10 @@ type
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     procedure UpdateFitGradientExtensions(const P: TProfileFunctions);
     procedure MatchToStructure;
+    /// Redraws the thickness, roughness and density pages for Structure with
+    /// the active model's gradients. Unlike MatchToStructure it does not write
+    /// Structure back into the active model.
+    procedure PlotProfiles;
 
     { Utilities }
     procedure CreateProfileExtension(const AFromFit: Boolean = False);
@@ -601,6 +605,8 @@ procedure TfrmProjectPanel.pmiEnabledClick(Sender: TObject);
 begin
   FLastData.Enabled := not FLastData.Enabled;
   FProject.Repaint;
+  if FLastData.RowType = prExtension then
+    PlotProfiles;
 end;
 
 procedure TfrmProjectPanel.pmiLinkedClick(Sender: TObject);
@@ -1040,7 +1046,10 @@ begin
   edtrProfileFunction.Data := Data;
   edtrProfileFunction.Structure := Structure;
   if edtrProfileFunction.ShowModal = mrOk then
+  begin
     SetDescription(Data.Description);
+    PlotProfiles;
+  end;
 end;
 
 procedure TfrmProjectPanel.EditTable(var Data: PProjectData);
@@ -1649,8 +1658,7 @@ begin
       Structure.FromString(FLastData.Data);
       FOperationsStack.Clear;
       FOperationsStack.Push(FLastData.Data);
-      FProfileMgr.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
-      FProfileMgr.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
+      PlotProfiles;
       if Assigned(FOnModelChanged) then
         FOnModelChanged(Self);
     end;
@@ -1691,11 +1699,19 @@ var
 begin
   SetLength(Result, 0);
   Count := 0;
+  if FLastModel = nil then Exit;
+
   Item := FProject.GetFirstChild(FLastModel);
   while Item <> Nil do
   begin
     Data := FProject.GetNodeData(Item);
-    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) then
+    { A gradient added but never set up points at stack -1, and one whose
+      layer or stack has since been deleted points past the structure. Neither
+      has a layer to take C[0] from; skip it rather than index out of range -
+      the Thickness page asks for these on every redraw, not only on Calculate. }
+    if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) and
+       (Data.StackID >= 0) and (Data.StackID <= High(Structure.Stacks)) and
+       (Data.LayerID >= 0) and (Data.LayerID <= High(Structure.Stacks[Data.StackID].Layers)) then
     begin
       SetLength(Result, Count + 1);
       Result[Count].C       := Data.PolyD;
@@ -1843,10 +1859,19 @@ begin
   FProject.Selected[FLastModel] := True;
 end;
 
-procedure TfrmProjectPanel.MatchToStructure;
+procedure TfrmProjectPanel.PlotProfiles;
 begin
   FProfileMgr.Prepare(Structure, FChartPages.ThicknessChart, FChartPages.RoughnessChart, FChartPages.DensityChart);
+  { The gradients the calculation applies (TCalcOrchestrator.PrepareCalc hands
+    the same list to the model). Without them the profile pages drew every
+    period at the layer's own value, so a graded stack looked flat. }
+  FProfileMgr.Profiles := GetProfileFunctions;
   FProfileMgr.PlotProfile(IsNonPeriodicProfile, FChartPages.IsProfileActive);
+end;
+
+procedure TfrmProjectPanel.MatchToStructure;
+begin
+  PlotProfiles;
   FProject.ActiveModel.Data := Structure.ToString;
 end;
 
