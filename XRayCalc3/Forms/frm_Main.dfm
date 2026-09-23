@@ -71,18 +71,18 @@ object frmMain: TfrmMain
     Top = 0
     Width = 1982
     Height = 1091
-    Position = 275
-    Percent = 13
+    Position = 242
+    Percent = 12
     UpperLeft.Color = 15987699
     LowerRight.Color = 15987699
-    SplitterWidth = 8
+    SplitterWidth = 4
     Align = alClient
     Color = 15987699
     TabOrder = 1
     BarSize = (
-      275
+      242
       0
-      283
+      246
       1091)
     UpperLeftControls = (
       FProjectPanel)
@@ -93,8 +93,9 @@ object frmMain: TfrmMain
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 269
+      Width = 239
       Height = 1085
+      Margins.Right = 0
       Align = alClient
       Color = 15987699
       ParentColor = False
@@ -138,7 +139,7 @@ object frmMain: TfrmMain
     end
     object pnlMain: TRzPanel
       AlignWithMargins = True
-      Left = 356
+      Left = 353
       Top = 3
       Width = 1373
       Height = 1085
@@ -619,9 +620,12 @@ object frmMain: TfrmMain
           StyleElements = [seFont, seClient, seBorder]
           ExplicitTop = 668
           ExplicitWidth = 1363
+          inherited spChiScale: TRzStatusPane
+            Width = 744
+          end
           inherited btnChartScale: TRzBitBtn
-            Left = 1202
-            ExplicitLeft = 1202
+            Left = 1282
+            ExplicitLeft = 1282
           end
           inherited cbMinLimit: TRzComboBox
             Left = 1282
@@ -633,15 +637,16 @@ object frmMain: TfrmMain
     end
     inline FStructurePanel: TfrmStructurePanel
       AlignWithMargins = True
-      Left = 3
+      Left = 0
       Top = 3
       Width = 350
       Height = 1085
+      Margins.Left = 0
       Align = alLeft
       Color = 15987699
       ParentColor = False
       TabOrder = 1
-      ExplicitLeft = 3
+      ExplicitLeft = 0
       ExplicitTop = 3
       ExplicitHeight = 1085
       inherited tlbStructure: TRzToolbar

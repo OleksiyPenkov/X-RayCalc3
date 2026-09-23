@@ -100,7 +100,7 @@ object frmCalcSettings: TfrmCalcSettings
       HorizontalSpacing = 16
       ItemIndex = 0
       Items.Strings = (
-        'Irregualr'
+        'Irregular'
         'Periodic'
         'Polynomial')
       SpaceEvenly = True

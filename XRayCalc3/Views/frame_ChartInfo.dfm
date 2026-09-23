@@ -141,7 +141,7 @@
     object StatusD: TRzStatusPane
       Left = 252
       Top = 28
-      Width = 89
+      Width = 70
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
@@ -166,7 +166,7 @@
     object StatusRi: TRzStatusPane
       Left = 252
       Top = 4
-      Width = 89
+      Width = 70
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
@@ -176,7 +176,7 @@
       Caption = '0.00'
     end
     object spChiSqr: TRzStatusPane
-      Left = 392
+      Left = 373
       Top = 5
       Width = 89
       Font.Charset = DEFAULT_CHARSET
@@ -189,7 +189,7 @@
       Caption = '0.00'
     end
     object RzStatusPane7: TRzStatusPane
-      Left = 364
+      Left = 345
       Top = 5
       Width = 25
       Height = 41
@@ -203,7 +203,7 @@
       Caption = #967'2'
     end
     object spChiBest: TRzStatusPane
-      Left = 392
+      Left = 373
       Top = 27
       Width = 89
       Font.Charset = DEFAULT_CHARSET
@@ -216,8 +216,8 @@
       Caption = '0.00'
     end
     object RzStatusPane8: TRzStatusPane
-      Left = 489
-      Top = 15
+      Left = 470
+      Top = 4
       Width = 56
       Hint = 
         'Unweighted '#967'2 - the bare disagreement between data and fit, wit' +
@@ -234,8 +234,8 @@
       Caption = 'plain '#967'2'
     end
     object spChiPlain: TRzStatusPane
-      Left = 549
-      Top = 15
+      Left = 530
+      Top = 4
       Width = 89
       Hint = 
         'Unweighted '#967'2 - the bare disagreement between data and fit, wit' +
@@ -252,9 +252,9 @@
       Caption = '0.00'
     end
     object RzStatusPane9: TRzStatusPane
-      Left = 645
-      Top = 15
-      Width = 40
+      Left = 470
+      Top = 28
+      Width = 56
       Hint = 
         'The measured scale the '#967'2 is taken at. solved x r: the scale th' +
         'at minimises '#967'2, r times the anchored one, within the window (' +
@@ -272,9 +272,10 @@
       Caption = 'scale'
     end
     object spChiScale: TRzStatusPane
-      Left = 689
-      Top = 15
-      Width = 190
+      Left = 530
+      Top = 28
+      Width = 429
+      Anchors = [akLeft, akTop, akRight]
       Hint = 
         'The measured scale the '#967'2 is taken at. solved x r: the scale th' +
         'at minimises '#967'2, r times the anchored one, within the window (' +
@@ -288,13 +289,13 @@
       Font.Name = 'MS Sans Serif'
       Font.Style = [fsBold]
       ParentFont = False
-      Alignment = taCenter
       Caption = ''
     end
     object btnChartScale: TRzBitBtn
-      Left = 887
-      Top = 13
-      Height = 24
+      Left = 967
+      Top = 2
+      Width = 76
+      Height = 22
       Hint = 'Switch the reflectivity axis between logarithmic and linear'
       Anchors = [akTop, akRight]
       Caption = 'Linear'
@@ -312,7 +313,7 @@
     end
     object cbMinLimit: TRzComboBox
       Left = 967
-      Top = 13
+      Top = 25
       Width = 76
       Height = 24
       Hint = 
