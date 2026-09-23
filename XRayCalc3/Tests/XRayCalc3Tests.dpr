@@ -108,6 +108,7 @@ uses
   unit_XRCStackControl in '..\Components\unit_XRCStackControl.pas',
   unit_XRCStructure in '..\Components\unit_XRCStructure.pas',
   TestStructureWriteBack in 'TestStructureWriteBack.pas',
+  TestStructureRenumber in 'TestStructureRenumber.pas',
   frame_CalcSettings in '..\Views\frame_CalcSettings.pas' {frmCalcSettings: TFrame},
   TestCalcSettingsScale in 'TestCalcSettingsScale.pas';
 

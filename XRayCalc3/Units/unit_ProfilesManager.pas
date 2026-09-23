@@ -3,7 +3,6 @@
 interface
 
 uses
-  System.Generics.Collections,
   VCLTee.Series, unit_XRCStructure, VCLTee.Chart, unit_types, unit_ProfileCalc;
 
 type
@@ -16,29 +15,24 @@ type
 
       FDensityProfile: TLineSeries;
       FProfiles: TProfileFunctions;
-      FProfileIndex: TDictionary<Cardinal, TArray<Integer>>;
       function StructureToStacks: TStacksData;
-      procedure SetProfiles(const Value: TProfileFunctions);
+      procedure PlotPeriodProfiles(const Stacks: TStacksData; const ExpandTables: Boolean);
+      procedure PlotDensityProfile(const Stacks: TStacksData; const ExpandTables: Boolean);
     public
-      constructor Create;
-      destructor Destroy; override;
-
-      procedure PlotProfile(const PlotNP, PlotD: boolean);
-      procedure PlotProfileNP(const PlotD: boolean);
-      procedure PlotGradedProfile(const PlotNP: Boolean);
-      procedure PlotSimpleProfile;
-      procedure PlotDensityProfile;
+      { ExpandTables is TfrmProjectPanel.IsNonPeriodicProfile, the flag the
+        calculation hands TXRCStructure.Model; PlotD draws the depth profile too. }
+      procedure PlotProfile(const ExpandTables, PlotD: boolean);
       procedure ClearProfiles;
       procedure Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
 
-      property Profiles: TProfileFunctions write SetProfiles;
+      property Profiles: TProfileFunctions write FProfiles;
       property DensityProfile: TLineSeries write FDensityProfile;
     end;
 
 implementation
 
 uses
-  unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs, math_globals;
+  unit_materials, VCLTee.TeEngine, VCLTee.TeeProcs;
 
 
 procedure TProfileManager.Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);
@@ -57,7 +51,9 @@ var
   var
     i: integer;
   begin
-    Chart.SeriesList.Clear;
+    { The chart owns its series, and SeriesList.Clear only unlists them, so
+      every redraw left the previous set behind in memory. }
+    Chart.FreeAllSeries;
     SetLength(SeriesList, High(Materials) + 1);
 
     for I := 0 to High(Materials) do
@@ -78,156 +74,29 @@ begin
   CreateSeries(chDensity,   FSeriesArray[3]);
 end;
 
-procedure TProfileManager.PlotProfileNP;
-var
-  i, j,  p, n, shift: integer;
-begin
-  ClearProfiles;
-  shift := 1;
-  for i := 0 to High(FStructure.Stacks) do
-  begin
-    if FStructure.Stacks[i].N = 1 then Continue;
-    for j := 0 to High(FStructure.Stacks[i].Layers) do
-    begin
-      for p := 1 to 3 do
-      begin
-        FSeriesArray[p][j].Clear;
-        if not FStructure.Stacks[i].Layers[j].Data.P[p].Paired then
-        begin
-          for n := 0 to High(FStructure.Stacks[i].Layers[j].Data.PP[p]) do
-               FSeriesArray[p][j].AddXY(n + shift, FStructure.Stacks[i].Layers[j].Data.PP[p][n]);
-        end
-        else begin
-          for n := 0 to FStructure.Stacks[i].N - 1 do
-               FSeriesArray[p][j].AddXY(n + shift, FStructure.Stacks[i].Layers[j].Data.P[p].V);
-        end;
-      end;
-    end;
-    Inc(shift, FStructure.Stacks[i].N);
-  end;
-  if PlotD then
-      PlotDensityProfile;
-end;
-
-procedure TProfileManager.SetProfiles(const Value: TProfileFunctions);
-var
-  i, Len: Integer;
-  Key: Cardinal;
-  Indices: TArray<Integer>;
-begin
-  FProfiles := Value;
-  FProfileIndex.Clear;
-  for i := 0 to High(FProfiles) do
-  begin
-    Key := Cardinal(FProfiles[i].StackID) shl 16 or FProfiles[i].LayerID;
-    if FProfileIndex.TryGetValue(Key, Indices) then
-    begin
-      Len := Length(Indices);
-      SetLength(Indices, Len + 1);
-      Indices[Len] := i;
-      FProfileIndex[Key] := Indices;
-    end
-    else begin
-      SetLength(Indices, 1);
-      Indices[0] := i;
-      FProfileIndex.Add(Key, Indices);
-    end;
-  end;
-end;
-
-{ The per-period values the calculation uses when the model carries gradient
-  extensions. A gradient is evaluated as TLayeredModel.PrepareLayers does it:
-  Poly of the period number counted from 1 at the top of ITS OWN stack, whatever
-  the form, so the x passed in is PeriodIndex, never the chart position
-  PeriodIndex + shift. A parameter without a gradient takes the table profile
-  when one is enabled (PlotNP) and the parameter is not paired, as
-  TXRCStructure.Model(ExpandProfiles) does, and the layer's value otherwise. }
-procedure TProfileManager.PlotGradedProfile(const PlotNP: Boolean);
-var
-  StackIndex, LayerIndex, PeriodIndex, gi, shift, d, p: integer;
-  Profiled, HasProfiles: Boolean;
-  Key: Cardinal;
-  Indices: TArray<Integer>;
-  Data: TLayerData;
-  Val: Single;
-begin
-  shift := 0; d := 0;
-  for StackIndex := 0 to High(FStructure.Stacks) do
-  begin
-    if FStructure.Stacks[StackIndex].N = 1 then Continue;
-
-    for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
-    begin
-      Key := Cardinal(FStructure.Stacks[StackIndex].Layers[LayerIndex].StackID) shl 16
-           or FStructure.Stacks[StackIndex].Layers[LayerIndex].ID;
-      HasProfiles := FProfileIndex.TryGetValue(Key, Indices);
-      Data := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data;
-
-      for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
-      begin
-        for p := 1 to 3 do
-        begin
-          Profiled := False;
-          if HasProfiles then
-            for gi := 0 to High(Indices) do
-              if FProfiles[Indices[gi]].PIndex = p then
-              begin
-                FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
-                                                      Poly(PeriodIndex, FProfiles[Indices[gi]]));
-                Profiled := True;
-              end;
-          if not Profiled then
-          begin
-            if PlotNP and not Data.P[p].Paired and (PeriodIndex <= Length(Data.PP[p])) then
-              Val := Data.PP[p][PeriodIndex - 1]
-            else
-              Val := Data.P[p].V;
-            FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Val);
-          end;
-        end;
-      end;
-    end;
-    Inc(shift, FStructure.Stacks[StackIndex].N);
-    Inc(d, Length(FStructure.Stacks[StackIndex].Layers));
-  end;
-end;
-
-
-procedure TProfileManager.PlotSimpleProfile;
+{ One point per period for every layer of the periodic stacks, at the value the
+  calculation gives it (ModelValue): the table or the layer's value, replaced
+  by the last gradient aimed at it. A gradient counts periods from 1 in its own
+  stack, so it is evaluated at PeriodIndex, never at the chart position
+  PeriodIndex + shift. }
+procedure TProfileManager.PlotPeriodProfiles(const Stacks: TStacksData; const ExpandTables: Boolean);
 var
   StackIndex, LayerIndex, PeriodIndex, shift, d, p: integer;
-  Val: single;
 begin
   shift := 0; d := 0;
-  for StackIndex := 0 to High(FStructure.Stacks) do
+  for StackIndex := 0 to High(Stacks) do
   begin
-    if FStructure.Stacks[StackIndex].N = 1 then Continue;
+    if Stacks[StackIndex].N = 1 then Continue;
 
-    for LayerIndex := 0 to High(FStructure.Stacks[StackIndex].Layers) do
-    begin
-      for PeriodIndex := 1 to FStructure.Stacks[StackIndex].N do
-      begin
+    for LayerIndex := 0 to High(Stacks[StackIndex].Layers) do
+      for PeriodIndex := 1 to Stacks[StackIndex].N do
         for p := 1 to 3 do
-        begin
-          Val := FStructure.Stacks[StackIndex].Layers[LayerIndex].Data.P[p].V;
-          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift, Val);
-        end;
-      end;
-    end;
-    Inc(shift, FStructure.Stacks[StackIndex].N);
-    Inc(d, Length(FStructure.Stacks[StackIndex].Layers));
+          FSeriesArray[p][LayerIndex + d].AddXY(PeriodIndex + shift,
+            ModelValue(Stacks, FProfiles, StackIndex, LayerIndex, PeriodIndex, p, ExpandTables));
+
+    Inc(shift, Stacks[StackIndex].N);
+    Inc(d, Length(Stacks[StackIndex].Layers));
   end;
-end;
-
-constructor TProfileManager.Create;
-begin
-  FProfileIndex := TDictionary<Cardinal, TArray<Integer>>.Create;
-end;
-
-destructor TProfileManager.Destroy;
-begin
-  FProfileIndex.Free;
-  inherited;
 end;
 
 function TProfileManager.StructureToStacks: TStacksData;
@@ -242,15 +111,13 @@ begin
   end;
 end;
 
-procedure TProfileManager.PlotDensityProfile;
+procedure TProfileManager.PlotDensityProfile(const Stacks: TStacksData; const ExpandTables: Boolean);
 var
-  Stacks: TStacksData;
   Layers: TArray<TPLayer>;
   Points: TArray<TDensityPoint>;
   i: Integer;
 begin
-  Stacks := StructureToStacks;
-  Layers := BuildLayers(Stacks, FProfiles);
+  Layers := BuildLayers(Stacks, ExpandTables, FProfiles);
   Points := CalcDensityProfile(Layers);
   for i := 0 to High(Points) do
     FDensityProfile.AddXY(Points[i].Depth, Points[i].Value);
@@ -267,22 +134,15 @@ begin
   FDensityProfile.Clear;
 end;
 
-//      if IsProfileEnbled and (FittingMode <> fmPeriodic) then
-
-procedure TProfileManager.PlotProfile(const PlotNP, PlotD: boolean);
+procedure TProfileManager.PlotProfile(const ExpandTables, PlotD: boolean);
+var
+  Stacks: TStacksData;
 begin
   ClearProfiles;
-
-  if Length(FProfiles) > 0 then
-    PlotGradedProfile(PlotNP)
-  else
-      if PlotNP then
-         PlotProfileNP(false)
-      else
-        PlotSimpleProfile;
-
+  Stacks := StructureToStacks;
+  PlotPeriodProfiles(Stacks, ExpandTables);
   if PlotD then
-      PlotDensityProfile;
+    PlotDensityProfile(Stacks, ExpandTables);
 end;
 
 end.

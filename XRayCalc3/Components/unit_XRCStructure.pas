@@ -20,6 +20,18 @@ type
 
   TStacks = array of TXRCStack;
 
+  TLayerPos = record
+    StackID, LayerID: Integer;
+  end;
+
+  { Where the layers went in an insert, delete or move: Map[OldStack][OldLayer]
+    is the layer's new (stack, layer), or (-1, -1) once it has been deleted.
+    Anything that addresses a layer by its indices - a gradient extension -
+    follows it through this map instead of landing on whichever layer takes
+    its old place. }
+  TLayerMap = TArray<TArray<TLayerPos>>;
+  TLayersRenumberedEvent = procedure(Sender: TObject; const Map: TLayerMap) of object;
+
   TXRCStructure = class (TXRCPanel)
     private
       Header: TRzPanel;
@@ -45,7 +57,10 @@ type
       JLayer, JStack, JSub: TJSONValue;
       FPeriodicMode: boolean;
       FRealHeight: Integer;
+      FOnLayersRenumbered: TLayersRenumberedEvent;
 
+      function LayerControls: TArray<TLayers>;
+      procedure NotifyRenumbered(const Before: TArray<TLayers>);
       procedure RealignStacks;
       procedure SetIncrement(const Value: single);
       function GetSelectedStack: Integer;
@@ -121,6 +136,11 @@ type
       property RealHeight: Integer read FRealHeight;
       property LayerData: TLayerData write SetCurrentLayerData;
       property SubstrateData: TLayerData read GetSubstrateData write SetSubstrateData;
+      { Fired after InsertLayer, InsertStack, DeleteLayer, DeleteStack and
+        MoveLayer. Appending (AddLayer, AddStack, PasteLayer) moves no layer;
+        FromString and Clear replace the structure as a whole, so their layers
+        have no predecessors to map. }
+      property OnLayersRenumbered: TLayersRenumberedEvent read FOnLayersRenumbered write FOnLayersRenumbered;
     published
       property Increment: single read FIncrement write SetIncrement;
   end;
@@ -332,26 +352,31 @@ end;
 procedure TXRCStructure.DeleteLayer;
 begin
   if IfValidLayerSelected then
-  begin
-    FStacks[FSelectedLayerParent].DeleteLayer(FSelectedLayer);
-    FSelectedLayerParent := -1;
-    FSelectedLayer := -1;
-  end;
+    DeleteLayer(FSelectedLayerParent, FSelectedLayer);
 end;
 
 procedure TXRCStructure.DeleteLayer(const StackID, LayerID: Integer);
+var
+  Before: TArray<TLayers>;
 begin
-    FStacks[StackID].DeleteLayer(LayerID);
-    FSelectedLayerParent := -1;
-    FSelectedLayer := -1;
+  // The indices may come from a posted message and be stale by now.
+  if not HasLayer(StackID, LayerID) then Exit;
+
+  Before := LayerControls;
+  FStacks[StackID].DeleteLayer(LayerID);
+  FSelectedLayerParent := -1;
+  FSelectedLayer := -1;
+  NotifyRenumbered(Before);
 end;
 
 procedure TXRCStructure.DeleteStack;
 var
   i: integer;
+  Before: TArray<TLayers>;
 begin
   if FSelectedStack > -1 then
   begin
+    Before := LayerControls;
     FStacks[FSelectedStack].Free;
     Delete(FStacks, FSelectedStack, 1);
     FSelectedStack := -1;
@@ -361,7 +386,48 @@ begin
       FStacks[i].ID := i;
       FStacks[i].UpdateLayersID;
     end;
+    NotifyRenumbered(Before);
   end;
+end;
+
+function TXRCStructure.LayerControls: TArray<TLayers>;
+var
+  i: Integer;
+begin
+  SetLength(Result, Length(FStacks));
+  for i := 0 to High(FStacks) do
+    Result[i] := Copy(FStacks[i].Layers);
+end;
+
+{ Layer controls keep their identity through every insert, delete and move -
+  only their place in the arrays changes - so a layer is found again by its
+  control. A deleted control is only compared, never dereferenced, and nothing
+  is created between the snapshot and here that could take its address. }
+procedure TXRCStructure.NotifyRenumbered(const Before: TArray<TLayers>);
+var
+  Map: TLayerMap;
+  s, l, ns, nl: Integer;
+begin
+  if not Assigned(FOnLayersRenumbered) then Exit;
+
+  SetLength(Map, Length(Before));
+  for s := 0 to High(Before) do
+  begin
+    SetLength(Map[s], Length(Before[s]));
+    for l := 0 to High(Before[s]) do
+    begin
+      Map[s][l].StackID := -1;
+      Map[s][l].LayerID := -1;
+      for ns := 0 to High(FStacks) do
+        for nl := 0 to High(FStacks[ns].Layers) do
+          if FStacks[ns].Layers[nl] = Before[s][l] then
+          begin
+            Map[s][l].StackID := ns;
+            Map[s][l].LayerID := nl;
+          end;
+    end;
+  end;
+  FOnLayersRenumbered(Self, Map);
 end;
 
 destructor TXRCStructure.Destroy;
@@ -410,15 +476,20 @@ end;
 procedure TXRCStructure.InsertLayer(const Data: TLayerData);
 var
   StackID: Integer;
+  Before: TArray<TLayers>;
 begin
+  Before := LayerControls;
   StackID := FSelectedLayerParent;
   FStacks[StackID].AddLayer(Data, FSelectedLayer);
+  NotifyRenumbered(Before);
 end;
 
 procedure TXRCStructure.InsertStack(const N: Integer; const Title: string);
 var
   Count, pos, i: Integer;
+  Before: TArray<TLayers>;
 begin
+  Before := LayerControls;
   FVisibility := Visible;
   Visible := False;
 
@@ -441,6 +512,7 @@ begin
   end;
 
   RealignStacks;
+  NotifyRenumbered(Before);
 end;
 
 function TXRCStructure.IsPeriodic: boolean;
@@ -483,8 +555,8 @@ end;
 
 function TXRCStructure.Model(const ExpandProfiles: Boolean): TLayeredModel;
 var
-  i, j, k, p, slN: Integer;
-  StackLayers: TLayersData;
+  i, j, k, p: Integer;
+  Source, StackLayers: TLayersData;
 begin
   FPeriod := 0;
   Result := TLayeredModel.Create;
@@ -492,16 +564,15 @@ begin
 
   for I := 0 to High(FStacks) do
   begin
-    StackLayers := FStacks[i].LayerData;
+    Source := FStacks[i].LayerData;
+    StackLayers := Copy(Source);
     for j := 1  to FStacks[i].N do
     begin
       if ExpandProfiles and (FStacks[i].N > 1) then
       begin
-        slN := High(StackLayers);
-        for k := 0 to slN do
+        for k := 0 to High(StackLayers) do
           for p := 1 to 3 do
-            if not StackLayers[k].P[p].Paired then
-               StackLayers[k].P[p].V := StackLayers[k].PP[p][j - 1];
+            StackLayers[k].P[p].V := Source[k].PeriodValue(p, j, FStacks[i].N, True);
       end;
       Result.AddLayers(i, StackLayers);
     end;
@@ -517,8 +588,15 @@ begin
 end;
 
 procedure TXRCStructure.MoveLayer(const StackID, LayerID, Direction: Integer);
+var
+  Before: TArray<TLayers>;
 begin
+  // The indices come from a posted message and may be stale by now.
+  if not HasLayer(StackID, LayerID) then Exit;
+
+  Before := LayerControls;
   FStacks[StackID].MoveLayer(LayerID, Direction);
+  NotifyRenumbered(Before);
 end;
 
 procedure TXRCStructure.PasteLayer;
@@ -909,12 +987,12 @@ begin
           Data.P[p].min := FindValue(UpperCase(PAlias[p]) + 'min', Data.P[p].V);
           Data.P[p].max := FindValue(UpperCase(PAlias[p]) + 'max', Data.P[p].V);
 
+          { Data is reused for every layer, so a layer saved without a table
+            must not keep the one read for the layer before it. }
+          Data.ClearProfiles(p);
           PS := FindStrValue('Profile' + UpperCase(PAlias[p]));
           if PS <> '' then
-          begin
-            Data.ClearProfiles(p);
             Data.ProfileFromString(p, PS);
-          end;
 
         end;
         FStacks[i].AddLayer(Data);

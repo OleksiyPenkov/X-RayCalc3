@@ -166,6 +166,7 @@
         <DCCReference Include="..\Components\unit_XRCStackControl.pas"/>
         <DCCReference Include="..\Components\unit_XRCStructure.pas"/>
         <DCCReference Include="TestStructureWriteBack.pas"/>
+        <DCCReference Include="TestStructureRenumber.pas"/>
         <DCCReference Include="..\Views\frame_CalcSettings.pas">
             <Form>frmCalcSettings</Form>
             <FormType>dfm</FormType>

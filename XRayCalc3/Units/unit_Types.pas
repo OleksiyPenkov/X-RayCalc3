@@ -200,6 +200,14 @@ type
     procedure AddProfilePoint(const Val: Single; Index: Word);
     function ProfileFromString(const p: Word; Profile: string): string;
     function ProfileToString(const Subj: TParameterType): string;
+    { The value parameter Param (1 = H, 2 = sigma, 3 = rho) takes in period Period
+      (from 1) of a stack repeated N times, before any gradient: the table
+      value when tables are expanded (a non-periodic profile is enabled), the
+      stack is periodic, Param is not paired and the table covers all N periods;
+      the layer's own value otherwise. A table shorter than N - left over
+      after N was raised - is ignored as a whole rather than read past its end.
+      TXRCStructure.Model and every profile plot go through here. }
+    function PeriodValue(const Param, Period, N: Integer; const ExpandTables: Boolean): Single;
   end;
 
   TLayersData = array of TLayerData;
@@ -491,6 +499,14 @@ begin
     Val := PP[p][i];
     Result := Format('%s%*.*f;',[Result, 5, 4, Val])
   end;
+end;
+
+function TLayerData.PeriodValue(const Param, Period, N: Integer; const ExpandTables: Boolean): Single;
+begin
+  if ExpandTables and (N > 1) and not P[Param].Paired and (Length(PP[Param]) >= N) then
+    Result := PP[Param][Period - 1]
+  else
+    Result := P[Param].V;
 end;
 
 { TFuncProfileRec }

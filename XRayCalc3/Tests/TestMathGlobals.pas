@@ -30,10 +30,6 @@ type
     [Test] procedure Test_CopyData_Empty;
     [Test] procedure Test_CopyData_Values;
 
-    { FuncProfile }
-    [Test] procedure Test_FuncProfile_Poly;
-    [Test] procedure Test_FuncProfile_None;
-
     { Poly with TFuncProfileRec overload }
     [Test] procedure Test_Poly_FuncProfileRec;
   end;
@@ -185,32 +181,6 @@ begin
   Assert.AreEqual(Single(2.5), Dst[0].r, 1E-5);
   Assert.AreEqual(Single(3.0), Dst[1].t, 1E-5);
   Assert.AreEqual(Single(4.0), Dst[1].r, 1E-5);
-end;
-
-{ --- FuncProfile --- }
-
-procedure TTestMathGlobals.Test_FuncProfile_Poly;
-var
-  FP: TFuncProfileRec;
-begin
-  // FuncProfile with ffPoly dispatches to Poly(x, FP)
-  // P(x) = 5 + 2*(x-1) -> P(3) = 5 + 2*2 = 9
-  FP.Func := ffPoly;
-  SetLength(FP.C, 2);
-  FP.C[0] := 5;
-  FP.C[1] := 2;
-  Assert.AreEqual(Single(9), FuncProfile(3, FP), 1E-5);
-end;
-
-procedure TTestMathGlobals.Test_FuncProfile_None;
-var
-  FP: TFuncProfileRec;
-begin
-  // Non-poly function forms return 0
-  FP.Func := ffNone;
-  SetLength(FP.C, 1);
-  FP.C[0] := 99;
-  Assert.AreEqual(Single(0), FuncProfile(1, FP), 1E-5);
 end;
 
 { --- Poly(x, FuncProfileRec) overload --- }

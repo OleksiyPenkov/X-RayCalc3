@@ -22,15 +22,21 @@ type
 
 function Erf(const sigma, xmax: Single): Single;
 
-function GetLayerVal(const Stacks: TStacksData;
-  StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer): Single;
+/// The value parameter ValIdx (1 = H, 2 = sigma, 3 = rho) of layer LayerIdx
+/// takes in period PeriodIdx (from 1) of stack StackIdx in the calculated model.
+/// TXRCStructure.Model(ExpandTables) sets it from the table or the layer's value
+/// (TLayerData.PeriodValue), then TLayeredModel.PrepareLayers replaces it with
+/// every gradient in Profiles aimed at (StackIdx, LayerIdx, ValIdx) in turn -
+/// Poly of the period number counted in its own stack - so the last one wins.
+/// Every profile plot reads its values here.
+function ModelValue(const Stacks: TStacksData; const Profiles: TProfileFunctions;
+  StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer; ExpandTables: Boolean): Single;
 
-/// The layers of the depth profile, surface first. Profiles are the model's
-/// gradient extensions (TfrmProjectPanel.GetProfileFunctions); each replaces its
-/// parameter as TLayeredModel.PrepareLayers does - Poly of the period number
-/// counted from 1 in its own stack - so the plot shows the structure that is
-/// calculated. Without them every period takes the layer's value or its table.
-function BuildLayers(const Stacks: TStacksData;
+/// The layers of the depth profile, surface first, with the values of
+/// ModelValue, so the plot shows the structure that is calculated. ExpandTables
+/// is TfrmProjectPanel.IsNonPeriodicProfile; Profiles the model's gradient
+/// extensions (TfrmProjectPanel.GetProfileFunctions).
+function BuildLayers(const Stacks: TStacksData; ExpandTables: Boolean;
   const Profiles: TProfileFunctions = nil): TArray<TPLayer>;
 
 function CalcDensityProfile(const Layers: TArray<TPLayer>): TArray<TDensityPoint>;
@@ -57,42 +63,33 @@ begin
   Result := 1 / Sqrt(Pi) * i;
 end;
 
-function GetLayerVal(const Stacks: TStacksData;
-  StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer): Single;
+function ModelValue(const Stacks: TStacksData; const Profiles: TProfileFunctions;
+  StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer; ExpandTables: Boolean): Single;
+var
+  g: Integer;
 begin
-  if Length(Stacks[StackIdx].Layers[LayerIdx].PP[ValIdx]) > 1 then
-    Result := Stacks[StackIdx].Layers[LayerIdx].PP[ValIdx][PeriodIdx - 1]
-  else
-    Result := Stacks[StackIdx].Layers[LayerIdx].P[ValIdx].V;
+  Result := Stacks[StackIdx].Layers[LayerIdx].PeriodValue(ValIdx, PeriodIdx,
+              Stacks[StackIdx].N, ExpandTables);
+  for g := 0 to High(Profiles) do
+    if (Integer(Profiles[g].StackID) = StackIdx) and (Integer(Profiles[g].LayerID) = LayerIdx) and
+       (Integer(Profiles[g].PIndex) = ValIdx) and (Length(Profiles[g].C) > 0) then
+      Result := Poly(PeriodIdx, Profiles[g]);
 end;
 
-function BuildLayers(const Stacks: TStacksData;
+function BuildLayers(const Stacks: TStacksData; ExpandTables: Boolean;
   const Profiles: TProfileFunctions): TArray<TPLayer>;
 var
   StackIdx, LayerIdx, PeriodIdx: Integer;
   Layer: TPLayer;
-
-  // The last matching gradient wins, as it does in PrepareLayers.
-  function Value(ValIdx: Integer): Single;
-  var
-    g: Integer;
-  begin
-    Result := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, ValIdx);
-    for g := 0 to High(Profiles) do
-      if (Integer(Profiles[g].StackID) = StackIdx) and (Integer(Profiles[g].LayerID) = LayerIdx) and
-         (Integer(Profiles[g].PIndex) = ValIdx) and (Length(Profiles[g].C) > 0) then
-        Result := Poly(PeriodIdx, Profiles[g]);
-  end;
-
 begin
   Result := nil;
   for StackIdx := 0 to High(Stacks) do
     for PeriodIdx := 1 to Stacks[StackIdx].N do
       for LayerIdx := 0 to High(Stacks[StackIdx].Layers) do
       begin
-        Layer.h := Value(1);
-        Layer.s := Value(2);
-        Layer.r := Value(3);
+        Layer.h := ModelValue(Stacks, Profiles, StackIdx, LayerIdx, PeriodIdx, 1, ExpandTables);
+        Layer.s := ModelValue(Stacks, Profiles, StackIdx, LayerIdx, PeriodIdx, 2, ExpandTables);
+        Layer.r := ModelValue(Stacks, Profiles, StackIdx, LayerIdx, PeriodIdx, 3, ExpandTables);
         Result := Result + [Layer];
       end;
 end;

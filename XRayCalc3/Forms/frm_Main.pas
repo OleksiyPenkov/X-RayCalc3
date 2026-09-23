@@ -819,8 +819,7 @@ end;
 
 procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
 begin
-  if FProjectPanel.OperationsStack.Count > 0 then
-    Structure.FromString(FProjectPanel.OperationsStack.Extract);
+  FProjectPanel.Undo;
 end;
 
 procedure TfrmMain.actAutoFittingExecute(Sender: TObject);

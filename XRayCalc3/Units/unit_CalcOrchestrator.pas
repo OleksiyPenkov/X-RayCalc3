@@ -494,9 +494,7 @@ end;
 
 procedure TCalcOrchestrator.RecalcFromStructure;
 begin
-  FProfileMgr.Profiles := FProjectPanel.GetProfileFunctions;
-  FProfileMgr.PlotProfile(FProjectPanel.IsNonPeriodicProfile, FChartPages.IsProfileActive);
-  RunCalc(False);
+  RunCalc(False);   // redraws the profile pages too
 end;
 
 procedure TCalcOrchestrator.HandleFitUpdate(var Msg: TMessage);

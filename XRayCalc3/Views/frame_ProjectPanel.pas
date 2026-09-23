@@ -22,6 +22,20 @@ uses
 type
   TStringProc = procedure(const S: string) of object;
 
+  { A gradient extension's target at the time an undo point was taken. }
+  TGradientTarget = record
+    Ext: PProjectData;
+    StackID, LayerID: Integer;
+  end;
+
+  { An undo point: the structure, and where its gradients pointed - a delete,
+    insert or move renumbers them (RemapGradients), so undoing the structure
+    alone would leave them on the wrong layer. }
+  THistoryEntry = record
+    Structure: string;
+    Targets: TArray<TGradientTarget>;
+  end;
+
   TfrmProjectPanel = class(TFrame)
     tlbrFile: TRzToolbar;
     BtnNew: TRzToolButton;
@@ -85,7 +99,7 @@ type
     FFitParams: TFitParams;
     FAutoSaveFileName: string;
 
-    FOperationsStack: TStack<String>;
+    FOperationsStack: TStack<THistoryEntry>;
     FRecentProjects: TRecentProjectsManager;
 
     FChartMgr: TChartManager;
@@ -123,6 +137,9 @@ type
     procedure OnRecentProjectClick(Sender: TObject; const FileName: string);
     function  GetLastData: PProjectData;
     function  CreateDataNode(ParentNode: PVirtualNode; const Title: string): PProjectData;
+    function  HistoryEntry(const AStructure: string): THistoryEntry;
+    procedure RemapGradients(Sender: TObject; const Map: TLayerMap);
+    procedure ExtensionChanged;
   public
     destructor Destroy; override;
 
@@ -204,6 +221,9 @@ type
     procedure RefreshChartLegend;
     procedure SyncSeriesVisibility(Series: TChartSeries);
     procedure SaveHistory;
+    { Restores the structure and the gradients' targets saved by the last
+      SaveHistory. False when there is nothing to undo. }
+    function  Undo: Boolean;
     procedure AutoSave;
     procedure LoadAutoSave;
     procedure GenerateAutosaveName;
@@ -223,7 +243,6 @@ type
     property DataRoot: PVirtualNode read FDataRoot;
     property LastModel: PVirtualNode read FLastModel write FLastModel;
     property LastData: PProjectData read GetLastData;
-    property OperationsStack: TStack<String> read FOperationsStack;
     property AutoSaveFileName: string read FAutoSaveFileName;
     property RecentProjects: TRecentProjectsManager read FRecentProjects;
     property Structure: TXRCStructure read FStructure;
@@ -509,7 +528,7 @@ begin
   FChartPages := AChartPages;
   FProfileMgr := AProfileMgr;
 
-  FOperationsStack := TStack<String>.Create;
+  FOperationsStack := TStack<THistoryEntry>.Create;
   FOperationsStack.Capacity := 10;
 
   LoadRecentProjectsList(ARecentMenu, ARecentPopup);
@@ -518,6 +537,7 @@ end;
 procedure TfrmProjectPanel.SetStructure(AStructure: TXRCStructure);
 begin
   FStructure := AStructure;
+  FStructure.OnLayersRenumbered := RemapGradients;
 end;
 
 procedure TfrmProjectPanel.ConnectFileActions(
@@ -606,7 +626,7 @@ begin
   FLastData.Enabled := not FLastData.Enabled;
   FProject.Repaint;
   if FLastData.RowType = prExtension then
-    PlotProfiles;
+    ExtensionChanged;
 end;
 
 procedure TfrmProjectPanel.pmiLinkedClick(Sender: TObject);
@@ -1048,7 +1068,7 @@ begin
   if edtrProfileFunction.ShowModal = mrOk then
   begin
     SetDescription(Data.Description);
-    PlotProfiles;
+    ExtensionChanged;
   end;
 end;
 
@@ -1057,7 +1077,21 @@ begin
   edtrProfileTable.Data := Data;
   edtrProfileTable.Structure := Structure;
   if edtrProfileTable.ShowModal = mrOk then
+  begin
     SetDescription(Data.Description);
+    ExtensionChanged;
+  end;
+end;
+
+{ An extension switched on or off or edited changes the model the curve is
+  calculated from, so the curve, chi-squared and the profile pages are redone
+  together (RunCalc redraws the pages) rather than the pages alone. }
+procedure TfrmProjectPanel.ExtensionChanged;
+begin
+  if Assigned(FOnCalcRun) then
+    FOnCalcRun(Self)
+  else
+    PlotProfiles;
 end;
 
 procedure TfrmProjectPanel.SyncSeriesVisibility(Series: TChartSeries);
@@ -1657,7 +1691,7 @@ begin
     begin
       Structure.FromString(FLastData.Data);
       FOperationsStack.Clear;
-      FOperationsStack.Push(FLastData.Data);
+      FOperationsStack.Push(HistoryEntry(FLastData.Data));
       PlotProfiles;
       if Assigned(FOnModelChanged) then
         FOnModelChanged(Self);
@@ -1705,13 +1739,12 @@ begin
   while Item <> Nil do
   begin
     Data := FProject.GetNodeData(Item);
-    { A gradient added but never set up points at stack -1, and one whose
-      layer or stack has since been deleted points past the structure. Neither
-      has a layer to take C[0] from; skip it rather than index out of range -
-      the Thickness page asks for these on every redraw, not only on Calculate. }
+    { A gradient added but never set up points at stack -1, and so does one
+      whose layer has been deleted (RemapGradients). Neither has a layer to
+      take C[0] from; skip it rather than index out of range - the Thickness
+      page asks for these on every redraw, not only on Calculate. }
     if (Data.RowType = prExtension) and (Data.Enabled) and (Data.ExtType = etFunction) and
-       (Data.StackID >= 0) and (Data.StackID <= High(Structure.Stacks)) and
-       (Data.LayerID >= 0) and (Data.LayerID <= High(Structure.Stacks[Data.StackID].Layers)) then
+       Structure.HasLayer(Data.StackID, Data.LayerID) then
     begin
       SetLength(Result, Count + 1);
       Result[Count].C       := Data.PolyD;
@@ -1879,7 +1912,94 @@ end;
 
 procedure TfrmProjectPanel.SaveHistory;
 begin
-  FOperationsStack.Push(Structure.ToString);
+  FOperationsStack.Push(HistoryEntry(Structure.ToString));
+end;
+
+function TfrmProjectPanel.HistoryEntry(const AStructure: string): THistoryEntry;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  Count: Integer;
+begin
+  Result.Structure := AStructure;
+  SetLength(Result.Targets, 0);
+  if FLastModel = nil then Exit;
+
+  Count := 0;
+  Node := FProject.GetFirstChild(FLastModel);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.RowType = prExtension) and (Data.ExtType = etFunction) then
+    begin
+      SetLength(Result.Targets, Count + 1);
+      Result.Targets[Count].Ext := Data;
+      Result.Targets[Count].StackID := Data.StackID;
+      Result.Targets[Count].LayerID := Data.LayerID;
+      Inc(Count);
+    end;
+    Node := FProject.GetNextSibling(Node);
+  end;
+end;
+
+function TfrmProjectPanel.Undo: Boolean;
+var
+  Entry: THistoryEntry;
+  Node: PVirtualNode;
+  Data: PProjectData;
+  i: Integer;
+begin
+  Result := FOperationsStack.Count > 0;
+  if not Result then Exit;
+
+  Entry := FOperationsStack.Pop;
+  Structure.FromString(Entry.Structure);
+
+  { Only extensions still under the model are restored: one deleted since
+    the undo point is gone, and the history is cleared when another model is
+    selected. }
+  if FLastModel = nil then Exit;
+  Node := FProject.GetFirstChild(FLastModel);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    for i := 0 to High(Entry.Targets) do
+      if Entry.Targets[i].Ext = Data then
+      begin
+        Data.StackID := Entry.Targets[i].StackID;
+        Data.LayerID := Entry.Targets[i].LayerID;
+      end;
+    Node := FProject.GetNextSibling(Node);
+  end;
+end;
+
+{ Structure fires this after a layer or stack was inserted, deleted or moved.
+  A gradient names its layer by (stack, layer) index, so without it the
+  gradient stays on the index and lands on whichever layer now sits there. It
+  follows its layer instead; one whose layer was deleted points at (-1, -1)
+  and is skipped (GetProfileFunctions) until it is set up again. }
+procedure TfrmProjectPanel.RemapGradients(Sender: TObject; const Map: TLayerMap);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  NewPos: TLayerPos;
+begin
+  if FLastModel = nil then Exit;
+
+  Node := FProject.GetFirstChild(FLastModel);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.RowType = prExtension) and (Data.ExtType = etFunction) and
+       (Data.StackID >= 0) and (Data.StackID <= High(Map)) and
+       (Data.LayerID >= 0) and (Data.LayerID <= High(Map[Data.StackID])) then
+    begin
+      NewPos := Map[Data.StackID][Data.LayerID];
+      Data.StackID := NewPos.StackID;
+      Data.LayerID := NewPos.LayerID;
+    end;
+    Node := FProject.GetNextSibling(Node);
+  end;
 end;
 
 procedure TfrmProjectPanel.AutoSave;

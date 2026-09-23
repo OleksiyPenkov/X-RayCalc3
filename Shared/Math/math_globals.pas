@@ -39,8 +39,10 @@ type
   procedure WriteHenkeTable(const N: string; Na, Nro: single; Table: THenkeTable);
   function Poly(const x: Integer; const C: TPolyArray): Single; overload;
   function Poly(const x: Integer; Min, Max: single; const C: TPolyArray): Single; overload;
+  { A gradient's value in period x. TFuncProfileRec.Func is not consulted:
+    the calculation (TLayeredModel.PrepareLayers) and the profile plots take
+    every gradient as this polynomial, whatever form it names. }
   function Poly(const x: Integer; Polynome: TFuncProfileRec): Single; overload;
-  function FuncProfile(const x: integer; FuncProfile: TFuncProfileRec): single;
 
 implementation
 
@@ -87,14 +89,6 @@ begin
   begin
     Last := Last * (x - 1);
     Result := Result + Polynome.C[i] * Last
-  end;
-end;
-
-function FuncProfile(const x: integer; FuncProfile: TFuncProfileRec): single;
-begin
-  case FuncProfile.Func of
-    ffPoly : Result := Poly(x, FuncProfile);
-    else Result := 0;
   end;
 end;
 
