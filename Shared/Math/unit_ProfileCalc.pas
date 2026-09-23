@@ -25,14 +25,20 @@ function Erf(const sigma, xmax: Single): Single;
 function GetLayerVal(const Stacks: TStacksData;
   StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer): Single;
 
-function BuildLayers(const Stacks: TStacksData): TArray<TPLayer>;
+/// The layers of the depth profile, surface first. Profiles are the model's
+/// gradient extensions (TfrmProjectPanel.GetProfileFunctions); each replaces its
+/// parameter as TLayeredModel.PrepareLayers does - Poly of the period number
+/// counted from 1 in its own stack - so the plot shows the structure that is
+/// calculated. Without them every period takes the layer's value or its table.
+function BuildLayers(const Stacks: TStacksData;
+  const Profiles: TProfileFunctions = nil): TArray<TPLayer>;
 
 function CalcDensityProfile(const Layers: TArray<TPLayer>): TArray<TDensityPoint>;
 
 implementation
 
 uses
-  System.Math;
+  System.Math, math_globals;
 
 function Erf(const sigma, xmax: Single): Single;
 const
@@ -60,19 +66,33 @@ begin
     Result := Stacks[StackIdx].Layers[LayerIdx].P[ValIdx].V;
 end;
 
-function BuildLayers(const Stacks: TStacksData): TArray<TPLayer>;
+function BuildLayers(const Stacks: TStacksData;
+  const Profiles: TProfileFunctions): TArray<TPLayer>;
 var
   StackIdx, LayerIdx, PeriodIdx: Integer;
   Layer: TPLayer;
+
+  // The last matching gradient wins, as it does in PrepareLayers.
+  function Value(ValIdx: Integer): Single;
+  var
+    g: Integer;
+  begin
+    Result := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, ValIdx);
+    for g := 0 to High(Profiles) do
+      if (Integer(Profiles[g].StackID) = StackIdx) and (Integer(Profiles[g].LayerID) = LayerIdx) and
+         (Integer(Profiles[g].PIndex) = ValIdx) and (Length(Profiles[g].C) > 0) then
+        Result := Poly(PeriodIdx, Profiles[g]);
+  end;
+
 begin
   Result := nil;
   for StackIdx := 0 to High(Stacks) do
     for PeriodIdx := 1 to Stacks[StackIdx].N do
       for LayerIdx := 0 to High(Stacks[StackIdx].Layers) do
       begin
-        Layer.h := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, 1);
-        Layer.s := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, 2);
-        Layer.r := GetLayerVal(Stacks, StackIdx, LayerIdx, PeriodIdx, 3);
+        Layer.h := Value(1);
+        Layer.s := Value(2);
+        Layer.r := Value(3);
         Result := Result + [Layer];
       end;
 end;

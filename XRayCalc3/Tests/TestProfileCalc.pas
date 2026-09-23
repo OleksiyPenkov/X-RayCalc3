@@ -3,13 +3,15 @@ unit TestProfileCalc;
 interface
 
 uses
-  DUnitX.TestFramework, unit_ProfileCalc;
+  DUnitX.TestFramework, unit_Types, unit_ProfileCalc;
 
 type
   [TestFixture]
   TTestProfileCalc = class
   private
     function MakeStacks(N: Integer; LayerH, LayerS, LayerR: Single): TStacksData;
+    function MakeProfile(StackID, LayerID: Word; Subj: TParameterType;
+      const C: array of Single): TFuncProfileRec;
   public
     [Test] procedure Test_Erf_ZeroSigma_ReturnsZero;
     [Test] procedure Test_Erf_Midpoint_ReturnsHalf;
@@ -23,6 +25,9 @@ type
     [Test] procedure Test_BuildLayers_MultiPeriod;
     [Test] procedure Test_BuildLayers_MultiStack;
     [Test] procedure Test_BuildLayers_PPValues;
+    [Test] procedure Test_BuildLayers_Gradient_ThicknessPerPeriod;
+    [Test] procedure Test_BuildLayers_Gradient_CountsPeriodsInItsOwnStack;
+    [Test] procedure Test_BuildLayers_Gradient_OverridesTable;
     [Test] procedure Test_CalcDensity_EmptyInput;
     [Test] procedure Test_CalcDensity_SingleLayer_MonotonicDepth;
     [Test] procedure Test_CalcDensity_ZeroRoughness_StepFunction;
@@ -34,7 +39,7 @@ type
 implementation
 
 uses
-  unit_Types, System.Math;
+  System.Math;
 
 procedure TTestProfileCalc.Test_Erf_ZeroSigma_ReturnsZero;
 begin
@@ -160,6 +165,79 @@ begin
   Assert.AreEqual(Single(11.0), L[0].h, 'Period 1 from PP');
   Assert.AreEqual(Single(12.0), L[1].h, 'Period 2 from PP');
   Assert.AreEqual(Single(2.0),  L[0].s, 'S from P (no PP)');
+end;
+
+function TTestProfileCalc.MakeProfile(StackID, LayerID: Word;
+  Subj: TParameterType; const C: array of Single): TFuncProfileRec;
+var
+  i: Integer;
+begin
+  Result.Func := ffPoly;
+  Result.Subj := Subj;
+  Result.StackID := StackID;
+  Result.LayerID := LayerID;
+  SetLength(Result.C, Length(C));
+  for i := 0 to High(C) do
+    Result.C[i] := C[i];
+end;
+
+// The demo ML(30x2)P3 "Target": Si thickness graded through 30 periods. The
+// depth profile must carry the per-period values the calculation uses.
+procedure TTestProfileCalc.Test_BuildLayers_Gradient_ThicknessPerPeriod;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  S := MakeStacks(30, 25.0, 3.0, 2.33);
+  L := BuildLayers(S, [MakeProfile(0, 0, ptH, [25.0, 0.14, 0.012, -0.0005])]);
+  Assert.AreEqual(30, Length(L));
+  Assert.AreEqual(Single(25.0), L[0].h, 1E-4, 'period 1 is C0');
+  Assert.AreEqual(Single(28.601), L[21].h, 1E-3, 'period 22');
+  Assert.AreEqual(Single(26.9575), L[29].h, 1E-3, 'period 30');
+  Assert.AreEqual(Single(3.0), L[29].s, 'sigma has no gradient');
+  Assert.AreEqual(Single(2.33), L[29].r, 'density has no gradient');
+end;
+
+// PrepareLayers counts a gradient's periods from 1 in the stack it belongs to,
+// and applies it only to its own (stack, layer, parameter).
+procedure TTestProfileCalc.Test_BuildLayers_Gradient_CountsPeriodsInItsOwnStack;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  SetLength(S, 2);
+  S[0].N := 2;
+  SetLength(S[0].Layers, 1);
+  S[0].Layers[0].P[1].V := 10; S[0].Layers[0].P[2].V := 1; S[0].Layers[0].P[3].V := 3;
+  S[1].N := 3;
+  SetLength(S[1].Layers, 2);
+  S[1].Layers[0].P[1].V := 25; S[1].Layers[0].P[2].V := 3; S[1].Layers[0].P[3].V := 2.33;
+  S[1].Layers[1].P[1].V := 15; S[1].Layers[1].P[2].V := 3; S[1].Layers[1].P[3].V := 10;
+
+  L := BuildLayers(S, [MakeProfile(1, 1, ptRho, [10.0, 0.5])]);
+
+  Assert.AreEqual(8, Length(L));
+  Assert.AreEqual(Single(3.0),  L[0].r, 'stack 0 untouched');
+  Assert.AreEqual(Single(3.0),  L[1].r, 'stack 0 untouched');
+  Assert.AreEqual(Single(2.33), L[2].r, 'Si untouched');
+  Assert.AreEqual(Single(10.0), L[3].r, 1E-5, 'Mo period 1');
+  Assert.AreEqual(Single(10.5), L[5].r, 1E-5, 'Mo period 2');
+  Assert.AreEqual(Single(11.0), L[7].r, 1E-5, 'Mo period 3');
+  Assert.AreEqual(Single(15.0), L[7].h, 'Mo thickness untouched');
+end;
+
+// The calculation expands the table first and PrepareLayers then replaces the
+// profiled parameter, so a gradient wins over a table profile.
+procedure TTestProfileCalc.Test_BuildLayers_Gradient_OverridesTable;
+var
+  S: TStacksData;
+  L: TArray<TPLayer>;
+begin
+  S := MakeStacks(2, 10.0, 2.0, 5.0);
+  S[0].Layers[0].PP[1] := TFloatArray.Create(11.0, 12.0);
+  L := BuildLayers(S, [MakeProfile(0, 0, ptH, [20.0, 1.0])]);
+  Assert.AreEqual(Single(20.0), L[0].h, 1E-5, 'period 1 from the gradient');
+  Assert.AreEqual(Single(21.0), L[1].h, 1E-5, 'period 2 from the gradient');
 end;
 
 procedure TTestProfileCalc.Test_CalcDensity_EmptyInput;

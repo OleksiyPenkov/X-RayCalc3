@@ -250,7 +250,7 @@ var
   i: Integer;
 begin
   Stacks := StructureToStacks;
-  Layers := BuildLayers(Stacks);
+  Layers := BuildLayers(Stacks, FProfiles);
   Points := CalcDensityProfile(Layers);
   for i := 0 to High(Points) do
     FDensityProfile.AddXY(Points[i].Depth, Points[i].Value);
