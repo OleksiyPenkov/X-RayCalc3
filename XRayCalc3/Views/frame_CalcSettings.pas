@@ -141,7 +141,7 @@ const
   INI_SCALE_WINDOW  = 'ScaleWindow';
   INI_FREE_PERIOD   = 'FreePeriod';
   INI_PERIOD_WINDOW = 'PeriodWindow';   // per cent, invariant format
-  DEF_PERIOD_WINDOW = 5;
+  DEF_PERIOD_WINDOW = 10;   // the fitting procedure bounds the period at +/- 10 %
 
 function ReadPeriodWindow(INF: TMemIniFile): Double;
 begin

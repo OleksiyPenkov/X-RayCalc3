@@ -347,7 +347,7 @@ object frmCalcSettings: TfrmCalcSettings
       ParentShowHint = False
       ShowHint = True
       TabOrder = 13
-      Text = '5'
+      Text = '10'
       StyleElements = [seFont, seClient, seBorder]
     end
     object lblPeriodWindow: TLabel
