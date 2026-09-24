@@ -27,6 +27,7 @@ type
     SynJSONSyn: TSynJSONSyn;
     btnSave: TRzBitBtn;
     btnCancel: TRzBitBtn;
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     { Private declarations }
   public
@@ -55,6 +56,17 @@ begin
 end;
 
 { TfrmJsonEditor }
+
+{ The editor keeps Esc for itself, so btnCancel's Cancel never fires while it
+  has the focus - which is always. The form sees the key first instead. }
+procedure TfrmJsonEditor.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if (Key = VK_ESCAPE) and (Shift = []) then
+  begin
+    Key := 0;
+    ModalResult := mrCancel;
+  end;
+end;
 
 function TfrmJsonEditor.Edit(var InString: string): Boolean;
 begin

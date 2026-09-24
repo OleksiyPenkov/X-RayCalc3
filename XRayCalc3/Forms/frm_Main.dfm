@@ -874,9 +874,8 @@ object frmMain: TfrmMain
         Action = CalcRun
       end
       object Calcall1: TMenuItem
+        Action = CalcAll
         ImageIndex = 22
-        Caption = 'Calc all'
-        ShortCut = 123
       end
       object N10: TMenuItem
         Caption = '-'

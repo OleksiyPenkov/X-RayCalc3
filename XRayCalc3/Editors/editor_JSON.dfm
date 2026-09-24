@@ -10,6 +10,8 @@ object frmJsonEditor: TfrmJsonEditor
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  KeyPreview = True
+  OnKeyDown = FormKeyDown
   TextHeight = 15
   object rzstsbr1: TRzStatusBar
     Left = 0
