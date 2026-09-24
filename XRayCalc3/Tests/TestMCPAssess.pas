@@ -25,7 +25,7 @@ uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
   System.JSON, System.Math,
   unit_Types, unit_xrdml, unit_MCPAssess, unit_MCPStructure, unit_MCPSandbox,
-  unit_MCPErrors, unit_ToolsFiles;
+  unit_MCPErrors, unit_ToolsFiles, unit_MCPFitReport;
 
 type
   [TestFixture]
@@ -67,6 +67,9 @@ type
     [Test] procedure AllZeroCurve_DoesNotDivideByZero;
     [Test] procedure Tool_ReadsTheInboxFile_RawAndText;
     [Test] procedure Tool_UnknownMeasurement_RaisesNotFound;
+    [Test] procedure AboveFloor_ARoundingStepOverIsNotAbove;
+    [Test] procedure OrdersVisible_ThreeCountsOnAFlooredBackground_AreNoise;
+    [Test] procedure Sampling_FringesFinerThanTheResolution_JudgedByTheResolution;
   end;
 
 implementation
@@ -776,6 +779,161 @@ begin
     Assert.AreEqual('not_found', Code);
   finally
     Params.Free;
+  end;
+end;
+
+{ ------------------------------------------------- the visibility floor -- }
+
+procedure TTestMCPAssess.AboveFloor_ARoundingStepOverIsNotAbove;
+const
+  ONE_COUNT = 1 / 1074961.0;
+begin
+  Assert.IsFalse(AboveFloor(3 * ONE_COUNT, 3 * ONE_COUNT), 'equal is not above');
+  Assert.IsFalse(AboveFloor(3 * ONE_COUNT * (1 + 1E-7), 3 * ONE_COUNT),
+    'a Single rounding step over three counts is still three counts');
+  Assert.IsTrue(AboveFloor(4 * ONE_COUNT, 3 * ONE_COUNT), 'four counts are more than three');
+end;
+
+{ The peer session's CoC5 case (Zenodo deposit of the XRR fitting paper): 20
+  periods of C/Co, a tail of floored zeros that makes the background exactly one
+  count, and orders 5 to 7 at 3 counts each. Those three are noise, 3 x a
+  one-count background; before 3.9.4 a Single rounding step made them "visible"
+  and the check reported 7 of 7. The real orders are 268742, 3623, 99 and 16
+  counts. }
+procedure TTestMCPAssess.OrdersVisible_ThreeCountsOnAFlooredBackground_AreNoise;
+const
+  COC5_DESIGN =
+    '{"substrate":{"material":"SiO2","sigma":3.8,"density":2.65},' +
+    '"stacks":[{"N":20,"layers":[' +
+    '{"material":"C","thickness":31.2135,"sigma":4.3254,"density":2.0621},' +
+    '{"material":"Co","thickness":18.8183,"sigma":5.7386,"density":6.2509}]}]}';
+var
+  Path: string;
+  Inp: TAssessInput;
+  J, Res, C, O: TJSONObject;
+  Orders: TJSONArray;
+  i, Counts: Integer;
+begin
+  if not HenkePresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Path := TPath.GetFullPath(TPath.Combine(ExtractFilePath(ParamStr(0)),
+    '..\..\Data\xrdml\CoC5.xrdml'));
+  Assert.IsTrue(TFile.Exists(Path), 'missing test asset: ' + Path);
+
+  Inp := InputFromScan(ReadXRDMLFile(Path));
+  J := TJSONObject.ParseJSONValue(COC5_DESIGN) as TJSONObject;
+  try
+    Inp.Structure := StructureFromJSON(J, Inp.Info);
+  finally
+    J.Free;
+  end;
+  Inp.HasStructure := True;
+  Inp.Resolution := 0.009;
+
+  Res := AssessJSON(Inp);
+  try
+    C := CheckOf(Res, 'orders_visible');
+    Assert.AreEqual(7, C.GetValue<Integer>('orders_predicted_in_range'));
+    Assert.AreEqual(4, C.GetValue<Integer>('orders_visible'),
+      'orders 1-4 stand above the background, 5-7 are 3 counts on a 1-count floor');
+    Orders := C.GetValue('orders') as TJSONArray;
+    for i := 0 to Orders.Count - 1 do
+    begin
+      O := Orders.Items[i] as TJSONObject;
+      Counts := Round(O.GetValue<Double>('i_meas') * Inp.PeakCounts);
+      Assert.AreEqual(Counts > 3, O.GetValue<Boolean>('visible'),
+        Format('order %d at %d counts', [O.GetValue<Integer>('n'), Counts]));
+    end;
+    Assert.Contains(C.GetValue<string>('why'), 'not a measured noise level',
+      'the reason says the background is the floor of the zero counts');
+  finally
+    Res.Free;
+  end;
+end;
+
+{ The author's case: a thick stack at a usual step. 200 periods of 53 A are
+  10 600 A, fringes 0.00416 deg theta apart, 1.67 points each at the example's
+  0.0025 deg step - "aliased" by the fringe rule alone. At 0.015 deg resolution
+  only exp(-Pi^2 (0.015/0.00416)^2 / (4 ln 2)) of their contrast survives,
+  nothing: no step would show them, and the step is judged against the
+  resolution instead. }
+procedure TTestMCPAssess.Sampling_FringesFinerThanTheResolution_JudgedByTheResolution;
+const
+  THICK_DESIGN =
+    '{"substrate":{"material":"Si","sigma":3},' +
+    '"stacks":[{"N":200,"layers":[{"material":"W","thickness":18},' +
+    '{"material":"B4C","thickness":35}]}]}';
+
+  function SamplingAt(Resolution: Double): TJSONObject;
+  var
+    Inp: TAssessInput;
+    J, Res: TJSONObject;
+  begin
+    Inp := InputFromScan(FScan);
+    J := TJSONObject.ParseJSONValue(THICK_DESIGN) as TJSONObject;
+    try
+      Inp.Structure := StructureFromJSON(J, Inp.Info);
+    finally
+      J.Free;
+    end;
+    Inp.HasStructure := True;
+    Inp.Resolution := Resolution;
+    Res := AssessJSON(Inp);
+    try
+      Result := CheckOf(Res, 'sampling').Clone as TJSONObject;
+    finally
+      Res.Free;
+    end;
+  end;
+
+var
+  C: TJSONObject;
+begin
+  if not HenkePresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  C := SamplingAt(0.015);
+  try
+    Assert.AreEqual('pass', C.GetValue<string>('verdict'), C.GetValue<string>('why'));
+    Assert.IsFalse(C.GetValue<Boolean>('fringes_resolved'));
+    Assert.IsTrue(C.GetValue<Double>('fringe_contrast') < 1E-3, 'no contrast survives');
+    Assert.Contains(C.GetValue<string>('why'), 'under 0.1 % of their contrast: they are not measurable at any step');
+    Assert.AreEqual(6.0, C.GetValue<Double>('points_per_resolution'), 0.01, '0.015 / 0.0025');
+    Assert.IsTrue(C.GetValue<Double>('points_per_fringe') < 2, 'the fringe rule alone would fail it');
+  finally
+    C.Free;
+  end;
+
+  C := SamplingAt(0.0045);
+  try
+    Assert.AreEqual('warn', C.GetValue<string>('verdict'),
+      'still unresolved, but the step is coarser than half the resolution: ' + C.GetValue<string>('why'));
+    Assert.IsFalse(C.GetValue<Boolean>('fringes_resolved'));
+  finally
+    C.Free;
+  end;
+
+  C := SamplingAt(0.003);
+  try
+    Assert.AreEqual('fail', C.GetValue<string>('verdict'),
+      'fringes coarser than the resolution: the fringe rule applies');
+    Assert.IsTrue(C.GetValue<Boolean>('fringes_resolved'));
+  finally
+    C.Free;
+  end;
+
+  C := SamplingAt(0);
+  try
+    Assert.AreEqual('fail', C.GetValue<string>('verdict'), 'no resolution, no relief');
+    Assert.IsTrue(C.GetValue('fringe_contrast') is TJSONNull);
+  finally
+    C.Free;
   end;
 end;
 

@@ -595,12 +595,14 @@ begin
   else
     S := S + '; counts / s, no attenuation factors in the file';
   Result := Result + [S];
-  Result := Result + ['* Intensity normalised to 1 at the maximum; raw peak rate ' +
+  { PeakRate carries the attenuation factors; the rate the detector itself
+    saw is RawPeakRate, which Assess XRR quality reports }
+  Result := Result + ['* Intensity normalised to 1 at the maximum; peak rate ' +
     FormatFloat('0.###', PeakRate, TFormatSettings.Invariant) +
-    ' counts / s (counts / counting time, before normalisation)'];
+    ' counts / s (counts x attenuation factor / counting time, before normalisation)'];
   if ZerosFloored > 0 then
     Result := Result + ['* Zero counts: ' + IntToStr(ZerosFloored) + ' of ' + IntToStr(Points) +
-      ' points floored to the smallest positive intensity before each (1000 counts / s when none)'];
+      ' points floored to the smallest positive intensity before each, at most 1000 counts / s'];
   Result := Result + ['* Angle column: ' + XAxis + ' as scanned, ' + IntToStr(Points) + ' points'];
 end;
 

@@ -26,6 +26,7 @@ type
     SynExporterHTML: TSynExporterHTML;
     SynJSONSyn: TSynJSONSyn;
     btnSave: TRzBitBtn;
+    btnCancel: TRzBitBtn;
   private
     { Private declarations }
   public

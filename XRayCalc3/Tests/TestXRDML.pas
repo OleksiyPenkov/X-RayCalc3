@@ -393,7 +393,7 @@ begin
   Assert.AreEqual(0.25, S.Curve[4].r, 1e-6);
   H := string.Join(#10, S.DescriptionLines);
   Assert.IsTrue(Pos('Zero counts: 2 of 5', H) > 0, H);
-  Assert.IsTrue(Pos('raw peak rate 16', H) > 0, H);
+  Assert.IsTrue(Pos('; peak rate 16', H) > 0, H);
 end;
 
 initialization

@@ -1,7 +1,7 @@
 object frmJsonEditor: TfrmJsonEditor
   Left = 0
   Top = 0
-  Caption = 'Vew/Edit structure as text'
+  Caption = 'View/Edit structure as text'
   ClientHeight = 669
   ClientWidth = 795
   Color = clBtnFace
@@ -83,7 +83,8 @@ object frmJsonEditor: TfrmJsonEditor
     TabOrder = 2
     ExplicitWidth = 791
     ToolbarControls = (
-      btnSave)
+      btnSave
+      btnCancel)
     object btnSave: TRzBitBtn
       Left = 4
       Top = 2
@@ -91,6 +92,15 @@ object frmJsonEditor: TfrmJsonEditor
       Align = alRight
       Caption = 'Save'
       TabOrder = 0
+    end
+    object btnCancel: TRzBitBtn
+      Left = 80
+      Top = 2
+      Cancel = True
+      ModalResult = 2
+      Align = alRight
+      Caption = 'Cancel'
+      TabOrder = 1
     end
   end
   object pmMain: TPopupMenu

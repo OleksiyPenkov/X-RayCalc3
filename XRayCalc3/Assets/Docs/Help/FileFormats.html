@@ -60,7 +60,7 @@ Column 2: reflectivity.</p>
   <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
   <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
 </ul>
-<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it); a text file is floored the same way. The peak count rate of the corrected curve is kept in the description. See <a href="Data.html#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
+<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it, but never by more than 1000 counts/s (the value used when none precedes it); a text file is floored the same way. The peak count rate of the corrected curve is kept in the description. See <a href="Data.html#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
 
 <h2 id="henke-tables">Henke Tables</h2>
 <p>One binary file per material, element or compound, <code>Henke\&lt;Name&gt;.bin</code> (the <code>Henke</code> folder beside the program, or under the storage folder set in <a href="Settings.html">Settings</a>). A layer's material name must match a file name. Each file holds:</p>

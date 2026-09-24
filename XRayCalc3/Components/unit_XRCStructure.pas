@@ -153,6 +153,24 @@ implementation
 uses
   unit_consts, editor_Layer;
 
+{ A Single as the shortest decimal that reads back as the same Single: 0.9,
+  not the 0.899999976158142 its Double widening prints. The model text is
+  both what Edit as text shows and what the project stores, so the value
+  must survive the round trip exactly; nine significant digits always do. }
+function SingleJSON(const V: Single): TJSONNumber;
+var
+  Prec: Integer;
+  S: string;
+begin
+  for Prec := 1 to 9 do
+  begin
+    S := FloatToStrF(V, ffGeneral, Prec, 0, TFormatSettings.Invariant);
+    if Single(StrToFloat(S, TFormatSettings.Invariant)) = V then
+      Exit(TJSONNumber.Create(S));
+  end;
+  Result := TJSONNumber.Create(Double(V));
+end;
+
 { TXRCStructure }
 
 procedure TXRCStructure.AddLayer(const StackID: Integer;
@@ -859,11 +877,11 @@ begin
 
         for p := 1 to 3 do
         begin
-          JLayer.AddPair(PAlias[p], Data.P[p].V);
+          JLayer.AddPair(PAlias[p], SingleJSON(Data.P[p].V));
           JLayer.AddPair(UpperCase(PAlias[p]) + 'P', Data.P[p].Paired);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'F', Data.P[p].Fixed);
-          JLayer.AddPair(UpperCase(PAlias[p]) + 'min', Data.P[p].min);
-          JLayer.AddPair(UpperCase(PAlias[p]) + 'max', Data.P[p].max);
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'min', SingleJSON(Data.P[p].min));
+          JLayer.AddPair(UpperCase(PAlias[p]) + 'max', SingleJSON(Data.P[p].max));
           Profile := Data.ProfileToString(TParameterType(p - 1));
           JLayer.AddPair('Profile' + UpperCase(PAlias[p]), Profile);
         end;
@@ -877,8 +895,8 @@ begin
     Data := Substrate.LayerData[0];
     JSub := TJSONObject.Create;
     JSub.AddPair('M', Data.Material);
-    JSub.AddPair('s', Data.P[2].V);
-    JSub.AddPair('r', Data.P[3].V);
+    JSub.AddPair('s', SingleJSON(Data.P[2].V));
+    JSub.AddPair('r', SingleJSON(Data.P[3].V));
 
     JStstructure.AddPair('Stacks', JStacks);
     JStstructure.AddPair('Subs', JSub);

@@ -17,7 +17,7 @@ unit frm_XRRAssess;
    block underneath ready to paste into the specimen's record. The window
    holds the instrument numbers nobody records in a file - the detector's
    linear limit, the specimen length, the beam width - and re-runs the checks
-   when they change; a number left empty leaves its check "unknown", which is
+   with them when Assess is pressed; a number left empty leaves its check "unknown", which is
    what the engine says rather than inventing a threshold. *)
 
 interface

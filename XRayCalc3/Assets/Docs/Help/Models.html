@@ -77,16 +77,17 @@
 <ol>
   <li>Select the model in the project tree.</li>
   <li>Choose <strong>Structure &gt; Add Stack</strong> or use the structure toolbar.</li>
-  <li>The Stack Properties dialog opens with:
+  <li>The Stack properties dialog opens with:
     <ul>
       <li><strong>Stack name:</strong> A label for the stack</li>
       <li><strong>N:</strong> Number of repetitions (periods)</li>
     </ul>
   </li>
 </ol>
+<p><strong>Add Stack</strong> appends the new stack at the bottom of the structure, just above the substrate. <strong>Insert Stack</strong> puts it above the selected stack (at the bottom when no stack is selected), which is the way to add a top layer such as a contamination or oxide film.</p>
 
 <h3>Editing a stack</h3>
-<p>Double-click the stack header in the structure editor to open the Stack Properties dialog.</p>
+<p>Double-click the stack header in the structure editor to open the Stack properties dialog.</p>
 
 <h3>Freezing a stack <span class="badge">v3.8.2</span></h3>
 <p>Right-click a stack and choose <strong>Freeze stack</strong> to hold all three parameters (H, &sigma;, &rho;) of every layer in it during the next fit, or <strong>Thaw stack</strong> to release them. The stack header then reads <em>[frozen]</em>, or <em>[3/6 frozen]</em> when only part of it is held.</p>
@@ -113,9 +114,9 @@
 <ol>
   <li>Select a stack or model in the structure editor.</li>
   <li>Choose <strong>Structure &gt; Add Layer</strong> or use the <img src="images/icons/add_layer.png" alt="Add Layer" class="icon"> toolbar.</li>
-  <li>The Layer Properties dialog opens with fields for:
+  <li>The Layer properties dialog opens with fields for:
     <ul>
-      <li><strong>Layer material:</strong> Select or type the name of a material in the materials database (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;). The name is not parsed as a formula: it must match a Henke table, otherwise the calculation stops with &ldquo;Material &hellip; not found in the database&rdquo;. Add new compounds with <a href="Tools.html">Tools &gt; Create New Material</a> first.</li>
+      <li><strong>Layer material:</strong> Select or type the name of a material in the materials database (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;). The name is not parsed as a formula: it must match a Henke table, otherwise the calculation stops with &ldquo;Material &hellip; not found in the database&rdquo;. Add new compounds with <a href="Tools.html">Tools &gt; Create new material ...</a> first.</li>
       <li><strong>H (&#8491;):</strong> Thickness in Angstroms</li>
       <li><strong>&sigma; (&#8491;):</strong> Roughness in Angstroms</li>
       <li><strong>&rho; (g/cm&sup3;):</strong> Density in g/cm&sup3;</li>
@@ -124,7 +125,7 @@
 </ol>
 
 <h3>Navigating layers</h3>
-<p>The Layer Properties dialog includes <strong>&lt;&lt;</strong> and <strong>&gt;&gt;</strong> buttons to move to the previous or next layer without closing the dialog.</p>
+<p>The Layer properties dialog includes <strong>&lt;&lt;</strong> and <strong>&gt;&gt;</strong> buttons to move to the previous or next layer without closing the dialog.</p>
 
 <h3>Layer operations (via Structure menu or toolbar)</h3>
 <ul>
@@ -144,10 +145,11 @@
 </ul>
 
 <h2 id="undo">Undo</h2>
-<p>Choose <strong>Structure &gt; Undo Structure Changes</strong> to revert the last structural modification.</p>
+<p>Choose <strong>Structure &gt; Undo</strong> (Ctrl+Z) to revert the last structural modification.</p>
 
 <h2 id="model-text-json">Model Text (JSON)</h2>
-<p>For advanced users, <strong>Structure &gt; Edit Model Text</strong> opens a JSON editor showing the raw model definition. This allows direct text editing of the complete structure.</p>
+<p>For advanced users, <strong>Structure &gt; Edit as text ...</strong> opens a JSON editor showing the raw model definition. This allows direct text editing of the complete structure; <strong>Save</strong> applies the text, <strong>Cancel</strong> or the close box discards it.</p>
+<p>Each layer carries its material <code>M</code>, the values <code>H</code> (thickness), <code>s</code> (roughness) and <code>r</code> (density), and for each of them the fit limits <code>Hmin</code>/<code>Hmax</code>, <code>Smin</code>/<code>Smax</code>, <code>Rmin</code>/<code>Rmax</code>, the flags <code>HF</code>, <code>SF</code>, <code>RF</code> (fixed) and <code>HP</code>, <code>SP</code>, <code>RP</code> (paired). A limit left out of typed text is set to the value itself, so that parameter has a zero-width fit range until you widen it in <a href="Fitting.html#fit-limits">the fit limits</a>.</p>
 
 <h3>See Also</h3>
 <ul>

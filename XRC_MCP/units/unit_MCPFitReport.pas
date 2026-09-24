@@ -95,6 +95,10 @@ function FitReportJSON(const Inp: TFitReportInput): TJSONObject;
 /// visible against. 0 for an empty curve.</summary>
 function ReportBackground(const C: unit_Types.TDataArray): Double;
 
+/// <summary>True when R stands above Floor (REPORT_VISIBLE_FACTOR x background),
+/// by more than a rounding step of the Single a curve is stored in.</summary>
+function AboveFloor(const R, Floor: Double): Boolean; inline;
+
 /// <summary>The median of A, which is sorted in place. 0 for an empty array.</summary>
 function MedianOf(var A: TArray<Double>): Double;
 
@@ -130,6 +134,18 @@ begin
     Result := JSONArgs.Num(Num / Den)
   else
     Result := TJSONNull.Create;
+end;
+
+{ True when R stands above Floor = VisibleFactor x background. A counted curve
+  is quantised: with a background of one count, a 3-count point is exactly
+  3 x background, and the Single the curve is stored in can put it a rounding
+  step over. The margin, 1E-5 relative, is far above that rounding and far
+  below one count, so "more than three times" means what it says. }
+function AboveFloor(const R, Floor: Double): Boolean; inline;
+const
+  FLOOR_REL_TOL = 1E-5;
+begin
+  Result := R > Floor * (1 + FLOOR_REL_TOL);
 end;
 
 function MedianOf(var A: TArray<Double>): Double;
@@ -205,7 +221,7 @@ begin
     Result.AddPair('r_calc', JSONArgs.Num(Inp.Calculated[IC].r));
     Result.AddPair('ratio', RatioOrNull(Inp.Calculated[IC].r, Inp.Measured[IM].r));
     Result.AddPair('visible',
-      TJSONBool.Create(Inp.Measured[IM].r > REPORT_VISIBLE_FACTOR * Background));
+      TJSONBool.Create(AboveFloor(Inp.Measured[IM].r, REPORT_VISIBLE_FACTOR * Background)));
   except
     Result.Free;
     raise;

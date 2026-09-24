@@ -45,7 +45,8 @@ unit unit_MCPAssess;
      total_reflection         did the scan start below the critical angle
      orders_visible           orders above background against the design
      range_below_background   the part of the scan that bought nothing
-     sampling                 points per Kiessig fringe and per order
+     sampling                 points per Kiessig fringe (or per resolution width
+                              when the fringes are finer than it) and per order
      footprint                the knee where the beam overfills the specimen
      zeros                    non-positive counts and where they start
 
@@ -55,8 +56,9 @@ unit unit_MCPAssess;
      detector limit, no design, no raw file. No threshold is ever invented in
      code to fill the gap. The only numbers this unit brings of its own are
      the ones physics or sampling theory fixes: a reflectivity above the
-     plateau is impossible, and fewer than two points per fringe cannot
-     resolve the fringe.
+     plateau is impossible, fewer than two points per fringe cannot
+     resolve the fringe, and a fringe finer than the resolution has lost
+     all but 3 % of its contrast before any step samples it.
    - The engine returns numbers and verdicts. It never writes anything, not
      to the inbox, not to the specimen's record; the client formats and files
      the text block.
@@ -698,6 +700,25 @@ begin
   Result.AddPair('i_start_over_i_max', RatioOrNull(Ctx.Inp.Curve[0].r, Ctx.Inp.Curve[Ctx.ILow].r));
 end;
 
+{ The background is the level the floored zeros were raised to when the file
+  has zero counts and the background is about one count: "above the
+  background" then counts from a single count, not from a measured noise
+  floor. '' otherwise. }
+function FlooredBackgroundNote(const Ctx: TAssessContext): string;
+var
+  LevelCounts: Double;
+begin
+  Result := '';
+  if not (Ctx.Inp.HasRaw and (Ctx.Inp.PeakCounts > 0) and (Ctx.Inp.ZerosFloored > 0)) then
+    Exit;
+  LevelCounts := Ctx.Background * Ctx.Inp.PeakCounts;
+  if LevelCounts < 1.5 then
+    Result := Fmt('. The background is the floor the %d zero counts were raised to ' +
+                  '(%.3g counts), not a measured noise level, so an order is visible from ' +
+                  'more than %.3g counts', [Ctx.Inp.ZerosFloored, LevelCounts,
+                  Ctx.Inp.VisibleFactor * LevelCounts]);
+end;
+
 function OrdersVisibleCheck(const Ctx: TAssessContext): TJSONObject;
 var
   Order, IM, IMod, IMLow, Predicted, Visible, Expected, Peaks: Integer;
@@ -714,7 +735,7 @@ begin
     fringes alike, which is all that can be counted. }
   Peaks := 0;
   for n := 0 to High(Ctx.Extrema) do
-    if Ctx.Extrema[n].IsMax and (Ctx.Inp.Curve[Ctx.Extrema[n].Idx].r > Floor) then
+    if Ctx.Extrema[n].IsMax and AboveFloor(Ctx.Inp.Curve[Ctx.Extrema[n].Idx].r, Floor) then
       Inc(Peaks);
 
   if not (Ctx.Inp.HasStructure and (Ctx.Period > 0)) then
@@ -770,8 +791,8 @@ begin
         begin
           AddAngle(Obj, 'theta_meas_', Ctx.Inp.Curve[IM].t);
           Obj.AddPair('i_meas', JSONArgs.Num(Ctx.Inp.Curve[IM].r));
-          Obj.AddPair('visible', TJSONBool.Create(Ctx.Inp.Curve[IM].r > Floor));
-          if Ctx.Inp.Curve[IM].r > Floor then
+          Obj.AddPair('visible', TJSONBool.Create(AboveFloor(Ctx.Inp.Curve[IM].r, Floor)));
+          if AboveFloor(Ctx.Inp.Curve[IM].r, Floor) then
             Inc(Visible);
         end
         else
@@ -786,7 +807,7 @@ begin
           if IMod >= 0 then
           begin
             Obj.AddPair('i_model_scaled', JSONArgs.Num(Ctx.Model[IMod].r * ModelScale));
-            ModelVisible := Ctx.Model[IMod].r * ModelScale > Floor;
+            ModelVisible := AboveFloor(Ctx.Model[IMod].r * ModelScale, Floor);
           end
           else
             Obj.AddPair('i_model_scaled', TJSONNull.Create);
@@ -819,6 +840,7 @@ begin
                  'measured plateau puts %d above the background: a measurement problem, not a ' +
                  'fitting one', [Visible, Predicted, Expected]);
     end;
+    Why := Why + FlooredBackgroundNote(Ctx);
 
     Result := CheckJSON(TJSONNumber.Create(Visible), NumOrNull(Expected, ModelScale > 0), Verdict, Why);
     Result.AddPair('orders_predicted_in_range', TJSONNumber.Create(Predicted));
@@ -851,7 +873,7 @@ begin
       if FirstIdx < 0 then
         FirstIdx := i;
     end;
-    if Ctx.Inp.Curve[i].r > Floor then
+    if AboveFloor(Ctx.Inp.Curve[i].r, Floor) then
       LastAbove := i;
   end;
   Fraction := Count / Length(Ctx.Inp.Curve);
@@ -873,31 +895,67 @@ begin
   AddAngle(Result, 'scan_end_', Ctx.Inp.Curve[High(Ctx.Inp.Curve)].t);
 end;
 
+{ Points per Kiessig fringe against the grid step - but only for fringes the
+  instrument resolves. A Gaussian resolution of FWHM Res leaves
+  exp(-Pi^2 Res^2 / (4 ln 2 P^2)) of the contrast of a fringe of period P,
+  2.8 % at P = Res: finer fringes are gone before the step is reached, and a
+  finer step would not bring them back. For those the step is judged against
+  the resolution instead: coarser than Res / 2 undersamples what the
+  instrument does resolve. With no resolution (0) the fringe rule applies. }
 function SamplingCheck(const Ctx: TAssessContext): TJSONObject;
 var
-  FringeDeg, OrderDeg, PerFringe, PerOrder: Double;
-  HaveFringe, HaveOrder: Boolean;
-  Verdict, Why: string;
+  FringeDeg, OrderDeg, PerFringe, PerOrder, Res, Contrast, PerRes: Double;
+  HaveFringe, HaveOrder, Unresolved: Boolean;
+  Verdict, Why, ContrastText: string;
 begin
   HaveFringe := Ctx.Inp.HasStructure and (Ctx.TotalThickness > 0) and (Ctx.Inp.Lambda > 0) and (Ctx.Step > 0);
   HaveOrder := Ctx.Inp.HasStructure and (Ctx.Period > 0) and (Ctx.Inp.Lambda > 0) and (Ctx.Step > 0);
   FringeDeg := 0; OrderDeg := 0; PerFringe := 0; PerOrder := 0;
+  Res := Max(0, Ctx.Inp.Resolution);
+  Contrast := 1;
+  PerRes := 0;
   if HaveFringe then
   begin
     FringeDeg := RadToDeg(Ctx.Inp.Lambda / (2 * Ctx.TotalThickness));
     PerFringe := FringeDeg / Ctx.Step;
+    if Res > 0 then
+      Contrast := Exp(-Sqr(Pi * Res / FringeDeg) / (4 * Ln(2)));
   end;
   if HaveOrder then
   begin
     OrderDeg := RadToDeg(Ctx.Inp.Lambda / (2 * Ctx.Period));
     PerOrder := OrderDeg / Ctx.Step;
   end;
+  if (Res > 0) and (Ctx.Step > 0) then
+    PerRes := Res / Ctx.Step;
+  Unresolved := HaveFringe and (Res > 0) and (FringeDeg <= Res);
+  if Contrast < 1E-3 then
+    ContrastText := 'under 0.1 %'
+  else
+    ContrastText := Fmt('%.1f %%', [100 * Contrast]);
 
   if not HaveFringe then
   begin
     Verdict := VERDICT_UNKNOWN;
     Why := Fmt('the grid step is %.5f deg theta; no design gives the total thickness the fringe ' +
                'spacing follows from', [Ctx.Step]);
+  end
+  else if Unresolved and (PerRes < ASSESS_NYQUIST_POINTS_PER_FRINGE) then
+  begin
+    Verdict := VERDICT_WARN;
+    Why := Fmt('the Kiessig fringes (%.5f deg) are finer than the resolution (%.5f deg FWHM), which ' +
+               'leaves %s of their contrast: they are not measurable at any step. The step, %.5f deg, ' +
+               'is coarser than half the resolution, so features the instrument does resolve are ' +
+               'undersampled (%.2f points per resolution width)',
+               [FringeDeg, Res, ContrastText, Ctx.Step, PerRes]);
+  end
+  else if Unresolved then
+  begin
+    Verdict := VERDICT_PASS;
+    Why := Fmt('the Kiessig fringes (%.5f deg) are finer than the resolution (%.5f deg FWHM), which ' +
+               'leaves %s of their contrast: they are not measurable at any step, and a finer step ' +
+               'would not bring them back. The step, %.5f deg, gives %.2f points per resolution width',
+               [FringeDeg, Res, ContrastText, Ctx.Step, PerRes]);
   end
   else if PerFringe < ASSESS_NYQUIST_POINTS_PER_FRINGE then
   begin
@@ -924,6 +982,10 @@ begin
   Result.AddPair('step_two_theta_deg', JSONArgs.Num(2 * Ctx.Step));
   Result.AddPair('fringe_period_theta_deg', NumOrNull(FringeDeg, HaveFringe));
   Result.AddPair('points_per_fringe', NumOrNull(PerFringe, HaveFringe));
+  Result.AddPair('resolution_deg', JSONArgs.Num(Res));
+  Result.AddPair('fringe_contrast', NumOrNull(Contrast, HaveFringe and (Res > 0)));
+  Result.AddPair('fringes_resolved', TJSONBool.Create(not Unresolved));
+  Result.AddPair('points_per_resolution', NumOrNull(PerRes, PerRes > 0));
   Result.AddPair('order_spacing_theta_deg', NumOrNull(OrderDeg, HaveOrder));
   Result.AddPair('points_per_order', NumOrNull(PerOrder, HaveOrder));
   Result.AddPair('total_thickness_A', NumOrNull(Ctx.TotalThickness, Ctx.Inp.HasStructure));

@@ -243,7 +243,7 @@ object frmFitSettings: TfrmFitSettings
         Font.Style = []
         ParentFont = False
         TabOrder = 2
-        Text = '0.1'
+        Text = '0.3'
         OnEnter = ShowParamHint
       end
       object edLFPSOSkip: TEdit
@@ -355,7 +355,7 @@ object frmFitSettings: TfrmFitSettings
         NumbersOnly = True
         ParentFont = False
         TabOrder = 0
-        Text = '3'
+        Text = '-1'
         OnEnter = ShowParamHint
       end
     end

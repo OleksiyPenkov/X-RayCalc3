@@ -65,7 +65,7 @@
 <h3>Profile</h3>
 <p>Electron density (or refractive index) profile as a function of depth into the structure. This gives a physical picture of the complete multilayer structure.</p>
 
-<h3>Fitting Progress</h3>
+<h3>Convergence</h3>
 <p>During fitting, this chart shows the &chi;&sup2; value vs. iteration number. Use this to monitor convergence:</p>
 <ul>
   <li>A steadily decreasing curve indicates good convergence</li>
@@ -74,12 +74,13 @@
 </ul>
 
 <h2 id="peak-analysis">Peak Analysis</h2>
-<p>The Chart Info bar includes peak detection and analysis:</p>
+<p>The Chart Info bar reads the active model's calculated curve, not the measured data, over the chart's visible x range. It is recomputed after every calculation and every zoom:</p>
 <ul>
-  <li><strong>Peak Max:</strong> Maximum reflectivity value and its position</li>
-  <li><strong>Area:</strong> Integrated area under the peak (useful for quantitative analysis)</li>
-  <li><strong>Period:</strong> Estimated multilayer period from peak spacing</li>
+  <li><strong>Rmax</strong> and <strong>Xmax:</strong> the highest calculated reflectivity in the visible range, and the angle (or wavelength) where it lies</li>
+  <li><strong>Ri:</strong> the integrated reflectivity over the visible range, the sum of R&nbsp;&middot;&nbsp;&Delta;x in the chart's x unit</li>
+  <li><strong>D:</strong> the model's period in &Aring;, the summed layer thicknesses of the lowest stack with more than one period. It comes from the model, not from peak spacing.</li>
 </ul>
+<p><strong>X</strong> and <strong>Y</strong> show the cursor position in axis units while a model is active. Reflectivities below 0.01 are shown with three significant digits, e.g. 1.03E-4.</p>
 
 <h3>See Also</h3>
 <ul>

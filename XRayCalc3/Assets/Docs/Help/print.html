@@ -128,8 +128,8 @@
 <h2 id="navigating-the-interface">Navigating the Interface</h2>
 <ul>
   <li><strong>Double-click a model name</strong> in the Project Items list to open its Properties dialog (name, color, description). The same dialog is available from the right-click context menu.</li>
-  <li><strong>Double-click a layer</strong> to open the Layer Properties dialog, where you can change material, thickness, roughness, and density.</li>
-  <li><strong>Double-click a stack header</strong> to open the Stack Properties dialog, where you can rename the stack and change the number of periods.</li>
+  <li><strong>Double-click a layer</strong> to open the Layer properties dialog, where you can change material, thickness, roughness, and density.</li>
+  <li><strong>Double-click a stack header</strong> to open the Stack properties dialog, where you can rename the stack and change the number of periods.</li>
   <li>Use the <strong>Stack</strong> and <strong>Layer</strong> toolbar panels to add, insert, or delete structural elements.</li>
 </ul>
 
@@ -269,7 +269,7 @@
   <li><strong>Settings Panel:</strong> Calculation mode and parameters (left half) alongside Fitting mode and parameters (right half)</li>
   <li><strong>Main Chart:</strong> Interactive reflectivity plot (&theta; or &lambda; vs. reflectivity)</li>
   <li><strong>Chart Info Bar:</strong> Cursor position, peak detection, area integration, &chi;&sup2; values and the scale they are taken at</li>
-  <li><strong>Chart Pages:</strong> Tabbed sub-charts for parameter distributions (Thickness, Roughness, Density, Profile, Fitting Progress)</li>
+  <li><strong>Chart Pages:</strong> Tabbed sub-charts for parameter distributions (Thickness, Roughness, Density, Profile, Convergence)</li>
 </ul>
 
 <h3>Status Bar</h3>
@@ -505,16 +505,17 @@
 <ol>
   <li>Select the model in the project tree.</li>
   <li>Choose <strong>Structure &gt; Add Stack</strong> or use the structure toolbar.</li>
-  <li>The Stack Properties dialog opens with:
+  <li>The Stack properties dialog opens with:
     <ul>
       <li><strong>Stack name:</strong> A label for the stack</li>
       <li><strong>N:</strong> Number of repetitions (periods)</li>
     </ul>
   </li>
 </ol>
+<p><strong>Add Stack</strong> appends the new stack at the bottom of the structure, just above the substrate. <strong>Insert Stack</strong> puts it above the selected stack (at the bottom when no stack is selected), which is the way to add a top layer such as a contamination or oxide film.</p>
 
 <h3>Editing a stack</h3>
-<p>Double-click the stack header in the structure editor to open the Stack Properties dialog.</p>
+<p>Double-click the stack header in the structure editor to open the Stack properties dialog.</p>
 
 <h3>Freezing a stack <span class="badge">v3.8.2</span></h3>
 <p>Right-click a stack and choose <strong>Freeze stack</strong> to hold all three parameters (H, &sigma;, &rho;) of every layer in it during the next fit, or <strong>Thaw stack</strong> to release them. The stack header then reads <em>[frozen]</em>, or <em>[3/6 frozen]</em> when only part of it is held.</p>
@@ -541,9 +542,9 @@
 <ol>
   <li>Select a stack or model in the structure editor.</li>
   <li>Choose <strong>Structure &gt; Add Layer</strong> or use the <img src="images/icons/add_layer.png" alt="Add Layer" class="icon"> toolbar.</li>
-  <li>The Layer Properties dialog opens with fields for:
+  <li>The Layer properties dialog opens with fields for:
     <ul>
-      <li><strong>Layer material:</strong> Select or type the name of a material in the materials database (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;). The name is not parsed as a formula: it must match a Henke table, otherwise the calculation stops with &ldquo;Material &hellip; not found in the database&rdquo;. Add new compounds with <a href="#Tools">Tools &gt; Create New Material</a> first.</li>
+      <li><strong>Layer material:</strong> Select or type the name of a material in the materials database (e.g., &ldquo;Si&rdquo;, &ldquo;Mo&rdquo;, &ldquo;SiO2&rdquo;). The name is not parsed as a formula: it must match a Henke table, otherwise the calculation stops with &ldquo;Material &hellip; not found in the database&rdquo;. Add new compounds with <a href="#Tools">Tools &gt; Create new material ...</a> first.</li>
       <li><strong>H (&#8491;):</strong> Thickness in Angstroms</li>
       <li><strong>&sigma; (&#8491;):</strong> Roughness in Angstroms</li>
       <li><strong>&rho; (g/cm&sup3;):</strong> Density in g/cm&sup3;</li>
@@ -552,7 +553,7 @@
 </ol>
 
 <h3>Navigating layers</h3>
-<p>The Layer Properties dialog includes <strong>&lt;&lt;</strong> and <strong>&gt;&gt;</strong> buttons to move to the previous or next layer without closing the dialog.</p>
+<p>The Layer properties dialog includes <strong>&lt;&lt;</strong> and <strong>&gt;&gt;</strong> buttons to move to the previous or next layer without closing the dialog.</p>
 
 <h3>Layer operations (via Structure menu or toolbar)</h3>
 <ul>
@@ -572,10 +573,11 @@
 </ul>
 
 <h2 id="undo">Undo</h2>
-<p>Choose <strong>Structure &gt; Undo Structure Changes</strong> to revert the last structural modification.</p>
+<p>Choose <strong>Structure &gt; Undo</strong> (Ctrl+Z) to revert the last structural modification.</p>
 
 <h2 id="model-text-json">Model Text (JSON)</h2>
-<p>For advanced users, <strong>Structure &gt; Edit Model Text</strong> opens a JSON editor showing the raw model definition. This allows direct text editing of the complete structure.</p>
+<p>For advanced users, <strong>Structure &gt; Edit as text ...</strong> opens a JSON editor showing the raw model definition. This allows direct text editing of the complete structure; <strong>Save</strong> applies the text, <strong>Cancel</strong> or the close box discards it.</p>
+<p>Each layer carries its material <code>M</code>, the values <code>H</code> (thickness), <code>s</code> (roughness) and <code>r</code> (density), and for each of them the fit limits <code>Hmin</code>/<code>Hmax</code>, <code>Smin</code>/<code>Smax</code>, <code>Rmin</code>/<code>Rmax</code>, the flags <code>HF</code>, <code>SF</code>, <code>RF</code> (fixed) and <code>HP</code>, <code>SP</code>, <code>RP</code> (paired). A limit left out of typed text is set to the value itself, so that parameter has a zero-width fit range until you widen it in <a href="Fitting.html#fit-limits">the fit limits</a>.</p>
 
 <h3>See Also</h3>
 <ul>
@@ -620,8 +622,8 @@
 <p>A PANalytical / Malvern <code>.xrdml</code> file (schema 1.0 to 2.x) is read directly, and the file's own facts are used rather than typed in:</p>
 <ul>
   <li><strong>Angle axis.</strong> A 2Theta&ndash;Omega scan is in 2&theta;, a rocking curve in &omega;. The curve is brought to the unit the <strong>2-theta</strong> switch of the calculation settings says, so the chart and the fit see the same angle whichever way the file was scanned.</li>
-  <li><strong>Intensity.</strong> Counts are divided by the counting time (beam attenuation factors, when the file has them, are multiplied in) and the curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it), as a log chart needs. The peak count rate of the corrected curve (attenuation factors included), the counting time, the detector and the number of floored counts are written into the item's description; the rate the detector itself saw is re-read from the file by <a href="#assessing-a-measurement">Assess XRR quality</a>.</li>
-  <li><strong>Wavelength.</strong> The wavelength the file implies is written into the calculation settings: for a K&alpha; measurement through an optic that passes both lines it is the doublet weighted by the file's K&alpha;<sub>2</sub>/K&alpha;<sub>1</sub> ratio (1.541874&nbsp;&Aring; for Cu), for a monochromator or a hybrid mirror it is K&alpha;<sub>1</sub>. A period fitted at K&alpha;<sub>1</sub> when the doublet was measured comes out 0.08&nbsp;% short.</li>
+  <li><strong>Intensity.</strong> Counts are divided by the counting time (beam attenuation factors, when the file has them, are multiplied in) and the curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it, but never by more than 1000 counts/s (the value used when none precedes it), as a log chart needs. The peak count rate of the corrected curve (attenuation factors included), the counting time, the detector and the number of floored counts are written into the item's description; the rate the detector itself saw is re-read from the file by <a href="#assessing-a-measurement">Assess XRR quality</a>.</li>
+  <li><strong>Wavelength.</strong> The wavelength the file implies is written into the calculation settings: when the file's <code>usedWavelength</code> is <code>intended="K-Alpha"</code>, the optic passes both lines and the file gives the K&alpha;<sub>2</sub>/K&alpha;<sub>1</sub> ratio, it is the doublet weighted by that ratio (1.541874&nbsp;&Aring; for Cu); in every other case (a monochromator or a hybrid mirror, another intended line, no ratio) it is K&alpha;<sub>1</sub>. A period fitted at K&alpha;<sub>1</sub> when the doublet was measured comes out 0.08&nbsp;% short.</li>
   <li><strong>Source file.</strong> The path of the file is kept in the description as <code>* Source file:</code>, and <a href="#assessing-a-measurement">Assess XRR quality</a> reads the file again for the count rates the chart no longer carries.</li>
 </ul>
 <div class="note"><strong>Note:</strong> the normalisation to 1 at the maximum is a presentation scale, not a measurement: on a well-aligned specimen the maximum is the total-reflection plateau, on one whose plateau is depressed by alignment it is the first Bragg order. The <a href="#data-conditioning-walkthrough">Normalize</a> step still decides the scale a fit works at.</div>
@@ -629,7 +631,7 @@
 <h2 id="pasting-data-from-clipboard">Pasting Data from Clipboard</h2>
 <ol>
   <li>Copy two-column data from another application (e.g., a spreadsheet).</li>
-  <li>Choose <strong>Data &gt; Paste from Clipboard</strong> or click the <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> <strong>Paste Data</strong> toolbar button.</li>
+  <li>Choose <strong>Data &gt; From clipboard</strong> or click the <img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> <strong>Paste Data</strong> toolbar button.</li>
   <li>The data become a new item <em>Data N.dat</em> in the Data folder. The same rules as for a text file apply (see <a href="#data-format">Data Format</a>); a spreadsheet copy is TAB-separated and reads directly.</li>
 </ol>
 
@@ -642,7 +644,7 @@
 <p>The reader is strict:</p>
 <ul>
   <li>The two numbers are separated by <strong>one TAB</strong> (or, in a file without TABs, by one space). A line with a third column, or with several spaces between the numbers, is skipped.</li>
-  <li>The first line without a TAB switches the reader to space-separated columns for the rest of the file, so a TAB-separated file must not contain a header line without a TAB.</li>
+  <li>Any non-empty line without a TAB switches the reader to space-separated columns for the rest of the file, so a TAB-separated file must not contain a header line without a TAB.</li>
   <li>The angle must start with a digit; the intensity may also carry a sign. A leading blank or a leading point makes the line skipped. A zero or negative intensity (background-subtracted data) is replaced by the smallest positive value before it, as for an XRDML file. A comma is accepted as the decimal separator.</li>
   <li>Lines that are not two such numbers are skipped. A zero reflectivity is replaced by the smallest positive value before it (1000 when none precedes it).</li>
   <li>Lines at the top that start with <code>*</code> are copied into the item's description. A first line containing <code>Sample</code> removes the first 21 lines (the header of the old counter files).</li>
@@ -700,7 +702,7 @@
   <tr><td>Total reflection</td><td>Whether the scan starts below the design's critical angle and rises to a plateau. A curve whose maximum is its first point started on the way down and fails; so does a scan that starts at or above the design's critical angle.</td></tr>
   <tr><td>Orders visible</td><td>How many of the Bragg orders the design puts inside the range stand above the background, against how many the design's model, scaled to the measured plateau, puts there. Fewer measured than expected is a measurement problem, not a fitting one.</td></tr>
   <tr><td>Range below background</td><td>The fraction of the points at or below the background, and where the useful range ends: the part of the scan that bought nothing. Reported without a verdict.</td></tr>
-  <tr><td>Sampling</td><td>Points per Kiessig fringe, from the design's total thickness, and per order, from its period. Under two points per fringe the fringes are aliased and no fit will see them (fail); under the number in the window (default 3) it warns.</td></tr>
+  <tr><td>Sampling</td><td>Points per Kiessig fringe, from the design's total thickness, and per order, from its period. Fringes finer than the resolution (period at or below the resolution FWHM) keep under 3&nbsp;% of their contrast and cannot be measured at any step, so for them the step is judged against the resolution instead: it passes, and warns when the step is coarser than half the resolution. For fringes the resolution passes: under two points per fringe they are aliased and no fit will see them (fail); under the number in the window (default 3) it warns.</td></tr>
   <tr><td>Footprint</td><td>The knee asin(beam width / sample length) below which the beam overfills the specimen, and whether the plateau maximum lies below it (warn) or not (pass).</td></tr>
   <tr><td>Zeros</td><td>How many points have a non-positive count, their fraction, and where they start. Any zero warns; a curve from a text file carries no counts and is unknown.</td></tr>
 </table>
@@ -1044,7 +1046,7 @@
   <li>The fitting process begins:
     <ul>
       <li>The main chart updates in real time, showing the best-fit curve converging toward the experimental data.</li>
-      <li>The <strong>Fitting Progress</strong> chart page shows the &chi;&sup2; convergence curve.</li>
+      <li>The <strong>Convergence</strong> chart page shows the &chi;&sup2; convergence curve.</li>
       <li>The status bar displays elapsed fitting time, and at the end the device the fit ran on (see <a href="#gpu">GPU Acceleration</a>).</li>
       <li>The <strong>scale</strong> pane of the Chart Info bar reads <em>solved</em> or <em>anchored</em>; when the fit ends it shows the solved ratio (see <a href="#solved-scale">Solving the Measured Scale</a>).</li>
       <li>If <strong>Live Update</strong> is enabled (in Settings), the structure editor updates to show current best-fit parameters.</li>
@@ -1301,7 +1303,7 @@
 <h3>Profile</h3>
 <p>Electron density (or refractive index) profile as a function of depth into the structure. This gives a physical picture of the complete multilayer structure.</p>
 
-<h3>Fitting Progress</h3>
+<h3>Convergence</h3>
 <p>During fitting, this chart shows the &chi;&sup2; value vs. iteration number. Use this to monitor convergence:</p>
 <ul>
   <li>A steadily decreasing curve indicates good convergence</li>
@@ -1310,12 +1312,13 @@
 </ul>
 
 <h2 id="peak-analysis">Peak Analysis</h2>
-<p>The Chart Info bar includes peak detection and analysis:</p>
+<p>The Chart Info bar reads the active model's calculated curve, not the measured data, over the chart's visible x range. It is recomputed after every calculation and every zoom:</p>
 <ul>
-  <li><strong>Peak Max:</strong> Maximum reflectivity value and its position</li>
-  <li><strong>Area:</strong> Integrated area under the peak (useful for quantitative analysis)</li>
-  <li><strong>Period:</strong> Estimated multilayer period from peak spacing</li>
+  <li><strong>Rmax</strong> and <strong>Xmax:</strong> the highest calculated reflectivity in the visible range, and the angle (or wavelength) where it lies</li>
+  <li><strong>Ri:</strong> the integrated reflectivity over the visible range, the sum of R&nbsp;&middot;&nbsp;&Delta;x in the chart's x unit</li>
+  <li><strong>D:</strong> the model's period in &Aring;, the summed layer thicknesses of the lowest stack with more than one period. It comes from the model, not from peak spacing.</li>
 </ul>
+<p><strong>X</strong> and <strong>Y</strong> show the cursor position in axis units while a model is active. Reflectivities below 0.01 are shown with three significant digits, e.g. 1.03E-4.</p>
 
 <h3>See Also</h3>
 <ul>
@@ -1387,14 +1390,14 @@
 <div class="page-toc">
   <div class="page-toc-title">On this page</div>
   <ul>
-    <li><a href="#create-new-material">Create New Material</a></li>
+    <li><a href="#create-new-material">Create new material</a></li>
     <li><a href="#edit-henke-table">Edit Henke Table</a></li>
     <li><a href="#benchmark">Benchmark</a></li>
   </ul>
 </div>
 
-<h2 id="create-new-material">Create New Material</h2>
-<p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create New Material</strong> opens a dialog to add a custom material to the Henke database.</p>
+<h2 id="create-new-material">Create new material</h2>
+<p><img src="images/icons/Menu_NewMaterial.png" alt="New Material" class="icon"> <strong>Tools &gt; Create new material ...</strong> opens a dialog to add a custom material to the Henke database.</p>
 <p>Choose the number of components, pick each one (an element or an existing material) and give its concentration in atomic per cent, then a name and a density (g/cm&sup3;). The program writes <code>Henke\&lt;Name&gt;.bin</code> with f<sub>1</sub>, f<sub>2</sub> and the molar mass averaged per atom with the atomic fractions, f&nbsp;=&nbsp;&Sigma;&nbsp;c<sub>i</sub>f<sub>i</sub>, on the energy grid of the first component (the others are interpolated onto it). The density you enter becomes the bulk density used when a layer's density is 0.</p>
 <div class="note"><strong>Note:</strong> the percentages must add up to 100&nbsp;at.%; the dialog refuses to save otherwise, and asks before replacing an existing material of the same name.</div>
 
@@ -2104,7 +2107,7 @@ Layer 2: W=32.7% Si=35.8% C=31.5%</code></pre>
   <tr><td><code>lambda</code> or <code>energy</code></td><td>For the design; defaults to the file's wavelength or <code>meta.json</code>'s.</td></tr>
   <tr><td><code>detector_max_cps</code></td><td>The detector's linear count-rate limit, judged against the rate the detector itself saw (attenuation factors out). Without it the counting check reports the peak rate under <code>"unknown"</code>; no limit is built in.</td></tr>
   <tr><td><code>sample_length_mm</code>, <code>beam_width_mm</code></td><td>Place the footprint knee asin(beam / length).</td></tr>
-  <tr><td><code>order_visible_factor</code>, <code>min_points_per_fringe</code></td><td>An order counts as visible this many times above the background (default 3); the sampling check warns below this many points per Kiessig fringe (default 3) and fails below 2 whatever is given.</td></tr>
+  <tr><td><code>order_visible_factor</code>, <code>min_points_per_fringe</code></td><td>An order counts as visible this many times above the background (default 3); the sampling check warns below this many points per Kiessig fringe (default 3) and fails below 2 whatever is given, for fringes coarser than <code>resolution</code>; finer fringes are not measurable at any step and are judged by the points per resolution width instead.</td></tr>
 </table>
 <p>The result carries <code>checks</code> &mdash; <code>counting</code>, <code>plateau_vs_first_order</code>, <code>total_reflection</code>, <code>orders_visible</code>, <code>range_below_background</code>, <code>sampling</code>, <code>footprint</code>, <code>zeros</code>, each <code>{value, threshold, verdict, why}</code> with the numbers behind it &mdash; the background, the design's period, thickness and critical angle, the overall <code>verdict</code> (the worst check) and <code>summary_text</code>, one line per check for the client to file with the specimen. Every angle is <code>theta_deg</code> with the file's <code>two_theta_deg</code> beside it. No count-rate or fraction limit is built in. The fixed rules are: a first order above the plateau fails; a scan that starts at its own maximum, or at or above the design's critical angle, fails; fewer than two points per fringe fails. The warnings compare the measurement with the design scaled to the measured plateau (a plateau-to-first-order ratio above the design's; fewer visible orders than it predicts), with the footprint knee (the low-angle maximum below it), or flag any zero or negative count. <code>range_below_background</code> only reports the fraction and is always <code>"unknown"</code>. The background is the median of the last 100 points; the fringe spacing is &lambda;/(2&thinsp;&times;&thinsp;total thickness) and the order spacing &lambda;/(2d), converted to degrees; the design is always computed unpolarized (<code>sp</code>).</p>
 
@@ -2218,7 +2221,7 @@ Column 2: reflectivity.</p>
   <li>the wavelength: K&alpha;<sub>1</sub> and K&alpha;<sub>2</sub> with their ratio, weighted together unless a monochromator or a hybrid mirror is in the incident path;</li>
   <li>the detector name and read-out period, the sample id, the scan status and start time.</li>
 </ul>
-<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it (1000 counts/s when none precedes it); a text file is floored the same way. The peak count rate of the corrected curve is kept in the description. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
+<p>The curve is normalised to 1 at its maximum. A zero or negative count is replaced by the smallest positive rate before it, but never by more than 1000 counts/s (the value used when none precedes it); a text file is floored the same way. The peak count rate of the corrected curve is kept in the description. See <a href="#loading-xrdml-files">Experimental Data &gt; Loading XRDML Files</a>.</p>
 
 <h2 id="henke-tables">Henke Tables</h2>
 <p>One binary file per material, element or compound, <code>Henke\&lt;Name&gt;.bin</code> (the <code>Henke</code> folder beside the program, or under the storage folder set in <a href="#Settings">Settings</a>). A layer's material name must match a file name. Each file holds:</p>
@@ -2372,7 +2375,7 @@ Column 2: reflectivity.</p>
 <h2 id="material-not-found">Material not found</h2>
 <ul>
   <li>Check the spelling (chemical formula must be exact, e.g., &ldquo;SiO2&rdquo; not &ldquo;Sio2&rdquo;).</li>
-  <li>The material may not exist in the Henke database. Use <strong>Tools &gt; Create New Material</strong> to add it.</li>
+  <li>The material may not exist in the Henke database. Use <strong>Tools &gt; Create new material ...</strong> to add it.</li>
 </ul>
 
 <h2 id="chart-appears-empty-after-calculation">Chart appears empty after calculation</h2>

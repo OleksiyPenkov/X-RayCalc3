@@ -40,6 +40,7 @@ type
     [Test] procedure Model_ExpandsATableCoveringEveryPeriod;
     [Test] procedure Model_IgnoresATableShorterThanN;
     [Test] procedure FromString_LayerWithoutTable_KeepsNone;
+    [Test] procedure ToString_ShortestDecimals_ReadBackExactly;
   end;
 
 implementation
@@ -237,6 +238,53 @@ begin
 
   Assert.AreEqual(3, Integer(Length(S.Stacks[0].LayerData[0].PP[1])), 'W keeps its table');
   Assert.AreEqual(0, Integer(Length(S.Stacks[0].LayerData[1].PP[1])), 'Si has none');
+end;
+
+// Edit as text showed 0.9 as 0.899999976158142, the Single widened to a
+// Double. The text now carries the shortest decimal that reads back as the
+// same Single - and the project stores this text, so it must be exact.
+procedure TTestStructureRenumber.ToString_ShortestDecimals_ReadBackExactly;
+var
+  S: TXRCStructure;
+  Data: TLayerData;
+  Text: string;
+  Before: TArray<Single>;
+  i, j, p, k: Integer;
+begin
+  S := Build(MODEL);
+  Data := S.Stacks[0].LayerData[0];
+  Data.P[2].V := 0.9;
+  Data.P[1].V := 1 / 3;
+  Data.P[1].min := 0.1;
+  Data.P[1].max := 12.7;
+  S.Stacks[0].UpdateLayer(0, Data);
+
+  Text := S.ToString;
+  Assert.IsTrue(Pos('"s":0.9,', Text) > 0, Text);
+  Assert.IsTrue(Pos('"r":2.33,', Text) > 0, Text);
+  Assert.IsTrue(Pos('"Hmax":12.7,', Text) > 0, Text);
+  Assert.IsTrue(Pos('99999', Text) = 0, 'no Double widening noise: ' + Text);
+
+  Before := nil;
+  for i := 0 to High(S.Stacks) do
+    for j := 0 to High(S.Stacks[i].LayerData) do
+      for p := 1 to 3 do
+        with S.Stacks[i].LayerData[j].P[p] do
+          Before := Before + [V, min, max];
+
+  S.FromString(Text);
+
+  k := 0;
+  for i := 0 to High(S.Stacks) do
+    for j := 0 to High(S.Stacks[i].LayerData) do
+      for p := 1 to 3 do
+        with S.Stacks[i].LayerData[j].P[p] do
+        begin
+          Assert.IsTrue(Before[k] = V, Format('stack %d layer %d p%d value', [i, j, p]));
+          Assert.IsTrue(Before[k + 1] = min, Format('stack %d layer %d p%d min', [i, j, p]));
+          Assert.IsTrue(Before[k + 2] = max, Format('stack %d layer %d p%d max', [i, j, p]));
+          Inc(k, 3);
+        end;
 end;
 
 initialization

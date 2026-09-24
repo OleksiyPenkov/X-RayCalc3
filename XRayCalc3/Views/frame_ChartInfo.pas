@@ -242,13 +242,29 @@ begin
   CommitMinLimit;
 end;
 
+{ A reflectivity or an area for the status panes: three decimals from 0.01
+  up, and below it three significant digits with a one-digit exponent,
+  "1.03E-4" - the two-digit form, "1.03E-04", is wider than the 64-pixel pane. }
+function ReadoutR(const V: Single): string;
+begin
+  if V < 0.01 then
+    Result := FloatToStrF(V, ffExponent, 3, 1)
+  else
+    Result := FloatToStrF(V, ffFixed, 7, 3);
+end;
+
+{ An angle or a wavelength: a fixed number of decimals at any size. The
+  precision is a Single's seven digits, so 11.3365 reads 11.337, not the
+  11.340 that four significant digits gave. }
+function ReadoutX(const V: Single; Decimals: Integer): string;
+begin
+  Result := FloatToStrF(V, ffFixed, 7, Decimals);
+end;
+
 procedure TfrmChartInfo.SetCursorPos(const X, Y: Single);
 begin
-  StatusX.Caption := FloatToStrF(X, ffFixed, 4, 3);
-  if Y < 0.01 then
-    StatusY.Caption := FloatToStrF(Y, ffExponent, 3, 2)
-  else
-    StatusY.Caption := FloatToStrF(Y, ffFixed, 4, 3);
+  StatusX.Caption := ReadoutX(X, 3);
+  StatusY.Caption := ReadoutR(Y);
 end;
 
 procedure TfrmChartInfo.SetPeakInfo(Series: TChartSeries; XMin, XMax: Single);
@@ -279,13 +295,13 @@ begin
     OldX := XVal;
   end;
 
-  if my < 0.01 then
-    StatusRMax.Caption := FloatToStrF(my, ffExponent, 3, 2)
+  StatusRMax.Caption := ReadoutR(my);
+  StatusMaxX.Caption := ReadoutX(mx, 4);
+  { a narrow zoom integrates to less than 1E-4, which four decimals show as 0 }
+  if RI < 0.01 then
+    StatusRi.Caption := ReadoutR(RI)
   else
-    StatusRMax.Caption := FloatToStrF(my, ffFixed, 4, 3);
-
-  StatusMaxX.Caption := FloatToStrF(mx, ffFixed, 5, 4);
-  StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
+    StatusRi.Caption := FloatToStrF(RI, ffFixed, 7, 4);
 end;
 
 procedure TfrmChartInfo.SetChiSquare(const Current, Best: Single);

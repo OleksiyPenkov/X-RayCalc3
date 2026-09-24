@@ -448,7 +448,7 @@ object frmSettings: TfrmSettings
           Top = 11
           Width = 137
           Height = 13
-          Caption = 'Number od CPU cores to use'
+          Caption = 'Number of CPU cores to use'
         end
         object cbbCPUCores: TComboBox
           Left = 275

@@ -146,7 +146,7 @@ GUI's Data - Load): the 2Theta axis is brought to theta, counts (x attenuation f
 are divided by the counting time and normalised to 1 at the maximum, a zero count is floored as the
 text parser floors it, and the wavelength the file implies (the K-alpha doublet weighted by the file's
 ratio unless a monochromator or a hybrid mirror selects K-alpha1) overrides `meta.json`;
-`lambda_source` says `file: <rule>`. The header carries the raw peak rate, the counting time, the
+`lambda_source` says `file: <rule>`. The header carries the peak rate (attenuation factors in), the counting time, the
 detector, its readOutPeriod and the zero count.
 
 **`fit_xrr` since 2026-09-22 (`scale_solve`):** the measured scale is a nuisance parameter solved in
@@ -164,7 +164,8 @@ the raw `.xrdml` (counting rate against `detector_max_cps`, first order against 
 reflection reached, orders visible against the design, range below background, points per fringe
 and per order, footprint knee, zero counts), each `{value, threshold, verdict, why}` plus the numbers
 behind it, `verdict` the worst of them, `summary_text` one line per check. `unknown` whenever an
-input is missing; no threshold is invented in code (only ratio > 1 and < 2 points per fringe fail).
+input is missing; no threshold is invented in code (only ratio > 1 and < 2 points per fringe fail; fringes finer than
+`resolution` are not measurable at any step, so for them the step is judged against the resolution).
 Accepts a bare substrate, `"stacks": []`, as the design. The checks live in
 `units/unit_MCPAssess.pas` and are the GUI's Data - Assess XRR quality as well.
 

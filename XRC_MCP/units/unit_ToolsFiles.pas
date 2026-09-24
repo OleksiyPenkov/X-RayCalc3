@@ -169,7 +169,7 @@ begin
     '"lambda_source" says "file: <rule>". Counts are ' +
     'divided by the counting time, a zero count becomes the smallest positive ' +
     'intensity before it, and the curve is normalised to 1 at its maximum; the ' +
-    'raw peak rate, the counting time, the detector and its readOutPeriod are ' +
+    'peak rate (attenuation factors in), the counting time, the detector and its readOutPeriod are ' +
     'in "header", so one count and the detector''s linear range stay ' +
     'recoverable.');
   AddProp(Schema, 'max_points', 'integer',
@@ -228,7 +228,9 @@ begin
     '(default 3, the fit report''s).');
   AddProp(Schema, 'min_points_per_fringe', 'number',
     'The sampling check warns below this many points per Kiessig fringe (default 3) ' +
-    'and fails below 2 whatever is given.');
+    'and fails below 2 whatever is given, for fringes coarser than "resolution"; ' +
+    'finer fringes are not measurable at any step and are judged by the points ' +
+    'per resolution width instead.');
   Registry.Register('assess_xrr',
     'Says whether a measured XRR curve is worth fitting, before anyone fits it: eight ' +
     'checks on the measurement itself - the peak count rate against the detector''s ' +
