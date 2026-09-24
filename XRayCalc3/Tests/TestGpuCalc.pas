@@ -266,7 +266,7 @@ var
   x: Double;
 begin
   case RF of
-    rfError:  Result := Exp(-(Sigma * Sigma * 0.50299) * s * s);
+    rfError:  Result := Exp(-(Sigma * Sigma * 0.5) * s * s);
     rfExp:    Result := 1 / (1 + (s * s * Sigma * Sigma) / 2);
     rfLinear:
       if Sigma < 0.5 then

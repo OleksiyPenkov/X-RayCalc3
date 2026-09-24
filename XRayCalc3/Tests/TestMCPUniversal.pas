@@ -1763,8 +1763,8 @@ end;
   reference - the laboratory has fitted measured curves with it for years, and
   fit_xrr uses it - and unit_universal_refcalc.pas is what the figure of merit
   scores with. They shared every formula except the error-function roughness
-  factor, where the classic engine applies exp(-0.50299 sigma^2 s^2), the
-  Nevot-Croce factor for s = 2 k_z, and the universal one applied
+  factor, where the classic engine applies exp(-sigma^2 s^2 / 2) (0.50299 until
+  3.9.4), the Nevot-Croce factor for s = 2 k_z, and the universal one applied
   exp(-sigma^2 s^2): twice the exponent, which is every interface behaving as
   though it were sqrt(2) times rougher than specified. At sigma 0 the two agreed
   to 0.2 %; at the roughnesses this laboratory actually deposits they differed by

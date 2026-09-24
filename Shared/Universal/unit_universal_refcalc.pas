@@ -59,15 +59,12 @@ var
       case RF of
         rfError:
           // The Nevot-Croce factor, exp(-2 k_z^2 sigma^2): s is 2 k_z here
-          // (c = 4 Pi / Lambda), so the coefficient is one half. The literal is
-          // unit_calc.pas's, which precomputes Sqr(sigma) * 0.50299 - its
-          // sqr(1/1.41) for sqr(1/sqrt(2)), 0.6 % above an exact half. That
-          // engine is the reference this one has to match, so its constant is
-          // the constant, approximation included; an exact 0.5 here would put
-          // the fitness 0.6 % away from every curve fit_xrr has ever fitted.
+          // (c = 4 Pi / Lambda), so the coefficient is one half, as in
+          // unit_calc.pas, which this engine has to match. Until 3.9.4 both
+          // used 0.50299, sqr(1/1.41) for sqr(1/sqrt(2)), 0.6 % above a half.
           // This was exp(-sigma^2 s^2) until 2026-09-12 - twice the exponent,
           // every interface behaving as if it were sqrt(2) times rougher.
-          Result := exp(-0.50299 * sqr(sigma) * sqr(s));
+          Result := exp(-0.5 * sqr(sigma) * sqr(s));
         rfExp:
           Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
         rfLinear:

@@ -215,6 +215,11 @@ const
     '{"material":"C","thickness":55.5,"sigma":3},' +
     '{"material":"Ru","thickness":13.0,"sigma":3}]}]}';
 
+  { StartCurveJSON writes the curve with JSONArgs.NumArr's 6 significant
+    digits, so a scale taken from it is good to half a unit in the sixth digit
+    (5E-6 relative) and no better: 5E-9 on 0.001. }
+  SCALE_TOL = 5E-9;
+
   { The same stack with the wrong period: 60 A against the true 68.5 A. The
     periodic engine holds the period unless "period" is freed, so this start
     can only reach the answer when it is. }
@@ -1843,21 +1848,24 @@ end;
   convolution) and the resolution kernel is normalised, which moved that
   fit's chi2 from 2.16926 to 2.17153 and its layers in the fourth digit.
   The synthetic fit, which has no resolution and whose last point carries no
-  residual, is unchanged. A number published before 3.9.4 reproduces on the
+  residual, is unchanged. 3.9.4 also sets the roughness exponent to exactly
+  sigma^2 s^2 / 2 (it was 0.50299): the synthetic chi2 went from 0.000413109
+  to 0.000413763 on the same structure, and P2-02 from 2.17153 to 2.16063,
+  its sigmas up by 0.14 and 0.18 %. A number published before 3.9.4 reproduces on the
   binary it was made with (D:\SoftwareStorage\X-RayCalc3\Releases), not on
   this source. }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
-  CHI2_06035DE = '0.000413109';
+  CHI2_06035DE = '0.000413763';
   FITTED_06035DE =
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
     '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
-  P2_CHI2_06035DE = '2.17153';
+  P2_CHI2_06035DE = '2.16063';
   P2_FITTED_06035DE =
     '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
-    '"layers":[{"material":"C","thickness":25.3868,"sigma":9.87208,"density":2.74609},' +
-    '{"material":"Co","thickness":2.40001,"sigma":7.79898,"density":8.89977}]}]}';
+    '"layers":[{"material":"C","thickness":25.3859,"sigma":9.88615,"density":2.74231},' +
+    '{"material":"Co","thickness":2.40004,"sigma":7.81322,"density":8.89935}]}]}';
 var
   Res: TJSONObject;
 begin
@@ -2329,7 +2337,7 @@ begin
     [START_STRUCTURE, StartCurveJSON(1000)]));
 
   Assert.AreEqual('auto', Req.ScaleMode);
-  Assert.AreEqual(Double(0.001), Req.Scale, 1E-9,
+  Assert.AreEqual(Double(0.001), Req.Scale, SCALE_TOL,
     'a curve a thousand times the model is scaled back by a thousand');
 end;
 
@@ -2468,7 +2476,7 @@ begin
     [START_STRUCTURE, StartCurveJSON(1000)]));
 
   Assert.AreEqual('auto', Req.ScaleMode);
-  Assert.AreEqual(Double(0.001), Req.Scale, 1E-9,
+  Assert.AreEqual(Double(0.001), Req.Scale, SCALE_TOL,
     'the number beside "scale_auto": true is ignored, not multiplied in');
 end;
 
@@ -2544,7 +2552,7 @@ begin
   Res := RunFit(7, StartCurveJSON(1000), '', ',"scale":"auto"');
   try
     Assert.AreEqual('auto', Res.GetValue<string>('scale_mode'));
-    Assert.AreEqual(Double(0.001), Res.GetValue<Double>('scale'), 1E-9);
+    Assert.AreEqual(Double(0.001), Res.GetValue<Double>('scale'), SCALE_TOL);
     Assert.AreEqual(Double(CURVE_THETA_MIN), Res.GetValue<Double>('scale_theta'),
       1E-6);
     Assert.IsTrue(Res.GetValue<Double>('scale_counts') > 0,

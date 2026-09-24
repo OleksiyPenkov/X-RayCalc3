@@ -95,7 +95,7 @@ begin
   for i := 0 to Length(Layers) - 2 do
   begin
     Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
-    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.50299;
+    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.5;
   end;
 end;
 

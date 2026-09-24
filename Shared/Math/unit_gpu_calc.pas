@@ -182,7 +182,7 @@ const
     // TCalc.RefCalc's Roughness
     float Roughness(float sigma, float s)
     {
-        if (RF == 0) return exp(-(sigma * sigma * 0.50299) * s * s);
+        if (RF == 0) return exp(-(sigma * sigma * 0.5) * s * s);
         if (RF == 1) return 1.0 / (1.0 + (s * s * sigma * sigma) * 0.5);
         if (RF == 2)
         {

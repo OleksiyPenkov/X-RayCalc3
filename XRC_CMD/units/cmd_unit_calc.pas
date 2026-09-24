@@ -291,11 +291,12 @@ var
       case RF of
         rfError:
           // Nevot-Croce, exp(-2 k_z^2 sigma^2) with s = 2 k_z: the coefficient
-          // is a half, 0.50299 as in unit_calc.pas and unit_universal_refcalc.
-          // Until 3.9.3 this was exp(-sigma^2 s^2): twice the exponent, every
-          // interface of an xrccmd calculation or fit sqrt(2) times rougher
-          // than the same sigma in the GUI.
-          Result := exp(-0.50299 * sqr(sigma) * sqr(s));
+          // is a half, as in unit_calc.pas and unit_universal_refcalc. Until
+          // 3.9.3 this was exp(-sigma^2 s^2) with sigma stored as sigma/1.41,
+          // which is 0.50299; 3.9.3 set 0.50299 here but kept the /1.41, so
+          // its interfaces were sqrt(2) times smoother than the GUI's. 3.9.4
+          // stores sigma as given.
+          Result := exp(-0.5 * sqr(sigma) * sqr(s));
         rfExp:
           Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
         rfLinear:

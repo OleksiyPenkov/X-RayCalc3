@@ -97,7 +97,7 @@ begin
   begin
     Name := AName;
     H := aH;
-    s := aSigma / 1.41;
+    s := aSigma;
     rho := Arho;
   end;
 end;
@@ -107,7 +107,7 @@ begin
   FLayers[LayersCount + 1].Name := AName;
   FLayers[LayersCount + 1].Rho  := Arho;
   FLayers[LayersCount + 1].H    := 1E8;
-  FLayers[LayersCount + 1].s    := ASigma  / 1.41;
+  FLayers[LayersCount + 1].s    := ASigma;
 end;
 
 procedure TLayeredModel.CalcOpticalConstants(const Lambda: single);

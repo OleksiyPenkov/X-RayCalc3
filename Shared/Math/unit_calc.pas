@@ -426,7 +426,7 @@ begin
     for j := 0 to Length(Layers) - 2 do
     begin
       Layers[j].eRatio := AbsZ(DivZZ(Layers[j].e, Layers[j + 1].e));
-      Layers[j + 1].s2 := Sqr(Layers[j + 1].s) * 0.50299;
+      Layers[j + 1].s2 := Sqr(Layers[j + 1].s) * 0.5;
     end;
     // Transpose AoS -> SoA
     Model.CopyFrom(Layers);
@@ -461,7 +461,7 @@ begin
   for i := 0 to Length(Layers) - 2 do
   begin
     Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
-    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.50299; { sqr(sigma/1.41) for rfError }
+    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.5; { sigma^2 / 2 for rfError (0.50299 until 3.9.4) }
   end;
 
   // Transpose AoS -> SoA once before angle loop
