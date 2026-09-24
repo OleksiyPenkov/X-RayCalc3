@@ -189,6 +189,8 @@ type
     procedure PasteData;
     procedure SaveData;
     procedure SaveActiveData;
+    /// Appends Line to the active data item's description.
+    procedure AppendActiveDataNote(const Line: string);
 
     { Project loading/saving }
     procedure LoadProject(const FileName: string);
@@ -1556,6 +1558,18 @@ end;
 procedure TfrmProjectPanel.SaveActiveData;
 begin
   SeriesToFile(ActiveDataSeries, DataName(FProject.ActiveData));
+end;
+
+procedure TfrmProjectPanel.AppendActiveDataNote(const Line: string);
+var
+  Node: PVirtualNode;
+begin
+  if FProject.ActiveData = nil then
+    Exit;
+  FProject.ActiveData.Description := FProject.ActiveData.Description + Line + #13#10;
+  Node := FProject.GetFirstSelected;
+  if (Node <> nil) and (FProject.GetNodeData(Node) = FProject.ActiveData) then
+    SetDescription(FProject.ActiveData.Description);
 end;
 
 { --- Project loading/saving --- }

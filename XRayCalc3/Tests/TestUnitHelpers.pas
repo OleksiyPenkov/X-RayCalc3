@@ -32,6 +32,7 @@ type
     { Normalize }
     [Test] procedure Test_Normalize;
     [Test] procedure Test_NormalizeAuto;
+    [Test] procedure Test_NormalizeAuto_SearchWindow_SkipsABraggPeakAboveThePlateau;
     { the model stops short of the measured maximum: refused, data untouched }
     [Test] procedure Test_NormalizeAuto_ModelShortOfTheMaximum;
 
@@ -258,6 +259,7 @@ end;
 procedure TTestHelpers.Test_NormalizeAuto_ModelShortOfTheMaximum;
 var
   Calc, Exp: TLineSeries;
+  F, X: Single;
 begin
   Calc := TLineSeries.Create(nil);
   Exp := TLineSeries.Create(nil);
@@ -269,7 +271,7 @@ begin
     Assert.WillRaise(
       procedure
       begin
-        NormalizeAuto(Calc, Exp);
+        NormalizeAuto(Calc, Exp, 0, F, X);
       end, Exception, 'the model does not reach the angle of the maximum');
     Assert.AreEqual(Double(100), Exp.YValue[1], 0, 'the data are left as they are');
   finally
@@ -281,6 +283,7 @@ end;
 procedure TTestHelpers.Test_NormalizeAuto;
 var
   Calc, Exp: TLineSeries;
+  F, X: Single;
 begin
   // NormalizeAuto: finds max of Exp, matches it to Calc at same X, scales Exp
   Calc := TLineSeries.Create(nil);
@@ -294,9 +297,50 @@ begin
     Exp.AddXY(1, 50);
     Exp.AddXY(2, 100);
     Exp.AddXY(3, 50);
-    NormalizeAuto(Calc, Exp);
+    NormalizeAuto(Calc, Exp, 0, F, X);
+    Assert.AreEqual(Double(10), Double(F), 1E-5, 'divided by 100 / 10');
+    Assert.AreEqual(Double(2), Double(X), 0, 'anchored at the maximum');
     // After normalization, Exp peak at X=2 should be close to Calc at X=2 (=10)
     Assert.AreEqual(Double(10.0), Exp.YValue[1], 0.5, 'Peak should be normalized to Calc value');
+  finally
+    Calc.Free;
+    Exp.Free;
+  end;
+end;
+
+{ A misaligned specimen: the first Bragg order at 2 deg stands above the
+  depressed plateau at 0.4 deg. Searched below 1 deg (the GUI's 2theta
+  window), the plateau is the anchor; searched everywhere, the Bragg peak. }
+procedure TTestHelpers.Test_NormalizeAuto_SearchWindow_SkipsABraggPeakAboveThePlateau;
+var
+  Calc, Exp: TLineSeries;
+  F, X: Single;
+begin
+  Calc := TLineSeries.Create(nil);
+  Exp := TLineSeries.Create(nil);
+  try
+    Calc.AddXY(0.4, 1);
+    Calc.AddXY(2, 0.1);
+    Exp.AddXY(0.4, 500);
+    Exp.AddXY(2, 800);
+    NormalizeAuto(Calc, Exp, 1, F, X);
+    Assert.AreEqual(Double(0.4), Double(X), 1E-6, 'the plateau, not the Bragg peak');
+    Assert.AreEqual(Double(500), Double(F), 1E-3);
+    Assert.AreEqual(Double(1), Exp.YValue[0], 1E-6);
+  finally
+    Calc.Free;
+    Exp.Free;
+  end;
+
+  Calc := TLineSeries.Create(nil);
+  Exp := TLineSeries.Create(nil);
+  try
+    Calc.AddXY(0.4, 1);
+    Calc.AddXY(2, 0.1);
+    Exp.AddXY(0.4, 500);
+    Exp.AddXY(2, 800);
+    NormalizeAuto(Calc, Exp, 0, F, X);
+    Assert.AreEqual(Double(2), Double(X), 1E-6, 'no window: the global maximum');
   finally
     Calc.Free;
     Exp.Free;

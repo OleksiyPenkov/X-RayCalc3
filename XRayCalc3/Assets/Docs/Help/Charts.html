@@ -43,8 +43,8 @@
   <li><strong>Zoom:</strong> Click and drag to select a zoom region</li>
   <li><strong>Pan:</strong> Right-click and drag to pan</li>
   <li><strong>Reset zoom:</strong> Double-click to reset to full view</li>
-  <li><strong>Scale toggle:</strong> Click the <strong>Scale</strong> button to switch between linear and logarithmic Y-axis</li>
-  <li><strong>Min limit:</strong> Set a cutoff threshold &mdash; reflectivity values below this limit are clipped</li>
+  <li><strong>Scale toggle:</strong> The <strong>Linear</strong>/<strong>Log</strong> button at the right end of the Chart Info bar switches the Y-axis between linear and logarithmic</li>
+  <li><strong>R min:</strong> the box under the Linear/Log button (default 1E-7; pick a decade or type a value such as 3E-8) is the reflectivity floor. It is the lower limit of the Y-axis, and more: in every calculation and every fit, each calculated point below it is raised to it before the resolution convolution, so the &chi;&sup2; sees the floored model. The measured data are not changed. The value is saved with the project. A good setting is one count of the measured curve after normalization, the level below which the data hold nothing.</li>
 </ul>
 
 <h3>Cursor Tracking</h3>

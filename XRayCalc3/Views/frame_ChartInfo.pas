@@ -15,6 +15,8 @@ uses
 type
   TGetFastSeriesEvent = function: TFastLineSeries of object;
   TLegendCheckEvent = procedure(Sender: TObject; Series: TChartSeries) of object;
+  /// A line for the active data item's description.
+  TDataNoteEvent = procedure(Sender: TObject; const Line: string) of object;
 
   TLegendEntry = record
     Title: string;
@@ -48,6 +50,7 @@ type
     RzStatusPane9: TRzStatusPane;
     spChiScale: TRzStatusPane;
     btnChartScale: TRzBitBtn;
+    lblMinLimit: TRzStatusPane;
     cbMinLimit: TRzComboBox;
     dlgSaveResult: TSaveDialog;
     dlgExport: TSaveDialog;
@@ -73,6 +76,7 @@ type
     FGetActiveModelSeries: TGetFastSeriesEvent;
     FGetActiveDataSeries: TGetFastSeriesEvent;
     FOnSaveActiveData: TNotifyEvent;
+    FOnDataNote: TDataNoteEvent;
     FOnLegendCheckBoxClick: TLegendCheckEvent;
     FCalcSettings: TfrmCalcSettings;
     FLegendControls: TArray<TControl>;
@@ -134,6 +138,7 @@ type
     property OnGetActiveModelSeries: TGetFastSeriesEvent read FGetActiveModelSeries write FGetActiveModelSeries;
     property OnGetActiveDataSeries: TGetFastSeriesEvent read FGetActiveDataSeries write FGetActiveDataSeries;
     property OnSaveActiveData: TNotifyEvent read FOnSaveActiveData write FOnSaveActiveData;
+    property OnDataNote: TDataNoteEvent read FOnDataNote write FOnDataNote;
     property OnLegendCheckBoxClick: TLegendCheckEvent read FOnLegendCheckBoxClick write FOnLegendCheckBoxClick;
   end;
 
@@ -512,15 +517,40 @@ begin
   end;
 end;
 
+{ The maximum is taken below theta 0.5 deg (2theta 1 deg), the MCP server's
+  auto_theta_max, so a Bragg order standing above a depressed plateau is not
+  the anchor; by wavelength there is no such window. What the data were
+  divided by, and where, goes into the item's description. }
 procedure TfrmChartInfo.NormalizeDataAuto;
+const
+  AUTO_THETA_MAX = 0.5;
 var
   ModelSeries, DataSeries: TFastLineSeries;
+  SearchBelow, Factor, AnchorX: Single;
+  XName: string;
 begin
   ModelSeries := FGetActiveModelSeries;
   DataSeries := FGetActiveDataSeries;
-  NormalizeAuto(ModelSeries, DataSeries);
+  SearchBelow := 0;
+  XName := 'lambda';
+  if FCalcSettings.CalcMode = Ord(cmTheta) then
+    if FCalcSettings.Is2Theta then
+    begin
+      SearchBelow := 2 * AUTO_THETA_MAX;
+      XName := '2Theta';
+    end
+    else
+    begin
+      SearchBelow := AUTO_THETA_MAX;
+      XName := 'theta';
+    end;
+  NormalizeAuto(ModelSeries, DataSeries, SearchBelow, Factor, AnchorX);
   if Assigned(FOnSaveActiveData) then
     FOnSaveActiveData(Self);
+  if Assigned(FOnDataNote) then
+    FOnDataNote(Self, Format('* Normalised (Auto): divided by %s at %s %s', [
+      FloatToStrF(Factor, ffGeneral, 5, 0, TFormatSettings.Invariant), XName,
+      FloatToStrF(AnchorX, ffFixed, 7, 4, TFormatSettings.Invariant)]));
 end;
 
 procedure TfrmChartInfo.SmoothData;

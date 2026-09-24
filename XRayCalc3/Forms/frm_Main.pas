@@ -299,6 +299,7 @@ type
     function GetActiveModelSeries: TFastLineSeries;
     function GetActiveDataSeries: TFastLineSeries;
     procedure OnSaveActiveData(Sender: TObject);
+    procedure OnDataNote(Sender: TObject; const Line: string);
     procedure OnIncrementChange(Sender: TObject);
     procedure OnSetFitLimits(Sender: TObject);
     procedure OnProjectCaptionChange(const S: string);
@@ -374,6 +375,11 @@ end;
 procedure TfrmMain.OnSaveActiveData(Sender: TObject);
 begin
   FProjectPanel.SaveActiveData;
+end;
+
+procedure TfrmMain.OnDataNote(Sender: TObject; const Line: string);
+begin
+  FProjectPanel.AppendActiveDataNote(Line);
 end;
 
 procedure TfrmMain.OnLegendCheckBoxClick(Sender: TObject; Series: TChartSeries);
@@ -1116,6 +1122,7 @@ begin
   FChartInfo.OnGetActiveModelSeries := GetActiveModelSeries;
   FChartInfo.OnGetActiveDataSeries := GetActiveDataSeries;
   FChartInfo.OnSaveActiveData := OnSaveActiveData;
+  FChartInfo.OnDataNote := OnDataNote;
   FChartInfo.OnLegendCheckBoxClick := OnLegendCheckBoxClick;
   FChartInfo.btnStop.OnClick := CalcStopExecute;
 

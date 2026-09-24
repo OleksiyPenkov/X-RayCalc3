@@ -274,7 +274,7 @@
     object spChiScale: TRzStatusPane
       Left = 530
       Top = 28
-      Width = 429
+      Width = 379
       Anchors = [akLeft, akTop, akRight]
       Hint = 
         'The measured scale the '#967'2 is taken at. solved x r: the scale th' +
@@ -311,14 +311,34 @@
       OnClick = btnChartScaleClick
       Margin = 4
     end
+    object lblMinLimit: TRzStatusPane
+      Left = 913
+      Top = 28
+      Width = 50
+      Anchors = [akTop, akRight]
+      Hint = 
+        'Calculated reflectivity below this value is raised to it in every ' +
+        'calculation and fit; the measured data are not changed'
+      ParentShowHint = False
+      ShowHint = True
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Alignment = taRightJustify
+      Caption = 'R min'
+    end
     object cbMinLimit: TRzComboBox
       Left = 967
       Top = 25
       Width = 76
       Height = 24
       Hint = 
-        'Lower limit of the reflectivity axis - pick a decade or type a va' +
-        'lue such as 3E-8'
+        'Reflectivity floor: the lower limit of the axis, and every calcul' +
+        'ated value below it is raised to it in calculations and fits - p' +
+        'ick a decade or type a value such as 3E-8'
       Anchors = [akTop, akRight]
       AutoComplete = False
       ParentShowHint = False
