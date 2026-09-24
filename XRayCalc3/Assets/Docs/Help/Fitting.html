@@ -65,8 +65,8 @@
 <h2 id="fit-limits">Setting Fit Limits</h2>
 <ol>
   <li>Select the model in the project tree.</li>
-  <li>Click the <strong>Set Fit Limits</strong> button in the structure toolbar.</li>
-  <li>The Limits dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;), each with a <strong>Fix</strong> column and columns for Min and Max.</li>
+  <li>Click the <strong>Limits</strong> button in the structure toolbar.</li>
+  <li>The <strong>Fitting Limits</strong> dialog opens, showing a table of all layer parameters (H, &sigma;, &rho;), each with a <strong>Fix</strong> column and columns for Min and Max.</li>
   <li>Click any Min or Max cell to edit its value directly.</li>
   <li>Only parameters with Min &ne; Max will be adjusted during fitting. Setting Min = Max pins a parameter permanently; to hold one temporarily, freeze it instead (see below).</li>
 </ol>
@@ -87,10 +87,10 @@
 <p>The dialog provides action buttons for batch operations on limits:</p>
 <table>
   <tr><th>Button</th><th>Action</th></tr>
-  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; fractions (0.25 = &plusmn;25&nbsp;%): Min&nbsp;=&nbsp;V(1&nbsp;&minus;&nbsp;&Delta;), Max&nbsp;=&nbsp;V(1&nbsp;+&nbsp;&Delta;). For density (&rho;), uses the Henke database bulk density as the center value when available.</td></tr>
+  <tr><td><strong>Initialize</strong></td><td>Generates limit ranges around current parameter values using the &Delta;H, &Delta;&sigma;, &Delta;&rho; fractions (0.25 = &plusmn;25&nbsp;%): Min&nbsp;=&nbsp;V(1&nbsp;&minus;&nbsp;&Delta;), Max&nbsp;=&nbsp;V(1&nbsp;+&nbsp;&Delta;). For density (&rho;) the window is also around the layer's own value, with the maximum capped at the Henke table's bulk density, the one physical ceiling: Max&nbsp;=&nbsp;min(V(1&nbsp;+&nbsp;&Delta;&rho;), bulk), or V itself when V is already above bulk. A density left at 0 (bulk) is set to the table value first. A light layer such as a carbon contamination film at 0.9 therefore gets 0.68&ndash;1.13, not a window around bulk that leaves its own value out.</td></tr>
   <tr><td><strong>Narrow</strong></td><td>Shrinks all unlocked limits toward the current fitted value by 50%, reducing the search space. Useful after a successful fit to refine results.</td></tr>
-  <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 1% of the range edge). Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range.</td></tr>
-  <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values, widens at-boundary parameters, enforces physics constraints, and applies geometry coupling. Despite the name, this is unrelated to the <strong>Fix</strong> columns &mdash; it repairs limits, it does not freeze anything.</td></tr>
+  <tr><td><strong>Widen</strong></td><td>Expands limits only for parameters where the fitted value sits at a boundary (within 5&nbsp;% of the range from the edge, the fitting procedure's near-bound fraction), by half the range. Useful when a fit converges to a limit, suggesting the true optimum may lie outside the current range. A density maximum at or below the table's bulk density, as the dialog shows it to two decimals, is not widened past it.</td></tr>
+  <tr><td><strong>Fix</strong></td><td>Automatically resolves all detectable problems: swaps inverted Min/Max, adjusts limits to include out-of-range values (a density above a maximum held at bulk is brought down to bulk instead), widens at-boundary parameters, enforces physics constraints, and applies geometry coupling. Despite the name, this is unrelated to the <strong>Fix</strong> columns &mdash; it repairs limits, it does not freeze anything.</td></tr>
   <tr><td><strong>Freeze</strong> / <strong>Thaw</strong></td><td>Holds or releases every parameter of the selected layers. See <a href="#freezing">Freezing Parameters</a>.</td></tr>
 </table>
 
@@ -106,7 +106,7 @@
   <li><span style="background:#FFFFCC;padding:1px 6px">Yellow cells</span> indicate <strong>warnings</strong> &mdash; fitting is allowed but results may be suboptimal:
     <ul>
       <li>Fitted value below Min or above Max</li>
-      <li>Fitted value at a limit boundary (within 1% of range)</li>
+      <li>Fitted value at a limit boundary (within 5&nbsp;% of the range)</li>
       <li>Range too wide (&gt;100&times;) or too narrow (&lt;1% of value)</li>
       <li>&rho; Max exceeds densest stable element (23 g/cm&sup3;)</li>
       <li>All parameters locked &mdash; nothing to fit</li>
@@ -262,13 +262,13 @@
 <p>A complex model rarely fits well in one pass. Staged fitting lets you settle part of it, hold that part still, and concentrate the search on what remains &mdash; typically fitting the periodic stack first, then freezing it and working on the top and bottom stacks with a different weighting.</p>
 <ol>
   <li>Run a fit as usual and let it converge.</li>
-  <li>Freeze the part that has settled &mdash; right-click the stack in the structure panel, or use the <strong>Fix</strong> columns in the Limits dialog.</li>
+  <li>Freeze the part that has settled &mdash; right-click the stack in the structure panel, or use the <strong>Fix</strong> columns in the Fitting Limits dialog.</li>
   <li>Change whatever you want for the next pass, the weight type above all.</li>
   <li>Choose <strong>Calc &gt; Resume Fitting</strong> or click the <img src="images/icons/48_Resume.png" alt="Resume Fitting" class="icon"> <strong>Resume Fitting</strong> toolbar button.</li>
 </ol>
 <p><strong>Resume Fitting</strong> is available once a fit has produced a result, and differs from <strong>Auto Fitting</strong> in three ways:</p>
 <ul>
-  <li><strong>It re-centres the search.</strong> Every free parameter's window slides so the value the last fit reached sits at its centre, keeping the width you set. A parameter that ended hard against a boundary can therefore carry on past it, instead of being stuck at the wall.</li>
+  <li><strong>It re-centres the search.</strong> Every free parameter's window slides so the value the last fit reached sits at its centre, keeping the width you set. A parameter that ended hard against a boundary can therefore carry on past it, instead of being stuck at the wall. The same slide moves a ceiling you set on purpose: a density in the upper half of its window gets a maximum above the one you gave, e.g. C at 2.00 with limits 1.5&ndash;2.4 resumes with 1.55&ndash;2.45, past the 2.4 you set, and no message says so. A density maximum at or below the table's bulk density (as the dialog shows it, to two decimals) is the exception: it is held, and the window slides down under it with its width kept. A ceiling you set anywhere else is not, so check the &rho; maxima in the Fitting Limits dialog before you resume.</li>
   <li><strong>It keeps your fit extensions</strong> without asking. A resumed fit continues from the depth profiles they hold, so the stale-extension prompt would be meaningless there.</li>
   <li><strong>It continues the convergence chart</strong> rather than clearing it, so both passes are visible on one axis.</li>
 </ul>

@@ -26,6 +26,16 @@ type
 
 const
   MAX_DENSITY = 23.0;  // Osmium — densest stable element
+  /// A value this close to a bound, as a fraction of the range, is "at" it:
+  /// the limits dialog flags it and Widen moves that bound. It is the lab
+  /// fitting procedure's near_bound_fraction.
+  NEAR_BOUND_FRACTION = 0.05;
+
+{ The Henke table's bulk density of every layer, in the order the stacks and
+  layers run (the order of TFitStructure.Total); 0 where the material has no
+  table. It is the ceiling WidenAtLimit, AutoFixErrors and RecentreOnValue
+  keep a density maximum under when it already sits at or below it. }
+function BulkDensities(const Structure: TFitStructure): TArray<Single>;
 
 function ValidateLimits(const Structure: TFitStructure): TArray<TLimitIssue>;
 procedure ClampToPhysics(var Structure: TFitStructure);
@@ -56,8 +66,9 @@ procedure ApplyMaterialDensity(var Structure: TFitStructure;
   const NroValues: array of Single);
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);
 procedure NarrowLimits(var Structure: TFitStructure; ShrinkFactor: Single);
-procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single);
-procedure AutoFixErrors(var Structure: TFitStructure);
+procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single;
+  const Bulk: TArray<Single> = nil);
+procedure AutoFixErrors(var Structure: TFitStructure; const Bulk: TArray<Single> = nil);
 
 { Pins every parameter marked Fixed to its current value by giving it an empty
   range. The optimizer needs no concept of freezing: Xrange = max - min = 0
@@ -77,13 +88,54 @@ procedure CollapseFixed(var Structure: TFitStructure);
   value sitting near the bound, and a few resumes later the parameter would be
   pinned with no Fixed flag to show for it. Only a window wider than the whole
   physical range still has to be shortened.
+  A density maximum at or below the layer's bulk value (Bulk, from
+  BulkDensities; nil for none) is a ceiling: the window slides down under it
+  rather than past it.
   Apply ClampToPhysics afterwards. }
-procedure RecentreOnValue(var Structure: TFitStructure);
+procedure RecentreOnValue(var Structure: TFitStructure; const Bulk: TArray<Single> = nil);
 
 implementation
 
 uses
-  System.Math;
+  System.Math, math_globals, math_complex;
+
+function BulkDensities(const Structure: TFitStructure): TArray<Single>;
+var
+  i, j, Index: Integer;
+  f: TComplex;
+  Na, Nro: Single;
+begin
+  SetLength(Result, Structure.Total);
+  Index := 0;
+  for i := 0 to High(Structure.Stacks) do
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      Result[Index] := 0;
+      try
+        ReadHenke(Structure.Stacks[i].Layers[j].Material, 8000, 0, f, Na, Nro);
+        Result[Index] := Nro;
+      except
+        on EInOutError do ;
+      end;
+      Inc(Index);
+    end;
+end;
+
+{ The bulk ceiling of layer Index's density, or MaxSingle when there is none:
+  no table, or a maximum already above bulk that the user set on purpose.
+  The limits dialog shows and stores two decimals, so C's bulk 2.266 comes
+  back from Initialize - or from a user typing what the dialog shows - as
+  2.27. A maximum within that display rounding of bulk is the bulk ceiling,
+  and is kept as it stands rather than shaved to the table's third decimal. }
+function DensityCeiling(const Bulk: TArray<Single>; Index: Integer; CurrentMax: Single): Single;
+const
+  DISPLAY_ROUNDING = 0.005;   // half a unit in the dialog's second decimal
+begin
+  Result := MaxSingle;
+  if (Index <= High(Bulk)) and (Bulk[Index] > 0) and
+     (CurrentMax <= Bulk[Index] + DISPLAY_ROUNDING) then
+    Result := System.Math.Max(Bulk[Index], CurrentMax);
+end;
 
 const
   ParamNames: array [1..3] of string = ('H', 'S', 'Rho');
@@ -154,13 +206,13 @@ begin
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s range very narrow', [LayerName, ParamNames[p]]));
 
-        // Value at limit (within 1% of range from boundary)
+        // Value at limit (within NEAR_BOUND_FRACTION of range from boundary)
         if (FV.min <> FV.max) and (FV.max > FV.min) then
         begin
-          if (FV.V - FV.min) < 0.01 * (FV.max - FV.min) then
+          if (FV.V - FV.min) < NEAR_BOUND_FRACTION * (FV.max - FV.min) then
             AddIssue(Result, likWarning, Index, p,
               Format('%s: %s value at lower limit', [LayerName, ParamNames[p]]));
-          if (FV.max - FV.V) < 0.01 * (FV.max - FV.min) then
+          if (FV.max - FV.V) < NEAR_BOUND_FRACTION * (FV.max - FV.min) then
             AddIssue(Result, likWarning, Index, p,
               Format('%s: %s value at upper limit', [LayerName, ParamNames[p]]));
         end;
@@ -355,13 +407,17 @@ begin
       end;
 end;
 
-procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single);
+procedure WidenAtLimit(var Structure: TFitStructure; ExpandFactor: Single;
+  const Bulk: TArray<Single>);
 var
-  i, j, p: Integer;
-  Range: Single;
+  i, j, p, Index: Integer;
+  Range, Ceiling: Single;
 begin
+  Index := -1;
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      Inc(Index);
       for p := 1 to 3 do
       begin
         if Structure.Stacks[i].Layers[j].P[p].Fixed then
@@ -373,23 +429,31 @@ begin
             Continue;
 
           Range := max - min;
+          Ceiling := MaxSingle;
+          if p = 3 then
+            Ceiling := DensityCeiling(Bulk, Index, max);
 
-          if (V - min) < 0.01 * Range then
+          if (V - min) < NEAR_BOUND_FRACTION * Range then
             min := min - Range * ExpandFactor;
 
-          if (max - V) < 0.01 * Range then
-            max := max + Range * ExpandFactor;
+          { a density maximum held at bulk is not widened past it }
+          if (max - V) < NEAR_BOUND_FRACTION * Range then
+            max := System.Math.Min(max + Range * ExpandFactor, System.Math.Max(max, Ceiling));
         end;
       end;
+    end;
 end;
 
-procedure AutoFixErrors(var Structure: TFitStructure);
+procedure AutoFixErrors(var Structure: TFitStructure; const Bulk: TArray<Single>);
 var
-  i, j, p: Integer;
-  Tmp: Single;
+  i, j, p, Index: Integer;
+  Tmp, Ceiling: Single;
 begin
+  Index := -1;
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      Inc(Index);
       for p := 1 to 3 do
       begin
         if Structure.Stacks[i].Layers[j].P[p].Fixed then
@@ -403,15 +467,28 @@ begin
           Structure.Stacks[i].Layers[j].P[p].max := Tmp;
         end;
 
-        // Fix value out of range
+        // Fix value out of range. A density above a maximum held at bulk is
+        // brought down to the bulk value instead of lifting the ceiling.
         with Structure.Stacks[i].Layers[j].P[p] do
         begin
           if V < min then
             min := V;
           if V > max then
-            max := V;
+          begin
+            Ceiling := MaxSingle;
+            if p = 3 then
+              Ceiling := DensityCeiling(Bulk, Index, max);
+            if V > Ceiling then
+            begin
+              max := Ceiling;
+              V := Ceiling;
+            end
+            else
+              max := V;
+          end;
         end;
       end;
+    end;
 end;
 
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);
@@ -469,9 +546,10 @@ begin
     Pin(Structure.Subs.P[p]);
 end;
 
-procedure RecentreOnValue(var Structure: TFitStructure);
+procedure RecentreOnValue(var Structure: TFitStructure; const Bulk: TArray<Single>);
 var
-  i, j, p: Integer;
+  i, j, p, Index: Integer;
+  Hi: Single;
 
   { The upper bound ClampToPhysics would enforce on this parameter. }
   function HiBound(const ParamIndex: Integer): Single;
@@ -512,10 +590,19 @@ var
   end;
 
 begin
+  Index := -1;
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      Inc(Index);
       for p := 1 to 3 do
-        Recentre(Structure.Stacks[i].Layers[j].P[p], 0, HiBound(p));
+      begin
+        Hi := HiBound(p);
+        if p = 3 then
+          Hi := System.Math.Min(Hi, DensityCeiling(Bulk, Index, Structure.Stacks[i].Layers[j].P[p].max));
+        Recentre(Structure.Stacks[i].Layers[j].P[p], 0, Hi);
+      end;
+    end;
 
   for p := 1 to 3 do
     Recentre(Structure.Subs.P[p], 0, HiBound(p));

@@ -253,7 +253,7 @@ begin
     FFitStructure := Structure.ToFitStructure;
     if Resume then
     begin
-      RecentreOnValue(FFitStructure);
+      RecentreOnValue(FFitStructure, BulkDensities(FFitStructure));
       ClampToPhysics(FFitStructure);
     end;
     if Resume then

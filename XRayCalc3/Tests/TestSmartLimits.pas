@@ -67,6 +67,12 @@ type
     [Test] procedure Test_Recentre_RepeatedResumeKeepsWidthNearZero;
     [Test] procedure Test_Recentre_KeepsWidthUnderRhoCap;
     [Test] procedure Test_ColumnHelpers_Mapping;
+    [Test] procedure Test_NearBound_FivePercent_FlagsAndWidens;
+    [Test] procedure Test_Widen_HoldsARhoMaxAtBulk;
+    [Test] procedure Test_Widen_RhoMaxAboveBulk_IsTheUsersChoice;
+    [Test] procedure Test_AutoFix_RhoAboveABulkCeiling_ComesDown;
+    [Test] procedure Test_Recentre_SlidesUnderABulkCeiling;
+    [Test] procedure Test_BulkCeiling_AsTheDialogRoundsIt;
   end;
 
 implementation
@@ -1106,6 +1112,128 @@ begin
 
   // Column 0 is the layer caption: no parameter, and never a Fix column.
   Assert.AreEqual(0, FreezeParamOf(0), 'the Layer column freezes nothing');
+end;
+
+
+{ The lab procedure's near_bound_fraction: a value within 5 % of the range of
+  a bound is "at" it. 3 % from the top was ignored at the old 1 %. }
+procedure TTestValidateLimits.Test_NearBound_FivePercent_FlagsAndWidens;
+var
+  FS: TFitStructure;
+  Issues: TArray<TLimitIssue>;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 14.7;   // min 5, max 15: 3 % of the range below max
+  Issues := ValidateLimits(FS);
+  Assert.IsTrue(HasWarnings(Issues), 'flagged at upper limit');
+  WidenAtLimit(FS, 0.5);
+  Assert.AreEqual(Single(20.0), FS.Stacks[0].Layers[0].P[1].max, 'widened by half the range');
+
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[1].V := 14.0;   // 10 %: not at the bound
+  WidenAtLimit(FS, 0.5);
+  Assert.AreEqual(Single(15.0), FS.Stacks[0].Layers[0].P[1].max, 'left alone');
+end;
+
+{ A density maximum set at the table's bulk value is the ceiling the
+  procedure treats as physical: Widen does not carry it past bulk. }
+procedure TTestValidateLimits.Test_Widen_HoldsARhoMaxAtBulk;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 8.9;
+  FS.Stacks[0].Layers[0].P[3].min := 6.6;
+  FS.Stacks[0].Layers[0].P[3].max := 8.9;    // Co bulk
+
+  WidenAtLimit(FS, 0.5, [8.9]);
+  Assert.AreEqual(Single(8.9), FS.Stacks[0].Layers[0].P[3].max, 'held at bulk');
+
+  WidenAtLimit(FS, 0.5);
+  Assert.IsTrue(FS.Stacks[0].Layers[0].P[3].max > 8.9, 'no bulk given: widened as before');
+end;
+
+procedure TTestValidateLimits.Test_Widen_RhoMaxAboveBulk_IsTheUsersChoice;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 9.5;
+  FS.Stacks[0].Layers[0].P[3].min := 7.0;
+  FS.Stacks[0].Layers[0].P[3].max := 9.5;    // set above bulk on purpose
+
+  WidenAtLimit(FS, 0.5, [8.9]);
+  Assert.AreEqual(Single(10.75), FS.Stacks[0].Layers[0].P[3].max, 'not a bulk ceiling: widened');
+end;
+
+procedure TTestValidateLimits.Test_AutoFix_RhoAboveABulkCeiling_ComesDown;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 9.4;
+  FS.Stacks[0].Layers[0].P[3].min := 6.6;
+  FS.Stacks[0].Layers[0].P[3].max := 8.9;
+
+  AutoFixErrors(FS, [8.9]);
+  Assert.AreEqual(Single(8.9), FS.Stacks[0].Layers[0].P[3].max, 'the ceiling stays');
+  Assert.AreEqual(Single(8.9), FS.Stacks[0].Layers[0].P[3].V, 'the value comes down to it');
+
+  FS.Stacks[0].Layers[0].P[1].V := 20;       // H is not density: max follows V
+  AutoFixErrors(FS, [8.9]);
+  Assert.AreEqual(Single(20), FS.Stacks[0].Layers[0].P[1].max);
+end;
+
+{ The book's example: C at 2.00 with limits 1.5-2.4 resumed as 1.55-2.45.
+  With 2.4 the bulk value, the window keeps its width and slides under it. }
+procedure TTestValidateLimits.Test_Recentre_SlidesUnderABulkCeiling;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 2.0;
+  FS.Stacks[0].Layers[0].P[3].min := 1.5;
+  FS.Stacks[0].Layers[0].P[3].max := 2.4;
+
+  RecentreOnValue(FS, [2.4]);
+  Assert.AreEqual(2.4, FS.Stacks[0].Layers[0].P[3].max, 1E-6, 'not past the ceiling');
+  Assert.AreEqual(1.5, FS.Stacks[0].Layers[0].P[3].min, 1E-6, 'width kept');
+
+  FS.Stacks[0].Layers[0].P[3].min := 1.5;
+  FS.Stacks[0].Layers[0].P[3].max := 2.4;
+  RecentreOnValue(FS);
+  Assert.AreEqual(2.45, FS.Stacks[0].Layers[0].P[3].max, 1E-6, 'no bulk given: centred as before');
+end;
+
+
+{ Initialize writes C's bulk 2.266 as "2.27", and that is what comes back:
+  still the bulk ceiling for Widen, Fix and Resume, kept at 2.27. 2.28 is
+  beyond the display rounding and is the user's own. }
+procedure TTestValidateLimits.Test_BulkCeiling_AsTheDialogRoundsIt;
+var
+  FS: TFitStructure;
+begin
+  FS := MakeStructure(1);
+  FS.Stacks[0].Layers[0].P[3].V := 2.27;
+  FS.Stacks[0].Layers[0].P[3].min := 1.70;
+  FS.Stacks[0].Layers[0].P[3].max := 2.27;
+  WidenAtLimit(FS, 0.5, [2.266]);
+  Assert.AreEqual(Single(2.27), FS.Stacks[0].Layers[0].P[3].max, 'Widen holds 2.27');
+
+  FS.Stacks[0].Layers[0].P[3].V := 2.0;
+  FS.Stacks[0].Layers[0].P[3].min := 1.5;
+  RecentreOnValue(FS, [2.266]);
+  Assert.AreEqual(2.27, FS.Stacks[0].Layers[0].P[3].max, 1E-6, 'Resume slides under 2.27');
+
+  FS.Stacks[0].Layers[0].P[3].V := 2.4;
+  AutoFixErrors(FS, [2.266]);
+  Assert.AreEqual(Single(2.27), FS.Stacks[0].Layers[0].P[3].V, 'Fix brings the value to the ceiling');
+
+  FS.Stacks[0].Layers[0].P[3].V := 2.28;
+  FS.Stacks[0].Layers[0].P[3].min := 1.70;
+  FS.Stacks[0].Layers[0].P[3].max := 2.28;
+  WidenAtLimit(FS, 0.5, [2.266]);
+  Assert.IsTrue(FS.Stacks[0].Layers[0].P[3].max > 2.28, '2.28 is the user''s choice: widened');
 end;
 
 end.

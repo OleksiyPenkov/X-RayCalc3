@@ -95,7 +95,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.UITypes, CommCtrl, math_globals, math_complex;
+  System.UITypes, System.Math, CommCtrl, math_globals, math_complex;
 
 var
   EDIT_COLUMN: integer;
@@ -106,7 +106,7 @@ var
   dP: array [1..3] of single;
   NroValues: array of Single;
   f: TComplex;
-  Na, Nro: Single;
+  Na, Nro, Rho: Single;
 
   function Convert(const Inp, D: single): string;
   var
@@ -157,9 +157,14 @@ begin
 
         if (p = 3) and (Index <= High(NroValues)) and (NroValues[Index] > 0) then
         begin
-          // Use Henke density as center for Rho limits
-          ListView.Items[Index].SubItems[Count] := Convert(NroValues[Index], -dP[p]);
-          ListView.Items[Index].SubItems[Count + 1] := Convert(NroValues[Index], dP[p]);
+          { Rho: around the layer's own density (a thin carbon contamination
+            at 0.9 is far from bulk 2.26, and a window around bulk would leave
+            it out), with the maximum capped at the table's bulk value, the
+            one physical ceiling - unless the density is already above it. }
+          Rho := FStructure.Stacks[i].Layers[j].P[3].V;
+          ListView.Items[Index].SubItems[Count] := Convert(Rho, -dP[p]);
+          ListView.Items[Index].SubItems[Count + 1] := FloatToStrF(
+            Max(Rho, Min(Rho * (1 + dP[p]), NroValues[Index])), ffFixed, 5, 2);
         end
         else
         begin
@@ -189,7 +194,7 @@ end;
 procedure TfrmLimits.btnWidenClick(Sender: TObject);
 begin
   StructureFromView;
-  WidenAtLimit(FStructure, 0.5);
+  WidenAtLimit(FStructure, 0.5, BulkDensities(FStructure));
   ClampToPhysics(FStructure);
   ApplyGeometryCoupling(FStructure);
   StructureToView;
@@ -198,8 +203,8 @@ end;
 procedure TfrmLimits.btnFixClick(Sender: TObject);
 begin
   StructureFromView;
-  AutoFixErrors(FStructure);
-  WidenAtLimit(FStructure, 0.5);
+  AutoFixErrors(FStructure, BulkDensities(FStructure));
+  WidenAtLimit(FStructure, 0.5, BulkDensities(FStructure));
   ClampToPhysics(FStructure);
   ApplyGeometryCoupling(FStructure);
   StructureToView;
