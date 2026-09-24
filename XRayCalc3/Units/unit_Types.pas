@@ -114,6 +114,8 @@ type
    SmoothWindow: ShortInt;
      SolveScale: Boolean;   // TCalc.SolveScale for every evaluation of the fit
  ScaleWindowLog: Single;    // TCalc.ScaleWindowLog
+     FreePeriod: Boolean;   // periodic mode: every N > 1 stack's period may move
+   PeriodWindow: Single;    //   by this fraction of its start value either way
   end;
 
   // Calculation data types

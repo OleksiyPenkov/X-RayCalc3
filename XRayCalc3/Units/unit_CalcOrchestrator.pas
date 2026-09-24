@@ -276,6 +276,9 @@ begin
 end;
 
 function TCalcOrchestrator.PrepareLFPSO(const Resume: Boolean): Boolean;
+var
+  Ranges: TArray<TPeriodRange>;
+  i: Integer;
 begin
   Result := False;
   case FCalcSettings.FittingMode of
@@ -314,6 +317,17 @@ begin
     has no concept of freezing; an empty range is what pins a value. }
   CollapseFixed(FFitStructure);
   FLFPSO.Structure := FFitStructure;
+
+  { Free period (periodic mode): each repeating stack's period may move by the
+    window around the value it starts from - this run's model, so a resumed
+    fit carries on from where the last one ended. The engine is the one
+    fit_xrr's "target": "period" drives. }
+  if (FCalcSettings.FittingMode = fmPeriodic) and FProjectPanel.FitParams.FreePeriod then
+  begin
+    Ranges := PeriodRanges(FFitStructure, FProjectPanel.FitParams.PeriodWindow);
+    for i := 0 to High(Ranges) do
+      TLFPSO_Periodic(FLFPSO).SetPeriodRange(i, Ranges[i].Min, Ranges[i].Max);
+  end;
 
   FChartPages.PrepareConvergence(FProjectPanel.FitParams.NMax, Resume);
   FChartPages.PrepareDiagnostics(FProjectPanel.FitParams.NMax, Resume);
@@ -597,6 +611,10 @@ begin
     { the fraction typed, back from the log10(1 + w) the engine holds }
     JFitParams.AddPair('scaleSolveWindow',
       TJSONNumber.Create(RoundTo(Power(10, FitParams.ScaleWindowLog) - 1, -6)));
+    JFitParams.AddPair('freePeriod', TJSONBool.Create(FitParams.FreePeriod and
+      (FCalcSettings.FittingMode = fmPeriodic)));
+    if FitParams.FreePeriod and (FCalcSettings.FittingMode = fmPeriodic) then
+      JFitParams.AddPair('periodWindow', TJSONNumber.Create(RoundTo(FitParams.PeriodWindow, -6)));
     Root.AddPair('fitParams', JFitParams);
 
     // calcParams

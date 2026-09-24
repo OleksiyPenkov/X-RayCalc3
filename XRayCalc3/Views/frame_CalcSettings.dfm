@@ -311,6 +311,57 @@ object frmCalcSettings: TfrmCalcSettings
       Text = '0.2'
       StyleElements = [seFont, seClient, seBorder]
     end
+    object cbFreePeriod: TRzCheckBox
+      Left = 460
+      Top = 81
+      Width = 84
+      Height = 18
+      Hint =
+        'Periodic mode: let the period of every repeating stack move by th' +
+        'e window around its start value, as fit_xrr'#39's "target": "period' +
+        '" does. Off: the period is held at its start value'
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      AutoSizeWidth = 84
+      Caption = 'Free period '#177
+      ParentShowHint = False
+      ShowHint = True
+      State = cbUnchecked
+      TabOrder = 12
+    end
+    object edPeriodWindow: TEdit
+      Left = 548
+      Top = 80
+      Width = 34
+      Height = 18
+      Hint =
+        'How far each period may move from the one the fit starts with, i' +
+        'n per cent either way'
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      Alignment = taRightJustify
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 13
+      Text = '5'
+      StyleElements = [seFont, seClient, seBorder]
+    end
+    object lblPeriodWindow: TLabel
+      Left = 586
+      Top = 83
+      Width = 11
+      Height = 14
+      Margins.Left = 3
+      Margins.Top = 3
+      Margins.Right = 3
+      Margins.Bottom = 3
+      Caption = '%'
+      StyleElements = [seFont, seClient, seBorder]
+    end
   end
   object RzPanel7: TRzPanel
     AlignWithMargins = True

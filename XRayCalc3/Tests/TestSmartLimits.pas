@@ -73,6 +73,7 @@ type
     [Test] procedure Test_AutoFix_RhoAboveABulkCeiling_ComesDown;
     [Test] procedure Test_Recentre_SlidesUnderABulkCeiling;
     [Test] procedure Test_BulkCeiling_AsTheDialogRoundsIt;
+    [Test] procedure Test_PeriodRanges_WindowAroundTheStartPeriod;
   end;
 
 implementation
@@ -1234,6 +1235,37 @@ begin
   FS.Stacks[0].Layers[0].P[3].max := 2.28;
   WidenAtLimit(FS, 0.5, [2.266]);
   Assert.IsTrue(FS.Stacks[0].Layers[0].P[3].max > 2.28, '2.28 is the user''s choice: widened');
+end;
+
+
+{ Free period: a window around each repeating stack's start period, and a
+  hold (0, 0) for a stack with no period or none of its thicknesses free. }
+procedure TTestValidateLimits.Test_PeriodRanges_WindowAroundTheStartPeriod;
+var
+  FS: TFitStructure;
+  R: TArray<TPeriodRange>;
+begin
+  FS := MakeStructure(2);                    // H 10 + 10, range 5..15 each
+  FS.Stacks[0].N := 20;
+  SetLength(FS.Stacks, 2);
+  FS.Stacks[1] := FS.Stacks[0];
+  FS.Stacks[1].Layers := Copy(FS.Stacks[0].Layers);
+  FS.Stacks[1].N := 1;                       // a capping layer: no period
+
+  R := PeriodRanges(FS, 0.05);
+  Assert.AreEqual(2, Integer(Length(R)));
+  Assert.AreEqual(19.0, R[0].Min, 1E-6, 'D 20, 5 % down');
+  Assert.AreEqual(21.0, R[0].Max, 1E-6, 'D 20, 5 % up');
+  Assert.IsTrue(R[1].Max <= R[1].Min, 'N = 1: held');
+
+  FS.Stacks[0].Layers[0].P[1].Fixed := True;
+  FS.Stacks[0].Layers[1].P[1].Fixed := True;
+  R := PeriodRanges(FS, 0.05);
+  Assert.IsTrue(R[0].Max <= R[0].Min, 'every thickness frozen: nothing can move the period');
+
+  FS.Stacks[0].Layers[1].P[1].Fixed := False;
+  R := PeriodRanges(FS, 0);
+  Assert.IsTrue(R[0].Max <= R[0].Min, 'a zero window holds');
 end;
 
 end.

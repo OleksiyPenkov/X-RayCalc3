@@ -37,6 +37,18 @@ const
   keep a density maximum under when it already sits at or below it. }
 function BulkDensities(const Structure: TFitStructure): TArray<Single>;
 
+type
+  TPeriodRange = record
+    Min, Max: Double;   // Max <= Min: the stack's period is held
+  end;
+
+{ The period range of every stack for a fit with a free period: D(1 - Window)
+  to D(1 + Window) around the stack's start period D, the sum of its layer
+  thicknesses. A stack with N = 1 has no period, and one whose thicknesses are
+  all frozen cannot move it; both are held (0, 0). Indexed like
+  Structure.Stacks, which is how TLFPSO_Periodic.SetPeriodRange takes them. }
+function PeriodRanges(const Structure: TFitStructure; Window: Double): TArray<TPeriodRange>;
+
 function ValidateLimits(const Structure: TFitStructure): TArray<TLimitIssue>;
 procedure ClampToPhysics(var Structure: TFitStructure);
 function HasErrors(const Issues: TArray<TLimitIssue>): Boolean;
@@ -119,6 +131,36 @@ begin
       end;
       Inc(Index);
     end;
+end;
+
+function PeriodRanges(const Structure: TFitStructure; Window: Double): TArray<TPeriodRange>;
+var
+  i, j: Integer;
+  D: Double;
+  Movable: Boolean;
+begin
+  SetLength(Result, Length(Structure.Stacks));
+  for i := 0 to High(Structure.Stacks) do
+  begin
+    Result[i].Min := 0;
+    Result[i].Max := 0;
+    if (Structure.Stacks[i].N < 2) or (Window <= 0) then
+      Continue;
+    D := 0;
+    Movable := False;
+    for j := 0 to High(Structure.Stacks[i].Layers) do
+    begin
+      D := D + Structure.Stacks[i].Layers[j].P[1].V;
+      if not Structure.Stacks[i].Layers[j].P[1].Fixed and
+         (Structure.Stacks[i].Layers[j].P[1].max > Structure.Stacks[i].Layers[j].P[1].min) then
+        Movable := True;
+    end;
+    if (D > 0) and Movable then
+    begin
+      Result[i].Min := D * (1 - Window);
+      Result[i].Max := D * (1 + Window);
+    end;
+  end;
 end;
 
 { The bulk ceiling of layer Index's density, or MaxSingle when there is none:

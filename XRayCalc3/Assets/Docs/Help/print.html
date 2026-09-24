@@ -959,8 +959,8 @@
 <div class="note"><strong>Example:</strong> A Mo/Si PMM with 60 repeated stacks would require 726 variables if treated individually. Using the periodic mode, this reduces to just 18 variables.</div>
 
 <h3>Periodic Mode</h3>
-<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. After every move a periodicity keeper rescales the layer thicknesses of each stack with N&nbsp;&gt;&nbsp;1, in proportion to each layer's thickness and within its bounds, so that the period D keeps its value.</p>
-<div class="note"><strong>The period is fixed.</strong> A Periodic fit in the program holds the period D of every repeating stack at its value in the start model: it changes the ratio of the layer thicknesses (and &sigma;, &rho;), not D, so it cannot move the Bragg peaks. Set the period first &mdash; the peak positions must already match &mdash; or use Irregular or Polynomial mode to let it move. (The MCP server can free the period; see <a href="#fitting">MCP Server &gt; Fitting</a>.)</div>
+<p>The coating consists of repeated stacks; each stack consists of several layers. Parameters are fitted per-layer within one period, then applied to all periods. After every move a periodicity keeper rescales the layer thicknesses of each stack with N&nbsp;&gt;&nbsp;1, in proportion to each layer's thickness and within its bounds, so that the period D keeps its value &mdash; or, with <strong>Free period</strong> checked, stays inside its window.</p>
+<div class="note"><strong>The period is fixed unless you free it.</strong> By default a Periodic fit holds the period D of every repeating stack at its value in the start model: it changes the ratio of the layer thicknesses (and &sigma;, &rho;), not D, so it cannot move the Bragg peaks. Set the period first &mdash; the peak positions must already match &mdash; or check <strong>Free period &plusmn;</strong> in the Fitting panel <span class="badge">v3.9.4</span>. D may then move by that percentage of the value it starts from (default 5&nbsp;%), each layer still within its own thickness limits; the periodicity keeper steps in only when the sum leaves the window. The window is taken around the model the fit starts from, so <strong>Resume Fitting</strong> carries on from the period the last fit reached. A stack whose thicknesses are all frozen keeps its period. It is the same engine the MCP server's <code>"target": "period"</code> drives (see <a href="#fitting">MCP Server &gt; Fitting</a>).</div>
 <ul>
   <li>Suitable for structures with consistent periodicity.</li>
   <li>Dramatically reduces the number of fitting variables for PMMs.</li>
@@ -987,6 +987,7 @@
   <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
   <tr><td><strong>Solve scale in &chi;&sup2;</strong></td><td>Score every candidate structure at the measured scale that suits it best, within the window, instead of at the anchored scale (see <a href="#solved-scale">Solving the Measured Scale</a>)</td><td>Checked</td></tr>
   <tr><td><strong>Window</strong></td><td>How far the solved scale may move from the anchored one, as a fraction: the scale stays between 1/(1&nbsp;+&nbsp;w) and (1&nbsp;+&nbsp;w) times the anchor; 0 pins it</td><td>0.2</td></tr>
+  <tr><td><strong>Free period &plusmn; %</strong></td><td>Periodic mode only: lets the period of every stack with N&nbsp;&gt;&nbsp;1 move within that percentage of its start value, instead of holding it (see <a href="#fit-modes">Periodic Mode</a>). Saved with the project</td><td>Unchecked, 5</td></tr>
 </table>
 
 <h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
@@ -2357,7 +2358,7 @@ Column 2: reflectivity.</p>
   <li><strong>Enable Shake</strong> &mdash; this helps escape local minima.</li>
   <li><strong>Check initial model</strong> &mdash; a better starting guess leads to faster convergence.</li>
   <li><strong>Try a different fitting mode</strong> &mdash; Periodic mode may work better than Irregular for regular multilayers, and vice versa.</li>
-  <li><strong>Check the Bragg peak positions first</strong> &mdash; a Periodic fit holds the period D of every repeating stack at its start value, so it cannot move the peaks. Set the period so the peaks line up, or fit in Irregular or Polynomial mode (see <a href="#fit-modes">Fitting Modes</a>).</li>
+  <li><strong>Check the Bragg peak positions first</strong> &mdash; a Periodic fit holds the period D of every repeating stack at its start value unless <strong>Free period</strong> is checked, so by default it cannot move the peaks. Set the period so the peaks line up, check Free period, or fit in Irregular or Polynomial mode (see <a href="#fit-modes">Fitting Modes</a>).</li>
   <li><strong>Look at the scale pane</strong> &mdash; if it reads <em>at bound</em>, the normalisation is off by more than the Window allows: renormalise, or widen the Window (see <a href="#solved-scale">Solving the Measured Scale</a>).</li>
   <li><strong>Check the chart's lower reflectivity limit</strong> &mdash; the calculated curve is floored at it, so measured points below it are compared with that limit.</li>
   <li><strong>Link the data</strong> &mdash; the fit needs the measured curve linked to the model and visible; otherwise it stops with <em>Measured curve is not linked!</em></li>

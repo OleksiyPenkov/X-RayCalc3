@@ -60,6 +60,9 @@ type
     cbSolveScale: TRzCheckBox;
     lblScaleWindow: TLabel;
     edScaleWindow: TEdit;
+    cbFreePeriod: TRzCheckBox;
+    edPeriodWindow: TEdit;
+    lblPeriodWindow: TLabel;
     procedure rgCalcModeChanging(Sender: TObject; NewIndex: Integer;
       var AllowChange: Boolean);
     procedure rgCalcModeClick(Sender: TObject);
@@ -136,6 +139,17 @@ const
   INI_SECTION_SCALE = 'FIT';
   INI_SOLVE_SCALE   = 'SolveScale';
   INI_SCALE_WINDOW  = 'ScaleWindow';
+  INI_FREE_PERIOD   = 'FreePeriod';
+  INI_PERIOD_WINDOW = 'PeriodWindow';   // per cent, invariant format
+  DEF_PERIOD_WINDOW = 5;
+
+function ReadPeriodWindow(INF: TMemIniFile): Double;
+begin
+  Result := StrToFloatDef(INF.ReadString(INI_SECTION_SCALE, INI_PERIOD_WINDOW, ''),
+    DEF_PERIOD_WINDOW, TFormatSettings.Invariant);
+  if Result <= 0 then
+    Result := DEF_PERIOD_WINDOW;
+end;
 
 function ReadScaleWindow(INF: TMemIniFile): Double;
 begin
@@ -256,6 +270,9 @@ begin
   cbSmooth.Enabled := FittingMode = fmIrregular;
   edPolyOrder.Enabled := FittingMode = fmPoly;
   lblPolyOrder.Enabled := edPolyOrder.Enabled;
+  cbFreePeriod.Enabled := FittingMode = fmPeriodic;
+  edPeriodWindow.Enabled := cbFreePeriod.Enabled;
+  lblPeriodWindow.Enabled := cbFreePeriod.Enabled;
   if Assigned(FOnFittingModeChange) then
     FOnFittingModeChange(Self);
 end;
@@ -313,6 +330,9 @@ begin
     defaults: solved, window 0.2. }
   cbSolveScale.Checked := INF.ReadBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, True);
   edScaleWindow.Text := FloatToStr(ReadScaleWindow(INF));
+  { A project saved before the option existed holds its period, as it did. }
+  cbFreePeriod.Checked := INF.ReadBool(INI_SECTION_SCALE, INI_FREE_PERIOD, False);
+  edPeriodWindow.Text := FloatToStr(ReadPeriodWindow(INF));
 
   ApplyModeSettings;
 end;
@@ -335,6 +355,9 @@ begin
   cbSmooth.Enabled := FittingMode = fmIrregular;
   edPolyOrder.Enabled := FittingMode = fmPoly;
   lblPolyOrder.Enabled := edPolyOrder.Enabled;
+  cbFreePeriod.Enabled := FittingMode = fmPeriodic;
+  edPeriodWindow.Enabled := cbFreePeriod.Enabled;
+  lblPeriodWindow.Enabled := cbFreePeriod.Enabled;
 
   if Assigned(FOnCalcModeChange) then
     FOnCalcModeChange(Self);
@@ -376,6 +399,10 @@ begin
   INF.WriteBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, cbSolveScale.Checked);
   INF.WriteString(INI_SECTION_SCALE, INI_SCALE_WINDOW,
     FloatToStr(ScaleWindowOrDefault, TFormatSettings.Invariant));
+  INF.WriteBool(INI_SECTION_SCALE, INI_FREE_PERIOD, cbFreePeriod.Checked);
+  INF.WriteString(INI_SECTION_SCALE, INI_PERIOD_WINDOW,
+    FloatToStr(StrToFloatDef(Trim(edPeriodWindow.Text), DEF_PERIOD_WINDOW),
+    TFormatSettings.Invariant));
 end;
 
 procedure TfrmCalcSettings.ReadFitParams(var Params: TFitParams);
@@ -389,6 +416,11 @@ begin
   Params.Smooth := cbSmooth.Checked;
   Params.SolveScale := SolveScale;
   Params.ScaleWindowLog := ScaleWindowToLog(ScaleWindow);
+  Params.FreePeriod := cbFreePeriod.Checked;
+  Params.PeriodWindow := StrToFloat(Trim(edPeriodWindow.Text)) / 100;
+  if Params.FreePeriod and (Params.PeriodWindow <= 0) then
+    raise EConvertError.CreateFmt('The period window must be positive (%s %%): it is ' +
+      'how far each period may move from its start value', [edPeriodWindow.Text]);
 end;
 
 procedure TfrmCalcSettings.FillCalcThreadParams(var Params: TCalcThreadParams);
@@ -463,6 +495,8 @@ begin
     frame's controls own them and SaveToINI writes them. }
   Params.SolveScale := INF.ReadBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, True);
   Params.ScaleWindowLog := ScaleWindowToLog(ReadScaleWindow(INF));
+  Params.FreePeriod := INF.ReadBool(INI_SECTION_SCALE, INI_FREE_PERIOD, False);
+  Params.PeriodWindow := ReadPeriodWindow(INF) / 100;
 end;
 
 procedure TfrmCalcSettings.SaveAdvancedParams(INF: TMemIniFile; const Params: TFitParams);
