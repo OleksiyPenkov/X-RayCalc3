@@ -176,6 +176,7 @@ var
   end;
 
 begin
+  Result := nil;
   if not FileExists(FileName) then
   begin
     Writeln('File ', FileName, ' not found');

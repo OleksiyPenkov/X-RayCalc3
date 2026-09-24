@@ -87,7 +87,7 @@ uses
   System.Classes;
 
 const
-  ClassicalElectronRadius = 0.54014E-5;  // r_e * N_A / (2*pi) in CGS units
+  ClassicalElectronRadius = 0.54014E-5;  // r_e * N_A / pi (lambda in A, rho in g/cm3): c * f1 = 2*delta
 
 { TLayeredModel }
 

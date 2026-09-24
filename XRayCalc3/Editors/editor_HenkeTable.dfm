@@ -47,9 +47,9 @@ object edtrHenkeTable: TedtrHenkeTable
     object Label6: TLabel
       Left = 11
       Top = 42
-      Width = 44
+      Width = 57
       Height = 16
-      Caption = 'N (a.u.)'
+      Caption = 'A (g/mol)'
       Font.Charset = ANSI_CHARSET
       Font.Color = clBlack
       Font.Height = -13
@@ -78,9 +78,9 @@ object edtrHenkeTable: TedtrHenkeTable
       DecimalPlacesAlwaysShown = False
     end
     object edN: TJvCalcEdit
-      Left = 61
+      Left = 73
       Top = 40
-      Width = 100
+      Width = 88
       Height = 23
       ButtonFlat = True
       TabOrder = 2

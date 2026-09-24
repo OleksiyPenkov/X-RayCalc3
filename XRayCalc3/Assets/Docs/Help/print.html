@@ -535,6 +535,7 @@
 <p>A density of <strong>0</strong> means &ldquo;use the bulk density from the Henke table&rdquo;. This holds for every layer and, since version 3.9.1, for the substrate too: a substrate density you enter is now used in the calculation. Earlier versions always used the bulk density for the substrate and silently ignored the value shown.</p>
 <p>A density gradient (<a href="#Profiles">function profile</a> on &rho;) takes the layer&rsquo;s entered density as its constant term. With &rho; = 0 it therefore starts from zero, not from the bulk value, and the layer is empty in the first period: enter an explicit density before adding a density gradient.</p>
 <p>So that old results do not change, a project saved by an earlier version opens with its substrate density set to 0 (bulk), which is what those models were always computed with. To use a specific substrate density, for example 2.2&nbsp;g/cm&sup3; for fused silica or 2.5 for soda-lime glass, enter it and save the project.</p>
+<p>Density 0 means the bulk density stored in the Henke table, which is not always the form you have. The table for SiO2 holds crystalline quartz, 2.65&nbsp;g/cm&sup3;. A fused-silica substrate left at 0 therefore puts the critical edge at about 2&theta;&nbsp;=&nbsp;0.475&deg; at Cu K&alpha; instead of about 0.433&deg;. Enter 2.2 for fused silica. The Henke table editor shows the bulk density of each material.</p>
 
 <h3>Adding a layer</h3>
 <ol>

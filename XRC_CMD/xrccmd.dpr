@@ -81,7 +81,9 @@ begin
 
       if FindCmdLineSwitch('iter', Value, True, [clstValueNextParam]) then
           Iterations := StrToInt(Value);
-     end;
+     end
+     else if not FileExists(InputStructureFileName) then
+       OperationMode := omHelp;
 
      case OperationMode of
        omHelp       : ShowHelp;

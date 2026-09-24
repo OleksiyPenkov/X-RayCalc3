@@ -107,13 +107,12 @@ var
   end;
 
 begin
+  Result.Count := 0;
   if not FileExists(InputStructureFileName) then
   begin
     Writeln('File ', InputStructureFileName, ' not found');
     Exit;
   end;
-
-  Result.Count := 0;
 
   SL   := TStringList.Create;
   Line := TStringList.Create;

@@ -115,7 +115,11 @@ begin
   begin
     InputStructureFileName := StringReplace(FN, '#', IntToStr(i),[]);
     if i =  1 then
-      Model := LoadModel(InputStructureFileName, CalcParams)
+    begin
+      Model := LoadModel(InputStructureFileName, CalcParams);
+      if Model = nil then
+        Exit;
+    end
     else
       UpdateLayeredModel(Model);
     CalcInline(ChiSquares[i-1]);
