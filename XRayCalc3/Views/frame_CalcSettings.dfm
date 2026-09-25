@@ -230,7 +230,7 @@ object frmCalcSettings: TfrmCalcSettings
       TabOrder = 7
     end
     object btnAdvFitSettings: TRzBitBtn
-      Left = 375
+      Left = 522
       Top = 9
       Width = 75
       Height = 92
@@ -239,7 +239,7 @@ object frmCalcSettings: TfrmCalcSettings
       Margins.Right = 3
       Margins.Bottom = 3
       Caption = 'Advanced'#13'Settings'
-      TabOrder = 8
+      TabOrder = 13
       OnClick = btnAdvFitSettingsClick
       Margin = 4
       Spacing = 4
@@ -256,10 +256,10 @@ object frmCalcSettings: TfrmCalcSettings
       AutoSizeWidth = 109
       Caption = 'Smooth'
       State = cbUnchecked
-      TabOrder = 9
+      TabOrder = 8
     end
     object cbSolveScale: TRzCheckBox
-      Left = 460
+      Left = 375
       Top = 25
       Width = 112
       Height = 18
@@ -277,10 +277,10 @@ object frmCalcSettings: TfrmCalcSettings
       ParentShowHint = False
       ShowHint = True
       State = cbChecked
-      TabOrder = 10
+      TabOrder = 9
     end
     object lblScaleWindow: TLabel
-      Left = 460
+      Left = 375
       Top = 57
       Width = 39
       Height = 14
@@ -292,7 +292,7 @@ object frmCalcSettings: TfrmCalcSettings
       StyleElements = [seFont, seClient, seBorder]
     end
     object edScaleWindow: TEdit
-      Left = 510
+      Left = 425
       Top = 53
       Width = 50
       Height = 18
@@ -307,12 +307,12 @@ object frmCalcSettings: TfrmCalcSettings
       Alignment = taRightJustify
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 11
+      TabOrder = 10
       Text = '0.2'
       StyleElements = [seFont, seClient, seBorder]
     end
     object cbFreePeriod: TRzCheckBox
-      Left = 460
+      Left = 375
       Top = 81
       Width = 84
       Height = 18
@@ -329,10 +329,10 @@ object frmCalcSettings: TfrmCalcSettings
       ParentShowHint = False
       ShowHint = True
       State = cbUnchecked
-      TabOrder = 12
+      TabOrder = 11
     end
     object edPeriodWindow: TEdit
-      Left = 548
+      Left = 463
       Top = 80
       Width = 34
       Height = 18
@@ -346,12 +346,12 @@ object frmCalcSettings: TfrmCalcSettings
       Alignment = taRightJustify
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 13
+      TabOrder = 12
       Text = '10'
       StyleElements = [seFont, seClient, seBorder]
     end
     object lblPeriodWindow: TLabel
-      Left = 586
+      Left = 501
       Top = 83
       Width = 11
       Height = 14
