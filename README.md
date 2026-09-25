@@ -11,11 +11,16 @@ user manual, manual fitting, working with experimental data).
 
 ## Citing
 
+If you use the software in published work, please cite:
+
+- Penkov, O. V., Li, M., Mikki, S., Devizenko, A. & Kopylets, I. (2024). *X-Ray Calc 3: improved
+  software for simulation and inverse problem solving for X-ray reflectivity.* J. Appl. Cryst.
+  **57**, 555–566. https://doi.org/10.1107/S1600576724001031
 - Penkov, O. V., Kopylets, I. A., Khadem, M. & Qin, T. (2020). *X-Ray Calc: a software for the
   simulation of X-ray reflectivity.* SoftwareX **12**, 100528.
   https://doi.org/10.1016/j.softx.2020.100528
-- Penkov, O. V. et al. (2024). *X-Ray Calc 3.* J. Appl. Cryst. **57**, 555–566.
-  https://doi.org/10.1107/S1600576724001031
+
+The same metadata is in [`CITATION.cff`](CITATION.cff), which GitHub shows as "Cite this repository".
 
 ## Downloads
 
