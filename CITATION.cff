@@ -15,7 +15,7 @@ authors:
     affiliation: Zhejiang University
 version: 3.9.3
 date-released: 2026-09-24
-license: GPL-3.0-only
+license: MIT
 repository-code: "https://github.com/OleksiyPenkov/X-RayCalc3"
 url: "https://github.com/OleksiyPenkov/X-RayCalc3/wiki"
 keywords:

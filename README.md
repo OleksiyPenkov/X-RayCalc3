@@ -106,4 +106,5 @@ history, with the flat layout and the 3.5.x releases, is preserved under the tag
 
 ## Licence
 
-GNU General Public License v3.0; see [LICENSE](LICENSE).
+MIT License; see [LICENSE](LICENSE). Releases up to and including 3.9.4 were published under the
+GNU General Public License v3.0.
