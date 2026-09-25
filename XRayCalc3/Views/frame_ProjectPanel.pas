@@ -691,6 +691,7 @@ end;
 
 procedure TfrmProjectPanel.pmiEnabledClick(Sender: TObject);
 begin
+  if FLastData = nil then Exit;
   FLastData.Enabled := not FLastData.Enabled;
   FProject.Repaint;
   if FLastData.RowType = prExtension then
@@ -699,6 +700,7 @@ end;
 
 procedure TfrmProjectPanel.pmiLinkedClick(Sender: TObject);
 begin
+  if FLastData = nil then Exit;
   if not pmiLinked.Checked then
     FProject.LinkedData := nil
   else
@@ -709,6 +711,7 @@ end;
 
 procedure TfrmProjectPanel.pmiVisibleClick(Sender: TObject);
 begin
+  if FLastData = nil then Exit;
   FChartMgr.Series[FLastData.CurveID].Active := pmiVisible.Checked;
   FChartMgr.Series[FLastData.CurveID].Visible := pmiVisible.Checked;
   FLastData.Visible := pmiVisible.Checked;
@@ -718,6 +721,7 @@ end;
 
 procedure TfrmProjectPanel.pmiDrawOrderClick(Sender: TObject);
 begin
+  if FLastData = nil then Exit;
   FChartMgr.MoveSeries(FLastData.CurveID, TDrawOrderMove((Sender as TMenuItem).Tag));
 end;
 
@@ -727,6 +731,22 @@ var
   Order: TArray<Integer>;
   Place: Integer;
 begin
+  { Nothing selected: a click on the tree's empty space, or the moment after
+    a delete. The menu was also run for its shortcuts, so F3 (then Enabled's,
+    now File - Open project's alone) raised an access violation here with the
+    tree focused and nothing selected (3.9.4.1170). }
+  if FLastData = nil then
+  begin
+    pmiEnabled.Visible   := False;
+    pmiVisible.Visible   := False;
+    pmiLinked.Visible    := False;
+    pmiDrawOrder.Visible := False;
+    pmiNorm.Visible      := False;
+    pmCopytoclipboard.Visible := False;
+    pmExporttofile.Visible    := False;
+    Exit;
+  end;
+
   case FLastData.RowType of
     prItem:
       begin

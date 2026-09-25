@@ -384,7 +384,6 @@ object frmProjectPanel: TfrmProjectPanel
     object pmiEnabled: TMenuItem
       AutoCheck = True
       Caption = 'Enabled'
-      ShortCut = 114
       OnClick = pmiEnabledClick
     end
     object pmiVisible: TMenuItem
