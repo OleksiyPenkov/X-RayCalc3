@@ -15,6 +15,12 @@ unit unit_ResidualStrip;
    so zoom, pan, undo-zoom, copy, export and print take it along. A zoom or a
    pan would also rescale its vertical axis; HoldRange puts it back.
 
+   It is drawn as a plot of its own: before the series the gap between the
+   two axes is painted in the panel's color, over the plot background, the
+   frame and the grid, and after them each plot gets its own frame. For that
+   the strip takes the chart's OnBeforeDrawSeries and OnAfterDraw, calling
+   whatever handlers were there before.
+
    The strip keeps no reference to its series: it finds them by their Tag. So
    whatever frees the chart's series (TChartManager.ClearAll, the chart itself)
    cannot leave it holding a dangling one. *)
@@ -22,13 +28,13 @@ unit unit_ResidualStrip;
 interface
 
 uses
-  System.UITypes, VCLTee.Chart, VCLTee.TeEngine, VCLTee.Series,
+  System.Classes, System.UITypes, VCLTee.Chart, VCLTee.TeEngine, VCLTee.Series,
   unit_Residuals;
 
 const
   RESIDUAL_SERIES_TAG = $52455344;   // 'RESD'
-  STRIP_START = 77;                  // percent of the plot height, from the top
-  MAIN_END = 73;                     // where the reflectivity axis ends while the strip shows
+  STRIP_START = 78;                  // percent of the plot height, from the top
+  MAIN_END = 72;                     // where the reflectivity axis ends while the strip shows
   STRIP_RANGE = 1;                   // decades either side of zero
   STRIP_TOLERANCE = 0.1;             // a tenth of a decade: 26 % high, 21 % low
 
@@ -47,13 +53,18 @@ type
     FShowBands: Boolean;
     FShowFloored: Boolean;
     FPlots: TArray<TResidualPlot>;
+    FPrevBeforeDrawSeries: TNotifyEvent;
+    FPrevAfterDraw: TNotifyEvent;
     procedure SetVisible(Value: Boolean);
+    procedure ChartBeforeDrawSeries(Sender: TObject);
+    procedure ChartAfterDraw(Sender: TObject);
     procedure ClearSeries;
     procedure Redraw;
     function AddLine(AColor: TColor; AWidth: Integer): TFastLineSeries;
     function AddPoints(AColor: TColor): TPointSeries;
   public
     constructor Create(AChart: TChart);
+    destructor Destroy; override;
 
     { Replaces what the strip shows. Drawn only while Visible. }
     procedure Plot(const Plots: array of TResidualPlot);
@@ -71,7 +82,7 @@ type
 implementation
 
 uses
-  System.Math, Vcl.Graphics;
+  System.Types, System.Math, Vcl.Graphics;
 
 constructor TResidualStrip.Create(AChart: TChart);
 begin
@@ -95,6 +106,48 @@ begin
   FAxis.Grid.Visible := False;
   HoldRange;
   FAxis.Visible := False;
+
+  FPrevBeforeDrawSeries := FChart.OnBeforeDrawSeries;
+  FPrevAfterDraw := FChart.OnAfterDraw;
+  FChart.OnBeforeDrawSeries := ChartBeforeDrawSeries;
+  FChart.OnAfterDraw := ChartAfterDraw;
+end;
+
+destructor TResidualStrip.Destroy;
+begin
+  FChart.OnBeforeDrawSeries := FPrevBeforeDrawSeries;
+  FChart.OnAfterDraw := FPrevAfterDraw;
+  inherited;
+end;
+
+procedure TResidualStrip.ChartBeforeDrawSeries(Sender: TObject);
+begin
+  if Assigned(FPrevBeforeDrawSeries) then
+    FPrevBeforeDrawSeries(Sender);
+  if not FVisible then
+    Exit;
+  { The gap, frame lines and grid included; one pixel wider than the plot
+    either side, where the chart's frame runs. }
+  FChart.Canvas.Brush.Style := bsSolid;
+  FChart.Canvas.Brush.Color := FChart.Color;
+  FChart.Canvas.FillRect(Rect(FChart.ChartRect.Left - 1, FChart.LeftAxis.IEndPos + 1,
+    FChart.ChartRect.Right + 2, FAxis.IStartPos));
+end;
+
+procedure TResidualStrip.ChartAfterDraw(Sender: TObject);
+begin
+  if Assigned(FPrevAfterDraw) then
+    FPrevAfterDraw(Sender);
+  if not FVisible then
+    Exit;
+  FChart.Canvas.Brush.Style := bsClear;
+  FChart.Canvas.Pen.Style := psSolid;
+  FChart.Canvas.Pen.Width := 1;
+  FChart.Canvas.Pen.Color := FChart.LeftAxis.Axis.Color;
+  FChart.Canvas.Rectangle(FChart.ChartRect.Left, FChart.LeftAxis.IStartPos,
+    FChart.ChartRect.Right + 1, FChart.LeftAxis.IEndPos + 1);
+  FChart.Canvas.Rectangle(FChart.ChartRect.Left, FAxis.IStartPos,
+    FChart.ChartRect.Right + 1, FAxis.IEndPos + 1);
 end;
 
 procedure TResidualStrip.HoldRange;

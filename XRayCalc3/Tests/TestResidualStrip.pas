@@ -7,8 +7,9 @@ unit TestResidualStrip;
 interface
 
 uses
-  DUnitX.TestFramework, System.SysUtils, System.UITypes,
-  VCLTee.Chart, VCLTee.TeEngine, VCLTee.Series,
+  DUnitX.TestFramework, System.SysUtils, System.UITypes, System.Types,
+  Winapi.Windows, Vcl.Graphics,
+  VCLTee.Chart, VCLTee.TeEngine, VCLTee.Series, VCLTee.TeeGDIPlus,
   unit_Types, unit_MCPFitReport, unit_Residuals, unit_ResidualStrip, unit_ChartManager;
 
 type
@@ -35,6 +36,8 @@ type
     [Test] procedure ValueOffTheStrip_IsDrawnAtItsEdge;
     [Test] procedure EmptyBand_LeavesTheOtherBandsDrawn;
     [Test] procedure ChartManagerClearAll_LeavesTheStripWorking;
+    [Test] procedure Rendered_TheResidualLineIsInTheStrip;
+    [Test] procedure Rendered_TheStripIsASeparatePlot;
   end;
 
 implementation
@@ -222,6 +225,111 @@ begin
     Assert.AreEqual(6, FStrip.SeriesCount, 'drawn again');
   finally
     Mgr.Free;
+  end;
+end;
+
+{ What the window would show: the chart drawn off screen through its GDI+
+  canvas, a red residual at +0.5 over the whole range. Its pixels must be
+  red, in the strip, below the reflectivity axis. }
+procedure TTestResidualStrip.Rendered_TheResidualLineIsInTheStrip;
+var
+  Plots: TArray<TResidualPlot>;
+  i, X, Y, Y0, Y1, Found: Integer;
+  Bmp: TBitmap;
+  P: TColor;
+  Msg: string;
+begin
+  FChart.Canvas := TGDIPlusCanvas.Create;
+  FChart.View3D := False;
+  FChart.Legend.Visible := False;
+  FChart.Color := clWhite;
+  FChart.Gradient.Visible := False;
+  FChart.BottomAxis.Automatic := False;
+  FChart.BottomAxis.SetMinMax(0, 3);
+  FChart.LeftAxis.Automatic := False;
+  FChart.LeftAxis.SetMinMax(0, 1);
+
+  Plots := OnePlot;
+  for i := 0 to High(Plots[0].Curve.Points) do
+    Plots[0].Curve.Points[i].D := 0.5;
+  FStrip.SetOptions(False, False, False);
+  FStrip.Visible := True;
+  FStrip.Plot(Plots);
+
+  Bmp := FChart.TeeCreateBitmap(clWhite, Rect(0, 0, FChart.Width, FChart.Height));
+  try
+    X := FChart.BottomAxis.CalcXPosValue(1.0);
+    Y := FStrip.Axis.CalcYPosValue(0.5);
+    Y0 := FStrip.Axis.IStartPos;
+    Y1 := FStrip.Axis.IEndPos;
+    Assert.IsTrue((Y > Y0) and (Y < Y1), Format('0.5 is inside the strip: %d in %d..%d', [Y, Y0, Y1]));
+    Assert.IsTrue(Y0 > FChart.LeftAxis.IEndPos, Format('the strip is below the curves: %d > %d',
+      [Y0, FChart.LeftAxis.IEndPos]));
+    Found := 0;
+    for i := Y - 2 to Y + 2 do
+    begin
+      P := Bmp.Canvas.Pixels[X, i];
+      { clearly red: a 1-pixel line comes out anti-aliased, e.g. (240, 104, 104) }
+      if (GetRValue(P) > 180) and (GetRValue(P) - GetGValue(P) > 80) and
+         (GetRValue(P) - GetBValue(P) > 80) then
+        Inc(Found);
+    end;
+    if Found = 0 then
+    begin
+      Msg := '';
+      for i := Y - 6 to Y + 6 do
+        Msg := Msg + Format(' %d:%.6x', [i, Integer(Bmp.Canvas.Pixels[X, i])]);
+      for i := 0 to FChart.SeriesCount - 1 do
+        Msg := Msg + Format(' | %s n=%d act=%s vis=%s vax=%d col=%.6x pen=%.6x w=%d',
+          [FChart.Series[i].ClassName, FChart.Series[i].Count, BoolToStr(FChart.Series[i].Active, True),
+           BoolToStr(FChart.Series[i].Visible, True), Ord(FChart.Series[i].VertAxis),
+           Integer(FChart.Series[i].SeriesColor), Integer(TFastLineSeries(FChart.Series[i]).LinePen.Color),
+           TFastLineSeries(FChart.Series[i]).LinePen.Width]);
+      Assert.Fail(Format('no red at x=%d around y=%d:', [X, Y]) + Msg);
+    end;
+  finally
+    Bmp.Free;
+  end;
+end;
+
+{ Two plots, not one: the gap between them in the panel's color, not the
+  plot's, and a frame line along the top of the strip. }
+procedure TTestResidualStrip.Rendered_TheStripIsASeparatePlot;
+var
+  Bmp: TBitmap;
+  X, YGap, YTop: Integer;
+  P: TColor;
+begin
+  FChart.Canvas := TGDIPlusCanvas.Create;
+  FChart.View3D := False;
+  FChart.Legend.Visible := False;
+  FChart.Color := clWhite;
+  FChart.Gradient.Visible := False;
+  FChart.BackWall.Color := $00E0E0E0;
+  FChart.BackWall.Transparent := False;
+  FChart.BottomAxis.Automatic := False;
+  FChart.BottomAxis.SetMinMax(0, 3);
+  FChart.LeftAxis.Automatic := False;
+  FChart.LeftAxis.SetMinMax(0, 1);
+  FStrip.Visible := True;
+  FStrip.Plot(OnePlot);
+
+  Bmp := FChart.TeeCreateBitmap(clWhite, Rect(0, 0, FChart.Width, FChart.Height));
+  try
+    X := (FChart.ChartRect.Left + FChart.ChartRect.Right) div 2;
+    YGap := (FChart.LeftAxis.IEndPos + FStrip.Axis.IStartPos) div 2;
+    YTop := FStrip.Axis.IStartPos;
+    Assert.IsTrue(FStrip.Axis.IStartPos - FChart.LeftAxis.IEndPos >= 10,
+      Format('a gap between the plots: %d..%d', [FChart.LeftAxis.IEndPos, FStrip.Axis.IStartPos]));
+
+    P := Bmp.Canvas.Pixels[X, YGap];
+    Assert.AreEqual(Integer(clWhite), Integer(P and $FFFFFF), Format('the gap is the panel at y=%d', [YGap]));
+
+    P := Bmp.Canvas.Pixels[X, YTop];
+    Assert.IsTrue((GetRValue(P) < 128) and (GetGValue(P) < 128) and (GetBValue(P) < 128),
+      Format('a frame along the top of the strip at y=%d: $%.6x', [YTop, Integer(P)]));
+  finally
+    Bmp.Free;
   end;
 end;
 

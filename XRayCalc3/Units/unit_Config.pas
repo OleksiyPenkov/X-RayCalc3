@@ -117,7 +117,7 @@ type
       [DefaultValue(2)]
       property LineWidth: integer index 0 read getIntegerValue write SetIntegerValue;
       { The residual strip under the main chart (Result - Residual strip). }
-      [DefaultValue(False)]
+      [DefaultValue(True)]
       property ResidualStrip     : boolean index 1 read getBooleanValue write SetBooleanValue;
       [DefaultValue(True)]
       property ResidualTolerance : boolean index 2 read getBooleanValue write SetBooleanValue;
