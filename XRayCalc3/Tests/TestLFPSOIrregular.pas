@@ -70,6 +70,10 @@ type
 
     { XSeed }
     [Test] procedure Test_XSeed_X0Unchanged;
+    [Test] procedure Test_XSeed_LinkedLayersCopied;
+
+    { Re-initialisation (Shake) }
+    [Test] procedure Test_ReInit_KeepsTheLinks;
 
     { RangeSeed }
     [Test] procedure Test_RangeSeed_LinkedLayersCopied;
@@ -364,6 +368,52 @@ begin
   FPSO.TestXSeed;
   Assert.AreEqual(H0_before, FPSO.GetX[0][0][1][0], 1E-5,
     'X[0] should remain unchanged');
+end;
+
+{ A paired parameter is one value in every period, from the first evaluation
+  on: XSeed is what seeds the swarm after every shake (and at the start when
+  range_seed is off), and a particle scored with its paired values apart could
+  become the global best and be reported as the fit. }
+procedure TTestLFPSOIrregular.Test_XSeed_LinkedLayersCopied;
+var
+  i: integer;
+begin
+  RandSeed := 42;
+  FPSO.TestSetParams(MakeParams);
+  FPSO.TestSetStructure(MakeIrregularStructure_Paired);
+  FPSO.TestXSeed;
+  for i := 1 to High(FPSO.GetX) do
+    Assert.AreEqual(FPSO.GetX[i][0][1][0], FPSO.GetX[i][2][1][0], 0.0,
+      Format('Linked H: layer 2 copies layer 0 for particle %d', [i]));
+end;
+
+{ Re-initialisation
+
+  Shake hands SetStructure the engine's own flattened structure with FReInit
+  set. That structure is one stack of N = 1, so the pairing cannot be read off
+  it again: the links built on the first call must survive. They used to be
+  zeroed, which linked every parameter of every layer to layer 0 - after the
+  first shake no parameter moved but by being copied from layer 0 and clamped
+  to its own bounds. }
+procedure TTestLFPSOIrregular.Test_ReInit_KeepsTheLinks;
+var
+  Before: TIndexes;
+  Flat: TFitStructure;
+  j, k: integer;
+begin
+  FPSO.TestSetParams(MakeParams(True));
+  FPSO.TestSetStructure(MakeIrregularStructure_Paired);
+  Before := Copy(FPSO.GetLinks);
+  FPSO.Pub_FStructure.CopyContent(Flat);
+  FPSO.Pub_FReInit := True;
+  FPSO.TestSetStructure(Flat);
+
+  Assert.AreEqual(Length(Before), Length(FPSO.GetLinks), 'one link row per layer');
+  for j := 0 to High(Before) do
+    for k := 1 to 3 do
+      Assert.AreEqual(Before[j][k], FPSO.GetLinks[j][k],
+        Format('Links[%d][%d] survives the re-initialisation', [j, k]));
+  Assert.IsTrue(FPSO.GetSmoothies > 0, 'and so do the smoothing groups');
 end;
 
 { RangeSeed }

@@ -483,7 +483,10 @@ begin
   while i < Length(Profile) do
   begin
     k := Pos(';', Profile, i);
-    val := StrToFloat(copy(Profile, i, k - i - 1));
+    { Every character up to the separator: until 2026-09-25 this read
+      k - i - 1 of them and dropped the last written digit, so a table saved
+      as 15.4579 came back as 15.457. }
+    val := StrToFloat(copy(Profile, i, k - i));
     Insert(Val, PP[p], MaxInt);
     i := k + 1;
   end;

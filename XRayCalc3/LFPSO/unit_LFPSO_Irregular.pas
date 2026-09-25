@@ -171,7 +171,12 @@ begin
     for j := 0 to High(X[i]) do     //for every layer
       for k := 1 to 3 do
       begin            // for H, s, rho
-        X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
+        { A paired parameter takes its first period's value, as in RangeSeed:
+          the particle is scored before any update copies it across. }
+        if FLinks[j][k] > -1 then
+          X[i][j][k][0] := X[i][FLinks[j][k]][k][0]
+        else
+          X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
         CheckLimits(i, j, k);
       end;
 
@@ -223,9 +228,16 @@ begin
 
   Init_Domains(0);
 
-  InitArray(FLayersCount, FLinks);
+  { A re-initialisation (Shake) hands back the engine's own flattened structure:
+    one stack of N = 1, from which the pairing cannot be read again. The links
+    and the smoothing groups built on the first call stay as they are. Zeroing
+    the links here, as this did until 2026-09-25, linked every parameter of
+    every layer to layer 0 after the first shake. }
   if not FReInit then
-      SetLength(FSmoothies, 0);
+  begin
+    InitArray(FLayersCount, FLinks);
+    SetLength(FSmoothies, 0);
+  end;
 
   Index := 0;
   for i := 0 to High(Inp.Stacks) do

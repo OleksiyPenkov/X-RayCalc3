@@ -31,6 +31,7 @@ type
     [Test] procedure Test_ProfileToString_Empty;
     [Test] procedure Test_ProfileToString_WithValues;
     [Test] procedure Test_ProfileFromString_Roundtrip;
+    [Test] procedure Test_ProfileFromString_KeepsEveryWrittenDigit;
   end;
 
   [TestFixture]
@@ -201,6 +202,25 @@ begin
   Assert.AreEqual(LD1.PP[1][0], LD2.PP[1][0], 1E-3);
   Assert.AreEqual(LD1.PP[1][1], LD2.PP[1][1], 1E-3);
   Assert.AreEqual(LD1.PP[1][2], LD2.PP[1][2], 1E-3);
+end;
+
+{ ProfileToString writes four decimals and the read-back must keep all four:
+  the per-period table of an irregular fit is what the GUI recalculates a
+  saved project from. }
+procedure TTestLayerProfile.Test_ProfileFromString_KeepsEveryWrittenDigit;
+var
+  LD1, LD2: TLayerData;
+begin
+  LD1.ClearProfiles(1);
+  LD1.AddProfilePoint(15.4579, 1);
+  LD1.AddProfilePoint(19.8308, 1);
+
+  LD2.ClearProfiles(1);
+  LD2.ProfileFromString(1, LD1.ProfileToString(ptH));
+
+  Assert.AreEqual(2, Integer(Length(LD2.PP[1])));
+  Assert.AreEqual(Single(15.4579), LD2.PP[1][0], 1E-5);
+  Assert.AreEqual(Single(19.8308), LD2.PP[1][1], 1E-5);
 end;
 
 { TTestFuncProfileRec }
