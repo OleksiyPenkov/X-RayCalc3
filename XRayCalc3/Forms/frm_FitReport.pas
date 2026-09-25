@@ -59,6 +59,7 @@ type
     procedure ShowFringes(Rep: TJSONObject);
     procedure ShowBands(Rep: TJSONObject);
     procedure ShowNear(const Near: TArray<TNearBound>);
+    procedure FitToWorkArea;
   public
     /// <summary>Computes the report on Inp (theta, the solved scale applied)
     /// and shows it. TwoTheta says how the chart shows angles; Source and
@@ -168,7 +169,26 @@ begin
     Rep.Free;
   end;
   ShowNear(Near);
+  FitToWorkArea;
   ShowModal;
+end;
+
+{ The form is 800 px tall at 96 dpi and scales with the display; at 200 % and
+  more that is taller than the screen, and the bottom blocks - the bands and
+  the parameters near a bound - would sit under the taskbar. The Bragg-order
+  table is the one that gives way (it scrolls). }
+procedure TfrmFitReport.FitToWorkArea;
+var
+  WA: TRect;
+begin
+  if Application.MainForm <> nil then
+    WA := Screen.MonitorFromWindow(Application.MainForm.Handle).WorkareaRect
+  else
+    WA := Screen.WorkAreaRect;
+  if Height > WA.Height then
+    Height := WA.Height;
+  if Width > WA.Width then
+    Width := WA.Width;
 end;
 
 procedure TfrmFitReport.ShowOrders(Rep: TJSONObject);

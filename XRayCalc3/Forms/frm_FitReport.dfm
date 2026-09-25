@@ -3,7 +3,7 @@ object frmFitReport: TfrmFitReport
   Top = 0
   BorderStyle = bsSizeable
   Caption = 'Fit report'
-  ClientHeight = 740
+  ClientHeight = 800
   ClientWidth = 900
   Color = clBtnFace
   Constraints.MinHeight = 560
@@ -51,8 +51,8 @@ object frmFitReport: TfrmFitReport
     Left = 3
     Top = 59
     Width = 894
-    Height = 200
-    Align = alTop
+    Height = 192
+    Align = alClient
     Caption = 'Bragg orders'
     TabOrder = 1
     object lvOrders: TRzListView
@@ -60,7 +60,7 @@ object frmFitReport: TfrmFitReport
       Left = 4
       Top = 19
       Width = 886
-      Height = 177
+      Height = 169
       Align = alClient
       Columns = <
         item
@@ -106,10 +106,10 @@ object frmFitReport: TfrmFitReport
   end
   object pnlMiddle: TRzPanel
     Left = 0
-    Top = 262
+    Top = 254
     Width = 900
     Height = 150
-    Align = alTop
+    Align = alBottom
     BorderOuter = fsNone
     TabOrder = 2
     object grpEdge: TRzGroupBox
@@ -191,10 +191,10 @@ object frmFitReport: TfrmFitReport
   object grpBands: TRzGroupBox
     AlignWithMargins = True
     Left = 3
-    Top = 415
+    Top = 407
     Width = 894
-    Height = 215
-    Align = alTop
+    Height = 200
+    Align = alBottom
     Caption = 'Residual by band: log10(R calc / I meas)'
     TabOrder = 3
     object lvBands: TRzListView
@@ -202,7 +202,7 @@ object frmFitReport: TfrmFitReport
       Left = 4
       Top = 19
       Width = 886
-      Height = 192
+      Height = 177
       Align = alClient
       Columns = <
         item
@@ -239,10 +239,10 @@ object frmFitReport: TfrmFitReport
   object grpNear: TRzGroupBox
     AlignWithMargins = True
     Left = 3
-    Top = 636
+    Top = 613
     Width = 894
-    Height = 57
-    Align = alClient
+    Height = 140
+    Align = alBottom
     Caption = 'Parameters within 5 % of a bound'
     TabOrder = 4
     object lvNear: TRzListView
@@ -250,7 +250,7 @@ object frmFitReport: TfrmFitReport
       Left = 4
       Top = 19
       Width = 886
-      Height = 34
+      Height = 117
       Align = alClient
       Columns = <
         item
@@ -293,7 +293,7 @@ object frmFitReport: TfrmFitReport
   end
   object pnlButtons: TRzPanel
     Left = 0
-    Top = 696
+    Top = 756
     Width = 900
     Height = 44
     Align = alBottom
