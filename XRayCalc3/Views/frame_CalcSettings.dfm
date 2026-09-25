@@ -59,7 +59,7 @@ object frmCalcSettings: TfrmCalcSettings
       StyleElements = [seFont, seClient, seBorder]
     end
     object lblPolyOrder: TLabel
-      Left = 291
+      Left = 203
       Top = 57
       Width = 28
       Height = 14
@@ -72,7 +72,7 @@ object frmCalcSettings: TfrmCalcSettings
       StyleElements = [seFont, seClient, seBorder]
     end
     object Label21: TLabel
-      Left = 256
+      Left = 193
       Top = 84
       Width = 34
       Height = 16
@@ -174,7 +174,7 @@ object frmCalcSettings: TfrmCalcSettings
       TabOrder = 4
     end
     object edPolyOrder: TEdit
-      Left = 335
+      Left = 235
       Top = 53
       Width = 34
       Height = 21
@@ -194,7 +194,7 @@ object frmCalcSettings: TfrmCalcSettings
       StyleElements = [seFont, seClient, seBorder]
     end
     object cbTWChi: TComboBox
-      Left = 297
+      Left = 231
       Top = 81
       Width = 72
       Height = 20
