@@ -1374,6 +1374,7 @@ procedure TfrmProjectPanel.NewProject;
 begin
   Structure.Clear;
   FProfileMgr.ClearProfiles;
+  FChartPages.ClearConvergence;   // and the diagnostics: the last fit's
   CreateDefaultProject;
 end;
 
@@ -1779,6 +1780,7 @@ begin
   Inc(FProjectSerial);
   FIgnoreFocusChange := True;
   FProfileMgr.ClearProfiles;
+  FChartPages.ClearConvergence;   // and the diagnostics: the last fit's
   ExtractProject(FileName);
   LoadProjectParams(LinkedID, ActiveID);
   RecoverProjectTree(ActiveID);
