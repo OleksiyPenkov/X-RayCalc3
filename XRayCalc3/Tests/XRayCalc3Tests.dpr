@@ -116,7 +116,11 @@ uses
   unit_CurveStyle in '..\Units\unit_CurveStyle.pas',
   TestCurveStyle in 'TestCurveStyle.pas',
   unit_ChartManager in '..\Units\unit_ChartManager.pas',
-  TestChartManager in 'TestChartManager.pas';
+  TestChartManager in 'TestChartManager.pas',
+  unit_Residuals in '..\Units\unit_Residuals.pas',
+  TestResiduals in 'TestResiduals.pas',
+  unit_ResidualStrip in '..\Units\unit_ResidualStrip.pas',
+  TestResidualStrip in 'TestResidualStrip.pas';
 
 {$R *.res}
 

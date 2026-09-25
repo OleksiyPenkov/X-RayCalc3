@@ -387,6 +387,8 @@
     Title.Text.Strings = (
       'TChart')
     Title.Visible = False
+    OnScroll = ChartScroll
+    OnUndoZoom = ChartUndoZoom
     OnZoom = ChartZoom
     BottomAxis.Automatic = False
     BottomAxis.AutomaticMaximum = False

@@ -938,6 +938,30 @@ object frmMain: TfrmMain
       object mnuFitReport: TMenuItem
         Action = actFitReport
       end
+      object mnuResidual: TMenuItem
+        Caption = 'Residual strip'
+        Hint = 'log10(calculated / measured) under the reflectivity curves'
+        object mnuResidualShow: TMenuItem
+          AutoCheck = True
+          Caption = 'Show'
+          OnClick = mnuResidualClick
+        end
+        object mnuResidualTolerance: TMenuItem
+          AutoCheck = True
+          Caption = #177'0.1 lines'
+          OnClick = mnuResidualClick
+        end
+        object mnuResidualBands: TMenuItem
+          AutoCheck = True
+          Caption = 'Band means'
+          OnClick = mnuResidualClick
+        end
+        object mnuResidualFloored: TMenuItem
+          AutoCheck = True
+          Caption = 'Floored points'
+          OnClick = mnuResidualClick
+        end
+      end
     end
     object ools1: TMenuItem
       Caption = 'Tools'

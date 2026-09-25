@@ -41,6 +41,8 @@ type
     { The scale the last chi-squared shown was taken at (RunCalc) }
     FLastSolveScale, FLastScaleClamped: Boolean;
     FLastScaleLog: Single;
+    { Which measured curve that scale belongs to: its node ID and project. }
+    FLastScaleDataID, FLastScaleProject: Integer;
 
     { Dependencies - not owned }
     FCalcSettings: TfrmCalcSettings;
@@ -90,6 +92,8 @@ type
     /// and log10 of its ratio to the anchored one (0 when anchored).
     property LastSolveScale: Boolean read FLastSolveScale;
     property LastScaleLog: Single read FLastScaleLog;
+    property LastScaleDataID: Integer read FLastScaleDataID;
+    property LastScaleProject: Integer read FLastScaleProject;
     property OnEnableControls: TEnableControlsEvent write FOnEnableControls;
     property OnCalcTimeUpdate: TStatusUpdateEvent write FOnCalcTimeUpdate;
     property OnFitTimeUpdate: TStatusUpdateEvent write FOnFitTimeUpdate;
@@ -219,6 +223,8 @@ begin
         FLastSolveScale := FCalc.SolveScale;
         FLastScaleLog := FCalc.ScaleLog;
         FLastScaleClamped := FCalc.ScaleClamped;
+        FLastScaleDataID := FProjectPanel.Project.LinkedData.ID;
+        FLastScaleProject := FProjectPanel.ProjectSerial;
         FChartInfo.SetChiScale(FLastSolveScale, FLastScaleLog, FLastScaleClamped);
       end
       else begin

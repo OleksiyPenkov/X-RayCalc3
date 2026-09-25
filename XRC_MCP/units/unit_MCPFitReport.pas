@@ -90,6 +90,20 @@ const
 /// structure has no repeating stack to give a period.</summary>
 function FitReportJSON(const Inp: TFitReportInput): TJSONObject;
 
+type
+  /// <summary>One of the REPORT_BANDS equal bands of theta the fitting range
+  /// is split into: the mean and the rms of log10(R_calc / I_meas) over its
+  /// points. Mean and Rms are 0 when Count is 0.</summary>
+  TReportBand = record
+    Theta0, Theta1: Double;
+    Count: Integer;
+    Mean, Rms: Double;
+  end;
+
+/// <summary>The report's bands, what its "bands" entry is written from and
+/// what the GUI's residual strip draws. Empty when the range has no width.</summary>
+function ReportBands(const Inp: TFitReportInput): TArray<TReportBand>;
+
 /// <summary>The median of the last REPORT_BACKGROUND_POINTS values of the
 /// curve (all of them when it is shorter), which is what an order is called
 /// visible against. 0 for an empty curve.</summary>
@@ -523,56 +537,70 @@ end;
 /// The fitting range in REPORT_BANDS equal bands of theta, each with the mean
 /// and the rms of log10(R_calc / I_meas) over its points: where in angle the
 /// model sits above the data and where below, in decades.
-function BandsJSON(const Inp: TFitReportInput): TJSONArray;
+function ReportBands(const Inp: TFitReportInput): TArray<TReportBand>;
 var
   Sum, SumSq: array [0 .. REPORT_BANDS - 1] of Double;
   Count: array [0 .. REPORT_BANDS - 1] of Integer;
   i, b, n: Integer;
   T0, T1, Width, D: Double;
+begin
+  Result := nil;
+  n := Min(Length(Inp.Measured), Length(Inp.Calculated));
+  if n < 1 then
+    Exit;
+
+  T0 := Inp.Measured[0].t;
+  T1 := Inp.Measured[n - 1].t;
+  if T1 <= T0 then
+    Exit;
+  Width := (T1 - T0) / REPORT_BANDS;
+
+  for b := 0 to REPORT_BANDS - 1 do
+  begin
+    Sum[b] := 0;
+    SumSq[b] := 0;
+    Count[b] := 0;
+  end;
+
+  for i := 0 to n - 1 do
+  begin
+    if (Inp.Measured[i].r <= 0) or (Inp.Calculated[i].r <= 0) then
+      Continue;
+    b := Trunc((Inp.Measured[i].t - T0) / Width);
+    b := EnsureRange(b, 0, REPORT_BANDS - 1);
+    D := Log10(Inp.Calculated[i].r / Inp.Measured[i].r);
+    Sum[b] := Sum[b] + D;
+    SumSq[b] := SumSq[b] + D * D;
+    Inc(Count[b]);
+  end;
+
+  SetLength(Result, REPORT_BANDS);
+  for b := 0 to REPORT_BANDS - 1 do
+  begin
+    Result[b].Theta0 := T0 + b * Width;
+    Result[b].Theta1 := T0 + (b + 1) * Width;
+    Result[b].Count := Count[b];
+    Result[b].Mean := Sum[b] / Max(1, Count[b]);
+    Result[b].Rms := Sqrt(SumSq[b] / Max(1, Count[b]));
+  end;
+end;
+
+function BandsJSON(const Inp: TFitReportInput): TJSONArray;
+var
+  Band: TReportBand;
   Obj: TJSONObject;
 begin
   Result := TJSONArray.Create;
   try
-    n := Min(Length(Inp.Measured), Length(Inp.Calculated));
-    if n < 1 then
-      Exit;
-
-    T0 := Inp.Measured[0].t;
-    T1 := Inp.Measured[n - 1].t;
-    if T1 <= T0 then
-      Exit;
-    Width := (T1 - T0) / REPORT_BANDS;
-
-    for b := 0 to REPORT_BANDS - 1 do
-    begin
-      Sum[b] := 0;
-      SumSq[b] := 0;
-      Count[b] := 0;
-    end;
-
-    for i := 0 to n - 1 do
-    begin
-      if (Inp.Measured[i].r <= 0) or (Inp.Calculated[i].r <= 0) then
-        Continue;
-      b := Trunc((Inp.Measured[i].t - T0) / Width);
-      b := EnsureRange(b, 0, REPORT_BANDS - 1);
-      D := Log10(Inp.Calculated[i].r / Inp.Measured[i].r);
-      Sum[b] := Sum[b] + D;
-      SumSq[b] := SumSq[b] + D * D;
-      Inc(Count[b]);
-    end;
-
-    for b := 0 to REPORT_BANDS - 1 do
+    for Band in ReportBands(Inp) do
     begin
       Obj := TJSONObject.Create;
       Result.AddElement(Obj);
       Obj.AddPair('theta_deg',
-        JSONArgs.NumArr(TArray<Double>.Create(T0 + b * Width,
-                                              T0 + (b + 1) * Width)));
-      Obj.AddPair('n', TJSONNumber.Create(Count[b]));
-      Obj.AddPair('mean', NumOrNull(Sum[b] / Max(1, Count[b]), Count[b] > 0));
-      Obj.AddPair('rms',
-        NumOrNull(Sqrt(SumSq[b] / Max(1, Count[b])), Count[b] > 0));
+        JSONArgs.NumArr(TArray<Double>.Create(Band.Theta0, Band.Theta1)));
+      Obj.AddPair('n', TJSONNumber.Create(Band.Count));
+      Obj.AddPair('mean', NumOrNull(Band.Mean, Band.Count > 0));
+      Obj.AddPair('rms', NumOrNull(Band.Rms, Band.Count > 0));
     end;
   except
     Result.Free;

@@ -179,6 +179,10 @@
         <DCCReference Include="TestCurveStyle.pas"/>
         <DCCReference Include="..\Units\unit_ChartManager.pas"/>
         <DCCReference Include="TestChartManager.pas"/>
+        <DCCReference Include="..\Units\unit_Residuals.pas"/>
+        <DCCReference Include="TestResiduals.pas"/>
+        <DCCReference Include="..\Units\unit_ResidualStrip.pas"/>
+        <DCCReference Include="TestResidualStrip.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

@@ -120,6 +120,10 @@ type
     { Fired whenever the live structure is replaced by another model - a
       project loaded or created, or a different model node focused. }
     FOnModelChanged: TNotifyEvent;
+    { The curves on the chart changed: which are visible, which data is
+      linked, or the set itself (after RefreshChartLegend). }
+    FOnCurvesChanged: TNotifyEvent;
+    FProjectSerial: Integer;
 
     procedure CreateNewModel(Node: PVirtualNode);
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
@@ -229,6 +233,12 @@ type
     procedure CreateProfileExtension(const AFromFit: Boolean = False);
     procedure RescaleChart;
     procedure RefreshChartLegend;
+    { The chart series of the models shown on the chart, in tree order. }
+    function  VisibleModelSeries: TArray<TFastLineSeries>;
+    { The linked data's chart series and node ID, nil when no data is linked.
+      Found by walking the tree, so a LinkedData left pointing at a freed node
+      is never read. }
+    function  LinkedDataSeries(out ID: Integer): TFastLineSeries;
     procedure SyncSeriesVisibility(Series: TChartSeries);
     procedure SaveHistory;
     { Restores the structure and the gradients' targets saved by the last
@@ -260,6 +270,10 @@ type
     property OnCaptionChange: TStringProc read FOnCaptionChange write FOnCaptionChange;
     property OnCalcRun: TNotifyEvent read FOnCalcRun write FOnCalcRun;
     property OnModelChanged: TNotifyEvent read FOnModelChanged write FOnModelChanged;
+    property OnCurvesChanged: TNotifyEvent read FOnCurvesChanged write FOnCurvesChanged;
+    { Changes whenever another project is loaded or a new one created, so a
+      number remembered from one project is not taken for the next one's. }
+    property ProjectSerial: Integer read FProjectSerial;
   end;
 
 implementation
@@ -1275,6 +1289,51 @@ begin
   end;
 
   FChartInfo.RefreshLegend(Items);
+  if Assigned(FOnCurvesChanged) then
+    FOnCurvesChanged(Self);
+end;
+
+function TfrmProjectPanel.LinkedDataSeries(out ID: Integer): TFastLineSeries;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+begin
+  Result := nil;
+  ID := -1;
+  if FProject.LinkedData = nil then
+    Exit;
+  Node := FProject.GetFirst;
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if Data = FProject.LinkedData then
+    begin
+      ID := Data.ID;
+      Exit(FChartMgr.Series[Data.CurveID]);
+    end;
+    Node := FProject.GetNext(Node);
+  end;
+end;
+
+function TfrmProjectPanel.VisibleModelSeries: TArray<TFastLineSeries>;
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  S: TFastLineSeries;
+begin
+  Result := nil;
+  Node := FProject.GetFirstChild(FProject.GetFirst);
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if Data.IsModel then
+    begin
+      S := FChartMgr.Series[Data.CurveID];
+      if (S <> nil) and S.Visible then
+        Result := Result + [S];
+    end;
+    Node := FProject.GetNext(Node);
+  end;
 end;
 
 procedure TfrmProjectPanel.LoadRecentProjectsList(ARecentMenu: TMenuItem; ARecentPopup: TPopupMenu);
@@ -1692,6 +1751,7 @@ procedure TfrmProjectPanel.LoadProject(const FileName: string);
 var
   LinkedID, ActiveID: Integer;
 begin
+  Inc(FProjectSerial);
   FIgnoreFocusChange := True;
   FProfileMgr.ClearProfiles;
   ExtractProject(FileName);
@@ -1737,6 +1797,12 @@ var
   PD: PProjectData;
   PG: PVirtualNode;
 begin
+  { These point into the nodes FProject.Clear frees, and CreateNewModel's
+    RefreshChartLegend below already has listeners reading them. }
+  FProject.LinkedData := nil;
+  FProject.ActiveData := nil;
+  FProject.ActiveModel := nil;
+  Inc(FProjectSerial);
   FChartMgr.ClearAll;
   FProject.Clear;
   Structure.AddSubstrate('Si', 5, 2.2);

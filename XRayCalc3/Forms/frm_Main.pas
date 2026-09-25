@@ -196,6 +196,11 @@ type
     N16: TMenuItem;
     ExportFitResults1: TMenuItem;
     mnuFitReport: TMenuItem;
+    mnuResidual: TMenuItem;
+    mnuResidualShow: TMenuItem;
+    mnuResidualTolerance: TMenuItem;
+    mnuResidualBands: TMenuItem;
+    mnuResidualFloored: TMenuItem;
     actFitReport: TAction;
     Calcbatchjobs1: TMenuItem;
     pmRecentList: TPopupMenu;
@@ -271,6 +276,7 @@ type
     procedure actDataTrimExecute(Sender: TObject);
     procedure actDataAssessExecute(Sender: TObject);
     procedure actFitReportExecute(Sender: TObject);
+    procedure mnuResidualClick(Sender: TObject);
     procedure actCalcFitJobsExecute(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
@@ -307,6 +313,10 @@ type
     procedure OnSetFitLimits(Sender: TObject);
     procedure OnProjectCaptionChange(const S: string);
     procedure OnLegendCheckBoxClick(Sender: TObject; Series: TChartSeries);
+    procedure OnCurvesChanged(Sender: TObject);
+    procedure LoadResidualOptions;
+    procedure ApplyResidualOptions;
+    procedure RefreshResiduals;
     procedure OpenHelpPage(const PageName: string);
     procedure OpenURL(const URL: string);
   public
@@ -356,6 +366,7 @@ uses
   frm_FitSettings,
   frm_XRRAssess,
   frm_FitReport, unit_FitReportGUI, unit_MCPFitReport, unit_MCPCalc,
+  unit_Residuals, unit_ResidualStrip,
   unit_MCPAssess,
   unit_xrdml,
   unit_SeriesIO,
@@ -379,6 +390,7 @@ end;
 procedure TfrmMain.OnSaveActiveData(Sender: TObject);
 begin
   FProjectPanel.SaveActiveData;
+  RefreshResiduals;   // normalized, smoothed or trimmed: the linked curve may be this one
 end;
 
 procedure TfrmMain.OnDataNote(Sender: TObject; const Line: string);
@@ -389,6 +401,88 @@ end;
 procedure TfrmMain.OnLegendCheckBoxClick(Sender: TObject; Series: TChartSeries);
 begin
   FProjectPanel.SyncSeriesVisibility(Series);
+  RefreshResiduals;
+end;
+
+procedure TfrmMain.OnCurvesChanged(Sender: TObject);
+begin
+  RefreshResiduals;
+end;
+
+{ Result - Residual strip: log10(R_calc / (I_meas K)) of every visible model
+  against the linked data, under the reflectivity curves. K is the solved
+  scale of the last calculation (1 when it was anchored), the same for every
+  model: the scale was solved for the model calculated last. It is used only
+  while the linked curve is the one it was solved against, in the same
+  project. The numbers are the Fit report's (FitReportInput, ReportBands). }
+procedure TfrmMain.LoadResidualOptions;
+begin
+  with TConfig.Section<TGraphOptions> do
+  begin
+    mnuResidualShow.Checked := ResidualStrip;
+    mnuResidualTolerance.Checked := ResidualTolerance;
+    mnuResidualBands.Checked := ResidualBands;
+    mnuResidualFloored.Checked := ResidualFloored;
+  end;
+  ApplyResidualOptions;
+end;
+
+procedure TfrmMain.ApplyResidualOptions;
+begin
+  FChartInfo.ResidualStrip.SetOptions(mnuResidualTolerance.Checked,
+    mnuResidualBands.Checked, mnuResidualFloored.Checked);
+  FChartInfo.ResidualStrip.Visible := mnuResidualShow.Checked;
+  RefreshResiduals;
+end;
+
+procedure TfrmMain.mnuResidualClick(Sender: TObject);
+begin
+  with TConfig.Section<TGraphOptions> do
+  begin
+    ResidualStrip := mnuResidualShow.Checked;
+    ResidualTolerance := mnuResidualTolerance.Checked;
+    ResidualBands := mnuResidualBands.Checked;
+    ResidualFloored := mnuResidualFloored.Checked;
+  end;
+  ApplyResidualOptions;
+end;
+
+procedure TfrmMain.RefreshResiduals;
+var
+  LinkedID: Integer;
+  DataSeries, S: TFastLineSeries;
+  Measured: TDataArray;
+  Plots: TArray<TResidualPlot>;
+  Plot: TResidualPlot;
+  ScaleLog: Double;
+begin
+  if (FOrchestrator = nil) or not FChartInfo.ResidualStrip.Visible then
+    Exit;
+
+  Plots := nil;
+  DataSeries := FProjectPanel.LinkedDataSeries(LinkedID);
+  if FCalcSettings.CalcMode = Ord(cmTheta) then
+  begin
+    if (DataSeries <> nil) and (DataSeries.Count >= 3) then
+    begin
+      ScaleLog := 0;
+      if FOrchestrator.LastSolveScale and (FOrchestrator.LastScaleDataID = LinkedID) and
+         (FOrchestrator.LastScaleProject = FProjectPanel.ProjectSerial) then
+        ScaleLog := FOrchestrator.LastScaleLog;
+      Measured := SeriesToData(DataSeries);
+      for S in FProjectPanel.VisibleModelSeries do
+        if S.Count >= 2 then
+        begin
+          Plot.Color := S.SeriesColor;
+          Plot.Curve := ResidualCurve(
+            FitReportInput(Measured, SeriesToData(S), FCalcSettings.Is2Theta,
+              ScaleLog, FCalcSettings.Lambda, 0, 0),
+            FCalcSettings.Is2Theta, FChartInfo.MinLimit);
+          Plots := Plots + [Plot];
+        end;
+    end;
+  end;
+  FChartInfo.ResidualStrip.Plot(Plots);
 end;
 
 procedure TfrmMain.OnAdvancedSettings(Sender: TObject; var Params: TFitParams);
@@ -890,6 +984,8 @@ begin
   FProjectPanel.Project.Enabled := Enable;
   FCalcSettings.Enabled := Enable;
   actResumeFitting.Enabled := FOrchestrator.HasFitResults;
+  if Enable then
+    RefreshResiduals;
 end;
 
 procedure TfrmMain.acStructureUndoExecute(Sender: TObject);
@@ -1193,6 +1289,9 @@ begin
   FChartInfo.OnSaveActiveData := OnSaveActiveData;
   FChartInfo.OnDataNote := OnDataNote;
   FChartInfo.OnLegendCheckBoxClick := OnLegendCheckBoxClick;
+  FChartInfo.OnMinLimitChange := OnCurvesChanged;
+  FProjectPanel.OnCurvesChanged := OnCurvesChanged;
+  LoadResidualOptions;
   FChartInfo.btnStop.OnClick := CalcStopExecute;
 
   FStructurePanel.ConnectActions(vilModel,
@@ -1232,6 +1331,7 @@ begin
          FChartInfo.Chart.BottomAxis.Title.Caption := 'Incidence angle (deg)';
     1: FChartInfo.Chart.BottomAxis.Title.Caption := 'Wavelength (Å)';
   end;
+  RefreshResiduals;
 end;
 
 { A fit's results belong to the model it ran on, so swapping the live model

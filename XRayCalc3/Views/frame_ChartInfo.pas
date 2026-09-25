@@ -10,7 +10,7 @@ uses
   RzStatus, RzButton, RzCmboBx, RzPanel,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.TeCanvas,
   VCLTee.Chart, VCLTee.Series,
-  frame_CalcSettings, unit_Types;
+  frame_CalcSettings, unit_Types, unit_ResidualStrip;
 
 type
   TGetFastSeriesEvent = function: TFastLineSeries of object;
@@ -72,6 +72,8 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure ChartResize(Sender: TObject);
     procedure ChartZoom(Sender: TObject);
+    procedure ChartUndoZoom(Sender: TObject);
+    procedure ChartScroll(Sender: TObject);
   private
     FGetActiveModelSeries: TGetFastSeriesEvent;
     FGetActiveDataSeries: TGetFastSeriesEvent;
@@ -81,6 +83,8 @@ type
     FCalcSettings: TfrmCalcSettings;
     FLegendControls: TArray<TControl>;
     FMinLimit: Single;
+    FResidualStrip: TResidualStrip;
+    FOnMinLimitChange: TNotifyEvent;
     procedure LegendCheckBoxClick(Sender: TObject);
     procedure CommitMinLimit;
     function GetMinLimit: Single;
@@ -88,6 +92,7 @@ type
     procedure SetMinLimitText(const Value: string);
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
 
     procedure SetCursorPos(const X, Y: Single);
     procedure SetPeakInfo(Series: TChartSeries; XMin, XMax: Single);
@@ -140,6 +145,10 @@ type
     property OnSaveActiveData: TNotifyEvent read FOnSaveActiveData write FOnSaveActiveData;
     property OnDataNote: TDataNoteEvent read FOnDataNote write FOnDataNote;
     property OnLegendCheckBoxClick: TLegendCheckEvent read FOnLegendCheckBoxClick write FOnLegendCheckBoxClick;
+    { The residual strip at the bottom of Chart. }
+    property ResidualStrip: TResidualStrip read FResidualStrip;
+    { R min was committed to a new value. }
+    property OnMinLimitChange: TNotifyEvent read FOnMinLimitChange write FOnMinLimitChange;
   end;
 
 implementation
@@ -161,6 +170,13 @@ begin
     FMinLimit := DEFAULT_AXIS_LIMIT;
     cbMinLimit.Text := DEFAULT_AXIS_LIMIT_TEXT;
   end;
+  FResidualStrip := TResidualStrip.Create(Chart);
+end;
+
+destructor TfrmChartInfo.Destroy;
+begin
+  FResidualStrip.Free;
+  inherited;
 end;
 
 procedure TfrmChartInfo.btnChartScaleClick(Sender: TObject);
@@ -203,6 +219,8 @@ begin
     // into the same '1E-8' the drop-down uses.
     cbMinLimit.Text := AxisLimitToText(V);
     Chart.LeftAxis.Minimum := V;
+    if Assigned(FOnMinLimitChange) then
+      FOnMinLimitChange(Self);
   end
   else
   begin
@@ -412,10 +430,23 @@ begin
   pnlLegend.Top := Chart.ClientHeight * 4 div 100;
 end;
 
+{ A zoom box or a pan moves every vertical axis, the residual strip's too; the
+  strip keeps its range, so only the angle follows the main chart. }
+procedure TfrmChartInfo.ChartUndoZoom(Sender: TObject);
+begin
+  FResidualStrip.HoldRange;
+end;
+
+procedure TfrmChartInfo.ChartScroll(Sender: TObject);
+begin
+  FResidualStrip.HoldRange;
+end;
+
 procedure TfrmChartInfo.ChartZoom(Sender: TObject);
 var
   Series: TFastLineSeries;
 begin
+  FResidualStrip.HoldRange;
   if not Assigned(FGetActiveModelSeries) then Exit;
   Series := FGetActiveModelSeries;
   if Series = nil then Exit;
