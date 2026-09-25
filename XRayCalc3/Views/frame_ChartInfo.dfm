@@ -311,24 +311,27 @@
       OnClick = btnChartScaleClick
       Margin = 4
     end
-    object lblMinLimit: TRzStatusPane
+    object lblMinLimit: TLabel
       Left = 913
-      Top = 28
+      Top = 31
       Width = 50
-      Anchors = [akTop, akRight]
+      Height = 16
       Hint = 
         'Calculated reflectivity below this value is raised to it in every ' +
         'calculation and fit; the measured data are not changed'
-      ParentShowHint = False
-      ShowHint = True
+      Alignment = taRightJustify
+      Anchors = [akTop, akRight]
+      AutoSize = False
+      Caption = 'R min'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
       Font.Name = 'Tahoma'
       Font.Style = [fsBold]
       ParentFont = False
-      Alignment = taRightJustify
-      Caption = 'R min'
+      ParentShowHint = False
+      ShowHint = True
+      Transparent = True
     end
     object cbMinLimit: TRzComboBox
       Left = 967

@@ -50,7 +50,7 @@ type
     RzStatusPane9: TRzStatusPane;
     spChiScale: TRzStatusPane;
     btnChartScale: TRzBitBtn;
-    lblMinLimit: TRzStatusPane;
+    lblMinLimit: TLabel;
     cbMinLimit: TRzComboBox;
     dlgSaveResult: TSaveDialog;
     dlgExport: TSaveDialog;
