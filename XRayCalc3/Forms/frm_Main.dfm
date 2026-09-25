@@ -986,11 +986,13 @@ object frmMain: TfrmMain
       end
       object N11: TMenuItem
         Caption = '-'
+        Visible = False
       end
       object MaterialsLibrary1: TMenuItem
         ImageIndex = 38
         Caption = 'Materials Library'
         Enabled = False
+        Visible = False
       end
     end
     object Calc2: TMenuItem
@@ -2114,7 +2116,7 @@ object frmMain: TfrmMain
       Category = 'Project'
       Caption = 'Reopen'
       Hint = 'Reopen project'
-      ShortCut = 114
+      ShortCut = 8306
       OnExecute = actProjectReopenExecute
     end
     object actCalcBenchmark: TAction

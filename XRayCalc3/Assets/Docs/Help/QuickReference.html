@@ -40,13 +40,14 @@
   <tr><td><img src="images/icons/06_AddModel.png" alt="Add Model" class="icon"> Add Model</td><td>Add a new model to the project</td></tr>
   <tr><td><img src="images/icons/43_DataLoad.png" alt="Load Data" class="icon"> Load Data</td><td>Load experimental data from file</td></tr>
   <tr><td><img src="images/icons/44_DataPaste.png" alt="Paste Data" class="icon"> Paste Data</td><td>Paste experimental data from clipboard</td></tr>
-  <tr><td><img src="images/icons/40_Play.png" alt="Calc Run" class="icon"> Calc Run</td><td>Calculate the selected model</td></tr>
-  <tr><td>Stop</td><td>Abort the current calculation or fitting</td></tr>
-  <tr><td><img src="images/icons/41_Forward.png" alt="Fast Forward" class="icon"> Fast Forward</td><td>Start auto-fitting</td></tr>
+  <tr><td><img src="images/icons/40_Play.png" alt="Calculate" class="icon"> Calculate</td><td>Calculate the active model (F5)</td></tr>
+  <tr><td><img src="images/icons/41_Forward.png" alt="Calculate all" class="icon"> Calculate all</td><td>Calculate every model in the project (F6)</td></tr>
+  <tr><td><img src="images/icons/42_AutoFit.png" alt="Auto Fitting" class="icon"> Auto Fitting</td><td>Start auto-fitting (F7)</td></tr>
   <tr><td><img src="images/icons/48_Resume.png" alt="Resume Fitting" class="icon"> Resume Fitting</td><td>Continue fitting from the last result, holding frozen parameters &mdash; see <a href="Fitting.html#staged-fitting">Staged Fitting</a></td></tr>
   <tr><td><img src="images/icons/45_ResultSave.png" alt="Result Save" class="icon"> Result Save</td><td>Save calculation results to file</td></tr>
   <tr><td><img src="images/icons/46_CopyResult.png" alt="Copy Result" class="icon"> Copy Result</td><td>Copy results to clipboard</td></tr>
-  <tr><td>Scale</td><td>Toggle linear/logarithmic chart scale</td></tr>
+  <tr><td>Stop</td><td>Abort the current calculation or fitting. Not on a toolbar: it appears at the top centre of the chart only while a calculation or a fit runs.</td></tr>
+  <tr><td>Linear</td><td>Switch the reflectivity axis between logarithmic and linear (a check box in the Chart Info bar)</td></tr>
   <tr><td><img src="images/icons/12_DeleteExtension.png" alt="Delete" class="icon"> Delete</td><td>Remove the selected item</td></tr>
 </table>
 
@@ -69,7 +70,20 @@
 <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
 <table>
   <tr><th>Key</th><th>Action</th></tr>
-  <tr><td><strong>F1</strong></td><td>Open User Manual</td></tr>
+  <tr><td><strong>F1</strong></td><td>Help &gt; User Manual</td></tr>
+  <tr><td><strong>F2</strong></td><td>File &gt; Save project As ...</td></tr>
+  <tr><td><strong>F3</strong></td><td>File &gt; Open project ...</td></tr>
+  <tr><td><strong>Shift+F3</strong></td><td>Reopen the current project from its file (the Reopen toolbar button)</td></tr>
+  <tr><td><strong>Ctrl+S</strong></td><td>File &gt; Save project</td></tr>
+  <tr><td><strong>F5</strong></td><td>Calc &gt; Run: calculate the active model</td></tr>
+  <tr><td><strong>F6</strong></td><td>Calc &gt; Calc all models</td></tr>
+  <tr><td><strong>F7</strong></td><td>Calc &gt; Auto Fitting</td></tr>
+  <tr><td><strong>Ctrl+Z</strong></td><td>Undo the last structure change</td></tr>
+  <tr><td><strong>Insert</strong></td><td>Insert a layer</td></tr>
+  <tr><td><strong>Ctrl+Delete</strong></td><td>Delete the selected layer</td></tr>
+  <tr><td><strong>Ctrl+Shift+C</strong></td><td>Copy the selected layer</td></tr>
+  <tr><td><strong>Ctrl+Shift+X</strong></td><td>Cut the selected layer</td></tr>
+  <tr><td><strong>Ctrl+Shift+V</strong></td><td>Paste the copied layer</td></tr>
 </table>
 
 <h3>See Also</h3>

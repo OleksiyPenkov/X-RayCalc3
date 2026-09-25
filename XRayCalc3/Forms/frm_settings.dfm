@@ -143,7 +143,7 @@ object frmSettings: TfrmSettings
             Height = 13
             Alignment = taRightJustify
             AutoSize = False
-            Caption = 'Henke libray'
+            Caption = 'Henke library'
           end
           object edHenkeDir: TRzButtonEdit
             Left = 132
