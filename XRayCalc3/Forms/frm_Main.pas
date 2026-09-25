@@ -945,26 +945,69 @@ end;
 
 procedure TfrmMain.CalcAllExecute(Sender: TObject);
 var
-  Node: PVirtualNode;
-  Data: PProjectData;
+  Models: TArray<PVirtualNode>;
+  Node, CurrentNode, SavedLastModel: PVirtualNode;
+  Data, Current: PProjectData;
+
+  procedure CollectModels(Parent: PVirtualNode);
+  var
+    Child: PVirtualNode;
+  begin
+    Child := FProjectPanel.Project.GetFirstChild(Parent);
+    while Child <> nil do
+    begin
+      Data := FProjectPanel.Project.GetNodeData(Child);
+      if Data.IsModel then
+        Models := Models + [Child]
+      else if Data.RowType = prFolder then
+        CollectModels(Child);
+      Child := FProjectPanel.Project.GetNextSibling(Child);
+    end;
+  end;
+
+  procedure CalcModel(ANode: PVirtualNode; AData: PProjectData);
+  begin
+    FProjectPanel.Project.ActiveModel := AData;
+    { Its gradients and Table, not those of the model the tree has focused. }
+    FProjectPanel.LastModel := ANode;
+    Structure.FromString(AData.Data);
+    { Swapped behind the tree's back, so the tree fires nothing. }
+    OnModelChanged(Self);
+    FOrchestrator.RunCalc(False);
+  end;
+
 begin
-  if FProjectPanel.ModelsRoot.ChildCount > 0 then
-    Node := FProjectPanel.Project.GetFirstChild(FProjectPanel.ModelsRoot)
-  else
+  Models := nil;
+  CollectModels(FProjectPanel.ModelsRoot);
+  if Models = nil then
     Exit;
 
-  while Node <> nil do
-  begin
-    Data := FProjectPanel.Project.GetNodeData(Node);
-    if Data.IsModel then
+  { The structure panel holds the active model as edited, and a model's Data
+    catches up only when the tree's focus leaves it. A model made by New,
+    Duplicate or Paste is active without ever having had the focus, so its
+    Data was still the structure it started from - a duplicate was calculated
+    as the model it was copied from. }
+  Current := FProjectPanel.Project.ActiveModel;
+  if Current <> nil then
+    Current.Data := Structure.ToString;
+
+  SavedLastModel := FProjectPanel.LastModel;
+  CurrentNode := nil;
+  try
+    for Node in Models do
     begin
-      FProjectPanel.Project.ActiveModel := Data;
-      Structure.FromString(Data.Data);
-      { Swapped behind the tree's back, so the tree fires nothing. }
-      OnModelChanged(Self);
-      FOrchestrator.RunCalc(False);
+      Data := FProjectPanel.Project.GetNodeData(Node);
+      if Data = Current then
+        CurrentNode := Node
+      else if Data.Data <> '' then   // never given a structure: nothing to calculate
+        CalcModel(Node, Data);
     end;
-    Node := FProjectPanel.Project.GetNextSibling(Node);
+    { The active model last, so the structure panel, chi-squared and profile
+      pages are left showing it, as they were. }
+    if CurrentNode <> nil then
+      CalcModel(CurrentNode, Current);
+  finally
+    FProjectPanel.LastModel := SavedLastModel;
   end;
 end;
 
