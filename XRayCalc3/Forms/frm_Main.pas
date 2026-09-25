@@ -366,7 +366,7 @@ uses
   frm_FitSettings,
   frm_XRRAssess,
   frm_FitReport, unit_FitReportGUI, unit_MCPFitReport, unit_MCPCalc,
-  unit_Residuals, unit_ResidualStrip,
+  unit_Residuals, unit_ResidualStrip, unit_SaveBeforeDialog,
   unit_MCPAssess,
   unit_xrdml,
   unit_SeriesIO,
@@ -1146,6 +1146,15 @@ end;
 
 procedure TfrmMain.FileNewExecute(Sender: TObject);
 begin
+  case ConfirmSaveBeforeNew of
+    sbaSave:
+      if not FProjectPanel.SaveCurrentProject then
+        Exit;           // the Save As dialog was cancelled: keep the project
+    sbaDiscard:
+      ;
+  else
+    Exit;
+  end;
   FProjectPanel.NewProject;
 end;
 

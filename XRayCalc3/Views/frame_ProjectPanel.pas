@@ -179,8 +179,9 @@ type
     { Project file operations }
     procedure NewProject;
     procedure OpenProject;
-    procedure SaveCurrentProject;
-    procedure SaveProjectAs;
+    { Both return False when the user cancels the Save As dialog. }
+    function  SaveCurrentProject: Boolean;
+    function  SaveProjectAs: Boolean;
     procedure ReopenProject;
 
     { Tree operations }
@@ -1389,16 +1390,20 @@ begin
   end;
 end;
 
-procedure TfrmProjectPanel.SaveCurrentProject;
+function TfrmProjectPanel.SaveCurrentProject: Boolean;
 begin
   if FProjectName = DEFAULT_PROJECT_NAME then
-    SaveProjectAs
+    Result := SaveProjectAs
   else
+  begin
     SaveProject(FProjectFileName);
+    Result := True;
+  end;
 end;
 
-procedure TfrmProjectPanel.SaveProjectAs;
+function TfrmProjectPanel.SaveProjectAs: Boolean;
 begin
+  Result := False;
   if TConfig.SystemDir[sdProjDir] <> '' then
     dlgSaveProject.InitialDir := TConfig.SystemDir[sdProjDir]
   else
@@ -1414,6 +1419,7 @@ begin
     FRecentProjects.Add(FProjectFileName);
     if Assigned(FOnCaptionChange) then
       FOnCaptionChange('X-Ray Calc 3: ' + FProjectName);
+    Result := True;
   end;
 end;
 

@@ -72,6 +72,7 @@ uses
   unit_ResidualStrip in 'Units\unit_ResidualStrip.pas',
   unit_CalcOrchestrator in 'Units\unit_CalcOrchestrator.pas',
   unit_StaleExtDialog in 'Units\unit_StaleExtDialog.pas',
+  unit_SaveBeforeDialog in 'Units\unit_SaveBeforeDialog.pas',
   unit_BatchRunner in 'Units\unit_BatchRunner.pas',
   unit_XRCPanel in 'Components\unit_XRCPanel.pas';
 
