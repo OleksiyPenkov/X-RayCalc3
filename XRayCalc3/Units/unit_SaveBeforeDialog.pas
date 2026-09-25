@@ -14,9 +14,11 @@ interface
 type
   TSaveBeforeAction = (sbaSave, sbaDiscard, sbaCancel);
 
-/// <summary>File - New: save the current project first, discard it, or stay.
-/// The program does not track changes, so it always asks.</summary>
-function ConfirmSaveBeforeNew: TSaveBeforeAction;
+/// <summary>Before the current project is replaced - File - New, Open, a
+/// recent project: save it first, discard it, or stay. The program does not
+/// track changes, so it always asks. Caption names the command, Title is the
+/// question.</summary>
+function ConfirmSaveBefore(const Caption, Title: string): TSaveBeforeAction;
 
 implementation
 
@@ -24,13 +26,11 @@ uses
   System.UITypes, Vcl.Dialogs, Vcl.Forms;
 
 resourcestring
-  rstrNewCaption     = 'New project';
-  rstrNewTitle       = 'Save the current project before starting a new one?';
-  rstrNewText        = 'Unsaved results are lost otherwise.';
+  rstrLostText       = 'Unsaved results are lost otherwise.';
   rstrSaveCaption    = 'Save';
   rstrDiscardCaption = 'Don''t save';
 
-function ConfirmSaveBeforeNew: TSaveBeforeAction;
+function ConfirmSaveBefore(const Caption, Title: string): TSaveBeforeAction;
 const
   mrSaveProject    = 100;
   mrDiscardProject = 101;
@@ -42,9 +42,9 @@ begin
 
   Dlg := TTaskDialog.Create(Application);
   try
-    Dlg.Caption := rstrNewCaption;
-    Dlg.Title := rstrNewTitle;
-    Dlg.Text := rstrNewText;
+    Dlg.Caption := Caption;
+    Dlg.Title := Title;
+    Dlg.Text := rstrLostText;
     Dlg.CommonButtons := [tcbCancel];
     Dlg.Flags := [tfAllowDialogCancellation];
     Dlg.MainIcon := tdiWarning;

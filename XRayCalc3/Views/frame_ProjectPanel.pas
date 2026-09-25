@@ -182,6 +182,9 @@ type
     { Both return False when the user cancels the Save As dialog. }
     function  SaveCurrentProject: Boolean;
     function  SaveProjectAs: Boolean;
+    { Asks Save / Don't save / Cancel before the current project is replaced;
+      True when it may go - saved or discarded. }
+    function  MayReplaceProject(const Caption, Question: string): Boolean;
     procedure ReopenProject;
 
     { Tree operations }
@@ -281,7 +284,7 @@ implementation
 
 uses
   System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
-  unit_xrdml, unit_CurveStyle,
+  unit_xrdml, unit_CurveStyle, unit_SaveBeforeDialog,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
   editor_JSON, frm_ExtensionType;
 
@@ -1353,6 +1356,9 @@ begin
     FRecentProjects.Remove(FileName);
     Exit;
   end;
+  if not MayReplaceProject('Open project',
+    'Save the current project before opening another one?') then
+    Exit;
 
   FProjectFileName := FileName;
   PrepareProjectFolder(FProjectFileName, True);
@@ -1380,6 +1386,9 @@ begin
 
   if dlgOpenProject.Execute then
   begin
+    if not MayReplaceProject('Open project',
+      'Save the current project before opening another one?') then
+      Exit;
     PrepareProjectFolder(dlgOpenProject.FileName, True);
     LoadProject(dlgOpenProject.FileName);
     if TConfig.Section<TOtherOptions>.AutoCalc then
@@ -1387,6 +1396,16 @@ begin
         FOnCalcRun(Self);
 
     FRecentProjects.Add(FProjectFileName);
+  end;
+end;
+
+function TfrmProjectPanel.MayReplaceProject(const Caption, Question: string): Boolean;
+begin
+  case ConfirmSaveBefore(Caption, Question) of
+    sbaSave:    Result := SaveCurrentProject;   // False: the Save As was cancelled
+    sbaDiscard: Result := True;
+  else
+    Result := False;
   end;
 end;
 
