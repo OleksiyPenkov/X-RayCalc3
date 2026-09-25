@@ -296,6 +296,20 @@ object frmChartPages: TfrmChartPages
           TabOrder = 0
           OnClick = btnCopyConvergenceClick
         end
+        object chkWorstChi: TCheckBox
+          Left = 896
+          Top = 13
+          Width = 64
+          Height = 17
+          Hint = 'Show the worst chi-squared of the swarm at every iteration'
+          Anchors = [akTop, akRight]
+          Caption = 'Worst'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 1
+          Visible = False
+          OnClick = chkWorstChiClick
+        end
         object lsrConvergence: TLineSeries
           SeriesColor = 16744448
           Title = 'srFitProgress'

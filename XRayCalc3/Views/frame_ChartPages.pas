@@ -29,13 +29,14 @@ type
     btnProfileCopy: TRzButton;
     btnCopyDiagnostics: TRzButton;
     DensityProfile: TLineSeries;
+    chkWorstChi: TCheckBox;
     procedure btnCopyConvergenceClick(Sender: TObject);
     procedure btnProfileCopyClick(Sender: TObject);
     procedure btnCopyDiagnosticsClick(Sender: TObject);
+    procedure chkWorstChiClick(Sender: TObject);
   private
     lsrWorstChi: TLineSeries;
     lsrShake: TPointSeries;
-    chkWorstChi: TCheckBox;
     lsrDiversity: TLineSeries;
     lsrMeanVelocity: TLineSeries;
     lsrJamming: TLineSeries;
@@ -47,7 +48,6 @@ type
       identical X values and the plot zig-zags between their chi-squared
       levels. Set by PrepareConvergence, which runs before PrepareDiagnostics. }
     FStepOffset: Integer;
-    procedure chkWorstChiClick(Sender: TObject);
   public
     property ThicknessChart: TChart read chThickness;
     property RoughnessChart: TChart read chRoughness;
@@ -181,17 +181,9 @@ begin
   else if not Append then
     lsrShake.Clear;
 
-  if chkWorstChi = nil then
-  begin
-    chkWorstChi := TCheckBox.Create(chFittingProgress);
-    chkWorstChi.Parent := chFittingProgress;
-    chkWorstChi.Caption := 'Worst';
-    chkWorstChi.Width := 55;
-    chkWorstChi.Anchors := [akTop, akRight];
-    chkWorstChi.Left := btnCopyConvergence.Left - chkWorstChi.Width - 4;
-    chkWorstChi.Top := btnCopyConvergence.Top + 2;
-    chkWorstChi.OnClick := chkWorstChiClick;
-  end;
+  { In the DFM beside the Copy button, so that it scales with it: created
+    here at a fixed 55 px it ran under the button on a high-DPI display. }
+  chkWorstChi.Visible := True;
 
   Pages.ActivePage := tsFittingProgress;
   chFittingProgress.BottomAxis.Minimum := 0;
