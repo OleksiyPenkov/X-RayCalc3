@@ -6,8 +6,15 @@ current version of X-Ray Calc, written in Delphi (Object Pascal). This repositor
 command-line interface, the XRF mirror-design program XRFCalc, and XRC_MCP, a server that exposes
 the same calculation engine to LLM agents over the Model Context Protocol.
 
-Documentation: the [wiki](https://github.com/OleksiyPenkov/X-RayCalc3/wiki) (getting started,
-user manual, manual fitting, working with experimental data).
+## Documentation
+
+- **Book:** Penkov, O. (2026). *Mastering XRR Fitting: Fitting X-Ray Reflectivity Curves with
+  X-Ray Calc 3*. A free book that takes you from a raw XRR curve to a reported fit, every step done
+  in this program. [Read it online](https://oleksiypenkov.github.io/MasteringXRR/) or
+  [download the PDF](https://github.com/OleksiyPenkov/MasteringXRR/releases/latest/download/Mastering-XRR-Fitting.pdf);
+  https://doi.org/10.5281/zenodo.22959661. It is written for X-Ray Calc 3.9.4.
+- The [wiki](https://github.com/OleksiyPenkov/X-RayCalc3/wiki): getting started, user manual,
+  manual fitting, working with experimental data.
 
 ## Citing
 
