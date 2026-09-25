@@ -58,6 +58,9 @@ uses
   frm_FitSettings in 'Forms\frm_FitSettings.pas' {frmFitSettings},
   frm_XRRAssess in 'Forms\frm_XRRAssess.pas' {frmXRRAssess},
   unit_MCPAssess in '..\XRC_MCP\units\unit_MCPAssess.pas',
+  frm_FitReport in 'Forms\frm_FitReport.pas' {frmFitReport},
+  unit_FitReportGUI in 'Units\unit_FitReportGUI.pas',
+  unit_MCPFitReport in '..\XRC_MCP\units\unit_MCPFitReport.pas',
   unit_AutoCompleteEdit in 'Components\unit_AutoCompleteEdit.pas',
   MHLButtonedEdit in 'Components\MHLButtonedEdit.pas',
   unit_StaticTip in 'Components\unit_StaticTip.pas',
@@ -92,5 +95,6 @@ begin
   Application.CreateForm(TedtrProfileTable, edtrProfileTable);
   Application.CreateForm(TfrmFitSettings, frmFitSettings);
   Application.CreateForm(TfrmXRRAssess, frmXRRAssess);
+  Application.CreateForm(TfrmFitReport, frmFitReport);
   Application.Run;
 end.

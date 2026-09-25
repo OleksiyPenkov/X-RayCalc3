@@ -86,6 +86,10 @@ type
     property LastChiSquare: Single read FLastChiSquare write FLastChiSquare;
     property BenchmarkMode: Boolean read FBenchmarkMode write FBenchmarkMode;
     property HasFitResults: Boolean read FHasFitResults;
+    /// The scale the last calculation's chi2 was taken at: solved or not,
+    /// and log10 of its ratio to the anchored one (0 when anchored).
+    property LastSolveScale: Boolean read FLastSolveScale;
+    property LastScaleLog: Single read FLastScaleLog;
     property OnEnableControls: TEnableControlsEvent write FOnEnableControls;
     property OnCalcTimeUpdate: TStatusUpdateEvent write FOnCalcTimeUpdate;
     property OnFitTimeUpdate: TStatusUpdateEvent write FOnFitTimeUpdate;

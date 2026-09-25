@@ -236,6 +236,12 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\XRC_MCP\units\unit_MCPAssess.pas"/>
+        <DCCReference Include="Forms\frm_FitReport.pas">
+            <Form>frmFitReport</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="Units\unit_FitReportGUI.pas"/>
+        <DCCReference Include="..\XRC_MCP\units\unit_MCPFitReport.pas"/>
         <DCCReference Include="Editors\editor_proj_item.pas">
             <Form>edtrProjectItem</Form>
             <FormType>dfm</FormType>

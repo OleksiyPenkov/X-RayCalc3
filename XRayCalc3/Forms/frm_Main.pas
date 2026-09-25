@@ -195,6 +195,8 @@ type
     dlgSaveFitJSON: TSaveDialog;
     N16: TMenuItem;
     ExportFitResults1: TMenuItem;
+    mnuFitReport: TMenuItem;
+    actFitReport: TAction;
     Calcbatchjobs1: TMenuItem;
     pmRecentList: TPopupMenu;
     pmRecentList1: TMenuItem;
@@ -268,6 +270,7 @@ type
     procedure actCopyStructureBitmapExecute(Sender: TObject);
     procedure actDataTrimExecute(Sender: TObject);
     procedure actDataAssessExecute(Sender: TObject);
+    procedure actFitReportExecute(Sender: TObject);
     procedure actCalcFitJobsExecute(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
@@ -352,6 +355,7 @@ uses
   unit_sys_helpers,
   frm_FitSettings,
   frm_XRRAssess,
+  frm_FitReport, unit_FitReportGUI, unit_MCPFitReport, unit_MCPCalc,
   unit_MCPAssess,
   unit_xrdml,
   unit_SeriesIO,
@@ -594,6 +598,71 @@ begin
                       (Trim(Inp.Structure.Subs.Material) <> '');
 
   frmXRRAssess.Assess(Inp, Source);
+end;
+
+{ Result - Fit report: unit_MCPFitReport on the active model's calculated
+  curve against the measured curve linked to it, the measured one at the
+  solved scale of the last calculation - the scale the chi2 and the Chart
+  Info bar show. Calculate first: the report reads the curve on the chart. }
+procedure TfrmMain.actFitReportExecute(Sender: TObject);
+var
+  Model, Linked: PProjectData;
+  ModelSeries, DataSeries: TFastLineSeries;
+  FS: TFitStructure;
+  Inp: TFitReportInput;
+  ScaleLog: Double;
+  Source, Facts: string;
+begin
+  Model := FProjectPanel.Project.ActiveModel;
+  Linked := FProjectPanel.Project.LinkedData;
+  if (Model = nil) or (Linked = nil) then
+  begin
+    MessageDlg('Fit report needs an active model with measured data linked to it.',
+      mtInformation, [mbOK], 0);
+    Exit;
+  end;
+  if FCalcSettings.CalcMode <> Ord(cmTheta) then
+  begin
+    MessageDlg('Fit report is for angle scans (Calculation mode: by angle).',
+      mtInformation, [mbOK], 0);
+    Exit;
+  end;
+  ModelSeries := FProjectPanel.ActiveModelSeries;
+  DataSeries := FChartMgr.Series[Linked.CurveID];
+  if (ModelSeries = nil) or (ModelSeries.Count < 3) or (DataSeries = nil) or
+     (DataSeries.Count < 3) then
+  begin
+    MessageDlg('Calculate the model first: the report reads its curve on the chart.',
+      mtInformation, [mbOK], 0);
+    Exit;
+  end;
+
+  FS := Structure.ToFitStructure;
+  ScaleLog := 0;
+  if FOrchestrator.LastSolveScale then
+    ScaleLog := FOrchestrator.LastScaleLog;
+
+  Inp := FitReportInput(SeriesToData(DataSeries), SeriesToData(ModelSeries),
+    FCalcSettings.Is2Theta, ScaleLog, FCalcSettings.Lambda, FirstPeriod(FS),
+    CriticalAngleDeg(FS, FCalcSettings.Lambda));
+  if Length(Inp.Measured) < 3 then
+  begin
+    MessageDlg('The calculated curve does not cover the measured angles. ' +
+      'Calculate the model over the range of the data.', mtInformation, [mbOK], 0);
+    Exit;
+  end;
+
+  Source := Format('Model "%s" against "%s"', [Model.Title, Linked.Title]);
+  if ScaleLog <> 0 then
+    Facts := Format('Measured curve x %s, the solved scale of the last calculation',
+      [FloatToStrF(Exp(ScaleLog * Ln(10)), ffFixed, 8, 4)])
+  else
+    Facts := 'Measured curve at the anchored scale';
+  Facts := Facts + Format('.   Period %s ' + #$00C5 + ',   ' + #$03BB + ' %s ' + #$00C5 +
+    ',   %d points', [FloatToStrF(Inp.Period, ffFixed, 7, 2),
+    FloatToStrF(Inp.Lambda, ffFixed, 7, 4), Length(Inp.Measured)]);
+
+  frmFitReport.ShowReport(Inp, FCalcSettings.Is2Theta, NearBounds(FS), Source, Facts);
 end;
 
 procedure TfrmMain.actEditHenkeExecute(Sender: TObject);

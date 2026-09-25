@@ -931,6 +931,9 @@ object frmMain: TfrmMain
         ImageIndex = 6
         Action = FitExportJSON
       end
+      object mnuFitReport: TMenuItem
+        Action = actFitReport
+      end
     end
     object ools1: TMenuItem
       Caption = 'Tools'
@@ -2116,6 +2119,14 @@ object frmMain: TfrmMain
       Category = 'Result'
       Caption = 'Export fit results...'
       OnExecute = FitExportJSONExecute
+    end
+    object actFitReport: TAction
+      Category = 'Result'
+      Caption = 'Fit report ...'
+      Hint =
+        'Is this fit any good? Orders, edge, fringes and residual bands of' +
+        ' the active model against its linked data'
+      OnExecute = actFitReportExecute
     end
   end
   object dlgSaveFitJSON: TSaveDialog

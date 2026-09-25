@@ -29,6 +29,7 @@
     <li><a href="#saving-the-plot">Saving the Plot</a></li>
     <li><a href="#structure-image">Structure Image</a></li>
     <li><a href="#auto-save-results">Auto-Save Results</a></li>
+    <li><a href="#fit-report">Fit Report</a></li>
   </ul>
 </div>
 
@@ -47,6 +48,18 @@
 
 <h2 id="structure-image">Structure Image</h2>
 <p><strong>Structure &gt; Copy as Image</strong> copies the visual structure diagram (the layer/stack representation) to the clipboard as an image.</p>
+
+<h2 id="fit-report">Fit Report <span class="badge">v3.9.4</span></h2>
+<p><strong>Result &gt; Fit report ...</strong> answers "is this fit any good?" with the numbers the MCP server's <code>fit_xrr</code> report gives, for the active model against the measured curve linked to it. It is to a fit what <a href="Data.html#assessing-a-measurement">Data &gt; Assess XRR quality</a> is to a measurement. Calculate the model first: the report reads its curve on the chart, over the range of the data. The window shows values only, with no pass or fail marks; what a good fit looks like is the fitting procedure's to say.</p>
+<p>The measured curve is taken at the <strong>solved scale</strong> of the last calculation, the scale its &chi;&sup2; and the Chart Info bar show (<a href="Fitting.html#solved-scale">Solving the Measured Scale</a>); the header line gives the factor. Angles are in the chart's unit, 2&theta; or &theta;. The calculated curve is read at the measured angles (interpolated in log&nbsp;R between its own points).</p>
+<ul>
+  <li><strong>Bragg orders:</strong> for every order of the first repeating stack's period inside the data, the measured and the calculated maximum in the order's window, each with its own angle, their ratio calc/meas, and whether the measured one stands more than three times above the background (the median of the last 100 points).</li>
+  <li><strong>Critical edge:</strong> three points between the start of the data and the first minimum of the calculated curve, measured, calculated and their ratio.</li>
+  <li><strong>Fringes between orders 1 and 2:</strong> the number of fringe pairs (a maximum and the minimum after it) and their mean contrast, measured and calculated.</li>
+  <li><strong>Residual by band:</strong> the data range in eight equal bands of angle, each with its number of points and the mean and rms of log<sub>10</sub>(R<sub>calc</sub>/I<sub>meas</sub>): where the model sits above the data (positive) and where below, in decades.</li>
+  <li><strong>Parameters within 5&nbsp;% of a bound:</strong> every free layer parameter that sits within 5&nbsp;% of its range of Min or Max in the current limits, as the Fitting Limits dialog flags them.</li>
+</ul>
+<p><strong>Copy as text</strong> puts every table on the clipboard, tab-separated.</p>
 
 <h2 id="auto-save-results">Auto-Save Results</h2>
 <p>When enabled in Settings (<strong>Automatically save results to output folder after fitting</strong>), fitting results are automatically saved to the configured Output directory after each fitting run completes.</p>

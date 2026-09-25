@@ -94,6 +94,8 @@ uses
   TestMCPFitReport in 'TestMCPFitReport.pas',
   unit_MCPAssess in '..\..\XRC_MCP\units\unit_MCPAssess.pas',
   TestMCPAssess in 'TestMCPAssess.pas',
+  unit_FitReportGUI in '..\Units\unit_FitReportGUI.pas',
+  TestFitReportGUI in 'TestFitReportGUI.pas',
   unit_AxisLimit in '..\..\Shared\Math\unit_AxisLimit.pas',
   TestAxisLimit in 'TestAxisLimit.pas',
   TestProjectTreeNodeIO in 'TestProjectTreeNodeIO.pas',
