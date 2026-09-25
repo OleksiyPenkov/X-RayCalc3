@@ -128,7 +128,9 @@ type
     FOnCurvesChanged: TNotifyEvent;
     FProjectSerial: Integer;
 
-    procedure CreateNewModel(Node: PVirtualNode);
+    function  CreateNewModel(Node: PVirtualNode): PVirtualNode;
+    procedure AddModel(const AStructure: string);
+    procedure FocusModelNode(Node: PVirtualNode);
     procedure DeleteModel(Node: PVirtualNode; Data: PProjectData);
     procedure DeleteData(Node: PVirtualNode; Data: PProjectData);
     procedure DeleteExtension(Node: PVirtualNode);
@@ -772,11 +774,12 @@ end;
 
 { --- Internal helpers --- }
 
-procedure TfrmProjectPanel.CreateNewModel(Node: PVirtualNode);
+function TfrmProjectPanel.CreateNewModel(Node: PVirtualNode): PVirtualNode;
 var
   PL: PVirtualNode;
 begin
   PL := FProject.AddChild(Node, Nil);
+  Result := PL;
   FProject.ActiveModel := FProject.GetNodeData(PL);
   FProject.ActiveModel.ID := FLastID;
   FProject.ActiveModel.Title := 'Model ' + IntToStr(FLastID);
@@ -1491,21 +1494,40 @@ end;
 
 { --- Tree operations --- }
 
+{ A new model, holding AStructure, focused in the tree as a click would focus
+  it. Until 3.9.4.1150 the new model became active while the tree's focus
+  stayed on the old one: its stored structure never took the edits made to
+  it, and the next click on it in the tree saved those edits into the old
+  model instead. }
+procedure TfrmProjectPanel.AddModel(const AStructure: string);
+var
+  Node: PVirtualNode;
+begin
+  if FProject.ActiveModel <> nil then
+    FProject.ActiveModel.Data := Structure.ToString;
+  Node := CreateNewModel(FModelsRoot);
+  FProject.ActiveModel.Data := AStructure;
+  FocusModelNode(Node);
+end;
+
+{ ProjectChange does the switch: it saves the structure panel into the model
+  it came from, while the panel still holds that model, and loads Node's. }
+procedure TfrmProjectPanel.FocusModelNode(Node: PVirtualNode);
+begin
+  FProject.ClearSelection;
+  FProject.FocusedNode := Node;
+  FProject.Selected[Node] := True;
+end;
+
 procedure TfrmProjectPanel.CreateModel;
 begin
-  FProject.ActiveModel.Data := Structure.ToString;
-  CreateNewModel(FModelsRoot);
+  { Starts from the structure on screen, as it always has. }
+  AddModel(Structure.ToString);
 end;
 
 procedure TfrmProjectPanel.DuplicateModel;
-var
-  S: string;
 begin
-  FProject.ActiveModel.Data := Structure.ToString;
-  S := Structure.ToString;
-  CreateNewModel(FModelsRoot);
-  Structure.FromString(S);
-  FProject.ActiveModel.Data := S;
+  AddModel(Structure.ToString);
 end;
 
 procedure TfrmProjectPanel.CopyModel;
@@ -1514,11 +1536,28 @@ begin
 end;
 
 procedure TfrmProjectPanel.PasteModel;
+var
+  S: string;
+  JObj: TJSONValue;
+  IsStructure: Boolean;
 begin
-  FProject.ActiveModel.Data := Structure.ToString;
-  CreateNewModel(FModelsRoot);
-  FProject.ActiveModel.Data := ClipBoard.AsText;
-  Structure.FromString(FProject.ActiveModel.Data);
+  S := ClipBoard.AsText;
+  JObj := TJSONObject.ParseJSONValue(S);
+  try
+    IsStructure := (JObj is TJSONObject) and (JObj.FindValue('Stacks') <> nil) and
+      (JObj.FindValue('Subs') <> nil);
+  finally
+    JObj.Free;
+  end;
+  { Loading it raised an access violation, and with the new model now
+    focused first it would leave that model behind without a structure. }
+  if not IsStructure then
+  begin
+    MessageDlg('The clipboard holds no X-Ray Calc structure.' + sLineBreak +
+      'Copy a model first (Project > Copy model).', mtError, [mbOK], 0);
+    Exit;
+  end;
+  AddModel(S);
 end;
 
 procedure TfrmProjectPanel.CopySelectedItem;
@@ -1612,11 +1651,7 @@ begin
         JObj.Free;
       end;
 
-      if FProject.ActiveModel <> nil then
-        FProject.ActiveModel.Data := Structure.ToString;
-      CreateNewModel(FModelsRoot);
-      FProject.ActiveModel.Data := JSON;
-      Structure.FromString(JSON);
+      AddModel(JSON);
     end;
   finally
     Dlg.Free;
