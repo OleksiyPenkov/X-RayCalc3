@@ -29,25 +29,26 @@
     <li><a href="#saving-the-plot">Saving the Plot</a></li>
     <li><a href="#structure-image">Structure Image</a></li>
     <li><a href="#auto-save-results">Auto-Save Results</a></li>
+    <li><a href="#export-fit-results">Exporting Fit Results</a></li>
     <li><a href="#fit-report">Fit Report</a></li>
   </ul>
 </div>
 
 <h2 id="saving-results">Saving Results</h2>
-<p><img src="images/icons/45_ResultSave.png" alt="Save" class="icon"> <strong>Result &gt; Save Results</strong> saves the calculated reflectivity data to a text file with columns for angle/wavelength and reflectivity.</p>
+<p><img src="images/icons/45_ResultSave.png" alt="Save" class="icon"> <strong>Result &gt; Export ...</strong> saves the active model's calculated curve to a text file (.dat) with two tab-separated columns. The header names them: the x column after the chart axis (<code>2Theta</code> or <code>Theta</code>, in deg, or <code>Wavelength</code>, in &Aring;), the second <code>Reflectivity</code>.</p>
 
 <h2 id="copying-to-clipboard">Copying to Clipboard</h2>
 <ul>
-  <li><img src="images/icons/46_CopyResult.png" alt="Copy" class="icon"> <strong>Result &gt; Copy to Clipboard</strong> &mdash; copy reflectivity data as tab-separated text</li>
+  <li><img src="images/icons/46_CopyResult.png" alt="Copy" class="icon"> <strong>Result &gt; Copy to clipboard</strong> &mdash; copy reflectivity data as tab-separated text, with the same column names as the export</li>
   <li><img src="images/icons/47_CopyImage.png" alt="Copy Image" class="icon"> <strong>Result &gt; Copy as BMP</strong> &mdash; copy the chart as a bitmap image</li>
-  <li><strong>Result &gt; Copy as WMF</strong> &mdash; copy the chart as a Windows Metafile (vector format, suitable for publications)</li>
+  <li><strong>Result &gt; Copy as EMF</strong> &mdash; copy the chart as an enhanced metafile (vector format, suitable for publications)</li>
 </ul>
 
 <h2 id="saving-the-plot">Saving the Plot</h2>
-<p><strong>Result &gt; Save Plot as File</strong> saves the chart as an image file.</p>
+<p><strong>Result &gt; Save as graphics ...</strong> saves the chart as an image file: BMP, EMF (enhanced metafile) or WMF, chosen by the file type in the dialog. The file gets that type's extension; an extension typed in the name is replaced.</p>
 
 <h2 id="structure-image">Structure Image</h2>
-<p><strong>Structure &gt; Copy as Image</strong> copies the visual structure diagram (the layer/stack representation) to the clipboard as an image.</p>
+<p><strong>Structure &gt; Copy as image</strong> copies the visual structure diagram (the layer/stack representation) to the clipboard as an image.</p>
 
 <h2 id="fit-report">Fit Report <span class="badge">v3.9.4</span></h2>
 <p><strong>Result &gt; Fit report ...</strong> answers "is this fit any good?" with the numbers the MCP server's <code>fit_xrr</code> report gives, for the active model against the measured curve linked to it. It is to a fit what <a href="Data.html#assessing-a-measurement">Data &gt; Assess XRR quality</a> is to a measurement. Calculate the model first: the report reads its curve on the chart, over the range of the data. The window shows values only, with no pass or fail marks; what a good fit looks like is the fitting procedure's to say.</p>
@@ -62,7 +63,20 @@
 <p><strong>Copy as text</strong> puts every table on the clipboard, tab-separated.</p>
 
 <h2 id="auto-save-results">Auto-Save Results</h2>
-<p>When enabled in Settings (<strong>Automatically save results to output folder after fitting</strong>), fitting results are automatically saved to the configured Output directory after each fitting run completes.</p>
+<p>When enabled in Settings (<strong>Automatically save results to output folder after fitting</strong>), the whole project is saved as <code>&lt;project&gt;-fitted.xrcx</code> in the <strong>Fitting Output</strong> folder, or next to the project when that setting is blank (a project that was never saved goes to the <strong>Default Project's Folder</strong>). The folder is created if it is missing. The save happens when a fit ends; with <strong>Live update structure panel during fitting</strong> also on, it also happens during the fit, whenever the chart is updated with a better &chi;&sup2;. The project's own .xrcx file is not touched.</p>
+
+<h2 id="export-fit-results">Exporting Fit Results</h2>
+<p><strong>Result &gt; Export fit results...</strong> writes the project's fit record to a JSON file. Since the version after 3.9.4.1130 the record is taken when a fit ends and saved with the project (the <code>[FITRESULT]</code> section of <code>params.dsc</code>), so the export works after the project is reopened and describes the fit as it ran, whatever has been changed since. It holds:</p>
+<ul>
+  <li>the program <code>version</code> and <code>platform</code>, <code>fitDate</code>, <code>fittingSeconds</code>, <code>fittingDevice</code>, the <code>seed</code>, whether the fit was a resume, the <code>fittingMode</code> (and, in Irregular mode, <code>startFromTables</code>), the <code>model</code> and the <code>dataItem</code> it was fitted to;</li>
+  <li><code>chiSquared</code> (the engine's best, the number minimised), <code>chiSquaredRecalc</code> and <code>chiSquaredPlain</code> (the model it ended on, weighted and unweighted), <code>chi2Scale</code>, <code>scaleRatio</code>, <code>scaleClamped</code>;</li>
+  <li><code>chi2Weighting</code> (theta weight, point weight, moving-average window) and <code>rMin</code>;</li>
+  <li><code>fitParams</code>: every fitting setting, with <code>polyOrder</code>/<code>polyFactor</code> in Polynomial mode and <code>smooth</code>/<code>smoothWindow</code> in Irregular mode;</li>
+  <li><code>calcParams</code>: the range in &theta; (<code>startTheta</code>, <code>endTheta</code>, <code>deltaTheta</code> &mdash; the resolution, formerly exported as <code>step</code>), the wavelength, the number of points, polarisation, roughness function, and whether the chart shows 2&theta;;</li>
+  <li><code>structure</code>: every layer's thickness, roughness and density with their limits and the <code>paired</code> and <code>frozen</code> flags, and a <code>perPeriod</code> list where an Irregular fit gave the layer a value per period;</li>
+  <li><code>polynomials</code> in Polynomial mode: the coefficients of every depth profile.</li>
+</ul>
+<p>A project with no fit record says so and writes nothing.</p>
 
 <h3>See Also</h3>
 <ul>

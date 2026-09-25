@@ -29,7 +29,7 @@
     <li><a href="#opening-a-project">Opening a Project</a></li>
     <li><a href="#saving-a-project">Saving a Project</a></li>
     <li><a href="#auto-save">Auto-Save</a></li>
-    <li><a href="#project-locking">Project Locking</a></li>
+    <li><a href="#project-locking">The temp.lock File</a></li>
     <li><a href="#project-tree-organization">Project Tree Organization</a></li>
   </ul>
 </div>
@@ -37,35 +37,36 @@
 <h2 id="project-files">Project Files</h2>
 <p>Projects are saved as <code>.xrcx</code> files. Internally, an <code>.xrcx</code> file is a ZIP archive containing:</p>
 <ul>
-  <li><code>project.dsc</code> &mdash; project metadata</li>
-  <li><code>params.dsc</code> &mdash; model structure definitions</li>
-  <li>Associated experimental data files</li>
+  <li><code>project.dsc</code> &mdash; the project tree, including the structure of every model</li>
+  <li><code>params.dsc</code> &mdash; the calculation, fit and chart settings, and the project's state (active model, linked data, curve styles)</li>
+  <li><code>calc.dat</code> &mdash; the calculated curve of the active model</li>
+  <li><code>data_&lt;ID&gt;.dat</code> &mdash; one file for each data curve</li>
 </ul>
 
 <h2 id="creating-a-new-project">Creating a New Project</h2>
 <ol>
-  <li>Choose <strong>File &gt; New Project</strong> (or click the <img src="images/icons/01_New.png" alt="New" class="icon"> <strong>New</strong> toolbar button).</li>
+  <li>Choose <strong>File &gt; New project</strong> (or click the <img src="images/icons/01_New.png" alt="New" class="icon"> <strong>New</strong> toolbar button).</li>
   <li>An empty project is created with no models or data.</li>
 </ol>
 
 <h2 id="opening-a-project">Opening a Project</h2>
 <ul>
-  <li><strong>File &gt; Open Project</strong> &mdash; browse for a <code>.xrcx</code> file</li>
-  <li><strong>File &gt; Recent Projects</strong> &mdash; select from up to 10 recently opened projects</li>
+  <li><strong>File &gt; Open project ...</strong> &mdash; browse for a <code>.xrcx</code> file</li>
+  <li><strong>File &gt; Recent projects</strong> &mdash; select from up to 10 recently opened projects</li>
   <li><img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> <strong>Open toolbar button</strong> &mdash; click the dropdown arrow for recent projects</li>
 </ul>
 
 <h2 id="saving-a-project">Saving a Project</h2>
 <ul>
-  <li><strong>File &gt; Save Project</strong> &mdash; save to the current file</li>
-  <li><strong>File &gt; Save Project As</strong> &mdash; save with a new name/location</li>
+  <li><strong>File &gt; Save project</strong> &mdash; save to the current file</li>
+  <li><strong>File &gt; Save project As ...</strong> &mdash; save with a new name/location</li>
 </ul>
 
 <h2 id="auto-save">Auto-Save</h2>
-<p>When enabled in Settings, the application periodically saves a backup to <code>AutoSave.xrcx</code> in the temp directory. This provides crash recovery &mdash; on next launch, you will be prompted to restore the auto-saved project.</p>
+<p>The program does not keep a backup of the open project, and nothing is restored at the next launch. With <strong>Automatically save results to output folder after fitting</strong> on in Settings, a fit saves a copy of the whole project as <code>&lt;project&gt;-fitted.xrcx</code>; see <a href="Results.html#auto-save-results">Results &amp; Export &gt; Auto-Save Results</a>.</p>
 
-<h2 id="project-locking">Project Locking</h2>
-<p>When a project is open, a lock file (<code>temp.lock</code>) prevents simultaneous access from another instance. The lock is released when the project is closed.</p>
+<h2 id="project-locking">The temp.lock File</h2>
+<p>Opening a project does not lock it, and a second instance of the program is not stopped. The lock file <code>temp.lock</code> guards the shared working folder <code>%TEMP%\X-RayCalc3</code>, where every open project is unpacked into a subfolder of its own. The first instance to start creates the lock; at exit that instance deletes it and clears the folder. An instance that starts while the lock exists works normally but leaves the folder alone at exit. If the owning instance did not close normally, the lock stays behind and the folder is no longer cleared; delete <code>temp.lock</code> while no instance is running.</p>
 
 <h2 id="project-tree-organization">Project Tree Organization</h2>
 <p>The project tree shows items in a hierarchy:</p>

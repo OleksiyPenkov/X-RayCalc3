@@ -121,7 +121,7 @@
 <ul>
   <li>H, &sigma;, &rho; &ge; 0 (no negative values)</li>
   <li>&rho; &le; 23 g/cm&sup3; (densest stable element, Osmium)</li>
-  <li>&sigma; Max &le; min(own H, neighboring layer H) &mdash; roughness cannot exceed layer thickness or the thickness of the layer below</li>
+  <li>&sigma; Max &le; min(own H, H of the layer above) &mdash; a layer's &sigma; is the roughness of its top interface, so it cannot exceed the layer's own thickness or the thickness of the layer above it (toward the surface; layers are listed surface first). The first layer of a repeating stack takes the last layer of the same stack as the layer above; the first layer of the coating borders the ambient and is bounded by its own H only</li>
 </ul>
 
 <h2 id="fit-modes">Fitting Modes</h2>
@@ -140,9 +140,11 @@
 <p>Every parameter of each layer is treated independently. This mode is used for non-periodic coatings consisting of several layers. At the start of fitting, the software expands each periodic stack into individual layers. Once fitting is complete, distribution charts are generated for each parameter of every material type (thickness, roughness, density).</p>
 <ul>
   <li>Each layer has its own fitted thickness, roughness, and density.</li>
-  <li>With <strong>Smooth</strong> checked, each particle's period-to-period profile of every parameter is smoothed with a moving average over the <strong>Smoothing window</strong> (Advanced Settings) after every update. This is a constraint during the search, not a smoothing of the result; it applies to stacks with N&nbsp;&gt;&nbsp;1 and to parameters that are not paired.</li>
+  <li>With <strong>Smooth</strong> checked, each particle's period-to-period profile of every parameter is smoothed with a moving average over the <strong>Smoothing window</strong> (Advanced Settings) after every update. This is a constraint during the search, not a smoothing of the result; it applies to stacks with N&nbsp;&gt;&nbsp;1 and to parameters that are neither paired nor frozen (nor given Min&nbsp;=&nbsp;Max).</li>
   <li>Specific parameters can be &ldquo;stack-locked&rdquo; (paired) &mdash; e.g. roughness and density remain constant while thickness varies across the stack.</li>
+  <li>The fit writes each period's values into the model's <strong>Table</strong> extension, which the chart then uses. A fit that keeps the Table &mdash; <strong>Resume Fitting</strong>, or <strong>Run</strong> answered with <strong>Keep them</strong> &mdash; starts every period from its value in the Table, clamped into the layer's limits (a frozen parameter is held at each period's own value). <strong>Clear them</strong> starts every period from the layer's single value, the one the structure panel shows. In 3.9.4.1130 and earlier every Irregular fit started from the single values and the Table was ignored.</li>
 </ul>
+<div class="note"><strong>Irregular fits made with 3.9.4.1130 or earlier:</strong> after the first shake the pairing was lost (every parameter was copied from the first layer), so the search stopped improving at the first shake. Repeat such fits with a later version.</div>
 <div class="note"><strong>Example:</strong> A Mo/Si PMM with 60 repeated stacks would require 726 variables if treated individually. Using the periodic mode, this reduces to just 18 variables.</div>
 
 <h3>Periodic Mode</h3>
@@ -156,9 +158,9 @@
 <h3>Polynomial Mode</h3>
 <p>Arbitrary distributions of structural parameters across the stack can be described by polynomial functions of the period number. Instead of fitting N individual layer thicknesses, the software fits just a few polynomial coefficients (a<sub>1</sub>&ndash;a<sub>k</sub>) plus the base value x<sub>0</sub>:</p>
 <div class="note"><strong>x(j) = x<sub>0</sub> + a<sub>1</sub>(j&nbsp;&minus;&nbsp;1) + a<sub>2</sub>(j&nbsp;&minus;&nbsp;1)&sup2; + &hellip; + a<sub>k</sub>(j&nbsp;&minus;&nbsp;1)<sup>k</sup></strong>, j = 1, 2, &hellip; the period number, x<sub>0</sub> the first period's value.</div>
-<p>Only repeating stacks (N&nbsp;&gt;&nbsp;1) and parameters that are not paired get coefficients; the others keep a single value. The period is not held, so the Bragg peaks can move. Keep the order low (&le;&nbsp;5 in practice): high powers of the period number grow very fast, and the order field is not range-checked.</p>
+<p>Only repeating stacks (N&nbsp;&gt;&nbsp;1) and parameters that are not paired get coefficients; the others keep a single value. The period is not held, so the Bragg peaks can move. Keep the order low (&le;&nbsp;5 in practice): high powers of the period number grow very fast, and the order is limited to 1&ndash;9 (a number outside is set to the nearest limit, an entry that is not a number to 1).</p>
 <ul>
-  <li><strong>Order:</strong> Maximum polynomial order (1 = linear, 2 = quadratic, etc.)</li>
+  <li><strong>Order:</strong> Maximum polynomial order, 1 to 9 (1 = linear, 2 = quadratic, etc.)</li>
   <li>Useful for smooth, continuous parameter gradients (e.g. graded-period supermirrors, PMMs with unstable deposition rate).</li>
 </ul>
 
@@ -168,7 +170,7 @@
   <tr><td><strong>Iterations</strong></td><td>Maximum number of optimization iterations</td><td>100</td></tr>
   <tr><td><strong>Population</strong></td><td>Number of particles (candidate solutions) in the swarm</td><td>100 (a project from a version that did not store it opens with 1000)</td></tr>
   <tr><td><strong>Shake</strong></td><td>Enable random perturbation to escape local minima</td><td>Checked</td></tr>
-  <tr><td><strong>SeedR</strong></td><td>Start the swarm spread uniformly over each parameter's [Min, Max] instead of scattered around the start model (&plusmn;Ksxr of the range). Applies only at the start of a fit; no effect in Polynomial mode</td><td>Checked (unchecked for a project that did not store it)</td></tr>
+  <tr><td><strong>SeedR</strong></td><td>Start the swarm spread uniformly over each parameter's [Min, Max] instead of scattered around the start model (&plusmn;Ksxr of the range). Applies only at the start of a fit. Greyed out in Polynomial mode, which always seeds around the start model</td><td>Checked (unchecked for a project that did not store it)</td></tr>
   <tr><td><strong>Smooth</strong></td><td>Irregular mode only: keep each parameter's period-to-period profile smooth (moving average over the Smoothing window) during the search</td><td>Unchecked</td></tr>
   <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square calculation</td><td>Checked</td></tr>
   <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
@@ -197,6 +199,7 @@
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Tolerance</strong></td><td>Fitting stops when the best weighted &chi;&sup2; (as shown, with the PW, TW and scale settings) falls below this value</td><td>0.005</td></tr>
   <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
+  <tr><td><strong>Seed</strong></td><td>Random seed of the fits that follow. Blank draws a new one for every run. Every fit records the seed it used (<code>seed</code> in the project's fit record and in <strong>Export fit results</strong>); type it here, with the same settings and model, to repeat that fit. The same seed repeats a fit exactly on the same device (CPU or the same GPU), not to the last digit across devices. Not saved with the project</td><td>Blank</td></tr>
 </table>
 
 <h3>LFPSO Parameters</h3>
@@ -217,13 +220,13 @@
 <h3>Irregular Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Smoothing window</strong></td><td>Number of neighbouring periods averaged when Smooth is checked (a window W averages W&nbsp;+&nbsp;1 consecutive periods); &minus;1 = automatic, one tenth of the periods (at least 1)</td><td>&minus;1</td></tr>
+  <tr><td><strong>Smoothing window</strong></td><td>Width W of the moving average applied when Smooth is checked. Each period i is replaced by the mean of periods i to i&nbsp;+&nbsp;W (W&nbsp;+&nbsp;1 periods, a forward window); each of the last W periods, which have fewer than W periods after them, takes the mean of the W periods before it. &minus;1 = automatic: W = Round((N&nbsp;&minus;&nbsp;1)/10), at least 1, for a stack of N periods. The window is capped at half the periods. Paired and frozen parameters (and those with Min&nbsp;=&nbsp;Max) are not smoothed</td><td>&minus;1</td></tr>
 </table>
 
 <h3>Polynomial Mode Settings</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Polynomial factor</strong></td><td>Divisor per order: the order-p coefficient is searched within (Max&nbsp;&minus;&nbsp;Min)/F<sup>p</sup> with velocity limit V<sub>max</sub>/F<sup>p</sup> (1&ndash;15)</td><td>10</td></tr>
+  <tr><td><strong>Polynomial factor</strong></td><td>Divisor per order: (Max&nbsp;&minus;&nbsp;Min)/F<sup>p</sup> sets only the seed spread (&plusmn;Ksxr of it) and the velocity scale (V<sub>max</sub> of it) of the order-p coefficient; it does not bound the coefficient. The hard limit is on the profile: its value in every period must stay within [Min, Max]. When it does not, the coefficients are zeroed one by one from the highest order down until it does, and the constant x<sub>0</sub> is clamped last (1&ndash;15)</td><td>10</td></tr>
 </table>
 
 <h2 id="running-a-fit">Running a Fit</h2>
@@ -271,7 +274,7 @@
 <p><strong>Resume Fitting</strong> is available once a fit has produced a result, and differs from <strong>Auto Fitting</strong> in three ways:</p>
 <ul>
   <li><strong>It re-centres the search.</strong> Every free parameter's window slides so the value the last fit reached sits at its centre, keeping the width you set. A parameter that ended hard against a boundary can therefore carry on past it, instead of being stuck at the wall. The same slide moves a ceiling you set on purpose: a density in the upper half of its window gets a maximum above the one you gave, e.g. C at 2.00 with limits 1.5&ndash;2.4 resumes with 1.55&ndash;2.45, past the 2.4 you set, and no message says so. A density maximum at or below the table's bulk density (as the dialog shows it, to two decimals) is the exception: it is held, and the window slides down under it with its width kept. A ceiling you set anywhere else is not, so check the &rho; maxima in the Fitting Limits dialog before you resume.</li>
-  <li><strong>It keeps your fit extensions</strong> without asking. A resumed fit continues from the depth profiles they hold, so the stale-extension prompt would be meaningless there.</li>
+  <li><strong>It keeps your fit extensions</strong> without asking. A resumed fit continues from the depth profiles they hold &mdash; in Irregular mode from each period's value in the Table &mdash; so the stale-extension prompt would be meaningless there.</li>
   <li><strong>It continues the convergence chart</strong> rather than clearing it, so both passes are visible on one axis.</li>
 </ul>
 <p>The best &chi;&sup2; is <em>not</em> carried across a resume. Changing the weight type changes what is being minimised, so the two passes' numbers are not on the same scale and comparing them would be misleading.</p>
@@ -288,7 +291,7 @@
   <tr><th>Enhancement</th><th>Description</th></tr>
   <tr>
     <td><strong>Reflective boundaries</strong></td>
-    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search. (Irregular and Periodic modes; in Polynomial mode x<sub>0</sub> is clamped, and higher-order coefficients are zeroed from the top order down until the profile fits within the limits.)</td>
+    <td>When a particle exceeds the search domain, it bounces back into the valid range (like a ball hitting a wall) with 0.5&times; velocity damping, instead of being clamped at the boundary. This prevents particles from &ldquo;sticking&rdquo; at limits and keeps them active in the search. (Irregular and Periodic modes; in Polynomial mode the profile must stay within the limits in every period: higher-order coefficients are zeroed from the top order down until it does, and x<sub>0</sub> is clamped last.)</td>
   </tr>
   <tr>
     <td><strong>Adaptive L&eacute;vy scale</strong></td>

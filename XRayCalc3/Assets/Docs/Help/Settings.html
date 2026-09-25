@@ -43,7 +43,7 @@
   <tr><td><strong>Jobs</strong></td><td>Directory for batch job definitions</td></tr>
   <tr><td><strong>Benchmark output</strong></td><td>Where benchmark results are saved</td></tr>
   <tr><td><strong>Benchmark</strong></td><td>Location of benchmark model files</td></tr>
-  <tr><td><strong>Fitting Output</strong></td><td>Where fitting results are auto-saved</td></tr>
+  <tr><td><strong>Fitting Output</strong></td><td>Where fits are auto-saved (see below). Blank: next to the project. The default is <code>Output</code>, a folder beside the program, or under the Work Folder when one is set (a relative path is taken from there). The folder is created when missing</td></tr>
 </table>
 <p><strong>Register file associations (xrcx)</strong> &mdash; associates <code>.xrcx</code> files with X-Ray Calc 3 in Windows.</p>
 
@@ -52,7 +52,7 @@
   <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
   <tr><td><strong>Automatically calculate when opening project</strong></td><td>Calculate the active model when a project is opened</td><td>On</td></tr>
   <tr><td><strong>Live update structure panel during fitting</strong></td><td>Show real-time parameter changes in the structure editor during fitting</td><td>Off</td></tr>
-  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save the project as &lt;name&gt;-fitted.xrcx in the Fitting Output folder (or next to the project when that folder is not set) when a fit ends, and at each improvement during the fit if Live update is on</td><td>Off</td></tr>
+  <tr><td><strong>Automatically save results to output folder after fitting</strong></td><td>Save the project as &lt;name&gt;-fitted.xrcx in the Fitting Output folder (or next to the project when that setting is blank; a project that was never saved goes to the Default Project's Folder) when a fit ends, and at each improvement during the fit if Live update is on</td><td>Off</td></tr>
   <tr><td><strong>Automatically check for updates</strong></td><td>Check for new versions on launch</td><td>Off</td></tr>
 </table>
 

@@ -26,7 +26,7 @@
   <ul>
     <li><a href="#application-crashes-without-error-message">Application crashes without error message</a></li>
     <li><a href="#choosing-between-x32-and-x64">Choosing between x32 and x64</a></li>
-    <li><a href="#the-application-shows-a-project-locked-message">The application shows a &ldquo;project locked&rdquo; message</a></li>
+    <li><a href="#the-application-shows-a-project-locked-message">Old project folders pile up in the temp folder</a></li>
     <li><a href="#fitting-does-not-converge">Fitting does not converge</a></li>
     <li><a href="#calculation-is-slow">Calculation is slow</a></li>
     <li><a href="#material-not-found">Material not found</a></li>
@@ -48,8 +48,8 @@
 </table>
 <p>Use <strong>x32</strong> for routine calculations with small-to-medium models. Switch to <strong>x64</strong> when working with large multilayer structures, high population sizes, or when you encounter crashes.</p>
 
-<h2 id="the-application-shows-a-project-locked-message">The application shows a &ldquo;project locked&rdquo; message</h2>
-<p>Another instance of X-Ray Calc 3 may have the project open, or a previous session crashed without releasing the lock. Close the other instance, or manually delete the <code>temp.lock</code> file from the temp directory (<code>%TEMP%\X-RayCalc3\</code>).</p>
+<h2 id="the-application-shows-a-project-locked-message">Old project folders pile up in the temp folder</h2>
+<p>X-Ray Calc 3 does not lock projects and never refuses to open one. Every open project is unpacked into a subfolder of <code>%TEMP%\X-RayCalc3\</code>, and the instance that started first (the one that created <code>temp.lock</code> there) clears that folder when it exits. If that instance did not close normally, <code>temp.lock</code> stays behind and the folder is never cleared again. Close every instance of the program and delete <code>temp.lock</code>; the next start takes it over.</p>
 
 <h2 id="fitting-does-not-converge">Fitting does not converge</h2>
 <ul>
