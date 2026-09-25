@@ -478,6 +478,7 @@ begin
         if S.Count >= 2 then
         begin
           Plot.Color := S.SeriesColor;
+          Plot.Title := S.Title;
           Plot.Curve := ResidualCurve(
             FitReportInput(Measured, SeriesToData(S), FCalcSettings.Is2Theta,
               ScaleLog, FCalcSettings.Lambda, 0, 0),

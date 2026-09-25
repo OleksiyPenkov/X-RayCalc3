@@ -19,7 +19,10 @@ unit unit_ResidualStrip;
    two axes is painted in the panel's color, over the plot background, the
    frame and the grid, and after them each plot gets its own frame. For that
    the strip takes the chart's OnBeforeDrawSeries and OnAfterDraw, calling
-   whatever handlers were there before.
+   whatever handlers were there before. After the frames it draws its legend
+   along the top right of the strip - each model in its color, then a key for
+   the band means, the floored points and the +-0.1 lines when they show - on
+   the chart itself, so copies, exports and prints carry it.
 
    The strip keeps no reference to its series: it finds them by their Tag. So
    whatever frees the chart's series (TChartManager.ClearAll, the chart itself)
@@ -41,7 +44,16 @@ const
 type
   TResidualPlot = record
     Color: TColor;
+    Title: string;
     Curve: TResidualCurve;
+  end;
+
+  TLegendKeyKind = (lkModel, lkBands, lkFloored, lkTolerance);
+
+  TLegendKey = record
+    Kind: TLegendKeyKind;
+    Color: TColor;
+    Text: string;
   end;
 
   TResidualStrip = class
@@ -58,6 +70,7 @@ type
     procedure SetVisible(Value: Boolean);
     procedure ChartBeforeDrawSeries(Sender: TObject);
     procedure ChartAfterDraw(Sender: TObject);
+    procedure DrawLegend;
     procedure ClearSeries;
     procedure Redraw;
     function AddLine(AColor: TColor; AWidth: Integer): TFastLineSeries;
@@ -74,6 +87,9 @@ type
     procedure SetOptions(ShowTolerance, ShowBands, ShowFloored: Boolean);
     { The strip's series now on the chart, for the tests. }
     function SeriesCount: Integer;
+    { What the legend lists, left to right: the models drawn, then a key for
+      each option that is on and shows something. Empty while hidden. }
+    function LegendKeys: TArray<TLegendKey>;
 
     property Visible: Boolean read FVisible write SetVisible;
     property Axis: TChartAxis read FAxis;
@@ -82,7 +98,10 @@ type
 implementation
 
 uses
-  System.Types, System.Math, Vcl.Graphics;
+  System.Types, System.Math, Winapi.Windows, Vcl.Graphics, VCLTee.TeCanvas;
+
+const
+  BAND_KEY_COLOR = $00404040;
 
 constructor TResidualStrip.Create(AChart: TChart);
 begin
@@ -148,6 +167,112 @@ begin
     FChart.ChartRect.Right + 1, FChart.LeftAxis.IEndPos + 1);
   FChart.Canvas.Rectangle(FChart.ChartRect.Left, FAxis.IStartPos,
     FChart.ChartRect.Right + 1, FAxis.IEndPos + 1);
+  DrawLegend;
+end;
+
+function TResidualStrip.LegendKeys: TArray<TLegendKey>;
+var
+  Item: TResidualPlot;
+  P: TResidualPoint;
+  AnyBands, AnyFloored: Boolean;
+
+  procedure Add(Kind: TLegendKeyKind; Color: TColor; const Text: string);
+  var
+    Key: TLegendKey;
+  begin
+    Key.Kind := Kind;
+    Key.Color := Color;
+    Key.Text := Text;
+    Result := Result + [Key];
+  end;
+
+begin
+  Result := nil;
+  if not FVisible then
+    Exit;
+  AnyBands := False;
+  AnyFloored := False;
+  for Item in FPlots do
+  begin
+    if Length(Item.Curve.Points) = 0 then
+      Continue;
+    Add(lkModel, Item.Color, Item.Title);
+    AnyBands := AnyBands or (Length(Item.Curve.Bands) > 0);
+    for P in Item.Curve.Points do
+      AnyFloored := AnyFloored or P.Floored;
+  end;
+  if Result = nil then
+    Exit;
+  if FShowBands and AnyBands then
+    Add(lkBands, BAND_KEY_COLOR, 'band mean');
+  if FShowFloored and AnyFloored then
+    Add(lkFloored, clGray, 'floored');
+  if FShowTolerance then
+    Add(lkTolerance, clGray, #$00B1 + '0.1');
+end;
+
+procedure TResidualStrip.DrawLegend;
+var
+  Keys: TArray<TLegendKey>;
+  Key: TLegendKey;
+  C: TCanvas3D;
+  TH, Sym, Gap, Pad, W, X, Y, Mid, R: Integer;
+begin
+  Keys := LegendKeys;
+  if Keys = nil then
+    Exit;
+  C := FChart.Canvas;
+  C.AssignFont(FAxis.LabelsFont);
+  TH := C.TextHeight('Ag');
+  Sym := TH + TH div 2;       // the width of a symbol, in the font's own scale
+  Gap := TH;
+  Pad := TH div 3;
+
+  W := 0;
+  for Key in Keys do
+    W := W + Sym + Pad + C.TextWidth(Key.Text) + Gap;
+  W := W - Gap + 2 * Pad;
+
+  X := Max(FChart.ChartRect.Left + 2, FChart.ChartRect.Right - W - 3);
+  Y := FAxis.IStartPos + 3;
+  C.Brush.Style := bsSolid;
+  C.Brush.Color := FChart.Color;
+  C.Pen.Style := psSolid;
+  C.Pen.Width := 1;
+  C.Pen.Color := FChart.LeftAxis.Axis.Color;
+  C.Rectangle(X, Y, X + W, Y + TH + 2 * Pad);
+
+  X := X + Pad;
+  Mid := Y + Pad + TH div 2;
+  C.BackMode := cbmTransparent;
+  C.TextAlign := TA_LEFT or TA_TOP;
+  for Key in Keys do
+  begin
+    C.Pen.Color := Key.Color;
+    C.Pen.Style := psSolid;
+    C.Pen.Width := 1;
+    case Key.Kind of
+      lkBands:
+        C.Pen.Width := 3;
+      lkTolerance:
+        C.Pen.Style := psDot;
+    end;
+    if Key.Kind = lkFloored then
+    begin
+      R := Max(2, TH div 5);
+      C.Brush.Style := bsSolid;
+      C.Brush.Color := Key.Color;
+      C.Pen.Style := psClear;
+      C.Ellipse(X + Sym div 2 - R, Mid - R, X + Sym div 2 + R + 1, Mid + R + 1);
+    end
+    else
+      C.Line(X, Mid, X + Sym, Mid);
+    X := X + Sym + Pad;
+
+    C.Brush.Style := bsClear;
+    C.TextOut(X, Y + Pad, Key.Text);
+    X := X + C.TextWidth(Key.Text) + Gap;
+  end;
 end;
 
 procedure TResidualStrip.HoldRange;

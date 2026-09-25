@@ -38,6 +38,11 @@ type
     [Test] procedure ChartManagerClearAll_LeavesTheStripWorking;
     [Test] procedure Rendered_TheResidualLineIsInTheStrip;
     [Test] procedure Rendered_TheStripIsASeparatePlot;
+    [Test] procedure Legend_ModelsThenTheSymbolsInUse;
+    [Test] procedure Legend_NoFlooredPoint_NoFlooredKey;
+    [Test] procedure Legend_OptionsOff_ModelsOnly;
+    [Test] procedure Legend_Hidden_Nothing;
+    [Test] procedure Rendered_TheLegendIsAtTheTopOfTheStrip;
   end;
 
 implementation
@@ -85,6 +90,7 @@ function TTestResidualStrip.OnePlot(FlooredAt: Integer): TArray<TResidualPlot>;
 begin
   SetLength(Result, 1);
   Result[0].Color := MODEL_COLOR;
+  Result[0].Title := 'Model 3';
   Result[0].Curve := Curve(FlooredAt);
 end;
 
@@ -328,6 +334,92 @@ begin
     P := Bmp.Canvas.Pixels[X, YTop];
     Assert.IsTrue((GetRValue(P) < 128) and (GetGValue(P) < 128) and (GetBValue(P) < 128),
       Format('a frame along the top of the strip at y=%d: $%.6x', [YTop, Integer(P)]));
+  finally
+    Bmp.Free;
+  end;
+end;
+
+procedure TTestResidualStrip.Legend_ModelsThenTheSymbolsInUse;
+var
+  Plots: TArray<TResidualPlot>;
+  Keys: TArray<TLegendKey>;
+begin
+  Plots := OnePlot(4) + OnePlot;
+  Plots[1].Color := TColors.Blue;
+  Plots[1].Title := 'Model 5';
+  FStrip.Visible := True;
+  FStrip.Plot(Plots);
+  Keys := FStrip.LegendKeys;
+  Assert.AreEqual(5, Integer(Length(Keys)), 'two models, band mean, floored, +-0.1');
+  Assert.AreEqual('Model 3', Keys[0].Text);
+  Assert.AreEqual(Integer(MODEL_COLOR), Integer(Keys[0].Color));
+  Assert.AreEqual('Model 5', Keys[1].Text);
+  Assert.IsTrue(Keys[2].Kind = lkBands, 'band mean');
+  Assert.IsTrue(Keys[3].Kind = lkFloored, 'floored');
+  Assert.IsTrue(Keys[4].Kind = lkTolerance, '+-0.1');
+end;
+
+procedure TTestResidualStrip.Legend_NoFlooredPoint_NoFlooredKey;
+var
+  Key: TLegendKey;
+begin
+  FStrip.Visible := True;
+  FStrip.Plot(OnePlot);
+  for Key in FStrip.LegendKeys do
+    Assert.IsFalse(Key.Kind = lkFloored, 'nothing is floored');
+end;
+
+procedure TTestResidualStrip.Legend_OptionsOff_ModelsOnly;
+begin
+  FStrip.Visible := True;
+  FStrip.SetOptions(False, False, False);
+  FStrip.Plot(OnePlot(4));
+  Assert.AreEqual(1, Integer(Length(FStrip.LegendKeys)));
+end;
+
+procedure TTestResidualStrip.Legend_Hidden_Nothing;
+begin
+  FStrip.Plot(OnePlot);
+  Assert.AreEqual(0, Integer(Length(FStrip.LegendKeys)));
+end;
+
+{ The model's key, a short red line, is drawn in the top of the strip; the
+  residual itself runs at -0.6, well below it. }
+procedure TTestResidualStrip.Rendered_TheLegendIsAtTheTopOfTheStrip;
+var
+  Plots: TArray<TResidualPlot>;
+  Bmp: TBitmap;
+  i, X, Y, Found: Integer;
+  P: TColor;
+begin
+  FChart.Canvas := TGDIPlusCanvas.Create;
+  FChart.View3D := False;
+  FChart.Legend.Visible := False;
+  FChart.Color := clWhite;
+  FChart.Gradient.Visible := False;
+  FChart.BottomAxis.Automatic := False;
+  FChart.BottomAxis.SetMinMax(0, 3);
+  FChart.LeftAxis.Automatic := False;
+  FChart.LeftAxis.SetMinMax(0, 1);
+  Plots := OnePlot;
+  for i := 0 to High(Plots[0].Curve.Points) do
+    Plots[0].Curve.Points[i].D := -0.6;
+  FStrip.SetOptions(False, False, False);
+  FStrip.Visible := True;
+  FStrip.Plot(Plots);
+
+  Bmp := FChart.TeeCreateBitmap(clWhite, Rect(0, 0, FChart.Width, FChart.Height));
+  try
+    Found := 0;
+    for Y := FStrip.Axis.IStartPos + 1 to FStrip.Axis.CalcYPosValue(0.5) do
+      for X := (FChart.ChartRect.Left + FChart.ChartRect.Right) div 2 to FChart.ChartRect.Right do
+      begin
+        P := Bmp.Canvas.Pixels[X, Y];
+        if (GetRValue(P) > 180) and (GetRValue(P) - GetGValue(P) > 80) and
+           (GetRValue(P) - GetBValue(P) > 80) then
+          Inc(Found);
+      end;
+    Assert.IsTrue(Found > 0, 'the red key in the top right of the strip');
   finally
     Bmp.Free;
   end;
