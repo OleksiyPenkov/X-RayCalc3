@@ -24,7 +24,7 @@ unit frm_FitReport;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.JSON,
+  Winapi.Windows, Winapi.Messages, Winapi.CommCtrl, System.SysUtils, System.Classes, System.JSON,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls,
   Vcl.ComCtrls, RzPanel, RzButton, RzListVw,
   unit_Types, unit_MCPFitReport, unit_FitReportGUI;
@@ -59,6 +59,7 @@ type
     procedure ShowFringes(Rep: TJSONObject);
     procedure ShowBands(Rep: TJSONObject);
     procedure ShowNear(const Near: TArray<TNearBound>);
+    procedure GrowToOrders;
     procedure FitToWorkArea;
   public
     /// <summary>Computes the report on Inp (theta, the solved scale applied)
@@ -169,8 +170,32 @@ begin
     Rep.Free;
   end;
   ShowNear(Near);
+  GrowToOrders;
   FitToWorkArea;
   ShowModal;
+end;
+
+{ At the default size the Bragg-order table holds seven rows, so a multilayer
+  with eight orders or more scrolled its last order out of sight. The form
+  grows by what the table lacks; FitToWorkArea still caps it at the screen. }
+procedure TfrmFitReport.GrowToOrders;
+var
+  R: TRect;
+  RowH, HeaderH, Need: Integer;
+  Hdr: HWND;
+begin
+  if lvOrders.Items.Count = 0 then
+    Exit;
+  if not ListView_GetItemRect(lvOrders.Handle, 0, R, LVIR_BOUNDS) then
+    Exit;
+  RowH := R.Height;
+  HeaderH := 0;
+  Hdr := ListView_GetHeader(lvOrders.Handle);
+  if (Hdr <> 0) and GetWindowRect(Hdr, R) then
+    HeaderH := R.Height;
+  Need := HeaderH + (lvOrders.Items.Count + 1) * RowH;
+  if lvOrders.ClientHeight < Need then
+    Height := Height + Need - lvOrders.ClientHeight;
 end;
 
 { The form is 800 px tall at 96 dpi and scales with the display; at 200 % and
