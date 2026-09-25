@@ -9,11 +9,16 @@ uses
 type
   TFastSeriesList = array of TFastLineSeries;
 
+  { Where a curve goes in the draw order: the curve painted last is on top. }
+  TDrawOrderMove = (dmToFront, dmForward, dmBackward, dmToBack);
+
   TChartManager = class
   private
     FChart: TChart;
     FSeriesList: TFastSeriesList;
     FLineWidth: Integer;
+    function ChartIndexOf(CurveID: Integer): Integer;
+    function IsCurve(CurveID: Integer): Boolean;
   public
     constructor Create(AChart: TChart; ALineWidth: Integer);
 
@@ -26,6 +31,18 @@ type
 
     procedure ScaleFonts(ABaseSize, ATargetDPI: Integer);
 
+    { Percent, 0 (opaque) .. MAX_CURVE_TRANSPARENCY; out-of-range values are clamped. }
+    procedure SetTransparency(CurveID, Percent: Integer);
+    function GetTransparency(CurveID: Integer): Integer;
+
+    { The CurveIDs of the live curves in the order they are painted, bottom to top. }
+    function DrawOrder: TArray<Integer>;
+    procedure MoveSeries(CurveID: Integer; Move: TDrawOrderMove);
+    { Paints the listed curves first, in the order given, and every other live
+      curve above them in its present order. Unknown, deleted and repeated
+      CurveIDs are ignored. }
+    procedure ApplyDrawOrder(const CurveIDs: array of Integer);
+
     property Series: TFastSeriesList read FSeriesList;
     property Chart: TChart read FChart;
     property LineWidth: Integer read FLineWidth write FLineWidth;
@@ -34,7 +51,7 @@ type
 implementation
 
 uses
-  Winapi.Windows, System.SysUtils;
+  Winapi.Windows, System.SysUtils, System.Generics.Collections, unit_CurveStyle;
 
 { TChartManager }
 
@@ -133,6 +150,105 @@ begin
 
   for I := 0 to FChart.SeriesCount - 1 do
     FChart.Series[I].Marks.Font.Size := ScaledBaseSize;
+end;
+
+function TChartManager.IsCurve(CurveID: Integer): Boolean;
+begin
+  Result := (CurveID >= 0) and (CurveID < Length(FSeriesList)) and
+            Assigned(FSeriesList[CurveID]);
+end;
+
+function TChartManager.ChartIndexOf(CurveID: Integer): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to FChart.SeriesCount - 1 do
+    if FChart.Series[i] = FSeriesList[CurveID] then
+      Exit(i);
+  Result := -1;
+end;
+
+procedure TChartManager.SetTransparency(CurveID, Percent: Integer);
+begin
+  if IsCurve(CurveID) then
+    FSeriesList[CurveID].Transparency := ClampTransparency(Percent);
+end;
+
+function TChartManager.GetTransparency(CurveID: Integer): Integer;
+begin
+  if IsCurve(CurveID) then
+    Result := FSeriesList[CurveID].Transparency
+  else
+    Result := 0;
+end;
+
+function TChartManager.DrawOrder: TArray<Integer>;
+var
+  i, CurveID: Integer;
+begin
+  Result := nil;
+  for i := 0 to FChart.SeriesCount - 1 do
+    for CurveID := 0 to High(FSeriesList) do
+      if Assigned(FSeriesList[CurveID]) and (FChart.Series[i] = FSeriesList[CurveID]) then
+      begin
+        Result := Result + [CurveID];
+        Break;
+      end;
+end;
+
+procedure TChartManager.MoveSeries(CurveID: Integer; Move: TDrawOrderMove);
+var
+  Order: TArray<Integer>;
+  From, Target: Integer;
+begin
+  Order := DrawOrder;
+  From := TArray.IndexOf<Integer>(Order, CurveID);
+  if From < 0 then
+    Exit;
+
+  case Move of
+    dmToFront : Target := High(Order);
+    dmForward : Target := From + 1;
+    dmBackward: Target := From - 1;
+  else
+    Target := 0;
+  end;
+  if (Target < 0) or (Target > High(Order)) or (Target = From) then
+    Exit;
+
+  Delete(Order, From, 1);
+  Insert(CurveID, Order, Target);
+  ApplyDrawOrder(Order);
+end;
+
+procedure TChartManager.ApplyDrawOrder(const CurveIDs: array of Integer);
+var
+  Current, Wanted, Slots: TArray<Integer>;
+  CurveID, i, j: Integer;
+begin
+  Current := DrawOrder;
+  Wanted := nil;
+  for CurveID in CurveIDs do
+    if TArray.Contains<Integer>(Current, CurveID) and
+       not TArray.Contains<Integer>(Wanted, CurveID) then
+      Wanted := Wanted + [CurveID];
+  for CurveID in Current do
+    if not TArray.Contains<Integer>(Wanted, CurveID) then
+      Wanted := Wanted + [CurveID];
+
+  { The chart positions the curves hold now, ascending. Filling them in turn
+    only ever swaps two curves, so a series the manager does not own keeps
+    its place. }
+  SetLength(Slots, Length(Current));
+  for i := 0 to High(Current) do
+    Slots[i] := ChartIndexOf(Current[i]);
+
+  for i := 0 to High(Wanted) do
+  begin
+    j := ChartIndexOf(Wanted[i]);
+    if j <> Slots[i] then
+      FChart.ExchangeSeries(Slots[i], j);
+  end;
 end;
 
 end.

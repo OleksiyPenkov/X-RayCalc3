@@ -306,6 +306,7 @@
         <DCCReference Include="Units\unit_ProfilesManager.pas"/>
         <DCCReference Include="Units\unit_RecentProjects.pas"/>
         <DCCReference Include="Units\unit_ChartManager.pas"/>
+        <DCCReference Include="Units\unit_CurveStyle.pas"/>
         <DCCReference Include="Units\unit_CalcOrchestrator.pas"/>
         <DCCReference Include="Units\unit_StaleExtDialog.pas"/>
         <DCCReference Include="Units\unit_BatchRunner.pas"/>

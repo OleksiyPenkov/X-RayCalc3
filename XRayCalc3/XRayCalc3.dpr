@@ -67,6 +67,7 @@ uses
   unit_ProfilesManager in 'Units\unit_ProfilesManager.pas',
   unit_RecentProjects in 'Units\unit_RecentProjects.pas',
   unit_ChartManager in 'Units\unit_ChartManager.pas',
+  unit_CurveStyle in 'Units\unit_CurveStyle.pas',
   unit_CalcOrchestrator in 'Units\unit_CalcOrchestrator.pas',
   unit_StaleExtDialog in 'Units\unit_StaleExtDialog.pas',
   unit_BatchRunner in 'Units\unit_BatchRunner.pas',

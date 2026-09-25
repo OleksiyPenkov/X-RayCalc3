@@ -112,7 +112,11 @@ uses
   TestStructureWriteBack in 'TestStructureWriteBack.pas',
   TestStructureRenumber in 'TestStructureRenumber.pas',
   frame_CalcSettings in '..\Views\frame_CalcSettings.pas' {frmCalcSettings: TFrame},
-  TestCalcSettingsScale in 'TestCalcSettingsScale.pas';
+  TestCalcSettingsScale in 'TestCalcSettingsScale.pas',
+  unit_CurveStyle in '..\Units\unit_CurveStyle.pas',
+  TestCurveStyle in 'TestCurveStyle.pas',
+  unit_ChartManager in '..\Units\unit_ChartManager.pas',
+  TestChartManager in 'TestChartManager.pas';
 
 {$R *.res}
 

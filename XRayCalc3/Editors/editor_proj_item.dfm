@@ -3,7 +3,7 @@ object edtrProjectItem: TedtrProjectItem
   Top = 0
   BorderStyle = bsToolWindow
   Caption = 'Properties'
-  ClientHeight = 204
+  ClientHeight = 234
   ClientWidth = 374
   Color = 16765595
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@ object edtrProjectItem: TedtrProjectItem
   object RzPanel2: TRzPanel
     AlignWithMargins = True
     Left = 3
-    Top = 160
+    Top = 190
     Width = 368
     Height = 41
     Align = alBottom
@@ -49,7 +49,7 @@ object edtrProjectItem: TedtrProjectItem
     Left = 3
     Top = 3
     Width = 368
-    Height = 151
+    Height = 181
     Align = alClient
     BorderOuter = fsFlatRounded
     Color = 15987699
@@ -72,13 +72,34 @@ object edtrProjectItem: TedtrProjectItem
       TabOrder = 0
       Text = ''
     end
+    object lblTransparency: TLabel
+      Left = 8
+      Top = 57
+      Width = 88
+      Height = 13
+      Caption = 'Transparency, %'
+    end
     object mmDescription: TMemo
       Left = 8
-      Top = 64
-      Width = 361
+      Top = 84
+      Width = 353
       Height = 89
       ScrollBars = ssVertical
-      TabOrder = 1
+      TabOrder = 3
+    end
+    object seTransparency: TRzSpinEdit
+      Left = 104
+      Top = 54
+      Width = 58
+      Height = 21
+      Hint =
+        'How much of the curves below shows through this one: 0 is opaque' +
+        ', 90 the faintest'
+      Increment = 10.000000000000000000
+      Max = 90.000000000000000000
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 2
     end
     object cbColor: TColorBox
       Left = 257
@@ -87,7 +108,7 @@ object edtrProjectItem: TedtrProjectItem
       Height = 22
       DefaultColorColor = clRed
       Style = [cbStandardColors, cbExtendedColors, cbCustomColor, cbPrettyNames, cbCustomColors]
-      TabOrder = 2
+      TabOrder = 1
     end
   end
   object rzfrmcntrlr1: TRzFrameController

@@ -397,6 +397,29 @@ object frmProjectPanel: TfrmProjectPanel
       Caption = 'Linked'
       OnClick = pmiLinkedClick
     end
+    object pmiDrawOrder: TMenuItem
+      Caption = 'Draw order'
+      Hint = 'Which curve is painted on top of which on the chart'
+      object pmiToFront: TMenuItem
+        Caption = 'Bring to front'
+        OnClick = pmiDrawOrderClick
+      end
+      object pmiForward: TMenuItem
+        Tag = 1
+        Caption = 'Bring forward'
+        OnClick = pmiDrawOrderClick
+      end
+      object pmiBackward: TMenuItem
+        Tag = 2
+        Caption = 'Send backward'
+        OnClick = pmiDrawOrderClick
+      end
+      object pmiToBack: TMenuItem
+        Tag = 3
+        Caption = 'Send to back'
+        OnClick = pmiDrawOrderClick
+      end
+    end
     object pmiNorm: TMenuItem
       Caption = 'Normalize'
       ImageIndex = 12

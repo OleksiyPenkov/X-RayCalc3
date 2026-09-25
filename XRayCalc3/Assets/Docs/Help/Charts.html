@@ -47,6 +47,14 @@
   <li><strong>R min:</strong> the box under the Linear/Log button (default 1E-7; pick a decade or type a value such as 3E-8) is the reflectivity floor. It is the lower limit of the Y-axis, and more: in every calculation and every fit, each calculated point below it is raised to it before the resolution convolution, so the &chi;&sup2; sees the floored model. The measured data are not changed. The value is saved with the project. A good setting is one count of the measured curve after normalization, the level below which the data hold nothing.</li>
 </ul>
 
+<h3 id="curve-look">Transparency and Draw Order <span class="badge">v3.9.4</span></h3>
+<p>Where curves lie on top of each other, two settings decide what you see:</p>
+<ul>
+  <li><strong>Transparency:</strong> open a curve's Properties dialog (double-click it in the project tree) and set <strong>Transparency, %</strong> next to its color. 0 is opaque; at 50 the curves underneath show through; 90 is the faintest a curve can be.</li>
+  <li><strong>Draw order:</strong> right-click a curve in the project tree and choose <strong>Draw order &gt; Bring to front</strong>, <strong>Bring forward</strong>, <strong>Send backward</strong> or <strong>Send to back</strong>. The curve painted last is on top. A curve you add goes on top of the others. The order of the tree and of the legend does not change.</li>
+</ul>
+<p>Both are saved with the project. A project saved by an earlier version opens with every curve opaque, data curves on top of the models; an earlier version opening a newer project ignores both settings.</p>
+
 <h3>Cursor Tracking</h3>
 <p>The Chart Info bar shows the current cursor position (X, Y coordinates) as you move the mouse over the chart.</p>
 

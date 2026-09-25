@@ -63,6 +63,11 @@ type
     pmiEnabled: TMenuItem;
     pmiVisible: TMenuItem;
     pmiLinked: TMenuItem;
+    pmiDrawOrder: TMenuItem;
+    pmiToFront: TMenuItem;
+    pmiForward: TMenuItem;
+    pmiBackward: TMenuItem;
+    pmiToBack: TMenuItem;
     pmiNorm: TMenuItem;
     Auto1: TMenuItem;
     Manual1: TMenuItem;
@@ -79,6 +84,7 @@ type
     procedure pmiEnabledClick(Sender: TObject);
     procedure pmiVisibleClick(Sender: TObject);
     procedure pmiLinkedClick(Sender: TObject);
+    procedure pmiDrawOrderClick(Sender: TObject);
     procedure pmProjectPopup(Sender: TObject);
   private
     FProject: TXRCProjectTree;
@@ -127,6 +133,8 @@ type
     procedure RecoverProjectTree(const ActiveID: Integer);
     procedure RecoverDataCurves(const LinkedID: integer);
     function  SaveProjectINI(const IniFileName: string): boolean;
+    procedure SaveCurveStyles(INF: TCustomIniFile);
+    procedure LoadCurveStyles;
     procedure CreateFunctionProfileExtension(Node: PVirtualNode);
     function  FindParentModel(out Node: PVirtualNode): PVirtualNode;
     function  CreateChildNode(out Node: PVirtualNode): boolean;
@@ -258,7 +266,7 @@ implementation
 
 uses
   System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
-  unit_xrdml,
+  unit_xrdml, unit_CurveStyle,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
   editor_JSON, frm_ExtensionType;
 
@@ -650,9 +658,16 @@ begin
   RefreshChartLegend;
 end;
 
+procedure TfrmProjectPanel.pmiDrawOrderClick(Sender: TObject);
+begin
+  FChartMgr.MoveSeries(FLastData.CurveID, TDrawOrderMove((Sender as TMenuItem).Tag));
+end;
+
 procedure TfrmProjectPanel.pmProjectPopup(Sender: TObject);
 var
   IsModel, IsProfile: boolean;
+  Order: TArray<Integer>;
+  Place: Integer;
 begin
   case FLastData.RowType of
     prItem:
@@ -663,6 +678,14 @@ begin
         pmiVisible.Checked := FLastData.Visible;
         pmiLinked.Visible  := not IsModel;
         pmiLinked.Checked  := FLastData = FProject.LinkedData;
+
+        Order := FChartMgr.DrawOrder;
+        Place := TArray.IndexOf<Integer>(Order, FLastData.CurveID);
+        pmiDrawOrder.Visible := Place >= 0;
+        pmiToFront.Enabled   := Place < High(Order);
+        pmiForward.Enabled   := Place < High(Order);
+        pmiBackward.Enabled  := Place > 0;
+        pmiToBack.Enabled    := Place > 0;
         pmiNorm.Visible    := not IsModel;
         pmCopytoclipboard.Visible := not IsModel;
         pmExporttofile.Visible    := not IsModel;
@@ -674,10 +697,20 @@ begin
         pmiEnabled.Checked := FLastData.Enabled;
         pmiVisible.Visible := False;
         pmiLinked.Visible  := False;
+        pmiDrawOrder.Visible := False;
         IsProfile := FLastData.ExtType = etTable;
         pmCopytoclipboard.Visible := IsProfile;
         pmExporttofile.Visible    := IsProfile;
       end;
+  else
+    begin
+      { A group or folder: no curve of its own. Its CurveID was never written,
+        so it reads 0 and would act on the first model's curve. }
+      pmiEnabled.Visible   := False;
+      pmiVisible.Visible   := False;
+      pmiLinked.Visible    := False;
+      pmiDrawOrder.Visible := False;
+    end;
   end;
 end;
 
@@ -916,6 +949,78 @@ begin
   end;
 end;
 
+{ Each curve's transparency and the chart's draw order, by the node's group and
+  ID (see unit_CurveStyle). A curve's chart series holds both, not the node data. }
+procedure TfrmProjectPanel.SaveCurveStyles(INF: TCustomIniFile);
+var
+  Node: PVirtualNode;
+  Data: PProjectData;
+  Keys, Order: TArray<string>;
+  Key: string;
+  CurveID: Integer;
+begin
+  SetLength(Keys, Length(FChartMgr.Series));
+
+  Node := FProject.GetFirst;
+  while Node <> nil do
+  begin
+    Data := FProject.GetNodeData(Node);
+    if (Data.RowType = prItem) and (Data.CurveID >= 0) and (Data.CurveID <= High(Keys)) then
+    begin
+      Key := CurveKey(Data.IsModel, Data.ID);
+      Keys[Data.CurveID] := Key;
+      WriteCurveTransparency(INF, Key, FChartMgr.GetTransparency(Data.CurveID));
+    end;
+    Node := FProject.GetNext(Node);
+  end;
+
+  Order := nil;
+  for CurveID in FChartMgr.DrawOrder do
+    if Keys[CurveID] <> '' then
+      Order := Order + [Keys[CurveID]];
+  WriteDrawOrder(INF, Order);
+end;
+
+{ After every curve of a loaded project is on the chart. A project saved before
+  3.9.4 has neither key: every curve stays opaque, in creation order. }
+procedure TfrmProjectPanel.LoadCurveStyles;
+var
+  INF: TMemIniFile;
+  Node: PVirtualNode;
+  Data: PProjectData;
+  CurveOf: TDictionary<string, Integer>;
+  Order: TArray<Integer>;
+  Key: string;
+  CurveID: Integer;
+begin
+  INF := TMemIniFile.Create(FProjectDir + PARAMETERS_FILE_NAME);
+  CurveOf := TDictionary<string, Integer>.Create;
+  try
+    Node := FProject.GetFirst;
+    while Node <> nil do
+    begin
+      Data := FProject.GetNodeData(Node);
+      if Data.RowType = prItem then
+      begin
+        Key := CurveKey(Data.IsModel, Data.ID);
+        CurveOf.AddOrSetValue(Key, Data.CurveID);
+        FChartMgr.SetTransparency(Data.CurveID, ReadCurveTransparency(INF, Key));
+      end;
+      Node := FProject.GetNext(Node);
+    end;
+
+    Order := nil;
+    for Key in ReadDrawOrder(INF) do
+      if CurveOf.TryGetValue(Key, CurveID) then
+        Order := Order + [CurveID];
+    if Order <> nil then
+      FChartMgr.ApplyDrawOrder(Order);
+  finally
+    CurveOf.Free;
+    INF.Free;
+  end;
+end;
+
 function TfrmProjectPanel.SaveProjectINI(const IniFileName: string): boolean;
 var
   INF: TMemIniFile;
@@ -939,6 +1044,7 @@ begin
     end;
 
     INF.WriteBool('STATE', 'LogScale', FChartInfo.Chart.LeftAxis.Logarithmic);
+    SaveCurveStyles(INF);
 
     FCalcSettings.SaveAdvancedParams(INF, FFitParams);
     INF.UpdateFile;
@@ -1051,10 +1157,12 @@ begin
     prItem:
       begin
         edtrProjectItem.Data := Data;
+        edtrProjectItem.Transparency := FChartMgr.GetTransparency(Data.CurveID);
         if edtrProjectItem.ShowModal = mrOk then
         begin
           FChartMgr.Series[Data.CurveID].Color := Data.Color;
           FChartMgr.Series[Data.CurveID].Title := Data.Title;
+          FChartMgr.SetTransparency(Data.CurveID, edtrProjectItem.Transparency);
           SetDescription(Data.Description);
           RefreshChartLegend;
         end;
@@ -1590,6 +1698,7 @@ begin
   LoadProjectParams(LinkedID, ActiveID);
   RecoverProjectTree(ActiveID);
   RecoverDataCurves(LinkedID);
+  LoadCurveStyles;
   FIgnoreFocusChange := False;
   if Assigned(FOnCaptionChange) then
     FOnCaptionChange('X-Ray Calc 3: ' + ExtractFileName(FileName));
