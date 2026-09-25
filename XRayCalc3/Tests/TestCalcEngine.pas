@@ -23,6 +23,7 @@ type
   public
     [Test] procedure Test_Create_DefaultLimit;
     [Test] procedure Test_SetExpValues;
+    [Test] procedure Convolute_SmoothsTheFirstTenthOfADegree;
   end;
 
   { ChiSQRPlain is the sum CalcChiSquare builds with the peak and angle weights
@@ -247,6 +248,61 @@ begin
     C.ExpValues := D;
     Assert.AreEqual(3, Length(C.ExpValues));
     Assert.AreEqual(Single(0.5), Single(C.ExpValues[0].t), 1E-5);
+  finally
+    C.Free;
+  end;
+end;
+
+
+{ The resolution convolution covers the first 0.1 deg of the scan too. Until
+  3.9.4 those points were copied unconvolved, so a sharp feature of the model
+  there - CoC5 has a one-point dip at theta 0.208, between the C and Co
+  critical angles - reached the chart and the fit report at full depth, where
+  the measurement is smeared by the resolution; the report took it for the
+  first fringe minimum. A one-point notch in the first 0.1 deg must come back
+  smoothed like one anywhere else. }
+procedure TTestCalc.Convolute_SmoothsTheFirstTenthOfADegree;
+const
+  NOTCH = 5;          // well inside the first 0.1 deg (25 points here)
+  DEPTH = 0.07;
+var
+  C: TCalc;
+  D: TDataArray;
+  P: TCalcThreadParams;
+  Raw: TArray<Single>;
+  i: Integer;
+  Dip: Double;
+begin
+  SetLength(D, 1000);
+  SetLength(Raw, Length(D));
+  for i := 0 to High(D) do
+  begin
+    D[i].t := 0.1 + i * (4.0 - 0.1) / (Length(D) - 1);
+    D[i].r := 1;
+    Raw[i] := Exp(-(D[i].t - 0.1) * 2);
+  end;
+  Raw[NOTCH] := Raw[NOTCH] * (1 - DEPTH);
+
+  FillChar(P, SizeOf(P), 0);
+  P.Mode := cmTheta;
+  P.K := 1;
+  P.N := Length(D);
+  P.StartT := 0.1;
+  P.EndT := 4.0;
+  P.DT := 0.012;
+  P.MVAWindow := 10;
+  P.Lambda := 1.5406;
+
+  C := TCalc.Create;
+  try
+    C.Params := P;
+    C.ExpValues := D;
+    C.FinishRawCurve(Raw);
+    { how far the notch point sits below its neighbours' mean, relative }
+    Dip := 1 - C.Results[NOTCH].r / ((C.Results[NOTCH - 1].r + C.Results[NOTCH + 1].r) / 2);
+    Assert.IsTrue(Dip < DEPTH / 3,
+      Format('the notch comes back %.1f %% deep; raw it is %.1f %%', [100 * Dip, 100 * DEPTH]));
+    Assert.IsTrue(C.Results[0].r > 0.95, 'the first point stays near the plateau');
   finally
     C.Free;
   end;

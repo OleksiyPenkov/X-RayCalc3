@@ -91,7 +91,6 @@ type
       procedure RunThetaThreads;
       procedure Convolute(Width: single);
       procedure PrepareWorkers;
-      procedure Restore(const N1, N2: integer); inline;
       procedure MVA(const N1, N2, W: integer); inline;
       /// <summary>The point weight and the theta weight of measured point i,
       /// multiplied into W in the order the chi-squared has always applied
@@ -709,17 +708,6 @@ begin
     Result := Rs;
 end;
 
-procedure TCalc.Restore(const N1, N2: integer);
-var
-  i: integer;
-begin
-  for i := N1 to N2 do
-  begin
-    FTemp[i].t := FResult[i].t;
-    FTemp[i].R := FResult[i].r;
-  end;
-end;
-
 procedure TCalc.MVA(const N1, N2, W: integer);
 var
   i, j: integer;
@@ -785,7 +773,7 @@ end;
 procedure TCalc.Convolute(Width: single);
 var
   Sum: single;
-  i, N, k, Size, WinSize: integer;
+  i, j, N, k, Size, WinSize: integer;
 begin
   FTail := 0;
   if Width = 0 then Exit;
@@ -812,7 +800,31 @@ begin
     FTemp[i].R := Sum;
   end;
 
-  Restore(0, N - 1);
+  { The first N points are convolved too, with the angles below the scan
+    start taken at the first point's value - the plateau, when the scan starts
+    below the critical angle. Until 3.9.4 they were copied unconvolved
+    (Restore), and the seam where the raw part met the convolved one, 0.1 deg
+    above the start, could be a one-point dip on the plateau that the fit
+    report took for the first fringe minimum. chi2 skips these points (FTail)
+    either way. System.Math stays out of this unit: its Log10 would shadow
+    FastMath's, which the chi-squared relies on. }
+  for i := 0 to N - 1 do
+  begin
+    if i >= Size then
+      Break;
+    Sum := 0;
+    for k := 0 to WinSize - 1 do
+    begin
+      j := i - N + k;
+      if j < 0 then
+        j := 0
+      else if j > Size - 1 then
+        j := Size - 1;
+      Sum := Sum + FResult[j].r * FConvWeights[k];
+    end;
+    FTemp[i].t := FResult[i].t;
+    FTemp[i].R := Sum;
+  end;
   MVA(Size - N, Size - 1, FParams.MVAWindow);
 
   Move(FTemp[0], FResult[0], Size * SizeOf(TDataPoint));
