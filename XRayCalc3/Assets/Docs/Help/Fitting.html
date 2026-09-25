@@ -114,6 +114,7 @@
   </li>
 </ul>
 <p>Click <strong>Fix</strong> to resolve all highlighted issues automatically, or address them manually by editing individual cells.</p>
+<p>When you press the dialog's <strong>Run</strong>, <strong>Resume</strong> or <strong>Save</strong> button, errors are listed and the dialog stays open. Warnings are listed with the question <em>Proceed anyway?</em>: <strong>Yes</strong> accepts the limits as they are, <strong>No</strong> keeps the dialog open.</p>
 
 <h3>Physics Constraints</h3>
 <p>All limit operations automatically enforce physical constraints:</p>
@@ -276,6 +277,7 @@
 <p>The best &chi;&sup2; is <em>not</em> carried across a resume. Changing the weight type changes what is being minimised, so the two passes' numbers are not on the same scale and comparing them would be misleading.</p>
 <p>In Polynomial mode a frozen stack keeps its depth profile: the fit is seeded from the gradient the previous pass produced, so freezing holds the grading rather than flattening it.</p>
 <p>Freezing everything leaves nothing to fit, and validation says so.</p>
+<p>If the limits still carry a warning when you press <strong>Run</strong> or <strong>Resume</strong> in the Fitting Limits dialog, a message lists the warnings and asks <em>Proceed anyway?</em> &mdash; for example <code>Warning: C: S value at lower limit</code>. <strong>Yes</strong> starts the fit as it stands; <strong>No</strong> returns you to the dialog. On a resume this is common: a roughness the previous pass drove to 0 sits on its lower limit, and the re-centred window cannot go below zero, so the warning returns on every pass until you freeze that parameter or answer Yes. Errors are not offered this way; they must be fixed before the fit starts (see <a href="#fit-limits">Setting Fit Limits</a>).</p>
 
 <h2 id="convergence-enhancements">Convergence Enhancements <span class="badge">v3.6</span></h2>
 <p>Version 3.6 introduces several improvements to the LFPSO algorithm that significantly improve convergence speed and reliability. Six enhancements are always active and require no configuration; one is optional.</p>
