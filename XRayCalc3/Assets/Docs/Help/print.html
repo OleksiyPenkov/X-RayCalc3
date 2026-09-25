@@ -1319,7 +1319,7 @@
   <li><strong>Band means</strong> draws the mean of each of the Fit report&rsquo;s eight bands as a step over its band, in the model&rsquo;s color: the report&rsquo;s &ldquo;Residual by band&rdquo;, read off the chart.</li>
   <li><strong>Floored points</strong> are points where the model is within 1&nbsp;% of <strong>R min</strong>, or the scaled measured value is at or below it. They are not misfit, only the floor, so the line is broken there; they are drawn as gray dots, or left out when <em>Floored points</em> is unchecked. The band means still count them, as the report does.</li>
 </ul>
-<p>The strip is recalculated after every calculation and fit, and when R min, the linked data or the visible models change; not during a fit, whose scale is solved only at the end. Its settings are saved with the application settings, not with the project.</p>
+<p>The strip is recalculated after every calculation, with every curve a running fit plots, and when R min, the linked data or the visible models change. While a fit runs, the strip uses the scale of the calculation before the fit: the fit solves the scale for each candidate but does not report it. The calculation at the end of the fit brings the solved scale. Its settings are saved with the application settings, not with the project.</p>
 
 <h3>Cursor Tracking</h3>
 <p>The Chart Info bar shows the current cursor position (X, Y coordinates) as you move the mouse over the chart.</p>

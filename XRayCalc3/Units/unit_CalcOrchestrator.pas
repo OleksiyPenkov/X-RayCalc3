@@ -56,6 +56,7 @@ type
     FOnEnableControls: TEnableControlsEvent;
     FOnCalcTimeUpdate: TStatusUpdateEvent;
     FOnFitTimeUpdate: TStatusUpdateEvent;
+    FOnFitCurve: TNotifyEvent;
 
     { Internal }
     function PrepareCalc: Boolean;
@@ -97,6 +98,8 @@ type
     property OnEnableControls: TEnableControlsEvent write FOnEnableControls;
     property OnCalcTimeUpdate: TStatusUpdateEvent write FOnCalcTimeUpdate;
     property OnFitTimeUpdate: TStatusUpdateEvent write FOnFitTimeUpdate;
+    /// A running fit has just plotted its best curve so far on the chart.
+    property OnFitCurve: TNotifyEvent write FOnFitCurve;
   end;
 
 implementation
@@ -546,6 +549,8 @@ begin
   if msg_prm.Full then
   begin
     FChartMgr.PlotResults(FProjectPanel.Project.ActiveModel.CurveID, msg_prm.Curve);
+    if Assigned(FOnFitCurve) then
+      FOnFitCurve(Self);
     if TConfig.Section<TOtherOptions>.LiveUpdate then
     begin
       UpdateInterface(msg_prm.Structure, msg_prm.Poly, msg_prm.LayeredModel, FFirstUpdate);

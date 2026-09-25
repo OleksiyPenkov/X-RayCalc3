@@ -414,7 +414,11 @@ end;
   scale of the last calculation (1 when it was anchored), the same for every
   model: the scale was solved for the model calculated last. It is used only
   while the linked curve is the one it was solved against, in the same
-  project. The numbers are the Fit report's (FitReportInput, ReportBands). }
+  project. During a fit the strip follows every curve the fit plots, still at
+  the scale of the calculation before it: the fit's own scale is solved per
+  candidate and not reported, and the calculation that ends the fit brings
+  the solved one. The numbers are the Fit report's (FitReportInput,
+  ReportBands). }
 procedure TfrmMain.LoadResidualOptions;
 begin
   with TConfig.Section<TGraphOptions> do
@@ -1258,6 +1262,7 @@ begin
   FOrchestrator.OnEnableControls := EnableControls;
   FOrchestrator.OnCalcTimeUpdate := UpdateCalcTime;
   FOrchestrator.OnFitTimeUpdate := UpdateFitTime;
+  FOrchestrator.OnFitCurve := OnCurvesChanged;   // the residual strip follows the fit
 
   FBatchRunner := TBatchRunner.Create(FOrchestrator, FProjectPanel);
 
