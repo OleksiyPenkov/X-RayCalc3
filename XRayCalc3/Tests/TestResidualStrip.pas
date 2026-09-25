@@ -43,6 +43,8 @@ type
     [Test] procedure Legend_OptionsOff_ModelsOnly;
     [Test] procedure Legend_Hidden_Nothing;
     [Test] procedure Rendered_TheLegendIsAtTheTopOfTheStrip;
+    [Test] procedure Shown_WithNothingToPlot_KeepsItsAxis;
+    [Test] procedure Rendered_FramesAreAsWideAsTheAxisLine;
   end;
 
 implementation
@@ -383,8 +385,8 @@ begin
   Assert.AreEqual(0, Integer(Length(FStrip.LegendKeys)));
 end;
 
-{ The model's key, a short red line, is drawn in the top of the strip; the
-  residual itself runs at -0.6, well below it. }
+{ The model's key, a short red line, is drawn in the top left of the strip;
+  the residual itself runs at -0.6, well below it. }
 procedure TTestResidualStrip.Rendered_TheLegendIsAtTheTopOfTheStrip;
 var
   Plots: TArray<TResidualPlot>;
@@ -412,14 +414,70 @@ begin
   try
     Found := 0;
     for Y := FStrip.Axis.IStartPos + 1 to FStrip.Axis.CalcYPosValue(0.5) do
-      for X := (FChart.ChartRect.Left + FChart.ChartRect.Right) div 2 to FChart.ChartRect.Right do
+      for X := FChart.ChartRect.Left to (FChart.ChartRect.Left + FChart.ChartRect.Right) div 2 do
       begin
         P := Bmp.Canvas.Pixels[X, Y];
         if (GetRValue(P) > 180) and (GetRValue(P) - GetGValue(P) > 80) and
            (GetRValue(P) - GetBValue(P) > 80) then
           Inc(Found);
       end;
-    Assert.IsTrue(Found > 0, 'the red key in the top right of the strip');
+    Assert.IsTrue(Found > 0, 'the red key in the top left of the strip');
+  finally
+    Bmp.Free;
+  end;
+end;
+
+{ A new project has nothing to plot yet; the strip's axis, with its labels,
+  shows all the same - the chart draws an axis only for a series on it. }
+procedure TTestResidualStrip.Shown_WithNothingToPlot_KeepsItsAxis;
+var
+  i, OnAxis: Integer;
+begin
+  FStrip.Visible := True;
+  FStrip.Plot([]);
+  OnAxis := 0;
+  for i := 0 to FChart.SeriesCount - 1 do
+    if FChart.Series[i].CustomVertAxis = FStrip.Axis then
+      Inc(OnAxis);
+  Assert.IsTrue(OnAxis > 0, 'a series on the strip''s axis');
+end;
+
+{ The frame edges drawn around the plots match the axis lines the chart draws
+  on the other edges: a 4-pixel axis gives a frame at least 3 pixels deep. }
+procedure TTestResidualStrip.Rendered_FramesAreAsWideAsTheAxisLine;
+var
+  Bmp: TBitmap;
+  X, Y, YTop, Rows: Integer;
+
+  function Dark(P: TColor): Boolean;
+  begin
+    Result := (GetRValue(P) < 128) and (GetGValue(P) < 128) and (GetBValue(P) < 128);
+  end;
+
+begin
+  FChart.Canvas := TGDIPlusCanvas.Create;
+  FChart.View3D := False;
+  FChart.Legend.Visible := False;
+  FChart.Color := clWhite;
+  FChart.Gradient.Visible := False;
+  FChart.LeftAxis.Axis.Width := 4;
+  FChart.BottomAxis.Automatic := False;
+  FChart.BottomAxis.SetMinMax(0, 3);
+  FChart.LeftAxis.Automatic := False;
+  FChart.LeftAxis.SetMinMax(0, 1);
+  FStrip.SetOptions(False, False, False);
+  FStrip.Visible := True;
+  FStrip.Plot([]);
+
+  Bmp := FChart.TeeCreateBitmap(clWhite, Rect(0, 0, FChart.Width, FChart.Height));
+  try
+    X := (FChart.ChartRect.Left + FChart.ChartRect.Right) div 2;
+    YTop := FStrip.Axis.IStartPos;
+    Rows := 0;
+    for Y := YTop - 4 to YTop + 4 do
+      if Dark(Bmp.Canvas.Pixels[X, Y]) then
+        Inc(Rows);
+    Assert.IsTrue(Rows >= 3, Format('%d dark rows at the top of the strip, y=%d', [Rows, YTop]));
   finally
     Bmp.Free;
   end;

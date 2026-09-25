@@ -20,7 +20,7 @@ unit unit_ResidualStrip;
    frame and the grid, and after them each plot gets its own frame. For that
    the strip takes the chart's OnBeforeDrawSeries and OnAfterDraw, calling
    whatever handlers were there before. After the frames it draws its legend
-   along the top right of the strip - each model in its color, then a key for
+   in the top left corner of the strip, small - each model in its color, then a key for
    the band means, the floored points and the +-0.1 lines when they show - on
    the chart itself, so copies, exports and prints carry it.
 
@@ -102,6 +102,7 @@ uses
 
 const
   BAND_KEY_COLOR = $00404040;
+  LEGEND_FONT_SCALE = 0.8;   // of the strip's axis labels
 
 constructor TResidualStrip.Create(AChart: TChart);
 begin
@@ -159,9 +160,10 @@ begin
     FPrevAfterDraw(Sender);
   if not FVisible then
     Exit;
+  { As wide as the axis lines the chart draws on the other edges. }
   FChart.Canvas.Brush.Style := bsClear;
   FChart.Canvas.Pen.Style := psSolid;
-  FChart.Canvas.Pen.Width := 1;
+  FChart.Canvas.Pen.Width := FChart.LeftAxis.Axis.Width;
   FChart.Canvas.Pen.Color := FChart.LeftAxis.Axis.Color;
   FChart.Canvas.Rectangle(FChart.ChartRect.Left, FChart.LeftAxis.IStartPos,
     FChart.ChartRect.Right + 1, FChart.LeftAxis.IEndPos + 1);
@@ -222,18 +224,19 @@ begin
   if Keys = nil then
     Exit;
   C := FChart.Canvas;
-  C.AssignFont(FAxis.LabelsFont);
+  C.AssignFont(FAxis.LabelsFont);   // as the chart scales it for the DPI and zoom
+  C.Font.Height := Round(C.Font.Height * LEGEND_FONT_SCALE);
   TH := C.TextHeight('Ag');
-  Sym := TH + TH div 2;       // the width of a symbol, in the font's own scale
-  Gap := TH;
-  Pad := TH div 3;
+  Sym := TH;                  // the width of a symbol, in the font's own scale
+  Gap := TH div 2;
+  Pad := Max(2, TH div 5);
 
   W := 0;
   for Key in Keys do
-    W := W + Sym + Pad + C.TextWidth(Key.Text) + Gap;
+    W := W + Sym + Pad div 2 + C.TextWidth(Key.Text) + Gap;
   W := W - Gap + 2 * Pad;
 
-  X := Max(FChart.ChartRect.Left + 2, FChart.ChartRect.Right - W - 3);
+  X := FChart.ChartRect.Left + 3;
   Y := FAxis.IStartPos + 3;
   C.Brush.Style := bsSolid;
   C.Brush.Color := FChart.Color;
@@ -267,7 +270,7 @@ begin
     end
     else
       C.Line(X, Mid, X + Sym, Mid);
-    X := X + Sym + Pad;
+    X := X + Sym + Pad div 2;
 
     C.Brush.Style := bsClear;
     C.TextOut(X, Y + Pad, Key.Text);
@@ -400,8 +403,13 @@ begin
       X0 := Min(X0, Item.Curve.Points[0].X);
       X1 := Max(X1, Item.Curve.Points[High(Item.Curve.Points)].X);
     end;
+  { Nothing to plot yet: the reference lines over the angle axis all the same,
+    as the chart draws an axis, labels and all, only for a series on it. }
   if X1 < X0 then
-    Exit;
+  begin
+    X0 := FChart.BottomAxis.Minimum;
+    X1 := FChart.BottomAxis.Maximum;
+  end;
 
   { The reference lines first, so the residuals are drawn over them. }
   RefLine(0, psSolid);
