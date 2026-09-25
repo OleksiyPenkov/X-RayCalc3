@@ -48,6 +48,9 @@ type
       identical X values and the plot zig-zags between their chi-squared
       levels. Set by PrepareConvergence, which runs before PrepareDiagnostics. }
     FStepOffset: Integer;
+    { The decades FitConvergenceAxis last labelled, so it rebuilds the labels
+      only when the range or the spacing changes, not on every point. }
+    FAxisLoExp, FAxisHiExp, FAxisStep: Integer;
     procedure FitConvergenceAxis;
   public
     property ThicknessChart: TChart read chThickness;
@@ -76,6 +79,7 @@ type
 implementation
 
 uses
+  System.SysUtils,
   unit_SeriesIO;
 
 {$R *.dfm}
@@ -126,39 +130,89 @@ begin
   FitConvergenceAxis;
 end;
 
-{ Pins the log chi-squared axis to whole decades around the visible series.
-  Left automatic, the axis could end just under a decade, and the 9.0x10^11
-  and 1.0x10^12 labels were drawn on top of each other at the top of the
-  short chart. }
+{ "10" with the exponent in Unicode superscripts, so a decade label is one
+  short line: 10^2, 10, 1, 10^-1. Written with character codes because the
+  unit has no BOM. }
+function DecadeLabel(E: Integer): string;
+const
+  Sup: array['0'..'9'] of Char = (#$2070, #$00B9, #$00B2, #$00B3, #$2074,
+    #$2075, #$2076, #$2077, #$2078, #$2079);
+var
+  Digits: string;
+  I: Integer;
+begin
+  case E of
+    0: Exit('1');
+    1: Exit('10');
+  end;
+  Result := '10';
+  if E < 0 then
+    Result := Result + #$207B;
+  Digits := IntToStr(Abs(E));
+  for I := 1 to Length(Digits) do
+    Result := Result + Sup[Digits[I]];
+end;
+
+{ Pins the log chi-squared axis to whole decades around the visible series
+  and labels them itself. Left automatic, the axis could end just under a
+  decade and draw 9.0x10^11 over 1.0x10^12; pinned but auto-labelled, the
+  label spacing of the short chart kept only the top decade. The custom
+  labels take every decade, or every second or third one when they would
+  not fit the axis height, and always include 1. }
 procedure TfrmChartPages.FitConvergenceAxis;
 var
+  Axis: TChartAxis;
   Lo, Hi: Double;
+  LoExp, HiExp, Step, E, LabelH, AxisPx: Integer;
 begin
-  if lsrConvergence.Count = 0 then
+  Axis := chFittingProgress.LeftAxis;
+
+  Lo := 0;
+  Hi := 0;
+  if lsrConvergence.Count > 0 then
   begin
-    chFittingProgress.LeftAxis.Automatic := True;
+    Lo := lsrConvergence.MinYValue;
+    Hi := lsrConvergence.MaxYValue;
+    if (lsrWorstChi <> nil) and lsrWorstChi.Active and (lsrWorstChi.Count > 0) then
+    begin
+      Lo := Min(Lo, lsrWorstChi.MinYValue);
+      Hi := Max(Hi, lsrWorstChi.MaxYValue);
+    end;
+  end;
+
+  if (lsrConvergence.Count = 0) or (Lo <= 0) or IsNan(Lo) or IsNan(Hi) or IsInfinite(Hi) then
+  begin
+    Axis.Items.Clear;
+    Axis.Automatic := True;
+    FAxisStep := 0;
     Exit;
   end;
 
-  Lo := lsrConvergence.MinYValue;
-  Hi := lsrConvergence.MaxYValue;
-  if (lsrWorstChi <> nil) and lsrWorstChi.Active and (lsrWorstChi.Count > 0) then
-  begin
-    Lo := Min(Lo, lsrWorstChi.MinYValue);
-    Hi := Max(Hi, lsrWorstChi.MaxYValue);
-  end;
+  LoExp := Floor(Log10(Lo));
+  HiExp := Ceil(Log10(Hi));
+  if HiExp <= LoExp then
+    HiExp := LoExp + 1;
 
-  if (Lo <= 0) or IsNan(Lo) or IsNan(Hi) or IsInfinite(Hi) then
-  begin
-    chFittingProgress.LeftAxis.Automatic := True;
+  LabelH := Round(Abs(Axis.LabelsFont.Height) * 1.3);
+  AxisPx := Axis.IAxisSize;
+  if AxisPx <= 0 then
+    AxisPx := chFittingProgress.Height div 2;
+  Step := Max(1, Ceil(LabelH * (HiExp - LoExp) / Max(AxisPx, 1)));
+
+  if (LoExp = FAxisLoExp) and (HiExp = FAxisHiExp) and (Step = FAxisStep) then
     Exit;
-  end;
+  FAxisLoExp := LoExp;
+  FAxisHiExp := HiExp;
+  FAxisStep := Step;
 
-  Lo := Power(10, Floor(Log10(Lo)));
-  Hi := Power(10, Ceil(Log10(Hi)));
-  if Hi <= Lo then
-    Hi := Lo * 10;
-  chFittingProgress.LeftAxis.SetMinMax(Lo, Hi);
+  Axis.SetMinMax(Power(10, LoExp), Power(10, HiExp));
+  Axis.Items.Clear;
+  for E := HiExp downto LoExp do
+    if E mod Step = 0 then
+      Axis.Items.Add(Power(10, E), DecadeLabel(E));
+
+  { Half a label above the top decade, or it sticks out of the frame. }
+  chFittingProgress.MarginTop := Max(5, LabelH div 2 + 2);
 end;
 
 procedure TfrmChartPages.ClearConvergence;
