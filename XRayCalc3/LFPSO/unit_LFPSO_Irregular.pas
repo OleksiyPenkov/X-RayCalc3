@@ -52,7 +52,7 @@ uses
 procedure TLFPSO_Irregular.Smooth(const i: Word);
 var
   Data: TDataArray;
-  s, n : Word;
+  s, n : Integer;   // not Word: 0 to High of an empty list must not run
 begin
   for s :=  0 to High(FSmoothies) do
   begin
@@ -213,9 +213,12 @@ end;
 
 procedure TLFPSO_Irregular.SetStructure(const Inp: TFitStructure);
 var
-  i, j, k, l, p, Index, s: Word;
+  { Integer, not Word: a loop to High of an empty list (no smoothing group when
+    every parameter is paired, a stack without layers) must run no times
+    rather than 65536. }
+  i, j, k, l, p, Index, s: Integer;
   Links: TIndexes;
-  NLayers: Word;
+  NLayers: Integer;
 begin
   FLayersCount := Inp.TotalNP;
 
@@ -270,7 +273,11 @@ begin
                if Inp.Stacks[i].Layers[j].P[p].Paired then
                   Links[j][p] := Index
                else
-               if FFitParams.Smooth and (Inp.Stacks[i].N > 1) then   // create Smooths indexes for this layer
+               { A held parameter (empty range) is not smoothed: it keeps the
+                 value it was given in each period, which need not be the same
+                 in every one. }
+               if FFitParams.Smooth and (Inp.Stacks[i].N > 1) and
+                  (Inp.Stacks[i].Layers[j].P[p].max > Inp.Stacks[i].Layers[j].P[p].min) then   // create Smooths indexes for this layer
                begin
                  s := Length(FSmoothies);
                  SetLength(FSmoothies, s + 1);

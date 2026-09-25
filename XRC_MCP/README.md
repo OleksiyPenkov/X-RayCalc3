@@ -169,6 +169,28 @@ input is missing; no threshold is invented in code (only ratio > 1 and < 2 point
 Accepts a bare substrate, `"stacks": []`, as the design. The checks live in
 `units/unit_MCPAssess.pas` and are the GUI's Data - Assess XRR quality as well.
 
+**`fit_xrr` since 2026-09-25 (`"mode": "irregular"`):** the GUI's third fitting mode.
+`"mode"` is `"periodic"` (default), `"profile"` (`"profile": true` is still accepted as its older
+spelling) or `"irregular"`, which runs `TLFPSO_Irregular`: every repeating stack is expanded into its
+periods and each period's layers are fitted on their own, with the layer's bounds in every period.
+`"paired"` works here as in the GUI and may differ per layer; a paired parameter is one value in every
+period. `optimizer.period_smooth` / `period_smooth_window` are the GUI's Smooth box and Smoothing
+window (-1 = automatic), irregular mode only, echoed in `optimizer_used`. The result gives
+`thickness_profile`, `sigma_profile` and `density_profile` (N values, surface end first) on each
+repeating layer of `fitted_structure` for every unpaired parameter; the layer's plain value is period
+1's, as the GUI writes it back. `period_mode` is `floating` with the mean period in `fitted_A` and
+`fitted_A_min`/`fitted_A_max`; `near_bounds` and `out_of_bounds` check every period of an unpaired
+free parameter and name it by `period_index`; `free_values` counts the values searched. `fit.xrcx`
+opens in Irregular mode with the periods in a Table extension. `"start_profiles": true` starts each
+period from the `*_profile` arrays in `"structure"`, so a previous result's `fitted_structure` can be
+sent back to continue the fit (the GUI's Run and Resume start every period from the single value);
+in irregular mode a structure carrying such arrays must say `true` or `false`. At the defaults the
+irregular engine needs a large swarm: seeding every period of every particle within +/-30 % makes
+each particle a different multilayer (Ru/C 10 x 2 probe: 30 x 15 does not beat the start, the
+periodic engine reaches chi2 4E-4). The same day the engine lost two defects that the GUI shared: a
+shake zeroed its pairing links (after the first shake every parameter was copied from layer 0), and
+Smooth with every parameter paired looped 0..65535 over an empty list (access violation).
+
 **Release 3.9.2.970 (2026-09-22, e9ad011 engine):** the frozen public release the XRR fitting
 skill's campaign 3 runs on. Gate on the release candidate: identity, the 158-fit replay (158 of 158;
 the two Ru/C profile fits that fail on 3.9.1.950 now succeed), the 30-fit control against the study

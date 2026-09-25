@@ -75,6 +75,11 @@ type
     { Re-initialisation (Shake) }
     [Test] procedure Test_ReInit_KeepsTheLinks;
 
+    { Smooth with nothing to smooth }
+    [Test] procedure Test_Smooth_EveryParameterPaired_DoesNothing;
+    [Test] procedure Test_Smooth_SkipsHeldParameters;
+    [Test] procedure Test_SetStructure_EmptyStack_IsSkipped;
+
     { RangeSeed }
     [Test] procedure Test_RangeSeed_LinkedLayersCopied;
     [Test] procedure Test_RangeSeed_UnlinkedWithinBounds;
@@ -414,6 +419,59 @@ begin
       Assert.AreEqual(Before[j][k], FPSO.GetLinks[j][k],
         Format('Links[%d][%d] survives the re-initialisation', [j, k]));
   Assert.IsTrue(FPSO.GetSmoothies > 0, 'and so do the smoothing groups');
+end;
+
+{ Smooth on with every parameter paired leaves no smoothing group. The loops
+  over the groups counted in Word, so an empty list ran from 0 to 65535 and
+  the fit died of an access violation in SetStructure or in the first XSeed. }
+procedure TTestLFPSOIrregular.Test_Smooth_EveryParameterPaired_DoesNothing;
+var
+  Inp: TFitStructure;
+  j, p: integer;
+begin
+  RandSeed := 42;
+  Inp := MakeIrregularStructure_Paired;
+  for j := 0 to High(Inp.Stacks[0].Layers) do
+    for p := 1 to 3 do
+      Inp.Stacks[0].Layers[j].P[p].Paired := True;
+
+  FPSO.TestSetParams(MakeParams(True));
+  FPSO.TestSetStructure(Inp);
+  Assert.AreEqual(0, FPSO.GetSmoothies, 'nothing unpaired, nothing to smooth');
+  FPSO.TestXSeed;
+  Assert.AreEqual(FPSO.GetX[1][0][2][0], FPSO.GetX[1][2][2][0], 0.0,
+    'and the pairing still holds after the seed');
+end;
+
+{ A held parameter has an empty range and keeps the value it was given in each
+  period; averaging it over the periods would move it off that value. }
+procedure TTestLFPSOIrregular.Test_Smooth_SkipsHeldParameters;
+var
+  Inp: TFitStructure;
+begin
+  Inp := MakeIrregularStructure_Simple;
+  Inp.Stacks[0].Layers[0].P[1].min := Inp.Stacks[0].Layers[0].P[1].V;
+  Inp.Stacks[0].Layers[0].P[1].max := Inp.Stacks[0].Layers[0].P[1].V;
+  FPSO.TestSetParams(MakeParams(True));
+  FPSO.TestSetStructure(Inp);
+  Assert.AreEqual(5, FPSO.GetSmoothies,
+    'two layers times three parameters, less the held thickness');
+end;
+
+{ A stack without layers next to a real one: the layer loop counted in Word
+  and ran from 0 to 65535 over it, writing past the flattened structure. }
+procedure TTestLFPSOIrregular.Test_SetStructure_EmptyStack_IsSkipped;
+var
+  Inp: TFitStructure;
+begin
+  Inp := MakeIrregularStructure_Simple;
+  SetLength(Inp.Stacks, 2);
+  Inp.Stacks[1].N := 3;
+  SetLength(Inp.Stacks[1].Layers, 0);
+  FPSO.TestSetParams(MakeParams(True));
+  FPSO.TestSetStructure(Inp);
+  Assert.AreEqual(4, FPSO.Pub_FLayersCount, 'only the real stack''s layers');
+  Assert.AreEqual(4, Integer(Length(FPSO.Pub_FStructure.Stacks[0].Layers)));
 end;
 
 { RangeSeed }

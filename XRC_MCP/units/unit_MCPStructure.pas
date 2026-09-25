@@ -111,8 +111,12 @@ function InvertedRangesJSON(const S: TFitStructure): TJSONArray;
 
 /// <summary>The expanded physical model TCalc consumes: the same layers
 /// TXRCStructure.Model(False) and TLFPSO_BASE.FillModel produce. Caller frees.
-/// Per-period profiles (TLayerData.PP) are applied by the caller.</summary>
-function BuildLayeredModel(const S: TFitStructure): TLayeredModel;
+/// With ExpandProfiles each period takes its value from the layer's per-period
+/// table (TLayerData.PP, period 1 = the surface end) where the GUI's
+/// TLayerData.PeriodValue would: a repeating stack, an unpaired parameter and a
+/// table of at least N entries. Without it the tables are ignored.</summary>
+function BuildLayeredModel(const S: TFitStructure;
+  ExpandProfiles: Boolean = False): TLayeredModel;
 
 /// <summary>After Model.Generate, copy the Henke bulk density back into every
 /// layer - the substrate included - that asked for it (r = 0), so the server
@@ -736,7 +740,8 @@ end;
 
 { ------------------------------------------------------------ calculation -- }
 
-function BuildLayeredModel(const S: TFitStructure): TLayeredModel;
+function BuildLayeredModel(const S: TFitStructure;
+  ExpandProfiles: Boolean): TLayeredModel;
 var
   i, j, k, p, StackLen, MaxStackLen: Integer;
   Data: TLayersData;
@@ -764,7 +769,14 @@ begin
       end;
 
       for j := 1 to S.Stacks[i].N do
+      begin
+        if ExpandProfiles then
+          for k := 0 to StackLen - 1 do
+            for p := 1 to 3 do
+              Data[k].P[p].V := S.Stacks[i].Layers[k].PeriodValue(p, j,
+                S.Stacks[i].N, True);
         Result.AddLayers(-1, Data, StackLen);
+      end;
     end;
 
     Data[0].Material := S.Subs.Material;

@@ -124,6 +124,7 @@ type
     [Test] procedure Free_OmittedDensity_StartsAtBulkInsideItsBounds;
     [Test] procedure Free_OmittedDensity_NoBounds_DefaultsAroundBulk;
     [Test] procedure Bounds_StartOutsideExplicitBounds_Refused;
+    [Test] procedure Bounds_StartOnItsBound_Accepted;
     [Test] procedure ProfileFit_FreeOmittedDensity_Moves;
     [Test] procedure Period_Free_DefaultBoundsAroundStart;
     [Test] procedure Period_Bounds_Explicit;
@@ -187,6 +188,30 @@ type
 
     [Test] procedure Schema_DescribesNormalizeAutoAndPairing;
     [Test] procedure JobWait_IsRegisteredAndNamesTheClientTimeout;
+    [Test] procedure Irregular_Mode_IsParsed;
+    [Test] procedure Irregular_UnknownMode_Refused;
+    [Test] procedure Irregular_ModeAndProfileDisagree_Refused;
+    [Test] procedure Irregular_WithoutARepeatingStack_Refused;
+    [Test] procedure Irregular_FreePeriod_Refused;
+    [Test] procedure Irregular_Paired_PerLayer_IsAccepted;
+    [Test] procedure PeriodSmooth_OutsideIrregular_Refused;
+    [Test] procedure PeriodSmooth_Window_DefaultAndRange;
+    [Test] procedure PeriodSmooth_WindowWithoutSmooth_Refused;
+    [Test] procedure StartProfiles_ArraysWithoutTheFlag_Refused;
+    [Test] procedure StartProfiles_OutsideIrregular_Refused;
+    [Test] procedure StartProfiles_WrongLength_Refused;
+    [Test] procedure StartProfiles_OnAPairedParameter_Refused;
+    [Test] procedure StartProfiles_PeriodOutsideBounds_Refused;
+    [Test] procedure StartProfiles_FillTheTables;
+    [Test] procedure Irregular_SameSeedTwice_GivesTheSameAnswer;
+    [Test] procedure Irregular_ReportsEveryUnpairedParameterPerPeriod;
+    [Test] procedure Irregular_Pairing_ReducesTheFreeValues;
+    [Test] procedure Irregular_PairedValueNearItsBound_IsOneEntry;
+    [Test] procedure Irregular_UnrolledIntoSinglePeriods_ReproducesTheFit;
+    [Test] procedure Irregular_Xrcx_IsAnIrregularProjectWithItsTable;
+    [Test] procedure Irregular_SmoothWithEveryParameterPaired_ChangesNothing;
+    [Test] procedure Irregular_StartProfiles_ContinueFromAPreviousFit;
+    [Test] procedure Schema_DescribesIrregularMode;
   end;
 
 implementation
@@ -3343,6 +3368,768 @@ begin
   finally
     FOptimizerExtra := '';
   end;
+end;
+
+{ A GUI project stores a value that stopped on its bound as the same number
+  twice: the author's Sb/B4C fit has a sigma of 7.7 on a floor of 7.7. The
+  start is a Single and 7.7 is not one, so the start used to be refused as
+  2E-7 under its own bound. }
+procedure TTestMCPFit.Bounds_StartOnItsBound_Accepted;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('', ErrorCodeOf(Format(
+    '{"structure":{"substrate":{"material":"Si","sigma":3},"stacks":[{"N":10,' +
+    '"layers":[{"material":"C","thickness":55.5,"sigma":7.7},' +
+    '{"material":"Ru","thickness":13.0,"sigma":3}]}]},' +
+    '"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"stack":0,"layer":0,"parameters":["sigma"]}],' +
+    '"bounds":[{"stack":0,"layer":0,"parameter":"sigma","min":7.7,"max":12.83}]}',
+    [DUMMY_CURVE])), 'on the floor');
+  Assert.AreEqual('', ErrorCodeOf(Format(
+    '{"structure":{"substrate":{"material":"Si","sigma":3},"stacks":[{"N":10,' +
+    '"layers":[{"material":"C","thickness":55.5,"sigma":12.83},' +
+    '{"material":"Ru","thickness":13.0,"sigma":3}]}]},' +
+    '"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"stack":0,"layer":0,"parameters":["sigma"]}],' +
+    '"bounds":[{"stack":0,"layer":0,"parameter":"sigma","min":7.7,"max":12.83}]}',
+    [DUMMY_CURVE])), 'on the ceiling');
+end;
+
+{ ------------------------------------------------------- "mode": "irregular" -- }
+
+const
+  { The swarm of the irregular fits below starts around the start model. }
+  IRREGULAR_NEAR_START = ',"range_seed":false';
+  { Thickness and sigma of both layers free: forty values over ten periods. }
+  IRREGULAR_FREE =
+    '[{"stack":0,"layer":0,"parameters":["thickness","sigma"]},' +
+    '{"stack":0,"layer":1,"parameters":["thickness","sigma"]}]';
+  { Tight bounds around START_STRUCTURE that hold the answer. With the default
+    +/-30% every period of every seeded particle is a different multilayer,
+    and a test-sized swarm never beats the start (probe of 2026-09-25: 8.12
+    to 8.12 at 30 x 15, 8.03 at 200 x 40; the GUI's own fits of such a mirror
+    run 5000 x 200). A fit that returns its start would test nothing. The same
+    bounds serve a continuation, which must start inside them in every
+    period. }
+  IRREGULAR_BOUNDS =
+    ',"bounds":[{"stack":0,"layer":0,"parameter":"thickness","min":53,"max":56.5},' +
+    '{"stack":0,"layer":1,"parameter":"thickness","min":12.5,"max":15.5},' +
+    '{"stack":0,"layer":0,"parameter":"sigma","min":2.5,"max":3.5},' +
+    '{"stack":0,"layer":1,"parameter":"sigma","min":2.5,"max":3.5}]';
+  { Ten per-period C thicknesses for START_STRUCTURE, surface end first. }
+  C_TABLE = '[55.5,55.4,55.3,55.2,55.1,55.0,54.9,54.8,54.7,54.6]';
+
+/// START_STRUCTURE with a thickness_profile on its C layer.
+function StartWithCTable(const Table: string): string;
+begin
+  Result :=
+    '{"substrate":{"material":"Si","sigma":3},' +
+    '"stacks":[{"N":10,"layers":[' +
+    '{"material":"C","thickness":55.5,"sigma":3,"thickness_profile":' + Table + '},' +
+    '{"material":"Ru","thickness":13.0,"sigma":3}]}]}';
+end;
+
+/// The curve of StructureJSON on the angles of Grid, as calc_reflectivity
+/// computes it with fit_xrr's defaults.
+function CalcOnGrid(const StructureJSON: string; const Grid: TDataArray): TDataArray;
+var
+  Req: TCalcRequest;
+  Used: TFitStructure;
+  J: TJSONObject;
+begin
+  Req := Default(TCalcRequest);
+  J := TJSONObject.ParseJSONValue(StructureJSON) as TJSONObject;
+  try
+    Req.Structure := StructureFromJSON(J, Req.Info);
+  finally
+    J.Free;
+  end;
+  Req.Lambda := CU_K_ALPHA;
+  Req.ThetaMin := Grid[0].t;
+  Req.ThetaMax := Grid[High(Grid)].t;
+  Req.Points := Length(Grid);
+  Req.Polarization := cmSP;
+  Req.RMin := 1E-7;
+  Result := RunCalc(Req, Used);
+end;
+
+function MeanRelativeDifference(const A, B: TDataArray): Double;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to High(A) do
+    Result := Result + Abs(A[i].r - B[i].r) / B[i].r;
+  Result := Result / Length(A);
+end;
+
+function ArrayOfLayer(const Res: TJSONObject; const Structure: string;
+  Layer: Integer; const Key: string): TJSONArray;
+begin
+  Result := Res.GetValue<TJSONObject>(
+    Format('%s.stacks[0].layers[%d]', [Structure, Layer])).GetValue(Key) as TJSONArray;
+end;
+
+procedure TTestMCPFit.Irregular_Mode_IsParsed;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"mode":"irregular","free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+  Assert.AreEqual('irregular', Req.Mode);
+  Assert.IsTrue(Req.Irregular);
+  Assert.IsFalse(Req.Profile);
+  Assert.IsFalse(Req.StartProfiles);
+  Assert.IsFalse(Req.Fit.Smooth, 'period_smooth is off unless asked for');
+  Assert.AreEqual(-1, Integer(Req.Fit.SmoothWindow), 'the automatic window');
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"profile":true,' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+  Assert.AreEqual('profile', Req.Mode, '"profile": true is "mode": "profile"');
+  Assert.IsTrue(Req.Profile);
+end;
+
+procedure TTestMCPFit.Irregular_UnknownMode_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"graded",' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Irregular_ModeAndProfileDisagree_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"mode":"irregular","profile":true,' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Irregular_WithoutARepeatingStack_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":{"substrate":{"material":"Si"},"stacks":[{"N":1,"layers":' +
+    '[{"material":"Ru","thickness":50,"sigma":3}]}]},' +
+    '"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.Irregular_FreePeriod_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"mode":"irregular","free":%s}',
+    [START_STRUCTURE, DUMMY_CURVE, PERIOD_FREE])));
+end;
+
+{ The author's Sb/B4C project pairs a different set on each layer: all three
+  on one, the density alone on the next, sigma and density on the third. }
+procedure TTestMCPFit.Irregular_Paired_PerLayer_IsAccepted;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"paired":[{"stack":0,"layer":0,"parameters":["density"]},' +
+    '{"stack":0,"layer":1,"parameters":["sigma","density"]}],' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE]));
+  Assert.AreEqual(3, Length(Req.PairedParams));
+  with Req.Structure.Stacks[0] do
+  begin
+    Assert.IsFalse(Layers[0].P[1].Paired);
+    Assert.IsFalse(Layers[0].P[2].Paired);
+    Assert.IsTrue(Layers[0].P[3].Paired);
+    Assert.IsFalse(Layers[1].P[1].Paired);
+    Assert.IsTrue(Layers[1].P[2].Paired);
+    Assert.IsTrue(Layers[1].P[3].Paired);
+  end;
+end;
+
+procedure TTestMCPFit.PeriodSmooth_OutsideIrregular_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"optimizer":{"period_smooth":true},' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])), 'periodic');
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"profile",' +
+    '"optimizer":{"period_smooth":true},' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])), 'profile');
+end;
+
+{ Ten periods: the window runs from 1 to 5 - beyond half the periods the
+  engine's moving average reaches before period 1 - and -1 is automatic. }
+procedure TTestMCPFit.PeriodSmooth_Window_DefaultAndRange;
+
+  function WithWindow(const W: string): string;
+  begin
+    Result := Format(
+      '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+      '"optimizer":{"period_smooth":true%s},' +
+      '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+      [START_STRUCTURE, DUMMY_CURVE, W]);
+  end;
+
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(WithWindow(''));
+  Assert.IsTrue(Req.Fit.Smooth);
+  Assert.AreEqual(-1, Integer(Req.Fit.SmoothWindow));
+  Assert.AreEqual(5, Integer(Parse(WithWindow(',"period_smooth_window":5')).Fit.SmoothWindow));
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(WithWindow(',"period_smooth_window":6')),
+    'more than half the periods');
+  Assert.AreEqual(-1, Integer(Parse(WithWindow(',"period_smooth_window":-1')).Fit.SmoothWindow));
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(WithWindow(',"period_smooth_window":10')),
+    'as many as the periods');
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(WithWindow(',"period_smooth_window":0')));
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(WithWindow(',"period_smooth_window":2.5')));
+end;
+
+procedure TTestMCPFit.PeriodSmooth_WindowWithoutSmooth_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"optimizer":{"period_smooth_window":3},' +
+    '"free":[{"stack":0,"layer":0,"parameters":["thickness"]}]}',
+    [START_STRUCTURE, DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.StartProfiles_ArraysWithoutTheFlag_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])),
+    'an irregular fit must be told what to do with a table');
+  Assert.AreEqual('', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"start_profiles":false,"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])), 'false ignores it');
+  Assert.AreEqual('', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
+    '"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])),
+    'a periodic fit ignores it, as it always has');
+end;
+
+procedure TTestMCPFit.StartProfiles_OutsideIrregular_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"start_profiles":true,' +
+    '"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])));
+  Assert.AreEqual('', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"start_profiles":false,' +
+    '"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])), 'false asks for nothing');
+end;
+
+procedure TTestMCPFit.StartProfiles_WrongLength_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"start_profiles":true,"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable('[55.5,55.4,55.3]'), DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.StartProfiles_OnAPairedParameter_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"start_profiles":true,"paired":["thickness"],' +
+    '"free":[{"stack":0,"layer":1,"parameters":["thickness"]}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.StartProfiles_PeriodOutsideBounds_Refused;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  { 54.6, the last period, lies under a floor of 55 }
+  Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"start_profiles":true,"free":[{"stack":0,"layer":0,"parameters":["thickness"]}],' +
+    '"bounds":[{"stack":0,"layer":0,"parameter":"thickness","min":55,"max":60}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE])));
+end;
+
+procedure TTestMCPFit.StartProfiles_FillTheTables;
+var
+  Req: TFitRequest;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Req := Parse(Format(
+    '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
+    '"start_profiles":true,"free":[{"stack":0,"layer":0,"parameters":["thickness"]}],' +
+    '"bounds":[{"stack":0,"layer":0,"parameter":"thickness","min":50,"max":60}]}',
+    [StartWithCTable(C_TABLE), DUMMY_CURVE]));
+  Assert.IsTrue(Req.StartProfiles);
+  Assert.AreEqual(10, Integer(Length(Req.Structure.Stacks[0].Layers[0].PP[1])));
+  Assert.AreEqual(Single(55.5), Req.Structure.Stacks[0].Layers[0].PP[1][0], 1E-5,
+    'entry 0 is period 1, the surface end');
+  Assert.AreEqual(Single(54.6), Req.Structure.Stacks[0].Layers[0].PP[1][9], 1E-5);
+  Assert.AreEqual(0, Integer(Length(Req.Structure.Stacks[0].Layers[1].PP[1])),
+    'a layer without an array has no table');
+end;
+
+procedure TTestMCPFit.Irregular_SameSeedTwice_GivesTheSameAnswer;
+var
+  Curve: string;
+  A, B: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Curve := SyntheticCurveJSON;
+  A := RunFit(7, Curve, IRREGULAR_FREE, ',"mode":"irregular","paired":["density"]');
+  try
+    B := RunFit(7, Curve, IRREGULAR_FREE, ',"mode":"irregular","paired":["density"]');
+    try
+      Assert.AreEqual(A.GetValue<Double>('chi2'), B.GetValue<Double>('chi2'), 0.0,
+        'the same seed must give the same chi-squared');
+      Assert.AreEqual(A.GetValue<TJSONObject>('fitted_structure').ToJSON,
+                      B.GetValue<TJSONObject>('fitted_structure').ToJSON,
+        'the same seed must give the same per-period structure');
+    finally
+      B.Free;
+    end;
+  finally
+    A.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Irregular_ReportsEveryUnpairedParameterPerPeriod;
+const
+  KEYS: array [0..2] of string = ('thickness_profile', 'sigma_profile', 'density_profile');
+var
+  Res: TJSONObject;
+  Arr, Near: TJSONArray;
+  Mode: TJSONObject;
+  i, k: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON, '', ',"mode":"irregular"');
+  try
+    Assert.AreEqual('irregular', Res.GetValue<string>('mode'));
+    Assert.AreEqual('TLFPSO_Irregular', Res.GetValue<string>('engine'));
+    for i := 0 to 1 do
+      for k := 0 to High(KEYS) do
+      begin
+        Arr := ArrayOfLayer(Res, 'fitted_structure', i, KEYS[k]);
+        Assert.IsNotNull(Arr, Format('layer %d reports %s: nothing is paired', [i, KEYS[k]]));
+        Assert.AreEqual(10, Arr.Count, 'one value per period');
+      end;
+    Assert.AreEqual((ArrayOfLayer(Res, 'fitted_structure', 0, 'thickness_profile')
+                      .Items[0] as TJSONNumber).AsDouble,
+                    Res.GetValue<Double>('fitted_structure.stacks[0].layers[0].thickness'),
+                    0.0, 'the layer''s plain value is period 1''s');
+
+    Mode := (Res.GetValue('period_mode') as TJSONArray).Items[0] as TJSONObject;
+    Assert.AreEqual('floating', Mode.GetValue<string>('mode'));
+    Assert.IsTrue(Mode.GetValue<Double>('fitted_A_min') <= Mode.GetValue<Double>('fitted_A'));
+    Assert.IsTrue(Mode.GetValue<Double>('fitted_A') <= Mode.GetValue<Double>('fitted_A_max'));
+
+    Assert.AreEqual(0, (Res.GetValue('out_of_bounds') as TJSONArray).Count,
+      (Res.GetValue('out_of_bounds') as TJSONArray).ToJSON);
+    Near := ReportOf(Res).GetValue('near_bounds') as TJSONArray;
+    for i := 0 to Near.Count - 1 do
+      Assert.IsNotNull((Near.Items[i] as TJSONObject).GetValue('period_index'),
+        'a repeating layer''s value near a bound names its period');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Irregular_Pairing_ReducesTheFreeValues;
+var
+  Res: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON, IRREGULAR_FREE, ',"mode":"irregular"', 4, 1);
+  try
+    Assert.AreEqual(40, Res.GetValue<Integer>('free_values'),
+      'two parameters of two layers in each of ten periods');
+  finally
+    Res.Free;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON, IRREGULAR_FREE,
+    ',"mode":"irregular","paired":["sigma"]', 4, 1);
+  try
+    Assert.AreEqual(22, Res.GetValue<Integer>('free_values'),
+      'the thicknesses in each period, and one sigma per layer');
+    Assert.IsNull(ArrayOfLayer(Res, 'fitted_structure', 0, 'sigma_profile'),
+      'a paired sigma is one value');
+    Assert.IsNotNull(ArrayOfLayer(Res, 'fitted_structure', 0, 'thickness_profile'));
+  finally
+    Res.Free;
+  end;
+end;
+
+{ A paired parameter is one value, so a paired value on its bound is one entry
+  of near_bounds, without a period_index - not N copies of it. The true sigma
+  is 3, on the floor given here, where the fit leaves it. }
+procedure TTestMCPFit.Irregular_PairedValueNearItsBound_IsOneEntry;
+var
+  Res: TJSONObject;
+  Near: TJSONArray;
+  Entry: TJSONObject;
+  i, Sigmas: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(3, SyntheticCurveJSON, IRREGULAR_FREE,
+    ',"mode":"irregular","paired":["sigma"],"bounds":[' +
+    '{"stack":0,"layer":0,"parameter":"thickness","min":53,"max":56.5},' +
+    '{"stack":0,"layer":1,"parameter":"thickness","min":12.5,"max":15.5},' +
+    '{"stack":0,"layer":0,"parameter":"sigma","min":2.999,"max":3.3},' +
+    '{"stack":0,"layer":1,"parameter":"sigma","min":2.999,"max":3.3}]');
+  try
+    Near := ReportOf(Res).GetValue('near_bounds') as TJSONArray;
+    Sigmas := 0;
+    for i := 0 to Near.Count - 1 do
+    begin
+      Entry := Near.Items[i] as TJSONObject;
+      if Entry.GetValue<string>('parameter') <> 'sigma' then
+        Continue;
+      Inc(Sigmas);
+      Assert.IsNull(Entry.GetValue('period_index'), 'a paired value has no period');
+    end;
+    Assert.IsTrue((Sigmas >= 1) and (Sigmas <= 2),
+      Format('one entry per paired sigma on its floor, not one per period: %d', [Sigmas]));
+  finally
+    Res.Free;
+  end;
+end;
+
+{ The per-period structure the result reports is the structure the fit scored:
+  written out period by period it gives back the fit's curve and chi2. The
+  sigma of the Ru layer is paired, so this also holds the engine to one value
+  in every period for it - UnrollProfiles uses the layer's single value where
+  there is no array. }
+procedure TTestMCPFit.Irregular_UnrolledIntoSinglePeriods_ReproducesTheFit;
+var
+  Res, Res2: TJSONObject;
+  Unrolled: string;
+  FitCurve: TDataArray;
+  Chi2, Chi2Rebuilt, Diff: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  FOptimizerExtra := IRREGULAR_NEAR_START;
+  try
+    Res := RunFit(5, SyntheticCurveJSON, IRREGULAR_FREE,
+      ',"mode":"irregular","paired":[{"stack":0,"layer":1,"parameters":["sigma"]}]' +
+      IRREGULAR_BOUNDS, PROFILE_POPULATION, PROFILE_ITERATIONS);
+  finally
+    FOptimizerExtra := '';
+  end;
+  try
+    Chi2 := Res.GetValue<Double>('chi2');
+    Assert.IsTrue(Chi2 < Res.GetValue<Double>('chi2_start'), 'the fit improved on the start');
+    Assert.IsNull(ArrayOfLayer(Res, 'fitted_structure', 1, 'sigma_profile'));
+    Assert.IsNotNull(ArrayOfLayer(Res, 'fitted_structure', 0, 'sigma_profile'));
+    Unrolled := UnrollProfiles(Res.GetValue('fitted_structure') as TJSONObject, False);
+    FitCurve := ReadResultCurve(Res, 'calculated');
+  finally
+    Res.Free;
+  end;
+
+  Diff := MeanRelativeDifference(CalcOnGrid(Unrolled, FitCurve), FitCurve);
+  Assert.IsTrue(Diff < 1E-3,
+    Format('the unrolled structure gives the fit''s curve: mean relative ' +
+      'difference %.3g', [Diff]));
+
+  Res2 := RunFit(1, SyntheticCurveJSON, '', '', FIT_POPULATION, 1, Unrolled);
+  try
+    Chi2Rebuilt := Res2.GetValue<Double>('chi2_start');
+  finally
+    Res2.Free;
+  end;
+  Assert.AreEqual(Chi2, Chi2Rebuilt, 1E-3 * Chi2,
+    Format('the unrolled structure has the fit''s chi2: %.6g against %.6g',
+      [Chi2Rebuilt, Chi2]));
+end;
+
+{ fit.xrcx is what the GUI opens: Irregular mode, the Smooth settings, the
+  pairing flags, and the periods in the layers' tables with a Table
+  extension to expand them - the state the GUI leaves after its own fit. }
+procedure TTestMCPFit.Irregular_Xrcx_IsAnIrregularProjectWithItsTable;
+var
+  Res: TJSONObject;
+  Proj: TXRCXProject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+  Arr: TJSONArray;
+  c: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  FOptimizerExtra := ',"period_smooth":true,"period_smooth_window":2';
+  try
+    Res := RunFit(3, SyntheticCurveJSON, IRREGULAR_FREE,
+      ',"mode":"irregular","paired":["density"]');
+  finally
+    FOptimizerExtra := '';
+  end;
+  try
+    Assert.IsTrue(Res.GetValue<Boolean>('optimizer_used.period_smooth'));
+    Assert.AreEqual(2, Res.GetValue<Integer>('optimizer_used.period_smooth_window'));
+
+    Proj := ReadXRCX(TPath.Combine(FTemp,
+      (Res.GetValue('files') as TJSONObject).GetValue<string>('xrcx')));
+    Assert.AreEqual(0, Proj.Params.FitMode, '[FIT] Mode 0 is Irregular');
+    Assert.IsTrue(Proj.Params.LFPSO.Smooth, '[LFPSO] Smooth');
+    Assert.AreEqual(2, Integer(Proj.Params.LFPSO.SmoothWindow), '[LFPSO] SmoothWindow');
+    Assert.IsTrue(Proj.TableExtension, 'the model carries a Table extension');
+
+    S := StructureFromXRCData(Proj.XRCData, Info);
+    Assert.IsTrue(S.Stacks[0].Layers[0].P[3].Paired, 'the pairing is in the file');
+    Assert.AreEqual(0, Integer(Length(S.Stacks[0].Layers[0].PP[3])),
+      'a paired parameter has no table');
+    Arr := ArrayOfLayer(Res, 'fitted_structure', 0, 'thickness_profile');
+    Assert.AreEqual(10, Integer(Length(S.Stacks[0].Layers[0].PP[1])));
+    { the GUI's table format keeps four decimals }
+    for c := 0 to 9 do
+      Assert.AreEqual((Arr.Items[c] as TJSONNumber).AsDouble, Double(S.Stacks[0].Layers[0].PP[1][c]),
+        6E-5, Format('period %d', [c + 1]));
+  finally
+    Res.Free;
+  end;
+end;
+
+{ period_smooth averages each parameter over the periods; a paired parameter is
+  one value in every period already, so with everything paired the smoothing
+  has nothing to do, and the same seed gives the same fit with it and without
+  it. With nothing paired it does change the fit - otherwise the first half of
+  the test would prove nothing. }
+procedure TTestMCPFit.Irregular_SmoothWithEveryParameterPaired_ChangesNothing;
+
+  function Run(const Paired: string; Smooth: Boolean): TJSONObject;
+  begin
+    if Smooth then
+      FOptimizerExtra := IRREGULAR_NEAR_START + ',"period_smooth":true'
+    else
+      FOptimizerExtra := IRREGULAR_NEAR_START;
+    try
+      Result := RunFit(9, SyntheticCurveJSON, IRREGULAR_FREE,
+        ',"mode":"irregular"' + Paired + IRREGULAR_BOUNDS);
+    finally
+      FOptimizerExtra := '';
+    end;
+  end;
+
+var
+  A, B: TJSONObject;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  A := Run(',"paired":["thickness","sigma","density"]', False);
+  try
+    B := Run(',"paired":["thickness","sigma","density"]', True);
+    try
+      Assert.AreEqual(A.GetValue<Double>('chi2'), B.GetValue<Double>('chi2'), 0.0);
+      Assert.AreEqual(A.GetValue<TJSONObject>('fitted_structure').ToJSON,
+                      B.GetValue<TJSONObject>('fitted_structure').ToJSON);
+    finally
+      B.Free;
+    end;
+  finally
+    A.Free;
+  end;
+
+  A := Run('', False);
+  try
+    B := Run('', True);
+    try
+      Assert.AreNotEqual(A.GetValue<TJSONObject>('fitted_structure').ToJSON,
+                         B.GetValue<TJSONObject>('fitted_structure').ToJSON,
+        'with nothing paired the smoothing changes the fit');
+    finally
+      B.Free;
+    end;
+  finally
+    A.Free;
+  end;
+end;
+
+{ A continuation: the fitted_structure of one irregular fit, sent back with
+  "start_profiles", starts the next fit from every period's own value, so its
+  chi2_start is the first fit's chi2. Without the flag the GUI's Run would
+  start every period from period 1's value instead. }
+procedure TTestMCPFit.Irregular_StartProfiles_ContinueFromAPreviousFit;
+var
+  Res, Res2: TJSONObject;
+  Fitted: string;
+  Chi2: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  FOptimizerExtra := IRREGULAR_NEAR_START;
+  try
+    Res := RunFit(5, SyntheticCurveJSON, IRREGULAR_FREE,
+      ',"mode":"irregular","paired":["density"]' + IRREGULAR_BOUNDS,
+      PROFILE_POPULATION, PROFILE_ITERATIONS);
+  finally
+    FOptimizerExtra := '';
+  end;
+  try
+    Chi2 := Res.GetValue<Double>('chi2');
+    Assert.IsTrue(Chi2 < Res.GetValue<Double>('chi2_start'),
+      'the first fit moved, so the periods differ');
+    Fitted := Res.GetValue('fitted_structure').ToJSON;
+  finally
+    Res.Free;
+  end;
+
+  Res2 := RunFit(1, SyntheticCurveJSON, IRREGULAR_FREE,
+    ',"mode":"irregular","paired":["density"],"start_profiles":true' + IRREGULAR_BOUNDS,
+    FIT_POPULATION, 1, Fitted);
+  try
+    Assert.IsTrue(Res2.GetValue<Boolean>('start_profiles'));
+    Assert.AreEqual(Chi2, Res2.GetValue<Double>('chi2_start'), 1E-3 * Chi2,
+      'the continuation starts where the first fit ended');
+    Assert.IsTrue(Res2.GetValue<Double>('chi2') <= Res2.GetValue<Double>('chi2_start'),
+      'and does not end worse than it started');
+    Assert.AreEqual(10, ArrayOfLayer(Res2, 'start_structure', 0, 'thickness_profile').Count,
+      'start_structure reports the table it started from');
+  finally
+    Res2.Free;
+  end;
+end;
+
+procedure TTestMCPFit.Schema_DescribesIrregularMode;
+begin
+  Assert.IsTrue(FitXrrSchemaValue('mode.description').Contains('TLFPSO_Irregular'));
+  Assert.IsTrue(FitXrrSchemaValue('paired.description').Contains('irregular'));
+  Assert.IsTrue(FitXrrSchemaValue('start_profiles.description').Contains('thickness_profile'));
+  Assert.IsTrue(FitXrrSchemaValue('optimizer.properties.period_smooth.description')
+    .Contains('irregular'));
+  Assert.IsTrue(FitXrrSchemaValue('optimizer.properties.period_smooth_window.description')
+    .Contains('automatic'));
 end;
 
 initialization

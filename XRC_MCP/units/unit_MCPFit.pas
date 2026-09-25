@@ -26,8 +26,11 @@ unit unit_MCPFit;
 
    TCalcOrchestrator.PrepareLFPSO / RunFitting / FinalizeFitting do this in the
    GUI; everything here is the same sequence with the forms taken out. The
-   engine is unmodified - the same TLFPSO_Periodic (or TLFPSO_Poly), the same
-   TCalc, and therefore the same chi-squared as the number the GUI shows.
+   engine is unmodified - the same TLFPSO_Periodic, TLFPSO_Poly or
+   TLFPSO_Irregular (the GUI's three fitting modes, "mode" here), the same TCalc,
+   and therefore the same chi-squared as the number the GUI shows. The one
+   addition is TLFPSO_IrregularFromTable, which lets an irregular fit start from
+   per-period values instead of the stack's single value ("start_profiles").
 
    What the client hands over is parsed and validated synchronously by
    ParseFitRequest, on the calling thread, so that a bad bound or an unreadable
@@ -63,7 +66,10 @@ unit unit_MCPFit;
      the thicknesses of a periodic stack without freeing its period therefore
      fits the ratio, not the period. TLFPSO_Poly never holds the period at all
      (it has no NormalizeD), so a profile fit lets it float within the thickness
-     bounds and the result reports "floating". Since 2026-09-16 NormalizeD
+     bounds and the result reports "floating". TLFPSO_Irregular has no
+     NormalizeD either: it expands every repeating stack into its periods and
+     fits each period's layers on their own, so its periods float too. Since
+     2026-09-16 NormalizeD
      spreads its correction only over layers with room inside their own
      thickness bounds, and XSeed clamps every seed, so no value the engine
      returns can lie outside the bounds given; the result's "out_of_bounds"
@@ -170,6 +176,14 @@ const
   /// MovAvg(Data, 5) in TfrmChartInfo.SmoothData, and the most passes taken.
   FIT_SMOOTH_WINDOW = 5;
   MAX_SMOOTH_PASSES = 10;
+  /// optimizer.period_smooth_window: -1 lets TLFPSO_Irregular choose (a tenth
+  /// of the periods, at least 1), which is also the GUI's default.
+  DEF_PERIOD_SMOOTH_WINDOW = -1;
+
+  /// "mode": the GUI's three fitting modes, by the names the result echoes.
+  FIT_MODE_PERIODIC  = 'periodic';
+  FIT_MODE_PROFILE   = 'profile';
+  FIT_MODE_IRREGULAR = 'irregular';
 
 type
   /// <summary>One fitted parameter: where it is in the client's JSON, where it
@@ -211,7 +225,11 @@ type
     FreeParams: TArray<TFitParamRef>;        // the free parameters, in argument order
     Fit: TFitParams;
     PointWeight: Boolean;
-    Profile: Boolean;                   // TLFPSO_Poly rather than TLFPSO_Periodic
+    Mode: string;                       // FIT_MODE_PERIODIC, _PROFILE or _IRREGULAR
+    Profile: Boolean;                   // TLFPSO_Poly ("mode": "profile")
+    Irregular: Boolean;                 // TLFPSO_Irregular ("mode": "irregular")
+    StartProfiles: Boolean;             // the start model's per-period values are
+                                        // in Structure's TLayerData.PP tables
     InlineMax: Integer;
     Scale: Double;                      // multiplier already applied to Data
     ScaleMode: string;                  // 'fixed' (the client's number) or 'auto'
@@ -221,7 +239,7 @@ type
     SmoothPasses: Integer;              // Data - Smooth passes already applied to Data
     PeriodRefs: TArray<TPeriodRef>;     // repeating stacks whose period is free
     PairedParams: TArray<TFitParamRef>; // layer parameters held constant over
-                                        // the periods of a profile fit
+                                        // the periods of a profile or irregular fit
     Device: string;                     // 'auto', 'cpu' or 'gpu' (optimizer.device)
     ScaleSolveWindow: Double;           // "scale_solve_window" as given (Fit holds its log10)
   end;
@@ -242,7 +260,7 @@ implementation
 uses
   System.SysUtils, System.Math, System.IOUtils,
   unit_materials, unit_calc, unit_gpu_calc, unit_DataProcessing,
-  unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly,
+  unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly, unit_LFPSO_Irregular,
   unit_MCPCalc, unit_MCPErrors, unit_MCPFitReport, unit_MCPInbox,
   unit_MCPProjectFile, unit_MCPSandbox, unit_MCPUnits;
 
@@ -487,7 +505,8 @@ begin
     range here and ApplyThetaRange replaces them with the trimmed one. }
   Req.ThetaMin := Req.Data[0].t;
   Req.ThetaMax := Req.Data[High(Req.Data)].t;
-  Calc := ScanOnData(Req, BuildLayeredModel(Req.Structure), nil, Chi2, Chi2Plain);
+  Calc := ScanOnData(Req, BuildLayeredModel(Req.Structure, Req.StartProfiles),
+                     nil, Chi2, Chi2Plain);
 
   if (IMax > High(Calc)) or (Calc[IMax].r <= 0) then
     raise EMCPError.Create('invalid_argument',
@@ -749,22 +768,29 @@ end;
 /// The "free" array: which layer parameters take part in the fit. Order is
 /// preserved so that bounds_used reads back in the order it was written.
 /// One "period" entry of "free": the stack must be addressed by index and
-/// repeat (N > 1). Profile fits are refused because TLFPSO_Poly never holds
-/// the period - it floats within the thickness bounds - so there is nothing
-/// for the target to act on. The default range is the start period +/-30%.
+/// repeat (N > 1). Profile and irregular fits are refused because neither
+/// TLFPSO_Poly nor TLFPSO_Irregular holds the period - it floats within the
+/// thickness bounds - so there is nothing for the target to act on. The
+/// default range is the start period +/-30%.
 procedure ParsePeriodTarget(const JEntry: TJSONObject; const S: TFitStructure;
-  const Info: TStructureInfo; Profile: Boolean; const Path: string;
+  const Info: TStructureInfo; const Mode: string; const Path: string;
   var Refs: TArray<TPeriodRef>);
 var
   Probe: TFitParamRef;
   Ref: TPeriodRef;
   j, n: Integer;
 begin
-  if Profile then
+  if Mode = FIT_MODE_PROFILE then
     raise EMCPError.Create('invalid_argument',
       Format('%s: "period" cannot be freed in a profile fit. TLFPSO_Poly does ' +
              'not hold the period at all - it floats within the thickness ' +
              'bounds - so bound the thicknesses instead', [Path]));
+  if Mode = FIT_MODE_IRREGULAR then
+    raise EMCPError.Create('invalid_argument',
+      Format('%s: "period" cannot be freed in an irregular fit. ' +
+             'TLFPSO_Irregular fits every period''s layers on their own and ' +
+             'never holds the period - it floats within the thickness bounds - ' +
+             'so bound the thicknesses instead', [Path]));
 
   Probe := Default(TFitParamRef);
   ResolveStack(JEntry, Info, Path, Probe);
@@ -796,7 +822,7 @@ begin
 end;
 
 function ParseFree(const Params: TJSONObject; const S: TFitStructure;
-  const Info: TStructureInfo; Profile: Boolean;
+  const Info: TStructureInfo; const Mode: string;
   out PeriodRefs: TArray<TPeriodRef>): TArray<TFitParamRef>;
 var
   A, JParams: TJSONArray;
@@ -826,7 +852,7 @@ begin
       RefuseTarget(Target, Path);
     if Target = 'period' then
     begin
-      ParsePeriodTarget(JEntry, S, Info, Profile, Path, PeriodRefs);
+      ParsePeriodTarget(JEntry, S, Info, Mode, Path, PeriodRefs);
       Continue;
     end;
     if Target <> 'layer' then
@@ -1065,7 +1091,10 @@ end;
 /// TLFPSO_Poly.CheckLimitsP), so a start outside them would be fitted from
 /// the nearest bound, not from the model the client gave - and in a profile
 /// fit the reference particle keeps the out-of-range start, so nothing ever
-/// beats it. Refuse it instead.
+/// beats it. Refuse it instead. The start value is a Single, and so is the
+/// bound the engine clamps to (TFitValue.min/max), so they are compared as
+/// Singles: a start of 7.7 on a bound of 7.7 is on the bound, not 2E-7 below
+/// it, which is how the double 7.7 would have it.
 procedure CheckStartInsideBounds(const S: TFitStructure;
   const Refs: TArray<TFitParamRef>; const PeriodRefs: TArray<TPeriodRef>);
 var
@@ -1085,7 +1114,7 @@ begin
   for n := 0 to High(Refs) do
   begin
     V := S.Stacks[Refs[n].GUIStack].Layers[Refs[n].GUILayer].P[Refs[n].P].V;
-    if (V < Refs[n].Min) or (V > Refs[n].Max) then
+    if (V < Single(Refs[n].Min)) or (V > Single(Refs[n].Max)) then
     begin
       if Refs[n].StackLabel <> '' then
         Where := Refs[n].StackLabel
@@ -1163,12 +1192,13 @@ begin
   Result.ScaleWindowLog := Log10(1 + Win);
   ScaleSolveWindow := Win;
 
-  { TFitParams.Smooth makes the irregular engine smooth a parameter's profile
-    over the layers (TLFPSO_Irregular.Smooth); neither engine run here reads
-    it. It is not the GUI's Data - Smooth of the measured curve - that one is
-    the "smooth" argument, ApplySmooth. }
+  { TFitParams.Smooth makes the irregular engine smooth each parameter over
+    the periods (TLFPSO_Irregular.Smooth); ParsePeriodSmooth sets it from
+    optimizer.period_smooth once the mode and the structure are known. It is
+    not the GUI's Data - Smooth of the measured curve - that one is the
+    "smooth" argument, ApplySmooth. }
   Result.Smooth       := False;
-  Result.SmoothWindow := -1;
+  Result.SmoothWindow := DEF_PERIOD_SMOOTH_WINDOW;
 
   if Result.Pop < 2 then
     raise EMCPError.Create('invalid_argument',
@@ -1228,16 +1258,296 @@ begin
              'structure has %d', [Periodic]));
 end;
 
+/// "mode": "periodic" (default), "profile" or "irregular" - the GUI's three
+/// fitting modes. "profile": true is the older spelling of "mode": "profile"
+/// and is still accepted; the two may not disagree.
+function ParseMode(const Params: TJSONObject): string;
+var
+  HasProfile: Boolean;
+begin
+  HasProfile := JSONArgs.Has(Params, 'profile');
+  Result := LowerCase(Trim(JSONArgs.OptStr(Params, 'mode', '')));
+  if Result = '' then
+  begin
+    if HasProfile and JSONArgs.OptBool(Params, 'profile', False) then
+      Exit(FIT_MODE_PROFILE);
+    Exit(FIT_MODE_PERIODIC);
+  end;
+
+  if (Result <> FIT_MODE_PERIODIC) and (Result <> FIT_MODE_PROFILE) and
+     (Result <> FIT_MODE_IRREGULAR) then
+    raise EMCPError.Create('invalid_argument',
+      '"mode" must be "periodic", "profile" or "irregular"', Result);
+  if HasProfile and (JSONArgs.OptBool(Params, 'profile', False) <>
+                     (Result = FIT_MODE_PROFILE)) then
+    raise EMCPError.Create('invalid_argument',
+      '"profile" disagrees with "mode": "profile": true is the older spelling ' +
+      'of "mode": "profile"; send "mode" alone', Result);
+end;
+
+/// TLFPSO_Irregular expands every repeating stack into its periods. On a
+/// structure with none it is a periodic fit under another name, which is
+/// refused rather than run, so that "mode": "irregular" always means that
+/// the periods were fitted one by one.
+procedure CheckIrregularIsPossible(const S: TFitStructure);
+var
+  i: Integer;
+begin
+  for i := 0 to High(S.Stacks) do
+    if S.Stacks[i].N > 1 then
+      Exit;
+  raise EMCPError.Create('invalid_argument',
+    '"mode": "irregular" needs a repeating stack (N > 1) to expand into its ' +
+    'periods; this structure has none');
+end;
+
+/// optimizer.period_smooth and optimizer.period_smooth_window: the GUI's
+/// Smooth box and Smoothing window, TFitParams.Smooth / SmoothWindow. After
+/// every move TLFPSO_Irregular replaces each unpaired parameter's values over
+/// the periods of its stack by their moving average over window + 1 periods
+/// (unit_DataProcessing.Smooth; -1 = a tenth of the periods, at least 1). No
+/// other engine reads it, so asking for it in another mode is refused. Held
+/// parameters are not smoothed. The window may be at most half the periods of
+/// the shortest repeating stack: Smooth averages the last W periods over the W
+/// before each, and for W > N/2 that reaches before period 1.
+procedure ParsePeriodSmooth(const Params: TJSONObject; var Req: TFitRequest);
+var
+  JOpt: TJSONObject;
+  i, NMin: Integer;
+  W: Double;
+begin
+  JOpt := JSONArgs.OptObj(Params, 'optimizer');
+  Req.Fit.Smooth := JSONArgs.OptBool(JOpt, 'period_smooth', False);
+  Req.Fit.SmoothWindow := DEF_PERIOD_SMOOTH_WINDOW;
+
+  if Req.Fit.Smooth and not Req.Irregular then
+    raise EMCPError.Create('invalid_argument',
+      '"optimizer.period_smooth" smooths each parameter over the periods of an ' +
+      'irregular fit and needs "mode": "irregular"; the periodic and profile ' +
+      'engines never read it', Req.Mode);
+
+  if not JSONArgs.Has(JOpt, 'period_smooth_window') then
+    Exit;
+  if not Req.Fit.Smooth then
+    raise EMCPError.Create('invalid_argument',
+      '"optimizer.period_smooth_window" is the window of "period_smooth", ' +
+      'which is off: set "period_smooth": true or leave the window out');
+
+  NMin := MaxInt;
+  for i := 0 to High(Req.Structure.Stacks) do
+    if (Req.Structure.Stacks[i].N > 1) and (Req.Structure.Stacks[i].N < NMin) then
+      NMin := Req.Structure.Stacks[i].N;
+
+  W := JSONArgs.OptFloat(JOpt, 'period_smooth_window', DEF_PERIOD_SMOOTH_WINDOW);
+  if (Frac(W) <> 0) or
+     ((W <> -1) and ((W < 1) or (W > NMin div 2) or (W > High(ShortInt)))) then
+    raise EMCPError.Create('invalid_argument',
+      Format('"optimizer.period_smooth_window" must be -1 (automatic: a tenth ' +
+             'of the periods) or a whole number from 1 to %d, half the ' +
+             'periods of the shortest repeating stack',
+             [Min(NMin div 2, Integer(High(ShortInt)))]),
+      FloatToStr(W, FitFmt));
+  Req.Fit.SmoothWindow := Round(W);
+end;
+
+const
+  PROFILE_KEYS: array [1 .. 3] of string =
+    ('thickness_profile', 'sigma_profile', 'density_profile');
+
+/// True when any layer of "structure" carries a per-period array - which a
+/// fitted_structure of a profile or irregular fit does.
+function StructureHasProfiles(const JStructure: TJSONObject): Boolean;
+var
+  JStacks, JLayers: TJSONArray;
+  k, i, p: Integer;
+  JLayer: TJSONObject;
+begin
+  Result := False;
+  JStacks := JSONArgs.OptArr(JStructure, 'stacks');
+  if JStacks = nil then
+    Exit;
+  for k := 0 to JStacks.Count - 1 do
+  begin
+    if not (JStacks.Items[k] is TJSONObject) then
+      Continue;
+    JLayers := JSONArgs.OptArr(TJSONObject(JStacks.Items[k]), 'layers');
+    if JLayers = nil then
+      Continue;
+    for i := 0 to JLayers.Count - 1 do
+      if JLayers.Items[i] is TJSONObject then
+      begin
+        JLayer := TJSONObject(JLayers.Items[i]);
+        for p := 1 to 3 do
+          if JLayer.GetValue(PROFILE_KEYS[p]) <> nil then
+            Exit(True);
+      end;
+  end;
+end;
+
+/// "start_profiles": true starts an irregular fit from per-period values - the
+/// thickness_profile, sigma_profile and density_profile arrays on the layers
+/// of "structure", which is how a previous profile or irregular fit reports
+/// them - instead of starting every period from the layer's single value, as
+/// the GUI's Run and Resume do. Each array runs from the surface end (entry 0
+/// is period 1) and holds N values; a parameter without one starts every
+/// period from its single value. The tables go into TLayerData.PP, where
+/// BuildLayeredModel and TLFPSO_IrregularFromTable read them.
+///
+/// Without the flag the arrays are ignored, as they always have been. In
+/// irregular mode that would start the fit from period 1's values and quietly
+/// throw the rest of the table away, so there the client has to say which it
+/// wants whenever the structure carries a table.
+procedure ParseStartProfiles(const Params: TJSONObject; var Req: TFitRequest);
+const
+  MUST_BE: array [Boolean] of string = ('greater than zero', 'zero or more');
+var
+  JStructure, JLayer: TJSONObject;
+  JStacks, JLayers, Arr: TJSONArray;
+  k, i, p, c, GUIStack, N: Integer;
+  V: Double;
+  Path: string;
+  Any: Boolean;
+begin
+  JStructure := JSONArgs.ReqObj(Params, 'structure');
+  Req.StartProfiles := JSONArgs.OptBool(Params, 'start_profiles', False);
+
+  if Req.StartProfiles and not Req.Irregular then
+    raise EMCPError.Create('invalid_argument',
+      '"start_profiles" starts an irregular fit from per-period values and ' +
+      'needs "mode": "irregular"', Req.Mode);
+
+  if not Req.Irregular then
+    Exit;
+
+  if not JSONArgs.Has(Params, 'start_profiles') then
+  begin
+    if StructureHasProfiles(JStructure) then
+      raise EMCPError.Create('invalid_argument',
+        'The structure carries per-period arrays (thickness_profile, ' +
+        'sigma_profile or density_profile). Say what an irregular fit should ' +
+        'do with them: "start_profiles": true starts each period from its own ' +
+        'value, false starts every period from the layer''s single value and ' +
+        'ignores the arrays');
+    Exit;
+  end;
+  if not Req.StartProfiles then
+    Exit;
+
+  Any := False;
+  JStacks := JSONArgs.ReqArr(JStructure, 'stacks');
+  for k := 0 to JStacks.Count - 1 do
+  begin
+    GUIStack := Req.Info.StackMap[k];
+    N := Req.Structure.Stacks[GUIStack].N;
+    JLayers := JSONArgs.ReqArr(TJSONObject(JStacks.Items[k]), 'layers');
+    for i := 0 to JLayers.Count - 1 do
+    begin
+      JLayer := TJSONObject(JLayers.Items[i]);
+      for p := 1 to 3 do
+      begin
+        Path := Format('structure.stacks[%d].layers[%d].%s', [k, i, PROFILE_KEYS[p]]);
+        if JLayer.GetValue(PROFILE_KEYS[p]) = nil then
+          Continue;
+        if not (JLayer.GetValue(PROFILE_KEYS[p]) is TJSONArray) then
+          raise EMCPError.Create('invalid_argument',
+            Path + ' must be an array of numbers, one per period');
+        if N <= 1 then
+          raise EMCPError.Create('invalid_argument',
+            Format('%s: stack %d has N = 1, one period, and no per-period ' +
+                   'values; give the value itself', [Path, k]));
+        Arr := TJSONArray(JLayer.GetValue(PROFILE_KEYS[p]));
+        if Arr.Count <> N then
+          raise EMCPError.Create('invalid_argument',
+            Format('%s must hold one value per period, %d, surface end first',
+                   [Path, N]), IntToStr(Arr.Count));
+
+        Req.Structure.Stacks[GUIStack].Layers[i].ClearProfiles(p);
+        for c := 0 to Arr.Count - 1 do
+        begin
+          if not (Arr.Items[c] is TJSONNumber) then
+            raise EMCPError.Create('invalid_argument',
+              Format('%s[%d] must be a number', [Path, c]));
+          V := TJSONNumber(Arr.Items[c]).AsDouble;
+          if ((p <> 2) and not (V > 0)) or ((p = 2) and (V < 0)) then
+            raise EMCPError.Create('invalid_argument',
+              Format('%s[%d]: a %s must be %s',
+                     [Path, c, PARAM_NAMES[p], MUST_BE[p = 2]]),
+              FloatToStr(V, FitFmt));
+          Req.Structure.Stacks[GUIStack].Layers[i].AddProfilePoint(V, p);
+        end;
+        Any := True;
+      end;
+    end;
+  end;
+
+  if not Any then
+    raise EMCPError.Create('invalid_argument',
+      '"start_profiles" is true but no layer of a repeating stack in ' +
+      '"structure" carries a thickness_profile, sigma_profile or ' +
+      'density_profile to start from');
+end;
+
+/// The per-period start values against the rest of the request, once "free",
+/// "bounds" and "paired" are known. A paired parameter is one value in every
+/// period, so a table for it contradicts the pairing. A free parameter must
+/// start inside its bounds in every period, for the reason
+/// CheckStartInsideBounds gives. A held one keeps the value its table gives
+/// each period: TLFPSO_IrregularFromTable pins each period there.
+procedure CheckStartProfiles(const Req: TFitRequest);
+var
+  i, j, p, c, n: Integer;
+  L: TLayerData;
+  V: Double;
+  Where: string;
+begin
+  if not Req.StartProfiles then
+    Exit;
+  for i := 0 to High(Req.Structure.Stacks) do
+    for j := 0 to High(Req.Structure.Stacks[i].Layers) do
+    begin
+      L := Req.Structure.Stacks[i].Layers[j];
+      Where := '';
+      for n := 0 to High(Req.Info.StackMap) do
+        if Req.Info.StackMap[n] = i then
+          Where := Format('stack %d, layer %d', [n, j]);
+      for p := 1 to 3 do
+      begin
+        if Length(L.PP[p]) = 0 then
+          Continue;
+        if L.P[p].Paired then
+          raise EMCPError.Create('invalid_argument',
+            Format('%s: %s is paired - one value in every period - but the ' +
+                   'structure gives it a %s. Drop the array or unpair it',
+                   [Where, PARAM_NAMES[p], PROFILE_KEYS[p]]), PARAM_NAMES[p]);
+        if L.P[p].min = L.P[p].max then
+          Continue;                        // held: pinned to each period's value
+        for c := 0 to High(L.PP[p]) do
+        begin
+          V := L.PP[p][c];
+          if (V < L.P[p].min) or (V > L.P[p].max) then
+            raise EMCPError.Create('invalid_argument',
+              Format('the start value %.6g of "%s" in period %d (%s, %s[%d]) ' +
+                     'lies outside its bounds [%.6g, %.6g]. The engine seeds ' +
+                     'the swarm around the start value and clamps it to the ' +
+                     'bounds: move the start value or widen the bounds',
+                     [V, PARAM_NAMES[p], c + 1, Where, PROFILE_KEYS[p], c,
+                      L.P[p].min, L.P[p].max]), PARAM_NAMES[p]);
+        end;
+      end;
+    end;
+end;
+
 /// "paired": which layer parameters are held to one value over all the periods
-/// of a profile fit instead of getting a polynomial. It is the GUI's Paired
-/// box - TFitValue.Paired, the HP / SP / RP flags of the project file, which
-/// TLFPSO_Poly.Set_Init_XPoly already honours - and the author's own practice
-/// is to pair sigma and density and leave the thicknesses free.
+/// instead of getting a polynomial (profile mode) or a value of their own in
+/// each period (irregular mode). It is the GUI's Paired box - TFitValue.Paired,
+/// the HP / SP / RP flags of the project file, which TLFPSO_Poly.Set_Init_XPoly
+/// and TLFPSO_Irregular.SetStructure already honour - and the author's own
+/// practice is to pair sigma and density and leave the thicknesses free.
 ///
 /// An item is either a bare parameter name, which pairs that parameter in every
 /// layer, or {"stack", "layer", "parameters"} addressed exactly as "free" is.
 procedure ParsePaired(const Params: TJSONObject; var S: TFitStructure;
-  const Info: TStructureInfo; Profile: Boolean;
+  const Info: TStructureInfo; const Mode: string;
   out Refs: TArray<TFitParamRef>);
 var
   Arr, Names: TJSONArray;
@@ -1302,11 +1612,12 @@ begin
   if (Arr = nil) or (Arr.Count = 0) then
     Exit;
 
-  if not Profile then
+  if Mode = FIT_MODE_PERIODIC then
     raise EMCPError.Create('invalid_argument',
-      '"paired" only means something with "profile": true - it says which ' +
-      'parameters keep one value over the periods instead of getting a ' +
-      'polynomial of their own. A periodic fit has one value per layer already.');
+      '"paired" only means something with "mode": "profile" or "irregular" - ' +
+      'it says which parameters keep one value over the periods instead of ' +
+      'getting a polynomial or a value per period of their own. A periodic ' +
+      'fit has one value per layer already.');
 
   for i := 0 to Arr.Count - 1 do
   begin
@@ -1382,6 +1693,17 @@ begin
       Format('No Henke table for material "%s"', [Bad]),
       'list_materials enumerates the names this server knows');
 
+  { The engine, and the per-period start values an irregular fit may begin
+    from, before anything computes the start model: "scale": "auto" does. }
+  Result.Mode := ParseMode(Params);
+  Result.Profile := Result.Mode = FIT_MODE_PROFILE;
+  Result.Irregular := Result.Mode = FIT_MODE_IRREGULAR;
+  if Result.Profile then
+    CheckProfileIsPossible(Result.Structure);
+  if Result.Irregular then
+    CheckIrregularIsPossible(Result.Structure);
+  ParseStartProfiles(Params, Result);
+
   ReadMeasuredCurve(Params, Result);
   CheckMeasuredCurve(Result);
 
@@ -1420,20 +1742,18 @@ begin
     raise EMCPError.Create('invalid_argument',
       '"points_inline_max" must not be negative');
 
-  Result.Profile := JSONArgs.OptBool(Params, 'profile', False);
-  if Result.Profile then
-    CheckProfileIsPossible(Result.Structure);
-
   Result.FreeParams := ParseFree(Params, Result.Structure, Result.Info,
-                                 Result.Profile, Result.PeriodRefs);
+                                 Result.Mode, Result.PeriodRefs);
   ParseBounds(Params, Result.Structure, Result.Info, Result.FreeParams,
               Result.PeriodRefs);
   CheckStartInsideBounds(Result.Structure, Result.FreeParams, Result.PeriodRefs);
   ApplyBounds(Result.Structure, Result.FreeParams);
-  ParsePaired(Params, Result.Structure, Result.Info, Result.Profile,
+  ParsePaired(Params, Result.Structure, Result.Info, Result.Mode,
               Result.PairedParams);
+  CheckStartProfiles(Result);
 
   Result.Fit := ParseFitParams(Params, Result.ScaleSolveWindow);
+  ParsePeriodSmooth(Params, Result);
   Result.PointWeight := JSONArgs.OptBool(JSONArgs.OptObj(Params, 'chi2'),
                                          'point_weight', True);
   Result.Device := ParseDevice(Params);
@@ -1497,6 +1817,55 @@ begin
       update, and Free is nil-safe. }
     Msg.LayeredModel.Free;
   end;
+end;
+
+type
+  /// <summary>TLFPSO_Irregular started from per-period values
+  /// ("start_profiles"). Once the engine has expanded the repeating stacks,
+  /// each period's start value is its entry of the layer's table
+  /// (TLayerData.PP, read through PeriodValue exactly as the GUI's model reads
+  /// it) instead of the layer's single value. A free parameter keeps the
+  /// layer's bounds in every period; a held one (min = max) is pinned to its
+  /// own period's value. Both go into the engine's flattened structure as well
+  /// as into particle 0, because a shake re-seeds the swarm from that
+  /// structure.</summary>
+  TLFPSO_IrregularFromTable = class(TLFPSO_Irregular)
+  protected
+    procedure SetStructure(const Inp: TFitStructure); override;
+  end;
+
+procedure TLFPSO_IrregularFromTable.SetStructure(const Inp: TFitStructure);
+var
+  i, j, k, p, Index: Integer;
+  Val: TFitValue;
+begin
+  inherited;
+  { A shake hands back the engine's own flattened structure, which carries
+    the table's values and the pinned bounds already. }
+  if FReInit then
+    Exit;
+
+  { The order TLFPSO_Irregular.SetStructure expands in: stack by stack,
+    period 1 (the surface end) first, the layers of each period in turn. }
+  Index := 0;
+  for i := 0 to High(Inp.Stacks) do
+    for k := 1 to Inp.Stacks[i].N do
+      for j := 0 to High(Inp.Stacks[i].Layers) do
+      begin
+        for p := 1 to 3 do
+        begin
+          Val := Inp.Stacks[i].Layers[j].P[p];
+          Val.V := Inp.Stacks[i].Layers[j].PeriodValue(p, k, Inp.Stacks[i].N, True);
+          if Val.min = Val.max then
+          begin
+            Val.min := Val.V;
+            Val.max := Val.V;
+          end;
+          Set_Init_X(Index, p, Val);
+          FStructure.Stacks[0].Layers[Index].P[p] := Val;
+        end;
+        Inc(Index);
+      end;
 end;
 
 { The scan the engine and every check run afterwards share. With ExpValues set,
@@ -1652,6 +2021,169 @@ type
     Thickness, Sigma, Density: TArray<Single>;
   end;
 
+/// A free parameter's values in each period of an irregular fit, surface end
+/// first; nil when it is one value - an N = 1 layer, a paired parameter, or
+/// any other mode - and the fitted structure's single value is the answer.
+function PerPeriodValues(const Req: TFitRequest; const Ref: TFitParamRef;
+  const Profiles: TArray<TLayerProfile>): TArray<Single>; forward;
+
+/// One parameter's per-period values out of a TLayerProfile; nil when the
+/// layer has none.
+function ProfileValues(const Profiles: TArray<TLayerProfile>;
+  GUIStack, GUILayer, P: Integer): TArray<Single>;
+var
+  n: Integer;
+begin
+  Result := nil;
+  for n := 0 to High(Profiles) do
+    if (Profiles[n].GUIStack = GUIStack) and (Profiles[n].GUILayer = GUILayer) then
+      case P of
+        1: Exit(Profiles[n].Thickness);
+        2: Exit(Profiles[n].Sigma);
+        3: Exit(Profiles[n].Density);
+      end;
+end;
+
+function PerPeriodValues(const Req: TFitRequest; const Ref: TFitParamRef;
+  const Profiles: TArray<TLayerProfile>): TArray<Single>;
+begin
+  Result := nil;
+  if Req.Irregular and
+     not Req.Structure.Stacks[Ref.GUIStack].Layers[Ref.GUILayer].P[Ref.P].Paired then
+    Result := ProfileValues(Profiles, Ref.GUIStack, Ref.GUILayer, Ref.P);
+end;
+
+/// How many independent values an irregular fit searched: a free parameter of
+/// a repeating layer is a value in each of its stack's N periods, or one value
+/// for all of them when it is paired; a free parameter of an N = 1 stack is one.
+function FreeValueCount(const Req: TFitRequest): Integer;
+var
+  n, GS, GL: Integer;
+begin
+  Result := 0;
+  for n := 0 to High(Req.FreeParams) do
+  begin
+    GS := Req.FreeParams[n].GUIStack;
+    GL := Req.FreeParams[n].GUILayer;
+    if Req.Structure.Stacks[GS].Layers[GL].P[Req.FreeParams[n].P].Paired then
+      Inc(Result)
+    else
+      Inc(Result, Req.Structure.Stacks[GS].N);
+  end;
+end;
+
+/// The period of each repetition of one stack, surface end first: the sum of
+/// its layers' thicknesses in that period. Empty when the profiles do not
+/// cover the stack.
+function PeriodsOf(const Profiles: TArray<TLayerProfile>;
+  GUIStack: Integer): TArray<Double>;
+var
+  n, c: Integer;
+begin
+  Result := nil;
+  for n := 0 to High(Profiles) do
+    if Profiles[n].GUIStack = GUIStack then
+    begin
+      if Result = nil then
+        SetLength(Result, Length(Profiles[n].Thickness));
+      for c := 0 to Min(High(Result), High(Profiles[n].Thickness)) do
+        Result[c] := Result[c] + Profiles[n].Thickness[c];
+    end;
+end;
+
+function MeanOf(const V: TArray<Double>): Double;
+var
+  c: Integer;
+begin
+  Result := 0;
+  for c := 0 to High(V) do
+    Result := Result + V[c];
+  if Length(V) > 0 then
+    Result := Result / Length(V);
+end;
+
+/// The per-period values a structure's tables describe, in the shape
+/// CollectLayerProfiles gives a fitted model: every layer of every repeating
+/// stack, each parameter from its table where it has one and from its single
+/// value otherwise (TLayerData.PeriodValue, as the model is built).
+function TableProfiles(const S: TFitStructure): TArray<TLayerProfile>;
+var
+  i, j, k, n: Integer;
+begin
+  Result := nil;
+  for i := 0 to High(S.Stacks) do
+  begin
+    if S.Stacks[i].N <= 1 then
+      Continue;
+    for j := 0 to High(S.Stacks[i].Layers) do
+    begin
+      n := Length(Result);
+      SetLength(Result, n + 1);
+      Result[n].GUIStack := i;
+      Result[n].GUILayer := j;
+      SetLength(Result[n].Thickness, S.Stacks[i].N);
+      SetLength(Result[n].Sigma, S.Stacks[i].N);
+      SetLength(Result[n].Density, S.Stacks[i].N);
+      for k := 1 to S.Stacks[i].N do
+      begin
+        Result[n].Thickness[k - 1] := S.Stacks[i].Layers[j].PeriodValue(1, k, S.Stacks[i].N, True);
+        Result[n].Sigma[k - 1]     := S.Stacks[i].Layers[j].PeriodValue(2, k, S.Stacks[i].N, True);
+        Result[n].Density[k - 1]   := S.Stacks[i].Layers[j].PeriodValue(3, k, S.Stacks[i].N, True);
+      end;
+    end;
+  end;
+end;
+
+/// TLFPSO_Irregular's result in the shape of the start model. Each layer takes
+/// the values of its first period - the surface end - which is what the GUI's
+/// TXRCStructure.UpdateInterfaceNP writes back into the layer; the periods
+/// themselves go into its tables (SetFittedTables). Bounds, pairing and
+/// materials are the start model's.
+function UnflattenIrregular(const Start, Flat: TFitStructure): TFitStructure;
+var
+  i, j, p, Count: Integer;
+begin
+  Start.CopyContent(Result);
+  Count := 0;
+  for i := 0 to High(Result.Stacks) do
+  begin
+    for j := 0 to High(Result.Stacks[i].Layers) do
+    begin
+      for p := 1 to 3 do
+      begin
+        Result.Stacks[i].Layers[j].P[p].V := Flat.Stacks[0].Layers[Count].P[p].V;
+        Result.Stacks[i].Layers[j].ClearProfiles(p);
+      end;
+      Inc(Count);
+    end;
+    Inc(Count, (Result.Stacks[i].N - 1) * Length(Result.Stacks[i].Layers));
+  end;
+end;
+
+/// The fitted periods as the layers' tables, which the .xrcx stores and the
+/// GUI's Table extension expands: what TXRCStructure.UpdateProfiles writes
+/// after an irregular fit, every unpaired parameter of every repeating layer.
+procedure SetFittedTables(var S: TFitStructure; const Profiles: TArray<TLayerProfile>);
+var
+  n, k, c, GS, GL: Integer;
+  V: TArray<Single>;
+begin
+  for n := 0 to High(Profiles) do
+  begin
+    GS := Profiles[n].GUIStack;
+    GL := Profiles[n].GUILayer;
+    for k := 1 to 3 do
+    begin
+      S.Stacks[GS].Layers[GL].ClearProfiles(k);
+      if S.Stacks[GS].Layers[GL].P[k].Paired then
+        Continue;
+      V := ProfileValues(Profiles, GS, GL, k);
+      for c := 0 to High(V) do
+        S.Stacks[GS].Layers[GL].AddProfilePoint(V[c], k);
+    end;
+  end;
+end;
+
 function BoundsUsedJSON(const Refs: TArray<TFitParamRef>;
   const PeriodRefs: TArray<TPeriodRef>; const Info: TStructureInfo): TJSONArray;
 var
@@ -1716,16 +2248,20 @@ end;
 
 /// Every fitted value within NEAR_BOUND_FRACTION of its own range of either end
 /// of it, in the shape of bounds_used plus the value, which end it is near and
-/// how far away it is as a fraction of the range.
-function NearBoundsJSON(const Req: TFitRequest;
-  const Fitted: TFitStructure): TJSONArray;
+/// how far away it is as a fraction of the range. In an irregular fit a free
+/// parameter of a repeating layer is a value in every period, and each period
+/// is considered on its own: its entry carries "period_index", the index into
+/// that layer's *_profile array (0 = period 1, the surface end).
+function NearBoundsJSON(const Req: TFitRequest; const Fitted: TFitStructure;
+  const Profiles: TArray<TLayerProfile>): TJSONArray;
 var
-  n: Integer;
+  n, c: Integer;
   V, Lo, Hi, Range, DLo, DHi: Double;
   Obj: TJSONObject;
+  PerPeriod: TArray<Single>;
 
   procedure Consider(const Target: string; StackJSON, LayerJSON: Integer;
-    const Param: string);
+    const Param: string; PeriodIndex: Integer = -1);
   begin
     Range := Hi - Lo;
     if Range <= 0 then
@@ -1745,6 +2281,8 @@ var
     if Target <> 'period' then
       Obj.AddPair('layer', TJSONNumber.Create(LayerJSON));
     Obj.AddPair('parameter', Param);
+    if PeriodIndex >= 0 then
+      Obj.AddPair('period_index', TJSONNumber.Create(PeriodIndex));
     Obj.AddPair('value', JSONArgs.Num(V));
     Obj.AddPair('min', JSONArgs.Num(Lo));
     Obj.AddPair('max', JSONArgs.Num(Hi));
@@ -1760,10 +2298,21 @@ begin
   try
     for n := 0 to High(Req.FreeParams) do
     begin
-      V := Fitted.Stacks[Req.FreeParams[n].GUIStack]
-                 .Layers[Req.FreeParams[n].GUILayer].P[Req.FreeParams[n].P].V;
       Lo := Req.FreeParams[n].Min;
       Hi := Req.FreeParams[n].Max;
+      PerPeriod := PerPeriodValues(Req, Req.FreeParams[n], Profiles);
+      if Length(PerPeriod) > 0 then
+      begin
+        for c := 0 to High(PerPeriod) do
+        begin
+          V := PerPeriod[c];
+          Consider('layer', Req.FreeParams[n].GUIStack, Req.FreeParams[n].LayerJSON,
+                   PARAM_NAMES[Req.FreeParams[n].P], c);
+        end;
+        Continue;
+      end;
+      V := Fitted.Stacks[Req.FreeParams[n].GUIStack]
+                 .Layers[Req.FreeParams[n].GUILayer].P[Req.FreeParams[n].P].V;
       Consider('layer', Req.FreeParams[n].GUIStack, Req.FreeParams[n].LayerJSON,
                PARAM_NAMES[Req.FreeParams[n].P]);
     end;
@@ -1787,11 +2336,14 @@ end;
 /// since 2026-09-16), so that a client is never handed a silent violation.
 /// The comparison is against the bounds as the engine holds them - single
 /// precision, TFitValue.min/max - so a value clamped exactly to a bound is
-/// inside it.
-function OutOfBoundsJSON(const Req: TFitRequest; const Fitted: TFitStructure): TJSONArray;
+/// inside it. In an irregular fit every period of a free repeating parameter
+/// is checked, with "period_index" as in near_bounds, and one part in 1e6 of
+/// slack: period_smooth averages values in single precision after the clamp.
+function OutOfBoundsJSON(const Req: TFitRequest; const Fitted: TFitStructure;
+  const Profiles: TArray<TLayerProfile>): TJSONArray;
 
   procedure Add(const Target: string; StackJSON, LayerJSON: Integer;
-    const Param: string; Value, AMin, AMax: Double);
+    const Param: string; Value, AMin, AMax: Double; PeriodIndex: Integer = -1);
   var
     Obj: TJSONObject;
   begin
@@ -1802,21 +2354,33 @@ function OutOfBoundsJSON(const Req: TFitRequest; const Fitted: TFitStructure): T
     if Target = 'layer' then
       Obj.AddPair('layer', TJSONNumber.Create(LayerJSON));
     Obj.AddPair('parameter', Param);
+    if PeriodIndex >= 0 then
+      Obj.AddPair('period_index', TJSONNumber.Create(PeriodIndex));
     Obj.AddPair('value', JSONArgs.Num(Value));
     Obj.AddPair('min', JSONArgs.Num(AMin));
     Obj.AddPair('max', JSONArgs.Num(AMax));
   end;
 
 var
-  n: Integer;
+  n, c: Integer;
   V: Single;
-  D: Double;
+  D, Slack: Double;
+  PerPeriod: TArray<Single>;
 begin
   Result := TJSONArray.Create;
   try
     for n := 0 to High(Req.FreeParams) do
       with Req.FreeParams[n] do
       begin
+        PerPeriod := PerPeriodValues(Req, Req.FreeParams[n], Profiles);
+        if Length(PerPeriod) > 0 then
+        begin
+          Slack := 1E-6 * System.Math.Max(Abs(Min), Abs(Max));
+          for c := 0 to High(PerPeriod) do
+            if (PerPeriod[c] < Single(Min) - Slack) or (PerPeriod[c] > Single(Max) + Slack) then
+              Add('layer', StackJSON, LayerJSON, PARAM_NAMES[P], PerPeriod[c], Min, Max, c);
+          Continue;
+        end;
         V := Fitted.Stacks[GUIStack].Layers[GUILayer].P[P].V;
         if (V < Single(Min)) or (V > Single(Max)) then
           Add('layer', StackJSON, LayerJSON, PARAM_NAMES[P], V, Min, Max);
@@ -1838,15 +2402,21 @@ end;
 
 /// One entry per repeating stack, in JSON order: how its period was treated -
 /// "held" at the start value (the periodic engine's default), "free" inside
-/// the bounds given, or "floating" (a profile fit, where TLFPSO_Poly never
-/// constrains it) - with the start and fitted periods in Angstrom.
-function PeriodModeJSON(const Req: TFitRequest; const Fitted: TFitStructure): TJSONArray;
+/// the bounds given, or "floating" (a profile or irregular fit, where neither
+/// TLFPSO_Poly nor TLFPSO_Irregular constrains it) - with the start and fitted
+/// periods in Angstrom. In an irregular fit every period is fitted on its own:
+/// start_A and fitted_A are then the mean over the periods, and fitted_A_min
+/// and fitted_A_max the shortest and the longest.
+function PeriodModeJSON(const Req: TFitRequest; const Fitted: TFitStructure;
+  const StartProfiles, FittedProfiles: TArray<TLayerProfile>): TJSONArray;
 var
-  k, n, GUIStack: Integer;
+  k, n, c, GUIStack: Integer;
   Obj: TJSONObject;
   Mode: string;
   Ref: TPeriodRef;
   IsFree: Boolean;
+  Periods: TArray<Double>;
+  PMin, PMax: Double;
 begin
   Result := TJSONArray.Create;
   try
@@ -1865,7 +2435,7 @@ begin
           Ref := Req.PeriodRefs[n];
         end;
 
-      if Req.Profile then
+      if Req.Profile or Req.Irregular then
         Mode := 'floating'
       else if IsFree then
         Mode := 'free'
@@ -1876,8 +2446,32 @@ begin
       Result.AddElement(Obj);
       Obj.AddPair('stack', TJSONNumber.Create(k));
       Obj.AddPair('mode', Mode);
-      Obj.AddPair('start_A', JSONArgs.Num(StackPeriod(Req.Structure, GUIStack)));
-      Obj.AddPair('fitted_A', JSONArgs.Num(StackPeriod(Fitted, GUIStack)));
+      if Req.Irregular then
+      begin
+        Periods := PeriodsOf(StartProfiles, GUIStack);
+        if Length(Periods) > 0 then
+          Obj.AddPair('start_A', JSONArgs.Num(MeanOf(Periods)))
+        else
+          Obj.AddPair('start_A', JSONArgs.Num(StackPeriod(Req.Structure, GUIStack)));
+        Periods := PeriodsOf(FittedProfiles, GUIStack);
+        if Length(Periods) = 0 then
+          Periods := [StackPeriod(Fitted, GUIStack)];
+        PMin := Periods[0];
+        PMax := Periods[0];
+        for c := 1 to High(Periods) do
+        begin
+          PMin := System.Math.Min(PMin, Periods[c]);
+          PMax := System.Math.Max(PMax, Periods[c]);
+        end;
+        Obj.AddPair('fitted_A', JSONArgs.Num(MeanOf(Periods)));
+        Obj.AddPair('fitted_A_min', JSONArgs.Num(PMin));
+        Obj.AddPair('fitted_A_max', JSONArgs.Num(PMax));
+      end
+      else
+      begin
+        Obj.AddPair('start_A', JSONArgs.Num(StackPeriod(Req.Structure, GUIStack)));
+        Obj.AddPair('fitted_A', JSONArgs.Num(StackPeriod(Fitted, GUIStack)));
+      end;
       if IsFree then
       begin
         Obj.AddPair('min', JSONArgs.Num(Ref.Min));
@@ -2005,10 +2599,13 @@ begin
 end;
 
 /// The fitted structure in the requirements' section 3 shape, with each layer's
-/// per-period thickness added when the fit produced a gradient, and its
-/// per-period sigma and density where those vary too (not paired).
+/// per-period values added when the fit produced them. A profile fit adds the
+/// thickness always, and sigma and density where they vary (not paired). An
+/// irregular fit adds every parameter that is not paired, whether it varies or
+/// not: each unpaired parameter is a value of its own in every period there,
+/// and the layer's single value is period 1's.
 function FittedStructureJSON(const S: TFitStructure; const Info: TStructureInfo;
-  const Profiles: TArray<TLayerProfile>): TJSONObject;
+  const Profiles: TArray<TLayerProfile>; Irregular: Boolean = False): TJSONObject;
 var
   JStacks, JLayers: TJSONArray;
   JLayer: TJSONObject;
@@ -2030,6 +2627,16 @@ begin
           if (Profiles[n].GUIStack = Idx) and (Profiles[n].GUILayer = i) then
           begin
             JLayer := JLayers.Items[i] as TJSONObject;
+            if Irregular then
+            begin
+              if not S.Stacks[Idx].Layers[i].P[1].Paired then
+                AddProfile(JLayer, 'thickness_profile', Profiles[n].Thickness);
+              if not S.Stacks[Idx].Layers[i].P[2].Paired then
+                AddProfile(JLayer, 'sigma_profile', Profiles[n].Sigma);
+              if not S.Stacks[Idx].Layers[i].P[3].Paired then
+                AddProfile(JLayer, 'density_profile', Profiles[n].Density);
+              Continue;
+            end;
             AddProfile(JLayer, 'thickness_profile', Profiles[n].Thickness);
             if VariesOverPeriods(Profiles[n].Sigma) then
               AddProfile(JLayer, 'sigma_profile', Profiles[n].Sigma);
@@ -2100,6 +2707,8 @@ begin
     Result.AddPair('ksxr', JSONArgs.Num(FromSingle(Req.Fit.Ksxr)));
     Result.AddPair('poly_factor', TJSONNumber.Create(Req.Fit.PolyFactor));
     Result.AddPair('poly_order', TJSONNumber.Create(Req.Fit.MaxPOrder));
+    Result.AddPair('period_smooth', TJSONBool.Create(Req.Fit.Smooth));
+    Result.AddPair('period_smooth_window', TJSONNumber.Create(Req.Fit.SmoothWindow));
     Result.AddPair('device', Req.Device);
   except
     Result.Free;
@@ -2125,7 +2734,9 @@ begin
   Result.MinLimit := Req.RMin;
 
   // [FIT] Mode: 0 irregular, 1 periodic, 2 poly - the engine that ran.
-  if Req.Profile then
+  if Req.Irregular then
+    Result.FitMode := 0
+  else if Req.Profile then
     Result.FitMode := 2
   else
     Result.FitMode := 1;
@@ -2171,8 +2782,12 @@ begin
     P.Note := Format('fit_xrr on %s, intensities x %g', [Req.DataTitle, Req.Scale]);
   if Req.SmoothPasses > 0 then
     P.Note := P.Note + Format(', Data - Smooth x %d', [Req.SmoothPasses]);
+  { An irregular fit's periods are the layers' tables, which the GUI expands
+    only while the model has a Table extension: the one it attaches after an
+    irregular fit (TfrmProjectPanel.CreateProfileExtension). }
   P.XRCData    := StructureToXRCData(Fitted, Req.Info);
   P.Extensions := FitExtensions(Poly);
+  P.TableExtension := Req.Irregular;
   P.CalcCurve  := CalcCurve;
   P.DataTitle  := Req.DataTitle;
   P.DataCurve  := Req.Data;
@@ -2189,7 +2804,7 @@ var
   FS, StartFS, Fitted: TFitStructure;
   Poly: TProfileFunctions;
   Model: TLayeredModel;
-  Profiles: TArray<TLayerProfile>;
+  Profiles, StartProfiles: TArray<TLayerProfile>;
   MovAvgCurve, CalcCurve, StartCalcCurve, Residual: unit_Types.TDataArray;
   Chi2, Chi2Recalc, Chi2Start, Scale: Double;
   Chi2Plain, Chi2StartPlain: Double;
@@ -2225,7 +2840,7 @@ begin
     computing it twice would be a second pass over every point.
     BuildLayeredModel makes the same expanded model TLFPSO_BASE.FillModel does,
     and ScanOnData hands it to a TCalc, which frees it. }
-  StartCalcCurve := ScanOnData(Req, BuildLayeredModel(Req.Structure),
+  StartCalcCurve := ScanOnData(Req, BuildLayeredModel(Req.Structure, Req.StartProfiles),
                                MovAvgCurve, Chi2Start, Chi2StartPlain,
                                ScaleLogStart, ClampedStart);
 
@@ -2241,6 +2856,14 @@ begin
   begin
     L := TLFPSO_Poly.Create;
     EngineName := 'TLFPSO_Poly';
+  end
+  else if Req.Irregular then
+  begin
+    if Req.StartProfiles then
+      L := TLFPSO_IrregularFromTable.Create
+    else
+      L := TLFPSO_Irregular.Create;
+    EngineName := 'TLFPSO_Irregular';
   end
   else
   begin
@@ -2277,7 +2900,12 @@ begin
       if Runner.CancelSeen then
         Exit;
 
-      Fitted := L.Structure;
+      { The irregular engine hands back its own flattened structure, one stack
+        of every physical layer; the result reports the start model's shape. }
+      if Req.Irregular then
+        Fitted := UnflattenIrregular(Req.Structure, L.Structure)
+      else
+        Fitted := L.Structure;
       Poly := L.Polynomes;
       Chi2 := L.BestChiSquare;
       Model := L.Result;                // a fresh model; ScanOnData frees it
@@ -2290,10 +2918,10 @@ begin
 
     { Model is ours until ScanOnData hands it to a TCalc. }
     try
-      { Read off the expanded model while it is still ours: a gradient fit puts
-        the per-period thicknesses nowhere else. A plain periodic fit repeats
-        one thickness per period and has no profile to report. }
-      if Req.Profile then
+      { Read off the expanded model while it is still ours: a gradient or an
+        irregular fit puts the per-period values nowhere else. A plain periodic
+        fit repeats one thickness per period and has no profile to report. }
+      if Req.Profile or Req.Irregular then
         Profiles := CollectLayerProfiles(Model);
     except
       Model.Free;
@@ -2326,6 +2954,10 @@ begin
   FillEngineDensities(Fitted, Req.Lambda);
   Req.Structure.CopyContent(StartFS);
   FillEngineDensities(StartFS, Req.Lambda);
+  if Req.Irregular then
+    SetFittedTables(Fitted, Profiles);
+  if Req.StartProfiles then
+    StartProfiles := TableProfiles(StartFS);
 
   Residual := ResidualCurve(Req.Data, CalcCurve, ScaleLogFit);
   WriteCurveFile(CalcPath, CalcCurve, 'theta_deg', 'R');
@@ -2360,16 +2992,23 @@ begin
       JSONArgs.NumArr(TArray<Double>.Create(Req.ThetaMin, Req.ThetaMax)));
     Res.AddPair('resolution_deg', JSONArgs.Num(Req.Resolution));
     Res.AddPair('polarization', Req.PolarizationName);
+    Res.AddPair('mode', Req.Mode);
     Res.AddPair('engine', EngineName);
+    if Req.Irregular then
+    begin
+      Res.AddPair('start_profiles', TJSONBool.Create(Req.StartProfiles));
+      Res.AddPair('free_values', TJSONNumber.Create(FreeValueCount(Req)));
+    end;
     Res.AddPair('device_used', DeviceUsed);
     if GpuError <> '' then
       Res.AddPair('gpu_error', GpuError);
-    Res.AddPair('start_structure', StructureToJSON(StartFS, Req.Info));
+    Res.AddPair('start_structure',
+      FittedStructureJSON(StartFS, Req.Info, StartProfiles, True));
     Res.AddPair('fitted_structure',
-      FittedStructureJSON(Fitted, Req.Info, Profiles));
+      FittedStructureJSON(Fitted, Req.Info, Profiles, Req.Irregular));
     Res.AddPair('bounds_used', BoundsUsedJSON(Req.FreeParams, Req.PeriodRefs, Req.Info));
-    Res.AddPair('out_of_bounds', OutOfBoundsJSON(Req, Fitted));
-    Res.AddPair('period_mode', PeriodModeJSON(Req, Fitted));
+    Res.AddPair('out_of_bounds', OutOfBoundsJSON(Req, Fitted, Profiles));
+    Res.AddPair('period_mode', PeriodModeJSON(Req, Fitted, StartProfiles, Profiles));
     Res.AddPair('profiles', ProfilesJSON(Poly, Req.Info, Req.FreeParams));
 
     JFiles := TJSONObject.Create;
@@ -2431,6 +3070,10 @@ begin
     RepInp.Calculated := CalcCurve;
     RepInp.Lambda := Req.Lambda;
     RepInp.Period := ReportPeriod(Fitted, Req.Info);
+    { An irregular fit has a period per repetition; the orders sit at the
+      mean one. }
+    if Req.Irregular and (Req.Info.PeriodicStackIndex >= 0) then
+      RepInp.Period := MeanOf(PeriodsOf(Profiles, Req.Info.PeriodicStackIndex));
     RepInp.ThetaC := CriticalAngleDeg(Fitted, Req.Lambda);
     Report := FitReportJSON(RepInp);
     Res.AddPair('report', Report);        // Res owns it from here on
@@ -2447,11 +3090,13 @@ begin
     Report.AddPair('scale_solved', JSONArgs.Num(Req.Scale * Power(10, ScaleLogFit)));
     Report.AddPair('scale_clamped', TJSONBool.Create(ClampedFit));
     Report.AddPair('scale_start_ratio', JSONArgs.Num(Power(10, ScaleLogStart)));
-    Report.AddPair('near_bounds', NearBoundsJSON(Req, Fitted));
+    Report.AddPair('near_bounds', NearBoundsJSON(Req, Fitted, Profiles));
 
     RepInp.Measured := ScaledCurve(Req.Data, ScaleLogStart);
     RepInp.Calculated := StartCalcCurve;
     RepInp.Period := ReportPeriod(StartFS, Req.Info);
+    if Req.StartProfiles and (Req.Info.PeriodicStackIndex >= 0) then
+      RepInp.Period := MeanOf(PeriodsOf(StartProfiles, Req.Info.PeriodicStackIndex));
     RepInp.ThetaC := CriticalAngleDeg(StartFS, Req.Lambda);
     Report.AddPair('start', FitReportJSON(RepInp));
 

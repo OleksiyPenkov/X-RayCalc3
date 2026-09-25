@@ -66,7 +66,7 @@ const
     'the cap), the last entry is nearest the substrate; cap is the top layer; buffer ' +
     'sits between substrate and the first stack';
 
-  FIT_ENGINE = 'GUI LFPSO (TLFPSO_Periodic / TLFPSO_Poly)';
+  FIT_ENGINE = 'GUI LFPSO (TLFPSO_Periodic / TLFPSO_Poly / TLFPSO_Irregular)';
 
   { The definition lives in the unit that computes it, so describe_server and
     every fit_xrr result can never describe two different chi-squareds. }

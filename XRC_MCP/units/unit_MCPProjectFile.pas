@@ -126,6 +126,10 @@ type
     Note: string;                       // the model node's Description
     XRCData: string;                    // the GUI structure string (TXRCStructure.ToString)
     Extensions: TArray<TXRCXProfileExt>;
+    { A "Table" extension under the model: the GUI expands the layers'
+      per-period tables (the Profile* strings of XRCData) only while one is
+      attached, and attaches it after an irregular fit. }
+    TableExtension: Boolean;
     CalcCurve: unit_Types.TDataArray;   // calc.dat
     DataTitle: string;                  // '' = the project has no data node
     DataCurve: unit_Types.TDataArray;   // data_<id>.dat, theta
@@ -698,6 +702,25 @@ begin
         PD.SetPoly(Coeffs);
       end;
 
+      { The node TfrmProjectPanel.CreateProfileExtension(True) adds after an
+        irregular fit, field for field. }
+      if P.TableExtension then
+      begin
+        Node := Tree.AddChild(ModelNode, nil);
+        PD := Tree.GetNodeData(Node);
+        PD.Title := 'Table';
+        PD.Description := '';
+        PD.Data := '';
+        PD.Group := gtModel;
+        PD.RowType := prExtension;
+        PD.Enabled := True;
+        PD.FromFit := True;
+        PD.ExtType := etTable;
+        PD.StackID := -1;
+        PD.LayerID := -1;
+        PD.Form := ffNone;
+      end;
+
       GroupNode := Tree.AddChild(nil, nil);
       PD := Tree.GetNodeData(GroupNode);
       PD.Title := 'Data';
@@ -801,10 +824,13 @@ begin
           Format('model_%d.bin', [PD.ID]));
 
       SetLength(P.Extensions, 0);
+      P.TableExtension := False;
       Child := Tree.GetFirstChild(Chosen);
       while Child <> nil do
       begin
         PD := Tree.GetNodeData(Child);
+        if (PD.RowType = prExtension) and (PD.ExtType = etTable) then
+          P.TableExtension := True;
         if (PD.RowType = prExtension) and (PD.ExtType = etFunction) then
         begin
           Ext := Default(TXRCXProfileExt);

@@ -530,6 +530,20 @@ begin
   AddProp(Result, 'poly_order', 'integer',
     Format('Order of the per-period polynomial in a "profile" fit (default %d).',
       [DEF_POLY_ORDER]));
+  AddProp(Result, 'period_smooth', 'boolean',
+    'The GUI''s Smooth box of an irregular fit (default false; "mode": ' +
+    '"irregular" only). After every move the engine replaces each unpaired ' +
+    'parameter''s values over the periods of its stack by their moving ' +
+    'average over period_smooth_window + 1 periods, so neighbouring periods ' +
+    'cannot differ by more than the average allows. Paired parameters are one ' +
+    'value already and are left alone, so with every parameter paired it ' +
+    'changes nothing. The result echoes it in optimizer_used.');
+  AddProp(Result, 'period_smooth_window', 'integer',
+    Format('The GUI''s Smoothing window for "period_smooth" (default %d = ' +
+      'automatic: a tenth of the periods of each stack, at least 1). A whole ' +
+      'number from 1 to half the periods of the shortest repeating stack. ' +
+      'Held parameters are not smoothed. Only with "period_smooth": true.',
+      [DEF_PERIOD_SMOOTH_WINDOW]));
   AddEnumProp(Result, 'device',
     'Where the swarm is evaluated (default "auto"): "auto" uses the GPU when ' +
     'describe_server.server.gpu names one and the CPU otherwise, "cpu" never ' +
@@ -778,20 +792,57 @@ begin
     FitChi2Schema);
   AddRefProp(Schema, 'paired',
     'Which layer parameters keep one value over all the periods of a ' +
-    '"profile" fit instead of getting a polynomial of their own - the GUI''s ' +
-    'Paired boxes, the HP / SP / RP flags of the project file (default [], ' +
-    'every parameter free to vary from period to period). The laboratory''s ' +
-    'practice on a multilayer is ["sigma", "density"]: the thicknesses carry ' +
-    'the gradient and the roughness and the density are one number per layer, ' +
-    'which is what "stack locking" means in the 2024 paper. An item is a bare ' +
-    'parameter name, which pairs it in every layer, or {"stack", "layer", ' +
-    '"parameters"} addressed as in "free". Refused with "invalid_argument" ' +
-    'without "profile": true, where it would mean nothing. The result lists ' +
-    'what was paired in "paired".', ArraySchema(FitPairedItemSchema));
+    '"profile" or "irregular" fit instead of getting a polynomial, or a value ' +
+    'in every period, of their own - the GUI''s Paired boxes, the HP / SP / RP ' +
+    'flags of the project file (default [], every parameter free to vary from ' +
+    'period to period). The laboratory''s practice on a multilayer is ' +
+    '["sigma", "density"]: the thicknesses carry the gradient and the ' +
+    'roughness and the density are one number per layer, which is what ' +
+    '"stack locking" means in the 2024 paper. An item is a bare parameter ' +
+    'name, which pairs it in every layer, or {"stack", "layer", "parameters"} ' +
+    'addressed as in "free", so that each layer can pair different ' +
+    'parameters. Refused with "invalid_argument" in "mode": "periodic", where ' +
+    'it would mean nothing. The result lists what was paired in "paired".',
+    ArraySchema(FitPairedItemSchema));
+  AddEnumProp(Schema, 'mode',
+    'Which of the GUI''s three fitting engines runs (default "periodic"). ' +
+    '"periodic" (TLFPSO_Periodic): one value per layer, repeated in every ' +
+    'period. "profile" (TLFPSO_Poly): a polynomial of each parameter over the ' +
+    'periods of the one repeating stack - see "profile". "irregular" ' +
+    '(TLFPSO_Irregular): every repeating stack is expanded into its periods ' +
+    'and each period''s layers are fitted on their own, all with the bounds ' +
+    'of their layer and, unless "start_profiles", the same start value. A ' +
+    'parameter in "paired" keeps one value in every period; the others are ' +
+    'free in each. Needs at least one stack with N > 1. The period floats (no ' +
+    '"period" target). The result gives, on each layer of a repeating stack in ' +
+    '"fitted_structure", "thickness_profile", "sigma_profile" and ' +
+    '"density_profile" for every parameter that is not paired - N values, ' +
+    'surface end first, as in a profile fit - and the layer''s plain value is ' +
+    'period 1''s, as the GUI writes it back. near_bounds and out_of_bounds ' +
+    'check every period, naming it by "period_index" (the index into the ' +
+    'profile array), and "free_values" counts the values searched: a free ' +
+    'parameter counts once per period, or once when paired. fit.xrcx opens ' +
+    'in the GUI in Irregular mode with the ' +
+    'periods in its Table. See also optimizer.period_smooth.',
+    [FIT_MODE_PERIODIC, FIT_MODE_PROFILE, FIT_MODE_IRREGULAR]);
+  AddProp(Schema, 'start_profiles', 'boolean',
+    'Irregular mode only: start each period from its own value instead of ' +
+    'from the layer''s single value. The values are read from the ' +
+    '"thickness_profile", "sigma_profile" and "density_profile" arrays on the ' +
+    'layers of "structure" - N values, surface end first - which is how a ' +
+    'previous irregular or profile result reports them, so its ' +
+    '"fitted_structure" can be sent back as "structure" to continue the fit. ' +
+    'A parameter without an array starts every period from its single value; ' +
+    'a paired one may not have an array. A free parameter must lie inside its ' +
+    'bounds in every period; a held one is held at each period''s own value. ' +
+    'In irregular mode a structure that carries such arrays needs this set ' +
+    'either way: false starts every period from the single value and ignores ' +
+    'the arrays. The result''s "start_structure" carries the start arrays.');
   AddProp(Schema, 'profile', 'boolean',
+    'The older spelling of "mode": "profile" (default false). ' +
     'Fit a polynomial profile of each parameter over the periods of the ' +
-    'repeating stack (TLFPSO_Poly) instead of one value per layer (default ' +
-    'false). It needs exactly one stack with N > 1, and reports the ' +
+    'repeating stack (TLFPSO_Poly) instead of one value per layer. ' +
+    'It needs exactly one stack with N > 1, and reports the ' +
     'coefficients in "profiles" and, on each layer of "fitted_structure", ' +
     'the per-period values: "thickness_profile" always, "sigma_profile" and ' +
     '"density_profile" where those vary over the periods (not paired). Each ' +
@@ -830,14 +881,18 @@ begin
     'be fitted: the substrate is not in the engine''s particle vector and ' +
     'there are no scale, background or resolution parameters, so asking for ' +
     'those is refused with "not_fittable" ("scale" is accepted as a fixed ' +
-    'multiplier of the data instead). By default a repeating stack keeps the ' +
+    'multiplier of the data instead). "mode" picks the GUI''s fitting mode: ' +
+    '"periodic" (the default), "profile" (a polynomial of each parameter over ' +
+    'the periods) or "irregular" (every period of a repeating stack fitted on ' +
+    'its own, "paired" parameters excepted). ' +
+    'By default a repeating stack keeps the ' +
     'period of the start model - the engine rescales its layers after every ' +
     'move - so fitting the thicknesses of such a stack fits the ratio between ' +
     'them at a fixed period; free the period ("target":"period" in "free", ' +
     'bounds in Angstrom) to fit d itself, for example from the Bragg peaks ' +
     'calc_reflectivity reports. The result says in "period_mode" how each ' +
-    'repeating stack was treated (held, free, or floating in a profile fit, ' +
-    'where the polynomial engine never holds the period), echoes the bounds ' +
+    'repeating stack was treated (held, free, or floating in a profile or ' +
+    'irregular fit, where the engine never holds the period), echoes the bounds ' +
     'the fit ran with in "bounds_used", and lists in "out_of_bounds" every ' +
     'fitted value that lies outside them - an empty list, as the engine ' +
     'keeps every value inside the bounds given. ' +
