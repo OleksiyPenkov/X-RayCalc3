@@ -1796,6 +1796,7 @@ procedure TfrmProjectPanel.CreateDefaultProject;
 var
   PD: PProjectData;
   PG: PVirtualNode;
+  WasIgnoring: Boolean;
 begin
   { These point into the nodes FProject.Clear frees, and CreateNewModel's
     RefreshChartLegend below already has listeners reading them. }
@@ -1804,7 +1805,21 @@ begin
   FProject.ActiveModel := nil;
   Inc(FProjectSerial);
   FChartMgr.ClearAll;
-  FProject.Clear;
+
+  { FProject.Clear fires OnChange once its nodes are gone. ProjectChange would
+    then save the live structure - already cleared by NewProject, its substrate
+    freed - into LastNode, a node Clear has just freed: ToString copied the
+    freed substrate's layer data from address 0 (File - New, 3.9.4.1070). }
+  LastNode := nil;
+  FLastModel := nil;
+  FLastData := nil;
+  WasIgnoring := FIgnoreFocusChange;
+  FIgnoreFocusChange := True;
+  try
+    FProject.Clear;
+  finally
+    FIgnoreFocusChange := WasIgnoring;
+  end;
   Structure.AddSubstrate('Si', 5, 2.2);
 
   FLastID := 1;
@@ -1822,6 +1837,11 @@ begin
 
   CreateNewModel(FModelsRoot);
   FProject.Expanded[PG] := True;
+  { The new model is the one in hand, as RecoverProjectTree leaves a loaded
+    project: gradients and fit extensions are hung off FLastModel. }
+  LastNode := FProject.GetFirstChild(FModelsRoot);
+  FLastModel := LastNode;
+  FLastData := FProject.ActiveModel;
 
   PG := FProject.AddChild(Nil, Nil);
   PD := FProject.GetNodeData(PG);
