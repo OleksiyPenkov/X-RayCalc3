@@ -1952,6 +1952,8 @@ begin
     FIgnoreFocusChange := WasIgnoring;
   end;
   Structure.AddSubstrate('Si', 5, 2.2);
+  { Before CreateNewModel builds the stacks, which take their pairing from it. }
+  Structure.PeriodicMode := FCalcSettings.FittingMode = fmPeriodic;
 
   FLastID := 1;
   FFitRecord := '';

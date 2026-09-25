@@ -238,6 +238,7 @@ begin
   SetLength(FStacks, Count + 1);
   FStacks[Count] := TXRCStack.Create(Box, Title, N, FTargetDPI);
   FStacks[Count].ID := Count;
+  FStacks[Count].EnablePairing(not FPeriodicMode);
 
   RealignStacks;
 end;
@@ -329,6 +330,8 @@ constructor TXRCStructure.Create(AOwner: TComponent; const DPI: integer);
 begin
   inherited Create(AOwner);
   FTargetDPI := DPI;
+  { Pairing stays off until the owner sets the fitting mode, as it always did. }
+  FPeriodicMode := True;
   Align := alClient;
   BorderInner := fsNone;
   BorderOuter := fsNone;
@@ -526,6 +529,7 @@ begin
   Insert(Nil, FStacks, pos);
 
   FStacks[Pos] := TXRCStack.Create(Box, Title, N, FTargetDPI);
+  FStacks[Pos].EnablePairing(not FPeriodicMode);
 
   // Inserting shifts every stack after Pos down by one, so all IDs must be
   // renumbered - not just the new stack's. Layers cache their StackID and post
@@ -691,10 +695,16 @@ begin
     FStacks[i].Increment := Value;
 end;
 
+{ Remembered, so that every stack built later - by FromString on a tree
+  selection, Edit model text, Undo, Calc all models or a DPI change, or by
+  AddStack/InsertStack - gets the same pairing. Only the stacks alive at the
+  moment of the call used to get it, and every rebuild came back with the
+  Paired boxes disabled in Irregular and Polynomial mode. }
 procedure TXRCStructure.SetPeriodicMode(const Value: boolean);
 var
   Stack: TXRCStack;
 begin
+  FPeriodicMode := Value;
   for Stack in FStacks do
     Stack.EnablePairing(not Value);
 end;
