@@ -83,16 +83,32 @@
 <h3>Density (&rho;)</h3>
 <p>Bar chart showing the density of each layer, with the applied density profile overlaid.</p>
 
+<p>The three bar charts show the values the calculation uses in every period: a <a href="Profiles.html">gradient extension</a> is drawn period by period (the last gradient aimed at a parameter wins), and an enabled Table is drawn for an unpaired parameter of a repeating stack when it covers all N periods. A graded stack is therefore no longer drawn flat at the layer's own value.</p>
+
 <h3>Profile</h3>
-<p>Electron density (or refractive index) profile as a function of depth into the structure. This gives a physical picture of the complete multilayer structure.</p>
+<p>The mass density (g/cm&sup3;) as a function of depth (&Aring;) from the surface down, each interface drawn as an error function of its roughness &sigma;. It follows the same per-period values as the bar charts, gradients included, so it shows the structure that is calculated. <strong>Copy</strong> puts the depth and density columns on the clipboard.</p>
 
 <h3>Convergence</h3>
-<p>During fitting, this chart shows the &chi;&sup2; value vs. iteration number. Use this to monitor convergence:</p>
+<p>During fitting, this chart shows the best &chi;&sup2; found so far vs. iteration number. Use this to monitor convergence:</p>
 <ul>
   <li>A steadily decreasing curve indicates good convergence</li>
   <li>Plateaus may indicate local minima (shake/re-initialization helps escape these)</li>
-  <li>Sudden jumps up indicate a shake event</li>
+  <li>An orange triangle marks each iteration at which the swarm was shaken</li>
+  <li><strong>Worst</strong> (shown with the first fit) adds a grey dashed line: the highest &chi;&sup2; among the swarm's particles in each iteration. A wide gap between the two lines means the swarm is still spread out; lines that meet mean it has collapsed onto one solution.</li>
+  <li><strong>Resume Fitting</strong> continues the iteration axis instead of starting it again from 0.</li>
+  <li><strong>Copy</strong> puts the iteration and best &chi;&sup2; columns on the clipboard.</li>
 </ul>
+
+<h3>Diagnostics</h3>
+<p>The state of the swarm during a fit, one point per iteration, every curve scaled to 0&ndash;1 so they share one axis (see <a href="Fitting.html#convergence-enhancements">Convergence Enhancements</a>):</p>
+<ul>
+  <li><strong>Diversity</strong> (blue): the spread of the particles' positions, the standard deviation of each free parameter over the swarm divided by its range (Max&nbsp;&minus;&nbsp;Min), averaged in quadrature over the parameters. Below 0.01 the swarm has collapsed and a due shake fires at once.</li>
+  <li><strong>Velocity</strong> (green): the mean particle speed as a fraction of V<sub>max</sub>.</li>
+  <li><strong>Jamming</strong> (orange, dashed): the iterations since the start or the last shake that failed to improve the best, divided by <strong>Jmax</strong>; above 1 (drawn at 1) a shake is due.</li>
+  <li><strong>Levy Scale</strong> (purple): the L&eacute;vy step scale, which falls from 0.1 to 0.01 over the run, drawn 0.01&nbsp;&rarr;&nbsp;0 to 0.1&nbsp;&rarr;&nbsp;1.</li>
+  <li><strong>CFactor</strong> (teal): the <strong>Ad.V</strong> attraction coefficient &omega;<sub>1</sub>&nbsp;+&nbsp;&omega;<sub>2</sub>(1&nbsp;&minus;&nbsp;t/T) (1 with Ad.V off), divided by 2. With <strong>Constriction factor</strong> on the swarm does not use it.</li>
+</ul>
+<p><strong>Copy</strong> puts the iteration and Diversity columns on the clipboard. File&nbsp;&gt;&nbsp;New and opening a project clear the Convergence and Diagnostics pages.</p>
 
 <h2 id="peak-analysis">Peak Analysis</h2>
 <p>The Chart Info bar reads the active model's calculated curve, not the measured data, over the chart's visible x range. It is recomputed after every calculation and every zoom:</p>

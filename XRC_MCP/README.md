@@ -183,7 +183,8 @@ repeating layer of `fitted_structure` for every unpaired parameter; the layer's 
 free parameter and name it by `period_index`; `free_values` counts the values searched. `fit.xrcx`
 opens in Irregular mode with the periods in a Table extension. `"start_profiles": true` starts each
 period from the `*_profile` arrays in `"structure"`, so a previous result's `fitted_structure` can be
-sent back to continue the fit (the GUI's Run and Resume start every period from the single value);
+sent back to continue the fit (since 5a4c81b the GUI does the same from the model's Table while it is on, and
+fit_xrr's `start_profiles` uses the same engine switch);
 in irregular mode a structure carrying such arrays must say `true` or `false`. At the defaults the
 irregular engine needs a large swarm: seeding every period of every particle within +/-30 % makes
 each particle a different multilayer (Ru/C 10 x 2 probe: 30 x 15 does not beat the start, the

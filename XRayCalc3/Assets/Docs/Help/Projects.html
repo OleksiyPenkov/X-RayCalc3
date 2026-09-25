@@ -46,7 +46,8 @@
 <h2 id="creating-a-new-project">Creating a New Project</h2>
 <ol>
   <li>Choose <strong>File &gt; New project</strong> (or click the <img src="images/icons/01_New.png" alt="New" class="icon"> <strong>New</strong> toolbar button).</li>
-  <li>An empty project is created with no models or data.</li>
+  <li>The program asks <strong>Save the current project before starting a new one?</strong> (see below).</li>
+  <li>A new, untitled project is created: one model holding a bare Si substrate, no data, and empty profile, Convergence and Diagnostics pages.</li>
 </ol>
 
 <h2 id="opening-a-project">Opening a Project</h2>
@@ -54,6 +55,15 @@
   <li><strong>File &gt; Open project ...</strong> &mdash; browse for a <code>.xrcx</code> file</li>
   <li><strong>File &gt; Recent projects</strong> &mdash; select from up to 10 recently opened projects</li>
   <li><img src="images/icons/02_OpenProject.png" alt="Open" class="icon"> <strong>Open toolbar button</strong> &mdash; click the dropdown arrow for recent projects</li>
+</ul>
+<p>Once the file is chosen, the program asks <strong>Save the current project before opening another one?</strong> before the current project is replaced. The <img src="images/icons/03_Reopen.png" alt="Reopen" class="icon"> <strong>Reopen</strong> toolbar button, which reloads the current project from its file, does not ask.</p>
+
+<h3 id="save-before">Save / Don't save / Cancel</h3>
+<p>The program does not track changes, so New, Open and a recent project always ask (Exit only asks <strong>Exit X-Ray Calc 3?</strong> and does not offer to save):</p>
+<ul>
+  <li><strong>Save</strong> saves the current project (<strong>Save project As</strong> for an untitled one) and then goes on. Cancelling the Save As dialog cancels the command too.</li>
+  <li><strong>Don't save</strong> goes on without saving; unsaved results are lost.</li>
+  <li><strong>Cancel</strong> (or Esc) keeps the current project open.</li>
 </ul>
 
 <h2 id="saving-a-project">Saving a Project</h2>

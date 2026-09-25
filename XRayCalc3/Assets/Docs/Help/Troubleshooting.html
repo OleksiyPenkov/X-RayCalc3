@@ -25,6 +25,7 @@
   <div class="page-toc-title">On this page</div>
   <ul>
     <li><a href="#application-crashes-without-error-message">Application crashes without error message</a></li>
+    <li><a href="#unexpected-error-report">An &ldquo;Unexpected Error&rdquo; report appears</a></li>
     <li><a href="#choosing-between-x32-and-x64">Choosing between x32 and x64</a></li>
     <li><a href="#the-application-shows-a-project-locked-message">Old project folders pile up in the temp folder</a></li>
     <li><a href="#fitting-does-not-converge">Fitting does not converge</a></li>
@@ -38,6 +39,10 @@
 <h2 id="application-crashes-without-error-message">Application crashes without error message</h2>
 <p>This is typically caused by running out of memory when solving very large fitting problems (many layers or a very large population size).</p>
 <p><strong>Solution:</strong> Use the <strong>x64 version</strong> (<code>XRayCalc3.x64.exe</code>). It is somewhat slower than the x32 version for small models, but can address much larger amounts of RAM. The x32 version is limited to approximately 2 GB of memory.</p>
+
+<h2 id="unexpected-error-report">An &ldquo;Unexpected Error&rdquo; report appears</h2>
+<p>An error the program does not handle itself opens the <strong>X-Ray Calc 3 - Unexpected Error</strong> window. The report gives the version, the platform (x32 or x64), Windows and the memory (total, available, load), the error class, its message and where it happened, and the call stack at the moment the error was raised, as offsets into the program's module (since 3.9.4.1090). The same text is written to <code>crash_&lt;date&gt;_&lt;time&gt;.log</code> in the <code>Logs</code> folder of the settings folder (<code>%APPDATA%\X-RayCalc3\Logs\</code> by default).</p>
+<p><strong>What to do:</strong> click <strong>Copy Report</strong> and send the text, with what you were doing and, if you can, the project, to the developer. The call stack is read against the map file of the same build, so give the exact version from the report. <strong>Close</strong> returns to the program, but save the project under a new name before going on: the operation that failed may have left it half done.</p>
 
 <h2 id="choosing-between-x32-and-x64">Choosing between x32 and x64</h2>
 <p>Both versions are included in the distribution:</p>
