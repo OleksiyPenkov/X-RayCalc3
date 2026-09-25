@@ -49,6 +49,7 @@ type
     [Test] procedure Orders_BelowTheBackground_AreNotVisible;
     [Test] procedure Bands_ConstantRatio_IsTheSameInEveryBand;
     [Test] procedure Edge_HasThreePointsBeforeTheFirstMinimum;
+    [Test] procedure Edge_PlateauWiggleIsNotTheFirstMinimum;
     [Test] procedure Fringes_PairEverySecondaryMaximumWithTheMinimumAfterIt;
     [Test] procedure Fringes_ContrastIsLocalAndNotTheFallBetweenTheOrders;
     [Test] procedure Fringes_BothCurvesAreReadAtTheSamePositions;
@@ -395,6 +396,50 @@ begin
         'an edge point is before the first minimum');
       Assert.AreEqual(Double(1), P.GetValue<Double>('ratio'), 1E-9,
         'the same curve twice agrees with itself');
+    end;
+  finally
+    Rep.Free;
+  end;
+end;
+
+
+{ CoC5's fitted curve: a plateau that dips 0.1 % at theta 0.207, between the
+  C and Co critical angles, then the edge from 0.25 with fringes. The first
+  minimum is the first fringe's, past the edge; the wiggle is not one (it
+  took the whole edge window until 3.9.4). }
+procedure TTestMCPFitReport.Edge_PlateauWiggleIsNotTheFirstMinimum;
+var
+  C: TDataArray;
+  Rep, Edge, P: TJSONObject;
+  Points: TJSONArray;
+  i: Integer;
+  T: Double;
+begin
+  SetLength(C, 267);
+  for i := 0 to High(C) do
+  begin
+    T := 0.20225 + i * 0.0015;
+    C[i].t := T;
+    if T < 0.25 then
+      C[i].r := 0.837 * (1 - 0.001 * Exp(-Sqr((T - 0.207) / 0.003)))
+    else
+      C[i].r := 0.837 * Exp(-(T - 0.25) * 20) *
+                (1 + 0.3 * Sin(2 * Pi * (T - 0.25) / 0.04 - Pi / 2) + 0.3);
+  end;
+  Rep := FitReportJSON(InputOf(C, C, 0, 0));
+  try
+    Assert.IsTrue(Rep.GetValue('edge') is TJSONObject, '"edge" is an object');
+    Edge := Rep.GetValue('edge') as TJSONObject;
+    Assert.IsTrue(Edge.GetValue<Double>('first_min_deg') > 0.25,
+      Format('the first minimum is past the edge: %.5f', [Edge.GetValue<Double>('first_min_deg')]));
+    Points := Edge.GetValue('points') as TJSONArray;
+    Assert.AreEqual(REPORT_EDGE_POINTS, Points.Count);
+    for i := 1 to Points.Count - 1 do
+    begin
+      P := Points.Items[i] as TJSONObject;
+      Assert.IsTrue(P.GetValue<Double>('theta_deg') >
+        (Points.Items[i - 1] as TJSONObject).GetValue<Double>('theta_deg'),
+        'three distinct edge points');
     end;
   finally
     Rep.Free;

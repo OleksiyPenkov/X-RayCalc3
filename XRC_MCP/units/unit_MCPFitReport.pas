@@ -268,14 +268,24 @@ end;
 /// The first minimum of the calculated curve: the foot of the plateau edge,
 /// where the total-reflection region ends and the first fringe begins.
 /// -1 when the curve only falls.
+/// A minimum counts once the curve has risen REPORT_FRINGE_HYSTERESIS above
+/// it, the rule the fringe finder uses: a multilayer's plateau can wiggle by a
+/// fraction of a per cent between the critical angles of its materials
+/// (CoC5: 0.1 % at theta 0.207), and taking the first such wiggle for the
+/// first fringe put every edge point on the plateau (until 3.9.4).
 function FirstMinimumIndex(const C: unit_Types.TDataArray): Integer;
 var
-  i: Integer;
+  i, MinIdx: Integer;
 begin
   Result := -1;
-  for i := 1 to High(C) - 1 do
-    if (C[i].r < C[i - 1].r) and (C[i].r <= C[i + 1].r) then
-      Exit(i);
+  if Length(C) = 0 then
+    Exit;
+  MinIdx := 0;
+  for i := 1 to High(C) do
+    if C[i].r < C[MinIdx].r then
+      MinIdx := i
+    else if (C[MinIdx].r > 0) and (C[i].r > REPORT_FRINGE_HYSTERESIS * C[MinIdx].r) then
+      Exit(MinIdx);
 end;
 
 /// Three points evenly spaced over the plateau edge - at a quarter, a half and
