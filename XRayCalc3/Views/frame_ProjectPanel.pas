@@ -899,6 +899,12 @@ begin
       if Data.ID = LinkedID then
         FProject.LinkedData := Data;
 
+      { Models and data share one ID space, and a data curve's file is named
+        after its ID: the next free ID has to clear the data too, or the next
+        curve loaded takes an existing curve's ID and overwrites its file. }
+      if Data.ID >= FLastID then
+        FLastID := Data.ID + 1;
+
       FChartMgr.AddSeries(Data);
       SeriesFromFile(FChartMgr.Series[Data.CurveID], DataName(Data), s);
       FChartMgr.Series[Data.CurveID].Active := Data.Visible;
