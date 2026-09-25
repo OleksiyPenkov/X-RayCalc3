@@ -731,27 +731,32 @@ var
   Order: TArray<Integer>;
   Place: Integer;
 begin
-  { Nothing selected: a click on the tree's empty space, or the moment after
-    a delete. The menu was also run for its shortcuts, so F3 (then Enabled's,
-    now File - Open project's alone) raised an access violation here with the
-    tree focused and nothing selected (3.9.4.1170). }
+  { Every item hidden first, then each kind of node shows its own: set per
+    kind, a group or folder kept Normalize, Copy data and Export Data from the
+    data item right-clicked before it. }
+  pmiEnabled.Visible   := False;
+  pmiVisible.Visible   := False;
+  pmiLinked.Visible    := False;
+  pmiDrawOrder.Visible := False;
+  pmiNorm.Visible      := False;
+  pmCopytoclipboard.Visible := False;
+  pmExporttofile.Visible    := False;
+
+  { Nothing selected: a click on the tree's empty space, or after a delete.
+    A shortcut of this menu runs this handler too (TMenu.IsShortCut clicks
+    the menu's root item, which pops it up first), so F3, then the Enabled
+    item's, raised an access violation here with the tree focused and nothing
+    selected (3.9.4.1170). Properties has nothing to show either. }
+  Properties1.Visible := FLastData <> nil;
+  N1.Visible := FLastData <> nil;
+  N5.Visible := FLastData <> nil;
   if FLastData = nil then
-  begin
-    pmiEnabled.Visible   := False;
-    pmiVisible.Visible   := False;
-    pmiLinked.Visible    := False;
-    pmiDrawOrder.Visible := False;
-    pmiNorm.Visible      := False;
-    pmCopytoclipboard.Visible := False;
-    pmExporttofile.Visible    := False;
     Exit;
-  end;
 
   case FLastData.RowType of
     prItem:
       begin
         IsModel := FLastData.IsModel;
-        pmiEnabled.Visible := False;
         pmiVisible.Visible := True;
         pmiVisible.Checked := FLastData.Visible;
         pmiLinked.Visible  := not IsModel;
@@ -770,25 +775,14 @@ begin
       end;
     prExtension:
       begin
-        pmiNorm.Visible := False;
         pmiEnabled.Visible := True;
         pmiEnabled.Checked := FLastData.Enabled;
-        pmiVisible.Visible := False;
-        pmiLinked.Visible  := False;
-        pmiDrawOrder.Visible := False;
         IsProfile := FLastData.ExtType = etTable;
         pmCopytoclipboard.Visible := IsProfile;
         pmExporttofile.Visible    := IsProfile;
       end;
-  else
-    begin
-      { A group or folder: no curve of its own. Its CurveID was never written,
-        so it reads 0 and would act on the first model's curve. }
-      pmiEnabled.Visible   := False;
-      pmiVisible.Visible   := False;
-      pmiLinked.Visible    := False;
-      pmiDrawOrder.Visible := False;
-    end;
+    { A group or folder: no curve of its own. Its CurveID was never written,
+      so it reads 0 and would act on the first model's curve. }
   end;
 end;
 
@@ -814,6 +808,9 @@ end;
 
 procedure TfrmProjectPanel.DeleteModel(Node: PVirtualNode; Data: PProjectData);
 begin
+  { Gradients, Tables and the fit extensions are read from FLastModel. }
+  if Node = FLastModel then
+    FLastModel := nil;
   FChartMgr.DeleteSeries(Data.CurveID);
   FProject.DeleteNode(Node);
   FProject.Repaint;
@@ -841,7 +838,11 @@ begin
   if Node.ChildCount = 0 then
     FProject.DeleteNode(Node)
   else
+  begin
     ShowMessage('The folder is not empty! Can''t delete !');
+    { Left selected, DeleteSelectedItems found it again and asked for ever. }
+    FProject.Selected[Node] := False;
+  end;
 end;
 
 function TfrmProjectPanel.DataName(Data: PProjectData): string;
@@ -1230,6 +1231,8 @@ var
 begin
   Node := FProject.GetFirstSelected;
   Data := FProject.GetNodeData(Node);
+  if Data = nil then   // Properties, or a double-click, with nothing selected
+    Exit;
   case Data.RowType of
     prFolder:
       begin
@@ -1617,7 +1620,12 @@ begin
       DeleteExtension(Node);
     Node := FProject.GetFirstSelected;
   end;
+  { Deleting the selected node fires ProjectChange for that node, which is
+    LastNode, so it exits and leaves FLastData on the freed node; the call
+    below exits too (nil = nil). The popup and its items then read freed
+    memory. }
   LastNode := nil;
+  FLastData := nil;
   ProjectChange(FProject, Nil);
 end;
 
