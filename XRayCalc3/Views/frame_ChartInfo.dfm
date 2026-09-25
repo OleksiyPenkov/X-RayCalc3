@@ -77,7 +77,7 @@
     end
     object RzStatusPane3: TRzStatusPane
       Left = 103
-      Top = 5
+      Top = 4
       Width = 46
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText

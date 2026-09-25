@@ -36,7 +36,7 @@ object frmCalcSettings: TfrmCalcSettings
     StyleElements = [seFont, seClient, seBorder]
     object Label7: TLabel
       Left = 8
-      Top = 29
+      Top = 27
       Width = 46
       Height = 14
       Margins.Left = 3
@@ -48,7 +48,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object Label8: TLabel
       Left = 6
-      Top = 57
+      Top = 55
       Width = 50
       Height = 14
       Margins.Left = 3
@@ -60,7 +60,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object lblPolyOrder: TLabel
       Left = 203
-      Top = 57
+      Top = 55
       Width = 28
       Height = 14
       Margins.Left = 3
@@ -73,7 +73,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object Label21: TLabel
       Left = 193
-      Top = 84
+      Top = 82
       Width = 34
       Height = 16
       Margins.Left = 3
@@ -281,7 +281,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object lblScaleWindow: TLabel
       Left = 375
-      Top = 57
+      Top = 55
       Width = 39
       Height = 14
       Margins.Left = 3
@@ -352,7 +352,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object lblPeriodWindow: TLabel
       Left = 501
-      Top = 85
+      Top = 83
       Width = 11
       Height = 14
       Margins.Left = 3
