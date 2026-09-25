@@ -621,11 +621,15 @@ object frmMain: TfrmMain
           ExplicitTop = 668
           ExplicitWidth = 1363
           inherited spChiScale: TRzStatusPane
-            Width = 744
+            Width = 694
           end
           inherited btnChartScale: TRzBitBtn
             Left = 1282
             ExplicitLeft = 1282
+          end
+          inherited lblMinLimit: TLabel
+            Left = 1228
+            ExplicitLeft = 1228
           end
           inherited cbMinLimit: TRzComboBox
             Left = 1282
