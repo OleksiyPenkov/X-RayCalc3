@@ -313,9 +313,9 @@
     end
     object lblMinLimit: TLabel
       Left = 913
-      Top = 31
+      Top = 25
       Width = 50
-      Height = 16
+      Height = 24
       Hint = 
         'Calculated reflectivity below this value is raised to it in every ' +
         'calculation and fit; the measured data are not changed'
@@ -323,6 +323,7 @@
       Anchors = [akTop, akRight]
       AutoSize = False
       Caption = 'R min'
+      Layout = tlCenter
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -13
