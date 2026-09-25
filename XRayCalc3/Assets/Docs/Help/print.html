@@ -272,7 +272,7 @@
 </ul>
 
 <h3>Status Bar</h3>
-<p>Displays calculation time, fitting time, application version, and platform (x64).</p>
+<p>Displays calculation time, fitting time, application version, and platform (x32 or x64).</p>
 
 <h2 id="menus">Menu Bar</h2>
 <table>
@@ -2418,7 +2418,7 @@ Column 2: reflectivity.</p>
 
 <h2 id="application-crashes-without-error-message">Application crashes without error message</h2>
 <p>This is typically caused by running out of memory when solving very large fitting problems (many layers or a very large population size).</p>
-<p><strong>Solution:</strong> Use the <strong>x64 version</strong> (<code>XRayCalc3.x64.exe</code>). It is somewhat slower than the x32 version for small models, but can address much larger amounts of RAM. The x32 version is limited to approximately 2 GB of memory.</p>
+<p><strong>Solution:</strong> Use the <strong>x64 version</strong> (<code>XRayCalc3.x64.exe</code>). It calculates and fits as fast as the x32 version and can address much larger amounts of RAM. The x32 version is limited to approximately 2 GB of memory.</p>
 
 <h2 id="unexpected-error-report">An &ldquo;Unexpected Error&rdquo; report appears</h2>
 <p>An error the program does not handle itself opens the <strong>X-Ray Calc 3 - Unexpected Error</strong> window. The report gives the version, the platform (x32 or x64), Windows and the memory (total, available, load), the error class, its message and where it happened, and the call stack at the moment the error was raised, as offsets into the program's module (since 3.9.4.1090). The same text is written to <code>crash_&lt;date&gt;_&lt;time&gt;.log</code> in the <code>Logs</code> folder of the settings folder (<code>%APPDATA%\X-RayCalc3\Logs\</code> by default).</p>
@@ -2428,10 +2428,10 @@ Column 2: reflectivity.</p>
 <p>Both versions are included in the distribution:</p>
 <table>
   <tr><th>Version</th><th>Advantage</th><th>Limitation</th></tr>
-  <tr><td><strong>x32</strong> (<code>XRayCalc3.exe</code>)</td><td>~2&times; faster calculation</td><td>Limited to ~2 GB RAM</td></tr>
-  <tr><td><strong>x64</strong> (<code>XRayCalc3.x64.exe</code>)</td><td>Handles large models and populations</td><td>Slower for small models</td></tr>
+  <tr><td><strong>x32</strong> (<code>XRayCalc3.exe</code>)</td><td>The main build</td><td>Limited to ~2 GB RAM</td></tr>
+  <tr><td><strong>x64</strong> (<code>XRayCalc3.x64.exe</code>)</td><td>Handles large models and populations</td><td>&mdash;</td></tr>
 </table>
-<p>Use <strong>x32</strong> for routine calculations with small-to-medium models. Switch to <strong>x64</strong> when working with large multilayer structures, high population sizes, or when you encounter crashes.</p>
+<p>The two calculate and fit at the same speed. Either will do for routine work; switch to <strong>x64</strong> when working with large multilayer structures, high population sizes, or when x32 runs out of memory.</p>
 
 <h2 id="the-application-shows-a-project-locked-message">Old project folders pile up in the temp folder</h2>
 <p>X-Ray Calc 3 does not lock projects and never refuses to open one. Every open project is unpacked into a subfolder of <code>%TEMP%\X-RayCalc3\</code>, and the instance that started first (the one that created <code>temp.lock</code> there) clears that folder when it exits. If that instance did not close normally, <code>temp.lock</code> stays behind and the folder is never cleared again. Close every instance of the program and delete <code>temp.lock</code>; the next start takes it over.</p>
@@ -2455,8 +2455,6 @@ Column 2: reflectivity.</p>
   <li>Ensure multi-threading is enabled (<strong>Settings &gt; Calc &amp; Fit &gt; Auto (Use all)</strong>).</li>
   <li>Reduce the number of calculation points (N) for preliminary calculations. N is used only when no measured curve is linked (or it is hidden); with linked data the model is calculated at the measured angles.</li>
   <li>For fitting, turn on <strong>Settings &gt; Calc &amp; Fit &gt; Use the GPU for fitting</strong> (see <a href="#gpu">GPU Acceleration</a>).</li>
-  <li>Use the <strong>x32 version</strong> for small-to-medium models &mdash; it is approximately 2&times; faster than x64.</li>
-  <li>Use the <strong>x64 version</strong> only when the model is too large for x32 (memory limit).</li>
 </ul>
 
 <h2 id="material-not-found">Material not found</h2>

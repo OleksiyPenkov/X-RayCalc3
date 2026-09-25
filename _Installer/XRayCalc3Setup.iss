@@ -34,7 +34,7 @@ MinVersion=10.0
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; --- Both executables (x32 is faster, x64 handles large models) ---
+; --- Both executables (the same speed; x64 can use more than ~2 GB of RAM) ---
 Source: "deploy\Win64\XRayCalc3.x64.exe";          DestDir: "{app}"; Flags: ignoreversion
 Source: "deploy\Win32\XRayCalc3.exe";               DestDir: "{app}"; Flags: ignoreversion
 
@@ -55,11 +55,16 @@ Source: "deploy\XRayCalc3_x64_Icon.ico";             DestDir: "{app}";          
 
 [Icons]
 Name: "{group}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"
-Name: "{group}\{#MyAppName} x32 (Fast)"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"
+Name: "{group}\{#MyAppName} x32"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"
 Name: "{group}\User Manual";             Filename: "{app}\Help\UserManual.html"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"; Tasks: desktopicon
-Name: "{commondesktop}\{#MyAppName} x32 (Fast)"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName} x32"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"; Tasks: desktopicon
+
+[InstallDelete]
+; shortcuts named "x32 (Fast)" by 3.9.4.1150 and earlier
+Type: files; Name: "{group}\{#MyAppName} x32 (Fast).lnk"
+Type: files; Name: "{commondesktop}\{#MyAppName} x32 (Fast).lnk"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -72,8 +77,8 @@ Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project\DefaultIcon";           
 Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project\shell\open\command";      ValueType: string; ValueData: """{app}\XRayCalc3.x64.exe"" ""%1"""
 
 [Run]
+Filename: "{app}\XRayCalc3.exe"; Description: "Launch {#MyAppName} x32"; Flags: nowait postinstall skipifsilent unchecked
 Filename: "{app}\XRayCalc3.x64.exe"; Description: "Launch {#MyAppName} x64"; Flags: nowait postinstall skipifsilent unchecked
-Filename: "{app}\XRayCalc3.exe"; Description: "Launch {#MyAppName} x32 (Fast)"; Flags: nowait postinstall skipifsilent unchecked
 
 [Code]
 // Notify Windows of file association change
