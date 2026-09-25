@@ -1623,6 +1623,24 @@ begin
   end;
 end;
 
+/// The measured curve at the scale a chi2 was taken at: every intensity
+/// times 10^ScaleLog, which is what ResidualCurve adds in log space. The fit
+/// report reads orders, edge and bands off this curve, so its ratios are on
+/// the same footing as chi2, residual.dat and the GUI chart.
+function ScaledCurve(const Data: unit_Types.TDataArray;
+  const ScaleLog: Double): unit_Types.TDataArray;
+var
+  i: Integer;
+  K: Double;
+begin
+  Result := Copy(Data);
+  if ScaleLog = 0 then
+    Exit;
+  K := Power(10, ScaleLog);
+  for i := 0 to High(Result) do
+    Result[i].r := Result[i].r * K;
+end;
+
 { ------------------------------------------------------- result assembly -- }
 
 type
@@ -2403,9 +2421,13 @@ begin
     { The report is the same numbers for the fit and for the model the client
       started from, so that what the fit changed can be read off one object.
       Each side counts its orders on its own period: the start model's orders
-      are where the start model puts them. }
+      are where the start model puts them. Each side also reads the measured
+      curve at its own solved scale (scale_ratio, scale_start_ratio), the one
+      its chi2 was taken at: until 3.9.4 both read it at the anchored scale,
+      and every ratio in the report was off from chi2 and the chart by the
+      scale ratio. }
     RepInp := Default(TFitReportInput);
-    RepInp.Measured := Req.Data;
+    RepInp.Measured := ScaledCurve(Req.Data, ScaleLogFit);
     RepInp.Calculated := CalcCurve;
     RepInp.Lambda := Req.Lambda;
     RepInp.Period := ReportPeriod(Fitted, Req.Info);
@@ -2427,6 +2449,7 @@ begin
     Report.AddPair('scale_start_ratio', JSONArgs.Num(Power(10, ScaleLogStart)));
     Report.AddPair('near_bounds', NearBoundsJSON(Req, Fitted));
 
+    RepInp.Measured := ScaledCurve(Req.Data, ScaleLogStart);
     RepInp.Calculated := StartCalcCurve;
     RepInp.Period := ReportPeriod(StartFS, Req.Info);
     RepInp.ThetaC := CriticalAngleDeg(StartFS, Req.Lambda);

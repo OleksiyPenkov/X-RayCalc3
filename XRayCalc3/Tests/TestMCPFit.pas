@@ -97,6 +97,7 @@ type
     [Test] procedure Fit_SolvedScale_Off_IsAnchored;
     [Test] procedure Fit_SolvedScale_WindowNegative_Refused;
     [Test] procedure Schema_Has_ScaleSolve;
+    [Test] procedure Fit_SolvedScale_ReportReadsTheMeasuredCurveAtIt;
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
 
@@ -3300,6 +3301,48 @@ begin
     'scale_solve is documented as on by default');
   Assert.IsTrue(FitXrrSchemaValue('scale_solve_window.description').Contains('0.2'),
     'the window default is documented');
+end;
+
+
+{ The report reads the measured curve at the scale chi2 was taken at. A curve
+  at 0.9 of the model solves to scale_ratio ~ 1/0.9; the first order's i_meas
+  must then be scale_ratio times the anchored run's, at the same point - until
+  3.9.4 the report stayed at the anchored scale and disagreed with chi2 and the
+  chart by that factor. }
+procedure TTestMCPFit.Fit_SolvedScale_ReportReadsTheMeasuredCurveAtIt;
+var
+  ResOn, ResOff: TJSONObject;
+  OOn, OOff: TJSONObject;
+  Ratio: Double;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+  FOptimizerExtra := ',"device":"cpu"';
+  try
+    ResOn := RunFit(7, StartCurveJSON(0.9));
+    try
+      ResOff := RunFit(7, StartCurveJSON(0.9), '', ',"scale_solve":false');
+      try
+        Ratio := ResOn.GetValue<Double>('scale_ratio');
+        Assert.IsTrue(Ratio > 1.05, Format('a curve at 0.9 solves above 1: %.5f', [Ratio]));
+        OOn := (ReportOf(ResOn).GetValue('orders') as TJSONArray).Items[0] as TJSONObject;
+        OOff := (ReportOf(ResOff).GetValue('orders') as TJSONArray).Items[0] as TJSONObject;
+        Assert.AreEqual(OOff.GetValue<Double>('theta_meas_deg'), OOn.GetValue<Double>('theta_meas_deg'),
+          1E-9, 'the same measured point');
+        Assert.AreEqual(OOff.GetValue<Double>('i_meas') * Ratio, OOn.GetValue<Double>('i_meas'),
+          1E-4 * OOn.GetValue<Double>('i_meas'), 'i_meas at the solved scale');
+      finally
+        ResOff.Free;
+      end;
+    finally
+      ResOn.Free;
+    end;
+  finally
+    FOptimizerExtra := '';
+  end;
 end;
 
 initialization
