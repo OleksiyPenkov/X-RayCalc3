@@ -116,6 +116,8 @@ type
  ScaleWindowLog: Single;    // TCalc.ScaleWindowLog
      FreePeriod: Boolean;   // periodic mode: every N > 1 stack's period may move
    PeriodWindow: Single;    //   by this fraction of its start value either way
+           Seed: Integer;   // GUI: the random seed of the next fits, 0 = draw one;
+                            //   typed in Advanced settings, not saved with a project
   end;
 
   // Calculation data types

@@ -1058,9 +1058,11 @@ end;
 
 procedure TfrmMain.FitExportJSONExecute(Sender: TObject);
 begin
-  if not FOrchestrator.HasFitResults then
+  { The project's fit record: this session's last fit, or the one saved with
+    the project. }
+  if not FOrchestrator.HasFitRecord then
   begin
-    ShowMessage('No fitting results available. Run fitting first.');
+    ShowMessage('This project has no fitting record. Run fitting first.');
     Exit;
   end;
   if dlgSaveFitJSON.Execute then

@@ -819,7 +819,7 @@ end;
 
 function TXRCStructure.ToFitStructure: TFitStructure;
 var
-  i, j: integer;
+  i, j, p: integer;
   D: single;
 begin
 
@@ -847,6 +847,10 @@ begin
     begin
       Result.Stacks[i].Layers[j].Material := FStacks[i].LayerData[j].Material;
       Result.Stacks[i].Layers[j].P := FStacks[i].LayerData[j].P;
+      { The per-period tables, which only an irregular fit that starts from
+        them reads (TLFPSO_Irregular.StartFromTables). }
+      for p := 1 to 3 do
+        Result.Stacks[i].Layers[j].PP[p] := Copy(FStacks[i].LayerData[j].PP[p]);
       Result.Stacks[i].Layers[j].StackID := i;
       Result.Stacks[i].Layers[j].LayerID := j;
     end;

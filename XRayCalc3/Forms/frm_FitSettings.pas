@@ -35,6 +35,8 @@ type
     RzGroupBox3: TRzGroupBox;
     Label1: TLabel;
     edIrrSmoothWindow: TEdit;
+    lblSeed: TLabel;
+    edSeed: TEdit;
     btnSave: TRzBitBtn;
     btnCancel: TBitBtn;
     RzGroupBox4: TRzGroupBox;
@@ -79,6 +81,10 @@ begin
   edLFPSOOmega2.Text      := FloatToStrF(Params.w2, ffGeneral, 7, 0);
   edFitTolerance.Text     := FloatToStrF(Params.Tolerance, ffGeneral, 7, 0);
   edIrrSmoothWindow.Text  := Params.SmoothWindow.ToString;
+  if Params.Seed > 0 then
+    edSeed.Text := Params.Seed.ToString
+  else
+    edSeed.Text := '';
 
   sePolyFactor.Value      := Params.PolyFactor;
   edKsxr.Text             := FloatToStrF(Params.Ksxr, ffGeneral, 7, 0);
@@ -103,6 +109,8 @@ begin
     Params.SmoothWindow    := ShortInt(System.Math.EnsureRange(
       StrToIntDef(Trim(edIrrSmoothWindow.Text), -1), -1, High(ShortInt)));
 
+    Params.Seed            := Integer(EnsureRange(StrToInt64Def(Trim(edSeed.Text), 0),
+                                0, Int64(MaxInt)));
     Params.PolyFactor      := sePolyFactor.Value;
     Params.Ksxr            := StrToFloat(edKsxr.Text);
 

@@ -80,6 +80,11 @@ type
     [Test] procedure Test_Smooth_SkipsHeldParameters;
     [Test] procedure Test_SetStructure_EmptyStack_IsSkipped;
 
+    { StartFromTables: the GUI's Resume and fit_xrr's start_profiles }
+    [Test] procedure Test_StartFromTables_EachPeriodFromItsTable;
+    [Test] procedure Test_StartFromTables_Off_IgnoresTheTables;
+    [Test] procedure Test_StartFromTables_SurviveAShake;
+
     { RangeSeed }
     [Test] procedure Test_RangeSeed_LinkedLayersCopied;
     [Test] procedure Test_RangeSeed_UnlinkedWithinBounds;
@@ -472,6 +477,94 @@ begin
   FPSO.TestSetStructure(Inp);
   Assert.AreEqual(4, FPSO.Pub_FLayersCount, 'only the real stack''s layers');
   Assert.AreEqual(4, Integer(Length(FPSO.Pub_FStructure.Stacks[0].Layers)));
+end;
+
+{ Flattened order: [0 Si p1, 1 Mo p1, 2 Si p2, 3 Mo p2]. Each period starts
+  from its entry of the table; a held parameter is pinned to its own period's
+  value; a start outside the bounds is clamped into them; a paired parameter
+  keeps one value whatever its (stale) table says. }
+function TableStructure: TFitStructure;
+var
+  L0, L1: TLayerData;
+begin
+  Result := Default(TFitStructure);
+  SetLength(Result.Stacks, 1);
+  Result.Stacks[0].N := 2;
+  SetLength(Result.Stacks[0].Layers, 2);
+  L0 := Default(TLayerData);
+  L0.Material := 'Si';
+  L0.LayerID := 0;
+  L0.P[1].V := 10; L0.P[1].min := 1; L0.P[1].max := 100;
+  L0.P[2].V := 3;  L0.P[2].min := 1; L0.P[2].max := 100;
+  L0.P[3].V := 2;  L0.P[3].min := 1; L0.P[3].max := 5;
+  L0.P[3].Paired := True;
+  L0.AddProfilePoint(12, 1); L0.AddProfilePoint(18, 1);    // free thickness
+  L0.AddProfilePoint(200, 2); L0.AddProfilePoint(30, 2);   // sigma: 200 is out of range
+  L0.AddProfilePoint(4, 3); L0.AddProfilePoint(4.5, 3);    // paired density: ignored
+  L1 := Default(TLayerData);
+  L1.Material := 'Mo';
+  L1.LayerID := 1;
+  L1.P[1].V := 5; L1.P[1].min := 5; L1.P[1].max := 5;      // held thickness
+  L1.P[2].V := 3; L1.P[2].min := 1; L1.P[2].max := 50;
+  L1.P[3].V := 10; L1.P[3].min := 1; L1.P[3].max := 50;
+  L1.AddProfilePoint(5, 1); L1.AddProfilePoint(7, 1);
+  Result.Stacks[0].Layers[0] := L0;
+  Result.Stacks[0].Layers[1] := L1;
+  Result.Subs.Material := 'Si';
+end;
+
+procedure TTestLFPSOIrregular.Test_StartFromTables_EachPeriodFromItsTable;
+begin
+  FPSO.TestSetParams(MakeParams);
+  FPSO.StartFromTables := True;
+  FPSO.TestSetStructure(TableStructure);
+
+  Assert.AreEqual(Single(12), FPSO.GetX[0][0][1][0], 1E-5, 'Si thickness, period 1');
+  Assert.AreEqual(Single(18), FPSO.GetX[0][2][1][0], 1E-5, 'Si thickness, period 2');
+  Assert.AreEqual(Single(1), FPSO.TestXMin(2, 1), 1E-5, 'free: the layer''s bounds');
+  Assert.AreEqual(Single(100), FPSO.TestXMax(2, 1), 1E-5);
+
+  Assert.AreEqual(Single(100), FPSO.GetX[0][0][2][0], 1E-5, 'sigma 200 clamped to its max');
+  Assert.AreEqual(Single(30), FPSO.GetX[0][2][2][0], 1E-5);
+
+  Assert.AreEqual(Single(2), FPSO.GetX[0][0][3][0], 1E-5, 'paired: the single value');
+  Assert.AreEqual(Single(2), FPSO.GetX[0][2][3][0], 1E-5, 'in every period');
+
+  Assert.AreEqual(Single(5), FPSO.GetX[0][1][1][0], 1E-5, 'held, period 1');
+  Assert.AreEqual(Single(7), FPSO.GetX[0][3][1][0], 1E-5, 'held, period 2');
+  Assert.AreEqual(Single(7), FPSO.TestXMin(3, 1), 1E-5, 'pinned to its own value');
+  Assert.AreEqual(Single(7), FPSO.TestXMax(3, 1), 1E-5);
+  Assert.AreEqual(Single(7), FPSO.Pub_FStructure.Stacks[0].Layers[3].P[1].V, 1E-5,
+    'and in the flattened structure a shake re-seeds from');
+  Assert.AreEqual(1, FPSO.ClampedStarts, 'the one sigma outside its limits is counted');
+end;
+
+{ A shake hands SetStructure the flattened structure with FReInit set: the
+  pinned periods and their pinned bounds must come through unchanged. }
+procedure TTestLFPSOIrregular.Test_StartFromTables_SurviveAShake;
+var
+  Flat: TFitStructure;
+begin
+  FPSO.TestSetParams(MakeParams);
+  FPSO.StartFromTables := True;
+  FPSO.TestSetStructure(TableStructure);
+  FPSO.Pub_FStructure.CopyContent(Flat);
+  FPSO.Pub_FReInit := True;
+  FPSO.TestSetStructure(Flat);
+
+  Assert.AreEqual(Single(18), FPSO.GetX[0][2][1][0], 1E-5, 'Si thickness, period 2');
+  Assert.AreEqual(Single(7), FPSO.GetX[0][3][1][0], 1E-5, 'held, period 2');
+  Assert.AreEqual(Single(7), FPSO.TestXMin(3, 1), 1E-5, 'still pinned');
+  Assert.AreEqual(Single(7), FPSO.TestXMax(3, 1), 1E-5);
+end;
+
+procedure TTestLFPSOIrregular.Test_StartFromTables_Off_IgnoresTheTables;
+begin
+  FPSO.TestSetParams(MakeParams);
+  FPSO.TestSetStructure(TableStructure);
+  Assert.AreEqual(Single(10), FPSO.GetX[0][0][1][0], 1E-5);
+  Assert.AreEqual(Single(10), FPSO.GetX[0][2][1][0], 1E-5, 'every period from the single value');
+  Assert.AreEqual(Single(5), FPSO.GetX[0][3][1][0], 1E-5);
 end;
 
 { RangeSeed }

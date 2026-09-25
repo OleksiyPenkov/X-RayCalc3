@@ -38,6 +38,22 @@ type
     FFitSeconds: Double;
     FFitDevice: string;          // what evaluated the last fit: 'CPU' or the GPU's name
     FHasFitResults: Boolean;
+    { The last fit as it ran, captured when it starts - the settings may be
+      changed while it runs or afterwards - and written into the project's
+      fit record (BuildFitRecord) when it ends. }
+    FFitMode: TFittingMode;
+    FFitSeed: Integer;
+    FFitResumed, FFitFromTables: Boolean;
+    FFitStarted: TDateTime;
+    FFitCalcParams: TCalcThreadParams;
+    FFitSettings: TFitParams;
+    FFitPWChi: Boolean;
+    FFitRMin: Single;
+    FFitTwoTheta: Boolean;
+    FFitPoly: TProfileFunctions;
+    FFitBestChi: Single;
+    { The weighted and the plain chi-squared of the last calculation }
+    FLastChi, FLastChiPlain: Single;
     { The scale the last chi-squared shown was taken at (RunCalc) }
     FLastSolveScale, FLastScaleClamped: Boolean;
     FLastScaleLog: Single;
@@ -69,6 +85,7 @@ type
       const CreateExtension: Boolean = True);
     procedure FinalizeFitting;
     procedure StartFitting(const Resume: Boolean);
+    function BuildFitRecord: TJSONObject;
   public
     constructor Create(ACalcSettings: TfrmCalcSettings;
       AProjectPanel: TfrmProjectPanel; AChartInfo: TfrmChartInfo;
@@ -89,6 +106,9 @@ type
     property LastChiSquare: Single read FLastChiSquare write FLastChiSquare;
     property BenchmarkMode: Boolean read FBenchmarkMode write FBenchmarkMode;
     property HasFitResults: Boolean read FHasFitResults;
+    /// The open project carries a record of a fit (this session's or a saved
+    /// one), which Result - Export fit results writes out.
+    function HasFitRecord: Boolean;
     /// The scale the last calculation's chi2 was taken at: solved or not,
     /// and log10 of its ratio to the anchored one (0 when anchored).
     property LastSolveScale: Boolean read FLastSolveScale;
@@ -110,7 +130,7 @@ uses
   unit_DataProcessing, unit_SeriesIO,
   unit_LFPSO_Periodic, unit_LFPSO_Irregular, unit_LFPSO_Poly,
   unit_config, unit_SmartLimits, unit_sys_helpers, System.Math,
-  frm_Limits;
+  unit_CrashReport, unit_consts, frm_Limits;
 
 type
   TFittingThread = class(TThread)
@@ -128,6 +148,21 @@ begin
   finally
     PostMessage(Application.MainFormHandle, WM_FIT_COMPLETE, 0, 0);
   end;
+end;
+
+/// A seed for one fit run, from a GUID rather than Random: System.RandSeed is
+/// what the engine is about to be seeded with, and reading it here would tie
+/// every run's seed to the previous one. Positive, as TLFPSO_BASE.Seed wants
+/// (a negative one means Randomize).
+function NewFitSeed: Integer;
+var
+  G: TGUID;
+begin
+  G := TGUID.NewGuid;
+  Result := Integer((G.D1 xor (Cardinal(G.D2) shl 16) xor Cardinal(G.D3))
+                    and $7FFFFFFF);
+  if Result = 0 then
+    Result := 1;
 end;
 
 { TCalcOrchestrator }
@@ -223,6 +258,8 @@ begin
         FCalc.CalcChiSquare(FCalcSettings.ThetaWeightIndex);
         FChartInfo.SetChiSquare(FCalc.ChiSQR, FCalc.ChiSQR);
         FChartInfo.SetChiSquarePlain(FCalc.ChiSQRPlain);
+        FLastChi := FCalc.ChiSQR;
+        FLastChiPlain := FCalc.ChiSQRPlain;
         FLastSolveScale := FCalc.SolveScale;
         FLastScaleLog := FCalc.ScaleLog;
         FLastScaleClamped := FCalc.ScaleClamped;
@@ -300,6 +337,27 @@ begin
     fmPoly      : FLFPSO := TLFPSO_Poly.Create;
   end;
 
+  { An irregular fit on a model whose Table is in use starts each period from
+    its value in the Table, which is what the chart shows, rather than every
+    period from the stack's single value: a Resume, a Run answered "Keep
+    them", and a reopened project, whose Table is not flagged as a fit's and
+    so is never offered for clearing. "Clear them" deletes the Table, and then
+    every period starts from the single value. ToFitStructure carries the
+    tables; the engine reads them in SetStructure, so this is set before
+    Structure below. }
+  FFitFromTables := (FCalcSettings.FittingMode = fmIrregular) and
+    FProjectPanel.IsNonPeriodicProfile;
+  if FLFPSO is TLFPSO_Irregular then
+    TLFPSO_Irregular(FLFPSO).StartFromTables := FFitFromTables;
+
+  { A seed of its own for every run, drawn here rather than by Randomize inside
+    the engine, so that the fit record can say which one it was and typing it
+    into Advanced settings repeats the fit. }
+  FFitSeed := FProjectPanel.FitParams.Seed;
+  if FFitSeed <= 0 then
+    FFitSeed := NewFitSeed;
+  FLFPSO.Seed := FFitSeed;
+
   GetThreadParams;
 
   FLFPSO.Params := FProjectPanel.FitParams;
@@ -331,6 +389,22 @@ begin
   CollapseFixed(FFitStructure);
   FLFPSO.Structure := FFitStructure;
 
+  { The limits are one window per layer, and after a Resume that window is
+    centred on period 1's value: in a graded stack the other periods can lie
+    outside it. They start from the limit and cannot get past it, so ask. }
+  if FFitFromTables and not FBenchmarkMode and
+     (TLFPSO_Irregular(FLFPSO).ClampedStarts > 0) and
+     (MessageDlg(Format('%d per-period value(s) of the Table lie outside their ' +
+        'layer''s fit limits. They will start from the limit and the fit ' +
+        'cannot move them past it.'#13#10#13#10'Widen the limits in the ' +
+        'Fitting Limits dialog to keep them. Start the fit anyway?',
+        [TLFPSO_Irregular(FLFPSO).ClampedStarts]),
+        mtWarning, [mbYes, mbNo], 0) <> mrYes) then
+  begin
+    FreeAndNil(FLFPSO);
+    Exit;
+  end;
+
   { Free period (periodic mode): each repeating stack's period may move by the
     window around the value it starts from - this run's model, so a resumed
     fit carries on from where the last one ended. The engine is the one
@@ -344,6 +418,15 @@ begin
 
   FChartPages.PrepareConvergence(FProjectPanel.FitParams.NMax, Resume);
   FChartPages.PrepareDiagnostics(FProjectPanel.FitParams.NMax, Resume);
+
+  FFitMode := FCalcSettings.FittingMode;
+  FFitResumed := Resume;
+  FFitStarted := Now;
+  FFitCalcParams := FCalcThreadParams;
+  FFitSettings := FProjectPanel.FitParams;
+  FFitPWChi := FCalcSettings.IsPWChiSqr;
+  FFitRMin := FChartInfo.MinLimit;
+  FFitTwoTheta := FCalcSettings.Is2Theta;
 
   Result := True;
 end;
@@ -417,6 +500,9 @@ begin
   if not PrepareLFPSO(Resume) then Exit;
 
   Screen.Cursor := crHourGlass;
+  { The model is about to change: the record of the previous fit no longer
+    describes it, and a live autosave must not store it beside the new one. }
+  FProjectPanel.FitRecord := '';
   FProjectPanel.GenerateAutosaveName;
   if Assigned(FOnEnableControls) then
     FOnEnableControls(False);
@@ -471,10 +557,17 @@ procedure TCalcOrchestrator.FinalizeFitting;
 var
   Hour, Min, Sec, MSec: Word;
   FitResult: TLayeredModel;
+  Rec: TJSONObject;
 begin
   try
     FitResult := FLFPSO.Result;
     try
+      FFitPoly := FLFPSO.Polynomes;
+      { The chi-squared of the solution returned, rescored on the CPU after a
+        GPU run - not the running minimum of the progress messages, which a
+        benchmark or batch run never receives (it stays at 1e32) and which
+        after a GPU run is the GPU's number. }
+      FFitBestChi := FLFPSO.BestChiSquare;
       UpdateInterface(FLFPSO.Structure, FLFPSO.Polynomes, FitResult, FFirstUpdate);
     finally
       FitResult.Free;
@@ -489,8 +582,20 @@ begin
     if Assigned(FOnFitTimeUpdate) then
       FOnFitTimeUpdate(Format('Fitting time: %s on %s',
         [FormatDuration(FFitSeconds), FFitDevice]));
+    FLastChi := NaN;
+    FLastChiPlain := NaN;
+    FLastSolveScale := False;
+    FLastScaleLog := 0;
     RunCalc(False);
     FChartInfo.SetChiSquare(FABestChiSquare, FABestChiSquare);
+    { After RunCalc: the record carries the plain chi-squared and the scale of
+      the model the fit ended on. Before AutoSave, which saves it. }
+    Rec := BuildFitRecord;
+    try
+      FProjectPanel.FitRecord := Rec.ToJSON;
+    finally
+      Rec.Free;
+    end;
     FProjectPanel.AutoSave;
   finally
     Screen.Cursor := crDefault;
@@ -565,145 +670,243 @@ begin
     FOnFitTimeUpdate('Fitting time: ' + FormatDuration(FFitWatch.Elapsed.TotalSeconds));
 end;
 
-procedure TCalcOrchestrator.ExportFitResultsToJSON(const FileName: string);
+function TCalcOrchestrator.HasFitRecord: Boolean;
+begin
+  Result := FProjectPanel.FitRecord <> '';
+end;
+
+{ Everything about the fit that just ended, as it ran: the settings captured in
+  PrepareLFPSO, not the ones the panels hold now, the chi-squareds of the model
+  it ended on, and that model with its limits, pairing, freezing and tables.
+  It is kept with the project ([FITRESULT] in params.dsc), so Result - Export
+  fit results writes the same object after the project is reopened. }
+function TCalcOrchestrator.BuildFitRecord: TJSONObject;
 const
   FittingModeNames: array[TFittingMode] of string = ('Irregular', 'Periodic', 'Polynomial');
   CalcModeNames: array[TCalcMode] of string = ('Theta', 'Lambda', 'Test');
   PolarisationNames: array[TPolarisation] of string = ('S', 'SP');
   RoughnessNames: array[TRoughnessFunction] of string = ('Error', 'Exp', 'Linear', 'Step', 'Sinus');
+  ThetaWeightNames: array[0..5] of string =
+    ('none', 'theta^2', 'theta', 'sqrt(theta)', '1/theta^2', '1/sqrt(theta)');
+  ParamNames: array[1..3] of string = ('thickness', 'roughness', 'density');
+  SubjNames: array[TParameterType] of string = ('thickness', 'roughness', 'density');
 var
-  Root, JFitParams, JCalcParams, JStructure, JSubstrate: TJSONObject;
-  JStacks: TJSONArray;
-  JStack: TJSONObject;
-  JLayers: TJSONArray;
-  JLayer, JThickness, JRoughness, JDensity: TJSONObject;
-  FitParams: TFitParams;
+  JFit, JChi, JCalc, JStructure, JSubstrate, JStack, JLayer, JParam, JPoly: TJSONObject;
+  JStacks, JLayers, JTable, JPolys, JCoeffs: TJSONArray;
   FitStruct: TFitStructure;
-  i, j: Integer;
-  SL: TStringList;
-begin
-  FitParams := FProjectPanel.FitParams;
-  FitStruct := Structure.ToFitStructure;
+  i, j, q, c: Integer;   // q, not p: inside "with" a layer, p is its field P
+  Platform: string;
 
-  Root := TJSONObject.Create;
-  try
-    Root.AddPair('application', 'X-RayCalc3');
-    Root.AddPair('exportDate', DateToISO8601(Now, False));
-    Root.AddPair('fittingDuration', FFitDuration);
-    Root.AddPair('fittingSeconds', TJSONNumber.Create(RoundTo(FFitSeconds, -3)));
-    Root.AddPair('fittingDevice', FFitDevice);
-    Root.AddPair('chiSquared', TJSONNumber.Create(FABestChiSquare));
-    { As fit_xrr reports it: chi2_scale, scale_ratio, scale_clamped. The
-      ratio is the one the model the fit ended on was rescored at. }
-    if FitParams.SolveScale then
-      Root.AddPair('chi2Scale', 'solved')
+  { A number JSON can hold: NAN and INF are written unquoted by TJSONNumber and
+    would make the whole record unreadable. }
+  function Num(const V: Double): TJSONValue;
+  begin
+    if IsNan(V) or IsInfinite(V) then
+      Result := TJSONNull.Create
     else
-      Root.AddPair('chi2Scale', 'anchored');
+      Result := TJSONNumber.Create(V);
+  end;
+
+begin
+  FitStruct := Structure.ToFitStructure;
+  {$IFDEF WIN64} Platform := 'Win64'; {$ELSE} Platform := 'Win32'; {$ENDIF}
+
+  Result := TJSONObject.Create;
+  try
+    Result.AddPair('application', 'X-RayCalc3');
+    Result.AddPair('version', TCrashReport.GetAppVersion);
+    Result.AddPair('platform', Platform);
+    Result.AddPair('projectVersion', TJSONNumber.Create(CURRENT_PROJECT_VERSION));
+    Result.AddPair('fitDate', DateToISO8601(FFitStarted, False));
+    Result.AddPair('fittingDuration', FFitDuration);
+    Result.AddPair('fittingSeconds', TJSONNumber.Create(RoundTo(FFitSeconds, -3)));
+    Result.AddPair('fittingDevice', FFitDevice);
+    Result.AddPair('seed', TJSONNumber.Create(FFitSeed));
+    Result.AddPair('resumed', TJSONBool.Create(FFitResumed));
+    Result.AddPair('fittingMode', FittingModeNames[FFitMode]);
+    if FFitMode = fmIrregular then
+      Result.AddPair('startFromTables', TJSONBool.Create(FFitFromTables));
+    if FProjectPanel.Project.ActiveModel <> nil then
+      Result.AddPair('model', FProjectPanel.Project.ActiveModel.Title);
+    if FProjectPanel.Project.LinkedData <> nil then
+      Result.AddPair('dataItem', FProjectPanel.Project.LinkedData.Title);
+
+    { chiSquared is the engine's best, the number the fit minimised;
+      chiSquaredRecalc and chiSquaredPlain are the recalculation of the model
+      it ended on, weighted and unweighted, at the scale below. }
+    Result.AddPair('chiSquared', Num(FFitBestChi));
+    Result.AddPair('chiSquaredRecalc', Num(FLastChi));
+    Result.AddPair('chiSquaredPlain', Num(FLastChiPlain));
+    if FFitSettings.SolveScale then
+      Result.AddPair('chi2Scale', 'solved')
+    else
+      Result.AddPair('chi2Scale', 'anchored');
     if FLastSolveScale then
     begin
-      Root.AddPair('scaleRatio', TJSONNumber.Create(RoundTo(Power(10, FLastScaleLog), -6)));
-      Root.AddPair('scaleClamped', TJSONBool.Create(FLastScaleClamped));
+      Result.AddPair('scaleRatio', TJSONNumber.Create(RoundTo(Power(10, FLastScaleLog), -6)));
+      Result.AddPair('scaleClamped', TJSONBool.Create(FLastScaleClamped));
     end;
-    Root.AddPair('fittingMode', FittingModeNames[FCalcSettings.FittingMode]);
 
-    // fitParams
-    JFitParams := TJSONObject.Create;
-    JFitParams.AddPair('maxIterations', TJSONNumber.Create(FitParams.NMax));
-    JFitParams.AddPair('population', TJSONNumber.Create(FitParams.Pop));
-    JFitParams.AddPair('tolerance', TJSONNumber.Create(FitParams.Tolerance));
-    JFitParams.AddPair('vMax', TJSONNumber.Create(FitParams.Vmax));
-    JFitParams.AddPair('jammingMax', TJSONNumber.Create(FitParams.JammingMax));
-    JFitParams.AddPair('reInitMax', TJSONNumber.Create(FitParams.ReInitMax));
-    JFitParams.AddPair('kChiSqr', TJSONNumber.Create(FitParams.KChiSqr));
-    JFitParams.AddPair('kVmax', TJSONNumber.Create(FitParams.KVmax));
-    JFitParams.AddPair('w1', TJSONNumber.Create(FitParams.w1));
-    JFitParams.AddPair('w2', TJSONNumber.Create(FitParams.w2));
-    JFitParams.AddPair('shake', TJSONBool.Create(FitParams.Shake));
-    JFitParams.AddPair('adaptVel', TJSONBool.Create(FitParams.AdaptVel));
-    JFitParams.AddPair('useConstriction', TJSONBool.Create(FitParams.UseConstriction));
-    JFitParams.AddPair('rangeSeed', TJSONBool.Create(FitParams.RangeSeed));
-    JFitParams.AddPair('solveScale', TJSONBool.Create(FitParams.SolveScale));
+    JChi := TJSONObject.Create;
+    Result.AddPair('chi2Weighting', JChi);
+    JChi.AddPair('thetaWeight', TJSONNumber.Create(FFitSettings.ThetaWeight));
+    if (FFitSettings.ThetaWeight >= Low(ThetaWeightNames)) and
+       (FFitSettings.ThetaWeight <= High(ThetaWeightNames)) then
+      JChi.AddPair('thetaWeightName', ThetaWeightNames[FFitSettings.ThetaWeight]);
+    JChi.AddPair('pointWeight', TJSONBool.Create(FFitPWChi));
+    JChi.AddPair('movAvgWindow', TJSONNumber.Create(RoundTo(FFitSettings.MovAvgWindow, -6)));
+    Result.AddPair('rMin', Num(FFitRMin));
+
+    JFit := TJSONObject.Create;
+    Result.AddPair('fitParams', JFit);
+    JFit.AddPair('maxIterations', TJSONNumber.Create(FFitSettings.NMax));
+    JFit.AddPair('population', TJSONNumber.Create(FFitSettings.Pop));
+    JFit.AddPair('tolerance', TJSONNumber.Create(FFitSettings.Tolerance));
+    JFit.AddPair('vMax', TJSONNumber.Create(FFitSettings.Vmax));
+    JFit.AddPair('jammingMax', TJSONNumber.Create(FFitSettings.JammingMax));
+    JFit.AddPair('reInitMax', TJSONNumber.Create(FFitSettings.ReInitMax));
+    JFit.AddPair('kChiSqr', TJSONNumber.Create(FFitSettings.KChiSqr));
+    JFit.AddPair('kVmax', TJSONNumber.Create(FFitSettings.KVmax));
+    JFit.AddPair('w1', TJSONNumber.Create(FFitSettings.w1));
+    JFit.AddPair('w2', TJSONNumber.Create(FFitSettings.w2));
+    JFit.AddPair('ksxr', TJSONNumber.Create(FFitSettings.Ksxr));
+    JFit.AddPair('shake', TJSONBool.Create(FFitSettings.Shake));
+    JFit.AddPair('adaptVel', TJSONBool.Create(FFitSettings.AdaptVel));
+    JFit.AddPair('useConstriction', TJSONBool.Create(FFitSettings.UseConstriction));
+    if FFitMode <> fmPoly then          // the Polynomial engine has no range seed
+      JFit.AddPair('rangeSeed', TJSONBool.Create(FFitSettings.RangeSeed));
+    JFit.AddPair('solveScale', TJSONBool.Create(FFitSettings.SolveScale));
     { the fraction typed, back from the log10(1 + w) the engine holds }
-    JFitParams.AddPair('scaleSolveWindow',
-      TJSONNumber.Create(RoundTo(Power(10, FitParams.ScaleWindowLog) - 1, -6)));
-    JFitParams.AddPair('freePeriod', TJSONBool.Create(FitParams.FreePeriod and
-      (FCalcSettings.FittingMode = fmPeriodic)));
-    if FitParams.FreePeriod and (FCalcSettings.FittingMode = fmPeriodic) then
-      JFitParams.AddPair('periodWindow', TJSONNumber.Create(RoundTo(FitParams.PeriodWindow, -6)));
-    Root.AddPair('fitParams', JFitParams);
+    JFit.AddPair('scaleSolveWindow',
+      TJSONNumber.Create(RoundTo(Power(10, FFitSettings.ScaleWindowLog) - 1, -6)));
+    JFit.AddPair('freePeriod', TJSONBool.Create(FFitSettings.FreePeriod and
+      (FFitMode = fmPeriodic)));
+    if FFitSettings.FreePeriod and (FFitMode = fmPeriodic) then
+      JFit.AddPair('periodWindow', TJSONNumber.Create(RoundTo(FFitSettings.PeriodWindow, -6)));
+    if FFitMode = fmPoly then
+    begin
+      JFit.AddPair('polyOrder', TJSONNumber.Create(FFitSettings.MaxPOrder));
+      JFit.AddPair('polyFactor', TJSONNumber.Create(FFitSettings.PolyFactor));
+    end;
+    if FFitMode = fmIrregular then
+    begin
+      JFit.AddPair('smooth', TJSONBool.Create(FFitSettings.Smooth));
+      JFit.AddPair('smoothWindow', TJSONNumber.Create(FFitSettings.SmoothWindow));
+    end;
 
-    // calcParams
-    JCalcParams := TJSONObject.Create;
-    JCalcParams.AddPair('mode', CalcModeNames[FCalcThreadParams.Mode]);
-    case FCalcThreadParams.Mode of
+    JCalc := TJSONObject.Create;
+    Result.AddPair('calcParams', JCalc);
+    JCalc.AddPair('mode', CalcModeNames[FFitCalcParams.Mode]);
+    case FFitCalcParams.Mode of
       cmTheta:
         begin
-          JCalcParams.AddPair('startAngle', TJSONNumber.Create(FCalcThreadParams.StartT));
-          JCalcParams.AddPair('endAngle', TJSONNumber.Create(FCalcThreadParams.EndT));
-          JCalcParams.AddPair('step', TJSONNumber.Create(FCalcThreadParams.DT));
-          JCalcParams.AddPair('wavelength', TJSONNumber.Create(FCalcThreadParams.Lambda));
+          { the calculation's range is theta; the chart may show 2theta }
+          JCalc.AddPair('startTheta', TJSONNumber.Create(FFitCalcParams.StartT));
+          JCalc.AddPair('endTheta', TJSONNumber.Create(FFitCalcParams.EndT));
+          JCalc.AddPair('deltaTheta', TJSONNumber.Create(FFitCalcParams.DT));
+          JCalc.AddPair('wavelength', TJSONNumber.Create(FFitCalcParams.Lambda));
+          JCalc.AddPair('chartIn2Theta', TJSONBool.Create(FFitTwoTheta));
         end;
       cmLambda:
         begin
-          JCalcParams.AddPair('startLambda', TJSONNumber.Create(FCalcThreadParams.StartL));
-          JCalcParams.AddPair('endLambda', TJSONNumber.Create(FCalcThreadParams.EndL));
-          JCalcParams.AddPair('theta', TJSONNumber.Create(FCalcThreadParams.Theta));
-          JCalcParams.AddPair('stepLambda', TJSONNumber.Create(FCalcThreadParams.DW));
+          JCalc.AddPair('startLambda', TJSONNumber.Create(FFitCalcParams.StartL));
+          JCalc.AddPair('endLambda', TJSONNumber.Create(FFitCalcParams.EndL));
+          JCalc.AddPair('theta', TJSONNumber.Create(FFitCalcParams.Theta));
+          JCalc.AddPair('deltaLambda', TJSONNumber.Create(FFitCalcParams.DW));
         end;
     end;
-    JCalcParams.AddPair('polarisation', PolarisationNames[FCalcThreadParams.P]);
-    JCalcParams.AddPair('roughnessFunction', RoughnessNames[FCalcThreadParams.RF]);
-    Root.AddPair('calcParams', JCalcParams);
+    JCalc.AddPair('points', TJSONNumber.Create(FFitCalcParams.N));
+    JCalc.AddPair('polarisation', PolarisationNames[FFitCalcParams.P]);
+    JCalc.AddPair('roughnessFunction', RoughnessNames[FFitCalcParams.RF]);
 
-    // structure
     JStructure := TJSONObject.Create;
+    Result.AddPair('structure', JStructure);
     JStacks := TJSONArray.Create;
+    JStructure.AddPair('stacks', JStacks);
     for i := 0 to High(FitStruct.Stacks) do
     begin
       JStack := TJSONObject.Create;
+      JStacks.AddElement(JStack);
       JStack.AddPair('name', FitStruct.Stacks[i].Header);
       JStack.AddPair('repetitions', TJSONNumber.Create(FitStruct.Stacks[i].N));
 
       JLayers := TJSONArray.Create;
+      JStack.AddPair('layers', JLayers);
       for j := 0 to High(FitStruct.Stacks[i].Layers) do
       begin
         JLayer := TJSONObject.Create;
+        JLayers.AddElement(JLayer);
         JLayer.AddPair('material', FitStruct.Stacks[i].Layers[j].Material);
-
-        JThickness := TJSONObject.Create;
-        JThickness.AddPair('value', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[1].V));
-        JThickness.AddPair('min', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[1].min));
-        JThickness.AddPair('max', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[1].max));
-        JLayer.AddPair('thickness', JThickness);
-
-        JRoughness := TJSONObject.Create;
-        JRoughness.AddPair('value', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[2].V));
-        JRoughness.AddPair('min', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[2].min));
-        JRoughness.AddPair('max', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[2].max));
-        JLayer.AddPair('roughness', JRoughness);
-
-        JDensity := TJSONObject.Create;
-        JDensity.AddPair('value', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[3].V));
-        JDensity.AddPair('min', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[3].min));
-        JDensity.AddPair('max', TJSONNumber.Create(FitStruct.Stacks[i].Layers[j].P[3].max));
-        JLayer.AddPair('density', JDensity);
-
-        JLayers.Add(JLayer);
+        for q := 1 to 3 do
+          with FitStruct.Stacks[i].Layers[j] do
+          begin
+            JParam := TJSONObject.Create;
+            JLayer.AddPair(ParamNames[q], JParam);
+            JParam.AddPair('value', TJSONNumber.Create(P[q].V));
+            JParam.AddPair('min', TJSONNumber.Create(P[q].min));
+            JParam.AddPair('max', TJSONNumber.Create(P[q].max));
+            JParam.AddPair('paired', TJSONBool.Create(P[q].Paired));
+            JParam.AddPair('frozen', TJSONBool.Create(P[q].Fixed));
+            { the per-period values of an irregular fit, surface end first,
+              where the model uses them (TLayerData.PeriodValue) }
+            if (FitStruct.Stacks[i].N > 1) and not P[q].Paired and
+               (Length(PP[q]) >= FitStruct.Stacks[i].N) then
+            begin
+              JTable := TJSONArray.Create;
+              JParam.AddPair('perPeriod', JTable);
+              for c := 0 to FitStruct.Stacks[i].N - 1 do
+                JTable.AddElement(TJSONNumber.Create(PP[q][c]));
+            end;
+          end;
       end;
-      JStack.AddPair('layers', JLayers);
-      JStacks.Add(JStack);
     end;
-    JStructure.AddPair('stacks', JStacks);
 
-    // substrate
     JSubstrate := TJSONObject.Create;
+    JStructure.AddPair('substrate', JSubstrate);
     JSubstrate.AddPair('material', FitStruct.Subs.Material);
     JSubstrate.AddPair('roughness', TJSONNumber.Create(FitStruct.Subs.P[2].V));
     JSubstrate.AddPair('density', TJSONNumber.Create(FitStruct.Subs.P[3].V));
-    JStructure.AddPair('substrate', JSubstrate);
 
-    Root.AddPair('structure', JStructure);
+    { A polynomial fit's depth profiles: C[0] + C[1] n + ... over the periods,
+      as the gradient extensions hold them. }
+    if FFitMode = fmPoly then
+    begin
+      JPolys := TJSONArray.Create;
+      Result.AddPair('polynomials', JPolys);
+      for i := 0 to High(FFitPoly) do
+      begin
+        JPoly := TJSONObject.Create;
+        JPolys.AddElement(JPoly);
+        JPoly.AddPair('stack', TJSONNumber.Create(FFitPoly[i].StackID));
+        JPoly.AddPair('layer', TJSONNumber.Create(FFitPoly[i].LayerID));
+        JPoly.AddPair('parameter', SubjNames[FFitPoly[i].Subj]);
+        JCoeffs := TJSONArray.Create;
+        JPoly.AddPair('coefficients', JCoeffs);
+        for c := 0 to High(FFitPoly[i].C) do
+          JCoeffs.AddElement(TJSONNumber.Create(FFitPoly[i].C[c]));
+      end;
+    end;
+  except
+    Result.Free;
+    raise;
+  end;
+end;
 
+procedure TCalcOrchestrator.ExportFitResultsToJSON(const FileName: string);
+var
+  Parsed: TJSONValue;
+  Root: TJSONObject;
+  SL: TStringList;
+begin
+  Parsed := TJSONObject.ParseJSONValue(FProjectPanel.FitRecord);
+  if not (Parsed is TJSONObject) then
+  begin
+    Parsed.Free;
+    raise Exception.Create('The project''s fit record cannot be read.');
+  end;
+  Root := TJSONObject(Parsed);
+  try
+    Root.AddPair('exportDate', DateToISO8601(Now, False));
     SL := TStringList.Create;
     try
       SL.Text := Root.Format(2);

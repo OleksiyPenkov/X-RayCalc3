@@ -35,9 +35,23 @@ type
       procedure SetStructure(const Inp: TFitStructure); override;
       procedure UpdatePSO(const t: integer); override;
       procedure InitVelocity; override;
+    private
+      FStartFromTables: Boolean;
+      FClampedStarts: Integer;
+      procedure ApplyStartTables(const Inp: TFitStructure);
     public
-      //
     destructor Destroy; override;
+      { Start each period from its entry of the layer's per-period table
+        (TLayerData.PP, read through PeriodValue exactly as the GUI's model and
+        the MCP's are built) instead of from the layer's single value. Set it
+        before Structure. A free parameter keeps the layer's bounds in every
+        period, its start clamped into them; a held one (min = max) is pinned
+        to its own period's value. The GUI sets it for Resume and for Run with
+        "Keep them" when the model has a Table; fit_xrr for "start_profiles". }
+      property StartFromTables: Boolean read FStartFromTables write FStartFromTables;
+      { After Structure: how many per-period start values lay outside their
+        layer's limits and were moved onto the limit. }
+      property ClampedStarts: Integer read FClampedStarts;
   end;
 
 implementation
@@ -215,6 +229,45 @@ begin
   end;
 end;
 
+procedure TLFPSO_Irregular.ApplyStartTables(const Inp: TFitStructure);
+var
+  i, j, k, p, Index: Integer;
+  Val: TFitValue;
+begin
+  { The order SetStructure expands in: stack by stack, period 1 (the surface
+    end) first, the layers of each period in turn. }
+  FClampedStarts := 0;
+  Index := 0;
+  for i := 0 to High(Inp.Stacks) do
+    for k := 1 to Inp.Stacks[i].N do
+      for j := 0 to High(Inp.Stacks[i].Layers) do
+      begin
+        for p := 1 to 3 do
+        begin
+          Val := Inp.Stacks[i].Layers[j].P[p];
+          Val.V := Inp.Stacks[i].Layers[j].PeriodValue(p, k, Inp.Stacks[i].N, True);
+          if Val.min = Val.max then
+          begin
+            Val.min := Val.V;
+            Val.max := Val.V;
+          end
+          else if Val.V < Val.min then
+          begin
+            Val.V := Val.min;
+            Inc(FClampedStarts);
+          end
+          else if Val.V > Val.max then
+          begin
+            Val.V := Val.max;
+            Inc(FClampedStarts);
+          end;
+          Set_Init_X(Index, p, Val);
+          FStructure.Stacks[0].Layers[Index].P[p] := Val;
+        end;
+        Inc(Index);
+      end;
+end;
+
 procedure InitArray(const Length: Word; var A: TIndexes);
 begin
   SetLength(A, 0);
@@ -307,6 +360,11 @@ begin
       end;
     end;
   end;
+
+  { A shake hands back the engine's own flattened structure, which carries the
+    tables' values and pinned bounds already. }
+  if FStartFromTables and not FReInit then
+    ApplyStartTables(Inp);
 
   if not FReInit and FFitParams.Smooth then
   begin

@@ -19,8 +19,9 @@ type
   public
     class function BuildReport(E: Exception; Addr: Pointer): string;
     class procedure SaveToFile(const ReportText: string);
-  private
+    /// The executable's file version, a.b.c.d; 'Unknown' when it has none.
     class function GetAppVersion: string;
+  private
     class function GetOSInfo: string;
     class function GetMemoryInfo: string;
     class function GetPlatformStr: string;

@@ -93,6 +93,41 @@ object frmFitSettings: TfrmFitSettings
         TabOrder = 2
         OnEnter = ShowParamHint
       end
+      object lblSeed: TLabel
+        Left = 276
+        Top = 23
+        Width = 24
+        Height = 13
+        Caption = 'Seed'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object edSeed: TEdit
+        Left = 306
+        Top = 19
+        Width = 110
+        Height = 22
+        Hint =
+          'Random seed of the fits that follow. Blank: a new one for every ' +
+          'run. The seed each fit used is saved with the project and in Res' +
+          'ult - Export fit results; type it here to repeat that fit.'
+        Alignment = taRightJustify
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -12
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        MaxLength = 10
+        NumbersOnly = True
+        ParentFont = False
+        TabOrder = 3
+        TextHint = 'random'
+        OnEnter = ShowParamHint
+      end
     end
     object RzGroupBox2: TRzGroupBox
       AlignWithMargins = True

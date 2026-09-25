@@ -28,9 +28,10 @@ unit unit_MCPFit;
    GUI; everything here is the same sequence with the forms taken out. The
    engine is unmodified - the same TLFPSO_Periodic, TLFPSO_Poly or
    TLFPSO_Irregular (the GUI's three fitting modes, "mode" here), the same TCalc,
-   and therefore the same chi-squared as the number the GUI shows. The one
-   addition is TLFPSO_IrregularFromTable, which lets an irregular fit start from
-   per-period values instead of the stack's single value ("start_profiles").
+   and therefore the same chi-squared as the number the GUI shows. An irregular
+   fit may start from per-period values instead of the stack's single value
+   ("start_profiles", TLFPSO_Irregular.StartFromTables - the switch the GUI's
+   Resume uses too).
 
    What the client hands over is parsed and validated synchronously by
    ParseFitRequest, on the calling thread, so that a bad bound or an unreadable
@@ -1391,7 +1392,7 @@ end;
 /// the GUI's Run and Resume do. Each array runs from the surface end (entry 0
 /// is period 1) and holds N values; a parameter without one starts every
 /// period from its single value. The tables go into TLayerData.PP, where
-/// BuildLayeredModel and TLFPSO_IrregularFromTable read them.
+/// BuildLayeredModel and TLFPSO_Irregular.StartFromTables read them.
 ///
 /// Without the flag the arrays are ignored, as they always have been. In
 /// irregular mode that would start the fit from period 1's values and quietly
@@ -1492,7 +1493,7 @@ end;
 /// period, so a table for it contradicts the pairing. A free parameter must
 /// start inside its bounds in every period, for the reason
 /// CheckStartInsideBounds gives. A held one keeps the value its table gives
-/// each period: TLFPSO_IrregularFromTable pins each period there.
+/// each period: TLFPSO_Irregular.StartFromTables pins each period there.
 procedure CheckStartProfiles(const Req: TFitRequest);
 var
   i, j, p, c, n: Integer;
@@ -1817,55 +1818,6 @@ begin
       update, and Free is nil-safe. }
     Msg.LayeredModel.Free;
   end;
-end;
-
-type
-  /// <summary>TLFPSO_Irregular started from per-period values
-  /// ("start_profiles"). Once the engine has expanded the repeating stacks,
-  /// each period's start value is its entry of the layer's table
-  /// (TLayerData.PP, read through PeriodValue exactly as the GUI's model reads
-  /// it) instead of the layer's single value. A free parameter keeps the
-  /// layer's bounds in every period; a held one (min = max) is pinned to its
-  /// own period's value. Both go into the engine's flattened structure as well
-  /// as into particle 0, because a shake re-seeds the swarm from that
-  /// structure.</summary>
-  TLFPSO_IrregularFromTable = class(TLFPSO_Irregular)
-  protected
-    procedure SetStructure(const Inp: TFitStructure); override;
-  end;
-
-procedure TLFPSO_IrregularFromTable.SetStructure(const Inp: TFitStructure);
-var
-  i, j, k, p, Index: Integer;
-  Val: TFitValue;
-begin
-  inherited;
-  { A shake hands back the engine's own flattened structure, which carries
-    the table's values and the pinned bounds already. }
-  if FReInit then
-    Exit;
-
-  { The order TLFPSO_Irregular.SetStructure expands in: stack by stack,
-    period 1 (the surface end) first, the layers of each period in turn. }
-  Index := 0;
-  for i := 0 to High(Inp.Stacks) do
-    for k := 1 to Inp.Stacks[i].N do
-      for j := 0 to High(Inp.Stacks[i].Layers) do
-      begin
-        for p := 1 to 3 do
-        begin
-          Val := Inp.Stacks[i].Layers[j].P[p];
-          Val.V := Inp.Stacks[i].Layers[j].PeriodValue(p, k, Inp.Stacks[i].N, True);
-          if Val.min = Val.max then
-          begin
-            Val.min := Val.V;
-            Val.max := Val.V;
-          end;
-          Set_Init_X(Index, p, Val);
-          FStructure.Stacks[0].Layers[Index].P[p] := Val;
-        end;
-        Inc(Index);
-      end;
 end;
 
 { The scan the engine and every check run afterwards share. With ExpValues set,
@@ -2859,10 +2811,9 @@ begin
   end
   else if Req.Irregular then
   begin
-    if Req.StartProfiles then
-      L := TLFPSO_IrregularFromTable.Create
-    else
-      L := TLFPSO_Irregular.Create;
+    L := TLFPSO_Irregular.Create;
+    { before Structure, which reads the tables }
+    TLFPSO_Irregular(L).StartFromTables := Req.StartProfiles;
     EngineName := 'TLFPSO_Irregular';
   end
   else

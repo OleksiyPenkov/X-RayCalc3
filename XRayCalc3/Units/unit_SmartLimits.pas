@@ -536,7 +536,7 @@ end;
 procedure ApplyGeometryCoupling(var Structure: TFitStructure);
 var
   i, j: Integer;
-  H_self, H_below, Bound: Single;
+  H_self, H_above, Bound: Single;
 begin
   for i := 0 to High(Structure.Stacks) do
     for j := 0 to High(Structure.Stacks[i].Layers) do
@@ -548,18 +548,18 @@ begin
 
       if j > 0 then
         // Same stack, not first layer
-        H_below := Structure.Stacks[i].Layers[j - 1].P[1].V
+        H_above := Structure.Stacks[i].Layers[j - 1].P[1].V
       else if Structure.Stacks[i].N > 1 then
         // Periodic stack, first layer — wraps to last layer
-        H_below := Structure.Stacks[i].Layers[High(Structure.Stacks[i].Layers)].P[1].V
+        H_above := Structure.Stacks[i].Layers[High(Structure.Stacks[i].Layers)].P[1].V
       else if i > 0 then
         // Non-periodic, cross-stack boundary
-        H_below := Structure.Stacks[i - 1].Layers[High(Structure.Stacks[i - 1].Layers)].P[1].V
+        H_above := Structure.Stacks[i - 1].Layers[High(Structure.Stacks[i - 1].Layers)].P[1].V
       else
-        // First layer of first stack, non-periodic — substrate is semi-infinite
-        H_below := MaxSingle;
+        // First layer of first stack, non-periodic — borders the ambient, no layer above
+        H_above := MaxSingle;
 
-      Bound := Min(H_self, H_below);
+      Bound := Min(H_self, H_above);
       if Structure.Stacks[i].Layers[j].P[2].max > Bound then
         Structure.Stacks[i].Layers[j].P[2].max := Bound;
     end;

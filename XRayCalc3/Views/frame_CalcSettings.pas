@@ -270,6 +270,9 @@ begin
   cbSmooth.Enabled := FittingMode = fmIrregular;
   edPolyOrder.Enabled := FittingMode = fmPoly;
   lblPolyOrder.Enabled := edPolyOrder.Enabled;
+  { TLFPSO_Poly.RangeSeed is its XSeed: the polynomial engine always seeds
+    around the start model, so the box would change nothing there. }
+  cbSeedRange.Enabled := FittingMode <> fmPoly;
   cbFreePeriod.Enabled := FittingMode = fmPeriodic;
   edPeriodWindow.Enabled := cbFreePeriod.Enabled;
   lblPeriodWindow.Enabled := cbFreePeriod.Enabled;
@@ -355,6 +358,9 @@ begin
   cbSmooth.Enabled := FittingMode = fmIrregular;
   edPolyOrder.Enabled := FittingMode = fmPoly;
   lblPolyOrder.Enabled := edPolyOrder.Enabled;
+  { TLFPSO_Poly.RangeSeed is its XSeed: the polynomial engine always seeds
+    around the start model, so the box would change nothing there. }
+  cbSeedRange.Enabled := FittingMode <> fmPoly;
   cbFreePeriod.Enabled := FittingMode = fmPeriodic;
   edPeriodWindow.Enabled := cbFreePeriod.Enabled;
   lblPeriodWindow.Enabled := cbFreePeriod.Enabled;
