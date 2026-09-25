@@ -60,7 +60,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object lblPolyOrder: TLabel
       Left = 291
-      Top = 51
+      Top = 57
       Width = 28
       Height = 14
       Margins.Left = 3
@@ -73,7 +73,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object Label21: TLabel
       Left = 256
-      Top = 83
+      Top = 84
       Width = 34
       Height = 16
       Margins.Left = 3
@@ -86,7 +86,7 @@ object frmCalcSettings: TfrmCalcSettings
     object rgFittingMode: TRzRadioGroup
       AlignWithMargins = True
       Left = 132
-      Top = 3
+      Top = 8
       Width = 237
       Height = 39
       Margins.Left = 3
@@ -115,7 +115,7 @@ object frmCalcSettings: TfrmCalcSettings
       Left = 60
       Top = 25
       Width = 50
-      Height = 18
+      Height = 21
       Margins.Left = 3
       Margins.Top = 3
       Margins.Right = 3
@@ -130,7 +130,7 @@ object frmCalcSettings: TfrmCalcSettings
       Left = 60
       Top = 53
       Width = 50
-      Height = 18
+      Height = 21
       Margins.Left = 3
       Margins.Top = 3
       Margins.Right = 3
@@ -143,7 +143,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbLFPSOShake: TRzCheckBox
       Left = 7
-      Top = 81
+      Top = 82
       Width = 55
       Height = 19
       Margins.Left = 3
@@ -159,7 +159,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbSeedRange: TRzCheckBox
       Left = 71
-      Top = 81
+      Top = 82
       Width = 56
       Height = 19
       Margins.Left = 3
@@ -175,9 +175,9 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object edPolyOrder: TEdit
       Left = 335
-      Top = 48
+      Top = 53
       Width = 34
-      Height = 18
+      Height = 21
       Hint = 'Polynomial order'
       Margins.Left = 3
       Margins.Top = 3
@@ -195,7 +195,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbTWChi: TComboBox
       Left = 297
-      Top = 78
+      Top = 81
       Width = 72
       Height = 20
       Margins.Left = 3
@@ -216,9 +216,9 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbPWChiSqr: TRzCheckBox
       Left = 141
-      Top = 81
+      Top = 82
       Width = 46
-      Height = 18
+      Height = 19
       Margins.Left = 3
       Margins.Top = 3
       Margins.Right = 3
@@ -246,9 +246,9 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbSmooth: TRzCheckBox
       Left = 141
-      Top = 48
+      Top = 54
       Width = 54
-      Height = 18
+      Height = 19
       Margins.Left = 3
       Margins.Top = 3
       Margins.Right = 3
@@ -260,9 +260,9 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbSolveScale: TRzCheckBox
       Left = 375
-      Top = 25
+      Top = 26
       Width = 112
-      Height = 18
+      Height = 19
       Hint = 
         'Score every candidate at the measured scale that minimises '#967'2 (' +
         'within the window), as the MCP server'#39's scale_solve does. Off: t' +
@@ -295,7 +295,7 @@ object frmCalcSettings: TfrmCalcSettings
       Left = 425
       Top = 53
       Width = 50
-      Height = 18
+      Height = 21
       Hint = 
         'How far the solved scale may move from the anchored one, as a fr' +
         'action: 0.2 = within x1.2 either way, 0 pins it (scale_solve_win' +
@@ -313,9 +313,9 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object cbFreePeriod: TRzCheckBox
       Left = 375
-      Top = 81
+      Top = 82
       Width = 84
-      Height = 18
+      Height = 19
       Hint =
         'Periodic mode: let the period of every repeating stack move by th' +
         'e window around its start value, as fit_xrr'#39's "target": "period' +
@@ -333,9 +333,9 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object edPeriodWindow: TEdit
       Left = 463
-      Top = 80
+      Top = 81
       Width = 34
-      Height = 18
+      Height = 21
       Hint =
         'How far each period may move from the one the fit starts with, i' +
         'n per cent either way'
@@ -352,7 +352,7 @@ object frmCalcSettings: TfrmCalcSettings
     end
     object lblPeriodWindow: TLabel
       Left = 501
-      Top = 83
+      Top = 85
       Width = 11
       Height = 14
       Margins.Left = 3
