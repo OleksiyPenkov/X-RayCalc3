@@ -45,6 +45,7 @@ type
     [Test] procedure Rendered_TheLegendIsAtTheTopOfTheStrip;
     [Test] procedure Shown_WithNothingToPlot_KeepsItsAxis;
     [Test] procedure Rendered_FramesAreAsWideAsTheAxisLine;
+    [Test] procedure Rendered_ZoomedCurveStaysInItsPlot;
   end;
 
 implementation
@@ -478,6 +479,67 @@ begin
       if Dark(Bmp.Canvas.Pixels[X, Y]) then
         Inc(Rows);
     Assert.IsTrue(Rows >= 3, Format('%d dark rows at the top of the strip, y=%d', [Rows, YTop]));
+  finally
+    Bmp.Free;
+  end;
+end;
+
+{ A mouse-wheel zoom leaves the reflectivity curves running below their axis.
+  The chart clips a series to the whole plot, so they ran on through the gap
+  and over the strip. A blue curve from 0.5 down to -5 on a 0..1 axis: blue
+  above the bottom of its axis, none in the gap or in the strip. }
+procedure TTestResidualStrip.Rendered_ZoomedCurveStaysInItsPlot;
+var
+  Bmp: TBitmap;
+  Main: TFastLineSeries;
+  X, Y, Found, Leaked: Integer;
+  P: TColor;
+
+  function IsBlue(C: TColor): Boolean;
+  begin
+    Result := (GetBValue(C) > 150) and (GetBValue(C) - GetRValue(C) > 80) and
+      (GetBValue(C) - GetGValue(C) > 80);
+  end;
+
+begin
+  FChart.Canvas := TGDIPlusCanvas.Create;
+  FChart.View3D := False;
+  FChart.Legend.Visible := False;
+  FChart.Color := clWhite;
+  FChart.Gradient.Visible := False;
+  FChart.BottomAxis.Automatic := False;
+  FChart.BottomAxis.SetMinMax(0, 3);
+  FChart.LeftAxis.Automatic := False;
+  FChart.LeftAxis.SetMinMax(0, 1);
+
+  Main := TFastLineSeries.Create(FChart);
+  Main.ParentChart := FChart;
+  Main.SeriesColor := TColors.Blue;
+  Main.LinePen.Width := 3;
+  Main.AddXY(1.5, 0.5);
+  Main.AddXY(1.5, -5);
+
+  FStrip.SetOptions(False, False, False);
+  FStrip.Visible := True;
+  FStrip.Plot(OnePlot);
+
+  Bmp := FChart.TeeCreateBitmap(clWhite, Rect(0, 0, FChart.Width, FChart.Height));
+  try
+    X := FChart.BottomAxis.CalcXPosValue(1.5);
+    Found := 0;
+    for Y := FChart.LeftAxis.CalcYPosValue(0.4) to FChart.LeftAxis.IEndPos - 2 do
+      for P in [Bmp.Canvas.Pixels[X - 1, Y], Bmp.Canvas.Pixels[X, Y], Bmp.Canvas.Pixels[X + 1, Y]] do
+        if IsBlue(P) then
+          Inc(Found);
+    Assert.IsTrue(Found > 0, 'the curve is drawn in its own plot');
+
+    Leaked := 0;
+    for Y := FChart.LeftAxis.IEndPos + 2 to FStrip.Axis.IEndPos - 1 do
+      for P in [Bmp.Canvas.Pixels[X - 1, Y], Bmp.Canvas.Pixels[X, Y], Bmp.Canvas.Pixels[X + 1, Y]] do
+        if IsBlue(P) then
+          Inc(Leaked);
+    Assert.AreEqual(0, Leaked, Format('blue pixels below the reflectivity axis (%d..%d)',
+      [FChart.LeftAxis.IEndPos + 2, FStrip.Axis.IEndPos - 1]));
   finally
     Bmp.Free;
   end;

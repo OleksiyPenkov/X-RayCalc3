@@ -31,7 +31,7 @@ unit unit_ResidualStrip;
 interface
 
 uses
-  System.Classes, System.UITypes, VCLTee.Chart, VCLTee.TeEngine, VCLTee.Series,
+  System.Classes, System.Types, System.UITypes, VCLTee.Chart, VCLTee.TeEngine, VCLTee.Series,
   unit_Residuals;
 
 const
@@ -70,6 +70,12 @@ type
     procedure SetVisible(Value: Boolean);
     procedure ChartBeforeDrawSeries(Sender: TObject);
     procedure ChartAfterDraw(Sender: TObject);
+    procedure StripSeriesBeforeDraw(Sender: TObject);
+    procedure MainSeriesBeforeDraw(Sender: TObject);
+    procedure SeriesAfterDraw(Sender: TObject);
+    procedure HookMainSeries(Hook: Boolean);
+    function MainRect: TRect;
+    function StripRect: TRect;
     procedure DrawLegend;
     procedure ClearSeries;
     procedure Redraw;
@@ -98,7 +104,7 @@ type
 implementation
 
 uses
-  System.Types, System.Math, Winapi.Windows, Vcl.Graphics, VCLTee.TeCanvas;
+  System.Math, Winapi.Windows, Vcl.Graphics, VCLTee.TeCanvas;
 
 const
   BAND_KEY_COLOR = $00404040;
@@ -135,6 +141,7 @@ end;
 
 destructor TResidualStrip.Destroy;
 begin
+  HookMainSeries(False);
   FChart.OnBeforeDrawSeries := FPrevBeforeDrawSeries;
   FChart.OnAfterDraw := FPrevAfterDraw;
   inherited;
@@ -152,6 +159,64 @@ begin
   FChart.Canvas.Brush.Color := FChart.Color;
   FChart.Canvas.FillRect(Rect(FChart.ChartRect.Left - 1, FChart.LeftAxis.IEndPos + 1,
     FChart.ChartRect.Right + 2, FAxis.IStartPos));
+  { The chart clips a series to the whole plot, not to its axis: zoomed with
+    the mouse wheel, the reflectivity curves ran on below their axis, through
+    the gap and over the strip. Each series clips itself to its own plot as it
+    draws. Hooked here, so a series the chart manager adds later is caught. }
+  HookMainSeries(True);
+end;
+
+{ The canvas keeps its clips on a stack (TGDIPlusCanvas.PushClipRect), so a
+  series pushes its plot before it draws and pops it after; the chart's own
+  clip under it is left as it was. }
+procedure TResidualStrip.HookMainSeries(Hook: Boolean);
+var
+  i: Integer;
+  S: TChartSeries;
+begin
+  for i := 0 to FChart.SeriesCount - 1 do
+  begin
+    S := FChart.Series[i];
+    if S.Tag = RESIDUAL_SERIES_TAG then
+      Continue;
+    if Hook and not Assigned(S.BeforeDrawValues) then
+    begin
+      S.BeforeDrawValues := MainSeriesBeforeDraw;
+      S.AfterDrawValues := SeriesAfterDraw;
+    end
+    else if not Hook and (TMethod(S.BeforeDrawValues).Data = Self) then
+    begin
+      S.BeforeDrawValues := nil;
+      S.AfterDrawValues := nil;
+    end;
+  end;
+end;
+
+function TResidualStrip.MainRect: TRect;
+begin
+  Result := Rect(FChart.ChartRect.Left, FChart.LeftAxis.IStartPos,
+    FChart.ChartRect.Right + 1, FChart.LeftAxis.IEndPos + 1);
+end;
+
+function TResidualStrip.StripRect: TRect;
+begin
+  Result := Rect(FChart.ChartRect.Left, FAxis.IStartPos,
+    FChart.ChartRect.Right + 1, FAxis.IEndPos + 1);
+end;
+
+procedure TResidualStrip.StripSeriesBeforeDraw(Sender: TObject);
+begin
+  FChart.Canvas.ClipRectangle(StripRect);
+end;
+
+procedure TResidualStrip.MainSeriesBeforeDraw(Sender: TObject);
+begin
+  FChart.Canvas.ClipRectangle(MainRect);
+end;
+
+procedure TResidualStrip.SeriesAfterDraw(Sender: TObject);
+begin
+  FChart.Canvas.UnClipRectangle;
 end;
 
 procedure TResidualStrip.ChartAfterDraw(Sender: TObject);
@@ -345,6 +410,8 @@ begin
   Result.VertAxis := aCustomVertAxis;
   Result.CustomVertAxis := FAxis;
   Result.ShowInLegend := False;
+  Result.BeforeDrawValues := StripSeriesBeforeDraw;
+  Result.AfterDrawValues := SeriesAfterDraw;
   Result.SeriesColor := AColor;
   Result.LinePen.Width := AWidth;
   Result.IgnoreNulls := False;          // a floored point breaks the line
@@ -359,6 +426,8 @@ begin
   Result.VertAxis := aCustomVertAxis;
   Result.CustomVertAxis := FAxis;
   Result.ShowInLegend := False;
+  Result.BeforeDrawValues := StripSeriesBeforeDraw;
+  Result.AfterDrawValues := SeriesAfterDraw;
   Result.SeriesColor := AColor;
   Result.Pointer.Style := psCircle;
   Result.Pointer.HorizSize := 2;
@@ -375,8 +444,8 @@ var
   X0, X1: Double;
   b: Integer;
 
-  { A value off the strip is drawn at its edge: the chart clips a series to
-    the whole plot, not to its axis, so it would run up into the curves. }
+  { A value off the strip is drawn at its edge rather than cut off by the
+    strip's clip, so the reader sees there is one. }
   function Held(D: Double): Double;
   begin
     Result := EnsureRange(D, -STRIP_RANGE, STRIP_RANGE);
