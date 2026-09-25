@@ -38,6 +38,67 @@ implementation
 uses
   Winapi.Windows, unit_Config, frm_CrashReport;
 
+{ Exception.StackTrace: the return addresses on the stack when an exception is
+  raised, an access violation included, as module offsets. The Release build
+  writes a detailed .map next to the executable; an offset minus $1000 is the
+  address in segment 0001 there. }
+
+const
+  MAX_STACK_FRAMES = 62;
+
+type
+  PStackFrames = ^TStackFrames;
+  TStackFrames = record
+    Count: Integer;
+    Frames: array [0 .. MAX_STACK_FRAMES - 1] of Pointer;
+  end;
+
+function RtlCaptureStackBackTrace(FramesToSkip, FramesToCapture: ULONG;
+  BackTrace: Pointer; BackTraceHash: PULONG): USHORT; stdcall;
+  external kernel32 name 'RtlCaptureStackBackTrace';
+
+function GetStackInfo(P: System.PExceptionRecord): Pointer;
+var
+  S: PStackFrames;
+begin
+  New(S);
+  S.Count := RtlCaptureStackBackTrace(1, MAX_STACK_FRAMES, @S.Frames[0], nil);
+  Result := S;
+end;
+
+function GetStackInfoString(Info: Pointer): string;
+var
+  S: PStackFrames;
+  i: Integer;
+  Module: HMODULE;
+  Name: array [0 .. MAX_PATH] of Char;
+  MemInfo: TMemoryBasicInformation;
+begin
+  Result := '';
+  S := Info;
+  if S = nil then
+    Exit;
+  for i := 0 to S.Count - 1 do
+  begin
+    Module := 0;
+    if VirtualQuery(S.Frames[i], MemInfo, SizeOf(MemInfo)) <> 0 then
+      Module := HMODULE(MemInfo.AllocationBase);
+    if Module <> 0 then
+    begin
+      GetModuleFileName(Module, Name, Length(Name));
+      Result := Result + Format('  %s+$%x', [ExtractFileName(Name),
+        NativeUInt(S.Frames[i]) - NativeUInt(Module)]) + sLineBreak;
+    end
+    else
+      Result := Result + Format('  $%p', [S.Frames[i]]) + sLineBreak;
+  end;
+end;
+
+procedure CleanUpStackInfo(Info: Pointer);
+begin
+  Dispose(PStackFrames(Info));
+end;
+
 { TCrashReport }
 
 class function TCrashReport.GetAppVersion: string;
@@ -161,6 +222,12 @@ begin
     SL.Add(Format('Class:           %s', [E.ClassName]));
     SL.Add(Format('Message:         %s', [E.Message]));
     SL.Add(Format('Location:        %s', [GetModuleInfo(Addr)]));
+    if E.StackTrace <> '' then
+    begin
+      SL.Add('');
+      SL.Add('--- Stack ---');
+      SL.Add(TrimRight(E.StackTrace));
+    end;
 
     Inner := E.InnerException;
     while Inner <> nil do
@@ -231,7 +298,13 @@ begin
 end;
 
 initialization
+  Exception.GetExceptionStackInfoProc := GetStackInfo;
+  Exception.GetStackInfoStringProc := GetStackInfoString;
+  Exception.CleanUpStackInfoProc := CleanUpStackInfo;
 
 finalization
+  Exception.GetExceptionStackInfoProc := nil;
+  Exception.GetStackInfoStringProc := nil;
+  Exception.CleanUpStackInfoProc := nil;
 
 end.
