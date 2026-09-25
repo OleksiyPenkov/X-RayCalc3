@@ -1,0 +1,68 @@
+cff-version: 1.2.0
+message: "If you use X-Ray Calc 3 in your research, please cite the article below."
+type: software
+title: "X-Ray Calc 3"
+abstract: >-
+  X-Ray Calc 3 is a Windows program for the simulation of X-ray reflectivity (XRR)
+  of layered structures and for fitting measured curves with a particle-swarm
+  optimiser (LFPSO). The repository also holds the command-line interface, the XRF
+  mirror-design program XRFCalc, and XRC_MCP, a server that exposes the same
+  calculation engine to LLM agents over the Model Context Protocol.
+authors:
+  - family-names: Penkov
+    given-names: Oleksiy V.
+    orcid: "https://orcid.org/0000-0003-3675-5301"
+    affiliation: Zhejiang University
+version: 3.9.3
+date-released: 2026-09-24
+license: GPL-3.0-only
+repository-code: "https://github.com/OleksiyPenkov/X-RayCalc3"
+url: "https://github.com/OleksiyPenkov/X-RayCalc3/wiki"
+keywords:
+  - X-ray reflectivity
+  - XRR
+  - multilayer
+  - thin films
+  - inverse problem
+  - particle swarm optimization
+  - Delphi
+preferred-citation:
+  type: article
+  title: "X-Ray Calc 3: improved software for simulation and inverse problem solving for X-ray reflectivity"
+  authors:
+    - family-names: Penkov
+      given-names: Oleksiy V.
+      orcid: "https://orcid.org/0000-0003-3675-5301"
+    - family-names: Li
+      given-names: Mingfeng
+      orcid: "https://orcid.org/0000-0002-8318-5754"
+    - family-names: Mikki
+      given-names: Said
+    - family-names: Devizenko
+      given-names: Alexander
+    - family-names: Kopylets
+      given-names: Ihor
+  journal: "Journal of Applied Crystallography"
+  volume: 57
+  issue: 2
+  start: 555
+  end: 566
+  year: 2024
+  doi: "10.1107/S1600576724001031"
+references:
+  - type: article
+    title: "X-Ray Calc: A software for the simulation of X-ray reflectivity"
+    authors:
+      - family-names: Penkov
+        given-names: Oleksiy V.
+      - family-names: Kopylets
+        given-names: Igor A.
+      - family-names: Khadem
+        given-names: Mahdi
+      - family-names: Qin
+        given-names: Tianzuo
+    journal: SoftwareX
+    volume: 12
+    start: 100528
+    year: 2020
+    doi: "10.1016/j.softx.2020.100528"
