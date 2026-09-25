@@ -48,6 +48,7 @@ type
       identical X values and the plot zig-zags between their chi-squared
       levels. Set by PrepareConvergence, which runs before PrepareDiagnostics. }
     FStepOffset: Integer;
+    procedure FitConvergenceAxis;
   public
     property ThicknessChart: TChart read chThickness;
     property RoughnessChart: TChart read chRoughness;
@@ -122,6 +123,42 @@ begin
     lsrWorstChi.AddXY(X, WorstChi);
   if WasShaken and (lsrShake <> nil) then
     lsrShake.AddXY(X, BestChi);
+  FitConvergenceAxis;
+end;
+
+{ Pins the log chi-squared axis to whole decades around the visible series.
+  Left automatic, the axis could end just under a decade, and the 9.0x10^11
+  and 1.0x10^12 labels were drawn on top of each other at the top of the
+  short chart. }
+procedure TfrmChartPages.FitConvergenceAxis;
+var
+  Lo, Hi: Double;
+begin
+  if lsrConvergence.Count = 0 then
+  begin
+    chFittingProgress.LeftAxis.Automatic := True;
+    Exit;
+  end;
+
+  Lo := lsrConvergence.MinYValue;
+  Hi := lsrConvergence.MaxYValue;
+  if (lsrWorstChi <> nil) and lsrWorstChi.Active and (lsrWorstChi.Count > 0) then
+  begin
+    Lo := Min(Lo, lsrWorstChi.MinYValue);
+    Hi := Max(Hi, lsrWorstChi.MaxYValue);
+  end;
+
+  if (Lo <= 0) or IsNan(Lo) or IsNan(Hi) or IsInfinite(Hi) then
+  begin
+    chFittingProgress.LeftAxis.Automatic := True;
+    Exit;
+  end;
+
+  Lo := Power(10, Floor(Log10(Lo)));
+  Hi := Power(10, Ceil(Log10(Hi)));
+  if Hi <= Lo then
+    Hi := Lo * 10;
+  chFittingProgress.LeftAxis.SetMinMax(Lo, Hi);
 end;
 
 procedure TfrmChartPages.ClearConvergence;
@@ -130,6 +167,7 @@ begin
   lsrConvergence.Clear;
   if lsrWorstChi <> nil then lsrWorstChi.Clear;
   if lsrShake <> nil then lsrShake.Clear;
+  FitConvergenceAxis;
   ClearDiagnostics;
 end;
 
@@ -137,6 +175,7 @@ procedure TfrmChartPages.chkWorstChiClick(Sender: TObject);
 begin
   if lsrWorstChi <> nil then
     lsrWorstChi.Active := chkWorstChi.Checked;
+  FitConvergenceAxis;
 end;
 
 procedure TfrmChartPages.PrepareConvergence(NMax: Integer; const Append: Boolean);
