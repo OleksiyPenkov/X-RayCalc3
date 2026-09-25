@@ -587,7 +587,13 @@ begin
     FLastSolveScale := False;
     FLastScaleLog := 0;
     RunCalc(False);
-    FChartInfo.SetChiSquare(FABestChiSquare, FABestChiSquare);
+    { RunCalc has put the CPU recalculation on the Chart Info bar, the number
+      the fit record saves. Overwriting it with FABestChiSquare, the running
+      minimum of the progress messages, showed the GPU's chi-squared after a
+      GPU fit. Only when RunCalc scored nothing (no data or hidden curve) is
+      the fit's own best shown. }
+    if IsNan(FLastChi) then
+      FChartInfo.SetChiSquare(FFitBestChi, FFitBestChi);
     { After RunCalc: the record carries the plain chi-squared and the scale of
       the model the fit ended on. Before AutoSave, which saves it. }
     Rec := BuildFitRecord;
