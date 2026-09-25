@@ -412,7 +412,10 @@ begin
   Params.Shake := cbLFPSOShake.Checked;
   Params.ThetaWeight := cbTWChi.ItemIndex;
   Params.RangeSeed := cbSeedRange.Checked;
-  Params.MaxPOrder := StrToInt(edPolyOrder.Text);
+  { 1..9: TProjectData.Poly holds ten coefficients and the profile editor
+    offers orders 1 to 9. The box is one digit, but it can be empty, and a
+    project file can carry anything. }
+  Params.MaxPOrder := EnsureRange(StrToIntDef(Trim(edPolyOrder.Text), 1), 1, 9);
   Params.Smooth := cbSmooth.Checked;
   Params.SolveScale := SolveScale;
   Params.ScaleWindowLog := ScaleWindowToLog(ScaleWindow);

@@ -728,6 +728,9 @@ object frmMain: TfrmMain
         Caption = 'New model'
       end
       object Newextension1: TMenuItem
+        Action = ProjectItemExtension
+      end
+      object Duplicatemodel1: TMenuItem
         ImageIndex = 7
         Action = actProjectItemDuplicate
       end
@@ -1308,7 +1311,7 @@ object frmMain: TfrmMain
                   end
                   item
                     Action = FilePlotCopyWMF
-                    Caption = 'C&opy as WMF'
+                    Caption = 'C&opy as EMF'
                     CommandStyle = csMenu
                     ImageIndex = 13
                     CommandProperties.Width = 0
@@ -1618,7 +1621,7 @@ object frmMain: TfrmMain
               end
               item
                 Action = FilePlotCopyWMF
-                Caption = 'C&opy as WMF'
+                Caption = 'C&opy as EMF'
               end
               item
                 Caption = '&ActionClientItem2'
@@ -1638,7 +1641,7 @@ object frmMain: TfrmMain
               end
               item
                 Action = FilePlotCopyWMF
-                Caption = 'C&opy as WMF'
+                Caption = 'C&opy as EMF'
               end>
             Action = FilePlotToFile
             Caption = '&Save'
@@ -1958,7 +1961,7 @@ object frmMain: TfrmMain
     end
     object FilePlotCopyWMF: TAction
       Category = 'Plot'
-      Caption = 'Copy as WMF'
+      Caption = 'Copy as EMF'
       OnExecute = FilePlotCopyWMFExecute
     end
     object HelpHelp: TAction

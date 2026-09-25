@@ -17,6 +17,8 @@ type
 
     { SeriesToFile / SeriesFromFile roundtrip }
     [Test] procedure Test_SeriesToFile_CreatesFile;
+    [Test] procedure Test_XColumn_FollowsTheAxis;
+    [Test] procedure Test_SeriesToFile_HeaderNamesTheAxis;
     [Test] procedure Test_SeriesFromFile_Roundtrip;
     [Test] procedure Test_SeriesFromFile_SkipsCommentLines;
     [Test] procedure Test_SeriesFromFile_SkipsSampleHeader;
@@ -74,6 +76,43 @@ begin
     fn := TempFile('test.dat');
     SeriesToFile(S, fn);
     Assert.IsTrue(TFile.Exists(fn), 'File should exist');
+  finally
+    S.Free;
+  end;
+end;
+
+{ The chart holds what its axis shows, so the exported column is named after
+  the axis: it used to say 2Theta for a theta axis and for wavelengths too. }
+procedure TTestSeriesIO.Test_XColumn_FollowsTheAxis;
+var
+  C, U: string;
+begin
+  XColumn(0, True, C, U);
+  Assert.AreEqual('2Theta', C);
+  Assert.AreEqual('deg', U);
+  XColumn(0, False, C, U);
+  Assert.AreEqual('Theta', C);
+  Assert.AreEqual('deg', U);
+  XColumn(1, True, C, U);
+  Assert.AreEqual('Wavelength', C);
+  Assert.AreEqual('A', U);
+end;
+
+procedure TTestSeriesIO.Test_SeriesToFile_HeaderNamesTheAxis;
+var
+  S: TLineSeries;
+  fn: string;
+  Lines: TArray<string>;
+begin
+  S := TLineSeries.Create(nil);
+  try
+    S.AddXY(0.5, 1.0);
+    S.AddXY(1.0, 0.1);
+    fn := TempFile('theta.dat');
+    SeriesToFile(S, fn, 0, False);
+    Lines := TFile.ReadAllLines(fn);
+    Assert.IsTrue(Lines[0].StartsWith('Theta'#9'Reflectivity'), Lines[0]);
+    Assert.AreEqual('deg'#9, Lines[1]);
   finally
     S.Free;
   end;
@@ -234,7 +273,7 @@ begin
     SOut.AddXY(1.5, 0.01);
 
     try
-      SeriesToClipboard(SOut, 0);  // mode 0 = 2Theta
+      SeriesToClipboard(SOut, 0, True);  // mode 0, 2theta axis
     except
       on E: Exception do
       begin

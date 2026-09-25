@@ -136,6 +136,7 @@ type
     Copymodel1: TMenuItem;
     PasteModel1: TMenuItem;
     Newextension1: TMenuItem;
+    Duplicatemodel1: TMenuItem;
     Add1: TMenuItem;
     Insert1: TMenuItem;
     Delete1: TMenuItem;

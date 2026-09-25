@@ -293,10 +293,17 @@ begin
 end;
 
 procedure TXRCStructure.CopyLayer;
+var
+  p: Integer;
 begin
   if not IfValidLayerSelected then Exit;
 
   FClipBoardLayers[0] := FStacks[FSelectedLayerParent].LayerData[FSelectedLayer];
+  { The per-period table belongs to this layer in this stack; pasted into
+    another stack, or as another layer, it would describe periods it never
+    had. }
+  for p := 1 to 3 do
+    FClipBoardLayers[0].ClearProfiles(p);
   ClearSelection(Reset);
 end;
 
@@ -882,7 +889,14 @@ begin
           JLayer.AddPair(UpperCase(PAlias[p]) + 'F', Data.P[p].Fixed);
           JLayer.AddPair(UpperCase(PAlias[p]) + 'min', SingleJSON(Data.P[p].min));
           JLayer.AddPair(UpperCase(PAlias[p]) + 'max', SingleJSON(Data.P[p].max));
-          Profile := Data.ProfileToString(TParameterType(p - 1));
+          { A table is written only where TLayerData.PeriodValue reads one: a
+            repeating stack and an unpaired parameter. A paired parameter kept
+            the table of an earlier irregular fit, which came back to life
+            when it was unpaired again. }
+          if (FStacks[i].N > 1) and not Data.P[p].Paired then
+            Profile := Data.ProfileToString(TParameterType(p - 1))
+          else
+            Profile := '';
           JLayer.AddPair('Profile' + UpperCase(PAlias[p]), Profile);
         end;
 

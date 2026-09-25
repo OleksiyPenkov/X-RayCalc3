@@ -249,7 +249,6 @@ type
       SaveHistory. False when there is nothing to undo. }
     function  Undo: Boolean;
     procedure AutoSave;
-    procedure LoadAutoSave;
     procedure GenerateAutosaveName;
     function  GradientTitle(const P: TFuncProfileRec): string;
     function  ActiveModelSeries: TFastLineSeries; inline;
@@ -1489,7 +1488,8 @@ begin
   if (Data.Group = gtModel) and (Data.RowType = prItem) then
     ClipBoard.AsText := Structure.ToString;
   if (Data.Group = gtData) and (Data.RowType = prItem) then
-    SeriesToClipboard(FChartMgr.Series[Data.CurveID], FCalcSettings.CalcMode);
+    SeriesToClipboard(FChartMgr.Series[Data.CurveID], FCalcSettings.CalcMode,
+      FCalcSettings.Is2Theta);
 end;
 
 procedure TfrmProjectPanel.DeleteSelectedItems;
@@ -2247,33 +2247,33 @@ end;
 procedure TfrmProjectPanel.AutoSave;
 begin
   if TConfig.Section<TOtherOptions>.AutoSave then
-    SaveProject(FAutoSaveFileName);
-end;
-
-procedure TfrmProjectPanel.LoadAutoSave;
-begin
-  if FileExists(FAutoSaveFileName) then
   begin
-    LoadProject(FAutoSaveFileName);
-    if Assigned(FOnCalcRun) then
-      FOnCalcRun(Self);
+    { The Output folder is not created anywhere else. }
+    ForceDirectories(ExtractFilePath(FAutoSaveFileName));
+    SaveProject(FAutoSaveFileName);
   end;
 end;
 
+{ <project>-fitted.xrcx, in the Fitting Output folder when one is set and next
+  to the project when the setting is blank. TConfig.SystemDir never returns ''
+  (a blank setting is the program's own folder), so the setting itself is
+  what is asked. A project that was never saved has no folder: its autosave
+  goes to the Projects folder. }
 procedure TfrmProjectPanel.GenerateAutosaveName;
 var
-  FileName, Path: string;
-  p: Integer;
+  Path: string;
 begin
-  FileName := FProjectName;
-  if TConfig.SystemDir[sdOutDir] <> '' then
+  if Trim(TConfig.Section<TPathOptions>.OutputDir) <> '' then
     Path := TConfig.SystemDir[sdOutDir]
   else
-    Path := ExtractFilePath(FileName);
+  begin
+    Path := ExtractFilePath(FProjectFileName);
+    if Path = '' then
+      Path := TConfig.SystemDir[sdProjDir];
+  end;
 
-  p := pos(PROJECT_EXT, FileName);
-  Delete(FileName, p, Length(PROJECT_EXT));
-  FAutoSaveFileName := Path + FileName + '-fitted' + PROJECT_EXT;
+  FAutoSaveFileName := IncludeTrailingPathDelimiter(Path) +
+    ChangeFileExt(ExtractFileName(FProjectName), '') + '-fitted' + PROJECT_EXT;
 end;
 
 function TfrmProjectPanel.GradientTitle(const P: TFuncProfileRec): string;

@@ -56,6 +56,9 @@ var
 
 implementation
 
+uses
+  System.Math;
+
 {$R *.dfm}
 
 { TfrmFitSettings }
@@ -95,7 +98,10 @@ begin
     Params.Tolerance       := StrToFloat(edFitTolerance.Text);
     Params.AdaptVel        := cbAdaptiveVelocity.Checked;
     Params.UseConstriction := cbConstriction.Checked;
-    Params.SmoothWindow    := StrToInt(edIrrSmoothWindow.Text);
+    { -1 (automatic) or a window; TLFPSO_Irregular caps it at half the
+      periods of each stack. }
+    Params.SmoothWindow    := ShortInt(System.Math.EnsureRange(
+      StrToIntDef(Trim(edIrrSmoothWindow.Text), -1), -1, High(ShortInt)));
 
     Params.PolyFactor      := sePolyFactor.Value;
     Params.Ksxr            := StrToFloat(edKsxr.Text);

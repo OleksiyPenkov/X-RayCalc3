@@ -42,7 +42,6 @@ const
   PROJECT_EXT = '.xrcx';
   BACKUP_DIR_NAME = 'Backup';
   LOCK_FILE       = 'temp.lock';
-  AUTO_SAVE       = 'AutoSave.xrcx';
 
 implementation
 

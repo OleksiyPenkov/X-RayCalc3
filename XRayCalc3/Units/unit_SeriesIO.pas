@@ -15,10 +15,19 @@ uses
   VCLTee.TeEngine,
   unit_types;
 
-procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte); overload;
+/// <summary>The x column as the chart shows it: CalcMode 0 is the angle,
+/// 2Theta or Theta in degrees as the 2theta box says (the series hold what the
+/// axis shows); 1 is the wavelength in Angstrom.</summary>
+procedure XColumn(const Mode: byte; TwoTheta: Boolean; out Caption, Units: string);
+procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte;
+  TwoTheta: Boolean); overload;
 procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TChartSeries); overload;
 
-procedure SeriesToFile(Series: TChartSeries; const FileName: string);
+procedure SeriesToFile(Series: TChartSeries; const FileName: string); overload;
+/// <summary>A user export: the header names the x column as the chart shows
+/// it. The one-argument overload writes the project's own .dat files.</summary>
+procedure SeriesToFile(Series: TChartSeries; const FileName: string;
+  const Mode: byte; TwoTheta: Boolean); overload;
 function SeriesToString(Series: TChartSeries): string;
 
 procedure SeriesFromClipboard(Series: TChartSeries);
@@ -154,12 +163,34 @@ begin
   end;
 end;
 
-procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte);
+procedure XColumn(const Mode: byte; TwoTheta: Boolean; out Caption, Units: string);
 begin
   case Mode of
-    0: SeriesToClipboard('2Theta', 'Reflectivity', 'deg', '', Series);
-    1: SeriesToClipboard('Wavelength', 'Reflectivity', 'A', '', Series);
+    0:
+      begin
+        if TwoTheta then
+          Caption := '2Theta'
+        else
+          Caption := 'Theta';
+        Units := 'deg';
+      end;
+    1:
+      begin
+        Caption := 'Wavelength';
+        Units := 'A';
+      end;
+  else
+    Caption := 'X';
+    Units := '';
   end;
+end;
+
+procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte; TwoTheta: Boolean);
+var
+  Caption, Units: string;
+begin
+  XColumn(Mode, TwoTheta, Caption, Units);
+  SeriesToClipboard(Caption, 'Reflectivity', Units, '', Series);
 end;
 
 function SeriesToString(Series: TChartSeries): string;
@@ -182,6 +213,22 @@ begin
   MyStringList := TStringList.Create;
   try
     SeriesToText(MyStringList, Series);
+    MyStringList.SaveToFile(FileName);
+  finally
+    MyStringList.Free;
+  end;
+end;
+
+procedure SeriesToFile(Series: TChartSeries; const FileName: string;
+  const Mode: byte; TwoTheta: Boolean);
+var
+  MyStringList: TStringList;
+  Caption, Units: string;
+begin
+  XColumn(Mode, TwoTheta, Caption, Units);
+  MyStringList := TStringList.Create;
+  try
+    SeriesToText(Caption, 'Reflectivity', Units, '', MyStringList, Series);
     MyStringList.SaveToFile(FileName);
   finally
     MyStringList.Free;

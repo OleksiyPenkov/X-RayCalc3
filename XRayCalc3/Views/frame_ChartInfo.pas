@@ -471,11 +471,11 @@ begin
   if dlgExport.Execute then
     Case dlgExport.FilterIndex of
       1:
-        Chart.SaveToBitmapFile(dlgExport.FileName + '.bmp');
+        Chart.SaveToBitmapFile(ChangeFileExt(dlgExport.FileName, '.bmp'));
       2:
-        Chart.SaveToMetafileEnh(dlgExport.FileName + '.emf');
+        Chart.SaveToMetafileEnh(ChangeFileExt(dlgExport.FileName, '.emf'));
       3:
-        Chart.SaveToMetafile(dlgExport.FileName + '.wmf');
+        Chart.SaveToMetafile(ChangeFileExt(dlgExport.FileName, '.wmf'));
     end;
 end;
 
@@ -498,7 +498,8 @@ begin
   Series := FGetActiveModelSeries;
   if Series = nil then Exit;
   if dlgSaveResult.Execute then
-    SeriesToFile(Series, dlgSaveResult.FileName);
+    SeriesToFile(Series, dlgSaveResult.FileName, FCalcSettings.CalcMode,
+      FCalcSettings.Is2Theta);
 end;
 
 procedure TfrmChartInfo.CopyResultToClipboard;
@@ -507,7 +508,7 @@ var
 begin
   Series := FGetActiveModelSeries;
   if Series = nil then Exit;
-  SeriesToClipboard(Series, FCalcSettings.CalcMode);
+  SeriesToClipboard(Series, FCalcSettings.CalcMode, FCalcSettings.Is2Theta);
 end;
 
 { Experimental data operations }
@@ -518,7 +519,7 @@ var
 begin
   Series := FGetActiveDataSeries;
   if Series = nil then Exit;
-  SeriesToClipboard(Series, FCalcSettings.CalcMode);
+  SeriesToClipboard(Series, FCalcSettings.CalcMode, FCalcSettings.Is2Theta);
 end;
 
 procedure TfrmChartInfo.ExportDataToFile;
@@ -530,7 +531,8 @@ begin
   Series := FGetActiveDataSeries;
   if Series = nil then Exit;
   if dlgSaveResult.Execute then
-    SeriesToFile(Series, dlgSaveResult.FileName);
+    SeriesToFile(Series, dlgSaveResult.FileName, FCalcSettings.CalcMode,
+      FCalcSettings.Is2Theta);
 end;
 
 procedure TfrmChartInfo.NormalizeData;

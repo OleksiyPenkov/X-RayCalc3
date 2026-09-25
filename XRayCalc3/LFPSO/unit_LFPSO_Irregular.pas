@@ -53,9 +53,19 @@ procedure TLFPSO_Irregular.Smooth(const i: Word);
 var
   Data: TDataArray;
   s, n : Integer;   // not Word: 0 to High of an empty list must not run
+  W: ShortInt;
 begin
   for s :=  0 to High(FSmoothies) do
   begin
+    { unit_DataProcessing.Smooth averages the last W periods over the W
+      before each; beyond half the periods that reaches before period 1 and
+      its Word counters wrap. -1 (automatic) is always inside. }
+    W := FFitParams.SmoothWindow;
+    if W > Length(FSmoothies[s].Layers) div 2 then
+      W := Length(FSmoothies[s].Layers) div 2;
+    if W < -1 then
+      W := -1;
+
     SetLength(Data, Length(FSmoothies[s].Layers));
     for n := 0 to High(Data) do
     begin
@@ -63,7 +73,7 @@ begin
       Data[n].r := X[i][FSmoothies[s].Layers[n]][FSmoothies[s].ParamID][0];
     end;
 
-    Data := unit_DataProcessing.Smooth(Data, FFitParams.SmoothWindow);
+    Data := unit_DataProcessing.Smooth(Data, W);
 
     for n := 0 to High(Data) do
       X[i][FSmoothies[s].Layers[n]][FSmoothies[s].ParamID][0] := Data[n].r;
