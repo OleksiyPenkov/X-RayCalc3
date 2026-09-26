@@ -50,7 +50,7 @@ XRC3.groupproj Delphi project group; build order XRayCalc3 → XRayCalcVisualCon
 ```
 
 Project files are `.xrcx` (a zip archive with the model tree, parameters and curves); the
-current project version is 7. Lengths are in ångström, densities in g/cm³, angles are the grazing
+current project version is 8. Lengths are in ångström, densities in g/cm³, angles are the grazing
 angle θ in degrees.
 
 ## Building
