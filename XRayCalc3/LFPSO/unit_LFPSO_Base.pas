@@ -131,6 +131,10 @@ type
       procedure StopGpu(const Why: string);
       procedure RescoreBestOnCpu;
       function CpuCurveOf(const Solution: TSolution; out Chi: Single): TDataArray;
+      /// <summary>The score of one particle on one worker. The default is the
+      /// classic chi-squared; TLFPSO_Posterior returns its own cost. Called in
+      /// parallel: it must not call Random or write shared state.</summary>
+      function ParticleCost(const W: TCalcWorker; const Solution: TSolution): Single; virtual;
       function ToleranceMetOnCpu: Boolean;
       function GetResult: TLayeredModel; virtual;
 
@@ -571,6 +575,17 @@ begin
 end;
 
 
+function TLFPSO_BASE.ParticleCost(const W: TCalcWorker; const Solution: TSolution): Single;
+begin
+  W.Model.Reset;
+  FillModel(W.Model, Solution);
+  W.Calc.Model := W.Model;
+
+  W.Calc.Run;
+
+  Result := W.Calc.CalcChiSquare(FFitParams.ThetaWeight);
+end;
+
 procedure TLFPSO_BASE.EvaluateOnCpu(out BestIdx: Integer);
 var
   i: integer;
@@ -599,13 +614,7 @@ begin
       if Err <> nil then Exit;          // a sibling failed; the loop is lost anyway
       try
         W := FWorkers[taskIndex];
-        W.Model.Reset;
-        FillModel(W.Model, X[particleIndex]);
-        W.Calc.Model := W.Model;
-
-        W.Calc.Run;
-
-        Chi := W.Calc.CalcChiSquare(FFitParams.ThetaWeight);
+        Chi := ParticleCost(W, X[particleIndex]);
 
         // Track per-worker best (no synchronization needed)
         if Chi < WorkerBests[taskIndex].Chi then

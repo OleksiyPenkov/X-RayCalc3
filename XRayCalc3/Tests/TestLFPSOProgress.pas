@@ -65,6 +65,7 @@ type
     [Test] procedure Test_OnProgress_IsCalledWithAFullModel;
     [Test] procedure Test_Seed_SameSeedGivesSameBestChiSquare;
     [Test] procedure Test_Seed_DifferentSeedsGiveDifferentAnswers;
+    [Test] procedure Test_Seed_PinnedBestChiSquare;
     [Test] procedure Test_OnProgress_ThatRaises_LeaksNothing;
     [Test] procedure Test_BestCurve_IsNotEmptyAfterARun;
     [Test] procedure Test_StopBeforeFirstBest_DoesNotRaise;
@@ -367,6 +368,23 @@ begin
 
   Assert.AreNotEqual(Single(Chi1), Single(Chi2), Single(0),
     Format('two seeds must not give the same answer: %.10g vs %.10g', [Chi1, Chi2]));
+end;
+
+{ The classic engine's answer for TEST_SEED, pinned before ParticleCost was
+  extracted from EvaluateOnCpu (phase A of the Bayesian fitting work). The
+  extraction must not move a single bit of it. }
+procedure TTestLFPSOProgress.Test_Seed_PinnedBestChiSquare;
+const
+  PINNED_CHI: Single = 2.98045921;   // the unchanged engine's answer for TEST_SEED
+var
+  Chi: Single;
+  Curve: TDataArray;
+begin
+  if not TablesReady then
+    Assert.Pass('Henke tables for Si and Mo are not installed: ' + HENKE_DB_PATH);
+  RunFit(TEST_SEED, False, Chi, Curve);
+  Assert.AreEqual(PINNED_CHI, Chi, Single(0),
+    Format('the classic engine''s answer for seed %d moved: %.10g', [TEST_SEED, Chi]));
 end;
 
 { The engine disposes the message record in a finally, so an exception out of
