@@ -69,6 +69,7 @@ uses
   System.IOUtils,
   System.Classes,
   System.SyncObjs,
+  System.JSON,
   Winapi.Windows,
   unit_Config,
   unit_LFPSO_Base,

@@ -118,9 +118,18 @@ begin
     Result.AddPair('engine', ENGINE_DESCRIPTION);
     Result.AddPair('xraycalc3_exe_version', EngineVersionString);
     { The GPU fit_xrr's optimizer.device "auto" and "gpu" would use: its name,
-      or null and the reason there is none. }
+      or null and the reason there is none. gpu_shader and gpu_self_check
+      report which shaders that GPU ended up running: 'precise' (the
+      targeted qualifiers, unit_gpu_calc's default) or 'ieee_strict' (the
+      first-use self-check against the reference Parratt fell back to
+      D3DCOMPILE_IEEE_STRICTNESS on this GPU/driver), and the self-check's
+      measured mean |log10 R/R_ref|. }
     if TGpuEvaluator.Available(GpuName, GpuErr) then
-      Result.AddPair('gpu', GpuName)
+    begin
+      Result.AddPair('gpu', GpuName);
+      Result.AddPair('gpu_shader', TGpuEvaluator.ShaderMode);
+      Result.AddPair('gpu_self_check', TJSONNumber.Create(TGpuEvaluator.SelfCheckError));
+    end
     else
     begin
       Result.AddPair('gpu', TJSONNull.Create);
