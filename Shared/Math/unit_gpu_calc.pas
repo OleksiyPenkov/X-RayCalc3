@@ -81,9 +81,11 @@ type
     FFailAfter: Integer;
     FStrict: Boolean;            // shaders compiled with D3DCOMPILE_IEEE_STRICTNESS
     FShaderMode: string;         // '' | 'precise' | 'ieee_strict', after the self-check
-    FSelfChecked: Boolean;       // the self-check has run once for the process
+    FSelfChecked: Boolean;       // the self-check has settled on a usable compilation
     FSelfCheckError: Double;
+    FSelfCheckErrorWorst: Double;
     FSelfCheckBound: Double;
+    FSelfCheckWorstBound: Double;
     FFailSelfChecks: Integer;
   private
     FDev: ID3D11Device;
@@ -138,18 +140,31 @@ type
     /// <summary>Test hook: when positive, the N-th Evaluate of any evaluator
     /// in the process raises EGpuError instead of running, once, and the
     /// hook resets itself. It exercises the engines' fallback to the CPU.
-    /// </summary>
+    /// Does not count the self-check's own internal Evaluate (SelfCheck runs
+    /// before Create hands the evaluator to anyone, and must not consume a
+    /// count meant for the caller's own evaluations).</summary>
     class property FailAfter: Integer read FFailAfter write FFailAfter;
     /// <summary>'precise' or 'ieee_strict': how the shaders were compiled,
-    /// after the self-check; '' before the first evaluator is created.
-    /// </summary>
+    /// after the self-check; '' before the first evaluator is created, or
+    /// again whenever the self-check has just failed under both
+    /// compilations (the next Create retries the whole sequence).</summary>
     class property ShaderMode: string read FShaderMode;
     /// <summary>The self-check's mean |log10 R/R_ref| on its reference
-    /// multilayer, at whichever compilation it finally settled on.</summary>
+    /// multilayer, at whichever compilation it finally settled on (or the
+    /// IEEE-strict attempt's value, if both failed).</summary>
     class property SelfCheckError: Double read FSelfCheckError;
+    /// <summary>The self-check's worst |log10 R/R_ref| over its 200 angles,
+    /// at whichever compilation it finally settled on.</summary>
+    class property SelfCheckErrorWorst: Double read FSelfCheckErrorWorst;
     /// <summary>Mean |log10 R/R_ref| above which the self-check fails.
     /// 3E-4.</summary>
     class property SelfCheckBound: Double read FSelfCheckBound write FSelfCheckBound;
+    /// <summary>Worst-point |log10 R/R_ref| above which the self-check
+    /// fails, alongside SelfCheckBound on the mean. Default is about 40x
+    /// the worst measured on the reference GPU with `precise` (the same
+    /// ratio as SelfCheckBound to that GPU's measured mean), rounded up to
+    /// one significant digit.</summary>
+    class property SelfCheckWorstBound: Double read FSelfCheckWorstBound write FSelfCheckWorstBound;
     /// <summary>Test hook: the next N self-checks fail whatever they
     /// measure; resets itself.</summary>
     class property FailSelfChecks: Integer read FFailSelfChecks write FFailSelfChecks;
@@ -394,6 +409,10 @@ class constructor TGpuEvaluator.Create;
 begin
   FLock := TCriticalSection.Create;
   FSelfCheckBound := 3E-4;
+  { ~40x the worst |log10 R/R_ref| measured on the reference GPU (RTX 5080)
+    with `precise` (7.89E-5), rounded up to one significant digit - the same
+    ratio as SelfCheckBound to that GPU's measured mean (3E-4 to ~7.3E-6). }
+  FSelfCheckWorstBound := 4E-3;
 end;
 
 class destructor TGpuEvaluator.Destroy;
@@ -494,7 +513,7 @@ var
   BestMem: NativeUInt;
   i: UINT;
   FL, OutFL: D3D_FEATURE_LEVEL;
-  Err: Double;
+  Err, Worst, FirstErr, FirstWorst: Double;
   Bad: Boolean;
 begin
   inherited Create;
@@ -533,13 +552,13 @@ begin
     this instance's own compute shaders were already created from the
     pre-fallback bytes. Holding FLock across all of it means a second thread
     creating an evaluator at the same time either finishes its own compile-
-    create-check entirely before this one starts (so it never observes the
-    codes and FStrict Task 4 left half updated), or blocks here until this
-    one is done and then compiles/creates from the settled result. Available
-    already holds FLock while its probe calls Create (line ~577 above);
-    TCriticalSection is re-entrant for the same thread (it wraps a Windows
-    critical section), so that nested Enter succeeds immediately instead of
-    deadlocking. }
+    create-check sequence entirely before this one starts (so it never
+    observes a half-updated FReflectCode/FChiCode/FStrict), or blocks here
+    until this one is done and then compiles/creates from the settled
+    result. Available already holds FLock for its whole body, including the
+    throwaway Create its probe calls; TCriticalSection is re-entrant for the
+    same thread (it wraps a Windows critical section), so that nested Enter
+    succeeds immediately instead of deadlocking. }
   FLock.Enter;
   try
     CompileShaders;
@@ -551,7 +570,12 @@ begin
     if not FSelfChecked then
     begin
       Err := SelfCheck;
-      Bad := (Err > FSelfCheckBound);
+      Worst := FSelfCheckErrorWorst;
+      FirstErr := Err;
+      FirstWorst := Worst;
+      // NaN-robust: a NaN comparison is false either way, so a NaN measurement
+      // must fail explicitly rather than slip through `Err > Bound` (false).
+      Bad := not ((Err <= FSelfCheckBound) and (Worst <= FSelfCheckWorstBound));
       if FFailSelfChecks > 0 then
       begin
         Dec(FFailSelfChecks);
@@ -559,7 +583,7 @@ begin
       end;
       if Bad and not FStrict then
       begin
-        { The targeted `precise` qualifiers did not hold on this GPU/driver:
+        { The self-check did not hold on this GPU/driver with `precise`:
           fall back to compiling every kernel with D3DCOMPILE_IEEE_STRICTNESS
           and check again before this evaluator is handed to a caller. }
         FStrict := True;
@@ -571,25 +595,57 @@ begin
           'CreateComputeShader(Reflect, IEEE strict)');
         Check(FDev.CreateComputeShader(@FChiCode[0], Length(FChiCode), nil, FChi),
           'CreateComputeShader(ChiSquare, IEEE strict)');
-        Err := SelfCheck;
-        Bad := (Err > FSelfCheckBound);
+        try
+          Err := SelfCheck;
+        except
+          { A failure inside the IEEE-strict self-check itself (for example
+            the device was removed mid-dispatch) still leaves this Create
+            failing, but must not leave the process stuck compiling strict
+            forever: reset FStrict and the code blobs so a later retry
+            (Available's 60-second retry, or the caller's next Create) tries
+            `precise` again from scratch instead of skipping straight to
+            IEEE strictness because of an unrelated transient error. }
+          FStrict := False;
+          FReflectCode := nil;
+          FChiCode := nil;
+          FLogLikCode := nil;
+          raise;
+        end;
+        Worst := FSelfCheckErrorWorst;
+        Bad := not ((Err <= FSelfCheckBound) and (Worst <= FSelfCheckWorstBound));
         if FFailSelfChecks > 0 then
         begin
           Dec(FFailSelfChecks);
           Bad := True;
         end;
       end;
-      FSelfChecked := True;
       if Bad then
-        FShaderMode := ''
-      else if FStrict then
-        FShaderMode := 'ieee_strict'
+      begin
+        { Both compilations failed (or only `precise` was tried and it was
+          already strict): leave FSelfChecked False and reset FStrict and
+          every code blob, so a later Create - Available's 60-second retry
+          after a transient driver problem, or the caller's own next
+          attempt - runs the whole compile-and-check sequence again from
+          `precise`, instead of failing instantly forever. }
+        FShaderMode := '';
+        FStrict := False;
+        FReflectCode := nil;
+        FChiCode := nil;
+        FLogLikCode := nil;
+      end
       else
-        FShaderMode := 'precise';
+      begin
+        FSelfChecked := True;
+        if FStrict then
+          FShaderMode := 'ieee_strict'
+        else
+          FShaderMode := 'precise';
+      end;
     end;
     if FShaderMode = '' then
-      raise EGpuError.CreateFmt('GPU self-check failed: mean |log10 R/R_ref| %.2e ' +
-        'with precise and with IEEE strictness', [FSelfCheckError]);
+      raise EGpuError.CreateFmt('GPU self-check failed: mean/worst |log10 R/R_ref| ' +
+        '%.2e/%.2e with precise and %.2e/%.2e with IEEE strictness',
+        [FirstErr, FirstWorst, Err, Worst]);
   finally
     FLock.Leave;
   end;
@@ -731,7 +787,7 @@ begin
   if Length(Layers) <> 4 * FNPart * FNLay then
     raise EGpuError.CreateFmt('Evaluate: %d values for %d particles of %d layers',
       [Length(Layers), FNPart, FNLay]);
-  if FFailAfter > 0 then
+  if (FFailAfter > 0) and not FInSelfCheck then
   begin
     Dec(FFailAfter);
     if FFailAfter = 0 then

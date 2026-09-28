@@ -541,36 +541,32 @@ begin
 end;
 
 { The GPU raw curve against the double-precision Parratt, on the same
-  particles RawCurve_MatchesDoublePrecision_* uses, after Setup uploads the
-  grazing sine computed on the host in Double (task 1b, 2026-09-28) AND the
-  Reflect kernel protects the cancellation-free sums with `precise` (task 1b,
-  fix round 1, 2026-09-28).
+  particles RawCurve_MatchesDoublePrecision_* uses, with the grazing sine
+  computed on the host in Double (2026-09-28) and the Reflect kernel's
+  cancellation-sensitive sums marked `precise` (2026-09-28, and again after
+  delta-carrying below).
 
-  Fix round 1's finding: the Double grazing sine alone barely helped (mean
-  stayed ~1.2E-3..1.4E-3) because fxc/the driver, compiled without
-  D3DCOMPILE_IEEE_STRICTNESS, may reassociate `(eps.re - 1) + sin_g^2` into
-  `(eps.re + sin_g^2) - 1` and `(1 - eRatio) + eRatio * sin_g^2` likewise,
-  reintroducing exactly the cancellation between two numbers near 1 the Double
-  sine was meant to avoid. Marking those sums (and their `- 1`/`1 -`
-  intermediates) `precise` in the Reflect kernel - see the comments at the
-  csqrt inputs and at s1 - forces source-order, unfused evaluation and closes
-  the gap: measured (24 cases: 4 roughness functions x 2 polarisations x 3
-  particles) mean now runs 7.9E-6..3.2E-5, worst 7.6E-5..6.1E-4 (GPU/CPU
-  agreement, which is the more direct check of the fix, runs mean 2.9E-5..
-  5.3E-5, worst 4.9E-4..7.2E-4) - roughly 40x better on the mean and 20x on
-  the worst case than before `precise`, and in the CPU's own ~3E-5 mean
-  neighbourhood. `D3DCOMPILE_IEEE_STRICTNESS` alone reached the same accuracy
-  but cost ~13% more time per Evaluate (0.93-0.98 ms vs 0.83-0.86 ms baseline,
-  PARTICLES=2000/NLay=42/NAng=1000); the targeted `precise` qualifiers cost
-  none measurable (0.855-0.876 ms) and were chosen for that reason - see the
-  report filed under this task.
+  Originally (before delta was carried end to end): the Fresnel term was
+  `(eps.re - 1) + sin_g^2`, a genuine near-1 cancellation, and fxc/the
+  driver - compiled without D3DCOMPILE_IEEE_STRICTNESS - could reassociate
+  it (and `(1 - eRatio) + eRatio * sin_g^2`) back into a cancelling form;
+  measured then, mean stayed ~1.2E-3..1.4E-3 without `precise`, falling to
+  7.9E-6..3.2E-5 (worst 7.6E-5..6.1E-4) with it - roughly 40x/20x better.
 
-  Bounds: ~3x margin over the worst case measured with `precise`
-  (mean/agree-mean up to ~3.2E-5/5.3E-5, worst/agree-worst up to
-  ~6.1E-4/7.2E-4), and comfortably (>10x) below the pre-`precise` mean of
-  ~1.3E-3: the gap Step 1 of the brief asks for now exists. RED (the Double
-  grazing sine without `precise`) fails these bounds by more than an order of
-  magnitude (see the report). }
+  Since delta is carried directly into the kernel (2026-09-28-precision-
+  followups, Task 2, commit cd5ea6f): the Fresnel term is `sin_g2 - delta`
+  (Layers.x, never recovered from a near-1 epsilon), which is already a
+  well-conditioned subtraction - delta itself is small (~1E-5 for these
+  materials) - regardless of reassociation. Re-measured with `precise`
+  removed entirely (2026-09-28-precision-followups, Task 4, fix round 1):
+  this test still passes its bounds below on this GPU (RTX 5080), and
+  TGpuEvaluator's own self-check reference multilayer (TestGpuCalc's
+  SelfCheck_* tests) measures mean 7.61E-6 without `precise` vs 7.27E-6 with
+  it - `precise` no longer visibly changes the result on this machine, and
+  is kept as defence in depth (see unit_gpu_calc's header comment and
+  TGpuEvaluator.SelfCheck). The bounds below are unchanged from when they
+  were last measured with `precise` present (mean up to ~3.2E-5, worst up to
+  ~6.1E-4, agree-mean/-worst up to ~5.3E-5/7.2E-4) and still hold. }
 procedure TTestGpuCalc.GpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
