@@ -18,12 +18,10 @@ unit unit_gpu_calc;
    code runs in the Win32 and the Win64 builds. The shader is compiled from the
    HLSL below once per process.
 
-   The recursion mirrors TCalc.RefCalc layer for layer, with one change of
-   form: eps - sin^2(t) at t near 90 degrees is computed as
-   (eps.re - 1) + sin^2(theta) from the grazing angle. The naive form cancels
-   (eps ~ 1 - 1e-5) and doubled the error against a double-precision reference;
-   in this form the GPU is at least as accurate as the CPU engine (mean
-   |log10 R| error 1.0e-3 against 1.5e-3, 2026-09-21).
+   The recursion mirrors TCalc.RefCalc layer for layer, including its
+   cancellation-free form of eps - sin^2(t): (eps.re - 1) + sin^2(theta) from
+   the grazing angle (both engines since 2026-09-28; the naive form doubled
+   the error against a double-precision reference).
 
    Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
    a D3D11 immediate context is not thread-safe. *)

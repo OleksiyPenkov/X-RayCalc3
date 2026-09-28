@@ -49,6 +49,7 @@ type
     [TearDown] procedure TearDown;
 
     [Test] procedure RawCurve_MatchesDoublePrecision_EveryRoughnessAndPolarisation;
+    [Test] procedure CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
     [Test] procedure Chi_MatchesTheCpuEngine_EveryWeighting;
     [Test] procedure Chi_MatchesTheCpuEngine_WithTheScaleSolved;
     [Test] procedure SplitDispatches_GiveTheSameAnswer;
@@ -545,6 +546,92 @@ begin
               [What, p, Mean]));
             Assert.IsTrue(Worst < 0.1, Format('%s, particle %d: worst |log10 R/R_ref| %.2e',
               [What, p, Worst]));
+          end;
+        finally
+          G.Free;
+          Calc.Free;
+        end;
+      end;
+  finally
+    Model.Free;
+  end;
+end;
+
+{ TCalc against the double-precision Parratt, every roughness function and
+  polarisation, on the same particles RawCurve_MatchesDoublePrecision_* uses
+  for the GPU: the CPU's mean |log10 R/R_ref| must be within the GPU's bound,
+  and no worse than the GPU's own error on the same curve (plus 5 %). Before
+  the cancellation-free form it was about 1.5 times the GPU's. }
+procedure TTestGpuCalc.CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
+const
+  PARTICLES = 3;
+var
+  RF: TRoughnessFunction;
+  Pol: TPolarisation;
+  Sigma: Single;
+  Data: TDataArray;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Layers, Chi, Raw, Cpu: TArray<Single>;
+  Lay: TCalcLayers;
+  p, i, NLay: Integer;
+  Ref, MeanCpu, MeanGpu, WorstCpu: Double;
+  What: string;
+begin
+  if not Ready then Exit;
+
+  Model := TLayeredModel.Create;
+  Model.Init;
+  try
+    for RF := rfError to rfStep do
+      for Pol := cmS to cmSP do
+      begin
+        if RF = rfLinear then Sigma := 0.3 else Sigma := 3;
+        What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
+        Data := MakeData(0, Pol, RF, Sigma);
+        Calc := NewCalc(Data, nil, 0, Pol, RF);
+        G := TGpuEvaluator.Create;
+        try
+          FillModel(Model, 0, Sigma);
+          Model.Generate(CU_KA);
+          NLay := Length(Model.LayersDirect);
+          G.Setup(Calc.GpuInputs(0), NLay, PARTICLES, Pol, RF, CU_KA, 1, LIMIT);
+          SetLength(Layers, 4 * NLay * PARTICLES);
+          for p := 0 to PARTICLES - 1 do
+          begin
+            FillModel(Model, Jitter(p), Sigma);
+            Model.Generate(CU_KA);
+            Pack(Model, Layers, p);
+          end;
+          G.Evaluate(Layers, Chi);
+
+          for p := 0 to PARTICLES - 1 do
+          begin
+            FillModel(Model, Jitter(p), Sigma);
+            Model.Generate(CU_KA);
+            Lay := Copy(Model.LayersDirect);
+            Raw := G.RawCurve(p);
+            Cpu := RawOnCpu(Model, Data, Pol, RF);
+            MeanCpu := 0;
+            MeanGpu := 0;
+            WorstCpu := 0;
+            for i := 0 to High(Data) do
+            begin
+              Ref := ParrattDouble(Lay, Data[i].t, Pol = cmSP, RF);
+              MeanCpu := MeanCpu + Abs(System.Math.Log10(Cpu[i] / Ref));
+              MeanGpu := MeanGpu + Abs(System.Math.Log10(Raw[i] / Ref));
+              WorstCpu := Max(WorstCpu, Abs(System.Math.Log10(Cpu[i] / Ref)));
+            end;
+            MeanCpu := MeanCpu / Length(Data);
+            MeanGpu := MeanGpu / Length(Data);
+            Assert.IsTrue(MeanCpu < 3E-3, Format('%s, particle %d: CPU mean %.2e',
+              [What, p, MeanCpu]));
+            Assert.IsTrue(WorstCpu < 0.1, Format('%s, particle %d: CPU worst %.2e',
+              [What, p, WorstCpu]));
+            Assert.IsTrue(MeanCpu <= 1.05 * MeanGpu, Format('%s, particle %d: CPU mean %.2e, ' +
+              'GPU mean %.2e - the CPU must be no less precise than the GPU',
+              [What, p, MeanCpu, MeanGpu]));
           end;
         finally
           G.Free;

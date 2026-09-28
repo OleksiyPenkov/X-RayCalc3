@@ -375,7 +375,8 @@ end;
   extraction must not move a single bit of it. }
 procedure TTestLFPSOProgress.Test_Seed_PinnedBestChiSquare;
 const
-  PINNED_CHI: Single = 2.98045921;   // the unchanged engine's answer for TEST_SEED
+  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
+  PINNED_CHI: Single = 2.97892237;   // the unchanged engine's answer for TEST_SEED
 var
   Chi: Single;
   Curve: TDataArray;

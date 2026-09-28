@@ -551,7 +551,7 @@ end;
 function TCalc.RefCalc(const ATheta, c1, c2: single;
   const AModel: TCalcModelSoA; var AScratch: TCalcScratchSoA): single;
 var
-  Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t, t: single;
+  Rs, Rp, Rsp, s1, sin_g, sqr_sin_g: single;
 
   function TotalRecursiveRefraction: single;
   var
@@ -635,8 +635,8 @@ var
       b1 := SubZZ(Ki, Ki1);
       b2 := AddZZ(Ki, Ki1);
       RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AModel.eRatio[i] * sqr_sin_t));
-      sv := c1 * sqrt(cos_t * sqrt(s1));
+      s1 := Abs((1 - AModel.eRatio[i]) + AModel.eRatio[i] * sqr_sin_g);
+      sv := c1 * sqrt(sin_g * sqrt(s1));
 
       rfVal := Roughness(FParams.RF, AModel.s[i + 1], AModel.s2[i + 1], sv);
       AScratch.RoughFactor[i] := rfVal; { cache for P-polarization reuse }
@@ -680,7 +680,7 @@ var
   begin
     for i := 0 to AModel.Count - 1 do
     begin
-      a1 := SqrtZ(AddZR(ToComplex(AModel.eRe[i], AModel.eIm[i]), -sqr_sin_t));
+      a1 := SqrtZ(ToComplex((AModel.eRe[i] - 1) + sqr_sin_g, AModel.eIm[i]));
       K := MulRZ(c2, a1);
       AScratch.KRe[i] := K.Re;
       AScratch.KIm[i] := K.Im;
@@ -688,10 +688,14 @@ var
   end;
 
 begin
-  t := Pi / 2 - Pi * ATheta / 180;
-
-  FastSinCos(t, sin_t, cos_t);
-  sqr_sin_t := sqr(sin_t);
+  { The grazing angle's sine, in double precision: eps - sin^2 of the angle to
+    the normal is written below as (eps - 1) + sin^2 of the grazing angle, as
+    the GPU kernel does (unit_gpu_calc). The naive form subtracts two numbers
+    near 1 in single precision and keeps only a few digits of their ~1e-5
+    difference near the critical angle; it cost TCalc 1.5 times the GPU's
+    error against a double-precision Parratt (2026-09-28). }
+  sin_g := Sin(Pi * Double(ATheta) / 180);
+  sqr_sin_g := sqr(sin_g);
 
   FresnelCoefficients;
   LayerAmplitudeRefractionS;

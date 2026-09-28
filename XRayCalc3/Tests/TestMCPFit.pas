@@ -1879,19 +1879,29 @@ end;
   to 0.000413763 on the same structure, and P2-02 from 2.17153 to 2.16063,
   its sigmas up by 0.14 and 0.18 %. A number published before 3.9.4 reproduces on the
   binary it was made with (D:\SoftwareStorage\X-RayCalc3\Releases), not on
-  this source. }
+  this source.
+
+  2026-09-28: TCalc.RefCalc took the GPU kernel's cancellation-free form of
+  eps - sin^2(t) (plan 2026-09-28-tcalc-precision). The synthetic fit lands on
+  the same structure - it was already the right one - but now matches the
+  noise-free curve far more closely: chi2 fell from 0.000413763 to 2.96477E-6.
+  P2-02's chi2 moved from 2.16063 to 2.16446 and its layers in the fourth
+  digit, same as the earlier precision fixes above. }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
-  CHI2_06035DE = '0.000413763';
+  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
+  CHI2_06035DE = '2.96477E-6';
   FITTED_06035DE =
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
     '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
-  P2_CHI2_06035DE = '2.16063';
+  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
+  P2_CHI2_06035DE = '2.16446';
+  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
   P2_FITTED_06035DE =
     '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
-    '"layers":[{"material":"C","thickness":25.3859,"sigma":9.88615,"density":2.74231},' +
-    '{"material":"Co","thickness":2.40004,"sigma":7.81322,"density":8.89935}]}]}';
+    '"layers":[{"material":"C","thickness":25.386,"sigma":9.88671,"density":2.74753},' +
+    '{"material":"Co","thickness":2.40001,"sigma":7.81321,"density":8.89988}]}]}';
 var
   Res: TJSONObject;
 begin
@@ -2561,7 +2571,10 @@ begin
     'the largest measured intensity below 0.5 deg is at theta 0.20075');
   Assert.AreEqual(Double(1074961), Req.ScaleCounts, 0.5,
     'and holds 1074961 counts (2theta 0.4015 of the raw file)');
-  Assert.AreEqual(Double(7.9794E-7), Req.Scale, 1E-10,
+  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) -
+    R_calc(0.20075) is near the critical angle, where the naive eps - sin^2 form lost the
+    most precision; the hand computation used the same engine, so it moves too. }
+  Assert.AreEqual(Double(8.0128E-7), Req.Scale, 1E-10,
     'R_calc(0.20075) / 1074961, the normalisation of the raw maximum');
 end;
 
