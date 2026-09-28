@@ -22,26 +22,25 @@ unit unit_gpu_calc;
    cancellation-free form of eps - sin^2(t): (eps.re - 1) + sin^2(theta) from
    the grazing angle (both engines since 2026-09-28; the naive form measured a
    mean |log10 R/R_ref| of ~1.2e-3 against a double-precision Parratt, this
-   form ~3e-5 on TCalc). Task 1b (2026-09-28) moved the grazing sine's
-   computation to the host in Double, expecting to close the GPU's matching
-   gap (still ~1.2e-3..1.4e-3 mean, ~9e-3..1.5e-2 worst): Setup now uploads,
-   per angle, the sine computed exactly as TCalc.CalcTet's angle reaches
-   TCalc.RefCalc - Single ThetaK := Theta[i] / KScale, then System.Sin(Pi *
-   Double(ThetaK) / 180) in Double, stored as Single - in the SinG buffer the
-   Reflect kernel reads directly. KScale stays in TParamsCB/cbuffer Params
-   even though Reflect no longer reads it, so the 80-byte constant-buffer
-   layout is unchanged.
+   form ~3e-5 on TCalc). The grazing sine itself comes from the host, in
+   Double, exactly as TCalc.CalcTet's angle reaches TCalc.RefCalc: Setup
+   computes Single ThetaK := Theta[i] / KScale, then System.Sin(Pi *
+   Double(ThetaK) / 180) in Double, stored as Single, and uploads it per
+   angle in the SinG buffer the Reflect kernel reads directly - the same
+   Single value TCalc.RefCalc itself uses. KScale stays in TParamsCB/cbuffer
+   Params even though Reflect no longer reads it, so the 80-byte
+   constant-buffer layout is unchanged.
 
-   That alone barely moved the mean (~1.31e-3 -> ~1.29e-3): the measured cause
-   was not sin()'s own precision but the compiler/driver reassociating the
-   cancellation-free sums - (eps.re - 1) + sin_g^2 into (eps.re + sin_g^2) - 1,
-   and (1 - eRatio) + eRatio * sin_g^2 likewise (the shader compiles with
-   D3DCOMPILE_OPTIMIZATION_LEVEL3, without D3DCOMPILE_IEEE_STRICTNESS) -
-   reintroducing exactly the cancellation the form was meant to avoid. Task 1b
-   fix round 1 (2026-09-28) marks those sums, and the "- 1"/"1 -"
-   intermediates that feed them, `precise`: source-order, unfused IEEE
+   The Double sine alone is not enough to bring the GPU close to TCalc's own
+   accuracy (mean stays ~1.29e-3, barely moved from ~1.31e-3): the compiler/
+   driver reassociates the cancellation-free sums - (eps.re - 1) + sin_g^2
+   into (eps.re + sin_g^2) - 1, and (1 - eRatio) + eRatio * sin_g^2 likewise
+   (the shader compiles with D3DCOMPILE_OPTIMIZATION_LEVEL3, without
+   D3DCOMPILE_IEEE_STRICTNESS) - reintroducing exactly the cancellation the
+   form was meant to avoid. Marking those sums, and the "- 1"/"1 -"
+   intermediates that feed them, `precise` - source-order, unfused IEEE
    evaluation for just those expressions (see the comments at KB/Ki and at s1
-   in Reflect below) brings the mean to ~8e-6..3e-5 (worst ~8e-5..6e-4; see
+   in Reflect below) - brings the mean to ~8e-6..3e-5 (worst ~8e-5..6e-4; see
    TestGpuCalc's GpuRawCurve_CloseToDoublePrecision). D3DCOMPILE_IEEE_STRICTNESS
    globally reaches the same accuracy but costs ~13% more time per Evaluate;
    the targeted `precise` qualifiers cost nothing measurable, which is why
@@ -224,7 +223,7 @@ const
         uint p = gid.y + PartOffset;
 
         // sin_g = the grazing sine, uploaded by Setup in double precision from
-        // the host (task 1b): keep eps - sin^2(t) as (eps - 1) + sin_g^2
+        // the host: keep eps - sin^2(t) as (eps - 1) + sin_g^2
         float sin_g = SinG[a];
         float sin_g2 = sin_g * sin_g;
 
@@ -579,9 +578,9 @@ begin
 
   { The grazing sine, computed once per angle on the host in Double, exactly
     as TCalc.CalcTet's angle reaches TCalc.RefCalc: ThetaK is Single, as
-    CalcTet's (t / K), and Sin runs in Double before narrowing back to Single
-    (task 1b, 2026-09-28). KScale stays in FParams/cbuffer Params below even
-    though Reflect no longer reads it, so the 80-byte layout is unchanged. }
+    CalcTet's (t / K), and Sin runs in Double before narrowing back to Single.
+    KScale stays in FParams/cbuffer Params below even though Reflect no
+    longer reads it, so the 80-byte layout is unchanged. }
   SetLength(SinG, FNAng);
   for i := 0 to FNAng - 1 do
   begin

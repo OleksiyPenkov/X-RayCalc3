@@ -371,12 +371,12 @@ begin
 end;
 
 { The classic engine's answer for TEST_SEED, pinned before ParticleCost was
-  extracted from EvaluateOnCpu (phase A of the Bayesian fitting work). The
-  extraction must not move a single bit of it. }
+  extracted from EvaluateOnCpu (phase A of the Bayesian fitting work), and
+  re-pinned whenever the engine itself deliberately changes. }
 procedure TTestLFPSOProgress.Test_Seed_PinnedBestChiSquare;
 const
   { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
-  PINNED_CHI: Single = 2.97892237;   // the unchanged engine's answer for TEST_SEED
+  PINNED_CHI: Single = 2.97892237;   // the classic engine's answer for TEST_SEED
 var
   Chi: Single;
   Curve: TDataArray;

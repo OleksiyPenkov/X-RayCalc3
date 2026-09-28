@@ -2565,8 +2565,9 @@ begin
     theta 0.20975 - the angle it had chosen as the start of the fitting range,
     not the maximum - and got 7.798e-7 from 1064515 counts. The maximum is
     1074961 counts at 0.20075, and the model is higher there too, so the scale
-    the server computes is 2.3 % above the one test A wrote down. Both are
-    arithmetically right; only one of them is the procedure. }
+    the server computes is 2.75 % above the one test A wrote down (8.0128e-7
+    vs 7.798e-7). Both are arithmetically right; only one of them is the
+    procedure. }
   Assert.AreEqual(Double(0.20075), Req.ScaleTheta, 1E-6,
     'the largest measured intensity below 0.5 deg is at theta 0.20075');
   Assert.AreEqual(Double(1074961), Req.ScaleCounts, 0.5,
