@@ -49,7 +49,7 @@ type
     [TearDown] procedure TearDown;
 
     [Test] procedure RawCurve_MatchesDoublePrecision_EveryRoughnessAndPolarisation;
-    [Test] procedure CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
+    [Test] procedure CpuRawCurve_CloseToDoublePrecision;
     [Test] procedure GpuRawCurve_CloseToDoublePrecision;
     [Test] procedure Chi_MatchesTheCpuEngine_EveryWeighting;
     [Test] procedure Chi_MatchesTheCpuEngine_WithTheScaleSolved;
@@ -559,26 +559,16 @@ begin
 end;
 
 { TCalc against the double-precision Parratt, every roughness function and
-  polarisation, on the same particles RawCurve_MatchesDoublePrecision_* uses
-  for the GPU. The primary guard is absolute: the cancellation-free form
-  measures a mean |log10 R/R_ref| of about 3E-5 and a worst case about 7E-4
-  here, against about 1.2E-3 and 1.2E-2 for the naive form it replaced - the
-  1E-4 / 3E-3 bounds below sit strictly between the two and catch a
-  regression to the naive form.
-
-  The GPU-relative assertion was originally "the CPU is no worse than the
-  GPU's own error, plus 5 %" - true only while the GPU's error (~1.3E-3) was
-  far above the CPU's. Since task 1b fix round 1 (`precise` on the Reflect
-  kernel's cancellation-free sums, 2026-09-28) the GPU is often *more* precise
-  than the CPU (measured ratio MeanCpu/MeanGpu from 0.81 to 3.86 across the 24
-  cases - the CPU's Win32 x87 extended-precision intermediates and the GPU's
-  now-protected float32 sums are simply different, not one uniformly better),
-  so a one-directional bound is no longer a true invariant. The assertion
-  below instead checks the two engines stay within a factor of 5 of each
-  other (comfortably above the measured 3.86), which is what "the engines
-  should be closer, not further apart" (global constraints) means once both
-  are within the same order of magnitude of the double-precision reference. }
-procedure TTestGpuCalc.CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
+  polarisation, on the same particles RawCurve_MatchesDoublePrecision_* and
+  GpuRawCurve_CloseToDoublePrecision use for the GPU. The bounds are
+  absolute: the cancellation-free form measures a mean |log10 R/R_ref| of
+  about 3E-5 and a worst case about 7E-4 here, against about 1.2E-3 and
+  1.2E-2 for the naive form it replaced - the 1E-4 / 3E-3 bounds below sit
+  strictly between the two and catch a regression to the naive form. Engine
+  agreement between the CPU and the GPU is asserted by
+  GpuRawCurve_CloseToDoublePrecision, not here: this test needs only the
+  Henke tables, not a GPU. }
+procedure TTestGpuCalc.CpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
 var
@@ -587,15 +577,14 @@ var
   Sigma: Single;
   Data: TDataArray;
   Model: TLayeredModel;
-  Calc: TCalc;
-  G: TGpuEvaluator;
-  Layers, Chi, Raw, Cpu: TArray<Single>;
+  Cpu: TArray<Single>;
   Lay: TCalcLayers;
-  p, i, NLay: Integer;
-  Ref, MeanCpu, MeanGpu, WorstCpu: Double;
+  p, i: Integer;
+  Ref, MeanCpu, WorstCpu: Double;
   What: string;
 begin
-  if not Ready then Exit;
+  if not HenkeReady then
+    Assert.Pass('Henke tables not installed: ' + HENKE_DB_PATH);
 
   Model := TLayeredModel.Create;
   Model.Init;
@@ -606,58 +595,25 @@ begin
         if RF = rfLinear then Sigma := 0.3 else Sigma := 3;
         What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
         Data := MakeData(0, Pol, RF, Sigma);
-        Calc := NewCalc(Data, nil, 0, Pol, RF);
-        G := TGpuEvaluator.Create;
-        try
-          FillModel(Model, 0, Sigma);
+        for p := 0 to PARTICLES - 1 do
+        begin
+          FillModel(Model, Jitter(p), Sigma);
           Model.Generate(CU_KA);
-          NLay := Length(Model.LayersDirect);
-          G.Setup(Calc.GpuInputs(0), NLay, PARTICLES, Pol, RF, CU_KA, 1, LIMIT);
-          SetLength(Layers, 4 * NLay * PARTICLES);
-          for p := 0 to PARTICLES - 1 do
+          Lay := Copy(Model.LayersDirect);
+          Cpu := RawOnCpu(Model, Data, Pol, RF);
+          MeanCpu := 0;
+          WorstCpu := 0;
+          for i := 0 to High(Data) do
           begin
-            FillModel(Model, Jitter(p), Sigma);
-            Model.Generate(CU_KA);
-            Pack(Model, Layers, p);
+            Ref := ParrattDouble(Lay, Data[i].t, Pol = cmSP, RF);
+            MeanCpu := MeanCpu + Abs(System.Math.Log10(Cpu[i] / Ref));
+            WorstCpu := Max(WorstCpu, Abs(System.Math.Log10(Cpu[i] / Ref)));
           end;
-          G.Evaluate(Layers, Chi);
-
-          for p := 0 to PARTICLES - 1 do
-          begin
-            FillModel(Model, Jitter(p), Sigma);
-            Model.Generate(CU_KA);
-            Lay := Copy(Model.LayersDirect);
-            Raw := G.RawCurve(p);
-            Cpu := RawOnCpu(Model, Data, Pol, RF);
-            MeanCpu := 0;
-            MeanGpu := 0;
-            WorstCpu := 0;
-            for i := 0 to High(Data) do
-            begin
-              Ref := ParrattDouble(Lay, Data[i].t, Pol = cmSP, RF);
-              MeanCpu := MeanCpu + Abs(System.Math.Log10(Cpu[i] / Ref));
-              MeanGpu := MeanGpu + Abs(System.Math.Log10(Raw[i] / Ref));
-              WorstCpu := Max(WorstCpu, Abs(System.Math.Log10(Cpu[i] / Ref)));
-            end;
-            MeanCpu := MeanCpu / Length(Data);
-            MeanGpu := MeanGpu / Length(Data);
-            Assert.IsTrue(MeanCpu < 1E-4, Format('%s, particle %d: CPU mean %.2e',
-              [What, p, MeanCpu]));
-            Assert.IsTrue(WorstCpu < 3E-3, Format('%s, particle %d: CPU worst %.2e',
-              [What, p, WorstCpu]));
-            { re-pinned 2026-09-28: the GPU's grazing sine from the host (plan
-              2026-09-28-tcalc-precision) - was "MeanCpu <= 1.05 * MeanGpu"
-              (the CPU no less precise than the GPU), true only while the
-              GPU's own error was far above the CPU's; fix round 1's `precise`
-              qualifiers make the GPU often more precise than the CPU
-              (measured ratio 0.81..3.86), so the bound is now symmetric. }
-            Assert.IsTrue((MeanCpu <= 5 * MeanGpu) and (MeanGpu <= 5 * MeanCpu),
-              Format('%s, particle %d: CPU mean %.2e, GPU mean %.2e - the two engines should stay ' +
-                'within a factor of 5 of each other', [What, p, MeanCpu, MeanGpu]));
-          end;
-        finally
-          G.Free;
-          Calc.Free;
+          MeanCpu := MeanCpu / Length(Data);
+          Assert.IsTrue(MeanCpu < 1E-4, Format('%s, particle %d: CPU mean %.2e',
+            [What, p, MeanCpu]));
+          Assert.IsTrue(WorstCpu < 3E-3, Format('%s, particle %d: CPU worst %.2e',
+            [What, p, WorstCpu]));
         end;
       end;
   finally

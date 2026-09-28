@@ -22,33 +22,30 @@ unit unit_gpu_calc;
    cancellation-free form of eps - sin^2(t): (eps.re - 1) + sin^2(theta) from
    the grazing angle (both engines since 2026-09-28; the naive form measured a
    mean |log10 R/R_ref| of ~1.2e-3 against a double-precision Parratt, this
-   form ~3e-5 on TCalc). Until task 1b (2026-09-28) the GPU still measured
-   ~1.2e-3..1.4e-3 mean (~9e-3..1.5e-2 worst) here, because the Reflect kernel
-   computed sin(grazing angle) itself, in HLSL's single-precision sin() of a
-   single-precision division Theta[a] / KScale that D3D does not round
-   correctly. Task 1b moves that computation to the host: Setup now uploads,
-   per angle, the grazing sine computed exactly as TCalc.CalcTet's angle
-   reaches TCalc.RefCalc - Single ThetaK := Theta[i] / KScale, then
-   System.Sin(Pi * Double(ThetaK) / 180) in Double, stored as Single - in the
-   SinG buffer the Reflect kernel reads directly. KScale stays in
-   TParamsCB/cbuffer Params even though Reflect no longer reads it, so the
-   80-byte constant-buffer layout is unchanged.
+   form ~3e-5 on TCalc). Task 1b (2026-09-28) moved the grazing sine's
+   computation to the host in Double, expecting to close the GPU's matching
+   gap (still ~1.2e-3..1.4e-3 mean, ~9e-3..1.5e-2 worst): Setup now uploads,
+   per angle, the sine computed exactly as TCalc.CalcTet's angle reaches
+   TCalc.RefCalc - Single ThetaK := Theta[i] / KScale, then System.Sin(Pi *
+   Double(ThetaK) / 180) in Double, stored as Single - in the SinG buffer the
+   Reflect kernel reads directly. KScale stays in TParamsCB/cbuffer Params
+   even though Reflect no longer reads it, so the 80-byte constant-buffer
+   layout is unchanged.
 
-   That host-side sine alone barely moved the GPU's error (still ~1.2e-3..
-   1.4e-3 mean): the shader is compiled with D3DCOMPILE_OPTIMIZATION_LEVEL3
-   and without D3DCOMPILE_IEEE_STRICTNESS, so fxc/the driver may reassociate
-   float sums - (eps.re - 1) + sin_g^2 into (eps.re + sin_g^2) - 1, and
-   (1 - eRatio) + eRatio * sin_g^2 likewise - reintroducing exactly the
-   cancellation between two numbers near 1 the Double sine was meant to avoid.
-   Task 1b fix round 1 (2026-09-28) marks those sums, and the "- 1"/"1 -"
-   intermediates that feed them, `precise`: this forces source-order, unfused
-   IEEE evaluation for just those expressions (see the comments at KB/Ki and
-   at s1 in Reflect below) and closes the gap: measured mean falls to
-   ~8e-6..3e-5 (worst ~8e-5..6e-4), in the CPU's own ~3e-5 neighbourhood (see
-   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision for the full numbers).
-   D3DCOMPILE_IEEE_STRICTNESS globally reaches the same accuracy but costs
-   ~13% more time per Evaluate; the targeted `precise` qualifiers cost nothing
-   measurable, which is why they were chosen over the global flag.
+   That alone barely moved the mean (~1.31e-3 -> ~1.29e-3): the measured cause
+   was not sin()'s own precision but the compiler/driver reassociating the
+   cancellation-free sums - (eps.re - 1) + sin_g^2 into (eps.re + sin_g^2) - 1,
+   and (1 - eRatio) + eRatio * sin_g^2 likewise (the shader compiles with
+   D3DCOMPILE_OPTIMIZATION_LEVEL3, without D3DCOMPILE_IEEE_STRICTNESS) -
+   reintroducing exactly the cancellation the form was meant to avoid. Task 1b
+   fix round 1 (2026-09-28) marks those sums, and the "- 1"/"1 -"
+   intermediates that feed them, `precise`: source-order, unfused IEEE
+   evaluation for just those expressions (see the comments at KB/Ki and at s1
+   in Reflect below) brings the mean to ~8e-6..3e-5 (worst ~8e-5..6e-4; see
+   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision). D3DCOMPILE_IEEE_STRICTNESS
+   globally reaches the same accuracy but costs ~13% more time per Evaluate;
+   the targeted `precise` qualifiers cost nothing measurable, which is why
+   they were chosen over the global flag.
 
    Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
    a D3D11 immediate context is not thread-safe. *)
@@ -235,8 +232,8 @@ const
         float4 lb = Layers[base + NLay - 1];            // the layer below, i + 1
         float2 eB = lb.xy;
         // precise: without it, the compiler/driver may reassociate
-        // (eB.x - 1) + sin_g2 into (eB.x + sin_g2) - 1, which reintroduces the
-        // cancellation the Single-precision grazing sine was meant to avoid.
+        // (eB.x - 1) + sin_g2 into (eB.x + sin_g2) - 1, which undoes the
+        // cancellation-free form.
         precise float dB = eB.x - 1;
         precise float reB = dB + sin_g2;
         float2 KB = c2 * csqrt(float2(reB, eB.y));
