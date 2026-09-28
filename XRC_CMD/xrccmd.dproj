@@ -152,6 +152,7 @@
         <DCCReference Include="Units\cmd_unit_load.pas"/>
         <DCCReference Include="Units\cmd_unit_universal.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_types.pas"/>
+        <DCCReference Include="..\Shared\Universal\unit_universal_refcalc.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_fitness.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_pso.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>

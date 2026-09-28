@@ -26,7 +26,7 @@ implementation
 function RefCalcStandalone(t, Lambda: Single; ALayers: TLayers;
   Pol: TPolarisation; RF: TRoughnessFunction): Single;
 var
-  c, Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t: single;
+  c, Rs, Rp, Rsp, s1, sin_g, sqr_sin_g: single;
 
   function TotalRecursiveRefraction: single;
   var
@@ -95,14 +95,16 @@ var
     i: integer;
     b1, b2: TComplex;
     s: Single;
+    rD: Double;
   begin
     for i := 0 to Length(ALayers) - 2 do
     begin
       b1 := SubZZ(ALayers[i].K, ALayers[i + 1].K);
       b2 := AddZZ(ALayers[i].K, ALayers[i + 1].K);
       ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
-      s := c * sqrt(cos_t * sqrt(s1));
+      rD := AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e));
+      s1 := Abs((1 - rD) + rD * sqr_sin_g);
+      s := c * sqrt(sin_g * sqrt(s1));
 
       ALayers[i].RF := MulRZ(Roughness(RF, ALayers[i + 1].s, s), ALayers[i].RF);
     end;
@@ -113,6 +115,7 @@ var
     i: integer;
     a1, a2, b1, b2: TComplex;
     s: Single;
+    rD: Double;
   begin
     for i := 0 to Length(ALayers) - 2 do
     begin
@@ -121,8 +124,9 @@ var
       b1 := SubZZ(MulRZ(1, a1), MulRZ(1, a2));
       b2 := AddZZ(MulRZ(1, a1), MulRZ(1, a2));
       ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
-      s := c * sqrt(cos_t * sqrt(s1));
+      rD := AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e));
+      s1 := Abs((1 - rD) + rD * sqr_sin_g);
+      s := c * sqrt(sin_g * sqrt(s1));
 
       ALayers[i].RF := MulRZ(Roughness(RF, ALayers[i + 1].s, s), ALayers[i].RF);
     end;
@@ -137,16 +141,18 @@ var
     c := 2 * Pi / Lambda; {другое волновое число }
     for i := 0 to Length(ALayers) - 1 do
       begin
-        a1 := SqrtZ(AddZR(ALayers[i].e, -sqr_sin_t));
+        a1 := SqrtZ(ToComplex((ALayers[i].e.re - 1) + sqr_sin_g, ALayers[i].e.im));
         ALayers[i].K := MulRZ(c, a1);
       end;
   end;
 
 begin
   c := 4 * Pi / Lambda; { волновое число }
-  t := Pi / 2 - Pi * t / 180;
-
-  sin_t := sin(t); cos_t := cos(t); sqr_sin_t := sqr(sin_t);
+  { The grazing angle's sine in Double: eps - sin^2 of the angle to the normal
+    is (eps - 1) + sin^2 of the grazing angle, as in unit_calc.TCalc.RefCalc;
+    the naive form keeps only a few digits near the critical angle. }
+  sin_g := Sin(Pi * Double(t) / 180);
+  sqr_sin_g := sqr(sin_g);
 
   FresnelCoefficients;
   LayerAmplitudeRefractionS;

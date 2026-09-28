@@ -20,6 +20,10 @@ type
       0.5 A and gave 0/0 at 0; rfSinus was undefined). }
     [Test]
     procedure RefCalcStandalone_RoughnessFunctions;
+    { RefCalcStandalone against the reference Parratt (unit_parratt_ref, in
+      Double), a 20-period W/B4C-on-Si stack, rfError, both polarisations. }
+    [Test]
+    procedure RefCalcStandalone_CloseToTheReferenceParratt;
   end;
 
 implementation
@@ -28,6 +32,8 @@ uses
   System.SysUtils, System.IOUtils, System.Math,
   math_complex,
   unit_Config,
+  unit_Types,
+  unit_parratt_ref,
   cmd_unit_types,
   unit_materials_mix,
   unit_universal_types,
@@ -77,6 +83,96 @@ begin
     Assert.AreEqual(Double(R3Error), Double(R3), 0.1 * R3Error,
       Names[RF] + ': sigma is the rms width, as for the error function');
   end;
+end;
+
+{ A 20-period W/B4C-on-Si stack, built once as cmd_unit_types.TLayers (the
+  universal engine's own layer record) and once as unit_Types.TCalcLayers
+  (ParrattRef's, the Double reference), so RefCalcStandalone can be checked
+  against the reference Parratt with a realistic multilayer. }
+procedure TTestUniversalFitnessLayers.RefCalcStandalone_CloseToTheReferenceParratt;
+const
+  LAMBDA = 1.5406;
+  N_PERIODS = 20;
+  N_ANGLES = 200;
+  THETA_MIN = 0.1;
+  THETA_MAX = 4.0;
+  SUBSTRATE_L = 1E8; { the sentinel thickness TLayeredModel.AddSubstrate gives
+                        the substrate; ignored by both engines' recursion,
+                        which starts from R = 0 at the bottom layer. }
+
+  function BuildUniLayers: cmd_unit_types.TLayers;
+  var
+    p, idx: Integer;
+  begin
+    SetLength(Result, 2 + N_PERIODS * 2);
+    Result[0].e.re := 1; Result[0].e.im := 0;
+    Result[0].H := 0; Result[0].S := 0;
+    idx := 1;
+    for p := 0 to N_PERIODS - 1 do
+    begin
+      Result[idx].e.re := 1 - 9.6E-5; Result[idx].e.im := 7.8E-6;
+      Result[idx].H := 12; Result[idx].S := 3;
+      Inc(idx);
+      Result[idx].e.re := 1 - 1.66E-5; Result[idx].e.im := 1.6E-8;
+      Result[idx].H := 22; Result[idx].S := 3;
+      Inc(idx);
+    end;
+    Result[idx].e.re := 1 - 1.52E-5; Result[idx].e.im := 3.5E-7;
+    Result[idx].H := SUBSTRATE_L; Result[idx].S := 3;
+  end;
+
+  { The same stack as unit_Types.TCalcLayers, delta computed in Double from
+    the same Single e.re (RefCalcStandalone has no independent delta - the
+    universal engine's TLayer keeps epsilon alone; see the precision-followups
+    plan, Task 5). }
+  function BuildRefLayers(const Uni: cmd_unit_types.TLayers): unit_Types.TCalcLayers;
+  var
+    i: Integer;
+  begin
+    SetLength(Result, Length(Uni));
+    for i := 0 to High(Uni) do
+    begin
+      Result[i].e := Uni[i].e;
+      Result[i].L := Uni[i].H;
+      Result[i].s := Uni[i].S;
+      Result[i].delta := 1 - Double(Uni[i].e.re);
+    end;
+  end;
+
+  procedure CheckPol(Pol: cmd_unit_types.TPolarisation; const Label_: string);
+  var
+    UniLayers: cmd_unit_types.TLayers;
+    RefLayers: unit_Types.TCalcLayers;
+    SP: Boolean;
+    i: Integer;
+    Theta, RUni, RRef, LogDiff, SumAbs, Worst: Double;
+  begin
+    RefLayers := BuildRefLayers(BuildUniLayers);
+    SP := Pol = cmSP;
+    SumAbs := 0;
+    Worst := 0;
+    for i := 0 to N_ANGLES - 1 do
+    begin
+      Theta := THETA_MIN + i * (THETA_MAX - THETA_MIN) / (N_ANGLES - 1);
+      // Fresh copy per call: RefCalcStandalone writes K/R/RF into ALayers.
+      UniLayers := BuildUniLayers;
+      RUni := RefCalcStandalone(Theta, LAMBDA, UniLayers, Pol, cmd_unit_types.rfError);
+      RRef := ParrattRef(RefLayers, Theta, LAMBDA, SP,
+        unit_Types.TRoughnessFunction(Ord(cmd_unit_types.rfError)));
+      LogDiff := Abs(System.Math.Log10(RUni / RRef));
+      SumAbs := SumAbs + LogDiff;
+      if LogDiff > Worst then
+        Worst := LogDiff;
+    end;
+    Assert.IsTrue(SumAbs / N_ANGLES < 1E-4,
+      Label_ + ': mean |log10(R/R_ref)| = ' + FloatToStr(SumAbs / N_ANGLES));
+    Assert.IsTrue(Worst < 3E-3,
+      Label_ + ': worst |log10(R/R_ref)| = ' + FloatToStr(Worst));
+  end;
+
+begin
+  CheckPol(cmS, 'S');
+  CheckPol(cmSP, 'SP');
 end;
 
 { The two-line W/Si configuration both tests use. }

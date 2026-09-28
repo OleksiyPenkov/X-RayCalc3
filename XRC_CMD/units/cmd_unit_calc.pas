@@ -22,7 +22,8 @@ uses
   GpLists,
   OtlSync,
   System.SysUtils,
-  cmd_unit_materials;
+  cmd_unit_materials,
+  unit_universal_refcalc;
 
 type
 
@@ -256,143 +257,15 @@ begin
   end;
 end;
 
+{ Delegates to unit_universal_refcalc.RefCalcStandalone, extracted from this
+  method: same roughness functions, the same use of FCD.RF/FCD.P, and the
+  same order of the S and P passes - only the RF source differed (this
+  method read FCD.RF directly; RefCalcStandalone takes it as a parameter).
+  Both now carry the cancellation-free (eps - 1) + sin^2(grazing) form, as
+  TCalc.RefCalc in Shared/Math/unit_calc.pas (precision-followups, Task 5). }
 function TCalc.RefCalc(t, Lambda:single; ALayers: TLayers): single;
-var
-  c, Rs, Rp, Rsp, s1, sin_t, cos_t, sqr_sin_t: single;
-
-  function TotalRecursiveRefraction: single;
-  var
-    i: integer;
-    Im: TComplex;
-    a1, a2, b1, b2: TComplex;
-  begin
-    Im := ToComplex(0, 1);
-    for i := High(ALayers) - 1 downto 0 do
-    begin
-      a1 := MulRZ(ALayers[i + 1].H * 2, ALayers[i + 1].K);
-      a1 := MulZZ(Im, a1);
-      a1 := ExpZ(a1);
-      a1 := MulZZ(ALayers[i + 1].R, a1);
-      b1 := AddZZ(ALayers[i].RF, a1);
-      a2 := MulZZ(ALayers[i].RF, a1);
-      b2 := AddZR(a2, 1);
-      ALayers[i].R := DivZZ(b1, b2);
-    end;
-    Result := sqr(AbsZ(ALayers[0].R));
-  end;
-
-  function Roughness(const RF: TRoughnessFunction; const sigma, s: single):Single;inline;
-  const
-    Sqrt3 = 1.7320508075688772;
-    SinusK = 2.2976031174871970;   // pi / sqrt(pi^2 - 8)
-  var
-    a: Single;
-  begin
-      case RF of
-        rfError:
-          // Nevot-Croce, exp(-2 k_z^2 sigma^2) with s = 2 k_z: the coefficient
-          // is a half, as in unit_calc.pas and unit_universal_refcalc. Until
-          // 3.9.3 this was exp(-sigma^2 s^2) with sigma stored as sigma/1.41,
-          // which is 0.50299; 3.9.3 set 0.50299 here but kept the /1.41, so
-          // its interfaces were sqrt(2) times smoother than the GUI's. 3.9.4
-          // stores sigma as given.
-          Result := exp(-0.5 * sqr(sigma) * sqr(s));
-        rfExp:
-          Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
-        rfLinear:
-          // until 3.9.3 this damped only below sigma = 0.5 A (and 0/0 at 0)
-          begin
-            a := Sqrt3 * sigma * s;
-            if Abs(a) < 1E-4 then
-              Result := 1
-            else
-              Result := sin(a) / a;
-          end;
-        rfStep:
-          Result := cos(sigma * s);
-        rfSinus:
-          // Stearns / IMD; the rms width is sigma. Undefined until 3.9.3.
-          begin
-            a := SinusK * sigma * s;
-            Result := Pi / 4 * (sin(a - Pi / 2) / (a - Pi / 2) +
-                                sin(a + Pi / 2) / (a + Pi / 2));
-          end;
-        else
-          Result := 1;
-      end;
-  end;
-
-  procedure LayerAmplitudeRefractionS;     { Коэффициент отражения Rs}
-  var
-    i: integer;
-    b1, b2: TComplex;
-    s: Single;
-  begin
-    for i := 0 to Length(ALayers) - 2 do
-    begin
-      b1 := SubZZ(ALayers[i].K, ALayers[i + 1].K);
-      b2 := AddZZ(ALayers[i].K, ALayers[i + 1].K);
-      ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
-      s := c * sqrt(cos_t * sqrt(s1));
-
-      ALayers[i].RF := MulRZ(Roughness(FCD.RF, ALayers[i + 1].s, s), ALayers[i].RF);
-    end;
-  end;
-
-  procedure LayerAmplitudeRefractionP;     { Коэффициент отражения Rp }
-  var
-    i: integer;
-    a1, a2, b1, b2: TComplex;
-    s: Single;
-  begin
-    for i := 0 to Length(ALayers) - 2 do
-    begin
-      a1 := DivZZ(ALayers[i].K, ALayers[i].e);
-      a2 := DivZZ(ALayers[i + 1].K, ALayers[i + 1].e);
-      b1 := SubZZ(MulRZ(1, a1), MulRZ(1, a2));
-      b2 := AddZZ(MulRZ(1, a1), MulRZ(1, a2));
-      ALayers[i].RF := DivZZ(b1, b2);
-      s1 := Abs(1 - (AbsZ(DivZZ(ALayers[i].e, ALayers[i + 1].e)) * sqr_sin_t));
-      s := c * sqrt(cos_t * sqrt(s1));
-
-      ALayers[i].RF := MulRZ(Roughness(FCD.RF, ALayers[i + 1].s, s), ALayers[i].RF);
-    end;
-  end;
-
-  procedure FresnelCoefficients;   { Френелевские коэффициенты (p-p) }
-  var
-    i: Integer;
-    c: Single;
-    a1: TComplex;
-  begin
-    c := 2 * Pi / Lambda; {другое волновое число }
-    for i := 0 to Length(ALayers) - 1 do
-      begin
-        a1 := SqrtZ(AddZR(ALayers[i].e, -sqr_sin_t));
-        ALayers[i].K := MulRZ(c, a1);
-      end;
-  end;
-
 begin
-  c := 4 * Pi / Lambda; { волновое число }
-  t := Pi / 2 - Pi * t / 180;
-
-  sin_t := sin(t); cos_t := cos(t); sqr_sin_t := sqr(sin_t);
-
-  FresnelCoefficients;
-  LayerAmplitudeRefractionS;
-  Rs := TotalRecursiveRefraction;
-
-  if FCD.P = cmSP then
-  begin
-    LayerAmplitudeRefractionP;
-    Rp := TotalRecursiveRefraction;
-    Rsp := (Rs + Rp) / 2;
-    Result := Rsp;
-  end
-  else
-    Result := Rs;
+  Result := RefCalcStandalone(t, Lambda, ALayers, FCD.P, FCD.RF);
 end;
 
 procedure TCalc.Convolute(Width: single);
