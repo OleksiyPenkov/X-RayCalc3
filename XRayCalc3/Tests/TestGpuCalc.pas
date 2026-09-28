@@ -50,6 +50,7 @@ type
 
     [Test] procedure RawCurve_MatchesDoublePrecision_EveryRoughnessAndPolarisation;
     [Test] procedure CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
+    [Test] procedure GpuRawCurve_CloseToDoublePrecision;
     [Test] procedure Chi_MatchesTheCpuEngine_EveryWeighting;
     [Test] procedure Chi_MatchesTheCpuEngine_WithTheScaleSolved;
     [Test] procedure SplitDispatches_GiveTheSameAnswer;
@@ -637,6 +638,115 @@ begin
             Assert.IsTrue(MeanCpu <= 1.05 * MeanGpu, Format('%s, particle %d: CPU mean %.2e, ' +
               'GPU mean %.2e - the CPU must be no less precise than the GPU',
               [What, p, MeanCpu, MeanGpu]));
+          end;
+        finally
+          G.Free;
+          Calc.Free;
+        end;
+      end;
+  finally
+    Model.Free;
+  end;
+end;
+
+{ The GPU raw curve against the double-precision Parratt, on the same
+  particles RawCurve_MatchesDoublePrecision_* uses, after Setup uploads the
+  grazing sine computed on the host in Double (task 1b, 2026-09-28).
+
+  Measured (24 cases: 4 roughness functions x 2 polarisations x 3 particles):
+  before task 1b (the shader's own single-precision sin of Theta/KScale) mean
+  ran 1.19E-3..1.39E-3, worst 8.85E-3..1.49E-2; after task 1b, uploading the
+  Double grazing sine from Setup, mean ran 1.16E-3..1.36E-3, worst
+  8.71E-3..1.34E-2 - a real but small improvement (a few percent on the mean,
+  up to ~10% on the worst case), nowhere near the CPU's ~3E-5 mean. The
+  bounds below are the worst measured case with about 3x margin, as the plan
+  asks; because the improvement is this small, the pre-fix kernel would also
+  pass them (see the report filed under this task for the full measurement
+  and the reason: replacing csqrt's rsqrt with 1/sqrt, adding manual sincos
+  range reduction and switching exp to exp2 each left every case unchanged to
+  three significant figures, so the dominant error is not the ones the plan
+  named as suspects; DONE_WITH_CONCERNS). The GPU/CPU agreement assertions
+  are the ones this task actually improves in absolute terms, even though the
+  margin is the same story. }
+procedure TTestGpuCalc.GpuRawCurve_CloseToDoublePrecision;
+const
+  PARTICLES = 3;
+  MEAN_BOUND = 4E-3;
+  WORST_BOUND = 4E-2;
+  AGREE_MEAN_BOUND = 4E-3;
+  AGREE_WORST_BOUND = 4E-2;
+var
+  RF: TRoughnessFunction;
+  Pol: TPolarisation;
+  Sigma: Single;
+  Data: TDataArray;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Layers, Chi, Raw, Cpu: TArray<Single>;
+  Lay: TCalcLayers;
+  p, i, NLay: Integer;
+  Ref, d, Mean, Worst, AgreeMean, AgreeWorst: Double;
+  What: string;
+begin
+  if not Ready then Exit;
+
+  Model := TLayeredModel.Create;
+  Model.Init;
+  try
+    for RF := rfError to rfStep do
+      for Pol := cmS to cmSP do
+      begin
+        if RF = rfLinear then Sigma := 0.3 else Sigma := 3;
+        What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
+        Data := MakeData(0, Pol, RF, Sigma);
+        Calc := NewCalc(Data, nil, 0, Pol, RF);
+        G := TGpuEvaluator.Create;
+        try
+          FillModel(Model, 0, Sigma);
+          Model.Generate(CU_KA);
+          NLay := Length(Model.LayersDirect);
+          G.Setup(Calc.GpuInputs(0), NLay, PARTICLES, Pol, RF, CU_KA, 1, LIMIT);
+          SetLength(Layers, 4 * NLay * PARTICLES);
+          for p := 0 to PARTICLES - 1 do
+          begin
+            FillModel(Model, Jitter(p), Sigma);
+            Model.Generate(CU_KA);
+            Pack(Model, Layers, p);
+          end;
+          G.Evaluate(Layers, Chi);
+
+          for p := 0 to PARTICLES - 1 do
+          begin
+            FillModel(Model, Jitter(p), Sigma);
+            Model.Generate(CU_KA);
+            Lay := Copy(Model.LayersDirect);
+            Raw := G.RawCurve(p);
+            Cpu := RawOnCpu(Model, Data, Pol, RF);
+            Mean := 0;
+            Worst := 0;
+            AgreeMean := 0;
+            AgreeWorst := 0;
+            for i := 0 to High(Data) do
+            begin
+              Ref := ParrattDouble(Lay, Data[i].t, Pol = cmSP, RF);
+              d := Abs(System.Math.Log10(Raw[i] / Ref));
+              Mean := Mean + d;
+              Worst := Max(Worst, d);
+              d := Abs(System.Math.Log10(Raw[i] / Cpu[i]));
+              AgreeMean := AgreeMean + d;
+              AgreeWorst := Max(AgreeWorst, d);
+            end;
+            Mean := Mean / Length(Data);
+            AgreeMean := AgreeMean / Length(Data);
+            Assert.IsTrue(Mean < MEAN_BOUND, Format('%s, particle %d: GPU mean |log10 R/R_ref| %.2e',
+              [What, p, Mean]));
+            Assert.IsTrue(Worst < WORST_BOUND, Format('%s, particle %d: GPU worst |log10 R/R_ref| %.2e',
+              [What, p, Worst]));
+            Assert.IsTrue(AgreeMean < AGREE_MEAN_BOUND, Format('%s, particle %d: GPU/CPU mean ' +
+              'disagreement %.2e', [What, p, AgreeMean]));
+            Assert.IsTrue(AgreeWorst < AGREE_WORST_BOUND, Format('%s, particle %d: GPU/CPU worst ' +
+              'disagreement %.2e', [What, p, AgreeWorst]));
           end;
         finally
           G.Free;

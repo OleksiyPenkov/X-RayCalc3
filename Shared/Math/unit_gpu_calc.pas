@@ -22,10 +22,20 @@ unit unit_gpu_calc;
    cancellation-free form of eps - sin^2(t): (eps.re - 1) + sin^2(theta) from
    the grazing angle (both engines since 2026-09-28; the naive form measured a
    mean |log10 R/R_ref| of ~1.2e-3 against a double-precision Parratt, this
-   form ~3e-5 on TCalc). The GPU still measures ~1.3e-3 here (Reflect below)
-   because cos_t is HLSL's single-precision sin() of the grazing angle, not a
-   Double one; a natural follow-up is computing sin^2(theta) in double
-   precision per angle before the dispatch.
+   form ~3e-5 on TCalc). Until task 1b (2026-09-28) the GPU still measured
+   ~1.2e-3..1.4e-3 mean (~9e-3..1.5e-2 worst) here, because the Reflect kernel
+   computed sin(grazing angle) itself, in HLSL's single-precision sin() of a
+   single-precision division Theta[a] / KScale that D3D does not round
+   correctly. Task 1b moves that computation to the host: Setup now uploads,
+   per angle, the grazing sine computed exactly as TCalc.CalcTet's angle
+   reaches TCalc.RefCalc - Single ThetaK := Theta[i] / KScale, then
+   System.Sin(Pi * Double(ThetaK) / 180) in Double, stored as Single - in the
+   SinG buffer the Reflect kernel reads directly. Both engines now start the
+   recursion from the same Single grazing sine, and the GPU's own error
+   against the double-precision Parratt falls to the CPU's ~3e-5 mean (see
+   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision for the measured numbers).
+   KScale stays in TParamsCB/cbuffer Params even though Reflect no longer
+   reads it, so the 80-byte constant-buffer layout is unchanged.
 
    Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
    a D3D11 immediate context is not thread-safe. *)
@@ -63,7 +73,7 @@ type
     FCtx: ID3D11DeviceContext;
     FReflect, FChi: ID3D11ComputeShader;
     FCB: ID3D11Buffer;
-    FLayers, FTheta, FWeights, FLogData, FPointWeight, FCurve, FChiBuf: ID3D11Buffer;
+    FLayers, FSinG, FWeights, FLogData, FPointWeight, FCurve, FChiBuf: ID3D11Buffer;
     FChiStage, FRowStage: ID3D11Buffer;
     FSRV: array [0..4] of ID3D11ShaderResourceView;
     FUAV: array [0..1] of ID3D11UnorderedAccessView;
@@ -154,7 +164,7 @@ const
     };
 
     StructuredBuffer<float4> Layers      : register(t0);  // e.re, e.im, L, sigma
-    StructuredBuffer<float>  Theta       : register(t1);
+    StructuredBuffer<float>  SinG        : register(t1);  // grazing sine, Double on the host (Setup)
     StructuredBuffer<float>  Weights     : register(t2);
     StructuredBuffer<float>  LogData     : register(t3);
     StructuredBuffer<float>  PointWeight : register(t4);
@@ -203,14 +213,15 @@ const
         if (a >= NAng) return;
         uint p = gid.y + PartOffset;
 
-        // cos_t = sin(grazing angle): keep eps - sin^2(t) as (eps - 1) + cos_t^2
-        float cos_t = sin(0.0174532925199 * (Theta[a] / KScale));
-        float cos2 = cos_t * cos_t;
+        // sin_g = the grazing sine, uploaded by Setup in double precision from
+        // the host (task 1b): keep eps - sin^2(t) as (eps - 1) + sin_g^2
+        float sin_g = SinG[a];
+        float sin_g2 = sin_g * sin_g;
 
         uint base = p * NLay;
         float4 lb = Layers[base + NLay - 1];            // the layer below, i + 1
         float2 eB = lb.xy;
-        float2 KB = c2 * csqrt(float2((eB.x - 1) + cos2, eB.y));
+        float2 KB = c2 * csqrt(float2((eB.x - 1) + sin_g2, eB.y));
         float2 R  = float2(0, 0);
         float2 Rp = float2(0, 0);
         bool first = true;   // R = 0 below the first interface: no phase term
@@ -219,11 +230,11 @@ const
         {
             float4 li = Layers[base + i];
             float2 ei = li.xy;
-            float2 Ki = c2 * csqrt(float2((ei.x - 1) + cos2, ei.y));
+            float2 Ki = c2 * csqrt(float2((ei.x - 1) + sin_g2, ei.y));
 
             float eRatio = length(cdiv(ei, eB));
-            float s1 = abs((1 - eRatio) + eRatio * cos2);
-            float rf = Roughness(lb.w, c1 * sqrt(cos_t * sqrt(s1)));
+            float s1 = abs((1 - eRatio) + eRatio * sin_g2);
+            float rf = Roughness(lb.w, c1 * sqrt(sin_g * sqrt(s1)));
 
             float2 RFs = rf * cdiv(Ki - KB, Ki + KB);
             float2 RFp = float2(0, 0);
@@ -504,6 +515,9 @@ procedure TGpuEvaluator.Setup(const Inputs: TGpuEvalInputs; NLay, NPart: Integer
 var
   Desc: TD3D11_BUFFER_DESC;
   Steps: Int64;
+  SinG: TArray<Single>;
+  ThetaK: Single;
+  i: Integer;
 begin
   if (NLay < 2) or (NPart < 1) or (Length(Inputs.Theta) < 2) then
     raise EGpuError.CreateFmt('Nothing to evaluate: %d layers, %d particles, %d angles',
@@ -542,6 +556,18 @@ begin
   if FChunk < 1 then FChunk := 1;
   if FChunk > MAX_GROUPS then FChunk := MAX_GROUPS;
 
+  { The grazing sine, computed once per angle on the host in Double, exactly
+    as TCalc.CalcTet's angle reaches TCalc.RefCalc: ThetaK is Single, as
+    CalcTet's (t / K), and Sin runs in Double before narrowing back to Single
+    (task 1b, 2026-09-28). KScale stays in FParams/cbuffer Params below even
+    though Reflect no longer reads it, so the 80-byte layout is unchanged. }
+  SetLength(SinG, FNAng);
+  for i := 0 to FNAng - 1 do
+  begin
+    ThetaK := Inputs.Theta[i] / KScale;
+    SinG[i] := Sin(Pi * Double(ThetaK) / 180);
+  end;
+
   FillChar(Desc, SizeOf(Desc), 0);
   Desc.ByteWidth := SizeOf(TParamsCB);
   Desc.Usage := D3D11_USAGE_DEFAULT;
@@ -549,7 +575,7 @@ begin
   Check(FDev.CreateBuffer(Desc, nil, FCB), 'CreateBuffer(constants)');
 
   FLayers      := Structured(16, FNPart * FNLay, D3D11_BIND_SHADER_RESOURCE, nil);
-  FTheta       := Structured(4, FNAng, D3D11_BIND_SHADER_RESOURCE, @Inputs.Theta[0]);
+  FSinG        := Structured(4, FNAng, D3D11_BIND_SHADER_RESOURCE, @SinG[0]);
   FWeights     := Structured(4, Length(Inputs.ConvWeights), D3D11_BIND_SHADER_RESOURCE,
                     @Inputs.ConvWeights[0]);
   FLogData     := Structured(4, FNAng, D3D11_BIND_SHADER_RESOURCE, @Inputs.LogData[0]);
@@ -560,7 +586,7 @@ begin
   FRowStage    := Staging(4 * FNAng);
 
   Check(FDev.CreateShaderResourceView(FLayers, nil, FSRV[0]), 'SRV(layers)');
-  Check(FDev.CreateShaderResourceView(FTheta, nil, FSRV[1]), 'SRV(theta)');
+  Check(FDev.CreateShaderResourceView(FSinG, nil, FSRV[1]), 'SRV(sin g)');
   Check(FDev.CreateShaderResourceView(FWeights, nil, FSRV[2]), 'SRV(weights)');
   Check(FDev.CreateShaderResourceView(FLogData, nil, FSRV[3]), 'SRV(log data)');
   Check(FDev.CreateShaderResourceView(FPointWeight, nil, FSRV[4]), 'SRV(point weights)');
