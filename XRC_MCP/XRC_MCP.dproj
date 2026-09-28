@@ -134,6 +134,7 @@
         <DCCReference Include="..\Shared\Math\unit_materials.pas"/>
         <DCCReference Include="..\Shared\Math\unit_calc.pas"/>
         <DCCReference Include="..\Shared\Math\unit_gpu_calc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_parratt_ref.pas"/>
         <DCCReference Include="units\unit_MCPStructure.pas"/>
         <DCCReference Include="..\XRC_CMD\Units\cmd_unit_types.pas"/>
         <DCCReference Include="..\XRC_CMD\Units\cmd_math_globals.pas"/>

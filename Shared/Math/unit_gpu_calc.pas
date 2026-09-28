@@ -200,19 +200,25 @@ const
         float im = sqrt(m * 0.5);
         return float2(abs(z.y) * rsqrt(m * 2), z.y < 0 ? -im : im);
     }
-    // TCalc.RefCalc's Roughness
+    // TCalc.RefCalc's Roughness (the 3.9.3 forms: rfLinear damps at every
+    // sigma, not only below 0.5 A; rfSinus is the Stearns form, not 0)
     float Roughness(float sigma, float s)
     {
         if (RF == 0) return exp(-(sigma * sigma * 0.5) * s * s);
         if (RF == 1) return 1.0 / (1.0 + (s * s * sigma * sigma) * 0.5);
         if (RF == 2)
         {
-            if (sigma >= 0.5) return 1.0;
             float x = 1.73205080757 * sigma * s;
-            return x == 0 ? 1.0 : sin(x) / x;
+            return abs(x) < 1e-4 ? 1.0 : sin(x) / x;
         }
         if (RF == 3) return cos(sigma * s);
-        return 0.0;
+        if (RF == 4)
+        {
+            float a = 2.29760311750 * sigma * s;
+            float u = a - 1.57079632679, v = a + 1.57079632679;
+            return 0.785398163397 * (sin(u) / u + sin(v) / v);
+        }
+        return 1.0;
     }
 
     [numthreads(64, 1, 1)]

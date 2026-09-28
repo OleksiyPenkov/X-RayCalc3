@@ -21,6 +21,7 @@ uses
   unit_materials in '..\..\Shared\Math\unit_materials.pas',
   unit_calc in '..\..\Shared\Math\unit_calc.pas',
   unit_gpu_calc in '..\..\Shared\Math\unit_gpu_calc.pas',
+  unit_parratt_ref in '..\..\Shared\Math\unit_parratt_ref.pas',
   TestMathComplex in 'TestMathComplex.pas',
   TestMathGlobals in 'TestMathGlobals.pas',
   TestUnitTypes in 'TestUnitTypes.pas',

@@ -221,6 +221,7 @@
         </DCCReference>
         <DCCReference Include="..\Shared\Math\unit_calc.pas"/>
         <DCCReference Include="..\Shared\Math\unit_gpu_calc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_parratt_ref.pas"/>
         <DCCReference Include="..\Shared\Math\unit_materials.pas"/>
         <DCCReference Include="..\Shared\Math\math_globals.pas"/>
         <DCCReference Include="Components\unit_XRCProjectTree.pas"/>

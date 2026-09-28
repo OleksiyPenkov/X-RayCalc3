@@ -24,7 +24,8 @@ uses
   unit_Types,
   unit_materials,
   unit_calc,
-  unit_gpu_calc;
+  unit_gpu_calc,
+  unit_parratt_ref;
 
 type
   [TestFixture]
@@ -222,118 +223,13 @@ end;
 
 { ------------------------------------------------ double-precision Parratt -- }
 
-type
-  TZ = record Re, Im: Double; end;
-
-function Z(a, b: Double): TZ; inline; begin Result.Re := a; Result.Im := b; end;
-function ZAdd(const a, b: TZ): TZ; inline; begin Result := Z(a.Re + b.Re, a.Im + b.Im); end;
-function ZSub(const a, b: TZ): TZ; inline; begin Result := Z(a.Re - b.Re, a.Im - b.Im); end;
-function ZMul(const a, b: TZ): TZ; inline;
-begin
-  Result := Z(a.Re * b.Re - a.Im * b.Im, a.Re * b.Im + a.Im * b.Re);
-end;
-function ZDiv(const a, b: TZ): TZ; inline;
-var
-  d: Double;
-begin
-  d := b.Re * b.Re + b.Im * b.Im;
-  Result := Z((a.Re * b.Re + a.Im * b.Im) / d, (a.Im * b.Re - a.Re * b.Im) / d);
-end;
-function ZScale(k: Double; const a: TZ): TZ; inline; begin Result := Z(k * a.Re, k * a.Im); end;
-function ZAbs(const a: TZ): Double; inline; begin Result := Sqrt(a.Re * a.Re + a.Im * a.Im); end;
-function ZSqrt(const a: TZ): TZ;
-var
-  m: Double;
-begin
-  if (a.Re = 0) and (a.Im = 0) then
-    Exit(Z(0, 0));
-  m := ZAbs(a);
-  if a.Re > 0 then
-  begin
-    m := m + a.Re;
-    Result := Z(Sqrt(m / 2), a.Im / Sqrt(m * 2));
-  end
-  else
-  begin
-    m := m - a.Re;
-    if a.Im < 0 then
-      Result := Z(Abs(a.Im) / Sqrt(m * 2), -Sqrt(m / 2))
-    else
-      Result := Z(Abs(a.Im) / Sqrt(m * 2), Sqrt(m / 2));
-  end;
-end;
-
-function RoughnessD(RF: TRoughnessFunction; Sigma, s: Double): Double;
-var
-  x: Double;
-begin
-  case RF of
-    rfError:  Result := Exp(-(Sigma * Sigma * 0.5) * s * s);
-    rfExp:    Result := 1 / (1 + (s * s * Sigma * Sigma) / 2);
-    rfLinear:
-      if Sigma < 0.5 then
-      begin
-        x := Sqrt(3) * Sigma * s;
-        if x = 0 then Result := 1 else Result := Sin(x) / x;
-      end
-      else
-        Result := 1;
-    rfStep:   Result := Cos(Sigma * s);
-  else
-    Result := 0;
-  end;
-end;
-
-{ TCalc.RefCalc in Double from the model TLayeredModel.Generate left, with the
-  angle taken as the grazing angle so nothing cancels. }
+{ A thin wrapper over unit_parratt_ref.ParrattRef (the reference Parratt now
+  lives there, shared with production code from Task 4 on), with the Limit
+  clamp the tests here expect. }
 function ParrattDouble(const L: TCalcLayers; ThetaDeg: Double; SP: Boolean;
   RF: TRoughnessFunction): Double;
-var
-  c1, c2, cs, cos2, eRatio, s1, rough, L2, ex, ph: Double;
-  i, n: Integer;
-  eB, ei, KB, Ki, R, Rp, RFs, RFp, a1, Ph1, k1, k2: TZ;
-  sB, LB: Double;
 begin
-  c1 := 4 * Pi / CU_KA;
-  c2 := c1 / 2;
-  cs := Sin(DegToRad(ThetaDeg));
-  cos2 := cs * cs;
-  n := Length(L);
-  eB := Z(L[n - 1].e.Re, L[n - 1].e.Im);
-  sB := L[n - 1].s;
-  LB := L[n - 1].L;
-  KB := ZScale(c2, ZSqrt(Z((eB.Re - 1) + cos2, eB.Im)));
-  R := Z(0, 0);
-  Rp := Z(0, 0);
-  for i := n - 2 downto 0 do
-  begin
-    ei := Z(L[i].e.Re, L[i].e.Im);
-    Ki := ZScale(c2, ZSqrt(Z((ei.Re - 1) + cos2, ei.Im)));
-    eRatio := ZAbs(ZDiv(ei, eB));
-    s1 := Abs((1 - eRatio) + eRatio * cos2);
-    rough := RoughnessD(RF, sB, c1 * Sqrt(cs * Sqrt(s1)));
-    L2 := LB * 2;
-    ex := Exp(-L2 * KB.Im);
-    ph := L2 * KB.Re;
-    Ph1 := Z(ex * Cos(ph), ex * Sin(ph));
-    RFs := ZScale(rough, ZDiv(ZSub(Ki, KB), ZAdd(Ki, KB)));
-    a1 := ZMul(R, Ph1);
-    R := ZDiv(ZAdd(RFs, a1), ZAdd(Z(1, 0), ZMul(RFs, a1)));
-    if SP then
-    begin
-      k1 := ZDiv(Ki, ei);
-      k2 := ZDiv(KB, eB);
-      RFp := ZScale(rough, ZDiv(ZSub(k1, k2), ZAdd(k1, k2)));
-      a1 := ZMul(Rp, Ph1);
-      Rp := ZDiv(ZAdd(RFp, a1), ZAdd(Z(1, 0), ZMul(RFp, a1)));
-    end;
-    eB := ei; KB := Ki; sB := L[i].s; LB := L[i].L;
-  end;
-  Result := R.Re * R.Re + R.Im * R.Im;
-  if SP then
-    Result := (Result + Rp.Re * Rp.Re + Rp.Im * Rp.Im) / 2;
-  if Result < LIMIT then
-    Result := LIMIT;
+  Result := Max(ParrattRef(L, ThetaDeg, CU_KA, SP, RF), LIMIT);
 end;
 
 { ============================================================ TTestGpuInputs }
@@ -504,11 +400,11 @@ begin
   Model := TLayeredModel.Create;
   Model.Init;
   try
-    for RF := rfError to rfStep do
+    for RF := rfError to rfSinus do
       for Pol := cmS to cmSP do
       begin
-        // rfLinear only departs from 1 below 0.5 A
-        if RF = rfLinear then Sigma := 0.3 else Sigma := 3;
+        // rfLinear damps at every sigma since 3.9.3; rfSinus is the Stearns form
+        Sigma := 3;
         What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
         Data := MakeData(0, Pol, RF, Sigma);
         Calc := NewCalc(Data, nil, 0, Pol, RF);
@@ -589,10 +485,10 @@ begin
   Model := TLayeredModel.Create;
   Model.Init;
   try
-    for RF := rfError to rfStep do
+    for RF := rfError to rfSinus do
       for Pol := cmS to cmSP do
       begin
-        if RF = rfLinear then Sigma := 0.3 else Sigma := 3;
+        Sigma := 3;
         What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
         Data := MakeData(0, Pol, RF, Sigma);
         for p := 0 to PARTICLES - 1 do
@@ -678,10 +574,10 @@ begin
   Model := TLayeredModel.Create;
   Model.Init;
   try
-    for RF := rfError to rfStep do
+    for RF := rfError to rfSinus do
       for Pol := cmS to cmSP do
       begin
-        if RF = rfLinear then Sigma := 0.3 else Sigma := 3;
+        Sigma := 3;
         What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
         Data := MakeData(0, Pol, RF, Sigma);
         Calc := NewCalc(Data, nil, 0, Pol, RF);
