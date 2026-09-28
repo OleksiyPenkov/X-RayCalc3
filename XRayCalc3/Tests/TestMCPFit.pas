@@ -1,4 +1,4 @@
-﻿unit TestMCPFit;
+unit TestMCPFit;
 
 (* fit_xrr: the argument parser and one real fit.
 
@@ -1885,8 +1885,8 @@ end;
   eps - sin^2(t) (plan 2026-09-28-tcalc-precision). The synthetic fit lands on
   the same structure - it was already the right one - but now matches the
   noise-free curve far more closely: chi2 fell from 0.000413763 to 2.96477E-6.
-  P2-02's chi2 moved from 2.16063 to 2.16446 and its layers in the fourth
-  digit, same as the earlier precision fixes above. }
+  P2-02's chi2 moved from 2.16063 to 2.16446 and its layers by similarly small
+  amounts, up to 0.2 % (the C density, its third significant digit). }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
   { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }

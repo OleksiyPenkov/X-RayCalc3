@@ -559,9 +559,14 @@ end;
 
 { TCalc against the double-precision Parratt, every roughness function and
   polarisation, on the same particles RawCurve_MatchesDoublePrecision_* uses
-  for the GPU: the CPU's mean |log10 R/R_ref| must be within the GPU's bound,
-  and no worse than the GPU's own error on the same curve (plus 5 %). Before
-  the cancellation-free form it was about 1.5 times the GPU's. }
+  for the GPU. The primary guard is absolute: the cancellation-free form
+  measures a mean |log10 R/R_ref| of about 3E-5 and a worst case about 7E-4
+  here, against about 1.2E-3 and 1.2E-2 for the naive form it replaced - the
+  1E-4 / 3E-3 bounds below sit strictly between the two and catch a
+  regression to the naive form. The GPU-relative assertion (no worse than the
+  GPU's own error, plus 5 %) is the plan's original check, kept as a second
+  guard: on this geometry the CPU already came in below the GPU even before
+  the fix, so it does not by itself detect the naive form. }
 procedure TTestGpuCalc.CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
 const
   PARTICLES = 3;
@@ -625,9 +630,9 @@ begin
             end;
             MeanCpu := MeanCpu / Length(Data);
             MeanGpu := MeanGpu / Length(Data);
-            Assert.IsTrue(MeanCpu < 3E-3, Format('%s, particle %d: CPU mean %.2e',
+            Assert.IsTrue(MeanCpu < 1E-4, Format('%s, particle %d: CPU mean %.2e',
               [What, p, MeanCpu]));
-            Assert.IsTrue(WorstCpu < 0.1, Format('%s, particle %d: CPU worst %.2e',
+            Assert.IsTrue(WorstCpu < 3E-3, Format('%s, particle %d: CPU worst %.2e',
               [What, p, WorstCpu]));
             Assert.IsTrue(MeanCpu <= 1.05 * MeanGpu, Format('%s, particle %d: CPU mean %.2e, ' +
               'GPU mean %.2e - the CPU must be no less precise than the GPU',

@@ -692,8 +692,9 @@ begin
     the normal is written below as (eps - 1) + sin^2 of the grazing angle, as
     the GPU kernel does (unit_gpu_calc). The naive form subtracts two numbers
     near 1 in single precision and keeps only a few digits of their ~1e-5
-    difference near the critical angle; it cost TCalc 1.5 times the GPU's
-    error against a double-precision Parratt (2026-09-28). }
+    difference near the critical angle: against a double-precision Parratt it
+    cost TCalc a mean |log10 R/R_ref| of ~1.2e-3; this form measures ~3e-5,
+    about 40x better (2026-09-28). }
   sin_g := Sin(Pi * Double(ATheta) / 180);
   sqr_sin_g := sqr(sin_g);
 

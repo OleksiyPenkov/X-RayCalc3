@@ -20,8 +20,12 @@ unit unit_gpu_calc;
 
    The recursion mirrors TCalc.RefCalc layer for layer, including its
    cancellation-free form of eps - sin^2(t): (eps.re - 1) + sin^2(theta) from
-   the grazing angle (both engines since 2026-09-28; the naive form doubled
-   the error against a double-precision reference).
+   the grazing angle (both engines since 2026-09-28; the naive form measured a
+   mean |log10 R/R_ref| of ~1.2e-3 against a double-precision Parratt, this
+   form ~3e-5 on TCalc). The GPU still measures ~1.3e-3 here (Reflect below)
+   because cos_t is HLSL's single-precision sin() of the grazing angle, not a
+   Double one; a natural follow-up is computing sin^2(theta) in double
+   precision per angle before the dispatch.
 
    Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
    a D3D11 immediate context is not thread-safe. *)
