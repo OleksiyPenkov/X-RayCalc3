@@ -30,12 +30,25 @@ unit unit_gpu_calc;
    per angle, the grazing sine computed exactly as TCalc.CalcTet's angle
    reaches TCalc.RefCalc - Single ThetaK := Theta[i] / KScale, then
    System.Sin(Pi * Double(ThetaK) / 180) in Double, stored as Single - in the
-   SinG buffer the Reflect kernel reads directly. Both engines now start the
-   recursion from the same Single grazing sine, and the GPU's own error
-   against the double-precision Parratt falls to the CPU's ~3e-5 mean (see
-   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision for the measured numbers).
-   KScale stays in TParamsCB/cbuffer Params even though Reflect no longer
-   reads it, so the 80-byte constant-buffer layout is unchanged.
+   SinG buffer the Reflect kernel reads directly. KScale stays in
+   TParamsCB/cbuffer Params even though Reflect no longer reads it, so the
+   80-byte constant-buffer layout is unchanged.
+
+   That host-side sine alone barely moved the GPU's error (still ~1.2e-3..
+   1.4e-3 mean): the shader is compiled with D3DCOMPILE_OPTIMIZATION_LEVEL3
+   and without D3DCOMPILE_IEEE_STRICTNESS, so fxc/the driver may reassociate
+   float sums - (eps.re - 1) + sin_g^2 into (eps.re + sin_g^2) - 1, and
+   (1 - eRatio) + eRatio * sin_g^2 likewise - reintroducing exactly the
+   cancellation between two numbers near 1 the Double sine was meant to avoid.
+   Task 1b fix round 1 (2026-09-28) marks those sums, and the "- 1"/"1 -"
+   intermediates that feed them, `precise`: this forces source-order, unfused
+   IEEE evaluation for just those expressions (see the comments at KB/Ki and
+   at s1 in Reflect below) and closes the gap: measured mean falls to
+   ~8e-6..3e-5 (worst ~8e-5..6e-4), in the CPU's own ~3e-5 neighbourhood (see
+   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision for the full numbers).
+   D3DCOMPILE_IEEE_STRICTNESS globally reaches the same accuracy but costs
+   ~13% more time per Evaluate; the targeted `precise` qualifiers cost nothing
+   measurable, which is why they were chosen over the global flag.
 
    Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
    a D3D11 immediate context is not thread-safe. *)
@@ -221,7 +234,12 @@ const
         uint base = p * NLay;
         float4 lb = Layers[base + NLay - 1];            // the layer below, i + 1
         float2 eB = lb.xy;
-        float2 KB = c2 * csqrt(float2((eB.x - 1) + sin_g2, eB.y));
+        // precise: without it, the compiler/driver may reassociate
+        // (eB.x - 1) + sin_g2 into (eB.x + sin_g2) - 1, which reintroduces the
+        // cancellation the Single-precision grazing sine was meant to avoid.
+        precise float dB = eB.x - 1;
+        precise float reB = dB + sin_g2;
+        float2 KB = c2 * csqrt(float2(reB, eB.y));
         float2 R  = float2(0, 0);
         float2 Rp = float2(0, 0);
         bool first = true;   // R = 0 below the first interface: no phase term
@@ -230,10 +248,16 @@ const
         {
             float4 li = Layers[base + i];
             float2 ei = li.xy;
-            float2 Ki = c2 * csqrt(float2((ei.x - 1) + sin_g2, ei.y));
+            precise float di = ei.x - 1;
+            precise float rei = di + sin_g2;
+            float2 Ki = c2 * csqrt(float2(rei, ei.y));
 
             float eRatio = length(cdiv(ei, eB));
-            float s1 = abs((1 - eRatio) + eRatio * sin_g2);
+            // precise: same reassociation risk as above, for
+            // (1 - eRatio) + eRatio * sin_g2.
+            precise float oneMinusRatio = 1 - eRatio;
+            precise float s1Signed = oneMinusRatio + eRatio * sin_g2;
+            float s1 = abs(s1Signed);
             float rf = Roughness(lb.w, c1 * sqrt(sin_g * sqrt(s1)));
 
             float2 RFs = rf * cdiv(Ki - KB, Ki + KB);

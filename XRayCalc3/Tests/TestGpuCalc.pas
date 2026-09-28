@@ -564,10 +564,20 @@ end;
   measures a mean |log10 R/R_ref| of about 3E-5 and a worst case about 7E-4
   here, against about 1.2E-3 and 1.2E-2 for the naive form it replaced - the
   1E-4 / 3E-3 bounds below sit strictly between the two and catch a
-  regression to the naive form. The GPU-relative assertion (no worse than the
-  GPU's own error, plus 5 %) is the plan's original check, kept as a second
-  guard: on this geometry the CPU already came in below the GPU even before
-  the fix, so it does not by itself detect the naive form. }
+  regression to the naive form.
+
+  The GPU-relative assertion was originally "the CPU is no worse than the
+  GPU's own error, plus 5 %" - true only while the GPU's error (~1.3E-3) was
+  far above the CPU's. Since task 1b fix round 1 (`precise` on the Reflect
+  kernel's cancellation-free sums, 2026-09-28) the GPU is often *more* precise
+  than the CPU (measured ratio MeanCpu/MeanGpu from 0.81 to 3.86 across the 24
+  cases - the CPU's Win32 x87 extended-precision intermediates and the GPU's
+  now-protected float32 sums are simply different, not one uniformly better),
+  so a one-directional bound is no longer a true invariant. The assertion
+  below instead checks the two engines stay within a factor of 5 of each
+  other (comfortably above the measured 3.86), which is what "the engines
+  should be closer, not further apart" (global constraints) means once both
+  are within the same order of magnitude of the double-precision reference. }
 procedure TTestGpuCalc.CpuRawCurve_AtLeastAsCloseToDoublePrecisionAsTheGpu;
 const
   PARTICLES = 3;
@@ -635,9 +645,15 @@ begin
               [What, p, MeanCpu]));
             Assert.IsTrue(WorstCpu < 3E-3, Format('%s, particle %d: CPU worst %.2e',
               [What, p, WorstCpu]));
-            Assert.IsTrue(MeanCpu <= 1.05 * MeanGpu, Format('%s, particle %d: CPU mean %.2e, ' +
-              'GPU mean %.2e - the CPU must be no less precise than the GPU',
-              [What, p, MeanCpu, MeanGpu]));
+            { re-pinned 2026-09-28: the GPU's grazing sine from the host (plan
+              2026-09-28-tcalc-precision) - was "MeanCpu <= 1.05 * MeanGpu"
+              (the CPU no less precise than the GPU), true only while the
+              GPU's own error was far above the CPU's; fix round 1's `precise`
+              qualifiers make the GPU often more precise than the CPU
+              (measured ratio 0.81..3.86), so the bound is now symmetric. }
+            Assert.IsTrue((MeanCpu <= 5 * MeanGpu) and (MeanGpu <= 5 * MeanCpu),
+              Format('%s, particle %d: CPU mean %.2e, GPU mean %.2e - the two engines should stay ' +
+                'within a factor of 5 of each other', [What, p, MeanCpu, MeanGpu]));
           end;
         finally
           G.Free;
@@ -651,30 +667,42 @@ end;
 
 { The GPU raw curve against the double-precision Parratt, on the same
   particles RawCurve_MatchesDoublePrecision_* uses, after Setup uploads the
-  grazing sine computed on the host in Double (task 1b, 2026-09-28).
+  grazing sine computed on the host in Double (task 1b, 2026-09-28) AND the
+  Reflect kernel protects the cancellation-free sums with `precise` (task 1b,
+  fix round 1, 2026-09-28).
 
-  Measured (24 cases: 4 roughness functions x 2 polarisations x 3 particles):
-  before task 1b (the shader's own single-precision sin of Theta/KScale) mean
-  ran 1.19E-3..1.39E-3, worst 8.85E-3..1.49E-2; after task 1b, uploading the
-  Double grazing sine from Setup, mean ran 1.16E-3..1.36E-3, worst
-  8.71E-3..1.34E-2 - a real but small improvement (a few percent on the mean,
-  up to ~10% on the worst case), nowhere near the CPU's ~3E-5 mean. The
-  bounds below are the worst measured case with about 3x margin, as the plan
-  asks; because the improvement is this small, the pre-fix kernel would also
-  pass them (see the report filed under this task for the full measurement
-  and the reason: replacing csqrt's rsqrt with 1/sqrt, adding manual sincos
-  range reduction and switching exp to exp2 each left every case unchanged to
-  three significant figures, so the dominant error is not the ones the plan
-  named as suspects; DONE_WITH_CONCERNS). The GPU/CPU agreement assertions
-  are the ones this task actually improves in absolute terms, even though the
-  margin is the same story. }
+  Fix round 1's finding: the Double grazing sine alone barely helped (mean
+  stayed ~1.2E-3..1.4E-3) because fxc/the driver, compiled without
+  D3DCOMPILE_IEEE_STRICTNESS, may reassociate `(eps.re - 1) + sin_g^2` into
+  `(eps.re + sin_g^2) - 1` and `(1 - eRatio) + eRatio * sin_g^2` likewise,
+  reintroducing exactly the cancellation between two numbers near 1 the Double
+  sine was meant to avoid. Marking those sums (and their `- 1`/`1 -`
+  intermediates) `precise` in the Reflect kernel - see the comments at the
+  csqrt inputs and at s1 - forces source-order, unfused evaluation and closes
+  the gap: measured (24 cases: 4 roughness functions x 2 polarisations x 3
+  particles) mean now runs 7.9E-6..3.2E-5, worst 7.6E-5..6.1E-4 (GPU/CPU
+  agreement, which is the more direct check of the fix, runs mean 2.9E-5..
+  5.3E-5, worst 4.9E-4..7.2E-4) - roughly 40x better on the mean and 20x on
+  the worst case than before `precise`, and in the CPU's own ~3E-5 mean
+  neighbourhood. `D3DCOMPILE_IEEE_STRICTNESS` alone reached the same accuracy
+  but cost ~13% more time per Evaluate (0.93-0.98 ms vs 0.83-0.86 ms baseline,
+  PARTICLES=2000/NLay=42/NAng=1000); the targeted `precise` qualifiers cost
+  none measurable (0.855-0.876 ms) and were chosen for that reason - see the
+  report filed under this task.
+
+  Bounds: ~3x margin over the worst case measured with `precise`
+  (mean/agree-mean up to ~3.2E-5/5.3E-5, worst/agree-worst up to
+  ~6.1E-4/7.2E-4), and comfortably (>10x) below the pre-`precise` mean of
+  ~1.3E-3: the gap Step 1 of the brief asks for now exists. RED (the Double
+  grazing sine without `precise`) fails these bounds by more than an order of
+  magnitude (see the report). }
 procedure TTestGpuCalc.GpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
-  MEAN_BOUND = 4E-3;
-  WORST_BOUND = 4E-2;
-  AGREE_MEAN_BOUND = 4E-3;
-  AGREE_WORST_BOUND = 4E-2;
+  MEAN_BOUND = 1E-4;
+  WORST_BOUND = 2E-3;
+  AGREE_MEAN_BOUND = 2E-4;
+  AGREE_WORST_BOUND = 2.5E-3;
 var
   RF: TRoughnessFunction;
   Pol: TPolarisation;
