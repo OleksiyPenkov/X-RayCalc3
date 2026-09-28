@@ -456,14 +456,29 @@ end;
 
 { TCalc against the double-precision Parratt, every roughness function and
   polarisation, on the same particles RawCurve_MatchesDoublePrecision_* and
-  GpuRawCurve_CloseToDoublePrecision use for the GPU. The bounds are
-  absolute: the cancellation-free form measures a mean |log10 R/R_ref| of
-  about 3E-5 and a worst case about 7E-4 here, against about 1.2E-3 and
-  1.2E-2 for the naive form it replaced - the 1E-4 / 3E-3 bounds below sit
-  strictly between the two and catch a regression to the naive form. Engine
-  agreement between the CPU and the GPU is asserted by
-  GpuRawCurve_CloseToDoublePrecision, not here: this test needs only the
-  Henke tables, not a GPU. }
+  GpuRawCurve_CloseToDoublePrecision use for the GPU.
+
+  Task 3 (2026-09-28-precision-followups) replaced TotalRecursiveRefraction's
+  FastExp/FastSinCos with System.Exp/System.Math.SinCos (the author's <= 10%
+  rule on a representative CPU likelihood fit: measured about 9.3% slower,
+  n=11 vs n=15 baseline trials - see the task report). Measured here (30
+  cases: 5 roughness functions x 2 polarisations x 3 particles): mean moved
+  from 2.54E-5..3.09E-5 to 7.4E-6..1.02E-5, worst from 5.44E-4..7.04E-4 to
+  8.7E-5..9.98E-5. The bounds below are the geometric mean of the "before"
+  minimum and "after" maximum, mean and worst separately (MeanBound =
+  Sqrt(2.537E-5 x 1.017E-5) = 1.6E-5; WorstBound = Sqrt(5.440E-4 x 9.981E-5)
+  = 2.3E-4): each sits sqrt(before/after) from both states, so it passes the
+  new form and catches a regression to the old one.
+
+  A second candidate, refining math_complex.SqrtZ's InverseSqrt (a Newton
+  step, or the exact 1 / System.Sqrt), was measured too: alone it cost only
+  ~1.6-2.8% on the same fit and fixed the sub-critical density test (see
+  TestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps), but
+  combined with this phase change the fit measured 11.7-12.3% slower (n=14
+  vs n=15) - over budget together, so SqrtZ was left unchanged and that
+  density test's window stays at 0.22-0.40 deg. Engine agreement between the
+  CPU and the GPU is asserted by GpuRawCurve_CloseToDoublePrecision, not
+  here: this test needs only the Henke tables, not a GPU. }
 procedure TTestGpuCalc.CpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
@@ -506,9 +521,9 @@ begin
             WorstCpu := Max(WorstCpu, Abs(System.Math.Log10(Cpu[i] / Ref)));
           end;
           MeanCpu := MeanCpu / Length(Data);
-          Assert.IsTrue(MeanCpu < 1E-4, Format('%s, particle %d: CPU mean %.2e',
+          Assert.IsTrue(MeanCpu < 1.6E-5, Format('%s, particle %d: CPU mean %.2e',
             [What, p, MeanCpu]));
-          Assert.IsTrue(WorstCpu < 3E-3, Format('%s, particle %d: CPU worst %.2e',
+          Assert.IsTrue(WorstCpu < 2.3E-4, Format('%s, particle %d: CPU worst %.2e',
             [What, p, WorstCpu]));
         end;
       end;

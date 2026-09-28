@@ -150,7 +150,7 @@ function EpsRatio(const Upper, Lower: TCalcLayer; out OneMinus: Single): Single;
 implementation
 
 uses
-  math_globals, unit_SeriesIO, unit_Config, unit_sys_helpers;
+  System.Math, math_globals, unit_SeriesIO, unit_Config, unit_sys_helpers;
 
 const
   InvTwoLn10 = 0.2171472409516259;       // 1/(2*ln(10)), for ln-to-log10 conversion
@@ -585,8 +585,14 @@ var
     begin
       { Fused: MulRZ(2L, K) * i -> ExpZ -> MulZZ(R, .) }
       L2 := AModel.L[i + 1] * 2;
-      expVal := FastExp(-L2 * AScratch.KIm[i + 1]);
-      FastSinCos(L2 * AScratch.KRe[i + 1], sinP, cosP);
+      expVal := System.Exp(-L2 * AScratch.KIm[i + 1]);
+      { Fully qualified: Neslib.FastMath declares its own approximate
+        SinCos(Single), which would otherwise shadow this exact one.
+        System.Math.SinCos(Single) widens to Double/Extended internally
+        (System.SineCosine) and narrows back, correctly rounded, without the
+        Double-vs-Extended overload split System.SineCosine itself has
+        between Win32 (10-byte Extended) and Win64 (Extended = Double). }
+      System.Math.SinCos(L2 * AScratch.KRe[i + 1], sinP, cosP);
       Rn.Re := AScratch.RRe[i + 1];
       Rn.Im := AScratch.RIm[i + 1];
       a1.Re := expVal * (Rn.Re * cosP - Rn.Im * sinP);

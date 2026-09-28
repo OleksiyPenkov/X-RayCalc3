@@ -535,10 +535,21 @@ end;
   ratios from 0.10 to 0.40 deg showed sub-1% agreement failing intermittently
   below ~0.205 deg, some points quantized to exactly 0, and consistent 3-4
   significant digit agreement from ~0.22 deg up). That SqrtZ approximation
-  predates this task and is out of its scope (TCalcLayer, TCalcModelSoA,
-  TCalc, the GPU kernel and the reference Parratt only); above critical angle
-  it is a small correction to a real, non-decaying K, so it does not limit
-  this test. }
+  predates this task and is out of its original scope (TCalcLayer,
+  TCalcModelSoA, TCalc, the GPU kernel and the reference Parratt only); above
+  critical angle it is a small correction to a real, non-decaying K, so it
+  does not limit this test.
+
+  Task 3 (2026-09-28-precision-followups) measured fixing it under the same
+  author's <= 10% rule: one Newton-Raphson step on InverseSqrt's result, or
+  the exact 1 / System.Sqrt, each measured alone at only ~1.6-2.8% slower on
+  the representative fit and enough to pass this test at 0.15-0.25 deg with
+  the tolerance formula unchanged. But Task 3 also adopted
+  TotalRecursiveRefraction's exact System.Exp/System.Math.SinCos (~9.3%
+  slower alone), and the two changes together measured 11.7-12.3% slower
+  (n=14 vs n=15 trials) - over budget combined. SqrtZ was left unchanged, so
+  the window stays at 0.22-0.40 deg; see the task report for the 0.15-0.25
+  deg numbers and the full benchmark table. }
 procedure TTestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps;
 const
   RHO1 = 2.33;
@@ -618,8 +629,8 @@ const
   THETA0 = 0.15;
   THETA1 = 0.25;
   { The CPU bound of TestGpuCalc.CpuRawCurve_CloseToDoublePrecision. }
-  MEAN_BOUND = 1E-4;
-  WORST_BOUND = 3E-3;
+  MEAN_BOUND = 1.6E-5;
+  WORST_BOUND = 2.3E-4;
 var
   Calc: TTestableCalc;
   Model: TLayeredModel;

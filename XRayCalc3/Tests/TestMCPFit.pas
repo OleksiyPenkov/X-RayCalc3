@@ -1889,22 +1889,22 @@ end;
   amounts, up to 0.2 % (the C density, its third significant digit). }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
-  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
-    (plan 2026-09-28-precision-followups) }
-  CHI2_06035DE = '2.86735E-6';
+  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
+    term (plan 2026-09-28-precision-followups, Task 3) }
+  CHI2_06035DE = '2.87046E-6';
   FITTED_06035DE =
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
     '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
-  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
-    (plan 2026-09-28-precision-followups) }
-  P2_CHI2_06035DE = '2.16757';
-  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
-    (plan 2026-09-28-precision-followups) }
+  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
+    term (plan 2026-09-28-precision-followups, Task 3) }
+  P2_CHI2_06035DE = '2.16726';
+  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
+    term (plan 2026-09-28-precision-followups, Task 3) }
   P2_FITTED_06035DE =
     '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
-    '"layers":[{"material":"C","thickness":25.3867,"sigma":9.89008,"density":2.74996},' +
-    '{"material":"Co","thickness":2.40015,"sigma":7.8118,"density":8.89998}]}]}';
+    '"layers":[{"material":"C","thickness":25.3875,"sigma":9.88962,"density":2.74997},' +
+    '{"material":"Co","thickness":2.40015,"sigma":7.81327,"density":8.89998}]}]}';
 var
   Res: TJSONObject;
 begin
