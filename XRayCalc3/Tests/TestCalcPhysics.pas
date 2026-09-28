@@ -546,7 +546,13 @@ end;
   the exact 1 / System.Sqrt (ExactInverseSqrt) in place of InverseSqrt; the
   rsqrtss floor that limited this window is gone, and this test now passes
   at the brief's originally-proposed 0.15-0.25 deg window with the tolerance
-  formula unchanged - restored below. See the task report for the numbers. }
+  formula unchanged - restored below. Against the double-precision reference,
+  CpuRawCurve_CloseToDoublePrecision's combined-set mean is 3.79E-6..5.93E-6,
+  worst 4.45E-5..7.80E-5 (30 cases, down from the phase-only fix's
+  7.4E-6..1.02E-5 / 8.7E-5..9.98E-5, and from the original baseline's
+  2.537E-5..3.093E-5 / 5.440E-4..7.040E-4); its bounds are re-set to
+  MEAN_BOUND = 1.2E-5, WORST_BOUND = 2.0E-4, the geometric mean of the
+  pre-Task-3 baseline minimum and the combined set's maximum. }
 procedure TTestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps;
 const
   RHO1 = 2.33;
