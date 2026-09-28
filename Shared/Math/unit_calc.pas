@@ -141,6 +141,12 @@ type
 function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Integer;
   Width: Single; out N: Integer): TArray<Single>;
 
+/// |e_upper / e_lower| and, in OneMinus, 1 minus it, both from delta and
+/// Im e in Double so that the difference of two numbers near 1 keeps its
+/// digits: 1 - |r| = (|e_l|^2 - |e_u|^2) / (|e_l| (|e_l| + |e_u|)), with
+/// |e_l|^2 - |e_u|^2 = (d_u - d_l)(2 - d_u - d_l) + b_l^2 - b_u^2.
+function EpsRatio(const Upper, Lower: TCalcLayer; out OneMinus: Single): Single;
+
 implementation
 
 uses
@@ -160,6 +166,22 @@ end;
 function Log10(const Val: single): single; inline;
 begin
   Result := InvTwoLn10 * FastLn(Val);
+end;
+
+/// |e_upper / e_lower| and, in OneMinus, 1 minus it, both from delta and
+/// Im e in Double so that the difference of two numbers near 1 keeps its
+/// digits: 1 - |r| = (|e_l|^2 - |e_u|^2) / (|e_l| (|e_l| + |e_u|)), with
+/// |e_l|^2 - |e_u|^2 = (d_u - d_l)(2 - d_u - d_l) + b_l^2 - b_u^2.
+function EpsRatio(const Upper, Lower: TCalcLayer; out OneMinus: Single): Single;
+var
+  du, dl, bu, bl, au, al: Double;
+begin
+  du := Upper.delta; dl := Lower.delta;
+  bu := Upper.e.Im;  bl := Lower.e.Im;
+  au := Sqrt(Sqr(1 - du) + Sqr(bu));
+  al := Sqrt(Sqr(1 - dl) + Sqr(bl));
+  OneMinus := ((du - dl) * (2 - du - dl) + (Sqr(bl) - Sqr(bu))) / (al * (al + au));
+  Result := au / al;
 end;
 
 
@@ -424,7 +446,7 @@ begin
     // Precompute per-layer constants for this lambda
     for j := 0 to Length(Layers) - 2 do
     begin
-      Layers[j].eRatio := AbsZ(DivZZ(Layers[j].e, Layers[j + 1].e));
+      Layers[j].eRatio := EpsRatio(Layers[j], Layers[j + 1], Layers[j].oneMinusRatio);
       Layers[j + 1].s2 := Sqr(Layers[j + 1].s) * 0.5;
     end;
     // Transpose AoS -> SoA
@@ -459,7 +481,7 @@ begin
   // Precompute per-layer constants — depend only on model, not on theta
   for i := 0 to Length(Layers) - 2 do
   begin
-    Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
+    Layers[i].eRatio := EpsRatio(Layers[i], Layers[i + 1], Layers[i].oneMinusRatio);
     Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.5; { sigma^2 / 2 for rfError (0.50299 until 3.9.4) }
   end;
 
@@ -635,7 +657,7 @@ var
       b1 := SubZZ(Ki, Ki1);
       b2 := AddZZ(Ki, Ki1);
       RF := DivZZ(b1, b2);
-      s1 := Abs((1 - AModel.eRatio[i]) + AModel.eRatio[i] * sqr_sin_g);
+      s1 := Abs(AModel.oneMinusRatio[i] + AModel.eRatio[i] * sqr_sin_g);
       sv := c1 * sqrt(sin_g * sqrt(s1));
 
       rfVal := Roughness(FParams.RF, AModel.s[i + 1], AModel.s2[i + 1], sv);
@@ -680,7 +702,7 @@ var
   begin
     for i := 0 to AModel.Count - 1 do
     begin
-      a1 := SqrtZ(ToComplex((AModel.eRe[i] - 1) + sqr_sin_g, AModel.eIm[i]));
+      a1 := SqrtZ(ToComplex(sqr_sin_g - AModel.delta[i], AModel.eIm[i]));
       K := MulRZ(c2, a1);
       AScratch.KRe[i] := K.Re;
       AScratch.KIm[i] := K.Im;
@@ -689,12 +711,14 @@ var
 
 begin
   { The grazing angle's sine, in double precision: eps - sin^2 of the angle to
-    the normal is written below as (eps - 1) + sin^2 of the grazing angle, as
-    the GPU kernel does (unit_gpu_calc). The naive form subtracts two numbers
-    near 1 in single precision and keeps only a few digits of their ~1e-5
-    difference near the critical angle: against a double-precision Parratt it
-    cost TCalc a mean |log10 R/R_ref| of ~1.2e-3; this form measures ~3e-5,
-    about 40x better (2026-09-28). }
+    the normal is sin^2(theta) - delta, delta = 1 - Re epsilon carried
+    directly from the materials (unit_materials.PrepareLayers) rather than
+    recovered from epsilon's own Single step near 1, as the GPU kernel does
+    (unit_gpu_calc). The 1 - |eRatio| term is likewise built from delta and
+    beta in Double (EpsRatio above), not from a Single ratio near 1. Neither
+    form now loses digits to a subtraction near 1: against a double-precision
+    Parratt this measures a mean |log10 R/R_ref| of ~3e-5 (2026-09-28; the
+    naive eps - sin^2(t) form measured ~1.2e-3). }
   sin_g := Sin(Pi * Double(ATheta) / 180);
   sqr_sin_g := sqr(sin_g);
 

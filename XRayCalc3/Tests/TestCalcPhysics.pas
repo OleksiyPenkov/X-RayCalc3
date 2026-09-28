@@ -45,6 +45,11 @@ type
     { Every interface function is 1 at sigma = 0 and damps the reflectivity
       as sigma grows (rfLinear damped only below 0.5 A, rfSinus gave 0). }
     [Test] procedure Test_RoughnessFunctions_AllDampFromOne;
+
+    { delta = 1 - eps, carried directly rather than recovered from a Single
+      epsilon near 1 (unit_calc.EpsRatio, TCalcLayer.delta). }
+    [Test] procedure Delta_ResolvesADensityChangeBelowTheSingleStepOfEps;
+    [Test] procedure Delta_AmbientAndVacuumMatchTheOldForm;
   end;
 
 const
@@ -54,7 +59,8 @@ const
 implementation
 
 uses
-  unit_Config, unit_materials, math_complex, System.SysUtils;
+  unit_Config, unit_materials, math_complex, System.SysUtils, System.Math,
+  unit_parratt_ref;
 
 { TTestableCalc }
 
@@ -94,7 +100,7 @@ var
 begin
   for i := 0 to Length(Layers) - 2 do
   begin
-    Layers[i].eRatio := AbsZ(DivZZ(Layers[i].e, Layers[i + 1].e));
+    Layers[i].eRatio := EpsRatio(Layers[i], Layers[i + 1], Layers[i].oneMinusRatio);
     Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.5;
   end;
 end;
@@ -364,6 +370,8 @@ begin
     B := Fresh.Layers;
     Assert.AreEqual(Double(B[High(B)].e.re), Double(A[High(A)].e.re), 0, 'delta at the new wavelength');
     Assert.AreEqual(Double(B[High(B)].e.im), Double(A[High(A)].e.im), 0, 'beta at the new wavelength');
+    Assert.AreEqual(Double(B[High(B)].delta), Double(A[High(A)].delta), 0,
+      'TCalcLayer.delta at the new wavelength');
   finally
     Fresh.Free;
     Scanned.Free;
@@ -503,6 +511,180 @@ begin
     for i := 0 to N - 1 do
       Assert.IsTrue((Calc.Results[i].r >= Calc.Limit) and (Calc.Results[i].r <= 1.0),
         Format('R[%d]=%.4e out of range', [i, Calc.Results[i].r]));
+  finally
+    Calc.Free;
+  end;
+end;
+
+{ --- delta = 1 - eps --- }
+
+{ delta_Si is about 1.5e-5; 2e-4 of it is about 3e-9, below the ~6e-8 step of
+  a Single stored near 1. A Single Re epsilon therefore moves by zero or one
+  ULP for this density change, giving the old engine a ratio of 0 or about
+  0.4%, never the reference's — delta, computed directly as f1 * c, resolves
+  it instead.
+
+  The angle window sits just above Si's critical angle (~0.22 deg), not
+  straddling it: below critical, math_complex.SqrtZ's real part (the P-ratio
+  and the interference term below) comes from Neslib.FastMath.InverseSqrt
+  (SSE rsqrtss, no Newton refinement, ~3.7e-4 relative error) rather than a
+  division, and right at grazing incidence that term's contribution to R is
+  leveraged enough (K0 and Im(K_substrate) are comparable there) that its
+  approximation noise can exceed this test's 2e-4 density signal - measured,
+  not assumed (a temporary per-angle scan comparing engine and reference
+  ratios from 0.10 to 0.40 deg showed sub-1% agreement failing intermittently
+  below ~0.205 deg, some points quantized to exactly 0, and consistent 3-4
+  significant digit agreement from ~0.22 deg up). That SqrtZ approximation
+  predates this task and is out of its scope (TCalcLayer, TCalcModelSoA,
+  TCalc, the GPU kernel and the reference Parratt only); above critical angle
+  it is a small correction to a real, non-decaying K, so it does not limit
+  this test. }
+procedure TTestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps;
+const
+  RHO1 = 2.33;
+  RHO2 = RHO1 * (1 + 2E-4);
+  N = 41;
+  THETA0 = 0.22;
+  THETA1 = 0.40;
+var
+  Calc1, Calc2: TTestableCalc;
+  Model1, Model2: TLayeredModel;
+  CP: TCalcParams;
+  Points: TArray<Single>;
+  Step: Single;
+  i: Integer;
+  R1, R2, Ref1, Ref2, RatioEng, RatioRef, Diff, MaxRefDev: Double;
+begin
+  Step := (THETA1 - THETA0) / (N - 1);
+  SetLength(Points, N);
+  for i := 0 to N - 1 do
+    Points[i] := THETA0 + i * Step;
+
+  Calc1 := TTestableCalc.Create;
+  Calc2 := TTestableCalc.Create;
+  Model1 := BuildSubstrateModel('Si', 0, RHO1);
+  Model2 := BuildSubstrateModel('Si', 0, RHO2);
+
+  Calc1.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
+  Calc2.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
+  Model1.Generate(CU_KA);
+  Model2.Generate(CU_KA);
+  Calc1.Model := Model1;  // TCalc takes ownership
+  Calc2.Model := Model2;
+
+  Calc1.AllocResult(N);
+  Calc2.AllocResult(N);
+
+  FillChar(CP, SizeOf(CP), 0);
+  CP.N := N;
+  CP.N0 := 0;
+  CP.UseData := True;
+  CP.Points := Copy(Points);
+  Calc1.TestCalcTet(CP);
+  CP.Points := Copy(Points);
+  Calc2.TestCalcTet(CP);
+
+  try
+    MaxRefDev := 0;
+    for i := 0 to N - 1 do
+    begin
+      R1 := Calc1.Results[i].r;
+      R2 := Calc2.Results[i].r;
+      Ref1 := ParrattRef(Model1.LayersDirect, Points[i], CU_KA, False, rfError);
+      Ref2 := ParrattRef(Model2.LayersDirect, Points[i], CU_KA, False, rfError);
+      RatioEng := R2 / R1 - 1;
+      RatioRef := Ref2 / Ref1 - 1;
+      MaxRefDev := Max(MaxRefDev, Abs(RatioRef));
+      Diff := Abs(RatioEng - RatioRef);
+      Assert.IsTrue(Diff <= 0.1 * Abs(RatioRef) + 1E-6,
+        Format('theta=%.4f: engine ratio %.6e, ref ratio %.6e, diff %.3e',
+          [Points[i], RatioEng, RatioRef, Diff]));
+    end;
+    Assert.IsTrue(MaxRefDev > 1E-4,
+      Format('max |Ref2/Ref1-1| = %.3e should exceed 1E-4 so the test is not vacuous', [MaxRefDev]));
+  finally
+    Calc1.Free;
+    Calc2.Free;
+  end;
+end;
+
+{ Ruling (controller, precision-followups Task 2): the vacuum inner layer is
+  built by setting LayersDirect fields after Generate, not by a layer density
+  of 0 — PrepareLayers treats a 0 density as "use the Henke bulk density",
+  not vacuum. }
+procedure TTestCalcPhysics.Delta_AmbientAndVacuumMatchTheOldForm;
+const
+  N = 41;
+  THETA0 = 0.15;
+  THETA1 = 0.25;
+  { The CPU bound of TestGpuCalc.CpuRawCurve_CloseToDoublePrecision. }
+  MEAN_BOUND = 1E-4;
+  WORST_BOUND = 3E-3;
+var
+  Calc: TTestableCalc;
+  Model: TLayeredModel;
+  Cap, Sub: TLayersData;
+  CP: TCalcParams;
+  L: TCalcLayers;
+  Ratio, OneMinus: Single;
+  Points: TArray<Single>;
+  i: Integer;
+  Eng, Ref, Mean, Worst, d: Double;
+begin
+  Model := TLayeredModel.Create;
+  Model.Init;
+  SetLength(Cap, 1);
+  Cap[0].Material := 'C';
+  Cap[0].P[1].New(200);
+  Cap[0].P[2].New(0);
+  Cap[0].P[3].New(2.2);
+  Model.AddLayers(1, Cap);
+  SetLength(Sub, 1);
+  Sub[0].Material := 'Si';
+  Sub[0].P[2].New(0);
+  Sub[0].P[3].New(2.33);
+  Model.AddSubstrate(Sub);
+  Model.Generate(CU_KA);
+
+  L := Model.LayersDirect;
+  L[1].e.re := 1;
+  L[1].e.im := 0;
+  L[1].delta := 0;
+
+  Ratio := EpsRatio(L[0], L[1], OneMinus);
+  Assert.AreEqual(Single(1), Ratio, 0, 'EpsRatio of two vacuum layers');
+  Assert.AreEqual(Single(0), OneMinus, 0, 'OneMinus of two vacuum layers');
+
+  SetLength(Points, N);
+  for i := 0 to N - 1 do
+    Points[i] := THETA0 + i * (THETA1 - THETA0) / (N - 1);
+
+  Calc := TTestableCalc.Create;
+  Calc.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
+  Calc.Model := Model;  // TCalc takes ownership
+  Calc.AllocResult(N);
+  FillChar(CP, SizeOf(CP), 0);
+  CP.N := N;
+  CP.N0 := 0;
+  CP.UseData := True;
+  CP.Points := Copy(Points);
+
+  try
+    Calc.TestCalcTet(CP);
+
+    Mean := 0;
+    Worst := 0;
+    for i := 0 to N - 1 do
+    begin
+      Eng := Calc.Results[i].r;
+      Ref := ParrattRef(L, Points[i], CU_KA, False, rfError);
+      d := Abs(System.Math.Log10(Eng / Ref));
+      Mean := Mean + d;
+      Worst := Max(Worst, d);
+    end;
+    Mean := Mean / N;
+    Assert.IsTrue(Mean < MEAN_BOUND, Format('mean |log10 R/R_ref| %.3e', [Mean]));
+    Assert.IsTrue(Worst < WORST_BOUND, Format('worst |log10 R/R_ref| %.3e', [Worst]));
   finally
     Calc.Free;
   end;

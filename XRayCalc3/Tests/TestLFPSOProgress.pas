@@ -375,8 +375,9 @@ end;
   re-pinned whenever the engine itself deliberately changes. }
 procedure TTestLFPSOProgress.Test_Seed_PinnedBestChiSquare;
 const
-  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
-  PINNED_CHI: Single = 2.97892237;   // the classic engine's answer for TEST_SEED
+  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
+    (plan 2026-09-28-precision-followups) }
+  PINNED_CHI: Single = 2.91911387;   // the classic engine's answer for TEST_SEED
 var
   Chi: Single;
   Curve: TDataArray;

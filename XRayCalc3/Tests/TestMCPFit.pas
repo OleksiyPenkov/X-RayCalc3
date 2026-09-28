@@ -1889,19 +1889,22 @@ end;
   amounts, up to 0.2 % (the C density, its third significant digit). }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
-  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
-  CHI2_06035DE = '2.96477E-6';
+  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
+    (plan 2026-09-28-precision-followups) }
+  CHI2_06035DE = '2.86735E-6';
   FITTED_06035DE =
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
     '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
-  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
-  P2_CHI2_06035DE = '2.16446';
-  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) }
+  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
+    (plan 2026-09-28-precision-followups) }
+  P2_CHI2_06035DE = '2.16757';
+  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
+    (plan 2026-09-28-precision-followups) }
   P2_FITTED_06035DE =
     '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
-    '"layers":[{"material":"C","thickness":25.386,"sigma":9.88671,"density":2.74753},' +
-    '{"material":"Co","thickness":2.40001,"sigma":7.81321,"density":8.89988}]}]}';
+    '"layers":[{"material":"C","thickness":25.3867,"sigma":9.89008,"density":2.74996},' +
+    '{"material":"Co","thickness":2.40015,"sigma":7.8118,"density":8.89998}]}]}';
 var
   Res: TJSONObject;
 begin
@@ -2572,10 +2575,11 @@ begin
     'the largest measured intensity below 0.5 deg is at theta 0.20075');
   Assert.AreEqual(Double(1074961), Req.ScaleCounts, 0.5,
     'and holds 1074961 counts (2theta 0.4015 of the raw file)');
-  { re-pinned 2026-09-28: TCalc's cancellation-free form (plan 2026-09-28-tcalc-precision) -
-    R_calc(0.20075) is near the critical angle, where the naive eps - sin^2 form lost the
-    most precision; the hand computation used the same engine, so it moves too. }
-  Assert.AreEqual(Double(8.0128E-7), Req.Scale, 1E-10,
+  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
+    (plan 2026-09-28-precision-followups) - R_calc(0.20075) is near the
+    critical angle, where the fix moves precision the most; the hand
+    computation used the same engine, so it moves too. }
+  Assert.AreEqual(Double(7.99925737633178E-7), Req.Scale, 1E-10,
     'R_calc(0.20075) / 1074961, the normalisation of the raw maximum');
 end;
 

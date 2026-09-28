@@ -107,32 +107,44 @@ begin
 end;
 
 { TCalc.RefCalc in Double from the model TLayeredModel.Generate left, with the
-  angle taken as the grazing angle so nothing cancels. }
+  angle taken as the grazing angle so nothing cancels. delta = 1 - Re epsilon
+  (TCalcLayer.delta, carried directly from the materials, not recovered from
+  e.Re's own Single step near 1) feeds the Fresnel term as sin^2(t) - delta,
+  and the epsilon ratio's "1 minus" as unit_calc.EpsRatio does, in Double
+  here too: 1 - |e_u/e_l| = (d_u - d_l)(2 - d_u - d_l) + b_l^2 - b_u^2, over
+  |e_l| (|e_l| + |e_u|). }
 function ParrattRef(const L: TCalcLayers; ThetaDeg, Lambda: Double; SP: Boolean;
   RF: TRoughnessFunction): Double;
 var
-  c1, c2, cs, cos2, eRatio, s1, rough, L2, ex, ph: Double;
+  c1, c2, cs, cos2, ratio, oneMinus, au, al, s1, rough, L2, ex, ph: Double;
   i, n: Integer;
   eB, ei, KB, Ki, R, Rp, RFs, RFp, a1, Ph1, k1, k2: TZ;
-  sB, LB: Double;
+  sB, LB, dB, bB, di, bi: Double;
 begin
   c1 := 4 * Pi / Lambda;
   c2 := c1 / 2;
   cs := Sin(DegToRad(ThetaDeg));
   cos2 := cs * cs;
   n := Length(L);
-  eB := Z(L[n - 1].e.Re, L[n - 1].e.Im);
+  dB := L[n - 1].delta;
+  bB := L[n - 1].e.Im;
+  eB := Z(1 - dB, bB);
   sB := L[n - 1].s;
   LB := L[n - 1].L;
-  KB := ZScale(c2, ZSqrt(Z((eB.Re - 1) + cos2, eB.Im)));
+  KB := ZScale(c2, ZSqrt(Z(cos2 - dB, bB)));
   R := Z(0, 0);
   Rp := Z(0, 0);
   for i := n - 2 downto 0 do
   begin
-    ei := Z(L[i].e.Re, L[i].e.Im);
-    Ki := ZScale(c2, ZSqrt(Z((ei.Re - 1) + cos2, ei.Im)));
-    eRatio := ZAbs(ZDiv(ei, eB));
-    s1 := Abs((1 - eRatio) + eRatio * cos2);
+    di := L[i].delta;
+    bi := L[i].e.Im;
+    ei := Z(1 - di, bi);
+    Ki := ZScale(c2, ZSqrt(Z(cos2 - di, bi)));
+    au := Sqrt(Sqr(1 - di) + Sqr(bi));
+    al := Sqrt(Sqr(1 - dB) + Sqr(bB));
+    ratio := au / al;
+    oneMinus := ((di - dB) * (2 - di - dB) + (Sqr(bB) - Sqr(bi))) / (al * (al + au));
+    s1 := Abs(oneMinus + ratio * cos2);
     rough := RoughnessRef(RF, sB, c1 * Sqrt(cs * Sqrt(s1)));
     L2 := LB * 2;
     ex := Exp(-L2 * KB.Im);
@@ -150,6 +162,7 @@ begin
       Rp := ZDiv(ZAdd(RFp, a1), ZAdd(Z(1, 0), ZMul(RFp, a1)));
     end;
     eB := ei; KB := Ki; sB := L[i].s; LB := L[i].L;
+    dB := di; bB := bi;
   end;
   Result := R.Re * R.Re + R.Im * R.Im;
   if SP then

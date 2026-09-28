@@ -130,6 +130,8 @@ type
     eRatio: single; { epsilon ratio, precomputed per model }
     s2: single; { sigma^2 / 2, precomputed per model for rfError roughness }
     RoughFactor: single; { cached roughness damping factor for cmSP reuse }
+    delta: single; { 1 - Re epsilon = f1 * c, computed directly, not as 1 - e.re }
+    oneMinusRatio: single; { 1 - eRatio, in Double on the host }
   end;
 
   TCalcLayers = array of TCalcLayer;
@@ -139,6 +141,7 @@ type
     eRe, eIm: TFloatArray;
     L, s, ro: TFloatArray;
     eRatio, s2: TFloatArray;
+    delta, oneMinusRatio: TFloatArray;
     procedure SetCount(N: Integer);
     procedure CopyFrom(const Layers: TCalcLayers);
   end;
@@ -322,6 +325,8 @@ begin
   SetLength(ro, N);
   SetLength(eRatio, N);
   SetLength(s2, N);
+  SetLength(delta, N);
+  SetLength(oneMinusRatio, N);
 end;
 
 procedure TCalcModelSoA.CopyFrom(const Layers: TCalcLayers);
@@ -338,6 +343,8 @@ begin
     ro[i] := Layers[i].ro;
     eRatio[i] := Layers[i].eRatio;
     s2[i] := Layers[i].s2;
+    delta[i] := Layers[i].delta;
+    oneMinusRatio[i] := Layers[i].oneMinusRatio;
   end;
 end;
 

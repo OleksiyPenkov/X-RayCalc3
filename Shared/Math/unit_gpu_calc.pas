@@ -19,32 +19,34 @@ unit unit_gpu_calc;
    HLSL below once per process.
 
    The recursion mirrors TCalc.RefCalc layer for layer, including its
-   cancellation-free form of eps - sin^2(t): (eps.re - 1) + sin^2(theta) from
-   the grazing angle (both engines since 2026-09-28; the naive form measured a
-   mean |log10 R/R_ref| of ~1.2e-3 against a double-precision Parratt, this
-   form ~3e-5 on TCalc). The grazing sine itself comes from the host, in
-   Double, exactly as TCalc.CalcTet's angle reaches TCalc.RefCalc: Setup
-   computes Single ThetaK := Theta[i] / KScale, then System.Sin(Pi *
-   Double(ThetaK) / 180) in Double, stored as Single, and uploads it per
-   angle in the SinG buffer the Reflect kernel reads directly - the same
-   Single value TCalc.RefCalc itself uses. KScale stays in TParamsCB/cbuffer
-   Params even though Reflect no longer reads it, so the 80-byte
-   constant-buffer layout is unchanged.
+   cancellation-free form of eps - sin^2(t): sin^2(theta) - delta, delta = 1 -
+   Re epsilon carried directly from the materials (TCalcLayer.delta,
+   unit_materials.PrepareLayers) into the layer buffer's first float, rather
+   than recovered from a Single epsilon near 1 (both engines since
+   2026-09-28). The grazing sine itself comes from the host, in Double,
+   exactly as TCalc.CalcTet's angle reaches TCalc.RefCalc: Setup computes
+   Single ThetaK := Theta[i] / KScale, then System.Sin(Pi * Double(ThetaK) /
+   180) in Double, stored as Single, and uploads it per angle in the SinG
+   buffer the Reflect kernel reads directly - the same Single value
+   TCalc.RefCalc itself uses. KScale stays in TParamsCB/cbuffer Params even
+   though Reflect no longer reads it, so the 80-byte constant-buffer layout is
+   unchanged.
 
-   The Double sine alone is not enough to bring the GPU close to TCalc's own
-   accuracy (mean stays ~1.29e-3, barely moved from ~1.31e-3): the compiler/
-   driver reassociates the cancellation-free sums - (eps.re - 1) + sin_g^2
-   into (eps.re + sin_g^2) - 1, and (1 - eRatio) + eRatio * sin_g^2 likewise
-   (the shader compiles with D3DCOMPILE_OPTIMIZATION_LEVEL3, without
-   D3DCOMPILE_IEEE_STRICTNESS) - reintroducing exactly the cancellation the
-   form was meant to avoid. Marking those sums, and the "- 1"/"1 -"
+   Carrying delta end to end (task 2, 2026-09-28) still leaves cancellation-
+   sensitive sums in the kernel: sin_g^2 - delta feeding the Fresnel argument,
+   and the delta/beta form of 1 - |ei/eB| (EpsRatio's Double math, done here in
+   Single) feeding s1. The compiler/driver, compiled with
+   D3DCOMPILE_OPTIMIZATION_LEVEL3 and without D3DCOMPILE_IEEE_STRICTNESS, may
+   still reassociate those sums with their neighbours. Marking them, and the
    intermediates that feed them, `precise` - source-order, unfused IEEE
    evaluation for just those expressions (see the comments at KB/Ki and at s1
-   in Reflect below) - brings the mean to ~8e-6..3e-5 (worst ~8e-5..6e-4; see
-   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision). D3DCOMPILE_IEEE_STRICTNESS
-   globally reaches the same accuracy but costs ~13% more time per Evaluate;
-   the targeted `precise` qualifiers cost nothing measurable, which is why
-   they were chosen over the global flag.
+   in Reflect below) - keeps the GPU close to TCalc's own accuracy; see
+   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision for the measured mean and
+   worst |log10 R/R_ref| against a double-precision Parratt, before and after
+   this task, and CpuRawCurve_CloseToDoublePrecision for TCalc's own.
+   D3DCOMPILE_IEEE_STRICTNESS globally reaches the same accuracy but costs
+   ~13% more time per Evaluate; the targeted `precise` qualifiers cost nothing
+   measurable, which is why they were chosen over the global flag.
 
    Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
    a D3D11 immediate context is not thread-safe. *)
@@ -112,8 +114,8 @@ type
     procedure Setup(const Inputs: TGpuEvalInputs; NLay, NPart: Integer;
       Pol: TPolarisation; RF: TRoughnessFunction; Lambda, KScale, Limit: Single);
     /// <summary>Layers holds NPart * NLay records of four Singles, particle
-    /// after particle, each model surface first: e.re, e.im, thickness, sigma.
-    /// Chi receives one chi-squared per particle.</summary>
+    /// after particle, each model surface first: delta (1 - Re epsilon),
+    /// e.im, thickness, sigma. Chi receives one chi-squared per particle.</summary>
     procedure Evaluate(const Layers: TArray<Single>; var Chi: TArray<Single>);
     /// <summary>The raw (unconvolved, Limit-clamped) curve of one particle of
     /// the last Evaluate, for TCalc.FinishRawCurve.</summary>
@@ -172,7 +174,7 @@ const
         float Pad3;
     };
 
-    StructuredBuffer<float4> Layers      : register(t0);  // e.re, e.im, L, sigma
+    StructuredBuffer<float4> Layers      : register(t0);  // delta, e.im, L, sigma
     StructuredBuffer<float>  SinG        : register(t1);  // grazing sine, Double on the host (Setup)
     StructuredBuffer<float>  Weights     : register(t2);
     StructuredBuffer<float>  LogData     : register(t3);
@@ -229,19 +231,21 @@ const
         uint p = gid.y + PartOffset;
 
         // sin_g = the grazing sine, uploaded by Setup in double precision from
-        // the host: keep eps - sin^2(t) as (eps - 1) + sin_g^2
+        // the host. The Fresnel term is sin^2(t) - delta, delta = 1 - Re
+        // epsilon carried directly from the materials (Layers.x): no near-1
+        // subtraction of epsilon remains.
         float sin_g = SinG[a];
         float sin_g2 = sin_g * sin_g;
 
         uint base = p * NLay;
         float4 lb = Layers[base + NLay - 1];            // the layer below, i + 1
-        float2 eB = lb.xy;
+        float dB = lb.x, bB = lb.y;
+        float2 eB = float2(1 - dB, bB);            // for the P ratio and |eB|
         // precise: without it, the compiler/driver may reassociate
-        // (eB.x - 1) + sin_g2 into (eB.x + sin_g2) - 1, which undoes the
-        // cancellation-free form.
-        precise float dB = eB.x - 1;
-        precise float reB = dB + sin_g2;
-        float2 KB = c2 * csqrt(float2(reB, eB.y));
+        // sin_g2 - dB against surrounding sums, undoing the cancellation-free
+        // form.
+        precise float reB = sin_g2 - dB;
+        float2 KB = c2 * csqrt(float2(reB, bB));
         float2 R  = float2(0, 0);
         float2 Rp = float2(0, 0);
         bool first = true;   // R = 0 below the first interface: no phase term
@@ -249,15 +253,20 @@ const
         for (int i = (int)NLay - 2; i >= 0; --i)
         {
             float4 li = Layers[base + i];
-            float2 ei = li.xy;
-            precise float di = ei.x - 1;
-            precise float rei = di + sin_g2;
-            float2 Ki = c2 * csqrt(float2(rei, ei.y));
+            float di = li.x, bi = li.y;
+            float2 ei = float2(1 - di, bi);
+            precise float rei = sin_g2 - di;
+            float2 Ki = c2 * csqrt(float2(rei, bi));
 
-            float eRatio = length(cdiv(ei, eB));
-            // precise: same reassociation risk as above, for
-            // (1 - eRatio) + eRatio * sin_g2.
-            precise float oneMinusRatio = 1 - eRatio;
+            // 1 - |ei/eB| computed directly from delta and beta
+            // (unit_calc.EpsRatio's Double form, here in Single): no near-1
+            // subtraction of ei/eB remains.
+            float ai = length(ei), aB = length(eB);
+            precise float num = (di - dB) * (2 - di - dB) + (bB * bB - bi * bi);
+            precise float oneMinusRatio = num / (aB * (aB + ai));
+            float eRatio = ai / aB;
+            // precise: without it, the compiler/driver may reassociate
+            // oneMinusRatio + eRatio * sin_g2, undoing the cancellation-free form.
             precise float s1Signed = oneMinusRatio + eRatio * sin_g2;
             float s1 = abs(s1Signed);
             float rf = Roughness(lb.w, c1 * sqrt(sin_g * sqrt(s1)));
@@ -297,7 +306,7 @@ const
                 }
             }
 
-            lb = li; eB = ei; KB = Ki;
+            lb = li; eB = ei; KB = Ki; dB = di; bB = bi;
         }
 
         float r = dot(R, R);

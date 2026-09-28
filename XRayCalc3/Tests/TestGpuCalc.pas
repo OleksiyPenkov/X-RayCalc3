@@ -209,7 +209,7 @@ begin
   Base := 4 * Length(L) * Particle;
   for k := 0 to High(L) do
   begin
-    Buf[Base + 4 * k]     := L[k].e.Re;
+    Buf[Base + 4 * k]     := L[k].delta;
     Buf[Base + 4 * k + 1] := L[k].e.Im;
     Buf[Base + 4 * k + 2] := L[k].L;
     Buf[Base + 4 * k + 3] := L[k].s;

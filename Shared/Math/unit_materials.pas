@@ -249,6 +249,9 @@ begin
     c := ClassicalElectronRadius * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
     FLayers[i].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
     FLayers[i].e.im := FMaterials[CurrentMaterial].f.im * c;
+    { delta = 1 - Re epsilon, computed directly (f1 * c keeps its own digits
+      at its own magnitude) rather than recovered from e.re's Single step near 1. }
+    FLayers[i].delta := FMaterials[CurrentMaterial].f.re * c;
   end;
 
   { The substrate follows the layers' rule: its own density when one is
@@ -264,6 +267,7 @@ begin
   c := ClassicalElectronRadius * l_ro / FMaterials[CurrentMaterial].am * sqr(FLambda);
   FLayers[High(FLayers)].e.re := 1 - FMaterials[CurrentMaterial].f.re * c;
   FLayers[High(FLayers)].e.im := FMaterials[CurrentMaterial].f.im * c;
+  FLayers[High(FLayers)].delta := FMaterials[CurrentMaterial].f.re * c;
 end;
 
 
@@ -364,6 +368,7 @@ begin
   FLayers[0].L := 1E10;
   FLayers[0].e.re := 1;
   FLayers[0].e.im := 0;
+  FLayers[0].delta := 0;
 
   CurrentLayer := 1;
 end;
@@ -383,6 +388,7 @@ begin
   FLayers[0].L := 1E10;
   FLayers[0].e.re := 1;
   FLayers[0].e.im := 0;
+  FLayers[0].delta := 0;
 
   CurrentLayer := 1;
   // FMaterials and FMaterialIndex preserved for caching
