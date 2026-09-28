@@ -841,8 +841,13 @@ begin
     (Restore), and the seam where the raw part met the convolved one, 0.1 deg
     above the start, could be a one-point dip on the plateau that the fit
     report took for the first fringe minimum. chi2 skips these points (FTail)
-    either way. System.Math stays out of this unit: its Log10 would shadow
-    FastMath's, which the chi-squared relies on. }
+    either way. System.Math is in this unit's implementation uses (Task 3,
+    2026-09-28-precision-followups, for System.Math.SinCos), but this unit's
+    own Log10 (~166, half of base-10 log) still wins every unqualified call
+    here by scope - a declaration in the current unit always outranks one
+    from a used unit, regardless of uses order - so the chi-squared's Log10
+    calls are unaffected; System.Math.SinCos itself is called fully
+    qualified, to bypass Neslib.FastMath's own approximate SinCos(Single). }
   for i := 0 to N - 1 do
   begin
     if i >= Size then
