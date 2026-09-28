@@ -376,8 +376,9 @@ end;
 procedure TTestLFPSOProgress.Test_Seed_PinnedBestChiSquare;
 const
   { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
-    term (plan 2026-09-28-precision-followups, Task 3) }
-  PINNED_CHI: Single = 2.91912722;   // the classic engine's answer for TEST_SEED
+    term (plan 2026-09-28-precision-followups, Task 3)
+    re-pinned 2026-09-28: exact SqrtZ (plan 2026-09-28-precision-followups) }
+  PINNED_CHI: Single = 2.91917348;   // the classic engine's answer for TEST_SEED
 var
   Chi: Single;
   Curve: TDataArray;

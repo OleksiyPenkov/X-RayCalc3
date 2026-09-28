@@ -1890,8 +1890,9 @@ end;
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
   { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
-    term (plan 2026-09-28-precision-followups, Task 3) }
-  CHI2_06035DE = '2.87046E-6';
+    term (plan 2026-09-28-precision-followups, Task 3)
+    re-pinned 2026-09-28: exact SqrtZ (plan 2026-09-28-precision-followups) }
+  CHI2_06035DE = '2.8691E-6';
   FITTED_06035DE =
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +

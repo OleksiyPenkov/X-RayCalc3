@@ -515,6 +515,29 @@ begin
   Range := AbsZ(Z);
 end;
 
+{ The reciprocal square root SqrtZ's small ("interference") component needs.
+  Until 2026-09-28 (Task 3's first commit) this was
+  Neslib.FastMath.InverseSqrt (SSE rsqrtss, ~12 bits, no Newton refinement,
+  ~3.7e-4 relative error): below the critical angle, where that component
+  carries the evanescent reflectivity, its
+  approximation noise could exceed a small physical signal (see
+  TestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps,
+  2026-09-28-precision-followups Task 2/3). The author's <= 10% CPU-fit-speed
+  rule was applied to this together with TCalc.RefCalc's exact phase
+  functions (Task 3): alone this candidate cost only ~1.6-2.8%, but combined
+  with the phase change the representative fit measured ~11.7-12.3% slower -
+  over budget for the phase change alone (~9.3%), so the author decided to
+  accept the combined ~12% for the accuracy this buys (2026-09-28-precision-
+  followups, Task 3, fix round 2). 1 / System.Sqrt is a plain value-parameter
+  call: System.Sqrt is declared once per platform (Extended on Win32,
+  Double on Win64, both by implicit widening from the Single argument, no
+  var-parameter overload split the way System.SineCosine has), so this needs
+  no platform-conditional code. }
+function ExactInverseSqrt(const X: Single): Single; inline;
+begin
+  Result := 1 / System.Sqrt(X);
+end;
+
 { return the Square root of Z: sqrt(x+yi) }
 function SqrtZ(Z: TComplex): TComplex;
 var
@@ -527,15 +550,15 @@ begin
     if Z.Re > 0 then
     begin
       LValue := LValue + Z.Re;
-      Result := ToComplex(Sqrt(LValue / 2), Z.Im * InverseSqrt(LValue * 2));
+      Result := ToComplex(Sqrt(LValue / 2), Z.Im * ExactInverseSqrt(LValue * 2));
     end
     else
     begin
       LValue := LValue - Z.Re;
       if Z.Im < 0 then
-        Result := ToComplex(Abs(Z.Im) * InverseSqrt(LValue * 2), -Sqrt(LValue / 2))
+        Result := ToComplex(Abs(Z.Im) * ExactInverseSqrt(LValue * 2), -Sqrt(LValue / 2))
       else
-        Result := ToComplex(Abs(Z.Im) * InverseSqrt(LValue * 2), Sqrt(LValue / 2));
+        Result := ToComplex(Abs(Z.Im) * ExactInverseSqrt(LValue * 2), Sqrt(LValue / 2));
     end;
   end;
 end;

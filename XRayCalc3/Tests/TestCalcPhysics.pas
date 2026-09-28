@@ -524,39 +524,36 @@ end;
   0.4%, never the reference's — delta, computed directly as f1 * c, resolves
   it instead.
 
-  The angle window sits just above Si's critical angle (~0.22 deg), not
-  straddling it: below critical, math_complex.SqrtZ's real part (the P-ratio
-  and the interference term below) comes from Neslib.FastMath.InverseSqrt
-  (SSE rsqrtss, no Newton refinement, ~3.7e-4 relative error) rather than a
-  division, and right at grazing incidence that term's contribution to R is
-  leveraged enough (K0 and Im(K_substrate) are comparable there) that its
-  approximation noise can exceed this test's 2e-4 density signal - measured,
-  not assumed (a temporary per-angle scan comparing engine and reference
-  ratios from 0.10 to 0.40 deg showed sub-1% agreement failing intermittently
-  below ~0.205 deg, some points quantized to exactly 0, and consistent 3-4
-  significant digit agreement from ~0.22 deg up). That SqrtZ approximation
-  predates this task and is out of its original scope (TCalcLayer,
-  TCalcModelSoA, TCalc, the GPU kernel and the reference Parratt only); above
-  critical angle it is a small correction to a real, non-decaying K, so it
-  does not limit this test.
+  History (2026-09-28-precision-followups): the angle window originally sat
+  just above Si's critical angle (~0.22 deg), not straddling it, because
+  below critical, math_complex.SqrtZ's small ("interference") component came
+  from Neslib.FastMath.InverseSqrt (SSE rsqrtss, no Newton refinement, ~3.7e-4
+  relative error) rather than a division, and right at grazing incidence that
+  term's contribution to R is leveraged enough (K0 and Im(K_substrate) are
+  comparable there) that its approximation noise could exceed this test's
+  2e-4 density signal - measured, not assumed (Task 2's per-angle scan from
+  0.10 to 0.40 deg showed sub-1% agreement failing intermittently below
+  ~0.205 deg, some points quantized to exactly 0, consistent 3-4 significant
+  digit agreement from ~0.22 deg up). Task 3 measured fixing it (a Newton
+  step, or the exact 1 / System.Sqrt) under the author's <= 10% CPU-fit-speed
+  rule: alone it cost only ~1.6-2.8%, but combined with Task 3's exact
+  TotalRecursiveRefraction phase functions (~9.3% alone) the fit measured
+  11.7-12.3% slower - over budget together at first, so Task 3's first
+  commit left SqrtZ unchanged and kept this window at 0.22-0.40 deg.
 
-  Task 3 (2026-09-28-precision-followups) measured fixing it under the same
-  author's <= 10% rule: one Newton-Raphson step on InverseSqrt's result, or
-  the exact 1 / System.Sqrt, each measured alone at only ~1.6-2.8% slower on
-  the representative fit and enough to pass this test at 0.15-0.25 deg with
-  the tolerance formula unchanged. But Task 3 also adopted
-  TotalRecursiveRefraction's exact System.Exp/System.Math.SinCos (~9.3%
-  slower alone), and the two changes together measured 11.7-12.3% slower
-  (n=14 vs n=15 trials) - over budget combined. SqrtZ was left unchanged, so
-  the window stays at 0.22-0.40 deg; see the task report for the 0.15-0.25
-  deg numbers and the full benchmark table. }
+  Fix round 2: the author decided to adopt both changes, accepting the
+  combined ~12% CPU fit cost for the accuracy. math_complex.SqrtZ now uses
+  the exact 1 / System.Sqrt (ExactInverseSqrt) in place of InverseSqrt; the
+  rsqrtss floor that limited this window is gone, and this test now passes
+  at the brief's originally-proposed 0.15-0.25 deg window with the tolerance
+  formula unchanged - restored below. See the task report for the numbers. }
 procedure TTestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps;
 const
   RHO1 = 2.33;
   RHO2 = RHO1 * (1 + 2E-4);
   N = 41;
-  THETA0 = 0.22;
-  THETA1 = 0.40;
+  THETA0 = 0.15;
+  THETA1 = 0.25;
 var
   Calc1, Calc2: TTestableCalc;
   Model1, Model2: TLayeredModel;
@@ -628,9 +625,12 @@ const
   N = 41;
   THETA0 = 0.15;
   THETA1 = 0.25;
-  { The CPU bound of TestGpuCalc.CpuRawCurve_CloseToDoublePrecision. }
-  MEAN_BOUND = 1.6E-5;
-  WORST_BOUND = 2.3E-4;
+  { The CPU bound of TestGpuCalc.CpuRawCurve_CloseToDoublePrecision, re-tightened
+    2026-09-28 (Task 3 fix round 2, exact math_complex.SqrtZ alongside the exact
+    phase term): measured here mean=2.275E-6 (5.3x margin), worst=3.254E-6
+    (61.5x margin) - comfortably under the tighter bound, so it moved too. }
+  MEAN_BOUND = 1.2E-5;
+  WORST_BOUND = 2.0E-4;
 var
   Calc: TTestableCalc;
   Model: TLayeredModel;
