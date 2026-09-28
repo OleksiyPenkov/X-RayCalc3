@@ -54,7 +54,7 @@ var
     Sqrt3 = 1.7320508075688772;
     SinusK = 2.2976031174871970;   // pi / sqrt(pi^2 - 8)
   var
-    a: Single;
+    a, u, v, t1, t2: Single;
   begin
       case RF of
         rfError:
@@ -80,10 +80,15 @@ var
           Result := cos(sigma * s);
         rfSinus:
           // Stearns / IMD; the rms width is sigma. Undefined until 3.9.3.
+          // u = a - pi/2 is 0/0 at a = pi/2; guarded like rfLinear above.
+          // v = a + pi/2 guarded the same way.
           begin
             a := SinusK * sigma * s;
-            Result := Pi / 4 * (sin(a - Pi / 2) / (a - Pi / 2) +
-                                sin(a + Pi / 2) / (a + Pi / 2));
+            u := a - Pi / 2;
+            v := a + Pi / 2;
+            if Abs(u) < 1E-4 then t1 := 1 else t1 := sin(u) / u;
+            if Abs(v) < 1E-4 then t2 := 1 else t2 := sin(v) / v;
+            Result := Pi / 4 * (t1 + t2);
           end;
         else
           Result := 1;

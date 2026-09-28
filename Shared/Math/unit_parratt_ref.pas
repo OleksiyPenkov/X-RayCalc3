@@ -14,9 +14,10 @@ unit unit_parratt_ref;
 
 (* The reference Parratt recursion in double precision: TCalc.RefCalc's
    algorithm, redone in Double so the tests can measure both the CPU's
-   (Single) and the GPU's own precision against it. No engine calls this at
-   run time yet (Task 4 wires the GPU's self-check to it); the DUnitX suite
-   is its only caller for now, in place of TestGpuCalc's own copy. *)
+   (Single) and the GPU's own precision against it. unit_gpu_calc.TGpuEvaluator
+   calls it at run time too, once per process, as the reference for its own
+   self-check (Create's SelfCheck); the DUnitX suite is its other caller, in
+   place of TestGpuCalc's own former copy. *)
 
 interface
 
@@ -85,7 +86,7 @@ const
   Sqrt3 = 1.7320508075688772;
   SinusK = 2.2976031174871970;   // pi / sqrt(pi^2 - 8): rms width sigma
 var
-  a: Double;
+  a, u, v, t1, t2: Double;
 begin
   case RF of
     rfError:  Result := Exp(-(Sigma * Sigma * 0.5) * s * s);
@@ -98,8 +99,14 @@ begin
     rfStep:   Result := Cos(Sigma * s);
     rfSinus:
       begin
+        { u = a - pi/2 is 0/0 at a = pi/2; guarded like rfLinear above. v = a
+          + pi/2 guarded the same way. }
         a := SinusK * Sigma * s;
-        Result := Pi / 4 * (Sin(a - Pi / 2) / (a - Pi / 2) + Sin(a + Pi / 2) / (a + Pi / 2));
+        u := a - Pi / 2;
+        v := a + Pi / 2;
+        if Abs(u) < 1E-4 then t1 := 1 else t1 := Sin(u) / u;
+        if Abs(v) < 1E-4 then t2 := 1 else t2 := Sin(v) / v;
+        Result := Pi / 4 * (t1 + t2);
       end;
   else
     Result := 1;

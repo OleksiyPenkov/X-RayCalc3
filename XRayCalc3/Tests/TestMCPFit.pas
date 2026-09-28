@@ -1886,7 +1886,19 @@ end;
   the same structure - it was already the right one - but now matches the
   noise-free curve far more closely: chi2 fell from 0.000413763 to 2.96477E-6.
   P2-02's chi2 moved from 2.16063 to 2.16446 and its layers by similarly small
-  amounts, up to 0.2 % (the C density, its third significant digit). }
+  amounts, up to 0.2 % (the C density, its third significant digit).
+
+  2026-09-28-precision-followups re-pins, same synthetic/P2-02 fits, CPU
+  device throughout: Task 2 (delta = 1 - Re eps carried directly, not
+  recovered from eps' Single step) moved the synthetic chi2 2.96477E-6 ->
+  2.86735E-6 and P2-02's chi2 2.16446 -> 2.16757 (layers similarly, in the
+  fourth-fifth digit). Task 3's exact System.Exp/System.Math.SinCos phase
+  term (first commit) moved the synthetic chi2 to 2.87046E-6 and P2-02's chi2
+  to 2.16726 (no further P2 layer re-pin needed). Task 3 fix round 2's exact
+  math_complex.SqrtZ (1/System.Sqrt in place of InverseSqrt, adopted together
+  with the phase term for a combined ~12 % slower CPU fit) moved the
+  synthetic chi2 to 2.8691E-6, its current pinned value; P2-02 needed no
+  further re-pin at this precision. }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
   { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase

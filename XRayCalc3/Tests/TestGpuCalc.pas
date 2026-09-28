@@ -564,16 +564,37 @@ end;
   SelfCheck_* tests) measures mean 7.61E-6 without `precise` vs 7.27E-6 with
   it - `precise` no longer visibly changes the result on this machine, and
   is kept as defence in depth (see unit_gpu_calc's header comment and
-  TGpuEvaluator.SelfCheck). The bounds below are unchanged from when they
-  were last measured with `precise` present (mean up to ~3.2E-5, worst up to
-  ~6.1E-4, agree-mean/-worst up to ~5.3E-5/7.2E-4) and still hold. }
+  TGpuEvaluator.SelfCheck).
+
+  Bounds re-tightened (2026-09-28-precision-followups, final review): the
+  bounds above (mean 1E-4, worst 2E-3, agree-mean 2E-4, agree-worst 2.5E-3)
+  had 14-26x slack once delta was carried (and, for the agree bounds, once
+  Task 3 also made the CPU exact). Re-set to the geometric mean of a "before
+  delta" figure and the current maximum, the same rule TestCalcPhysics used
+  for the CPU bounds: mean and worst against `before` = Task 2's own
+  pre-delta measurement of this test (mean-of-means 1.960E-5, worst-of-worst
+  6.054E-4); agree-mean and agree-worst against `before` = Task 2's pre-delta
+  agreement with the CPU (mean-of-means 4.063E-5, worst-of-worst 7.189E-4,
+  itself pre-Task-3's exact CPU). `current` = this test's own measurement
+  today (30 cases: 5 roughness functions x 2 polarisations x 3 particles):
+  mean-of-means 5.991E-6, max-of-means 7.119E-6, worst-of-worst 1.199E-4;
+  agree-mean-of-means 7.546E-6, max-of-agree-means 8.848E-6, agree-worst-of-
+  worst 1.227E-4 (measured with temporary instrumentation, reverted before
+  commit). MEAN_BOUND = Sqrt(1.960E-5 x 7.119E-6) = 1.181E-5, rounded to
+  1.2E-5 (1.7x the current max). WORST_BOUND = Sqrt(6.054E-4 x 1.199E-4) =
+  2.695E-4, rounded to 2.7E-4 (2.25x). AGREE_MEAN_BOUND =
+  Sqrt(4.063E-5 x 8.848E-6) = 1.896E-5, rounded to 1.9E-5 (2.1x).
+  AGREE_WORST_BOUND = Sqrt(7.189E-4 x 1.227E-4) = 2.969E-4, rounded to 3.0E-4
+  (2.4x). No case exceeded any bound; RED not re-proven here (would need the
+  pre-delta packing/kernel restored, which is not cheap) - the separation
+  factors above (2.25-26x before this tightening) stand in its place. }
 procedure TTestGpuCalc.GpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
-  MEAN_BOUND = 1E-4;
-  WORST_BOUND = 2E-3;
-  AGREE_MEAN_BOUND = 2E-4;
-  AGREE_WORST_BOUND = 2.5E-3;
+  MEAN_BOUND = 1.2E-5;
+  WORST_BOUND = 2.7E-4;
+  AGREE_MEAN_BOUND = 1.9E-5;
+  AGREE_WORST_BOUND = 3.0E-4;
 var
   RF: TRoughnessFunction;
   Pol: TPolarisation;

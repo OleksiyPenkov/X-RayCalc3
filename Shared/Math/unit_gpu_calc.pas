@@ -87,6 +87,8 @@ type
     FSelfCheckBound: Double;
     FSelfCheckWorstBound: Double;
     FFailSelfChecks: Integer;
+    FSelfCheckFailMsg: string;   // cached message of a double self-check failure; '' = none cached
+    FSelfCheckFailTick: UInt64;  // GetTickCount64 when FSelfCheckFailMsg was set
   private
     FDev: ID3D11Device;
     FCtx: ID3D11DeviceContext;
@@ -253,9 +255,13 @@ const
         if (RF == 3) return cos(sigma * s);
         if (RF == 4)
         {
+            // u = a - pi/2 is 0/0 at a = pi/2; guarded like RF == 2 above.
+            // v = a + pi/2 guarded the same way.
             float a = 2.29760311750 * sigma * s;
             float u = a - 1.57079632679, v = a + 1.57079632679;
-            return 0.785398163397 * (sin(u) / u + sin(v) / v);
+            float t1 = abs(u) < 1e-4 ? 1.0 : sin(u) / u;
+            float t2 = abs(v) < 1e-4 ? 1.0 : sin(v) / v;
+            return 0.785398163397 * (t1 + t2);
         }
         return 1.0;
     }
@@ -561,6 +567,16 @@ begin
     succeeds immediately instead of deadlocking. }
   FLock.Enter;
   try
+    { A double self-check failure (below) is cached for 60 seconds, the same
+      window Available retries on: only Available's own probe caches a
+      failure otherwise, so a direct Create (unit_LFPSO_Base's classic-fit
+      evaluator, unit_PosteriorBatch's) would otherwise recompile both
+      compilations and re-run the self-check every single time within that
+      window, since FSelfChecked stays False forever after a double failure.
+      ResetShaders clears this cache too. }
+    if (FSelfCheckFailMsg <> '') and (GetTickCount64 - FSelfCheckFailTick <= 60000) then
+      raise EGpuError.Create(FSelfCheckFailMsg);
+
     CompileShaders;
     Check(FDev.CreateComputeShader(@FReflectCode[0], Length(FReflectCode), nil, FReflect),
       'CreateComputeShader(Reflect)');
@@ -626,12 +642,20 @@ begin
           every code blob, so a later Create - Available's 60-second retry
           after a transient driver problem, or the caller's own next
           attempt - runs the whole compile-and-check sequence again from
-          `precise`, instead of failing instantly forever. }
+          `precise`, instead of failing instantly forever. The failure
+          message itself IS cached for that same 60 seconds (FSelfCheckFailMsg/
+          FSelfCheckFailTick, checked at the top of this method), so a direct
+          Create within the window raises at once instead of recompiling and
+          re-checking both compilations again first. }
         FShaderMode := '';
         FStrict := False;
         FReflectCode := nil;
         FChiCode := nil;
         FLogLikCode := nil;
+        FSelfCheckFailMsg := Format('GPU self-check failed: mean/worst |log10 R/R_ref| ' +
+          '%.2e/%.2e with precise and %.2e/%.2e with IEEE strictness',
+          [FirstErr, FirstWorst, Err, Worst]);
+        FSelfCheckFailTick := GetTickCount64;
       end
       else
       begin
@@ -643,9 +667,7 @@ begin
       end;
     end;
     if FShaderMode = '' then
-      raise EGpuError.CreateFmt('GPU self-check failed: mean/worst |log10 R/R_ref| ' +
-        '%.2e/%.2e with precise and %.2e/%.2e with IEEE strictness',
-        [FirstErr, FirstWorst, Err, Worst]);
+      raise EGpuError.Create(FSelfCheckFailMsg);
   finally
     FLock.Leave;
   end;

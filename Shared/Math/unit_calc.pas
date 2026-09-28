@@ -614,13 +614,18 @@ var
     the forms Windt's IMD uses), each 1 at sigma = 0. Until 3.9.3 rfLinear
     damped only below sigma = 0.5 A (the test was the wrong way round, and
     0/0 at sigma = 0) and rfSinus returned 0. The GUI, the MCP server and
-    fit_xrr use rfError only. }
+    fit_xrr use rfError only. rfSinus itself has its own 0/0 at a = pi/2 (u =
+    a - pi/2 = 0), guarded below the same way as rfLinear's a = 0; unreachable
+    from the GUI/MCP today for the same reason (rfError only), so it needs no
+    new test beyond the existing suite passing. The same guard was applied to
+    unit_gpu_calc's HLSL Roughness, unit_parratt_ref.RoughnessRef and
+    unit_universal_refcalc's Roughness (2026-09-28). }
   function Roughness(const RF: TRoughnessFunction; const sigma, s2, s: single): single; inline;
   const
     Sqrt3 = 1.7320508075688772;
     SinusK = 2.2976031174871970;   // pi / sqrt(pi^2 - 8): rms width sigma
   var
-    a: Single;
+    a, u, v, t1, t2: Single;
   begin
     case RF of
       rfError:
@@ -639,9 +644,16 @@ var
         Result := cos(sigma * s);
       rfSinus:
         begin
+          { u = a - pi/2 is 0/0 at a = pi/2 (rare from the GUI/MCP - rfError
+            only - but reachable through rfSinus's own s scan); guarded like
+            rfLinear above. v = a + pi/2 guarded the same way, though s >= 0
+            in practice keeps it away from 0. }
           a := SinusK * sigma * s;
-          Result := Pi / 4 * (sin(a - Pi / 2) / (a - Pi / 2) +
-                              sin(a + Pi / 2) / (a + Pi / 2));
+          u := a - Pi / 2;
+          v := a + Pi / 2;
+          if Abs(u) < 1E-4 then t1 := 1 else t1 := sin(u) / u;
+          if Abs(v) < 1E-4 then t2 := 1 else t2 := sin(v) / v;
+          Result := Pi / 4 * (t1 + t2);
         end;
       else
         Result := 1;
@@ -723,8 +735,13 @@ begin
     (unit_gpu_calc). The 1 - |eRatio| term is likewise built from delta and
     beta in Double (EpsRatio above), not from a Single ratio near 1. Neither
     form now loses digits to a subtraction near 1: against a double-precision
-    Parratt this measures a mean |log10 R/R_ref| of ~3e-5 (2026-09-28; the
-    naive eps - sin^2(t) form measured ~1.2e-3). }
+    Parratt this measures a mean |log10 R/R_ref| of ~4-6e-6 (worst ~5-8e-5;
+    2026-09-28), down from ~3e-5 (worst a few e-4) once delta was carried
+    directly (this comment), and down further once TotalRecursiveRefraction's
+    phase term (System.Exp/System.Math.SinCos in place of FastExp/FastSinCos)
+    and math_complex.SqrtZ's square root (an exact 1/System.Sqrt in place of
+    Neslib.FastMath.InverseSqrt) were made exact instead of approximate; the
+    naive eps - sin^2(t) form measured ~1.2e-3 before any of this. }
   sin_g := Sin(Pi * Double(ATheta) / 180);
   sqr_sin_g := sqr(sin_g);
 
