@@ -995,7 +995,7 @@ end;
 
 procedure TfrmProjectPanel.RecoverDataCurves(const LinkedID: integer);
 var
-  Node: PVirtualNode;
+  Node, Next: PVirtualNode;
   Data: PProjectData;
   s: string;
 begin
@@ -1004,6 +1004,7 @@ begin
   Node := FProject.GetFirstChild(FDataRoot);
   while Node <> nil do
   begin
+    Next := FProject.GetNext(Node);   // before DeleteNode frees Node
     Data := FProject.GetNodeData(Node);
     if (Data.RowType = prItem) and FileExists(DataName(Data)) then
     begin
@@ -1026,7 +1027,7 @@ begin
     end
     else
       FProject.DeleteNode(Node);
-    Node := FProject.GetNext(Node);
+    Node := Next;
   end;
 end;
 
