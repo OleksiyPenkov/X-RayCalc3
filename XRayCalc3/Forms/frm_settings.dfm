@@ -319,19 +319,6 @@ object frmSettings: TfrmSettings
           Transparent = True
           ExplicitWidth = 50
         end
-        object chkCheckForUpdates: TCheckBox
-          AlignWithMargins = True
-          Left = 9
-          Top = 91
-          Width = 425
-          Height = 17
-          Margins.Left = 9
-          Align = alTop
-          Caption = 'Automatically check for updates'
-          Color = clBtnFace
-          ParentColor = False
-          TabOrder = 0
-        end
         object chkAutoCalcOpen: TCheckBox
           AlignWithMargins = True
           Left = 9

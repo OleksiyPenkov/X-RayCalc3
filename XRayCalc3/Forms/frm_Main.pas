@@ -1018,7 +1018,9 @@ end;
 
 procedure TfrmMain.CalcStopExecute(Sender: TObject);
 begin
-  FOrchestrator.StopCalc;
+  { Stops the running fit and, during Batch jobs Fitting or a benchmark, the
+    files still to come; each run clears the flag when it starts. }
+  FBatchRunner.Stop;
 end;
 
 procedure TfrmMain.EnableControls(const Enable: Boolean);

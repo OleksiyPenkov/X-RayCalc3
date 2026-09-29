@@ -131,19 +131,4 @@ object frmNewMaterial: TfrmNewMaterial
       OnClick = btnMaterialClick
     end
   end
-  object PopupMenu1: TPopupMenu
-    Left = 104
-    Top = 272
-    object Inserttothetable1: TMenuItem
-      Caption = 'Insert to the table'
-      ShortCut = 13
-      OnClick = lbFilesDblClick
-    end
-    object N1: TMenuItem
-      Caption = '-'
-    end
-    object Deletefile1: TMenuItem
-      Caption = 'Delete file'
-    end
-  end
 end

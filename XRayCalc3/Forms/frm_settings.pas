@@ -43,7 +43,6 @@ type
     btnHelp: TButton;
     Panel3: TPanel;
     Label6: TLabel;
-    chkCheckForUpdates: TCheckBox;
     tsInterface: TTabSheet;
     Label3: TLabel;
     lbl1: TLabel;

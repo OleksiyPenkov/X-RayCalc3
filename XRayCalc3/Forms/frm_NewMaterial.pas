@@ -39,21 +39,13 @@ type
     Edit2: TEdit;
     Label2: TLabel;
     Label1: TLabel;
-    PopupMenu1: TPopupMenu;
-    Inserttothetable1: TMenuItem;
-    N1: TMenuItem;
-    Deletefile1: TMenuItem;
     btnClear: TButton;
     btnClose: TButton;
     btnMaterial: TButton;
     lbl1: TLabel;
-    procedure lbFilesDblClick(Sender: TObject);
     procedure SpinEdit1Change(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure bntSaveClick(Sender: TObject);
-    procedure lbFilesKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
-//    procedure Deletefile1Click(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
     procedure GridSelectCell(Sender: TObject; ACol, ARow: Integer;
       var CanSelect: Boolean);
@@ -127,35 +119,12 @@ begin
   Grid.Cells[col, row] := S;
 end;
 
-//procedure TfrmNewMaterial.Deletefile1Click(Sender: TObject);
-//var
-//  Name: string;
-//begin
-//  Name := lbFiles.Items[lbFiles.ItemIndex];
-//  if MessageDlg('File will be deleted! Do you want to continue?', mtWarning, [mbYes, mbNo], 0) = mrYes then
-//  begin
-//    lbFiles.Items.Delete(lbFiles.ItemIndex);
-//    DeleteFile(Settings.HenkePath + Name + '.bin');
-//  end;
-//end;
-
 procedure TfrmNewMaterial.FormCreate(Sender: TObject);
 begin
   Grid.Cells[0, 0] := 'Element';
   Grid.Cells[1, 0] := 'Conc. at%';
 
   btnClearClick(Nil);
-end;
-
-procedure TfrmNewMaterial.lbFilesDblClick(Sender: TObject);
-begin
-  ModalResult := mrOk;
-end;
-
-procedure TfrmNewMaterial.lbFilesKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-begin
-  if Key = vk_Return  then lbFilesDblClick(Sender);
 end;
 
 function TfrmNewMaterial.NewElement: boolean;
