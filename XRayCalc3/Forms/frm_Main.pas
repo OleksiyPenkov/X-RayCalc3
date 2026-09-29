@@ -18,7 +18,7 @@ uses
   unit_LFPSO_Base, Vcl.Buttons,
   Vcl.Imaging.pngimage, frm_Benchmark, frame_CalcSettings, frame_ChartInfo, frame_ChartPages, frame_StructurePanel, frame_ProjectPanel,
   Vcl.PlatformDefaultStyleActnCtrls, unit_ProfilesManager, unit_ChartManager,
-  unit_CalcOrchestrator, unit_BatchRunner,
+  unit_CalcOrchestrator, unit_BatchRunner, unit_Updater,
   Vcl.VirtualImageList, Vcl.BaseImageCollection, Vcl.ImageCollection;
 
 type
@@ -93,6 +93,7 @@ type
     Calc1: TMenuItem;
     Calc2: TMenuItem;
     UserManual1: TMenuItem;
+    CheckForUpdates1: TMenuItem;
     N15: TMenuItem;
     About1: TMenuItem;
     Calc3: TMenuItem;
@@ -256,6 +257,7 @@ type
     procedure HelpAboutExecute(Sender: TObject);
     procedure HelpContentExecute(Sender: TObject);
     procedure actHomePageExecute(Sender: TObject);
+    procedure actCheckUpdateExecute(Sender: TObject);
     procedure actWikiExecute(Sender: TObject);
     procedure actSupportExecute(Sender: TObject);
     procedure actQuickStartExecute(Sender: TObject);
@@ -293,6 +295,12 @@ type
     FDPI: Integer;
     FLockOwner: Boolean;
     FLockFile: File;
+    FPendingSetup: string;   // a downloaded setup to run once the form is gone
+
+    procedure CheckForUpdate(const Silent: Boolean);
+    procedure OfferUpdate(const Info: TReleaseInfo; const Error: string; const Silent: Boolean);
+    procedure DownloadUpdate(const Info: TReleaseInfo);
+    procedure InstallUpdate(const SetupPath, Version: string);
 
     procedure DoAddStack(const Insert: Boolean);
     procedure EnableControls(const Enable: Boolean);
@@ -369,6 +377,7 @@ uses
   frm_FitReport, unit_FitReportGUI, unit_MCPFitReport, unit_MCPCalc,
   unit_Residuals, unit_ResidualStrip,
   unit_MCPAssess,
+  unit_CrashReport,
   unit_xrdml,
   unit_SeriesIO,
   Winapi.ShellAPI;
@@ -933,6 +942,126 @@ begin
   OpenURL(URL_HOMEPAGE);
 end;
 
+procedure TfrmMain.actCheckUpdateExecute(Sender: TObject);
+begin
+  CheckForUpdate(False);
+end;
+
+{ The network calls run on their own thread; the answer comes back through
+  TThread.Queue. Silent (the startup check) speaks only of a newer version. }
+procedure TfrmMain.CheckForUpdate(const Silent: Boolean);
+var
+  URL: string;
+begin
+  URL := TConfig.Section<TOtherOptions>.UpdateInfoURL;
+  actCheckUpdate.Enabled := False;
+  TThread.CreateAnonymousThread(
+    procedure
+    var
+      Info: TReleaseInfo;
+      Error: string;
+    begin
+      Error := '';
+      try
+        Info := FetchLatestRelease(URL);
+      except
+        on E: Exception do
+          Error := E.Message;
+      end;
+      TThread.Queue(nil,
+        procedure
+        begin
+          if Application.Terminated then
+            Exit;
+          actCheckUpdate.Enabled := True;
+          OfferUpdate(Info, Error, Silent);
+        end);
+    end).Start;
+end;
+
+procedure TfrmMain.OfferUpdate(const Info: TReleaseInfo; const Error: string; const Silent: Boolean);
+var
+  Local: string;
+begin
+  if Error <> '' then
+  begin
+    if not Silent then
+      MessageDlg('Could not check for updates:' + sLineBreak + Error, mtWarning, [mbOK], 0);
+    Exit;
+  end;
+
+  Local := TCrashReport.GetAppVersion;
+  if not IsNewer(Info.Version, Local) then
+  begin
+    if not Silent then
+      MessageDlg(Format('X-Ray Calc %s is the latest version.', [Local]), mtInformation, [mbOK], 0);
+    Exit;
+  end;
+
+  if Info.SetupURL = '' then
+  begin
+    if MessageDlg(Format('X-Ray Calc %s is available (you have %s), but the release has no setup.' +
+      sLineBreak + 'Open its page on GitHub?', [Info.Version, Local]),
+      mtInformation, [mbYes, mbNo], 0) = mrYes then
+      OpenURL(Info.PageURL);
+    Exit;
+  end;
+
+  if MessageDlg(Format('X-Ray Calc %s is available (you have %s).' + sLineBreak +
+    'Download it now? You can keep working while it downloads.', [Info.Version, Local]),
+    mtInformation, [mbYes, mbNo], 0) = mrYes then
+    DownloadUpdate(Info);
+end;
+
+procedure TfrmMain.DownloadUpdate(const Info: TReleaseInfo);
+var
+  Release: TReleaseInfo;   // a const parameter cannot be captured
+begin
+  Release := Info;
+  actCheckUpdate.Enabled := False;
+  TThread.CreateAnonymousThread(
+    procedure
+    var
+      Path, Error: string;
+    begin
+      Error := '';
+      try
+        Path := DownloadSetup(Release);
+      except
+        on E: Exception do
+          Error := E.Message;
+      end;
+      TThread.Queue(nil,
+        procedure
+        begin
+          if Application.Terminated then
+            Exit;
+          actCheckUpdate.Enabled := True;
+          if Error <> '' then
+          begin
+            if MessageDlg(Error + sLineBreak + sLineBreak +
+              'Open the release page to download the setup in the browser?',
+              mtError, [mbYes, mbNo], 0) = mrYes then
+              OpenURL(Release.PageURL);
+          end
+          else
+            InstallUpdate(Path, Release.Version);
+        end);
+    end).Start;
+end;
+
+{ The setup cannot replace a running executable, so it runs from FormDestroy
+  once the user has agreed to close. }
+procedure TfrmMain.InstallUpdate(const SetupPath, Version: string);
+begin
+  if MessageDlg(Format('X-Ray Calc %s is downloaded.' + sLineBreak +
+    'Close X-Ray Calc and install it now? Save your work first.', [Version]),
+    mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+    Exit;
+  FPendingSetup := SetupPath;
+  Close;
+end;
+
 procedure TfrmMain.actWikiExecute(Sender: TObject);
 begin
   OpenURL(URL_WIKI);
@@ -1253,7 +1382,9 @@ end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes;
+  // an update the user just agreed to install has asked already
+  CanClose := (FPendingSetup <> '') or
+    (MessageDlg('Exit X-Ray Calc 3?', mtConfirmation, [mbYes, mbNo], 0, mbNO) = mrYes);
 end;
 
 procedure TfrmMain.CreateTmpLock;
@@ -1375,6 +1506,10 @@ begin
   FreeAndNil(Structure);
   FreeAndNil(FChartMgr);
   // TConfig uses class constructor/destructor; no instance to free
+
+  // Setup asks for elevation itself; /CLOSEAPPLICATIONS covers this process's last moments
+  if FPendingSetup <> '' then
+    ShellExecute(0, 'open', PChar(FPendingSetup), '/SILENT /CLOSEAPPLICATIONS', nil, SW_SHOWNORMAL);
 end;
 
 
@@ -1429,6 +1564,9 @@ begin
   end
   else
     FProjectPanel.CreateDefaultProject;
+
+  if TConfig.Section<TOtherOptions>.CheckForUpdates then
+    CheckForUpdate(True);
 end;
 
 

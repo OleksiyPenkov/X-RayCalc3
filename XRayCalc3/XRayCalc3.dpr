@@ -4,6 +4,7 @@ uses
   FastMM5,
   Vcl.Forms,
   unit_CrashReport in 'Units\unit_CrashReport.pas',
+  unit_Updater in 'Units\unit_Updater.pas',
   frm_CrashReport in 'Forms\frm_CrashReport.pas' {frmCrashReport},
   frm_Main in 'Forms\frm_Main.pas' {frmMain},
   frame_CalcSettings in 'Views\frame_CalcSettings.pas' {frmCalcSettings: TFrame},

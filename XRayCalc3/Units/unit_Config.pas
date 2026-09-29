@@ -88,7 +88,7 @@ type
     public
       [DefaultValue(False)]
       property CheckForUpdates : boolean index 0 read getBooleanValue write SetBooleanValue;
-      [DefaultValue('https://raw.githubusercontent.com/OleksiyPenkov/X-RayCalc3/xraycalc3.info')]
+      [DefaultValue('https://api.github.com/repos/OleksiyPenkov/X-RayCalc3/releases/latest')]
       property UpdateInfoURL   : string index 1 read getStringValue write SetStringValue;
       [DefaultValue(True)]
       property AutoCalc : boolean index 2 read getBooleanValue write SetBooleanValue;

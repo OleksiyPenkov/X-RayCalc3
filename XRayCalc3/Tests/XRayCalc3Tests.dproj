@@ -1,7 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
-        <ProjectVersion>20.3</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
@@ -96,6 +95,7 @@
         <DCCReference Include="..\Units\unit_helpers.pas"/>
         <DCCReference Include="..\Units\unit_Config.pas"/>
         <DCCReference Include="..\Units\unit_consts.pas"/>
+        <DCCReference Include="..\Units\unit_Updater.pas"/>
         <DCCReference Include="..\Units\unit_RecentProjects.pas"/>
         <DCCReference Include="TestHenke.pas"/>
         <DCCReference Include="TestCalcPhysics.pas"/>
@@ -149,6 +149,7 @@
         <DCCReference Include="..\..\Shared\Math\unit_AxisLimit.pas"/>
         <DCCReference Include="TestAxisLimit.pas"/>
         <DCCReference Include="TestProjectTreeNodeIO.pas"/>
+        <DCCReference Include="TestUpdater.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
         <DCCReference Include="..\..\Shared\Math\unit_gpu_calc.pas"/>
         <DCCReference Include="..\..\Shared\Math\unit_parratt_ref.pas"/>

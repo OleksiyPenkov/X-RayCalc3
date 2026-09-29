@@ -49,6 +49,7 @@ type
     tsCalc: TTabSheet;
     lbl2: TLabel;
     chkAutoCalcOpen: TCheckBox;
+    chkCheckForUpdates: TCheckBox;
     tsGraphics: TTabSheet;
     lbl3: TLabel;
     chkAutoSaveResults: TCheckBox;
@@ -144,6 +145,7 @@ begin
     chkAutoCalcOpen.Checked    := AutoCalc;
     chkAutoSaveResults.Checked := AutoSave;
     chkLiveUpdate.Checked      := LiveUpdate;
+    chkCheckForUpdates.Checked := CheckForUpdates;
   end;
 
   edHenkeDir.Text        := TConfig.SystemDirS[sdHenke];
@@ -178,6 +180,7 @@ begin
     AutoCalc   := chkAutoCalcOpen.Checked;
     AutoSave   := chkAutoSaveResults.Checked;
     LiveUpdate := chkLiveUpdate.Checked;
+    CheckForUpdates := chkCheckForUpdates.Checked;
   end;
 
   TConfig.SystemDir[sdHenke]       := edHenkeDir.Text;

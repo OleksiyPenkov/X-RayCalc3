@@ -1001,6 +1001,9 @@ object frmMain: TfrmMain
         ImageIndex = 40
         Action = HelpContent
       end
+      object CheckForUpdates1: TMenuItem
+        Action = actCheckUpdate
+      end
       object N15: TMenuItem
         Caption = '-'
       end
@@ -2003,7 +2006,8 @@ object frmMain: TfrmMain
     end
     object actCheckUpdate: TAction
       Category = 'Help'
-      Caption = 'Check for'#13#10'Update'
+      Caption = 'Check for updates...'
+      OnExecute = actCheckUpdateExecute
     end
     object actWiki: TAction
       Category = 'Help'

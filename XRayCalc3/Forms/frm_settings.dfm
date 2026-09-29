@@ -358,6 +358,19 @@ object frmSettings: TfrmSettings
           ParentColor = False
           TabOrder = 3
         end
+        object chkCheckForUpdates: TCheckBox
+          AlignWithMargins = True
+          Left = 9
+          Top = 91
+          Width = 425
+          Height = 17
+          Margins.Left = 9
+          Align = alTop
+          Caption = 'Check for updates at startup'
+          Color = clBtnFace
+          ParentColor = False
+          TabOrder = 0
+        end
       end
     end
     object tsInterface: TTabSheet

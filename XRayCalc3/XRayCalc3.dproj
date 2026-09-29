@@ -178,6 +178,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="Units\unit_CrashReport.pas"/>
+        <DCCReference Include="Units\unit_Updater.pas"/>
         <DCCReference Include="Forms\frm_CrashReport.pas">
             <Form>frmCrashReport</Form>
         </DCCReference>
