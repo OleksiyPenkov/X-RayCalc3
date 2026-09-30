@@ -687,7 +687,6 @@ begin
       var
         M: TLayeredModel;
         L: TCalcLayers;
-        k, Base: Integer;
       begin
         if Err <> nil then Exit;
         try
@@ -702,14 +701,7 @@ begin
           if Length(L) <> NLay then
             raise EGpuError.CreateFmt('particle %d expands to %d layers, not %d',
               [particleIndex, Length(L), NLay]);
-          Base := 4 * NLay * particleIndex;
-          for k := 0 to NLay - 1 do
-          begin
-            FGpuLayers[Base + 4 * k]     := L[k].e.Re;
-            FGpuLayers[Base + 4 * k + 1] := L[k].e.Im;
-            FGpuLayers[Base + 4 * k + 2] := L[k].L;
-            FGpuLayers[Base + 4 * k + 3] := L[k].s;
-          end;
+          PackModelLayers(L, FGpuLayers, particleIndex);   // delta first, as the kernel reads it
         except
           KeepFirstError(Err);
         end;
