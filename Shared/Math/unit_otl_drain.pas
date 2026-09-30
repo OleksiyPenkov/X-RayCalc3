@@ -25,7 +25,8 @@ unit unit_otl_drain;
      messages can arrive after the last drain. Once the thread is gone so is
      its window: the pool worker's PostMessage fails with EOSError (invalid
      window handle), which kills the worker, and the task control is never
-     freed. A thread started and ended 1800 times grew the process by 1.6 GB. *)
+     freed. A thread started and ended 1800 times grew the process by up to
+     1.6 GB. *)
 
 interface
 
@@ -34,27 +35,28 @@ interface
 procedure DrainThreadMessages;
 
 /// <summary>Call last in the Execute of a thread that ran Parallel loops:
-/// drains until OTL's pool has no task queued or running (so every task has
-/// posted its "terminated" message), then once more. Returns at once on a
-/// thread that never called DrainThreadMessages.</summary>
+/// pumps until OTL has freed every task control this thread created (the
+/// thread's task monitor window is gone), for at most 10 s.</summary>
 procedure DrainParallelTasksBeforeExit;
 
 implementation
 
 uses
-  Winapi.Windows, OtlParallel;
+  Winapi.Windows;
 
 const
-  { ponytail: GlobalParallelPool.IsIdle counts every thread's tasks, so a pool
-    kept busy by another thread (or a worker that died and never reported
-    back) holds this thread's exit for up to this long. A per-thread count of
-    outstanding tasks would need OTL to expose one. }
+  { ponytail: relies on OTL 3.08 internals. Unobserved (OtlTaskControl,
+    CreateInternalMonitor) attaches each task control to this thread's
+    TOmniEventMonitor from GTaskControlEventMonitorPool, which ref-counts it
+    per thread (OtlEventMonitor, TOmniCountedEventMonitor) and frees it - and
+    with it its message-only 'DSiUtilWindow' (DSiWin32 DSiAllocateHWnd,
+    CDSiHiddenWindowName) - when the last control is destroyed after its
+    "terminated" message. On an OTL upgrade re-check those three, or this
+    waits the full ceiling at every exit: a backstop, not the mechanism. }
   EXIT_DRAIN_CEILING_MS = 10000;
+  OTL_WINDOW_CLASS = 'DSiUtilWindow';
 
-threadvar
-  RanParallel: Boolean;   // this thread drained after a loop at least once
-
-procedure PumpThreadMessages;
+procedure DrainThreadMessages;
 var
   M: TMsg;
 begin
@@ -65,29 +67,35 @@ begin
   end;
 end;
 
-procedure DrainThreadMessages;
+/// True while this thread still owns an OTL/DSi message-only window, i.e.
+/// some task it created has not had its "terminated" message handled.
+function ThreadHasOtlMonitor: Boolean;
+var
+  W: HWND;
+  Me: DWORD;
 begin
-  RanParallel := True;
-  PumpThreadMessages;
+  Me := GetCurrentThreadId;
+  W := FindWindowEx(HWND_MESSAGE, 0, OTL_WINDOW_CLASS, nil);
+  while W <> 0 do
+  begin
+    if GetWindowThreadProcessId(W, nil) = Me then
+      Exit(True);
+    W := FindWindowEx(HWND_MESSAGE, W, OTL_WINDOW_CLASS, nil);
+  end;
+  Result := False;
 end;
 
 procedure DrainParallelTasksBeforeExit;
 var
   Deadline: UInt64;
 begin
-  { Without a loop on this thread there is nothing to wait for, and
-    GlobalParallelPool would create the pool just to ask. }
-  if not RanParallel then
-    Exit;
   Deadline := GetTickCount64 + EXIT_DRAIN_CEILING_MS;
-  { IsIdle turns true only after the pool's manager has seen each work item
-    complete, and a task posts "terminated" before its work item completes. }
-  while not GlobalParallelPool.IsIdle and (GetTickCount64 < Deadline) do
+  DrainThreadMessages;
+  while ThreadHasOtlMonitor and (GetTickCount64 < Deadline) do
   begin
-    PumpThreadMessages;
     Sleep(1);
+    DrainThreadMessages;
   end;
-  PumpThreadMessages;
 end;
 
 end.

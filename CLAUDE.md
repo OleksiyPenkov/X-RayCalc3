@@ -142,7 +142,8 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   creating thread's messages, ~12 MB per loop otherwise. And such a thread must end its `Execute` with
   `DrainParallelTasksBeforeExit` (in a `finally`), as `TJobWorker`, `TFittingThread` and `TSamplingThread`
   do: tasks post after the loop returns, and a message that reaches a thread already gone kills the pool
-  worker (EOSError) and leaks the control. It waits for `GlobalParallelPool.IsIdle`, at most 10 s.
+  worker (EOSError) and leaks the control. It pumps until the thread owns no OTL `DSiUtilWindow` (its
+  task monitor, freed with the last task control; OTL 3.08 internals, re-check on upgrade), at most 10 s.
 - **Third-party**: RaizeComponents, VirtualTrees, Abbrevia, SynEdit
 
 ## Code Conventions
