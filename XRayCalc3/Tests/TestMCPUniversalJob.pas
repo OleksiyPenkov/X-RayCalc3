@@ -40,12 +40,19 @@ type
     { checkpoint_every = 0 means no periodic checkpoint; until 3.9.3 it
       divided by zero after the first iteration. }
     [Test] procedure CheckpointEveryZero_RunsToTheEnd;
+    { Parallel.For on the job thread, which pumps no messages: OTL frees each
+      task's control only when this thread handles its "terminated" message,
+      so every iteration that skips the drain keeps ~12 MB for good. Win32 ran
+      out of address space in a full test run, and OTL turned that
+      EOutOfMemory into a hang in TOmniParallelSimpleLoop.Destroy. }
+    [Test] procedure LongRun_OnTheJobThread_GivesItsMemoryBack;
   end;
 
 implementation
 
 uses
   System.IOUtils, System.Math, System.Diagnostics, System.Zip,
+  Winapi.Windows, Winapi.PsAPI,
   unit_Config,
   unit_MCPUniversal;
 
@@ -336,6 +343,39 @@ begin
   finally
     R.Free;
   end;
+end;
+
+function PrivateBytes: Int64;
+var
+  C: TProcessMemoryCountersEx;
+begin
+  C.cb := SizeOf(C);
+  Win32Check(GetProcessMemoryInfo(GetCurrentProcess, PPROCESS_MEMORY_COUNTERS(@C), SizeOf(C)));
+  Result := C.PrivateUsage;
+end;
+
+procedure TTestMCPUniversalJob.LongRun_OnTheJobThread_GivesItsMemoryBack;
+const
+  ITERATIONS = 40;              // ~490 MB kept without the drain, about 0 with it
+  ALLOWED = 100 * 1024 * 1024;
+var
+  Before, Grown: Int64;
+  R: TJSONObject;
+  Dir: string;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables W/Mo/Si/B4C/Sc not found in ' + HenkePath +
+      ' - test skipped');
+    Exit;
+  end;
+  Before := PrivateBytes;
+  R := RunConfig(TinyConfig(20, ITERATIONS), Dir);
+  R.Free;
+  Grown := PrivateBytes - Before;
+  Assert.IsTrue(Grown < ALLOWED, Format(
+    'a %d-iteration run kept %d MB after its job thread ended',
+    [ITERATIONS, Grown div (1024 * 1024)]));
 end;
 
 { ------------------------------------------------------------ determinism -- }
