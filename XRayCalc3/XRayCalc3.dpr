@@ -25,6 +25,7 @@ uses
   unit_SMessages in 'Components\unit_SMessages.pas',
   editor_Stack in 'Components\editor_Stack.pas' {edtrStack},
   unit_calc in '..\Shared\Math\unit_calc.pas',
+  unit_otl_drain in '..\Shared\Math\unit_otl_drain.pas',
   unit_gpu_calc in '..\Shared\Math\unit_gpu_calc.pas',
   unit_parratt_ref in '..\Shared\Math\unit_parratt_ref.pas',
   unit_materials in '..\Shared\Math\unit_materials.pas',

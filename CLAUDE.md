@@ -137,9 +137,12 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   tests, the GUI and XRC_MCP alike. The patches use `UnregisterWaitEx(h, INVALID_HANDLE_VALUE)` and hold
   `FAwaitedLock` while registering. Keep them when moving to a newer OTL unless upstream has fixed it;
   after changing the clone, rebuild the IDE packages and every project.
-  Any thread that runs `Parallel.For` and pumps no messages must drain them (PeekMessage loop, as
-  `TLFPSO_BASE.EvaluateOnCpu` and `TUniversalOptimizer.EvaluatePopulation` do): OTL frees a task's
-  control only from the creating thread's messages, ~12 MB per loop otherwise.
+  Any thread that runs `Parallel.For` and pumps no messages must call `DrainThreadMessages`
+  (`Shared/Math/unit_otl_drain.pas`) after every loop: OTL frees a task's control only from the
+  creating thread's messages, ~12 MB per loop otherwise. And such a thread must end its `Execute` with
+  `DrainParallelTasksBeforeExit` (in a `finally`), as `TJobWorker`, `TFittingThread` and `TSamplingThread`
+  do: tasks post after the loop returns, and a message that reaches a thread already gone kills the pool
+  worker (EOSError) and leaks the control. It waits for `GlobalParallelPool.IsIdle`, at most 10 s.
 - **Third-party**: RaizeComponents, VirtualTrees, Abbrevia, SynEdit
 
 ## Code Conventions

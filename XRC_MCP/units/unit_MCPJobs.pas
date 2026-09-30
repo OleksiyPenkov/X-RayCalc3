@@ -248,7 +248,7 @@ var
 implementation
 
 uses
-  Winapi.Windows, System.IOUtils, unit_MCPErrors, unit_MCPJournal;
+  Winapi.Windows, System.IOUtils, unit_MCPErrors, unit_MCPJournal, unit_otl_drain;
 
 function JobStateName(S: TJobState): string;
 begin
@@ -669,29 +669,33 @@ var
   Job: TJob;
 begin
   NameThreadForDebugging('XRC_MCP jobs');
-  while not Terminated do
-  begin
-    Job := nil;
-    { RunJob catches everything the body can raise, so nothing should reach
-      here - but "should" is not a guarantee, and there is exactly one worker:
-      an exception escaping this loop would end the thread and every job
-      submitted afterwards would sit in the queue for ever. The guard is what
-      keeps the queue alive. }
-    try
-      Job := FManager.TakeNext;
-      if Job = nil then
-      begin
-        // A timed wait rather than an infinite one: the event is signalled by
-        // both Submit and the destructor, and a bounded wait means a missed
-        // signal costs a quarter of a second, not a hung shutdown.
-        FManager.FWake.WaitFor(250);
-        Continue;
+  try
+    while not Terminated do
+    begin
+      Job := nil;
+      { RunJob catches everything the body can raise, so nothing should reach
+        here - but "should" is not a guarantee, and there is exactly one worker:
+        an exception escaping this loop would end the thread and every job
+        submitted afterwards would sit in the queue for ever. The guard is what
+        keeps the queue alive. }
+      try
+        Job := FManager.TakeNext;
+        if Job = nil then
+        begin
+          // A timed wait rather than an infinite one: the event is signalled by
+          // both Submit and the destructor, and a bounded wait means a missed
+          // signal costs a quarter of a second, not a hung shutdown.
+          FManager.FWake.WaitFor(250);
+          Continue;
+        end;
+        FManager.RunJob(Job);
+      except
+        on E: Exception do
+          FManager.AbandonJob(Job, E);
       end;
-      FManager.RunJob(Job);
-    except
-      on E: Exception do
-        FManager.AbandonJob(Job, E);
     end;
+  finally
+    DrainParallelTasksBeforeExit;   // the last job's OTL tasks, before the window goes
   end;
 end;
 

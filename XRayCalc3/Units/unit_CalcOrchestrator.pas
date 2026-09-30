@@ -1,4 +1,4 @@
-﻿(* *****************************************************************************
+(* *****************************************************************************
   *
   *   X-Ray Calc 3
   *
@@ -144,7 +144,11 @@ type
 procedure TFittingThread.Execute;
 begin
   try
-    FLFPSO.Run(FCalcParams);
+    try
+      FLFPSO.Run(FCalcParams);
+    finally
+      DrainParallelTasksBeforeExit;   // before the thread's window goes (unit_otl_drain)
+    end;
   finally
     PostMessage(Application.MainFormHandle, WM_FIT_COMPLETE, 0, 0);
   end;

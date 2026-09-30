@@ -133,6 +133,7 @@
         <DCCReference Include="..\XRayCalc3\Units\unit_Config.pas"/>
         <DCCReference Include="..\Shared\Math\unit_materials.pas"/>
         <DCCReference Include="..\Shared\Math\unit_calc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_otl_drain.pas"/>
         <DCCReference Include="..\Shared\Math\unit_gpu_calc.pas"/>
         <DCCReference Include="..\Shared\Math\unit_parratt_ref.pas"/>
         <DCCReference Include="units\unit_MCPStructure.pas"/>

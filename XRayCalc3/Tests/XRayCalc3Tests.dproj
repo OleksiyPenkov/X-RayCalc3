@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
         <ProjectVersion>20.3</ProjectVersion>
@@ -126,6 +126,7 @@
         <DCCReference Include="TestMCPJobs.pas"/>
         <DCCReference Include="..\..\Shared\Universal\unit_universal_pso.pas"/>
         <DCCReference Include="..\..\Shared\Universal\unit_universal_optimizer.pas"/>
+        <DCCReference Include="..\..\Shared\Math\unit_otl_drain.pas"/>
         <DCCReference Include="TestMCPUniversalJob.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPInbox.pas"/>
         <DCCReference Include="..\..\Shared\Universal\unit_xrdml.pas"/>

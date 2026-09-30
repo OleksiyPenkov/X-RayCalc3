@@ -91,7 +91,7 @@ type
 implementation
 
 uses
-  Winapi.Windows, System.Diagnostics, OtlParallel;
+  Winapi.Windows, System.Diagnostics, OtlParallel, unit_otl_drain;
 
 { TUniversalOptimizer }
 
@@ -109,8 +109,6 @@ begin
 end;
 
 procedure TUniversalOptimizer.EvaluatePopulation;
-var
-  ThreadMsg: TMsg;
 begin
   Parallel.&For(0, FPSO.ParticleCount - 1)
     .NumTasks(TThread.ProcessorCount)
@@ -125,12 +123,8 @@ begin
   { OTL frees each task's control (~400 KB) only when this thread handles the
     task's "terminated" message. The XRC_MCP job thread and xrccmd pump no
     messages, so without this drain every iteration kept ~12 MB for good and a
-    Win32 run ran out of address space. Same drain as TLFPSO_BASE.EvaluateOnCpu. }
-  while PeekMessage(ThreadMsg, 0, 0, 0, PM_REMOVE) do
-  begin
-    TranslateMessage(ThreadMsg);
-    DispatchMessage(ThreadMsg);
-  end;
+    Win32 run ran out of address space. See unit_otl_drain. }
+  DrainThreadMessages;
 end;
 
 function TUniversalOptimizer.BuildIterationData(Iteration: Integer;

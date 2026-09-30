@@ -220,6 +220,7 @@
             <Form>edtrStack</Form>
         </DCCReference>
         <DCCReference Include="..\Shared\Math\unit_calc.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_otl_drain.pas"/>
         <DCCReference Include="..\Shared\Math\unit_gpu_calc.pas"/>
         <DCCReference Include="..\Shared\Math\unit_parratt_ref.pas"/>
         <DCCReference Include="..\Shared\Math\unit_materials.pas"/>

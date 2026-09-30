@@ -157,6 +157,7 @@
         <DCCReference Include="..\Shared\Universal\unit_universal_pso.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_io.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_optimizer.pas"/>
+        <DCCReference Include="..\Shared\Math\unit_otl_drain.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_universal_templates.pas"/>
         <DCCReference Include="..\Shared\Universal\unit_xrfx_package.pas"/>
         <DCCReference Include="..\Shared\Math\unit_materials_mix.pas"/>

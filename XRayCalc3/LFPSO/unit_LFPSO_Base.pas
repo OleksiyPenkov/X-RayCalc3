@@ -219,6 +219,7 @@ uses
   System.SyncObjs,
   Neslib.FastMath,
   OtlParallel,
+  unit_otl_drain,
   unit_Config,
   unit_sys_helpers;
 
@@ -590,7 +591,6 @@ procedure TLFPSO_BASE.EvaluateOnCpu(out BestIdx: Integer);
 var
   i: integer;
   WorkerBests: array of TWorkerBest;
-  ThreadMsg: TMsg;
   Err: Pointer;
 begin
   Err := nil;
@@ -631,11 +631,7 @@ begin
     end);
 
   // Drain OTL task-completion messages from this thread's queue
-  while PeekMessage(ThreadMsg, 0, 0, 0, PM_REMOVE) do
-  begin
-    TranslateMessage(ThreadMsg);
-    DispatchMessage(ThreadMsg);
-  end;
+  DrainThreadMessages;
   RaiseKept(Err);
 
   // Sequential reduction — merge per-worker results
