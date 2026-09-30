@@ -128,6 +128,18 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   iteration 0 and cannot shut down. Win32 is unaffected, so the test suite passes either way.
   Upstream fixed it in commit 220e9d03 ("fixed bad 64-bit pointer casts"), included in 3.08.
   The IDE packages for Studio 37.0 are built from `packages\Delphi 13 Florence`.
+  **Local patch required:** the clone is on branch `xrc-unregisterwaitex` (release-3.08 + two commits,
+  0cc7a66f and f3627653). Stock 3.08 (and upstream master as of 2026-09-30) has two races in `TWaitFor`
+  (`OtlSync.pas`) on its 64+ handle path, which the thread-pool manager takes once it has 60+ workers
+  (back-to-back fits on a 30+-core machine): `UnregisterWaitHandles` uses `UnregisterWait`, which does not
+  wait for a callback in flight, and `RegisterWaitHandles` fills the list a registered callback already
+  reads. Either one kills the process with 0x0EEDFADE (exit 222) or an access violation (139) — in the
+  tests, the GUI and XRC_MCP alike. The patches use `UnregisterWaitEx(h, INVALID_HANDLE_VALUE)` and hold
+  `FAwaitedLock` while registering. Keep them when moving to a newer OTL unless upstream has fixed it;
+  after changing the clone, rebuild the IDE packages and every project.
+  Any thread that runs `Parallel.For` and pumps no messages must drain them (PeekMessage loop, as
+  `TLFPSO_BASE.EvaluateOnCpu` and `TUniversalOptimizer.EvaluatePopulation` do): OTL frees a task's
+  control only from the creating thread's messages, ~12 MB per loop otherwise.
 - **Third-party**: RaizeComponents, VirtualTrees, Abbrevia, SynEdit
 
 ## Code Conventions
