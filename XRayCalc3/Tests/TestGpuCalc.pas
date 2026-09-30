@@ -60,6 +60,13 @@ type
     [Test] procedure Fit_GpuFailsMidRun_FinishesOnTheCpu;
     [Test] procedure Fit_ParticleBuildFails_OnTheGpu_FallsBackToTheCpu;
     [Test] procedure Fit_ParticleBuildFails_OnTheCpu_RaisesInsteadOfHanging;
+
+    [Test] procedure PackModelLayers_MatchesPack;
+
+    [Test] procedure SelfCheck_PassesWithPrecise;
+    [Test] procedure SelfCheck_FallsBackToIeeeStrict;
+    [Test] procedure SelfCheck_BothFail_GpuUnavailable;
+    [Test] procedure DescribeServer_ReportsGpuShaderAndSelfCheck;
   end;
 
 implementation
@@ -71,9 +78,12 @@ uses
   System.SyncObjs,
   System.JSON,
   Winapi.Windows,
+  unit_otl_drain,
   unit_Config,
   unit_LFPSO_Base,
-  unit_LFPSO_Periodic;
+  unit_LFPSO_Periodic,
+  unit_MCPTools,
+  unit_ToolsReference;
 
 const
   HENKE_DB_PATH = 'd:\SoftwareStorage\X-RayCalc3\Henke';
@@ -461,7 +471,7 @@ end;
 
   Task 3 (2026-09-28-precision-followups), first commit: TotalRecursiveRefraction's
   FastExp/FastSinCos replaced with System.Exp/System.Math.SinCos (the author's
-  <= 10% rule on a representative CPU likelihood fit: measured about 9.3%
+  <= 10% rule on a representative CPU fit: measured about 9.3%
   slower, n=11 vs n=15 baseline trials). Measured here (30 cases: 5 roughness
   functions x 2 polarisations x 3 particles): mean moved from 2.54E-5..3.09E-5
   to 7.4E-6..1.02E-5, worst from 5.44E-4..7.04E-4 to 8.7E-5..9.98E-5.
@@ -966,6 +976,7 @@ begin
     on E: Exception do
       FError := E.ClassName + ': ' + E.Message;
   end;
+  DrainParallelTasksBeforeExit;
 end;
 
 { Runs PSO on a thread; False when it has not finished within TimeoutMs (the
@@ -1160,6 +1171,219 @@ begin
     end;
   finally
     Model.Free;
+  end;
+end;
+
+{ Needs no GPU: the shared packing is the test's own Pack, value for value. }
+procedure TTestGpuCalc.PackModelLayers_MatchesPack;
+var
+  Model: TLayeredModel;
+  A, B: TArray<Single>;
+  NLay, i: Integer;
+begin
+  if not HenkeReady then
+    Assert.Pass('Henke tables not installed: ' + HENKE_DB_PATH);
+  Model := TLayeredModel.Create;
+  Model.Init;
+  try
+    FillModel(Model, Jitter(3), 3);
+    Model.Generate(CU_KA);
+    NLay := Length(Model.LayersDirect);
+    SetLength(A, 4 * NLay * 3);
+    SetLength(B, 4 * NLay * 3);
+    Pack(Model, A, 2);
+    PackModelLayers(Model.LayersDirect, B, 2);
+    for i := 0 to High(A) do
+      Assert.AreEqual(A[i], B[i], 'value ' + IntToStr(i));
+  finally
+    Model.Free;
+  end;
+end;
+
+{ ---------------------------------------------------- the GPU self-check -- }
+
+{ ResetShaders forces the whole compile-and-check sequence to run again: the
+  next Available (and this test's own Available call) creates a throwaway
+  evaluator whose Create runs the self-check fresh. On this machine (RTX
+  5080) that must pass with the targeted `precise` qualifiers - asserting
+  ShaderMode = 'precise' holds specifically for this machine/driver; a GPU
+  whose self-check correctly fell back to 'ieee_strict' would fail this
+  exact assertion (see SelfCheck_FallsBackToIeeeStrict for that path,
+  exercised deterministically via FailSelfChecks rather than by relying on
+  a real GPU/driver difference). }
+procedure TTestGpuCalc.SelfCheck_PassesWithPrecise;
+var
+  Name, Err: string;
+begin
+  if not Ready then Exit;
+  TGpuEvaluator.ResetShaders;
+  try
+    Assert.IsTrue(TGpuEvaluator.Available(Name, Err), 'a working GPU must be available: ' + Err);
+    Assert.AreEqual('precise', TGpuEvaluator.ShaderMode, 'shaders compile precise on the first pass');
+    Assert.IsTrue(TGpuEvaluator.SelfCheckError < 1E-4,
+      Format('self-check mean |log10 R/R_ref| %.2e should be under 1E-4 with precise shaders',
+        [TGpuEvaluator.SelfCheckError]));
+  finally
+    TGpuEvaluator.ResetShaders;
+  end;
+end;
+
+{ FailSelfChecks := 1 forces only the first (precise) self-check to fail,
+  whatever it actually measures: Create must then fall back to compiling
+  with D3DCOMPILE_IEEE_STRICTNESS, check again for real, and this time
+  succeed. Runs GpuRawCurve_CloseToDoublePrecision's first case (roughness
+  rfError, polarisation cmS, particle 0) through the now IEEE-strict shaders,
+  to show they still work and not just that Available reports True. }
+procedure TTestGpuCalc.SelfCheck_FallsBackToIeeeStrict;
+var
+  Name, Err: string;
+  Model: TLayeredModel;
+  Data: TDataArray;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Layers, Chi, Raw, Cpu: TArray<Single>;
+  Lay: TCalcLayers;
+  NLay, i: Integer;
+  Ref, d, Mean, AgreeMean: Double;
+begin
+  if not Ready then Exit;
+  TGpuEvaluator.ResetShaders;
+  try
+    TGpuEvaluator.FailSelfChecks := 1;
+    try
+      Assert.IsTrue(TGpuEvaluator.Available(Name, Err),
+        'the IEEE-strict fallback must still give a usable GPU: ' + Err);
+      Assert.AreEqual('ieee_strict', TGpuEvaluator.ShaderMode,
+        'the first (precise) self-check was forced to fail');
+    finally
+      TGpuEvaluator.FailSelfChecks := 0;
+    end;
+
+    Model := TLayeredModel.Create;
+    Model.Init;
+    try
+      Data := MakeData(0, cmS, rfError, 3);
+      Calc := NewCalc(Data, nil, 0, cmS, rfError);
+      G := TGpuEvaluator.Create;
+      try
+        FillModel(Model, 0, 3);
+        Model.Generate(CU_KA);
+        NLay := Length(Model.LayersDirect);
+        G.Setup(Calc.GpuInputs(0), NLay, 1, cmS, rfError, CU_KA, 1, LIMIT);
+        SetLength(Layers, 4 * NLay);
+        Pack(Model, Layers, 0);
+        G.Evaluate(Layers, Chi);
+        Lay := Copy(Model.LayersDirect);
+        Raw := G.RawCurve(0);
+        Cpu := RawOnCpu(Model, Data, cmS, rfError);
+        Mean := 0;
+        AgreeMean := 0;
+        for i := 0 to High(Data) do
+        begin
+          Ref := ParrattDouble(Lay, Data[i].t, False, rfError);
+          d := Abs(System.Math.Log10(Raw[i] / Ref));
+          Mean := Mean + d;
+          AgreeMean := AgreeMean + Abs(System.Math.Log10(Raw[i] / Cpu[i]));
+        end;
+        Mean := Mean / Length(Data);
+        AgreeMean := AgreeMean / Length(Data);
+        Assert.IsTrue(Mean < 1E-4, Format('IEEE-strict GPU mean |log10 R/R_ref| %.2e ' +
+          'should stay close to double precision', [Mean]));
+        Assert.IsTrue(AgreeMean < 2E-4, Format('IEEE-strict GPU/CPU mean disagreement %.2e ' +
+          'should stay small too', [AgreeMean]));
+      finally
+        G.Free;
+        Calc.Free;
+      end;
+    finally
+      Model.Free;
+    end;
+  finally
+    TGpuEvaluator.FailSelfChecks := 0;
+    TGpuEvaluator.ResetShaders;
+  end;
+end;
+
+{ FailSelfChecks := 2 forces both the precise and the IEEE-strict self-checks
+  to fail: Create must raise, Available must report False, and the message
+  must name the self-check so a client (and describe_server's gpu_error) can
+  tell this apart from every other reason a GPU is unavailable. }
+procedure TTestGpuCalc.SelfCheck_BothFail_GpuUnavailable;
+var
+  Name, Err, SecondErr: string;
+  G: TGpuEvaluator;
+begin
+  if not Ready then Exit;
+  TGpuEvaluator.ResetShaders;
+  try
+    TGpuEvaluator.FailSelfChecks := 2;
+    Assert.IsFalse(TGpuEvaluator.Available(Name, Err), 'both self-checks fail: no usable GPU');
+    Assert.Contains(Err, 'self-check', 'the error names the self-check');
+
+    { The double failure is cached for 60 s (FSelfCheckFailMsg/FSelfCheckFailTick,
+      unit_gpu_calc.pas's Create): a second, direct Create within that window
+      must raise at once, with the same message, and must not run the
+      self-check again - FailSelfChecks, already back to 0 after the two
+      consumed above, must stay 0, not go negative from a third decrement. }
+    Assert.AreEqual(0, TGpuEvaluator.FailSelfChecks, 'both self-checks already consumed above');
+    SecondErr := '';
+    try
+      G := TGpuEvaluator.Create;
+      G.Free;
+      Assert.Fail('a second Create within the 60-second cache window should still raise');
+    except
+      on E: Exception do
+        SecondErr := E.Message;
+    end;
+    Assert.AreEqual(Err, SecondErr, 'the cached Create raises the same message as Available''s probe');
+    Assert.AreEqual(0, TGpuEvaluator.FailSelfChecks, 'the cached raise did not run the self-check again');
+  finally
+    TGpuEvaluator.FailSelfChecks := 0;
+    TGpuEvaluator.ResetShaders;
+  end;
+end;
+
+{ describe_server's server section, through the registered tool: when a GPU is
+  available, gpu_shader and gpu_self_check must be there alongside gpu. }
+procedure TTestGpuCalc.DescribeServer_ReportsGpuShaderAndSelfCheck;
+var
+  Name, Err: string;
+  Reg: TToolRegistry;
+  Args, D, Server: TJSONObject;
+  Mode: string;
+  ChkVal, ChkWorst: Double;
+begin
+  if not Ready then Exit;
+  TGpuEvaluator.ResetShaders;
+  try
+    Assert.IsTrue(TGpuEvaluator.Available(Name, Err), 'a working GPU must be available: ' + Err);
+    Reg := TToolRegistry.Create;
+    try
+      RegisterReferenceTools(Reg);
+      Args := TJSONObject.Create;
+      try
+        D := Reg.Execute('describe_server', Args);
+      finally
+        Args.Free;
+      end;
+      try
+        Server := D.GetValue<TJSONObject>('server');
+        Assert.IsNotNull(Server, 'describe_server has "server"');
+        Mode := Server.GetValue<string>('gpu_shader');
+        Assert.IsTrue((Mode = 'precise') or (Mode = 'ieee_strict'),
+          'gpu_shader should be precise or ieee_strict, got ' + Mode);
+        ChkVal := Server.GetValue<Double>('gpu_self_check');
+        Assert.IsTrue(ChkVal >= 0, 'gpu_self_check should be a non-negative number');
+        ChkWorst := Server.GetValue<Double>('gpu_self_check_worst');
+        Assert.IsTrue(ChkWorst >= ChkVal, 'gpu_self_check_worst should be a non-negative number, >= the mean');
+      finally
+        D.Free;
+      end;
+    finally
+      Reg.Free;
+    end;
+  finally
+    TGpuEvaluator.ResetShaders;
   end;
 end;
 
