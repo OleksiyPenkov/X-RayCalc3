@@ -106,8 +106,22 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
 - `unit_gpu_calc.pas` — `TGpuEvaluator`: the LFPSO population's Parratt + convolution + χ² as D3D11 compute
   shaders (HLSL embedded, Win32 and Win64, no extra runtime). `TLFPSO_BASE.UseGPU` opts in; the GUI's
   `TCalcOptions.UseGPU` and `fit_xrr` `optimizer.device` set it. The GPU searches, the CPU rescores the
-  answer (`RescoreBestOnCpu`), so reported χ² equals `TCalc`'s. Keep the cancellation-free
-  `(eps.re - 1) + sin²θ` form in the shader: the naive `eps - sin²t` halves the accuracy.
+  answer (`RescoreBestOnCpu`), so reported χ² equals `TCalc`'s. Since 2026-09-28 both engines carry
+  1 − Re ε (`TCalcLayer.delta`, computed directly from the materials as f₁·c, not recovered from a
+  Single ε near 1) — only the GPU packs it into a layer buffer (its first float); the CPU model carries
+  the same field in `TCalcModelSoA` arrays. The Fresnel term is the cancellation-free `sin²θ − (1 − Re ε)`
+  in both the shader and `TCalc.RefCalc` (the epsilon ratio likewise from δ and β, `unit_calc.EpsRatio`),
+  with the grazing sine in Double on the host (both engines); the universal engine and xrccmd use the
+  same form. The shader's cancellation-free sums are also `precise`: the compiler/driver otherwise
+  reassociates them back into a cancelling form. `TCalc.RefCalc`'s phase term (`System.Exp`/
+  `System.Math.SinCos` in place of `Neslib.FastMath`'s approximations) and `math_complex.SqrtZ`'s square
+  root (`1/System.Sqrt`, exact, in place of `InverseSqrt`) are exact by deliberate choice too — the
+  author accepted CPU fits running ~12 % slower for the accuracy; don't revert either to FastMath.
+  The first `Create` per process self-checks the compiled shaders against the double-precision
+  reference Parratt (`unit_parratt_ref.ParrattRef`) on a fixed W/B4C multilayer, falls back to
+  compiling with `D3DCOMPILE_IEEE_STRICTNESS` if the mean or worst `|log10 R/R_ref|` exceeds
+  `TGpuEvaluator.SelfCheckBound`/`SelfCheckWorstBound` (3E-4, 4E-3) and raises (CPU fallback) if that
+  also fails; `describe_server` reports `gpu_shader`, `gpu_self_check` and `gpu_self_check_worst`.
 - `frm_Main.pas` — Primary window; logic being extracted into orchestrators and frames
 - `XRC_MCP/units/unit_MCPAssess.pas` — the XRR measurement-quality checks, shared by the MCP tool
   `assess_xrr` (handler in `unit_ToolsFiles`) and the GUI's Data - Assess XRR quality (`frm_XRRAssess`).
@@ -143,7 +157,7 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   Any thread that runs `Parallel.For` and pumps no messages must call `DrainThreadMessages`
   (`Shared/Math/unit_otl_drain.pas`) after every loop: OTL frees a task's control only from the
   creating thread's messages, ~12 MB per loop otherwise. And such a thread must end its `Execute` with
-  `DrainParallelTasksBeforeExit` (in a `finally`), as `TJobWorker`, `TFittingThread` and `TSamplingThread`
+  `DrainParallelTasksBeforeExit` (in a `finally`), as `TJobWorker` and `TFittingThread`
   do: tasks post after the loop returns, and a message that reaches a thread already gone kills the pool
   worker (EOSError) and leaks the control. It pumps until the thread owns no OTL `DSiUtilWindow` (its
   task monitor, freed with the last task control; OTL 3.08 internals, re-check on upgrade), at most 10 s.
@@ -152,7 +166,7 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
 ## Code Conventions
 
 - Git commit prefixes: `+` new feature, `*` modification/fix
-- Single `master` branch, remote is internal Gitea
+- Single `master` branch, remote is the lab GitLab (plus GitHub)
 - MVC-inspired: Forms/Views for UI, Units/Math for logic
 - Ongoing refactoring: extracting logic from frm_Main into TCalcOrchestrator, frame_ChartInfo, frame_ProjectPanel
 
