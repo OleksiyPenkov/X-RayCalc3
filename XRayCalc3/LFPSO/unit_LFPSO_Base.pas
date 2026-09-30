@@ -661,7 +661,6 @@ end;
 function TLFPSO_BASE.EvaluateOnGpu(out BestIdx: Integer): Boolean;
 var
   i, NLay: Integer;
-  ThreadMsg: TMsg;
   Err: Pointer;
 begin
   Result := False;
@@ -716,11 +715,7 @@ begin
         end;
       end);
 
-    while PeekMessage(ThreadMsg, 0, 0, 0, PM_REMOVE) do
-    begin
-      TranslateMessage(ThreadMsg);
-      DispatchMessage(ThreadMsg);
-    end;
+    DrainThreadMessages;
     RaiseKept(Err);
 
     FGpu.Evaluate(FGpuLayers, FGpuChi);

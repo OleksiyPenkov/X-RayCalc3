@@ -122,7 +122,8 @@ uses
   unit_Residuals in '..\Units\unit_Residuals.pas',
   TestResiduals in 'TestResiduals.pas',
   unit_ResidualStrip in '..\Units\unit_ResidualStrip.pas',
-  TestResidualStrip in 'TestResidualStrip.pas';
+  TestResidualStrip in 'TestResidualStrip.pas',
+  TestOtlDrain in 'TestOtlDrain.pas';
 
 {$R *.res}
 
