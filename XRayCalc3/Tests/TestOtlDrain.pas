@@ -50,18 +50,20 @@ const
 
 var
   OSErrors: Integer;
+  FirstOSError: string;   // written by the thread that raised the first one only
 
 { Sees every first-chance exception in the process. A Delphi raise carries the
   exception object as its second parameter; the pool worker's failed post is
-  an EOSError. Only counts, never handles. }
+  an EOSError. Only counts (and keeps the first message), never handles. }
 function CountOSErrors(P: PExceptionPointers): Integer; stdcall;
 var
   R: PExceptionRecord;
 begin
   R := P^.ExceptionRecord;
   if (R^.ExceptionCode = DELPHI_EXCEPTION) and (R^.NumberParameters >= 2) and
-     (TObject(R^.ExceptionInformation[1]) is EOSError) then
-    InterlockedIncrement(OSErrors);
+     (TObject(R^.ExceptionInformation[1]) is EOSError) and
+     (InterlockedIncrement(OSErrors) = 1) then
+    FirstOSError := EOSError(R^.ExceptionInformation[1]).Message;
   Result := 0;   // EXCEPTION_CONTINUE_SEARCH
 end;
 
@@ -135,6 +137,7 @@ begin
   RunThreads(10);   // the pool at its working size before the baseline
   Before := PrivateBytes;
   OSErrors := 0;
+  FirstOSError := '';
   Handler := AddVectoredExceptionHandler(1, @CountOSErrors);
   try
     RunThreads(THREADS);
@@ -143,8 +146,8 @@ begin
   end;
   Grown := PrivateBytes - Before;
   Assert.AreEqual(0, OSErrors, Format(
-    '%d task "terminated" messages reached a thread that had already ended',
-    [OSErrors]));
+    '%d task "terminated" messages reached a thread that had already ended (first: %s)',
+    [OSErrors, FirstOSError]));
   Assert.IsTrue(Grown < ALLOWED, Format('%d threads kept %d MB',
     [THREADS, Grown div (1024 * 1024)]));
 end;

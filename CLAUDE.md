@@ -128,8 +128,11 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   iteration 0 and cannot shut down. Win32 is unaffected, so the test suite passes either way.
   Upstream fixed it in commit 220e9d03 ("fixed bad 64-bit pointer casts"), included in 3.08.
   The IDE packages for Studio 37.0 are built from `packages\Delphi 13 Florence`.
-  **Local patch required:** the clone is on branch `xrc-unregisterwaitex` (release-3.08 + two commits,
-  0cc7a66f and f3627653). Stock 3.08 (and upstream master as of 2026-09-30) has two races in `TWaitFor`
+  **Local patch required:** the clone is on branch `xrc-unregisterwaitex` (release-3.08 + three commits,
+  0cc7a66f, f3627653 and 60b128c5). 60b128c5 (`OtlComm.pas`): `ReceiveWait` could dequeue a message and
+  still return False after a spurious wake-up, so a pool worker dropped `MSG_RUN` and a `Parallel.For`
+  waited for ever (a rare full-suite hang, job thread in `TOmniParallelSimpleLoop.InternalExecute`).
+  Stock 3.08 (and upstream master as of 2026-09-30) has two races in `TWaitFor`
   (`OtlSync.pas`) on its 64+ handle path, which the thread-pool manager takes once it has 60+ workers
   (back-to-back fits on a 30+-core machine): `UnregisterWaitHandles` uses `UnregisterWait`, which does not
   wait for a callback in flight, and `RegisterWaitHandles` fills the list a registered callback already
