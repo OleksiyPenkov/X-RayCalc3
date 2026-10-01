@@ -151,7 +151,8 @@ uses
   unit_SampleRun in '..\..\Shared\Bayes\unit_SampleRun.pas',
   TestSampleRun in 'TestSampleRun.pas',
   TestPosteriorModes in 'TestPosteriorModes.pas',
-  TestParamMapModes in 'TestParamMapModes.pas';
+  TestParamMapModes in 'TestParamMapModes.pas',
+  TestTruthGate in 'TestTruthGate.pas';
 
 {$R *.res}
 
