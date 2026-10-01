@@ -58,6 +58,7 @@ var
   M, N, w, i: Integer;
   Mean, Grand, W2, B, S: Double;
   Means: TArray<Double>;
+  Same: Boolean;
 begin
   M := Length(Walkers);
   if M < 2 then
@@ -67,6 +68,24 @@ begin
     N := Min(N, Length(Walkers[w]));
   if N < 2 then
     Exit(NaN);
+  { A value that never moves - a held slot - is the same number everywhere.
+    Decided by comparing the samples, not from the variances: the mean of N
+    equal numbers need not equal them to the last bit, and the ratio of two
+    rounding errors is anything (1.42 for 1E-7 before this check). }
+  Same := True;
+  for w := 0 to M - 1 do
+  begin
+    for i := 0 to N - 1 do
+      if Walkers[w][i] <> Walkers[0][0] then
+      begin
+        Same := False;
+        Break;
+      end;
+    if not Same then
+      Break;
+  end;
+  if Same then
+    Exit(1);
   SetLength(Means, M);
   W2 := 0;
   Grand := 0;
@@ -90,11 +109,7 @@ begin
     B := B + Sqr(Means[w] - Grand);
   B := B / (M - 1);                   // the variance of the walker means
   if W2 <= 0 then
-  begin
-    if B <= 0 then
-      Exit(1);                        // the same constant in every walker
-    Exit(Infinity);
-  end;
+    Exit(Infinity);                   // each walker stands still, at different places
   Result := Sqrt(((N - 1) / N * W2 + B) / W2);
 end;
 

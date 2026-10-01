@@ -91,8 +91,18 @@ type
     procedure AddSlot(const Slot: TParamSlot);
     function PolyValue(const G: TPolyGroup; const Theta: array of Double; Period: Integer): Double;
     function SummaryValue(const S: TFitStructure; const Sm: TStackSummary): Double;
+    { A derived layer and a period slot hold or sample ONE period of a stack;
+      a thickness table or profile gives every period its own. The two do not
+      go together: each raises when the other is already there. }
+    procedure CheckOnePeriod(const Name: string; Stack: Integer);
+    procedure CheckNoPeriod(const Name: string; Stack, P: Integer);
   public
-    constructor Create(const Template: TFitStructure);
+    /// <summary>The map of a copy of Template. Its per-period tables are
+    /// dropped unless KeepTables: a structure fitted periodically may still
+    /// carry a table from an earlier table fit, which the periodic model does
+    /// not read. Pass True for a structure fitted in table mode; AddTable and
+    /// AddProfile then put back the tables they sample.</summary>
+    constructor Create(const Template: TFitStructure; KeepTables: Boolean = False);
     procedure AddParam(const Name: string; Stack, Layer, P: Integer);
     procedure AddPeriod(const Name: string; Stack: Integer; Lower, Upper: Double);
     /// <summary>One slot per period for the value P of a layer of a repeating
@@ -102,9 +112,10 @@ type
     procedure AddTable(const Name: string; Stack, Layer, P: Integer);
     /// <summary>The value P of a layer of a repeating stack as a polynomial in
     /// the period number: slots Name.c0 .. Name.c<order>, starting at C. c0
-    /// keeps the layer's limits; a higher order may move the value across
-    /// twice its range over the stack. The resulting values are reported as
-    /// Name[1] .. Name[N].</summary>
+    /// keeps the layer's limits; the higher orders get bounds wide enough for
+    /// any polynomial that stays inside those limits in every period, which
+    /// Apply checks. The resulting values are reported as Name[1] .. Name[N].
+    /// A coefficient cannot take a prior; a summary of the stack can.</summary>
     procedure AddProfile(const Name: string; Stack, Layer, P: Integer; const C: array of Double);
     /// <summary>Reports Prefix.period_mean, Prefix.total and Prefix.drift of a
     /// repeating stack, last in ReportedNames. SetPrior takes those names.</summary>
@@ -143,10 +154,32 @@ begin
     Result := Result + S.Stacks[Stack].Layers[k].P[1].V;
 end;
 
-constructor TParamMap.Create(const Template: TFitStructure);
+constructor TParamMap.Create(const Template: TFitStructure; KeepTables: Boolean);
+var
+  i, j, p: Integer;
 begin
   inherited Create;
   Template.CopyContent(FTemplate);
+  if not KeepTables then
+    for i := 0 to High(FTemplate.Stacks) do
+      for j := 0 to High(FTemplate.Stacks[i].Layers) do
+        for p := 1 to 3 do
+          FTemplate.Stacks[i].Layers[j].PP[p] := nil;
+end;
+
+/// A thickness of Stack that differs from period to period: a table the
+/// model reads (held or sampled), or a profile.
+function HasThicknessTable(const S: TFitStructure; Stack: Integer): Boolean;
+var
+  k: Integer;
+begin
+  Result := False;
+  if S.Stacks[Stack].N < 2 then
+    Exit;
+  for k := 0 to High(S.Stacks[Stack].Layers) do
+    if not S.Stacks[Stack].Layers[k].P[1].Paired and
+       (Length(S.Stacks[Stack].Layers[k].PP[1]) >= S.Stacks[Stack].N) then
+      Exit(True);
 end;
 
 function TParamMap.GetSlot(i: Integer): TParamSlot;
@@ -194,6 +227,30 @@ begin
   Slot.Upper := V.max;
   Slot.Start := V.V;
   AddSlot(Slot);
+  { One slot is one value in every period: a table kept for this value would
+    be what the model reads, and the slot would move nothing. }
+  FTemplate.Stacks[Stack].Layers[Layer].PP[P] := nil;
+end;
+
+procedure TParamMap.CheckOnePeriod(const Name: string; Stack: Integer);
+begin
+  if HasThicknessTable(FTemplate, Stack) then
+    raise EParamMap.CreateFmt('"%s": the stack has a thickness that differs from period to ' +
+      'period, so its period is not one number', [Name]);
+end;
+
+procedure TParamMap.CheckNoPeriod(const Name: string; Stack, P: Integer);
+var
+  i: Integer;
+begin
+  if P <> 1 then
+    Exit;
+  for i := 0 to High(FDerived) do
+    if FDerived[i].Stack = Stack then
+      raise EParamMap.CreateFmt('"%s": the stack has a derived layer, which needs one period', [Name]);
+  for i := 0 to High(FSlots) do
+    if (FSlots[i].Kind = skPeriod) and (FSlots[i].Stack = Stack) then
+      raise EParamMap.CreateFmt('"%s": the stack has a period slot, which needs one period', [Name]);
 end;
 
 procedure TParamMap.AddPeriod(const Name: string; Stack: Integer; Lower, Upper: Double);
@@ -202,6 +259,7 @@ var
 begin
   if not (Lower < Upper) or (Lower <= 0) then
     raise EParamMap.CreateFmt('"%s": the period range must be 0 < min < max', [Name]);
+  CheckOnePeriod(Name, Stack);
   Slot := Default(TParamSlot);
   Slot.Name := Name;
   Slot.Kind := skPeriod;
@@ -228,6 +286,7 @@ begin
     raise EParamMap.CreateFmt('"%s": a paired parameter has one value, not a table', [Name]);
   if V.min > V.max then
     raise EParamMap.CreateFmt('"%s": the lower bound is above the upper one', [Name]);
+  CheckNoPeriod(Name, Stack, P);
   SetLength(T, N);
   for k := 1 to N do
     T[k - 1] := EnsureRange(FTemplate.Stacks[Stack].Layers[Layer].PeriodValue(P, k, N, True),
@@ -283,6 +342,10 @@ begin
     raise EParamMap.CreateFmt('"%s": a held value is not sampled', [Name]);
   if Length(C) < 2 then
     raise EParamMap.CreateFmt('"%s": a profile needs at least a gradient', [Name]);
+  for j := 0 to High(C) do
+    if IsNan(C[j]) or IsInfinite(C[j]) then
+      raise EParamMap.CreateFmt('"%s": coefficient %d is not a number', [Name, j]);
+  CheckNoPeriod(Name, Stack, P);
 
   G := Default(TPolyGroup);
   G.Name := Name;
@@ -312,7 +375,12 @@ begin
     end
     else
     begin
-      W := Max(2 * (V.max - V.min) / Power(N - 1, j), 2 * Abs(C[j]));
+      { Wide enough for every polynomial of this order that stays inside the
+        limits: by V. A. Markov's theorem its coefficients are largest for the
+        Chebyshev polynomial, whose grow slower than 6^order / 2 on the unit
+        interval. What decides feasibility is the per-period check in Apply;
+        this box only has to contain it. }
+      W := Max((V.max - V.min) * Power(6, High(C)) / Power(N - 1, j), 2 * Abs(C[j]));
       Slot.Lower := -W;
       Slot.Upper := W;
     end;
@@ -372,6 +440,7 @@ begin
   for i := 0 to High(FDerived) do
     if FDerived[i].Stack = Stack then
       raise EParamMap.CreateFmt('Stack %d already has a derived layer', [Stack]);
+  CheckOnePeriod(Name, Stack);
   { The derived thickness follows from the others: it cannot be a slot too. }
   for i := High(FSlots) downto 0 do
     if (FSlots[i].Kind = skParam) and (FSlots[i].Stack = Stack) and

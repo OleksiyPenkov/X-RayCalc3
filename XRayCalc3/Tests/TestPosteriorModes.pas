@@ -30,6 +30,7 @@ type
     [Test] procedure Periodic_CurveUnchangedByAnEmptyTable;
     [Test] procedure Table_GpuScoresAsTheCpu;
     [Test] procedure Profile_CurveEqualsItsTable;
+    [Test] procedure Periodic_StaleFullTable_IsNotRead;
   end;
 
 function Lay(const M: string; H, HMin, HMax, Sigma, Rho: Single; LayerID: Word): TLayerData;
@@ -58,7 +59,7 @@ var
   Data: TDataArray;
 begin
   Data := TWB4CFixture.Angles;
-  Map := TParamMap.Create(S);
+  Map := TParamMap.Create(S, True);
   try
     Map.AddNuisance(Log10(1.2), 0, 1E-7, 0.001, 1);
     Post := TLogPosterior.Create(Map, Data, nil, TWB4CFixture.CalcParams(Data, 0), 1E-9, 10);
@@ -166,7 +167,7 @@ begin
   if not TWB4CFixture.TablesPresent then
     Assert.Pass('Henke tables W, B4C, Si are not installed');
   Data := TWB4CFixture.Angles;
-  Map := TParamMap.Create(Tabled);
+  Map := TParamMap.Create(Tabled, True);
   Post := nil; Joint := nil; Batch := nil;
   try
     Map.AddTable('s0.l0.thickness', 0, 0, 1);
@@ -225,6 +226,39 @@ begin
     Map.Free;
   end;
   AssertSameCurve(CurveOf(Tabled), R, 'a profile is the table of its values');
+end;
+
+{ A periodic map of a structure that still carries a full table from an
+  earlier table fit: the slot's value is the layer's value in every period. }
+procedure TTestPosteriorModes.Periodic_StaleFullTable_IsNotRead;
+var
+  Map: TParamMap;
+  Post: TLogPosterior;
+  Data, R: TDataArray;
+  S: TFitStructure;
+  k: Integer;
+begin
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  S := TWB4CFixture.Structure(6);
+  SetLength(S.Stacks[0].Layers[2].PP[1], 20);
+  for k := 0 to 19 do
+    S.Stacks[0].Layers[2].PP[1][k] := 4;          // stale: the layer's value is 6
+  Data := TWB4CFixture.Angles;
+  Map := TParamMap.Create(S);
+  try
+    Map.AddParam('s0.l2.thickness', 0, 2, 1);
+    Map.AddNuisance(Log10(1.2), 0, 1E-7, 0.001, 1);
+    Post := TLogPosterior.Create(Map, Data, nil, TWB4CFixture.CalcParams(Data, 0), 1E-9, 10);
+    try
+      Assert.IsTrue(Post.EvaluateOnce(Map.StartVector, R).Feasible);
+    finally
+      Post.Free;
+    end;
+  finally
+    Map.Free;
+  end;
+  AssertSameCurve(CurveOf(TWB4CFixture.Structure(6)), R, 'the periodic model does not read a table');
 end;
 
 initialization

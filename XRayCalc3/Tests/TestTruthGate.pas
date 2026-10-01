@@ -249,7 +249,7 @@ end;
 
 function BuildMap(Mode: TMode; const Fitted: TFitStructure; const C: TArray<Double>): TParamMap;
 begin
-  Result := TParamMap.Create(Fitted);
+  Result := TParamMap.Create(Fitted, Mode = gmTable);
   case Mode of
     gmPeriodic: Result.AddParam('s0.l2.thickness', 0, FREE_L, 1);
     gmProfile:  Result.AddProfile('s0.l2.thickness', 0, FREE_L, 1, C);

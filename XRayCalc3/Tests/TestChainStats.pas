@@ -31,6 +31,7 @@ type
     [Test] procedure RHat_WalkersOfOneDistribution_NearOne;
     [Test] procedure RHat_OneWalkerElsewhere_Large;
     [Test] procedure RHat_TooShort_NaN;
+    [Test] procedure RHat_ValueThatNeverMoves_IsOne;
   end;
 
 implementation
@@ -170,6 +171,28 @@ procedure TTestChainStats.RHat_TooShort_NaN;
 begin
   Assert.IsTrue(IsNaN(RHat([[1.0], [2.0]])), 'one step per walker has no within-walker variance');
   Assert.IsTrue(IsNaN(RHat([[1.0, 2.0, 3.0]])), 'one walker has no between-walker variance');
+end;
+
+{ A held nuisance slot (BgMin = BgMax) is the same number in every walker at
+  every step; rounding in the means must not read as disagreement. }
+procedure TTestChainStats.RHat_ValueThatNeverMoves_IsOne;
+const
+  Held: array [0 .. 3] of Double = (1E-7, 0.1, 1 / 3, -6.907755278982137);
+var
+  W: TArray<TArray<Double>>;
+  v, k, i: Integer;
+begin
+  for v := Low(Held) to High(Held) do
+  begin
+    SetLength(W, 32);
+    for k := 0 to 31 do
+    begin
+      SetLength(W[k], 200);
+      for i := 0 to 199 do
+        W[k][i] := Held[v];
+    end;
+    Assert.AreEqual(1.0, RHat(W), 0.0, Format('held at %g', [Held[v]]));
+  end;
 end;
 
 initialization

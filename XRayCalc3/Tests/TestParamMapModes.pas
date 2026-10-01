@@ -43,6 +43,11 @@ type
     [Test] procedure Summary_FollowsATable;
     [Test] procedure Summary_Prior_AddsToThePriorTerm;
     [Test] procedure Summary_SinglePeriodStack_Raises;
+    [Test] procedure Create_DropsTablesUnlessKept;
+    [Test] procedure AddParam_DropsTheValuesTable;
+    [Test] procedure DerivedOrPeriod_WithAThicknessTableOrProfile_Raises;
+    [Test] procedure AddProfile_SecondOrder_BowedProfileIsFeasible;
+    [Test] procedure AddProfile_NonFiniteCoefficient_Raises;
   end;
 
 function Cell5: TFitStructure;
@@ -82,7 +87,7 @@ var
 begin
   S := Cell5;
   S.Stacks[0].Layers[0].PP[1] := [9, 9.5, 10, 10.5, 11];
-  M := TParamMap.Create(S);
+  M := TParamMap.Create(S, True);
   try
     M.AddTable('s0.l0.thickness', 0, 0, 1);
     Assert.AreEqual(5, M.Count);
@@ -124,7 +129,7 @@ var
 begin
   S := Cell5;
   S.Stacks[0].Layers[0].PP[1] := [7, 10, 10, 10, 13];
-  M := TParamMap.Create(S);
+  M := TParamMap.Create(S, True);
   try
     M.AddTable('s0.l0.thickness', 0, 0, 1);
     Assert.AreEqual(8.0, M.Slots[0].Start, 1E-6);
@@ -229,9 +234,9 @@ begin
     Assert.AreEqual(12.0, M.Slots[0].Upper, 1E-6);
     Assert.AreEqual(10.0, M.Slots[0].Start, 1E-6);
     Assert.AreEqual(0.25, M.Slots[1].Start, 1E-6);
-    { the gradient may take the whole range across the N - 1 = 4 steps, twice over }
-    Assert.AreEqual(-2.0, M.Slots[1].Lower, 1E-6);
-    Assert.AreEqual(2.0, M.Slots[1].Upper, 1E-6);
+    { range 4 times 6^order over (N - 1)^j: no polynomial that stays inside the limits is cut off }
+    Assert.AreEqual(-6.0, M.Slots[1].Lower, 1E-6);
+    Assert.AreEqual(6.0, M.Slots[1].Upper, 1E-6);
   finally
     M.Free;
   end;
@@ -446,6 +451,119 @@ begin
   M := TParamMap.Create(S);
   try
     Assert.WillRaise(procedure begin M.AddSummary('s0', 0); end, EParamMap);
+  finally
+    M.Free;
+  end;
+end;
+
+{ A project fitted periodically may still carry a table from an earlier table
+  fit. The periodic model does not read it, so neither may the map's. }
+procedure TTestParamMapModes.Create_DropsTablesUnlessKept;
+var
+  S: TFitStructure;
+  M: TParamMap;
+begin
+  S := Cell5;
+  S.Stacks[0].Layers[0].PP[1] := [9, 9.5, 10, 10.5, 11];
+  M := TParamMap.Create(S);
+  try
+    Assert.AreEqual(0, Length(M.Template.Stacks[0].Layers[0].PP[1]), 'dropped by default');
+  finally
+    M.Free;
+  end;
+  M := TParamMap.Create(S, True);
+  try
+    Assert.AreEqual(5, Length(M.Template.Stacks[0].Layers[0].PP[1]), 'kept on request');
+  finally
+    M.Free;
+  end;
+  Assert.AreEqual(5, Length(S.Stacks[0].Layers[0].PP[1]), 'the caller''s structure is never touched');
+end;
+
+procedure TTestParamMapModes.AddParam_DropsTheValuesTable;
+var
+  S, A: TFitStructure;
+  M: TParamMap;
+  N: TNuisance;
+begin
+  S := Cell5;
+  S.Stacks[0].Layers[0].PP[1] := [9, 9.5, 10, 10.5, 11];
+  M := TParamMap.Create(S, True);
+  try
+    M.AddParam('s0.l0.thickness', 0, 0, 1);
+    M.Template.CopyContent(A);
+    Assert.IsTrue(M.Apply([11], A, N));
+    Assert.AreEqual(11.0, Double(A.Stacks[0].Layers[0].PeriodValue(1, 3, 5, True)), 1E-6,
+      'one slot is one value in every period');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.DerivedOrPeriod_WithAThicknessTableOrProfile_Raises;
+var
+  S: TFitStructure;
+  M: TParamMap;
+begin
+  S := Cell5;
+  S.Stacks[0].Layers[1].P[1].min := 15;
+  S.Stacks[0].Layers[1].P[1].max := 25;
+
+  M := TParamMap.Create(S);
+  try
+    M.AddTable('s0.l0.thickness', 0, 0, 1);
+    Assert.WillRaise(procedure begin M.SetDerived('s0.l1.thickness', 0, 1); end, EParamMap,
+      'the period of a tabled stack is not one number');
+    Assert.WillRaise(procedure begin M.AddPeriod('s0.period', 0, 25, 35); end, EParamMap);
+  finally
+    M.Free;
+  end;
+
+  M := TParamMap.Create(S);
+  try
+    M.SetDerived('s0.l1.thickness', 0, 1);
+    Assert.WillRaise(procedure begin M.AddTable('s0.l0.thickness', 0, 0, 1); end, EParamMap);
+    Assert.WillRaise(procedure begin M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0]); end, EParamMap);
+  finally
+    M.Free;
+  end;
+
+  M := TParamMap.Create(S);
+  try
+    M.AddPeriod('s0.period', 0, 25, 35);
+    Assert.WillRaise(procedure begin M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0]); end, EParamMap);
+  finally
+    M.Free;
+  end;
+end;
+
+{ 8 + 4x - x^2 over x = 0 .. 4 runs 8, 11, 12, 11, 8: inside [8, 12] in every
+  period, with a gradient of the whole range per step. }
+procedure TTestParamMapModes.AddProfile_SecondOrder_BowedProfileIsFeasible;
+var
+  M: TParamMap;
+  S: TFitStructure;
+  N: TNuisance;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0, 0]);
+    M.Template.CopyContent(S);
+    Assert.IsTrue(M.Apply([8, 4, -1], S, N), 'a profile inside the limits is inside the slots');
+    Assert.AreEqual(12.0, Double(S.Stacks[0].Layers[0].PeriodValue(1, 3, 5, True)), 1E-5);
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.AddProfile_NonFiniteCoefficient_Raises;
+var
+  M: TParamMap;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    Assert.WillRaise(procedure begin M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, NaN]); end,
+      EParamMap);
   finally
     M.Free;
   end;
