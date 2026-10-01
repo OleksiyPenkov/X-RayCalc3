@@ -26,6 +26,7 @@ type
     [Test] procedure PeriodicShape_NonPeriodicModel_WritesBackStackByStack;
     [Test] procedure UpdateInterfaceNP_RejectsResultThatIsNotFlattened;
     [Test] procedure UpdateInterfaceNP_TakesTheFlattenedShape;
+    [Test] procedure FromString_RejectedText_LeavesTheStructureUsable;
   end;
 
 implementation
@@ -117,6 +118,43 @@ begin
 
     Assert.AreEqual(300, S.Stacks[2].LayerData[0].P[1].V, 0.001, 'Co thickness');
     Assert.AreEqual('CoO', S.Stacks[1].LayerData[0].Material);
+  finally
+    Host.Free;
+  end;
+end;
+
+{ A model text that cannot be read (an empty model node, a project from a
+  newer version) used to clear the structure first and fail afterwards, leaving
+  Substrate pointing at the freed control: every later FromString - every
+  project opened from then on - freed it a second time (3.9.5.1450). }
+procedure TTestStructureWriteBack.FromString_RejectedText_LeavesTheStructureUsable;
+const
+  BAD: array [0..2] of string = ('', 'not json', '{"Stacks":[]}');
+var
+  Host: TForm;
+  S: TXRCStructure;
+  i: Integer;
+begin
+  Host := TForm.CreateNew(nil);
+  try
+    S := Build(Host);
+    for i := 0 to High(BAD) do
+    begin
+      Assert.WillRaise(
+        procedure begin S.FromString(BAD[i]); end,
+        EArgumentException, BAD[i]);
+      Assert.AreEqual(3, Length(S.Stacks), 'the model in hand is kept');
+      Assert.IsTrue(S.Visible, 'and stays on screen');
+    end;
+    S.FromString(MODEL);
+    Assert.AreEqual('SiO2', S.ToFitStructure.Subs.Material);
+
+    { Clear twice, as File - New followed by a load does when nothing rebuilt
+      the substrate in between. }
+    S.Clear;
+    S.Clear;
+    S.FromString(MODEL);
+    Assert.AreEqual(3, Length(S.Stacks));
   finally
     Host.Free;
   end;

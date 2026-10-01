@@ -260,7 +260,7 @@ begin
      FStacks[i].Free;
   Finalize(FStacks);
 
-  Substrate.Free;
+  FreeAndNil(Substrate);   // a second Clear must not free it again
 end;
 
 
@@ -1002,12 +1002,25 @@ var
   JStstructure: TJSONObject;
   JStacks, JLayers : TJSONArray;
   PS: string;
+  JParsed: TJSONValue;
 
 begin
+  { Checked before Clear: a text that cannot be read must leave the model in
+    hand as it is. Cleared first, the failure left Substrate freed, and the
+    next FromString freed it again. }
+  JParsed := TJSonObject.ParseJSONValue(S);
+  if not (JParsed is TJSONObject) or
+     (TJSONObject(JParsed).Get('Subs') = nil) or
+     not (TJSONObject(JParsed).GetValue('Stacks') is TJSONArray) then
+  begin
+    JParsed.Free;
+    raise EArgumentException.Create('The model text is not a structure: ' +
+      'it needs "Subs" and "Stacks".');
+  end;
+  JStstructure := TJSONObject(JParsed);
+
   Visible := False;
   Clear;
-
-  JStstructure := TJSonObject.ParseJSONValue(S) as TJSonObject;
 
   try
     JSub := JStstructure.Get('Subs').JsonValue;
@@ -1047,9 +1060,8 @@ begin
 
   finally
     FreeAndNil(JStstructure);
+    Visible := True;
   end;
-
-  Visible := True;
 end;
 
 procedure TXRCStructure.GetLayersList(const ID: integer; List: TStrings);
