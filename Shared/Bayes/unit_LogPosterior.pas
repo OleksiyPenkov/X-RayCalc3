@@ -82,8 +82,11 @@ type
     property Last: Integer read FLast;
   end;
 
-/// <summary>The expanded model of S, as TLFPSO_BASE.FillModel builds it from a
-/// particle: every stack repeated N times, then the substrate.</summary>
+/// <summary>The expanded model of S: every stack repeated N times, then the
+/// substrate. A layer value with a per-period table (TLayerData.PeriodValue:
+/// a repeating stack, not paired, the table covering all N periods) takes its
+/// own value in every period, period 1 at the surface; a stack without one is
+/// built as TLFPSO_BASE.FillModel builds it.</summary>
 procedure FillLayeredModel(Model: TLayeredModel; const S: TFitStructure);
 
 implementation
@@ -95,6 +98,7 @@ procedure FillLayeredModel(Model: TLayeredModel; const S: TFitStructure);
 var
   i, j, k, p, StackLen, MaxStackLen: Integer;
   Data: TLayersData;
+  Tabled: Boolean;
 begin
   MaxStackLen := 1;
   for i := 0 to High(S.Stacks) do
@@ -107,16 +111,28 @@ begin
   for i := 0 to High(S.Stacks) do
   begin
     StackLen := Length(S.Stacks[i].Layers);
+    Tabled := False;
     for k := 0 to StackLen - 1 do
     begin
       SetMaterial(Data[k], S.Stacks[i].Layers[k].Material);
       for p := 1 to 3 do
+      begin
         Data[k].P[p].V := S.Stacks[i].Layers[k].P[p].V;
+        if (S.Stacks[i].N > 1) and not S.Stacks[i].Layers[k].P[p].Paired and
+           (Length(S.Stacks[i].Layers[k].PP[p]) >= S.Stacks[i].N) then
+          Tabled := True;
+      end;
       Data[k].StackID := S.Stacks[i].Layers[k].StackID;
       Data[k].LayerID := S.Stacks[i].Layers[k].LayerID;
     end;
     for j := 1 to S.Stacks[i].N do
+    begin
+      if Tabled then
+        for k := 0 to StackLen - 1 do
+          for p := 1 to 3 do
+            Data[k].P[p].V := S.Stacks[i].Layers[k].PeriodValue(p, j, S.Stacks[i].N, True);
       Model.AddLayers(-1, Data, StackLen);
+    end;
   end;
 
   SetMaterial(Data[0], S.Subs.Material);

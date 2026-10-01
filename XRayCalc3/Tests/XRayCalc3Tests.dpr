@@ -147,7 +147,10 @@ uses
   unit_PosteriorBatch in '..\..\Shared\Bayes\unit_PosteriorBatch.pas',
   TestPosteriorBatch in 'TestPosteriorBatch.pas',
   unit_GpuPosterior in '..\..\Shared\Bayes\unit_GpuPosterior.pas',
-  TestGpuPosterior in 'TestGpuPosterior.pas';
+  TestGpuPosterior in 'TestGpuPosterior.pas',
+  unit_SampleRun in '..\..\Shared\Bayes\unit_SampleRun.pas',
+  TestSampleRun in 'TestSampleRun.pas',
+  TestPosteriorModes in 'TestPosteriorModes.pas';
 
 {$R *.res}
 
