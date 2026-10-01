@@ -49,7 +49,7 @@
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-        <DCC_UnitSearchPath>..\..\Shared\Math;..\Units;..\LFPSO;..\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(BDS)\source\DunitX;..\..\Shared\Universal;..\..\XRC_CMD\Units;..\..\XRC_MCP\units;C:\Users\Admin\Documents\Embarcadero\Studio\37.0\CatalogRepository\VirtualTreeview_by_JamSoftware-13\8.3\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\..\Shared\Math;..\..\Shared\Bayes;..\Units;..\LFPSO;..\Components;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(BDS)\source\DunitX;..\..\Shared\Universal;..\..\XRC_CMD\Units;..\..\XRC_MCP\units;C:\Users\Admin\Documents\Embarcadero\Studio\37.0\CatalogRepository\VirtualTreeview_by_JamSoftware-13\8.3\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <SanitizedProjectName>XRayCalc3Tests</SanitizedProjectName>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
@@ -189,6 +189,26 @@
         <DCCReference Include="..\Units\unit_ResidualStrip.pas"/>
         <DCCReference Include="TestResidualStrip.pas"/>
         <DCCReference Include="TestOtlDrain.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_Xoshiro.pas"/>
+        <DCCReference Include="TestXoshiro.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_ChainStats.pas"/>
+        <DCCReference Include="TestChainStats.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_Expression.pas"/>
+        <DCCReference Include="TestExpression.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_StretchSampler.pas"/>
+        <DCCReference Include="TestStretchSampler.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_Likelihood.pas"/>
+        <DCCReference Include="TestLikelihood.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_ParamMap.pas"/>
+        <DCCReference Include="TestParamMap.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_LogPosterior.pas"/>
+        <DCCReference Include="TestLogPosterior.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_JointPosterior.pas"/>
+        <DCCReference Include="TestJointPosterior.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_PosteriorBatch.pas"/>
+        <DCCReference Include="TestPosteriorBatch.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_GpuPosterior.pas"/>
+        <DCCReference Include="TestGpuPosterior.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

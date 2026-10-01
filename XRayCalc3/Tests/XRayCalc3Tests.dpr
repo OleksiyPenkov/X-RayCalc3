@@ -127,7 +127,27 @@ uses
   TestResiduals in 'TestResiduals.pas',
   unit_ResidualStrip in '..\Units\unit_ResidualStrip.pas',
   TestResidualStrip in 'TestResidualStrip.pas',
-  TestOtlDrain in 'TestOtlDrain.pas';
+  TestOtlDrain in 'TestOtlDrain.pas',
+  unit_Xoshiro in '..\..\Shared\Bayes\unit_Xoshiro.pas',
+  TestXoshiro in 'TestXoshiro.pas',
+  unit_ChainStats in '..\..\Shared\Bayes\unit_ChainStats.pas',
+  TestChainStats in 'TestChainStats.pas',
+  unit_Expression in '..\..\Shared\Bayes\unit_Expression.pas',
+  TestExpression in 'TestExpression.pas',
+  unit_StretchSampler in '..\..\Shared\Bayes\unit_StretchSampler.pas',
+  TestStretchSampler in 'TestStretchSampler.pas',
+  unit_Likelihood in '..\..\Shared\Bayes\unit_Likelihood.pas',
+  TestLikelihood in 'TestLikelihood.pas',
+  unit_ParamMap in '..\..\Shared\Bayes\unit_ParamMap.pas',
+  TestParamMap in 'TestParamMap.pas',
+  unit_LogPosterior in '..\..\Shared\Bayes\unit_LogPosterior.pas',
+  TestLogPosterior in 'TestLogPosterior.pas',
+  unit_JointPosterior in '..\..\Shared\Bayes\unit_JointPosterior.pas',
+  TestJointPosterior in 'TestJointPosterior.pas',
+  unit_PosteriorBatch in '..\..\Shared\Bayes\unit_PosteriorBatch.pas',
+  TestPosteriorBatch in 'TestPosteriorBatch.pas',
+  unit_GpuPosterior in '..\..\Shared\Bayes\unit_GpuPosterior.pas',
+  TestGpuPosterior in 'TestGpuPosterior.pas';
 
 {$R *.res}
 

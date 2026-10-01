@@ -211,6 +211,13 @@ type
     names come from the one structure every worker thread shares, and
     reassigning bumps a reference count all of them write to. }
   procedure SetMaterial(var Data: TLayerData; const Name: string); inline;
+  { OTL's Parallel.&For does not hand an exception raised in the loop body
+    back to the caller - the worker never signals completion and the caller
+    waits for ever. Every loop body keeps the first exception with
+    KeepFirstError; the caller raises it with RaiseKept once the loop is
+    over. }
+  procedure KeepFirstError(var Slot: Pointer);
+  procedure RaiseKept(var Slot: Pointer);
 implementation
 
 uses
