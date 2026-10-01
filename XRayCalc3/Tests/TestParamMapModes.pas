@@ -31,6 +31,14 @@ type
     [Test] procedure Apply_TableOutsideLimits_Infeasible;
     [Test] procedure Apply_TableNaN_Infeasible;
     [Test] procedure AddTable_PairedOrSinglePeriod_Raises;
+    [Test] procedure AddProfile_SlotsAndBounds;
+    [Test] procedure Apply_Profile_FillsEveryPeriod;
+    [Test] procedure Apply_ProfileLeavesLimits_Infeasible;
+    [Test] procedure Apply_ProfileStartOutsideLimits_Infeasible;
+    [Test] procedure Apply_ProfileNaN_Infeasible;
+    [Test] procedure AddProfile_BadInput_Raises;
+    [Test] procedure Reported_ProfilePeriods;
+    [Test] procedure SetDerived_AfterAProfile_KeepsItsSlots;
   end;
 
 function Cell5: TFitStructure;
@@ -198,6 +206,166 @@ begin
   try
     Assert.WillRaise(procedure begin M.AddTable('s0.l0.thickness', 0, 0, 1); end, EParamMap,
       'a single period has no table');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.AddProfile_SlotsAndBounds;
+var
+  M: TParamMap;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0.25]);
+    Assert.AreEqual(2, M.Count);
+    Assert.AreEqual('s0.l0.thickness.c0', M.Slots[0].Name);
+    Assert.AreEqual('s0.l0.thickness.c1', M.Slots[1].Name);
+    Assert.AreEqual(8.0, M.Slots[0].Lower, 1E-6);
+    Assert.AreEqual(12.0, M.Slots[0].Upper, 1E-6);
+    Assert.AreEqual(10.0, M.Slots[0].Start, 1E-6);
+    Assert.AreEqual(0.25, M.Slots[1].Start, 1E-6);
+    { the gradient may take the whole range across the N - 1 = 4 steps, twice over }
+    Assert.AreEqual(-2.0, M.Slots[1].Lower, 1E-6);
+    Assert.AreEqual(2.0, M.Slots[1].Upper, 1E-6);
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Apply_Profile_FillsEveryPeriod;
+var
+  M: TParamMap;
+  S: TFitStructure;
+  N: TNuisance;
+  k: Integer;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0.25]);
+    M.Template.CopyContent(S);
+    Assert.IsTrue(M.Apply([9, 0.5], S, N));
+    for k := 1 to 5 do
+      Assert.AreEqual(9 + 0.5 * (k - 1), Double(S.Stacks[0].Layers[0].PeriodValue(1, k, 5, True)), 1E-5);
+    Assert.AreEqual(9.0, Double(S.Stacks[0].Layers[0].P[1].V), 1E-6, 'the layer''s own value is c0');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Apply_ProfileLeavesLimits_Infeasible;
+var
+  M: TParamMap;
+  S: TFitStructure;
+  N: TNuisance;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0.25]);
+    M.Template.CopyContent(S);
+    Assert.IsFalse(M.Apply([11, 0.5], S, N), 'period 5 would be 13 A, above 12');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Apply_ProfileStartOutsideLimits_Infeasible;
+var
+  M: TParamMap;
+  S: TFitStructure;
+  N: TNuisance;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [11, 0.5]);    // a fit that ended outside
+    M.Template.CopyContent(S);
+    Assert.IsFalse(M.Apply(M.StartVector, S, N), 'not clamped: the caller must hear of it');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Apply_ProfileNaN_Infeasible;
+var
+  M: TParamMap;
+  S: TFitStructure;
+  N: TNuisance;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0.25]);
+    M.Template.CopyContent(S);
+    Assert.IsFalse(M.Apply([10, NaN], S, N));
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.AddProfile_BadInput_Raises;
+var
+  S: TFitStructure;
+  M: TParamMap;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    Assert.WillRaise(procedure begin M.AddProfile('s0.l0.thickness', 0, 0, 1, [10]); end,
+      EParamMap, 'a profile needs a gradient');
+    Assert.WillRaise(procedure begin M.AddProfile('s0.l1.thickness', 0, 1, 1, [20, 0]); end,
+      EParamMap, 'a held value is not sampled');
+  finally
+    M.Free;
+  end;
+  S := Cell5;
+  S.Stacks[0].Layers[0].P[1].Paired := True;
+  M := TParamMap.Create(S);
+  try
+    Assert.WillRaise(procedure begin M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0]); end,
+      EParamMap, 'a paired parameter has one value');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Reported_ProfilePeriods;
+var
+  M: TParamMap;
+  Names: TArray<string>;
+  Values: TArray<Double>;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddProfile('s0.l0.thickness', 0, 0, 1, [10, 0.25]);
+    Names := M.ReportedNames;
+    Assert.AreEqual(7, Length(Names), 'two coefficients and five periods');
+    Assert.AreEqual('s0.l0.thickness[1]', Names[2]);
+    Assert.AreEqual('s0.l0.thickness[5]', Names[6]);
+    Assert.IsTrue(M.ReportedValues([9, 0.5], Values));
+    Assert.AreEqual(9.0, Values[2], 1E-5);
+    Assert.AreEqual(11.0, Values[6], 1E-5);
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.SetDerived_AfterAProfile_KeepsItsSlots;
+var
+  S, A: TFitStructure;
+  M: TParamMap;
+  N: TNuisance;
+begin
+  S := Cell5;
+  S.Stacks[0].Layers[0].P[2].min := 1;                         // Cell5 holds sigma; a profile needs a range
+  S.Stacks[0].Layers[0].P[2].max := 5;
+  S.Stacks[0].Layers[1].P[1].min := 15;
+  S.Stacks[0].Layers[1].P[1].max := 25;
+  M := TParamMap.Create(S);
+  try
+    M.AddParam('s0.l1.thickness', 0, 1, 1);                    // slot 0, removed below
+    M.AddProfile('s0.l0.sigma', 0, 0, 2, [3, 0]);              // slots 1, 2 -> 0, 1
+    M.SetDerived('s0.l1.thickness', 0, 1);
+    Assert.AreEqual(2, M.Count);
+    M.Template.CopyContent(A);
+    Assert.IsTrue(M.Apply(M.StartVector, A, N), 'the profile still reads its own two slots');
   finally
     M.Free;
   end;

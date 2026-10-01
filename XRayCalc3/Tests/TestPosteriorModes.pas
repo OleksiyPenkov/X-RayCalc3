@@ -29,6 +29,7 @@ type
     [Test] procedure Table_UnderASinglePeriodCap;
     [Test] procedure Periodic_CurveUnchangedByAnEmptyTable;
     [Test] procedure Table_GpuScoresAsTheCpu;
+    [Test] procedure Profile_CurveEqualsItsTable;
   end;
 
 function Lay(const M: string; H, HMin, HMax, Sigma, Rho: Single; LayerID: Word): TLayerData;
@@ -196,6 +197,34 @@ begin
     Post.Free;
     Map.Free;
   end;
+end;
+
+procedure TTestPosteriorModes.Profile_CurveEqualsItsTable;
+var
+  Map: TParamMap;
+  Post: TLogPosterior;
+  Data, R: TDataArray;
+  S: TFitStructure;
+begin
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  S := Tabled;
+  S.Stacks[0].Layers[0].PP[1] := nil;
+  Data := TWB4CFixture.Angles;
+  Map := TParamMap.Create(S);
+  try
+    Map.AddProfile('s0.l0.thickness', 0, 0, 1, [9, 1]);       // 9, 10, 11: Tabled's table
+    Map.AddNuisance(Log10(1.2), 0, 1E-7, 0.001, 1);
+    Post := TLogPosterior.Create(Map, Data, nil, TWB4CFixture.CalcParams(Data, 0), 1E-9, 10);
+    try
+      Assert.IsTrue(Post.EvaluateOnce(Map.StartVector, R).Feasible);
+    finally
+      Post.Free;
+    end;
+  finally
+    Map.Free;
+  end;
+  AssertSameCurve(CurveOf(Tabled), R, 'a profile is the table of its values');
 end;
 
 initialization

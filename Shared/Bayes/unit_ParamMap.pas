@@ -54,6 +54,16 @@ type
     PriorMean, PriorSD: Double;
   end;
 
+  /// <summary>A polynomial profile: slots First .. First + Count - 1 are its
+  /// coefficients c0 .. c(Count-1); period k of N takes sum c_i (k - 1)^i,
+  /// which must stay inside Lower .. Upper in every period.</summary>
+  TPolyGroup = record
+    Name: string;
+    Stack, Layer, P: Integer;
+    First, Count, N: Integer;
+    Lower, Upper: Double;
+  end;
+
   EParamMap = class(Exception);
 
   TParamMap = class
@@ -61,9 +71,11 @@ type
     FTemplate: TFitStructure;
     FSlots: TArray<TParamSlot>;
     FDerived: TArray<TDerivedLayer>;
+    FPoly: TArray<TPolyGroup>;
     FFMin: Double;
     function GetSlot(i: Integer): TParamSlot;
     procedure AddSlot(const Slot: TParamSlot);
+    function PolyValue(const G: TPolyGroup; const Theta: array of Double; Period: Integer): Double;
   public
     constructor Create(const Template: TFitStructure);
     procedure AddParam(const Name: string; Stack, Layer, P: Integer);
@@ -73,6 +85,12 @@ type
     /// its table entry (the layer's own value when the table is missing or
     /// shorter than N), moved into the layer's limits.</summary>
     procedure AddTable(const Name: string; Stack, Layer, P: Integer);
+    /// <summary>The value P of a layer of a repeating stack as a polynomial in
+    /// the period number: slots Name.c0 .. Name.c<order>, starting at C. c0
+    /// keeps the layer's limits; a higher order may move the value across
+    /// twice its range over the stack. The resulting values are reported as
+    /// Name[1] .. Name[N].</summary>
+    procedure AddProfile(const Name: string; Stack, Layer, P: Integer; const C: array of Double);
     procedure SetDerived(const Name: string; Stack, Layer: Integer);
     procedure AddNuisance(ScaleWindowLog, BgMin, BgMax, FMin, FMax: Double);
     procedure SetPrior(const Name: string; Mean, SD: Double);
@@ -213,9 +231,82 @@ begin
   end;
 end;
 
+function TParamMap.PolyValue(const G: TPolyGroup; const Theta: array of Double; Period: Integer): Double;
+var
+  j: Integer;
+  Pw: Double;
+begin
+  { math_globals.Poly's polynomial, here in Double and without that unit's
+    VCL baggage: sum c_j (Period - 1)^j. }
+  Result := 0;
+  Pw := 1;
+  for j := 0 to G.Count - 1 do
+  begin
+    Result := Result + Theta[G.First + j] * Pw;
+    Pw := Pw * (Period - 1);
+  end;
+end;
+
+procedure TParamMap.AddProfile(const Name: string; Stack, Layer, P: Integer; const C: array of Double);
+var
+  Slot: TParamSlot;
+  V: TFitValue;
+  G: TPolyGroup;
+  j, N: Integer;
+  W: Double;
+begin
+  V := FTemplate.Stacks[Stack].Layers[Layer].P[P];
+  N := FTemplate.Stacks[Stack].N;
+  if N < 2 then
+    raise EParamMap.CreateFmt('"%s": a profile needs a repeating stack', [Name]);
+  if V.Paired then
+    raise EParamMap.CreateFmt('"%s": a paired parameter has one value, not a profile', [Name]);
+  if not (V.min < V.max) then
+    raise EParamMap.CreateFmt('"%s": a held value is not sampled', [Name]);
+  if Length(C) < 2 then
+    raise EParamMap.CreateFmt('"%s": a profile needs at least a gradient', [Name]);
+
+  G := Default(TPolyGroup);
+  G.Name := Name;
+  G.Stack := Stack;
+  G.Layer := Layer;
+  G.P := P;
+  G.First := Length(FSlots);
+  G.Count := Length(C);
+  G.N := N;
+  G.Lower := V.min;
+  G.Upper := V.max;
+
+  for j := 0 to High(C) do
+  begin
+    Slot := Default(TParamSlot);
+    Slot.Name := Format('%s.c%d', [Name, j]);
+    Slot.Kind := skPoly;
+    Slot.Stack := Stack;
+    Slot.Layer := Layer;
+    Slot.P := P;
+    Slot.Period := j;
+    Slot.Start := C[j];
+    if j = 0 then
+    begin
+      Slot.Lower := V.min;
+      Slot.Upper := V.max;
+    end
+    else
+    begin
+      W := Max(2 * (V.max - V.min) / Power(N - 1, j), 2 * Abs(C[j]));
+      Slot.Lower := -W;
+      Slot.Upper := W;
+    end;
+    AddSlot(Slot);
+  end;
+  SetLength(FTemplate.Stacks[Stack].Layers[Layer].PP[P], N);
+  FPoly := FPoly + [G];
+end;
+
 procedure TParamMap.SetDerived(const Name: string; Stack, Layer: Integer);
 var
-  i: Integer;
+  i, j: Integer;
   D: TDerivedLayer;
 begin
   for i := 0 to High(FDerived) do
@@ -225,7 +316,12 @@ begin
   for i := High(FSlots) downto 0 do
     if (FSlots[i].Kind = skParam) and (FSlots[i].Stack = Stack) and
        (FSlots[i].Layer = Layer) and (FSlots[i].P = 1) then
+    begin
       Delete(FSlots, i, 1);
+      for j := 0 to High(FPoly) do
+        if FPoly[j].First > i then
+          Dec(FPoly[j].First);
+    end;
   D := Default(TDerivedLayer);
   D.Name := Name;
   D.Stack := Stack;
@@ -310,7 +406,7 @@ end;
 function TParamMap.Apply(const Theta: array of Double; var S: TFitStructure;
   out Nuis: TNuisance): Boolean;
 var
-  i, j, k: Integer;
+  i, j, k, g: Integer;
   D: TArray<Double>;
   Period, Sum, H: Double;
 begin
@@ -346,6 +442,19 @@ begin
     end;
   end;
 
+  for g := 0 to High(FPoly) do
+  begin
+    for k := 1 to FPoly[g].N do
+    begin
+      H := PolyValue(FPoly[g], Theta, k);
+      { Positive form: NaN is outside. }
+      if not ((H >= FPoly[g].Lower) and (H <= FPoly[g].Upper)) then
+        Exit;
+      S.Stacks[FPoly[g].Stack].Layers[FPoly[g].Layer].PP[FPoly[g].P][k - 1] := H;
+    end;
+    S.Stacks[FPoly[g].Stack].Layers[FPoly[g].Layer].P[FPoly[g].P].V := Theta[FPoly[g].First];
+  end;
+
   for j := 0 to High(FDerived) do
   begin
     if D[FDerived[j].Stack] < 0 then
@@ -366,7 +475,7 @@ end;
 
 function TParamMap.ReportedNames: TArray<string>;
 var
-  i, IdxScale, IdxF: Integer;
+  i, k, IdxScale, IdxF: Integer;
 begin
   SetLength(Result, Length(FSlots));
   for i := 0 to High(FSlots) do
@@ -377,13 +486,16 @@ begin
     Result := Result + ['c0.scale', 'c0.f'];
   for i := 0 to High(FDerived) do
     Result := Result + [FDerived[i].Name];
+  for i := 0 to High(FPoly) do
+    for k := 1 to FPoly[i].N do
+      Result := Result + [Format('%s[%d]', [FPoly[i].Name, k])];
 end;
 
 function TParamMap.ReportedValues(const Theta: array of Double; out Values: TArray<Double>): Boolean;
 var
   S: TFitStructure;
   Nuis: TNuisance;
-  i, n, IdxScale, IdxF: Integer;
+  i, k, n, IdxScale, IdxF: Integer;
 begin
   Values := nil;
   FTemplate.CopyContent(S);
@@ -391,7 +503,10 @@ begin
     Exit(False);
   IdxScale := IndexOf('c0.log10_scale');
   IdxF := IndexOf('c0.ln_f');
-  SetLength(Values, Length(FSlots) + Ord((IdxScale >= 0) and (IdxF >= 0)) * 2 + Length(FDerived));
+  n := Length(FSlots) + Ord((IdxScale >= 0) and (IdxF >= 0)) * 2 + Length(FDerived);
+  for i := 0 to High(FPoly) do
+    Inc(n, FPoly[i].N);
+  SetLength(Values, n);
   for i := 0 to High(FSlots) do
     Values[i] := Theta[i];
   n := Length(FSlots);
@@ -403,8 +518,15 @@ begin
   end;
   for i := 0 to High(FDerived) do
   begin
-    Values[n + i] := S.Stacks[FDerived[i].Stack].Layers[FDerived[i].Layer].P[1].V;
+    Values[n] := S.Stacks[FDerived[i].Stack].Layers[FDerived[i].Layer].P[1].V;
+    Inc(n);
   end;
+  for i := 0 to High(FPoly) do
+    for k := 1 to FPoly[i].N do
+    begin
+      Values[n] := S.Stacks[FPoly[i].Stack].Layers[FPoly[i].Layer].PP[FPoly[i].P][k - 1];
+      Inc(n);
+    end;
   Result := True;
 end;
 
