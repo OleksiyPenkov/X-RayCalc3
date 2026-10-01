@@ -53,7 +53,9 @@ type
 
   TTally = record
     Trials, In68, In95: Integer;
-    procedure Add(const R: TSampleResult; const Name: string; Truth: Double; var Log: string);
+    WorstRHat: Double;
+    procedure Add(Run: TSampleRun; const R: TSampleResult; const Name: string; Truth: Double;
+      var Log: string);
     function F68: Double;
     function F95: Double;
   end;
@@ -69,13 +71,65 @@ begin
     Line + sLineBreak);
 end;
 
-procedure TTally.Add(const R: TSampleResult; const Name: string; Truth: Double; var Log: string);
+{ Gelman-Rubin over the walkers for reported value k: the pooled variance
+  estimate over the mean within-walker variance, as a ratio of standard
+  deviations. Near 1 when the walkers sample one distribution; far above it
+  when they sit in different places (walkers left behind in a second optimum).
+  An ensemble's walkers are not independent chains, so this flags a split
+  chain, not fine mixing. }
+function RHat(Run: TSampleRun; k: Integer): Double;
+var
+  Walkers, w, i: Integer;
+  N: TArray<Integer>;
+  Mean, Sq: TArray<Double>;
+  Grand, B, WVar, PerWalker: Double;
+begin
+  Walkers := Run.Sampler.Walkers;
+  SetLength(N, Walkers);
+  SetLength(Mean, Walkers);
+  SetLength(Sq, Walkers);
+  for i := 0 to Run.Rows.Count - 1 do
+  begin
+    w := Run.Rows[i].Walker;
+    Inc(N[w]);
+    Mean[w] := Mean[w] + Run.Rows[i].Values[k];
+    Sq[w] := Sq[w] + Sqr(Run.Rows[i].Values[k]);
+  end;
+  PerWalker := N[0];
+  if PerWalker < 2 then
+    Exit(NaN);
+  Grand := 0;
+  WVar := 0;
+  for w := 0 to Walkers - 1 do
+  begin
+    Mean[w] := Mean[w] / PerWalker;
+    WVar := WVar + (Sq[w] - PerWalker * Sqr(Mean[w])) / (PerWalker - 1);
+    Grand := Grand + Mean[w];
+  end;
+  Grand := Grand / Walkers;
+  WVar := WVar / Walkers;
+  B := 0;
+  for w := 0 to Walkers - 1 do
+    B := B + Sqr(Mean[w] - Grand);
+  B := B / (Walkers - 1);              // the variance of the walker means
+  if WVar <= 0 then
+    Exit(Infinity);
+  Result := Sqrt(((PerWalker - 1) / PerWalker * WVar + B) / WVar);
+end;
+
+procedure TTally.Add(Run: TSampleRun; const R: TSampleResult; const Name: string; Truth: Double;
+  var Log: string);
 var
   k: Integer;
+  RH: Double;
 begin
   for k := 0 to High(R.Params) do
     if SameText(R.Params[k].Name, Name) then
     begin
+      RH := RHat(Run, k);
+      if not (RH <= WorstRHat) then      // NaN counts as the worst
+        WorstRHat := RH;
+      Log := Log + Format('  R-hat %.3f', [RH]);
       Inc(Trials);
       if (Truth >= R.Params[k].Summary.P16) and (Truth <= R.Params[k].Summary.P84) then
         Inc(In68);
@@ -200,6 +254,10 @@ begin
     Engine.ExpValues := Data;
     Engine.Seed := Seed;
     Engine.Structure := Fitted;
+    { The periodic engine holds each stack at its start period (32.5 A here)
+      unless told otherwise, and then the one free thickness cannot move. }
+    if Mode = gmPeriodic then
+      TLFPSO_Periodic(Engine).SetPeriodRange(0, 30, 38);
     Engine.Run(CP);
     case Mode of
       gmPeriodic:
@@ -286,27 +344,31 @@ begin
     Log := Format('%s seed %d: %d slots, %d walkers, acceptance %.3f, slowest tau %s, %d doubtful, %.0f s' +
       sLineBreak, [Title, Seed, Joint.Count, Walkers, R.AcceptanceMean,
       R.Params[R.TauSlowest].Name, Length(R.TauDoubtful), Watch.Elapsed.TotalSeconds]);
+    Log := Log + '  classic fit ended at:';
+    for k := 0 to Min(3, Map.Count - 4) do
+      Log := Log + Format(' %s = %.5g', [Map.Slots[k].Name, Map.Slots[k].Start]);
+    Log := Log + sLineBreak;
     case Mode of
       gmPeriodic:
-        Params.Add(R, 's0.l2.thickness', 6, Log);
+        Params.Add(Run, R, 's0.l2.thickness', 6, Log);
       gmProfile:
         begin
-          Params.Add(R, 's0.l2.thickness.c0', 5.5, Log);
-          Params.Add(R, 's0.l2.thickness.c1', 0.05, Log);
+          Params.Add(Run, R, 's0.l2.thickness.c0', 5.5, Log);
+          Params.Add(Run, R, 's0.l2.thickness.c1', 0.05, Log);
         end;
       gmTable:
         for k := 1 to N do
-          Params.Add(R, Format('s0.l2.thickness[%d]', [k]), TruthH(Mode, k), Log);
+          Params.Add(Run, R, Format('s0.l2.thickness[%d]', [k]), TruthH(Mode, k), Log);
     end;
     SumD := 0;
     for k := 1 to N do
       SumD := SumD + 28 + TruthH(Mode, k);
     D1 := 28 + TruthH(Mode, 1);
     DN := 28 + TruthH(Mode, N);
-    Sums.Add(R, 's0.period_mean', SumD / N, Log);
-    Sums.Add(R, 's0.total', SumD, Log);
+    Sums.Add(Run, R, 's0.period_mean', SumD / N, Log);
+    Sums.Add(Run, R, 's0.total', SumD, Log);
     if Mode <> gmPeriodic then
-      Sums.Add(R, 's0.drift', DN - D1, Log);
+      Sums.Add(Run, R, 's0.drift', DN - D1, Log);
     Report(Log);
   finally
     Run.Free;
@@ -325,11 +387,19 @@ begin
   Sums := Default(TTally);
   for Seed := 1 to SEEDS do
     RunCase(Mode, N, Seed, Params, Sums, Title);
-  Report(Format('%s: parameters %d/%d in 16-84, %d/%d in 2.5-97.5; summaries %d/%d and %d/%d' + sLineBreak,
-    [Title, Params.In68, Params.Trials, Params.In95, Params.Trials,
-     Sums.In68, Sums.Trials, Sums.In95, Sums.Trials]));
+  Report(Format('%s: parameters %d/%d in 16-84, %d/%d in 2.5-97.5, worst R-hat %.3f; ' +
+    'summaries %d/%d and %d/%d, worst R-hat %.3f' + sLineBreak,
+    [Title, Params.In68, Params.Trials, Params.In95, Params.Trials, Params.WorstRHat,
+     Sums.In68, Sums.Trials, Sums.In95, Sums.Trials, Sums.WorstRHat]));
   if not MustHold then
     Exit;
+  { A chain whose walkers sit in different places has no one range to report,
+    whatever the coverage count says: the first periodic run of this gate
+    passed the coverage bounds with half its walkers 0.8 A from the truth. }
+  Assert.IsTrue(Params.WorstRHat < 1.2,
+    Format('%s parameters: the walkers disagree, worst R-hat %.3f', [Title, Params.WorstRHat]));
+  Assert.IsTrue(Sums.WorstRHat < 1.2,
+    Format('%s summaries: the walkers disagree, worst R-hat %.3f', [Title, Sums.WorstRHat]));
   { 68 % and 95 % are the expected rates; the bounds allow for the few trials. }
   Assert.IsTrue((Params.F68 >= 0.35) and (Params.F68 <= 0.95),
     Format('%s parameters: %.2f of the truths inside 16-84 %%', [Title, Params.F68]));
