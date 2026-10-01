@@ -2094,4 +2094,45 @@ git commit -m "+ Truth gate: classic fit then sampler on known-truth curves, per
 
 ## Outcome
 
-_Filled in by Task 7, Step 4._
+_2026-10-01. Win32 Debug, CPU only, I0 = 1E7, 3000 steps (1000 burn-in, every 10th recorded), six
+seeds per case, each with its own noise and its own classic fit from the design (interlayer 4.5 A)._
+
+| Case | Slots | Walkers | Truth in 16-84 % | in 2.5-97.5 % | Summaries 16-84 / 2.5-97.5 | Worst R-hat | Acceptance | Time per seed |
+|---|---|---|---|---|---|---|---|---|
+| Periodic | 4 | 32 | 4/6 | 6/6 | 8/12, 12/12 | 1.02 | 0.51-0.55 | 39 s |
+| Profile | 5 | 32 | 10/12 | 12/12 | 13/18, 18/18 | 1.03 | 0.48-0.51 | 39 s |
+| Table, 10 entries | 13 | 32 | 45/60 | 55/60 | 17/18, 18/18 | 18.2 (seed 2) | 0.36 | 26-39 s |
+| Table, 40 entries | 43 | 88 | 86/240 | 142/240 | 4/18, 11/18 | 3.1 | 0.12-0.15 | ~2 min |
+| Table, 80 entries | 83 | 168 | 117/480 | 228/480 | 1/18, 2/18 | 5.2 | 0.08-0.11 | ~5 min |
+
+Every slot's autocorrelation time was reported doubtful in every run: 200 recorded steps per walker
+are too few for that estimate, so it says nothing either way here.
+
+**Is burn-in from the classic fit enough?**
+
+- Periodic and profile: yes. The classic fit ended within 0.01 A of the truth and the ranges cover it
+  at about the expected rate.
+- Table, 10 entries: yes in five seeds of six. In seed 2 the classic fit ended in a different place
+  (entries up to 0.6 A off) and the walkers had not come together after 3000 steps (R-hat 18). The
+  `Table_TruthInsideRange` test fails on that seed, as it should.
+- So the start decides: a good classic fit needs nothing more; a poor one is not repaired by the
+  burn-in, and R-hat across the walkers shows it.
+
+**Where do tables stop being trustworthy?** Between 10 and 40 entries at these settings. At 40 and 80
+entries the walkers have not converged (R-hat 3 to 5, acceptance near 0.1) and the reported ranges are
+wrong: the truth is inside the 16-84 % range about a third of the time or less, and the summary numbers
+fail as well (4 of 18, then 1 of 18). The spec's promise that a large table "still gets its summary
+numbers" does not hold with this sampler at this run length. Whether a much longer run fixes it was
+not tested.
+
+**Two faults found in the gate itself and fixed** (commit ce98518):
+
+- The classic periodic engine holds the period at the design's value unless given a range, so the one
+  free thickness could not move; the gate now opens the period range.
+- With that fault the first periodic run passed the plan's coverage bounds while half the walkers sat
+  0.8 A from the truth. Coverage counts alone cannot see a split chain; the gate now also requires
+  R-hat below 1.2 for every tallied value.
+
+**Decisions for the author before plan B:** what the tool does when the walkers disagree (run longer,
+refine first, or refuse with a plain message), and what it offers for tables above roughly 10 to 20
+entries.
