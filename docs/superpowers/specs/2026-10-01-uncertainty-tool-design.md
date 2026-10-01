@@ -147,7 +147,8 @@ The extension is confined to `TParamMap` and to the step that expands a structur
   expansion reads `PP` is checked first in plan A; if not, that expansion is changed to do so.
 
 **Summary numbers.** Mean period, total thickness and first-to-last drift per stack are evaluated
-for every recorded sample (`unit_Expression`), so each has its own range. A prior on a summary
+for every recorded sample by the parameter map itself (so a prior on one is part of the map's
+prior term on the CPU and the GPU path alike), and each has its own range. A prior on a summary
 number is one Gaussian term on that value; a prior on a plain parameter is the map's own, as 3.10.
 
 **Large tables.** Above a threshold of sampled parameters (50 to start with; set from the truth
