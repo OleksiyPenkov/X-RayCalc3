@@ -38,7 +38,7 @@ type
 implementation
 
 uses
-  unit_consts, unit_config, unit_files_list, frm_Benchmark;
+  unit_consts, unit_config, unit_files_list, unit_ProjectVersion, frm_Benchmark;
 
 { TBatchRunner }
 
@@ -59,7 +59,16 @@ end;
 procedure TBatchRunner.ProcessBenchFile(Sender: TObject; const F: TSearchRec);
 var
   i: Integer;
+  Why: string;
 begin
+  { A file this build cannot read is left out, without a dialog per run: the
+    fit would otherwise run on the project loaded before it. }
+  if not CheckProjectFile(FBenchmarkPath + F.Name, Why) then
+  begin
+    frmBenchmark.AddFile(ChangeFileExt(F.Name, '') + ' - skipped: ' + Why);
+    Exit;
+  end;
+
   FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
 
   frmBenchmark.AddFile(ChangeFileExt(F.Name, ''));
@@ -76,9 +85,12 @@ begin
 end;
 
 procedure TBatchRunner.ProcessJobFile(Sender: TObject; const F: TSearchRec);
+var
+  Why: string;
 begin
   Application.ProcessMessages;
   if FTerminated then Exit;
+  if not CheckProjectFile(FBenchmarkPath + F.Name, Why) then Exit;   // skipped, as above
 
   FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
 

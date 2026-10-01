@@ -96,6 +96,7 @@
         <DCCReference Include="..\Units\unit_Config.pas"/>
         <DCCReference Include="..\Units\unit_consts.pas"/>
         <DCCReference Include="..\Units\unit_Updater.pas"/>
+        <DCCReference Include="..\Units\unit_ProjectVersion.pas"/>
         <DCCReference Include="..\Units\unit_RecentProjects.pas"/>
         <DCCReference Include="TestHenke.pas"/>
         <DCCReference Include="TestCalcPhysics.pas"/>
@@ -150,6 +151,7 @@
         <DCCReference Include="TestAxisLimit.pas"/>
         <DCCReference Include="TestProjectTreeNodeIO.pas"/>
         <DCCReference Include="TestUpdater.pas"/>
+        <DCCReference Include="TestProjectVersion.pas"/>
         <DCCReference Include="TestLFPSOProgress.pas"/>
         <DCCReference Include="..\..\Shared\Math\unit_gpu_calc.pas"/>
         <DCCReference Include="..\..\Shared\Math\unit_parratt_ref.pas"/>

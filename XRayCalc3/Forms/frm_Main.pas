@@ -1551,7 +1551,7 @@ begin
   begin
      if FindCmdLineSwitch('f', Value, True, [clstValueNextParam]) then
       begin
-        if FileExists(Value) then
+        if FileExists(Value) and FProjectPanel.ProjectReadable(Value) then
         begin
           FProjectPanel.ProjectFileName := Value;
           FProjectPanel.ReopenProject;

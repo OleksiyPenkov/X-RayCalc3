@@ -179,6 +179,7 @@
         </DelphiCompile>
         <DCCReference Include="Units\unit_CrashReport.pas"/>
         <DCCReference Include="Units\unit_Updater.pas"/>
+        <DCCReference Include="Units\unit_ProjectVersion.pas"/>
         <DCCReference Include="Forms\frm_CrashReport.pas">
             <Form>frmCrashReport</Form>
         </DCCReference>

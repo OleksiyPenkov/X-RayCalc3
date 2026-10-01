@@ -190,6 +190,10 @@ type
     { Asks Save / Don't save / Cancel before the current project is replaced;
       True when it may go - saved or discarded. }
     function  MayReplaceProject(const Caption, Question: string): Boolean;
+    { False, after telling the user why, when FileName cannot be read by this
+      build (a newer project version, or not an archive). Asked before
+      anything of the open project is discarded. }
+    function  ProjectReadable(const FileName: string): Boolean;
     procedure ReopenProject;
 
     { Tree operations }
@@ -291,7 +295,7 @@ uses
   System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
   unit_xrdml, unit_CurveStyle, unit_SaveBeforeDialog,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
-  editor_JSON, frm_ExtensionType;
+  editor_JSON, frm_ExtensionType, unit_ProjectVersion;
 
 {$R *.dfm}
 
@@ -1423,6 +1427,8 @@ begin
     FRecentProjects.Remove(FileName);
     Exit;
   end;
+  if not ProjectReadable(FileName) then
+    Exit;
   if not MayReplaceProject('Open project',
     'Save the current project before opening another one?') then
     Exit;
@@ -1454,6 +1460,8 @@ begin
 
   if dlgOpenProject.Execute then
   begin
+    if not ProjectReadable(dlgOpenProject.FileName) then
+      Exit;
     if not MayReplaceProject('Open project',
       'Save the current project before opening another one?') then
       Exit;
@@ -1510,8 +1518,19 @@ begin
   end;
 end;
 
+function TfrmProjectPanel.ProjectReadable(const FileName: string): Boolean;
+var
+  Why: string;
+begin
+  Result := CheckProjectFile(FileName, Why);
+  if not Result then
+    MessageDlg(Why + sLineBreak + sLineBreak + FileName, mtError, [mbOK], 0);
+end;
+
 procedure TfrmProjectPanel.ReopenProject;
 begin
+  if not ProjectReadable(FProjectFileName) then
+    Exit;
   PrepareProjectFolder(FProjectFileName, True);
   LoadProject(FProjectFileName);
 end;

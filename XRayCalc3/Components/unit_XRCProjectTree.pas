@@ -83,7 +83,7 @@ type
 implementation
 
 uses
-  System.JSON;
+  System.JSON, unit_consts;
 
 const
   DefaultDPI = 96;
@@ -442,6 +442,14 @@ begin
   FillChar(LPoly, SizeOf(LPoly), 0);
   LForm := ffNone;
   LSubj := ptH;
+
+  { The case below has no branch for a newer version: the rest of the node
+    would stay unread and every model would load without its structure. The
+    GUI refuses such a file before it gets here (unit_ProjectVersion). }
+  if FProjectVersion > CURRENT_PROJECT_VERSION then
+    raise Exception.CreateFmt('This project was saved by a newer X-Ray Calc ' +
+      '(project version %d); this version reads up to %d.',
+      [FProjectVersion, CURRENT_PROJECT_VERSION]);
 
   Data := Sender.GetNodeData(Node);
   Stream.Read(Data.ID, SizeOf(Integer));
