@@ -80,8 +80,8 @@ end;
 
 function NewerProjectMessage(V: Integer): string;
 begin
-  Result := Format('This project was saved by a newer X-Ray Calc (project version %d); ' +
-    'this version reads up to %d.', [V, CURRENT_PROJECT_VERSION]);
+  Result := Format('This project cannot be opened: it was saved by a newer X-Ray Calc ' +
+    '(project version %d; this version reads up to %d).', [V, CURRENT_PROJECT_VERSION]);
 end;
 
 function CheckProjectFile(const Path: string; out Why: string): Boolean;

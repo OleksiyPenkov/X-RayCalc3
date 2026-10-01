@@ -1524,7 +1524,7 @@ var
 begin
   Result := CheckProjectFile(FileName, Why);
   if not Result then
-    MessageDlg(Why + sLineBreak + sLineBreak + FileName, mtError, [mbOK], 0);
+    MessageDlg(Why + sLineBreak + sLineBreak + FileName, mtWarning, [mbOK], 0);
 end;
 
 procedure TfrmProjectPanel.ReopenProject;
