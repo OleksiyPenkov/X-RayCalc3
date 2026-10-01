@@ -39,6 +39,10 @@ type
     [Test] procedure AddProfile_BadInput_Raises;
     [Test] procedure Reported_ProfilePeriods;
     [Test] procedure SetDerived_AfterAProfile_KeepsItsSlots;
+    [Test] procedure Summary_PeriodicCell;
+    [Test] procedure Summary_FollowsATable;
+    [Test] procedure Summary_Prior_AddsToThePriorTerm;
+    [Test] procedure Summary_SinglePeriodStack_Raises;
   end;
 
 function Cell5: TFitStructure;
@@ -366,6 +370,82 @@ begin
     Assert.AreEqual(2, M.Count);
     M.Template.CopyContent(A);
     Assert.IsTrue(M.Apply(M.StartVector, A, N), 'the profile still reads its own two slots');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Summary_PeriodicCell;
+var
+  M: TParamMap;
+  Names: TArray<string>;
+  Values: TArray<Double>;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddParam('s0.l0.thickness', 0, 0, 1);
+    M.AddSummary('s0', 0);
+    Names := M.ReportedNames;
+    Assert.AreEqual(4, Length(Names));
+    Assert.AreEqual('s0.period_mean', Names[1]);
+    Assert.AreEqual('s0.total', Names[2]);
+    Assert.AreEqual('s0.drift', Names[3]);
+    Assert.IsTrue(M.ReportedValues([11], Values));
+    Assert.AreEqual(31.0, Values[1], 1E-5);
+    Assert.AreEqual(155.0, Values[2], 1E-4);
+    Assert.AreEqual(0.0, Values[3], 1E-6);
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Summary_FollowsATable;
+var
+  M: TParamMap;
+  Values: TArray<Double>;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddTable('s0.l0.thickness', 0, 0, 1);
+    M.AddSummary('s0', 0);
+    Assert.IsTrue(M.ReportedValues([9, 9.5, 10, 10.5, 11], Values));
+    Assert.AreEqual(30.0, Values[5], 1E-5, 'mean period');
+    Assert.AreEqual(150.0, Values[6], 1E-4, 'total');
+    Assert.AreEqual(2.0, Values[7], 1E-5, 'last period minus the first');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Summary_Prior_AddsToThePriorTerm;
+var
+  M: TParamMap;
+  S: TFitStructure;
+  N: TNuisance;
+begin
+  M := TParamMap.Create(Cell5);
+  try
+    M.AddTable('s0.l0.thickness', 0, 0, 1);
+    M.AddSummary('s0', 0);
+    M.SetPrior('s0.total', 152, 2);
+    M.Template.CopyContent(S);
+    Assert.IsTrue(M.Apply([9, 9.5, 10, 10.5, 11], S, N));
+    Assert.AreEqual(1.0, M.PriorTerm([9, 9.5, 10, 10.5, 11], S), 1E-6, '((150 - 152) / 2)^2');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestParamMapModes.Summary_SinglePeriodStack_Raises;
+var
+  S: TFitStructure;
+  M: TParamMap;
+begin
+  S := Cell5;
+  S.Stacks[0].N := 1;
+  M := TParamMap.Create(S);
+  try
+    Assert.WillRaise(procedure begin M.AddSummary('s0', 0); end, EParamMap);
   finally
     M.Free;
   end;

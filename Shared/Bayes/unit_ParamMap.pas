@@ -64,6 +64,19 @@ type
     Lower, Upper: Double;
   end;
 
+  TSummaryKind = (smPeriodMean, smTotal, smDrift);
+
+  /// <summary>A number of a whole repeating stack, reported with every
+  /// sample: the mean period, the total thickness, or the last period's
+  /// thickness minus the first's (period 1 is at the surface).</summary>
+  TStackSummary = record
+    Name: string;
+    Stack: Integer;
+    Kind: TSummaryKind;
+    HasPrior: Boolean;
+    PriorMean, PriorSD: Double;
+  end;
+
   EParamMap = class(Exception);
 
   TParamMap = class
@@ -72,10 +85,12 @@ type
     FSlots: TArray<TParamSlot>;
     FDerived: TArray<TDerivedLayer>;
     FPoly: TArray<TPolyGroup>;
+    FSummaries: TArray<TStackSummary>;
     FFMin: Double;
     function GetSlot(i: Integer): TParamSlot;
     procedure AddSlot(const Slot: TParamSlot);
     function PolyValue(const G: TPolyGroup; const Theta: array of Double; Period: Integer): Double;
+    function SummaryValue(const S: TFitStructure; const Sm: TStackSummary): Double;
   public
     constructor Create(const Template: TFitStructure);
     procedure AddParam(const Name: string; Stack, Layer, P: Integer);
@@ -91,6 +106,9 @@ type
     /// twice its range over the stack. The resulting values are reported as
     /// Name[1] .. Name[N].</summary>
     procedure AddProfile(const Name: string; Stack, Layer, P: Integer; const C: array of Double);
+    /// <summary>Reports Prefix.period_mean, Prefix.total and Prefix.drift of a
+    /// repeating stack, last in ReportedNames. SetPrior takes those names.</summary>
+    procedure AddSummary(const Prefix: string; Stack: Integer);
     procedure SetDerived(const Name: string; Stack, Layer: Integer);
     procedure AddNuisance(ScaleWindowLog, BgMin, BgMax, FMin, FMax: Double);
     procedure SetPrior(const Name: string; Mean, SD: Double);
@@ -304,6 +322,48 @@ begin
   FPoly := FPoly + [G];
 end;
 
+function PeriodThickness(const S: TFitStructure; Stack, Period: Integer): Double;
+var
+  k: Integer;
+begin
+  Result := 0;
+  for k := 0 to High(S.Stacks[Stack].Layers) do
+    Result := Result + S.Stacks[Stack].Layers[k].PeriodValue(1, Period, S.Stacks[Stack].N, True);
+end;
+
+function TParamMap.SummaryValue(const S: TFitStructure; const Sm: TStackSummary): Double;
+var
+  k, N: Integer;
+begin
+  N := S.Stacks[Sm.Stack].N;
+  if Sm.Kind = smDrift then
+    Exit(PeriodThickness(S, Sm.Stack, N) - PeriodThickness(S, Sm.Stack, 1));
+  Result := 0;
+  for k := 1 to N do
+    Result := Result + PeriodThickness(S, Sm.Stack, k);
+  if Sm.Kind = smPeriodMean then
+    Result := Result / N;
+end;
+
+procedure TParamMap.AddSummary(const Prefix: string; Stack: Integer);
+const
+  Suffix: array [TSummaryKind] of string = ('.period_mean', '.total', '.drift');
+var
+  Sm: TStackSummary;
+  K: TSummaryKind;
+begin
+  if FTemplate.Stacks[Stack].N < 2 then
+    raise EParamMap.CreateFmt('"%s": a summary needs a repeating stack', [Prefix]);
+  for K := Low(TSummaryKind) to High(TSummaryKind) do
+  begin
+    Sm := Default(TStackSummary);
+    Sm.Name := Prefix + Suffix[K];
+    Sm.Stack := Stack;
+    Sm.Kind := K;
+    FSummaries := FSummaries + [Sm];
+  end;
+end;
+
 procedure TParamMap.SetDerived(const Name: string; Stack, Layer: Integer);
 var
   i, j: Integer;
@@ -391,7 +451,15 @@ begin
       FDerived[i].PriorSD := SD;
       Exit;
     end;
-  raise EParamMap.CreateFmt('"%s" is not a free layer parameter of this fit', [Name]);
+  for i := 0 to High(FSummaries) do
+    if SameText(FSummaries[i].Name, Name) then
+    begin
+      FSummaries[i].HasPrior := True;
+      FSummaries[i].PriorMean := Mean;
+      FSummaries[i].PriorSD := SD;
+      Exit;
+    end;
+  raise EParamMap.CreateFmt('"%s" is not a free layer parameter or a summary of this fit', [Name]);
 end;
 
 function TParamMap.StartVector: TArray<Double>;
@@ -489,6 +557,8 @@ begin
   for i := 0 to High(FPoly) do
     for k := 1 to FPoly[i].N do
       Result := Result + [Format('%s[%d]', [FPoly[i].Name, k])];
+  for i := 0 to High(FSummaries) do
+    Result := Result + [FSummaries[i].Name];
 end;
 
 function TParamMap.ReportedValues(const Theta: array of Double; out Values: TArray<Double>): Boolean;
@@ -506,6 +576,7 @@ begin
   n := Length(FSlots) + Ord((IdxScale >= 0) and (IdxF >= 0)) * 2 + Length(FDerived);
   for i := 0 to High(FPoly) do
     Inc(n, FPoly[i].N);
+  Inc(n, Length(FSummaries));
   SetLength(Values, n);
   for i := 0 to High(FSlots) do
     Values[i] := Theta[i];
@@ -527,6 +598,11 @@ begin
       Values[n] := S.Stacks[FPoly[i].Stack].Layers[FPoly[i].Layer].PP[FPoly[i].P][k - 1];
       Inc(n);
     end;
+  for i := 0 to High(FSummaries) do
+  begin
+    Values[n] := SummaryValue(S, FSummaries[i]);
+    Inc(n);
+  end;
   Result := True;
 end;
 
@@ -542,6 +618,10 @@ begin
     if FDerived[i].HasPrior then
       Result := Result + Sqr((S.Stacks[FDerived[i].Stack].Layers[FDerived[i].Layer].P[1].V -
         FDerived[i].PriorMean) / FDerived[i].PriorSD);
+  for i := 0 to High(FSummaries) do
+    if FSummaries[i].HasPrior then
+      Result := Result + Sqr((SummaryValue(S, FSummaries[i]) - FSummaries[i].PriorMean) /
+        FSummaries[i].PriorSD);
 end;
 
 end.
