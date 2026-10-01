@@ -28,6 +28,9 @@ type
     [Test] procedure Tau_WhiteNoise_IsOne;
     [Test] procedure Tau_AR1_MatchesAnalytic;
     [Test] procedure Tau_ShortChain_NoCrash;
+    [Test] procedure RHat_WalkersOfOneDistribution_NearOne;
+    [Test] procedure RHat_OneWalkerElsewhere_Large;
+    [Test] procedure RHat_TooShort_NaN;
   end;
 
 implementation
@@ -127,6 +130,46 @@ begin
   Tau := AutocorrTime(AR1(4, 1, 0.5, 3), Reliable);    // a single point
   Assert.IsFalse(Reliable);
   Assert.AreEqual(1.0, Tau, 0.0);
+end;
+
+function GaussianWalkers(Walkers, Steps: Integer; Seed: UInt64): TArray<TArray<Double>>;
+var
+  Rng: TXoshiro256;
+  w, i: Integer;
+begin
+  Rng.Seed(Seed);
+  SetLength(Result, Walkers);
+  for w := 0 to Walkers - 1 do
+  begin
+    SetLength(Result[w], Steps);
+    for i := 0 to Steps - 1 do
+      Result[w][i] := Rng.NextGaussian;
+  end;
+end;
+
+procedure TTestChainStats.RHat_WalkersOfOneDistribution_NearOne;
+var
+  R: Double;
+begin
+  R := RHat(GaussianWalkers(8, 500, 11));
+  Assert.IsTrue((R > 0.98) and (R < 1.05), Format('R-hat %g', [R]));
+end;
+
+procedure TTestChainStats.RHat_OneWalkerElsewhere_Large;
+var
+  W: TArray<TArray<Double>>;
+  i: Integer;
+begin
+  W := GaussianWalkers(8, 500, 11);
+  for i := 0 to High(W[3]) do
+    W[3][i] := W[3][i] + 10;                    // a walker left behind in another optimum
+  Assert.IsTrue(RHat(W) > 2, Format('R-hat %g', [RHat(W)]));
+end;
+
+procedure TTestChainStats.RHat_TooShort_NaN;
+begin
+  Assert.IsTrue(IsNaN(RHat([[1.0], [2.0]])), 'one step per walker has no within-walker variance');
+  Assert.IsTrue(IsNaN(RHat([[1.0, 2.0, 3.0]])), 'one walker has no between-walker variance');
 end;
 
 initialization

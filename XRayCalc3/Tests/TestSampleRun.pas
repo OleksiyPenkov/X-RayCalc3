@@ -29,6 +29,8 @@ type
     [Test] procedure NothingRecorded_NoBand;
     [Test] procedure SameSeed_SameRows;
     [Test] procedure WithoutCounts_Runs;
+    [Test] procedure Finish_ReportsRHat;
+    [Test] procedure Recentre_RestartsAroundTheBestWalker;
   end;
 
 implementation
@@ -192,6 +194,56 @@ begin
     R := Rig.Run.Finish([Rig.Data], 10, 3);
     Assert.AreEqual(WALKERS * 20, R.Recorded, 'a curve without counts is sampled with f alone');
     Assert.IsTrue(R.Bands[0].Present);
+  finally
+    Rig.Free;
+  end;
+end;
+
+procedure TTestSampleRun.Finish_ReportsRHat;
+var
+  Rig: TRig;
+  R: TSampleResult;
+  k: Integer;
+begin
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  Rig.Build(True);
+  try
+    Rig.Chain(60, 20, 7);
+    R := Rig.Run.Finish([Rig.Data], 10, 7);
+    for k := 0 to High(R.Params) do
+      Assert.IsTrue(R.Params[k].RHat > 0.9,
+        Format('%s: every reported value carries an R-hat, got %g', [R.Params[k].Name, R.Params[k].RHat]));
+    Assert.IsTrue(R.RHatWorst >= R.Params[0].RHat, 'the worst is the largest');
+  finally
+    Rig.Free;
+  end;
+end;
+
+procedure TTestSampleRun.Recentre_RestartsAroundTheBestWalker;
+var
+  Rig: TRig;
+  Centre: TArray<Double>;
+  w, Best: Integer;
+begin
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  Rig.Build(True);
+  try
+    Rig.Chain(30, 10, 7);
+    Assert.IsTrue(Rig.Run.Rows.Count > 0);
+    Best := 0;
+    for w := 1 to WALKERS - 1 do
+      if Rig.Run.Sampler.LnP[w] > Rig.Run.Sampler.LnP[Best] then
+        Best := w;
+    Centre := Copy(Rig.Run.Sampler.X[Best]);
+    Rig.Run.Recentre(99);
+    Assert.AreEqual(0, Rig.Run.Rows.Count, 'what was recorded before belongs to the old chain');
+    Assert.AreEqual(0, Rig.Run.Sampler.Step, 'the chain starts again');
+    for w := 0 to WALKERS - 1 do
+      { slot 0 is the thickness, range 3 .. 9: the 'fit' ball is 1e-3 of the range wide }
+      Assert.IsTrue(Abs(Rig.Run.Sampler.X[w][0] - Centre[0]) < 0.05,
+        Format('walker %d at %g, the best was at %g', [w, Rig.Run.Sampler.X[w][0], Centre[0]]));
   finally
     Rig.Free;
   end;

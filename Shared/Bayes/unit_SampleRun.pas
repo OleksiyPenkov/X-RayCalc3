@@ -53,6 +53,8 @@ const
   START_SEED_XOR      = UInt64($5DEECE66D);
   PREDICTIVE_SEED_XOR = UInt64($A5A5A5A5);
   { sample_posterior's defaults, shared with the GUI's dialog. }
+  { Above this R-hat the walkers disagree: there is no one range to report. }
+  RHAT_AGREE = 1.2;
   DEF_SAMPLE_STEPS = 5000;
   DEF_SAMPLE_BURN  = 1000;
   DEF_PREDICTIVE   = 200;
@@ -94,6 +96,7 @@ type
     HasTau: Boolean;               // a slot; aliases have no tau
     Tau: Double;
     TauReliable: Boolean;
+    RHat: Double;                  // unit_ChainStats.RHat over the walkers; NaN when nothing was recorded
   end;
 
   TDerivedStat = record
@@ -128,6 +131,8 @@ type
     Correlation: TArray<TArray<Double>>;   // over Params, in their order
     TauDoubtful: TArray<string>;   // slots whose tau is unreliable or above PerWalker / TAU_TOLERANCE
     TauSlowest: Integer;           // index into Params of the largest tau; 0 when nothing was recorded
+    RHatWorst: Double;             // the largest R-hat of Params (NaN counts as the worst): above
+                                   // RHAT_AGREE the walkers disagree and the ranges mean nothing
     Bands: TArray<TPredictiveBand>;// one per member
     GpuCheck: TGpuCheck;
   end;
@@ -172,6 +177,12 @@ type
     /// evaluator) and forgets Joint, which the caller may then free. Names,
     /// Rows and CsvLines stay usable; nothing else may be called.</summary>
     procedure ReleaseEngine;
+    /// <summary>Starts the chain again in a 'fit' ball around the walker with
+    /// the highest ln p and forgets every recorded row. A start that is not
+    /// at the optimum leaves walkers behind in other optima, and more steps do
+    /// not bring them back (the truth gate, 2026-10-01); a settling stage
+    /// followed by this does.</summary>
+    procedure Recentre(Seed: UInt64);
     property Joint: TJointPosterior read FJoint;
     property Batch: TPosteriorBatch read FBatch;
     property Sampler: TStretchSampler read FSampler;
@@ -451,6 +462,20 @@ begin
   inherited;
 end;
 
+procedure TSampleRun.Recentre(Seed: UInt64);
+var
+  w, Best: Integer;
+  Centre: TArray<Double>;
+begin
+  Best := 0;
+  for w := 1 to FSampler.Walkers - 1 do
+    if FSampler.LnP[w] > FSampler.LnP[Best] then
+      Best := w;
+  Centre := Copy(FSampler.X[Best]);
+  FRows.Clear;
+  Start('fit', Centre, Seed);
+end;
+
 procedure TSampleRun.ReleaseEngine;
 begin
   FreeAndNil(FSampler);   // before the batch: its LogProb closure captures it
@@ -695,6 +720,9 @@ begin
       Result.Params[k].Tau := Taus[k];
       Result.Params[k].TauReliable := Reliable[k];
     end;
+    Result.Params[k].RHat := RHat(WalkerSeries(FRows, FSampler.Walkers, k));
+    if (k = 0) or not (Result.Params[k].RHat <= Result.RHatWorst) then
+      Result.RHatWorst := Result.Params[k].RHat;
   end;
   SetLength(Result.Derived, Length(FExprs));
   for k := 0 to High(FExprs) do

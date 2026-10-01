@@ -27,7 +27,8 @@ run the tool on a real project and accepted its GUI.
 | 1 | A separate VCL application (working name **XRCUncert**), built like XRFCalc and added to `XRC3.groupproj`. The engine stays shared source; no BPL. |
 | 2 | Scope: one model, one curve, optional priors. **Joint fits are out**: a separate later project, in the main app. |
 | 3 | All three fit modes: periodic, profile (poly), table (irregular). |
-| 4 | Profiles and tables report a band on a depth chart plus summary numbers, not a row per table entry. A table too large to sample reliably still gets its summary numbers; its band is marked indicative, with a plain warning. |
+| 4 | Profiles and tables report a band on a depth chart plus summary numbers, not a row per table entry. A structure with more than 20 sampled table entries is refused before the run, with one line saying why. (Changed 2026-10-01 after the truth gate: at 40 and 80 entries neither the ranges nor the summary numbers were right, at any run length tried.) |
+| 4a | Every run settles, restarts around its best walker, then samples. When the walkers still disagree (R-hat above 1.2) the tool repeats once at a longer length; if they still disagree it shows no ranges and says the fit has not settled. |
 | 5 | Everything lives in the single `.xrcx` (it goes to the ELN): priors, results and counts are extra archive entries. No sidecar file. The project version stays 8. |
 | 6 | No settings dialog and no separate likelihood-fit step. Steps, walkers and burn-in are the tool's defaults. |
 | 7 | Default output is `value ± error` and plain warnings. Correlations, device and sampler numbers are behind Details. User-facing text says "uncertainty", never "posterior". |
@@ -151,8 +152,9 @@ for every recorded sample by the parameter map itself (so a prior on one is part
 prior term on the CPU and the GPU path alike), and each has its own range. A prior on a summary
 number is one Gaussian term on that value; a prior on a plain parameter is the map's own, as 3.10.
 
-**Large tables.** Above a threshold of sampled parameters (50 to start with; set from the truth
-gate) the band is marked indicative and the warning is shown. Summary numbers are still reported.
+**Large tables.** More than 20 sampled table entries are refused (decision 4). The truth gate found
+10 entries sound and 40 not; nothing between was tested, and the R-hat check (decision 4a), not this
+limit, is what keeps a wrong range from being shown.
 
 ## 5. Testing
 

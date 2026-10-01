@@ -39,11 +39,64 @@ function Summarize(const Values: TArray<Double>): TSummary;
 function Correlation(const Columns: TArray<TArray<Double>>): TArray<TArray<Double>>;
 function AutocorrTime(const Walkers: TArray<TArray<Double>>; out Reliable: Boolean;
   C: Double = 5): Double;
+/// <summary>Gelman-Rubin R-hat over the walkers' series of one value: the
+/// pooled standard deviation over the within-walker one. Near 1 when the
+/// walkers sample one distribution; well above it when some sit elsewhere
+/// (walkers left behind in a second optimum). 1 for a value that never moves
+/// in any walker. NaN with fewer than two walkers or two steps. An ensemble's
+/// walkers are not independent chains, so this detects a split chain, not
+/// fine mixing.</summary>
+function RHat(const Walkers: TArray<TArray<Double>>): Double;
 
 implementation
 
 uses
   System.Math, System.Generics.Collections;
+
+function RHat(const Walkers: TArray<TArray<Double>>): Double;
+var
+  M, N, w, i: Integer;
+  Mean, Grand, W2, B, S: Double;
+  Means: TArray<Double>;
+begin
+  M := Length(Walkers);
+  if M < 2 then
+    Exit(NaN);
+  N := MaxInt;
+  for w := 0 to M - 1 do
+    N := Min(N, Length(Walkers[w]));
+  if N < 2 then
+    Exit(NaN);
+  SetLength(Means, M);
+  W2 := 0;
+  Grand := 0;
+  for w := 0 to M - 1 do
+  begin
+    Mean := 0;
+    for i := 0 to N - 1 do
+      Mean := Mean + Walkers[w][i];
+    Mean := Mean / N;
+    S := 0;
+    for i := 0 to N - 1 do
+      S := S + Sqr(Walkers[w][i] - Mean);
+    W2 := W2 + S / (N - 1);
+    Means[w] := Mean;
+    Grand := Grand + Mean;
+  end;
+  W2 := W2 / M;                       // the mean within-walker variance
+  Grand := Grand / M;
+  B := 0;
+  for w := 0 to M - 1 do
+    B := B + Sqr(Means[w] - Grand);
+  B := B / (M - 1);                   // the variance of the walker means
+  if W2 <= 0 then
+  begin
+    if B <= 0 then
+      Exit(1);                        // the same constant in every walker
+    Exit(Infinity);
+  end;
+  Result := Sqrt(((N - 1) / N * W2 + B) / W2);
+end;
 
 function IsFiniteValue(X: Double): Boolean; inline;
 begin

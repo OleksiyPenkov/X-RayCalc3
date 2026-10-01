@@ -30,6 +30,7 @@ type
     [Test] procedure Profile_TruthInsideRange;
     [Test] procedure Table_TruthInsideRange;
     [Test] procedure LargeTable_Report;
+    [Test] procedure LongRun_Report;
   end;
 
 implementation
@@ -43,6 +44,7 @@ uses
 const
   I0     = 1E7;
   SEEDS  = 6;
+  SETTLE = 1000;              // steps before the chain is restarted around its best walker
   STEPS  = 3000;
   BURN   = 1000;
   THIN   = 10;
@@ -71,52 +73,6 @@ begin
     Line + sLineBreak);
 end;
 
-{ Gelman-Rubin over the walkers for reported value k: the pooled variance
-  estimate over the mean within-walker variance, as a ratio of standard
-  deviations. Near 1 when the walkers sample one distribution; far above it
-  when they sit in different places (walkers left behind in a second optimum).
-  An ensemble's walkers are not independent chains, so this flags a split
-  chain, not fine mixing. }
-function RHat(Run: TSampleRun; k: Integer): Double;
-var
-  Walkers, w, i: Integer;
-  N: TArray<Integer>;
-  Mean, Sq: TArray<Double>;
-  Grand, B, WVar, PerWalker: Double;
-begin
-  Walkers := Run.Sampler.Walkers;
-  SetLength(N, Walkers);
-  SetLength(Mean, Walkers);
-  SetLength(Sq, Walkers);
-  for i := 0 to Run.Rows.Count - 1 do
-  begin
-    w := Run.Rows[i].Walker;
-    Inc(N[w]);
-    Mean[w] := Mean[w] + Run.Rows[i].Values[k];
-    Sq[w] := Sq[w] + Sqr(Run.Rows[i].Values[k]);
-  end;
-  PerWalker := N[0];
-  if PerWalker < 2 then
-    Exit(NaN);
-  Grand := 0;
-  WVar := 0;
-  for w := 0 to Walkers - 1 do
-  begin
-    Mean[w] := Mean[w] / PerWalker;
-    WVar := WVar + (Sq[w] - PerWalker * Sqr(Mean[w])) / (PerWalker - 1);
-    Grand := Grand + Mean[w];
-  end;
-  Grand := Grand / Walkers;
-  WVar := WVar / Walkers;
-  B := 0;
-  for w := 0 to Walkers - 1 do
-    B := B + Sqr(Mean[w] - Grand);
-  B := B / (Walkers - 1);              // the variance of the walker means
-  if WVar <= 0 then
-    Exit(Infinity);
-  Result := Sqrt(((PerWalker - 1) / PerWalker * WVar + B) / WVar);
-end;
-
 procedure TTally.Add(Run: TSampleRun; const R: TSampleResult; const Name: string; Truth: Double;
   var Log: string);
 var
@@ -126,7 +82,7 @@ begin
   for k := 0 to High(R.Params) do
     if SameText(R.Params[k].Name, Name) then
     begin
-      RH := RHat(Run, k);
+      RH := R.Params[k].RHat;
       if not (RH <= WorstRHat) then      // NaN counts as the worst
         WorstRHat := RH;
       Log := Log + Format('  R-hat %.3f', [RH]);
@@ -305,7 +261,7 @@ end;
 
 { One seed of one case: noise, classic fit, sampler; the truth tallied. }
 procedure RunCase(Mode: TMode; N: Integer; Seed: Integer; var Params, Sums: TTally;
-  const Title: string);
+  const Title: string; Longer: Integer = 1);
 var
   Truth, Fitted: TFitStructure;
   Clean, Data: TDataArray;
@@ -337,8 +293,15 @@ begin
     Walkers := Max(32, 2 * Joint.Count + 2);
     Run := TSampleRun.Create(Joint, Walkers, CPUCount, False, nil);
     Run.Start('fit', Joint.StartVector, UInt64(Seed));
-    for st := 1 to STEPS do
-      Run.Advance(BURN, THIN);
+    { Settle, then start again around the best walker: a classic fit that
+      ended off the optimum otherwise leaves walkers behind for good. }
+    for st := 1 to SETTLE * Longer do
+      Run.Advance(MaxInt, 1);
+    Run.Recentre(UInt64(Seed) + 7777);
+    { Longer stretches the whole run - steps, burn-in and thinning alike - so
+      the number of recorded rows stays what it was. }
+    for st := 1 to STEPS * Longer do
+      Run.Advance(BURN * Longer, THIN * Longer);
     R := Run.Finish([Data], 50, UInt64(Seed));
 
     Log := Format('%s seed %d: %d slots, %d walkers, acceptance %.3f, slowest tau %s, %d doubtful, %.0f s' +
@@ -443,6 +406,28 @@ begin
   { No assertion: the numbers decide where the tool's "indicative" warning starts. }
   RunMode(gmTable, 40, 'table (40 entries)', False);
   RunMode(gmTable, 80, 'table (80 entries)', False);
+end;
+
+{ Run length or method? The 10-entry seed whose classic fit ended off the
+  optimum, and one 40-entry case, at ten times the steps. No assertion. }
+procedure TTestTruthGate.LongRun_Report;
+var
+  Params, Sums: TTally;
+begin
+  Guard;
+  Params := Default(TTally);
+  Sums := Default(TTally);
+  RunCase(gmTable, 10, 2, Params, Sums, 'table (10 entries) x10 steps', 10);
+  Report(Format('table (10 entries) x10 steps: parameters %d/%d in 16-84, %d/%d in 2.5-97.5, ' +
+    'worst R-hat %.3f; summaries worst R-hat %.3f' + sLineBreak,
+    [Params.In68, Params.Trials, Params.In95, Params.Trials, Params.WorstRHat, Sums.WorstRHat]));
+  Params := Default(TTally);
+  Sums := Default(TTally);
+  RunCase(gmTable, 40, 1, Params, Sums, 'table (40 entries) x10 steps', 10);
+  Report(Format('table (40 entries) x10 steps: parameters %d/%d in 16-84, %d/%d in 2.5-97.5, ' +
+    'worst R-hat %.3f; summaries %d/%d and %d/%d, worst R-hat %.3f' + sLineBreak,
+    [Params.In68, Params.Trials, Params.In95, Params.Trials, Params.WorstRHat,
+     Sums.In68, Sums.Trials, Sums.In95, Sums.Trials, Sums.WorstRHat]));
 end;
 
 initialization

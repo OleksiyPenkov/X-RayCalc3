@@ -2135,4 +2135,38 @@ not tested.
 
 **Decisions for the author before plan B:** what the tool does when the walkers disagree (run longer,
 refine first, or refuse with a plain message), and what it offers for tables above roughly 10 to 20
-entries.
+entries. The author's answer (2026-10-01): follow the recommendations - detect disagreement, one
+automatic repair, then a plain message; and test run length before deciding on large tables.
+
+### Follow-up, same day
+
+**Run length or method?** Ten times the steps, no other change:
+
+- Table, 10 entries, the failed seed: the medians sit on the truth (7/10 and 10/10), but R-hat is up
+  to 72. Most walkers found the optimum; a few stayed behind for good. More steps do not bring them back.
+- Table, 40 entries: R-hat 1.3 to 1.9, truth in 16-84 % for 17 of 40, summaries 0 of 3. Not a
+  run-length problem.
+
+**The repair, now in the core** (`TSampleRun.Recentre`, `unit_ChainStats.RHat`, `TParamStat.RHat`,
+`TSampleResult.RHatWorst`, `RHAT_AGREE = 1.2`): 1000 settling steps, then the chain starts again in a
+ball around its best walker, then the 3000 steps as before.
+
+| Case | Truth in 16-84 % | in 2.5-97.5 % | Summaries 16-84 / 2.5-97.5 | Worst R-hat |
+|---|---|---|---|---|
+| Periodic | 4/6 | 6/6 | 8/12, 12/12 | 1.02 |
+| Profile | 10/12 | 12/12 | 13/18, 18/18 | 1.02 |
+| Table, 10 entries | 41/60 | 55/60 | 16/18, 18/18 | 1.13 |
+| Table, 40 entries | 95/240 | 164/240 | 9/18, 12/18 | 3.4 |
+| Table, 80 entries | 117/480 | 233/480 | 1/18, 1/18 | 6.0 |
+
+All three gate tests pass, the failed seed included. The whole suite passes with the gate off
+(1062 of 1062). Large tables stay wrong and R-hat says so in every case; nothing was tested between
+10 and 40 entries.
+
+**What plan B takes from this:**
+
+- Every run is settle, restart around the best walker, sample. When `RHatWorst` is above `RHAT_AGREE`
+  the tool repeats that once at a longer length; if the walkers still disagree it shows no ranges and
+  says in plain words that the fit has not settled.
+- A structure with more than 20 sampled table entries is refused before the run with one line saying
+  why. The limit is a time saver, not the safeguard: the R-hat check is.
