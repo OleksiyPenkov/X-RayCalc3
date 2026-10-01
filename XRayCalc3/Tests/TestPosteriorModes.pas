@@ -28,6 +28,7 @@ type
     [Test] procedure Table_CurveEqualsExplicitStacks;
     [Test] procedure Table_UnderASinglePeriodCap;
     [Test] procedure Periodic_CurveUnchangedByAnEmptyTable;
+    [Test] procedure Table_GpuScoresAsTheCpu;
   end;
 
 function Lay(const M: string; H, HMin, HMax, Sigma, Rho: Single; LayerID: Word): TLayerData;
@@ -37,7 +38,7 @@ implementation
 
 uses
   System.SysUtils, System.Math, unit_Likelihood, unit_ParamMap, unit_LogPosterior,
-  TestLogPosterior;
+  unit_JointPosterior, unit_PosteriorBatch, unit_StretchSampler, TestLogPosterior;
 
 function Lay(const M: string; H, HMin, HMax, Sigma, Rho: Single; LayerID: Word): TLayerData;
 begin
@@ -146,6 +147,55 @@ begin
   Q := TWB4CFixture.Structure(6);
   Q.Stacks[0].Layers[2].PP[1] := [1, 2, 3];      // shorter than N = 20: ignored as a whole
   AssertSameCurve(CurveOf(P), CurveOf(Q), 'a table shorter than N is not a table');
+end;
+
+{ The GPU scorer packs what FillLayeredModel builds, so a tabled model must
+  score on the GPU as on the CPU. Passes with a note when no GPU ran. }
+procedure TTestPosteriorModes.Table_GpuScoresAsTheCpu;
+var
+  Map: TParamMap;
+  Post: TLogPosterior;
+  Joint: TJointPosterior;
+  Batch: TPosteriorBatch;
+  Data, R: TDataArray;
+  Vecs, Blobs: TArray<TVector>;
+  Gpu, Cpu: TArray<Double>;
+  i: Integer;
+begin
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  Data := TWB4CFixture.Angles;
+  Map := TParamMap.Create(Tabled);
+  Post := nil; Joint := nil; Batch := nil;
+  try
+    Map.AddTable('s0.l0.thickness', 0, 0, 1);
+    Map.AddNuisance(Log10(1.2), 0, 1E-7, 0.001, 1);
+    Post := TLogPosterior.Create(Map, Data, nil, TWB4CFixture.CalcParams(Data, 0), 1E-9, 10);
+    Post.EvaluateOnce(Map.StartVector, R);
+    for i := 0 to High(Data) do
+      Data[i].r := R[i].r;
+    FreeAndNil(Post);
+    Post := TLogPosterior.Create(Map, Data, nil, TWB4CFixture.CalcParams(Data, 0), 1E-9, 10);
+    Joint := TJointPosterior.CreateSingle(Post, False);
+    Batch := TPosteriorBatch.Create(Joint, 2, True);
+    SetLength(Vecs, 3);
+    for i := 0 to 2 do
+    begin
+      Vecs[i] := Joint.StartVector;
+      Vecs[i][i] := Vecs[i][i] + 0.4;           // move one period's W thickness
+    end;
+    Batch.LogProb(Vecs, Gpu, Blobs);
+    if not Batch.GpuUsed then
+      Assert.Pass('no GPU evaluated the batch: ' + Batch.GpuError);
+    Batch.LogProbOnCpu(Vecs, Cpu, Blobs);
+    for i := 0 to 2 do
+      Assert.AreEqual(Cpu[i], Gpu[i], 0.25, Format('ln p of vector %d', [i]));
+  finally
+    Batch.Free;
+    Joint.Free;
+    Post.Free;
+    Map.Free;
+  end;
 end;
 
 initialization

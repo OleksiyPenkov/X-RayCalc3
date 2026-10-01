@@ -150,7 +150,8 @@ uses
   TestGpuPosterior in 'TestGpuPosterior.pas',
   unit_SampleRun in '..\..\Shared\Bayes\unit_SampleRun.pas',
   TestSampleRun in 'TestSampleRun.pas',
-  TestPosteriorModes in 'TestPosteriorModes.pas';
+  TestPosteriorModes in 'TestPosteriorModes.pas',
+  TestParamMapModes in 'TestParamMapModes.pas';
 
 {$R *.res}
 

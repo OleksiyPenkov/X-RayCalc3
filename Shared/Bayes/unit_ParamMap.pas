@@ -18,6 +18,11 @@ unit unit_ParamMap;
    period (NormalizeD) is replaced by a derived layer: its thickness is the
    period - held or sampled - minus the other thicknesses of the cell.
 
+   A layer value that differs from period to period is a table
+   (TLayerData.PP, read by FillLayeredModel through PeriodValue). AddTable
+   makes every entry a slot; AddProfile makes the coefficients of a
+   polynomial in the period number the slots and writes the table from them.
+
    Apply is the only way from a vector to a structure. It returns False for a
    vector outside any slot's bounds, or whose derived thickness leaves the
    derived layer's bounds or is not positive: the posterior is zero there. *)
@@ -28,12 +33,13 @@ uses
   System.SysUtils, unit_Types, unit_Likelihood;
 
 type
-  TSlotKind = (skParam, skPeriod, skLogScale, skBackground, skLnF);
+  TSlotKind = (skParam, skPeriod, skLogScale, skBackground, skLnF, skTable, skPoly);
 
   TParamSlot = record
     Name: string;
     Kind: TSlotKind;
     Stack, Layer, P: Integer;       // GUI indices; P 1 thickness, 2 sigma, 3 density
+    Period: Integer;                // skTable: the period, from 1 (the surface); skPoly: the coefficient's order
     Lower, Upper, Start: Double;
     HasPrior: Boolean;
     PriorMean, PriorSD: Double;
@@ -62,6 +68,11 @@ type
     constructor Create(const Template: TFitStructure);
     procedure AddParam(const Name: string; Stack, Layer, P: Integer);
     procedure AddPeriod(const Name: string; Stack: Integer; Lower, Upper: Double);
+    /// <summary>One slot per period for the value P of a layer of a repeating
+    /// stack, named Name[1] .. Name[N], period 1 at the surface. Each starts at
+    /// its table entry (the layer's own value when the table is missing or
+    /// shorter than N), moved into the layer's limits.</summary>
+    procedure AddTable(const Name: string; Stack, Layer, P: Integer);
     procedure SetDerived(const Name: string; Stack, Layer: Integer);
     procedure AddNuisance(ScaleWindowLog, BgMin, BgMax, FMin, FMax: Double);
     procedure SetPrior(const Name: string; Mean, SD: Double);
@@ -164,6 +175,42 @@ begin
   Slot.Upper := Upper;
   Slot.Start := EnsureRange(StackPeriod(FTemplate, Stack), Lower, Upper);
   AddSlot(Slot);
+end;
+
+procedure TParamMap.AddTable(const Name: string; Stack, Layer, P: Integer);
+var
+  Slot: TParamSlot;
+  V: TFitValue;
+  T: TFloatArray;
+  k, N: Integer;
+begin
+  V := FTemplate.Stacks[Stack].Layers[Layer].P[P];
+  N := FTemplate.Stacks[Stack].N;
+  if N < 2 then
+    raise EParamMap.CreateFmt('"%s": a table needs a repeating stack', [Name]);
+  if V.Paired then
+    raise EParamMap.CreateFmt('"%s": a paired parameter has one value, not a table', [Name]);
+  if V.min > V.max then
+    raise EParamMap.CreateFmt('"%s": the lower bound is above the upper one', [Name]);
+  SetLength(T, N);
+  for k := 1 to N do
+    T[k - 1] := EnsureRange(FTemplate.Stacks[Stack].Layers[Layer].PeriodValue(P, k, N, True),
+      V.min, V.max);
+  FTemplate.Stacks[Stack].Layers[Layer].PP[P] := T;
+  for k := 1 to N do
+  begin
+    Slot := Default(TParamSlot);
+    Slot.Name := Format('%s[%d]', [Name, k]);
+    Slot.Kind := skTable;
+    Slot.Stack := Stack;
+    Slot.Layer := Layer;
+    Slot.P := P;
+    Slot.Period := k;
+    Slot.Lower := V.min;
+    Slot.Upper := V.max;
+    Slot.Start := T[k - 1];
+    AddSlot(Slot);
+  end;
 end;
 
 procedure TParamMap.SetDerived(const Name: string; Stack, Layer: Integer);
@@ -292,6 +339,10 @@ begin
         Nuis.Background := Theta[i];
       skLnF:
         Nuis.F := Exp(Theta[i]);
+      skTable:
+        S.Stacks[FSlots[i].Stack].Layers[FSlots[i].Layer].PP[FSlots[i].P][FSlots[i].Period - 1] := Theta[i];
+      skPoly:
+        ;   // read by the profile pass below
     end;
   end;
 
