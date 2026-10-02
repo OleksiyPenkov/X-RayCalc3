@@ -484,13 +484,44 @@ const
             }
             GroupMemoryBarrierWithGroupSync();
         }
-        if (gtid.x == 0)
+        // With the scale solved the sum is taken again, at a, as w (d + a)^2:
+        // never negative. S2 + 2 a S1 + a^2 S0 is the same number on paper, but
+        // one point with R within 1e-5 of 1 has w = 1e10, every term is then
+        // near 1e9 and their sum, near 1e2, is rounding noise of either sign in
+        // single precision - and a negative chi2 wins every comparison of a fit.
+        float t0 = P0[0], t1 = P1[0], t2 = P2[0];
+        GroupMemoryBarrierWithGroupSync();      // all have read before P0 is reused
+        float c = 0;
+        if (SolveScale != 0)
         {
             float a = 0;
-            if (SolveScale != 0 && P0[0] > 0)
-                a = clamp(-P1[0] / P0[0], -ScaleWindow, ScaleWindow);
-            Chi[p] = (P2[0] + 2 * a * P1[0] + a * a * P0[0]) * ChiNorm;
+            if (t0 > 0)
+                a = clamp(-t1 / t0, -ScaleWindow, ScaleWindow);
+            for (uint i2 = ChiFirst + gtid.x; i2 <= ChiLast; i2 += CHI_THREADS)
+            {
+                float r = 0;
+                for (uint k = 0; k < WinSize; ++k)
+                    r += Curve[base + i2 - ConvN + k] * Weights[k];
+                if (r != 0)
+                {
+                    float lr = 0.434294481903 * log(r);
+                    float e = (LogData[i2] - lr + a) / lr;
+                    c += PointWeight[i2] * e * e;
+                }
+            }
         }
+        else if (gtid.x == 0)
+            c = t2;
+        P0[gtid.x] = c;
+        GroupMemoryBarrierWithGroupSync();
+        for (uint s3 = CHI_THREADS / 2; s3 > 0; s3 >>= 1)
+        {
+            if (gtid.x < s3)
+                P0[gtid.x] += P0[gtid.x + s3];
+            GroupMemoryBarrierWithGroupSync();
+        }
+        if (gtid.x == 0)
+            Chi[p] = P0[0] * ChiNorm;
     }
 
     // unit_Likelihood.CurveLikelihood's Cost, one particle per group: over the

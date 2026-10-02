@@ -54,6 +54,7 @@ type
     [Test] procedure GpuRawCurve_CloseToDoublePrecision;
     [Test] procedure Chi_MatchesTheCpuEngine_EveryWeighting;
     [Test] procedure Chi_MatchesTheCpuEngine_WithTheScaleSolved;
+    [Test] procedure Chi_ScaleSolved_OnePointOutweighingTheRest_IsNotRoundingNoise;
     [Test] procedure SplitDispatches_GiveTheSameAnswer;
     [Test] procedure Fit_OnTheGpu_ImprovesAndNamesTheDevice;
     [Test] procedure Fit_WithoutUseGpu_StaysOnTheCpu;
@@ -1250,6 +1251,74 @@ begin
       end;
     end;
   finally
+    Model.Free;
+  end;
+end;
+
+{ A model whose reflectivity comes within 1E-5 of 1 at one angle gives that
+  point a weight 1/(log10 R)^2 of 1E10. The solved-scale sum is then
+  S2 + 2 a S1 + a^2 S0 with every term near 1E9 and a result near 1E2: in
+  single precision that is rounding noise of either sign, and a negative
+  chi-squared wins every comparison of a fit (Ru/C with a C cap, 2026-10-02:
+  -2114 on the GPU, 938 on the CPU). The heavy point is made here by its
+  weight; the reference is the same sum in Double on the GPU's own curve. }
+procedure TTestGpuCalc.Chi_ScaleSolved_OnePointOutweighingTheRest_IsNotRoundingNoise;
+const
+  HEAVY = 500;
+var
+  Data: TDataArray;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  In_: TGpuEvalInputs;
+  Layers, Chi: TArray<Single>;
+  NLay, i: Integer;
+  S0, S1, S2, W, D, LR, A, Expected: Double;
+begin
+  if not Ready then Exit;
+
+  Model := TLayeredModel.Create;
+  Model.Init;
+  Data := MakeData(0, cmS, rfError, 3);
+  for i := 0 to High(Data) do
+    Data[i].r := Data[i].r * 1.3;
+  Calc := NewCalc(Data, nil, 0, cmS, rfError);
+  G := TGpuEvaluator.Create;
+  try
+    Calc.SolveScale := True;
+    Calc.ScaleWindowLog := Log10(1.5);
+    FillModel(Model, 0.001, 3);
+    Model.Generate(CU_KA);
+    NLay := Length(Model.LayersDirect);
+    In_ := Calc.GpuInputs(0);
+    In_.PointWeight[HEAVY] := In_.PointWeight[HEAVY] * 1E14;
+    G.Setup(In_, NLay, 1, cmS, rfError, CU_KA, 1, LIMIT);
+    SetLength(Layers, 4 * NLay);
+    Pack(Model, Layers, 0);
+    G.Evaluate(Layers, Chi);
+
+    Calc.FinishRawCurve(G.RawCurve(0));
+    S0 := 0; S1 := 0; S2 := 0;
+    for i := In_.ChiFirst to In_.ChiLast do
+      if Calc.Results[i].r <> 0 then
+      begin
+        LR := Ln(Calc.Results[i].r) / Ln(10);
+        W := In_.PointWeight[i] / Sqr(LR);
+        D := In_.LogData[i] - LR;
+        S2 := S2 + W * D * D;
+        S1 := S1 + W * D;
+        S0 := S0 + W;
+      end;
+    A := EnsureRange(-S1 / S0, -In_.ScaleWindow, In_.ScaleWindow);
+    Expected := (S2 + 2 * A * S1 + A * A * S0) * In_.ChiNorm;
+    Assert.IsTrue(S0 > 1E12, Format('the heavy point dominates: S0 = %g', [S0]));
+    Assert.IsTrue(Expected > 0.01, Format('and the rest still disagrees: %g', [Expected]));
+    Assert.AreEqual(Expected, Double(Chi[0]), 0.03 * Expected,
+      Format('the GPU against the sum in Double (S0 = %g)', [S0]));
+  finally
+    G.Free;
+    Calc.Model := nil;
+    Calc.Free;
     Model.Free;
   end;
 end;
