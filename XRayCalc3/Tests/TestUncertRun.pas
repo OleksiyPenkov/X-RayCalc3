@@ -198,11 +198,14 @@ var
   Res: TUncertResult;
   Reports, LastStep, LastTotal: Integer;
   Rising: Boolean;
+  Recipe: TUncertRecipe;
 begin
   if not TWB4CFixture.TablesPresent then
     Assert.Pass('Henke tables W, B4C, Si are not installed');
   P := WB4CProject(6, Counts);
   Assert.AreEqual('', BuildRequest(P, Req));
+  Recipe := ShortRecipe;
+  Recipe.AgreeBelow := 10;                // one attempt whatever the walkers say: a second one counts anew
   Reports := 0;
   LastStep := 0;
   LastTotal := 0;
@@ -215,8 +218,9 @@ begin
         Rising := False;
       LastStep := Step;
       LastTotal := Total;
-    end, nil, ShortRecipe);
+    end, nil, Recipe);
   Assert.IsTrue(Res.Settled, Res.Message);
+  Assert.IsFalse(Res.Repeated, 'one attempt');
   Assert.IsTrue(Reports >= 4, Format('%d reports', [Reports]));
   Assert.IsTrue(Rising, 'the step count only rises');
   Assert.AreEqual(400, LastTotal, 'settling and sampling as one count');

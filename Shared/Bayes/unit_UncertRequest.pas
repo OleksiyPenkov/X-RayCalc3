@@ -19,9 +19,10 @@ unit unit_UncertRequest;
 
      periodic  one slot per free value. In a repeating stack the thickest free
                thickness is the derived layer (the period minus the others);
-               the period is a slot only when the fit had Free period on,
-               inside its window, and is held at the fitted value otherwise -
-               what TLFPSO_Periodic does.
+               the period is a slot too, inside the fit's window when the fit
+               had Free period on and inside HELD_PERIOD_WINDOW when the fit
+               held it: a held period has an uncertainty all the same, and a
+               single free thickness would otherwise be pinned by it.
      profile   an unpaired free value of a repeating stack is a polynomial in
                the period number, starting at the layer's value and its
                gradient extension; everything else is one slot.
@@ -42,6 +43,10 @@ uses
 
 const
   MAX_TABLE_SLOTS = 20;
+  { How far a period the fit held may move either way, as a fraction: far
+    wider than the Bragg peaks leave it, narrow enough to stay on the fitted
+    peak order. }
+  HELD_PERIOD_WINDOW = 0.02;
   { The measurement's own three values (3.10's defaults): the scale within
     10^+-0.2, the background up to ten times the smallest measured value, the
     relative noise floor f from 0.1 % to 100 %. }
@@ -180,7 +185,7 @@ var
   i, j, p, Derived: Integer;
   S: TFitStructure;
   Repeats, PerPeriod: Boolean;
-  D: Double;
+  D, W: Double;
 begin
   S := Req.Structure;
   for i := 0 to High(S.Stacks) do
@@ -215,12 +220,11 @@ begin
     if Derived >= 0 then
     begin
       Map.SetDerived(SlotName(i, Derived, 1), i, Derived);
+      W := HELD_PERIOD_WINDOW;
       if Req.FreePeriod then
-      begin
-        D := StackPeriodOf(S, i);
-        Map.AddPeriod(Format('s%d.period', [i]), i, D * (1 - Req.PeriodWindow),
-          D * (1 + Req.PeriodWindow));
-      end;
+        W := Req.PeriodWindow;
+      D := StackPeriodOf(S, i);
+      Map.AddPeriod(Format('s%d.period', [i]), i, D * (1 - W), D * (1 + W));
     end;
   end;
 

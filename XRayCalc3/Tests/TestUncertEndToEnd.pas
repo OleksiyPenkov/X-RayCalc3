@@ -36,6 +36,7 @@ type
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
     [Test] procedure Periodic_FromProjectFile;
+    [Test] procedure PeriodicHeldPeriod_FromProjectFile;
     [Test] procedure Profile_FromProjectFile;
     [Test] procedure Table_FromProjectFile;
     [Test] procedure LargeTable_IsRefusedAndNothingIsWritten;
@@ -250,6 +251,36 @@ begin
   WriteXRCX(Path, FittedProject(gmPeriodic, 20, Counts));
   Res := RunTool(Path, Counts, Req, Proj);
   Log := Format('periodic: %d walkers, %d steps, %s, %.0f s, repeated %s' + sLineBreak,
+    [Res.Walkers, Res.StepsRun, Res.Device, Res.Seconds, BoolToStr(Res.Repeated, True)]);
+  try
+    AssertInside(Res, 's0.period', 34, Log);
+    AssertInside(Res, 's0.l2.thickness', 6, Log);
+    AssertInside(Res, 's0.period_mean', 34, Log);
+  finally
+    Report(Log);
+  end;
+end;
+
+{ The same project saved without Free period: the tool samples the period all
+  the same, in its own small window. }
+procedure TTestUncertEndToEnd.PeriodicHeldPeriod_FromProjectFile;
+var
+  Path, Log: string;
+  Counts: TArray<Double>;
+  Req: TUncertRequest;
+  Proj: TXRCXProject;
+  Res: TUncertResult;
+begin
+  if not Enabled then
+    Assert.Pass('set XRC_TRUTH_GATE=1 to run the end-to-end cases');
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  Path := TPath.Combine(FDir, 'periodic_held.xrcx');
+  Proj := FittedProject(gmPeriodic, 20, Counts);
+  Proj.Params.LFPSO.FreePeriod := False;
+  WriteXRCX(Path, Proj);
+  Res := RunTool(Path, Counts, Req, Proj);
+  Log := Format('periodic, period held by the fit: %d walkers, %d steps, %s, %.0f s, repeated %s' + sLineBreak,
     [Res.Walkers, Res.StepsRun, Res.Device, Res.Seconds, BoolToStr(Res.Repeated, True)]);
   try
     AssertInside(Res, 's0.period', 34, Log);

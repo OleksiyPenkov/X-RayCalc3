@@ -26,6 +26,7 @@ type
   public
     [Test] procedure Periodic_FreeThicknesses_OneSlotOneDerived;
     [Test] procedure Periodic_FreePeriod_AddsThePeriodSlot;
+    [Test] procedure Periodic_HeldPeriod_IsSampledInASmallWindow;
     [Test] procedure Periodic_FixedOrNoRange_NotSampled;
     [Test] procedure Periodic_StaleTable_IsDropped;
     [Test] procedure Profile_UsesTheGradientExtension;
@@ -118,11 +119,10 @@ var
 begin
   M := MapOf(ProjectOf(WSi(10), 1), Req);
   try
-    Assert.AreEqual(4, M.Count, 'W thickness and the three measurement slots');
+    Assert.AreEqual(5, M.Count, 'W thickness, the period and the three measurement slots');
     Assert.AreEqual('s0.l0.thickness', M.Slots[0].Name);
     Assert.AreEqual(1, Length(M.Derived));
     Assert.AreEqual('s0.l1.thickness', M.Derived[0].Name, 'the thickest free thickness follows from the period');
-    Assert.AreEqual(-1, M.IndexOf('s0.period'), 'the period is held, as the fit held it');
     Assert.IsTrue(Req.Mode = fmPeriodic);
     Assert.AreEqual(0, Req.TableSlots);
   finally
@@ -147,6 +147,49 @@ begin
     Assert.AreEqual(47.5, M.Slots[k].Lower, 1E-4);
     Assert.AreEqual(52.5, M.Slots[k].Upper, 1E-4);
     Assert.AreEqual(50.0, M.Slots[k].Start, 1E-4);
+  finally
+    M.Free;
+  end;
+end;
+
+{ The fit held the period, the tool does not: a period nobody let move has an
+  uncertainty all the same, and a single free thickness would otherwise be
+  pinned by it. }
+procedure TTestUncertRequest.Periodic_HeldPeriod_IsSampledInASmallWindow;
+var
+  S: TFitStructure;
+  Req: TUncertRequest;
+  M: TParamMap;
+  k: Integer;
+begin
+  M := MapOf(ProjectOf(WSi(10), 1), Req);
+  try
+    k := M.IndexOf('s0.period');
+    Assert.IsTrue(k >= 0, 'the period is a slot though the fit held it');
+    Assert.AreEqual(49.0, M.Slots[k].Lower, 1E-4, '2 % below the fitted period');
+    Assert.AreEqual(51.0, M.Slots[k].Upper, 1E-4, '2 % above');
+    Assert.AreEqual(50.0, M.Slots[k].Start, 1E-4);
+  finally
+    M.Free;
+  end;
+
+  S := WSi(10);
+  S.Stacks[0].Layers[0].P[1].Fixed := True;          // one free thickness: Si
+  M := MapOf(ProjectOf(S, 1), Req);
+  try
+    Assert.IsTrue(M.IndexOf('s0.period') >= 0, 'Si moves with the period: something is free');
+  finally
+    M.Free;
+  end;
+
+  S := WSi(10);
+  S.Stacks[0].Layers[0].P[1].Fixed := True;
+  S.Stacks[0].Layers[1].P[1].Fixed := True;
+  S.Stacks[0].Layers[0].P[2].min := 1;               // only a roughness is free
+  S.Stacks[0].Layers[0].P[2].max := 6;
+  M := MapOf(ProjectOf(S, 1), Req);
+  try
+    Assert.AreEqual(-1, M.IndexOf('s0.period'), 'no free thickness: nothing can take up a change of period');
   finally
     M.Free;
   end;
@@ -416,7 +459,8 @@ begin
   Assert.IsTrue(Find('s0.l0.thickness').CanHavePrior);
   Assert.IsTrue(Find('s0.l1.thickness').Kind = unValue, 'the derived layer is a value like any other');
   Assert.AreEqual('Summary', Find('s0.period_mean').Group);
-  Assert.IsTrue(Find('s0.period_mean').Held, 'a held period has no error to show');
+  Assert.IsFalse(Find('s0.period_mean').Held, 'the period is sampled: it has an error to show');
+  Assert.IsTrue(Find('s0.period').Kind = unPeriod);
   Assert.IsTrue(Find('s0.period_mean').CanHavePrior);
   Assert.AreEqual('Measurement', Find('c0.background').Group);
   Assert.IsFalse(Find('c0.background').CanHavePrior);
