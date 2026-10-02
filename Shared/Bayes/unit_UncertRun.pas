@@ -372,9 +372,7 @@ begin
       if Misfit <> '' then
         Result.Message := Result.Message + ' ' + Misfit;
       Exit;
-    end;
-    if Misfit <> '' then
-      Result.Warnings := Result.Warnings + [Misfit + MISFIT_WIDENS];
+    end;                       // with a result, unit_UncertSession.SessionWarnings says it
     if (Length(R.Bands) > 0) and R.Bands[0].Present then
     begin
       Result.Band.Theta := R.Bands[0].Theta;

@@ -236,6 +236,12 @@ begin
   Assert.IsFalse(StoredFromJSON('', B));
   Assert.IsFalse(StoredFromJSON('not json', B));
   Assert.IsFalse(StoredFromJSON('{"format": 99}', B), 'a format this build does not know');
+  { format 1 passed a weaker check: its known values are kept, its result is not shown }
+  Assert.IsTrue(StoredFromJSON('{"format":1,"priors":[{"name":"s0.total","mean":500,"sd":2,"note":"n"}],' +
+    '"result":{"settled":true,"values":[]}}', B));
+  Assert.AreEqual(1, Integer(Length(B.Priors)));
+  Assert.AreEqual(500.0, B.Priors[0].Mean, 0.0);
+  Assert.IsFalse(B.HasResult, 'a result of the older check is not read');
   Assert.IsFalse(StoredFromJSON('[1, 2]', B));
 end;
 

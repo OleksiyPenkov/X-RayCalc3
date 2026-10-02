@@ -34,7 +34,11 @@ uses
   System.SysUtils, unit_Types, unit_MCPProjectFile, unit_UncertRequest, unit_UncertRun;
 
 const
-  UNCERT_FORMAT = 1;
+  { 2: results made with the split R-hat. A format 1 result passed a check
+    that a chain still on its way could pass, so only its known values are
+    read. }
+  UNCERT_FORMAT = 2;
+  UNCERT_FORMAT_KNOWN_ONLY = 1;
 
 type
   TStoredUncert = record
@@ -282,7 +286,7 @@ var
   V, Item: TJSONValue;
   Root, O, R, Band: TJSONObject;
   A: TJSONArray;
-  i: Integer;
+  i, Fmt: Integer;
 begin
   Result := False;
   S := Default(TStoredUncert);
@@ -291,7 +295,8 @@ begin
     if not (V is TJSONObject) then
       Exit;
     Root := TJSONObject(V);
-    if Root.GetValue<Integer>('format', 0) <> UNCERT_FORMAT then
+    Fmt := Root.GetValue<Integer>('format', 0);
+    if (Fmt <> UNCERT_FORMAT) and (Fmt <> UNCERT_FORMAT_KNOWN_ONLY) then
       Exit;
     S.Fingerprint := Root.GetValue<string>('fingerprint', '');
 
@@ -332,7 +337,7 @@ begin
         end;
     end;
 
-    if Root.GetValue('result') is TJSONObject then
+    if (Fmt = UNCERT_FORMAT) and (Root.GetValue('result') is TJSONObject) then
     begin
       R := TJSONObject(Root.GetValue('result'));
       S.HasResult := True;

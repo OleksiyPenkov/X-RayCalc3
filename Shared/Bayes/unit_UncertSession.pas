@@ -57,7 +57,7 @@ function StorePriors(var S: TUncertSession; const Priors: TArray<TUncertPrior>):
 /// '' or a plain sentence; S holds the result either way.</summary>
 function StoreResult(var S: TUncertSession; const Res: TUncertResult): string;
 /// <summary>The lines under the list, in order: the refusal alone; else out
-/// of date, the counts note, the result's message and warnings.</summary>
+/// of date, the misfit, the counts note, the result's message and warnings.</summary>
 function SessionWarnings(const S: TUncertSession): TArray<string>;
 
 implementation
@@ -219,6 +219,7 @@ end;
 function SessionWarnings(const S: TUncertSession): TArray<string>;
 var
   W: string;
+  k: Integer;
 begin
   Result := nil;
   if S.Refusal <> '' then
@@ -230,6 +231,16 @@ begin
     Result := Result + [S.EntryNote];
   if S.HasResult and S.OutOfDate then
     Result := Result + [MSG_OUT_OF_DATE];
+  { the misfit before everything it explains; from the stored values, so a
+    result of any age says it }
+  if S.HasResult and S.Result.Settled then
+    for k := 0 to High(S.Result.Values) do
+      if S.Result.Values[k].Name = 'c0.f' then
+      begin
+        W := MisfitWarning(S.Request.Data, S.Result.Values[k].P50);
+        if W <> '' then
+          Result := Result + [W + MISFIT_WIDENS];
+      end;
   if S.CountsNote <> '' then
     Result := Result + [S.CountsNote];
   if not S.HasResult then

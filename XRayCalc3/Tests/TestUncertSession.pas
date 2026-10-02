@@ -45,6 +45,7 @@ type
     [Test] procedure Open_EntryOfAnotherVersion_IsSaidNotIgnored;
     [Test] procedure StorePriors_ReadOnlyFile_SpeaksOfTheKnownValue;
     [Test] procedure SessionWarnings_Order;
+    [Test] procedure SessionWarnings_MisfitComesFirst;
   end;
 
 implementation
@@ -103,6 +104,8 @@ begin
     Result.Values[k].Minus := 0.5;
     Result.Values[k].Plus := 0.5;
     Result.Values[k].RHat := 1.01;
+    if Result.Values[k].Name = 'c0.f' then
+      Result.Values[k].P50 := 0.01;        // a model that follows its curve
   end;
 end;
 
@@ -385,6 +388,33 @@ begin
   Assert.AreEqual(MSG_OUT_OF_DATE, W[0]);
   Assert.Contains(W[1], 'No raw counts');
   Assert.Contains(W[2], 'limit');
+end;
+
+{ Said from the stored values, so a result of any age gets it, and first: it
+  is the line that explains the rest. }
+procedure TTestUncertSession.SessionWarnings_MisfitComesFirst;
+var
+  S: TUncertSession;
+  Res: TUncertResult;
+  W: TArray<string>;
+  k: Integer;
+  Found: Boolean;
+begin
+  S := Opened(NewProject('a.xrcx', ProjectOf(WSi(10), 1)));
+  Res := ResultFor(S);
+  Res.Warnings := ['W  H sits at its limit: its error is cut off there.'];
+  Found := False;
+  for k := 0 to High(Res.Values) do
+    if Res.Values[k].Name = 'c0.f' then
+    begin
+      Res.Values[k].P50 := 0.2;
+      Found := True;
+    end;
+  Assert.IsTrue(Found, 'the result carries the noise floor');
+  Assert.AreEqual('', StoreResult(S, Res));
+  W := SessionWarnings(S);
+  Assert.Contains(W[0], 'misses the measured curve by about 20 %');
+  Assert.Contains(W[High(W)], 'limit');
 end;
 
 initialization
