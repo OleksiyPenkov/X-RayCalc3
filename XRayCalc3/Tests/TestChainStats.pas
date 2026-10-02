@@ -30,6 +30,7 @@ type
     [Test] procedure Tau_ShortChain_NoCrash;
     [Test] procedure RHat_WalkersOfOneDistribution_NearOne;
     [Test] procedure RHat_OneWalkerElsewhere_Large;
+    [Test] procedure RHat_WalkersDriftingTogether_Large;
     [Test] procedure RHat_TooShort_NaN;
     [Test] procedure RHat_ValueThatNeverMoves_IsOne;
   end;
@@ -165,6 +166,22 @@ begin
   for i := 0 to High(W[3]) do
     W[3][i] := W[3][i] + 10;                    // a walker left behind in another optimum
   Assert.IsTrue(RHat(W) > 2, Format('R-hat %g', [RHat(W)]));
+end;
+
+procedure TTestChainStats.RHat_WalkersDriftingTogether_Large;
+var
+  W: TArray<TArray<Double>>;
+  w_, i: Integer;
+begin
+  { the whole ensemble still on its way: every walker's mean is the same, so
+    only the two halves of each walker tell }
+  W := GaussianWalkers(8, 500, 11);
+  for w_ := 0 to High(W) do
+    for i := 0 to High(W[w_]) do
+      W[w_][i] := W[w_][i] + 0.02 * i;
+  { a steady drift can read 2 at most: the halves' means are a quarter of the
+    way apart, each half's own spread a quarter of that squared over three }
+  Assert.IsTrue(RHat(W) > 1.5, Format('R-hat %g', [RHat(W)]));
 end;
 
 procedure TTestChainStats.RHat_TooShort_NaN;

@@ -43,9 +43,11 @@ function AutocorrTime(const Walkers: TArray<TArray<Double>>; out Reliable: Boole
 /// pooled standard deviation over the within-walker one. Near 1 when the
 /// walkers sample one distribution; well above it when some sit elsewhere
 /// (walkers left behind in a second optimum). 1 for a value that never moves
-/// in any walker. NaN with fewer than two walkers or two steps. An ensemble's
-/// walkers are not independent chains, so this detects a split chain, not
-/// fine mixing.</summary>
+/// in any walker. NaN with fewer than two walkers or two steps. With four
+/// steps or more it is the split R-hat - each walker's two halves are two
+/// series - so walkers that are all still moving the same way read well
+/// above 1 as well. An ensemble's walkers are not independent chains, so
+/// this detects a split or a moving chain, not fine mixing.</summary>
 function RHat(const Walkers: TArray<TArray<Double>>): Double;
 
 implementation
@@ -53,11 +55,12 @@ implementation
 uses
   System.Math, System.Generics.Collections;
 
-function RHat(const Walkers: TArray<TArray<Double>>): Double;
+function RHatOf(const Walkers: TArray<TArray<Double>>; Split: Boolean): Double;
 var
   M, N, w, i: Integer;
   Mean, Grand, W2, B, S: Double;
   Means: TArray<Double>;
+  Halves: TArray<TArray<Double>>;
   Same: Boolean;
 begin
   M := Length(Walkers);
@@ -68,6 +71,19 @@ begin
     N := Min(N, Length(Walkers[w]));
   if N < 2 then
     Exit(NaN);
+  { Split R-hat: each walker's first and second half are two series. An
+    ensemble still on its way moves as one - every walker's mean is the same
+    and the unsplit ratio is 1 - but its halves sit in different places. }
+  if Split and (N >= 4) then
+  begin
+    SetLength(Halves, 2 * M);
+    for w := 0 to M - 1 do
+    begin
+      Halves[2 * w] := Copy(Walkers[w], 0, N div 2);
+      Halves[2 * w + 1] := Copy(Walkers[w], N - N div 2, N div 2);
+    end;
+    Exit(RHatOf(Halves, False));
+  end;
   { A value that never moves - a held slot - is the same number everywhere.
     Decided by comparing the samples, not from the variances: the mean of N
     equal numbers need not equal them to the last bit, and the ratio of two
@@ -111,6 +127,11 @@ begin
   if W2 <= 0 then
     Exit(Infinity);                   // each walker stands still, at different places
   Result := Sqrt(((N - 1) / N * W2 + B) / W2);
+end;
+
+function RHat(const Walkers: TArray<TArray<Double>>): Double;
+begin
+  Result := RHatOf(Walkers, True);
 end;
 
 function IsFiniteValue(X: Double): Boolean; inline;
