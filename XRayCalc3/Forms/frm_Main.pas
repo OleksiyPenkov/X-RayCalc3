@@ -193,6 +193,8 @@ type
     actDataAssess: TAction;
     AssessXRRquality1: TMenuItem;
     actCalcFitJobs: TAction;
+    actCalcUncertainty: TAction;
+    miCalcUncertainty: TMenuItem;
     FitExportJSON: TAction;
     dlgSaveFitJSON: TSaveDialog;
     N16: TMenuItem;
@@ -281,6 +283,7 @@ type
     procedure actFitReportExecute(Sender: TObject);
     procedure mnuResidualClick(Sender: TObject);
     procedure actCalcFitJobsExecute(Sender: TObject);
+    procedure actCalcUncertaintyExecute(Sender: TObject);
     procedure actRecoverModelExecute(Sender: TObject);
     procedure FormAfterMonitorDpiChanged(Sender: TObject; OldDPI,
       NewDPI: Integer);
@@ -1164,6 +1167,7 @@ begin
   FProjectPanel.Project.Enabled := Enable;
   FCalcSettings.Enabled := Enable;
   actResumeFitting.Enabled := FOrchestrator.HasFitResults;
+  actCalcUncertainty.Enabled := Enable;
   if Enable then
     RefreshResiduals;
 end;
@@ -1191,6 +1195,27 @@ end;
 procedure TfrmMain.actCalcFitJobsExecute(Sender: TObject);
 begin
   FBatchRunner.RunBatchJobs;
+end;
+
+{ The uncertainties are a separate program (XRCUncert) that reads the project
+  file: the project is saved first, then the tool is started on it. }
+procedure TfrmMain.actCalcUncertaintyExecute(Sender: TObject);
+var
+  Tool: string;
+begin
+  Tool := ExtractFilePath(ParamStr(0)) + {$IFDEF WIN64}'XRCUncert.x64.exe'{$ELSE}'XRCUncert.exe'{$ENDIF};
+  if not FileExists(Tool) then
+  begin
+    MessageDlg('The uncertainty tool (XRCUncert) was not found beside the program.', mtWarning, [mbOK], 0);
+    Exit;
+  end;
+  if MessageDlg('Save the project and open it in the uncertainty tool?', mtConfirmation,
+    [mbOK, mbCancel], 0) <> mrOk then
+    Exit;
+  if not FProjectPanel.SaveCurrentProject then
+    Exit;
+  ShellExecute(Handle, 'open', PChar(Tool), PChar('"' + FProjectPanel.ProjectFileName + '"'), nil,
+    SW_SHOWNORMAL);
 end;
 
 procedure TfrmMain.actCopyStructureBitmapExecute(Sender: TObject);

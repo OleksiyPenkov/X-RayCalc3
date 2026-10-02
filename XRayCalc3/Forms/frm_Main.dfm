@@ -903,6 +903,9 @@ object frmMain: TfrmMain
         ImageIndex = 36
         Action = actCalcFitJobs
       end
+      object miCalcUncertainty: TMenuItem
+        Action = actCalcUncertainty
+      end
       object N14: TMenuItem
         Caption = '-'
       end
@@ -2158,6 +2161,11 @@ object frmMain: TfrmMain
       Category = 'Calc'
       Caption = 'Batch jobs Fitting'
       OnExecute = actCalcFitJobsExecute
+    end
+    object actCalcUncertainty: TAction
+      Category = 'Calc'
+      Caption = 'Parameter uncertainties...'
+      OnExecute = actCalcUncertaintyExecute
     end
     object FitExportJSON: TAction
       Category = 'Result'
