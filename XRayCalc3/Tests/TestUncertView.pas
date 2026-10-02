@@ -42,6 +42,12 @@ type
     [Test] procedure ParsePrior_ErrorNotPositive;
     [Test] procedure WithPrior_ReplacesAddsRemoves;
     [Test] procedure TimeLeftText_RoundsAndStaysQuietWhenUnknown;
+    [Test] procedure CellEdit_KnownBeforeItsError_IsKeptNotStored;
+    [Test] procedure CellEdit_ErrorCompletesTheKnownValue;
+    [Test] procedure CellEdit_ErrorLeftEmpty_Refused;
+    [Test] procedure CellEdit_NoteOrErrorWithoutKnown_Refused;
+    [Test] procedure CellEdit_ClearedKnown_RemovesOnlyWhatIsStored;
+    [Test] procedure CellEdit_Unchanged_IsNothing;
   end;
 
 implementation
@@ -388,6 +394,98 @@ begin
   Assert.AreEqual('b', L[0].Name);
   L := WithPrior(L, A, True);
   Assert.AreEqual(1, Integer(Length(L)), 'removing what is not there changes nothing');
+end;
+
+{ What an edit of a Known, +- or Note cell means: decided here, so the window
+  only carries it out. }
+
+function TotalRow(const Known, KnownError, Note: string): TUncertRow;
+begin
+  Result := Default(TUncertRow);
+  Result.Name := 's0.total';
+  Result.CanHavePrior := True;
+  Result.Known := Known;
+  Result.KnownError := KnownError;
+  Result.Note := Note;
+end;
+
+procedure TTestUncertView.CellEdit_KnownBeforeItsError_IsKeptNotStored;
+var
+  NewRow: TUncertRow;
+  Pr: TUncertPrior;
+  Why: string;
+begin
+  Assert.IsTrue(DecideCellEdit(TotalRow('', '', ''), False, COL_KNOWN, ' 2790 ', NewRow, Pr, Why) = cePending);
+  Assert.AreEqual('2790', NewRow.Known, 'the row keeps what was typed');
+  Assert.AreEqual('', Why);
+  Assert.IsTrue(DecideCellEdit(TotalRow('', '', ''), False, COL_KNOWN, '27,9', NewRow, Pr, Why) = ceRefuse,
+    'but only a number');
+  Assert.Contains(Why, 'number');
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '', ''), False, COL_NOTE, 'profilometer', NewRow, Pr, Why) = cePending,
+    'a note before the +- waits too');
+  Assert.AreEqual('profilometer', NewRow.Note);
+end;
+
+procedure TTestUncertView.CellEdit_ErrorCompletesTheKnownValue;
+var
+  NewRow: TUncertRow;
+  Pr: TUncertPrior;
+  Why: string;
+begin
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '', 'n'), False, COL_KNOWN_ERROR, '10', NewRow, Pr, Why) = ceStore);
+  Assert.AreEqual('s0.total', Pr.Name);
+  Assert.AreEqual(2790.0, Pr.Mean, 0.0);
+  Assert.AreEqual(10.0, Pr.SD, 0.0);
+  Assert.AreEqual('n', Pr.Note);
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '10', ''), True, COL_NOTE, 'TEM', NewRow, Pr, Why) = ceStore,
+    'a note on a stored value is stored');
+  Assert.AreEqual('TEM', Pr.Note);
+end;
+
+procedure TTestUncertView.CellEdit_ErrorLeftEmpty_Refused;
+var
+  NewRow: TUncertRow;
+  Pr: TUncertPrior;
+  Why: string;
+begin
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '5', ''), True, COL_KNOWN_ERROR, '', NewRow, Pr, Why) = ceRefuse);
+  Assert.Contains(Why, 'greater than zero');
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '', ''), False, COL_KNOWN_ERROR, '0', NewRow, Pr, Why) = ceRefuse);
+end;
+
+procedure TTestUncertView.CellEdit_NoteOrErrorWithoutKnown_Refused;
+var
+  NewRow: TUncertRow;
+  Pr: TUncertPrior;
+  Why: string;
+begin
+  Assert.IsTrue(DecideCellEdit(TotalRow('', '', ''), False, COL_NOTE, 'TEM', NewRow, Pr, Why) = ceRefuse);
+  Assert.Contains(Why, 'known value first');
+  Assert.IsTrue(DecideCellEdit(TotalRow('', '', ''), False, COL_KNOWN_ERROR, '10', NewRow, Pr, Why) = ceRefuse);
+end;
+
+procedure TTestUncertView.CellEdit_ClearedKnown_RemovesOnlyWhatIsStored;
+var
+  NewRow: TUncertRow;
+  Pr: TUncertPrior;
+  Why: string;
+begin
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '10', 'n'), True, COL_KNOWN, '', NewRow, Pr, Why) = ceRemove);
+  Assert.AreEqual('s0.total', Pr.Name, 'which one to remove');
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '', ''), False, COL_KNOWN, '', NewRow, Pr, Why) = ceNothing,
+    'a value that was never stored is just dropped');
+  Assert.AreEqual('', NewRow.Known);
+end;
+
+procedure TTestUncertView.CellEdit_Unchanged_IsNothing;
+var
+  NewRow: TUncertRow;
+  Pr: TUncertPrior;
+  Why: string;
+begin
+  Assert.IsTrue(DecideCellEdit(TotalRow('2790', '10', 'n'), True, COL_KNOWN_ERROR, '10', NewRow, Pr, Why) = ceNothing,
+    'nothing is written for an edit that changed nothing');
+  Assert.IsTrue(DecideCellEdit(TotalRow('', '', ''), False, COL_KNOWN, '', NewRow, Pr, Why) = ceNothing);
 end;
 
 initialization

@@ -27,6 +27,9 @@ uses
   VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.Chart, VCLTee.Series, VCLTee.TeeGDIPlus,
   unit_UncertRequest, unit_UncertRun, unit_UncertView, unit_UncertSession, unit_UncertThread;
 
+const
+  WM_EDITCELL = WM_USER + 1;      // WParam the row, LParam the column: open the cell editor there
+
 type
   TfrmUncertMain = class(TForm)
     pnlTop: TRzPanel;
@@ -75,6 +78,7 @@ type
     procedure lvParamsClick(Sender: TObject);
     procedure edCellExit(Sender: TObject);
     procedure edCellKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure edCellKeyPress(Sender: TObject; var Key: Char);
   private
     FSession: TUncertSession;
     FOpen: Boolean;                 // a project is open
@@ -84,7 +88,10 @@ type
     FRows: TArray<TUncertRow>;
     FDepth: TArray<TDepthSeries>;
     FEditRow, FEditColumn: Integer;
+    FLastEdit: TCellEdit;           // what the last CommitCell came to
+    FRefusedAt: Cardinal;           // tick of the last refusal message
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
+    procedure WMEditCell(var Msg: TMessage); message WM_EDITCELL;
     function Running: Boolean;
     procedure ShowSession;
     procedure FillList;
@@ -93,7 +100,7 @@ type
     procedure RunEnded;
     procedure StopAndWait;
     procedure EditCell(Row, Column: Integer);
-    procedure CommitCell;
+    function CommitCell: Boolean;
   public
     /// <summary>Opens FileName in place of the project shown; says why in a
     /// message and keeps the project it had when it cannot.</summary>
@@ -112,14 +119,18 @@ uses
 
 const
   RUN_SEED = 20261002;            // fixed: the same project gives the same result
-  COL_KNOWN = 3;
-  COL_KNOWN_ERROR = 4;
-  COL_NOTE = 5;
   HELP_PAGE = 'Help\XRCUncert\index.html';
 
 procedure TfrmUncertMain.FormCreate(Sender: TObject);
 begin
   edCell.Parent := lvParams;
+  serMeasured.Pointer.Style := psCircle;
+  serMeasured.Pointer.HorizSize := 2;
+  serMeasured.Pointer.VertSize := 2;
+  serMeasured.Pointer.Pen.Visible := False;
+  serDepthMedian.Pointer.Style := psCircle;
+  serDepthMedian.Pointer.HorizSize := 2;
+  serDepthMedian.Pointer.VertSize := 2;
   DragAcceptFiles(Handle, True);
   ShowSession;
   if ParamCount >= 1 then
@@ -173,7 +184,14 @@ var
   S: TUncertSession;
   Why: string;
 begin
-  edCell.Visible := False;
+  { Read first: a file that is not a project costs the window nothing, not
+    even a run in progress. }
+  Why := OpenSession(FileName, S);
+  if Why <> '' then
+  begin
+    MessageDlg(Why, mtWarning, [mbOK], 0);
+    Exit;
+  end;
   if Running then
   begin
     if MessageDlg('A run is in progress. Stop it and open the other project?', mtConfirmation,
@@ -181,13 +199,7 @@ begin
       Exit;
     StopAndWait;
   end;
-  Why := OpenSession(FileName, S);
-  if Why <> '' then
-  begin
-    MessageDlg(Why, mtWarning, [mbOK], 0);
-    ShowSession;
-    Exit;
-  end;
+  edCell.Visible := False;
   FSession := S;
   FOpen := True;
   FNote := '';
@@ -444,21 +456,37 @@ end;
 
 { ---------------------------------------------------------- known values -- }
 
+{ What an edit means is decided by unit_UncertView.DecideCellEdit; here it is
+  only carried out. The editor is opened through a posted message, after the
+  click and its focus changes are over (as frm_Limits does). }
+
 procedure TfrmUncertMain.lvParamsClick(Sender: TObject);
 var
   Info: TLVHitTestInfo;
+  Hit: Boolean;
 begin
-  CommitCell;
-  if Running then
+  { The click that dismissed a refusal's message box is not a click on a cell. }
+  if GetTickCount - FRefusedAt < 300 then
     Exit;
   ZeroMemory(@Info, SizeOf(Info));
   Info.pt := lvParams.ScreenToClient(Mouse.CursorPos);
-  if lvParams.Perform(LVM_SUBITEMHITTEST, 0, LPARAM(@Info)) = -1 then
+  Hit := (lvParams.Perform(LVM_SUBITEMHITTEST, 0, LPARAM(@Info)) <> -1) and
+    (Info.iItem >= 0) and (Info.iItem <= High(FRows)) and FRows[Info.iItem].CanHavePrior and
+    (Info.iSubItem in [COL_KNOWN, COL_KNOWN_ERROR, COL_NOTE]);
+  if edCell.Visible and Hit and (Info.iItem = FEditRow) and (Info.iSubItem = FEditColumn) then
+  begin
+    edCell.SetFocus;
     Exit;
-  if (Info.iItem < 0) or (Info.iItem > High(FRows)) or not FRows[Info.iItem].CanHavePrior then
-    Exit;
-  if Info.iSubItem in [COL_KNOWN, COL_KNOWN_ERROR, COL_NOTE] then
-    EditCell(Info.iItem, Info.iSubItem);
+  end;
+  if CommitCell and Hit and not Running then
+    PostMessage(Handle, WM_EDITCELL, Info.iItem, Info.iSubItem);
+end;
+
+procedure TfrmUncertMain.WMEditCell(var Msg: TMessage);
+begin
+  if not Running and (Msg.WParam <= WPARAM(High(FRows))) and (Length(FRows) > 0) and
+     FRows[Msg.WParam].CanHavePrior then
+    EditCell(Msg.WParam, Msg.LParam);
 end;
 
 procedure TfrmUncertMain.EditCell(Row, Column: Integer);
@@ -486,59 +514,68 @@ begin
   if Key = VK_RETURN then
   begin
     Key := 0;
-    CommitCell;
+    { Enter on a known value that still has no +-: on to its +- cell }
+    if CommitCell and (FLastEdit = cePending) and (FEditColumn = COL_KNOWN) then
+      PostMessage(Handle, WM_EDITCELL, FEditRow, COL_KNOWN_ERROR);
   end
   else if Key = VK_ESCAPE then
   begin
     Key := 0;
     edCell.Visible := False;
+    ShowSession;                  // and what was typed but not stored goes with it
   end;
 end;
 
-procedure TfrmUncertMain.CommitCell;
-var
-  Row: TUncertRow;
-  Prior: TUncertPrior;
-  Remove: Boolean;
-  Why: string;
+procedure TfrmUncertMain.edCellKeyPress(Sender: TObject; var Key: Char);
 begin
+  if CharInSet(Key, [#13, #27]) then
+    Key := #0;                    // handled in KeyDown; no beep
+end;
+
+{ False when the edit was refused (a message has been shown). }
+function TfrmUncertMain.CommitCell: Boolean;
+var
+  NewRow: TUncertRow;
+  Prior, Old: TUncertPrior;
+  Why: string;
+  k: Integer;
+  Stored: Boolean;
+begin
+  Result := True;
+  FLastEdit := ceNothing;
   if not edCell.Visible then
     Exit;
   edCell.Visible := False;        // first: a message below takes the focus and would come back here
   if (FEditRow < 0) or (FEditRow > High(FRows)) then
     Exit;
-  Row := FRows[FEditRow];
-  case FEditColumn of
-    COL_KNOWN: Row.Known := Trim(edCell.Text);
-    COL_KNOWN_ERROR: Row.KnownError := Trim(edCell.Text);
-  else
-    Row.Note := Trim(edCell.Text);
-  end;
+  Stored := False;
+  for Old in FSession.Priors do
+    if Old.Name = FRows[FEditRow].Name then
+      Stored := True;
 
-  { A known value typed before its +-: check the number, keep it on the row
-    and ask for the +- next. Nothing is stored until both are there. }
-  if (FEditColumn = COL_KNOWN) and (Row.Known <> '') and (Row.KnownError = '') then
-  begin
-    Why := ParsePrior(Row.Name, Row.Known, '1', Row.Note, Prior, Remove);
-    if Why <> '' then
-    begin
-      MessageDlg(Why, mtWarning, [mbOK], 0);
-      Exit;
-    end;
-    FRows[FEditRow].Known := Row.Known;
-    lvParams.Items[FEditRow].SubItems[COL_KNOWN - 1] := Row.Known;
-    EditCell(FEditRow, COL_KNOWN_ERROR);
-    Exit;
-  end;
-
-  Why := ParsePrior(Row.Name, Row.Known, Row.KnownError, Row.Note, Prior, Remove);
-  if Why = '' then
-  begin
-    Prior.Name := Row.Name;
-    Why := StorePriors(FSession, WithPrior(FSession.Priors, Prior, Remove));
+  FLastEdit := DecideCellEdit(FRows[FEditRow], Stored, FEditColumn, edCell.Text, NewRow, Prior, Why);
+  case FLastEdit of
+    ceNothing, cePending:
+      begin
+        { shown, not stored: a known value waits for its +- }
+        FRows[FEditRow] := NewRow;
+        k := FEditRow;
+        lvParams.Items[k].SubItems[COL_KNOWN - 1] := NewRow.Known;
+        lvParams.Items[k].SubItems[COL_KNOWN_ERROR - 1] := NewRow.KnownError;
+        lvParams.Items[k].SubItems[COL_NOTE - 1] := NewRow.Note;
+        Exit;
+      end;
+    ceStore:
+      Why := StorePriors(FSession, WithPrior(FSession.Priors, Prior, False));
+    ceRemove:
+      Why := StorePriors(FSession, WithPrior(FSession.Priors, Prior, True));
   end;
   if Why <> '' then
+  begin
     MessageDlg(Why, mtWarning, [mbOK], 0);
+    FRefusedAt := GetTickCount;
+    Result := False;
+  end;
   ShowSession;
 end;
 

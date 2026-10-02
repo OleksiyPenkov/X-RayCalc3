@@ -19,8 +19,9 @@ unit unit_UncertRequest;
 
      periodic  one slot per free value. In a repeating stack the thickest free
                thickness is the derived layer (the period minus the others);
-               the period is a slot too, inside the fit's window when the fit
-               had Free period on and inside HELD_PERIOD_WINDOW when the fit
+               the period is a slot too, within the fit's window (as a fraction
+               of the fitted period, MAX_PERIOD_WINDOW at most) when the fit
+               had Free period on, and within HELD_PERIOD_WINDOW when the fit
                held it: a held period has an uncertainty all the same, and a
                single free thickness would otherwise be pinned by it.
      profile   an unpaired free value of a repeating stack is a polynomial in
@@ -47,6 +48,9 @@ const
     wider than the Bragg peaks leave it, narrow enough to stay on the fitted
     peak order. }
   HELD_PERIOD_WINDOW = 0.02;
+  { A fit's own period window is cut to this: at 100 % the range would start
+    at a period of nothing. }
+  MAX_PERIOD_WINDOW = 0.5;
   { The measurement's own three values (3.10's defaults): the scale within
     10^+-0.2, the background up to ten times the smallest measured value, the
     relative noise floor f from 0.1 % to 100 %. }
@@ -222,7 +226,7 @@ begin
       Map.SetDerived(SlotName(i, Derived, 1), i, Derived);
       W := HELD_PERIOD_WINDOW;
       if Req.FreePeriod then
-        W := Req.PeriodWindow;
+        W := Min(Req.PeriodWindow, MAX_PERIOD_WINDOW);
       D := StackPeriodOf(S, i);
       Map.AddPeriod(Format('s%d.period', [i]), i, D * (1 - W), D * (1 + W));
     end;

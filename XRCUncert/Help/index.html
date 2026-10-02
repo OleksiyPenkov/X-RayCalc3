@@ -53,13 +53,13 @@
   <tr><td>What the fit left free</td><td>A parameter gets an error when it is not fixed and its lower limit is below its upper limit.</td></tr>
   <tr><td>The limits</td><td>Taken as they are. To change them, change them in X-Ray Calc 3, fit and save.</td></tr>
 </table>
-<p>In a periodic fit the period gets an error even when the fit held it. The period is then allowed to move by 2&nbsp;% either way.</p>
+<p>In a periodic fit the period of a stack gets an error even when the fit held it, as long as at least one thickness in the stack is free. The period is then allowed to move by 2&nbsp;% either way.</p>
 <p>The substrate is not analysed.</p>
 
 <h2 id="list">The list</h2>
 <p>The list has a <strong>Summary</strong> group and one group per stack.</p>
 <ul>
-  <li><strong>Summary</strong>: the period (or the mean period), the total thickness of each repeating stack, and the drift of the period from the first period to the last where the periods differ.</li>
+  <li><strong>Summary</strong>: for each repeating stack, the period (or the mean period), the total thickness, and the drift of the period from the first period to the last. A number that cannot move in this fit, such as the drift of a periodic stack, is shown without an error.</li>
   <li><strong>The stacks</strong>: each layer value that has one number for the whole stack: thickness H, roughness &sigma;, density &rho;.</li>
 </ul>
 <p>The <strong>&plusmn;</strong> column is the error: the parameter lies inside value &plusmn; error in about two cases out of three. When the two sides differ much, both are shown, like <code>+0.30 / &minus;0.10</code>.</p>
@@ -82,7 +82,9 @@
 <table>
   <tr><th>Line</th><th>What it means and what to do</th></tr>
   <tr><td>No raw counts were found</td><td>The errors are based on the scatter of the curve alone. They are more reliable when the tool can read the detector counts: keep the <code>.xrdml</code> file the curve was loaded from where it was, and do not trim or smooth the curve.</td></tr>
-  <tr><td>... sits at its limit</td><td>The parameter wants to go beyond its limit, so its error is cut off there. Widen the limit in X-Ray Calc 3, fit again, save.</td></tr>
+  <tr><td>... sits at its limit</td><td>The parameter wants to go beyond its limit, so its error is cut off there. Widen the limit in X-Ray Calc 3, fit again, save. For a period that the fit held, the limit is the tool's own 2&nbsp;%: fit with <em>Free period</em> on instead.</td></tr>
+  <tr><td>The graphics card stopped; the run finished on the processor</td><td>The result is as good as any other; the run only took longer.</td></tr>
+  <tr><td>The run failed: ...</td><td>Something went wrong inside the calculation and nothing was changed. Run again; if it repeats, report the project.</td></tr>
   <tr><td>... the result repeats what was entered as known</td><td>The measurement says nothing more about this parameter than the known value already did.</td></tr>
   <tr><td>The fit has not settled</td><td>No errors are given, because they could not be trusted. Refit the model in X-Ray Calc 3 (more iterations, or a better start) and try again.</td></tr>
   <tr><td>The model, the curve or the known values have changed since this result was made</td><td>The numbers shown belong to an earlier state of the project. Run again.</td></tr>

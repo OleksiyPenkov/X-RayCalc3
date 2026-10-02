@@ -209,6 +209,7 @@ object frmUncertMain: TfrmUncertMain
     Visible = False
     OnExit = edCellExit
     OnKeyDown = edCellKeyDown
+    OnKeyPress = edCellKeyPress
   end
   object pcCharts: TPageControl
     AlignWithMargins = True
@@ -241,12 +242,8 @@ object frmUncertMain: TfrmUncertMain
         object serMeasured: TPointSeries
           SeriesColor = clGray
           Title = 'Measured'
-          ClickableLine = False
-          Pointer.HorizSize = 2
           Pointer.InflateMargins = True
-          Pointer.Pen.Visible = False
-          Pointer.Style = psCircle
-          Pointer.VertSize = 2
+          Pointer.Style = psRectangle
           XValues.Name = 'X'
           XValues.Order = loAscending
           YValues.Name = 'Y'
@@ -350,10 +347,8 @@ object frmUncertMain: TfrmUncertMain
           Brush.BackColor = clDefault
           LinePen.Color = clRed
           LinePen.Width = 2
-          Pointer.HorizSize = 2
           Pointer.InflateMargins = True
-          Pointer.Style = psCircle
-          Pointer.VertSize = 2
+          Pointer.Style = psRectangle
           Pointer.Visible = True
           XValues.Name = 'X'
           XValues.Order = loAscending

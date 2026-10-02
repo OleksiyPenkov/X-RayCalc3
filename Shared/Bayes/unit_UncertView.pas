@@ -74,6 +74,25 @@ function WithPrior(const Priors: TArray<TUncertPrior>; const Prior: TUncertPrior
 /// 'a few seconds left'; '' when the time is not known.</summary>
 function TimeLeftText(Seconds: Double): string;
 
+const
+  { the list's columns that can be edited }
+  COL_KNOWN = 3;
+  COL_KNOWN_ERROR = 4;
+  COL_NOTE = 5;
+
+type
+  TCellEdit = (
+    ceNothing,    // nothing changed, or an unstored value was cleared: show NewRow
+    cePending,    // a known value still without its +-: keep NewRow on screen, store nothing
+    ceStore,      // store Prior
+    ceRemove,     // take the stored value named Prior.Name away
+    ceRefuse);    // Why says why; the row stays as it was
+
+/// <summary>What typing Text into one of Row's three editable cells means.
+/// Stored: the project holds a known value for this row.</summary>
+function DecideCellEdit(const Row: TUncertRow; Stored: Boolean; Column: Integer; const Text: string;
+  out NewRow: TUncertRow; out Prior: TUncertPrior; out Why: string): TCellEdit;
+
 implementation
 
 uses
@@ -392,6 +411,52 @@ begin
     end;
   if not Remove and not Found then
     Result := Result + [Prior];
+end;
+
+function DecideCellEdit(const Row: TUncertRow; Stored: Boolean; Column: Integer; const Text: string;
+  out NewRow: TUncertRow; out Prior: TUncertPrior; out Why: string): TCellEdit;
+var
+  Remove: Boolean;
+begin
+  Result := ceNothing;
+  NewRow := Row;
+  Prior := Default(TUncertPrior);
+  Why := '';
+  case Column of
+    COL_KNOWN: NewRow.Known := Trim(Text);
+    COL_KNOWN_ERROR: NewRow.KnownError := Trim(Text);
+  else
+    NewRow.Note := Trim(Text);
+  end;
+  if (NewRow.Known = Row.Known) and (NewRow.KnownError = Row.KnownError) and (NewRow.Note = Row.Note) then
+    Exit;
+
+  if NewRow.Known = '' then
+  begin
+    if Stored then
+    begin
+      Prior.Name := Row.Name;
+      Exit(ceRemove);
+    end;
+    if Column = COL_KNOWN then
+      Exit;                       // a value that was never stored is cleared
+    Why := 'Enter the known value first.';
+  end
+  else if (NewRow.KnownError = '') and (Column <> COL_KNOWN_ERROR) then
+  begin
+    { the +- comes next: only the number is checked so far }
+    Why := ParsePrior(Row.Name, NewRow.Known, '1', NewRow.Note, Prior, Remove);
+    if Why = '' then
+      Exit(cePending);
+  end
+  else
+  begin
+    Why := ParsePrior(Row.Name, NewRow.Known, NewRow.KnownError, NewRow.Note, Prior, Remove);
+    if Why = '' then
+      Exit(ceStore);
+  end;
+  NewRow := Row;
+  Result := ceRefuse;
 end;
 
 function TimeLeftText(Seconds: Double): string;

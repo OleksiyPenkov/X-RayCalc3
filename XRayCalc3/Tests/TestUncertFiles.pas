@@ -43,6 +43,7 @@ type
     [Test] procedure EntryNames;
     [Test] procedure KeepToolEntries_CopiesOnlyTheToolsEntries;
     [Test] procedure KeepToolEntries_ReplacesAnOlderFile;
+    [Test] procedure KeepToolEntries_EntryWithAPath_IsSkipped;
     [Test] procedure KeepToolEntries_MissingFile_DoesNothing;
   end;
 
@@ -390,6 +391,34 @@ begin
   TFile.WriteAllText(TPath.Combine(Dir, 'uncert_1.json'), 'old');
   KeepToolEntries(Path, Dir);
   Assert.AreEqual('new', TFile.ReadAllText(TPath.Combine(Dir, 'uncert_1.json'), TEncoding.UTF8));
+end;
+
+{ An archive is not trusted to name its entries politely: one with a folder in
+  its name is left alone, and the plain ones beside it are still taken. }
+procedure TTestUncertFiles.KeepToolEntries_EntryWithAPath_IsSkipped;
+var
+  Path, Dir, Work: string;
+  Z: TZipFile;
+begin
+  Path := TPath.Combine(FDir, 'odd.xrcx');
+  Z := TZipFile.Create;
+  try
+    Z.Open(Path, zmWrite);
+    Z.Add(TEncoding.UTF8.GetBytes('out'), 'uncert_x/../../uncert_escaped.json');
+    Z.Add(TEncoding.UTF8.GetBytes('sub'), 'sub/uncert_2.json');
+    Z.Add(TEncoding.UTF8.GetBytes('good'), 'uncert_1.json');
+    Z.Close;
+  finally
+    Z.Free;
+  end;
+  Dir := TPath.Combine(FDir, 'a');
+  Work := TPath.Combine(Dir, 'work');
+  TDirectory.CreateDirectory(Work);
+  KeepToolEntries(Path, Work);
+  Assert.AreEqual('good', TFile.ReadAllText(TPath.Combine(Work, 'uncert_1.json'), TEncoding.UTF8));
+  Assert.AreEqual(1, Integer(Length(TDirectory.GetFiles(Dir, '*', TSearchOption.soAllDirectories))),
+    'nothing but the plain entry, and nothing outside the folder');
+  Assert.IsFalse(TFile.Exists(TPath.Combine(FDir, 'uncert_escaped.json')));
 end;
 
 procedure TTestUncertFiles.KeepToolEntries_MissingFile_DoesNothing;

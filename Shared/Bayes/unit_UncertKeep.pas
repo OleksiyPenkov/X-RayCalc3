@@ -40,8 +40,10 @@ var
   L: string;
 begin
   L := Name.ToLower;
-  Result := (L.StartsWith('uncert_') and L.EndsWith('.json')) or
-            (L.StartsWith('counts_') and L.EndsWith('.dat'));
+  { a name with a folder in it is not one the tool writes, and could leave Dir }
+  Result := (L.IndexOfAny(['/', '\', ':']) < 0) and
+            ((L.StartsWith('uncert_') and L.EndsWith('.json')) or
+             (L.StartsWith('counts_') and L.EndsWith('.dat')));
 end;
 
 procedure KeepToolEntries(const ProjectFile, Dir: string);

@@ -27,6 +27,7 @@ type
     [Test] procedure Periodic_FreeThicknesses_OneSlotOneDerived;
     [Test] procedure Periodic_FreePeriod_AddsThePeriodSlot;
     [Test] procedure Periodic_HeldPeriod_IsSampledInASmallWindow;
+    [Test] procedure Periodic_VeryWidePeriodWindow_IsCut;
     [Test] procedure Periodic_FixedOrNoRange_NotSampled;
     [Test] procedure Periodic_StaleTable_IsDropped;
     [Test] procedure Profile_UsesTheGradientExtension;
@@ -190,6 +191,30 @@ begin
   M := MapOf(ProjectOf(S, 1), Req);
   try
     Assert.AreEqual(-1, M.IndexOf('s0.period'), 'no free thickness: nothing can take up a change of period');
+  finally
+    M.Free;
+  end;
+end;
+
+{ A fit whose period was free over a very wide range (an MCP fit with bounds
+  from 10 to 130 A on a 50 A period) is still analysed: the window is cut to
+  half the period either way. }
+procedure TTestUncertRequest.Periodic_VeryWidePeriodWindow_IsCut;
+var
+  P: TXRCXProject;
+  Req: TUncertRequest;
+  M: TParamMap;
+  k: Integer;
+begin
+  P := ProjectOf(WSi(10), 1);
+  P.Params.LFPSO.FreePeriod := True;
+  P.Params.LFPSO.PeriodWindow := 1.6;
+  M := MapOf(P, Req);
+  try
+    k := M.IndexOf('s0.period');
+    Assert.IsTrue(k >= 0);
+    Assert.AreEqual(25.0, M.Slots[k].Lower, 1E-4);
+    Assert.AreEqual(75.0, M.Slots[k].Upper, 1E-4);
   finally
     M.Free;
   end;

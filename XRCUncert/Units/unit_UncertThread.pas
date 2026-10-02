@@ -79,22 +79,27 @@ end;
 
 procedure TUncertThread.Execute;
 begin
+  { Whatever happens, the owner is told that the run has ended: it shows
+    "running" until then. }
   try
     try
-      FResult := RunUncertainty(FReq, FPriors, FCounts, FUseGPU, FSeed, FOnProgress,
-        function: Boolean
-        begin
-          Result := FStop;
-        end, FRecipe);
-    except
-      on E: Exception do
-        FFailure := E.Message;
+      try
+        FResult := RunUncertainty(FReq, FPriors, FCounts, FUseGPU, FSeed, FOnProgress,
+          function: Boolean
+          begin
+            Result := FStop;
+          end, FRecipe);
+      except
+        on E: Exception do
+          FFailure := E.Message;
+      end;
+    finally
+      DrainParallelTasksBeforeExit;
     end;
   finally
-    DrainParallelTasksBeforeExit;
+    if Assigned(FOnDone) then
+      FOnDone();
   end;
-  if Assigned(FOnDone) then
-    FOnDone();
 end;
 
 end.

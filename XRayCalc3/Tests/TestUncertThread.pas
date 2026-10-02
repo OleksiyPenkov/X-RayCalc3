@@ -88,7 +88,9 @@ var
   Recipe: TUncertRecipe;
   First: TEvent;
   Watch: TStopwatch;
+  Done: Integer;
 begin
+  Done := 0;
   if not TWB4CFixture.TablesPresent then
     Assert.Pass('Henke tables W, B4C, Si are not installed');
   Assert.AreEqual('', BuildRequest(WB4CProject(6, Counts), Req));
@@ -101,7 +103,11 @@ begin
       procedure(Step, Total: Integer; SecondsLeft: Double)
       begin
         First.SetEvent;
-      end, nil);
+      end,
+      procedure
+      begin
+        TInterlocked.Increment(Done);
+      end);
     try
       Assert.IsTrue(First.WaitFor(60000) = wrSignaled, 'the run started');
       Watch := TStopwatch.StartNew;
@@ -112,6 +118,7 @@ begin
       Assert.IsTrue(T.Result.Stopped);
       Assert.IsFalse(T.Result.Settled);
       Assert.AreEqual('', T.Failure);
+      Assert.AreEqual(1, Done, 'a stopped run says that it has ended too: the window waits for it');
     finally
       T.Free;
     end;
