@@ -161,7 +161,9 @@ uses
   TestUncertRun in 'TestUncertRun.pas',
   unit_UncertFiles in '..\..\Shared\Bayes\unit_UncertFiles.pas',
   TestUncertFiles in 'TestUncertFiles.pas',
-  TestUncertEndToEnd in 'TestUncertEndToEnd.pas';
+  TestUncertEndToEnd in 'TestUncertEndToEnd.pas',
+  unit_UncertView in '..\..\Shared\Bayes\unit_UncertView.pas',
+  TestUncertView in 'TestUncertView.pas';
 
 {$R *.res}
 
