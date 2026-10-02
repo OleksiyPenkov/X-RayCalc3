@@ -43,6 +43,11 @@ Source: "deploy\Win64\XRC_MCP.exe";                 DestDir: "{app}"; Flags: ign
 ; the server does not start without its XRF line table beside it
 Source: "deploy\Win64\xrf_lines.json";              DestDir: "{app}"; Flags: ignoreversion
 
+; --- The uncertainty tool (Calc - Parameter uncertainties starts the one of its own bitness) ---
+Source: "deploy\Win64\XRCUncert.x64.exe";           DestDir: "{app}"; Flags: ignoreversion
+Source: "deploy\Win32\XRCUncert.exe";               DestDir: "{app}"; Flags: ignoreversion
+Source: "deploy\Help\XRCUncert\*";                   DestDir: "{app}\Help\XRCUncert";    Flags: ignoreversion
+
 ; --- Shared data files ---
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
 Source: "deploy\Examples\*";                         DestDir: "{app}\Examples";          Flags: ignoreversion
@@ -56,6 +61,7 @@ Source: "deploy\XRayCalc3_x64_Icon.ico";             DestDir: "{app}";          
 [Icons]
 Name: "{group}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"
 Name: "{group}\{#MyAppName} x32"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"
+Name: "{group}\Parameter uncertainties"; Filename: "{app}\XRCUncert.x64.exe"
 Name: "{group}\User Manual";             Filename: "{app}\Help\UserManual.html"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"; Tasks: desktopicon

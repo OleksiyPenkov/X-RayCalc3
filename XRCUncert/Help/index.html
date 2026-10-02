@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XRCUncert: parameter uncertainties</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="app-title">XRCUncert Help</span>
+  <span class="sep">|</span>
+  <span>Parameter uncertainties</span>
+</div>
+
+<div class="container">
+
+<h1>Parameter uncertainties</h1>
+<div class="subtitle">An error for each fitted parameter of an X-Ray Calc project</div>
+
+<div class="page-toc">
+  <div class="page-toc-title">On this page</div>
+  <ul>
+    <li><a href="#what">What the tool gives</a></li>
+    <li><a href="#start">Starting it</a></li>
+    <li><a href="#takes">What it takes from the project</a></li>
+    <li><a href="#list">The list</a></li>
+    <li><a href="#known">Known values</a></li>
+    <li><a href="#charts">The charts</a></li>
+    <li><a href="#warnings">Warnings</a></li>
+    <li><a href="#details">Details, Copy table, Export</a></li>
+    <li><a href="#not">What it does not do</a></li>
+  </ul>
+</div>
+
+<h2 id="what">What the tool gives</h2>
+<p><strong>XRCUncert</strong> takes a project that has been fitted in X-Ray Calc 3 and gives every fitted parameter as <em>value &plusmn; error</em>. It works on one model and the one measured curve linked to it. The fit itself is not changed: the tool starts from the fitted model and finds how far each parameter can move before the calculated curve stops agreeing with the measurement.</p>
+
+<h2 id="start">Starting it</h2>
+<ul>
+  <li>In X-Ray Calc 3: <strong>Calc &gt; Parameter uncertainties...</strong> The project is saved and the tool opens on it.</li>
+  <li>On its own: <strong>Open...</strong>, or drop a <code>.xrcx</code> file on the window.</li>
+</ul>
+<p>Press <strong>Run</strong>. A line under the buttons shows the time left; a typical run takes about a minute. <strong>Stop</strong> ends the run and leaves the project as it was.</p>
+<p>The result is stored inside the project file, so it is there the next time the project is opened in the tool, and it travels with the file. Saving the project in X-Ray Calc 3 keeps it.</p>
+
+<h2 id="takes">What it takes from the project</h2>
+<table>
+  <tr><th>From the project</th><th>How it is used</th></tr>
+  <tr><td>The active model and its linked curve</td><td>These are what is analysed. Link the curve to the model in X-Ray Calc 3 first.</td></tr>
+  <tr><td>The fitting mode</td><td>Periodic, Profile or Irregular, as the project was last fitted.</td></tr>
+  <tr><td>What the fit left free</td><td>A parameter gets an error when it is not fixed and its lower limit is below its upper limit.</td></tr>
+  <tr><td>The limits</td><td>Taken as they are. To change them, change them in X-Ray Calc 3, fit and save.</td></tr>
+</table>
+<p>In a periodic fit the period gets an error even when the fit held it. The period is then allowed to move by 2&nbsp;% either way.</p>
+<p>The substrate is not analysed.</p>
+
+<h2 id="list">The list</h2>
+<p>The list has a <strong>Summary</strong> group and one group per stack.</p>
+<ul>
+  <li><strong>Summary</strong>: the period (or the mean period), the total thickness of each repeating stack, and the drift of the period from the first period to the last where the periods differ.</li>
+  <li><strong>The stacks</strong>: each layer value that has one number for the whole stack: thickness H, roughness &sigma;, density &rho;.</li>
+</ul>
+<p>The <strong>&plusmn;</strong> column is the error: the parameter lies inside value &plusmn; error in about two cases out of three. When the two sides differ much, both are shown, like <code>+0.30 / &minus;0.10</code>.</p>
+<p>A layer value that changes from period to period (a profile or a table) has no row. It is drawn on the <strong>Depth</strong> chart, and the Summary numbers describe the stack as a whole.</p>
+
+<h2 id="known">Known values</h2>
+<p>If a number is known from another measurement, enter it: click the <strong>Known</strong> cell of its row, type the value, press Enter, then type its error in the next <strong>&plusmn;</strong> cell. <strong>Note</strong> is for where the number came from. To take a known value away, clear its Known cell.</p>
+<div class="note"><strong>Example:</strong> a profilometer gives the total thickness of the coating as 2790 &plusmn; 10 &Aring;. Enter 2790 and 10 on the <em>Total thickness</em> row and run again. The errors of the other parameters usually become smaller.</div>
+<p>Use a decimal point, not a comma. A known value can be entered on the Summary rows and on the rows of the stacks.</p>
+<p>After a known value is changed the stored result is out of date; run again.</p>
+
+<h2 id="charts">The charts</h2>
+<ul>
+  <li><strong>Curve</strong>: the measured points, the calculated curve (red) and the range it covers (the two thin lines). The thin lines should enclose the red one closely and follow the points.</li>
+  <li><strong>Depth</strong> (profile and irregular fits only): a layer value against the period number, with its range. Choose the layer value in the box above the chart.</li>
+</ul>
+
+<h2 id="warnings">Warnings</h2>
+<p>Lines appear under the list only when there is something to say.</p>
+<table>
+  <tr><th>Line</th><th>What it means and what to do</th></tr>
+  <tr><td>No raw counts were found</td><td>The errors are based on the scatter of the curve alone. They are more reliable when the tool can read the detector counts: keep the <code>.xrdml</code> file the curve was loaded from where it was, and do not trim or smooth the curve.</td></tr>
+  <tr><td>... sits at its limit</td><td>The parameter wants to go beyond its limit, so its error is cut off there. Widen the limit in X-Ray Calc 3, fit again, save.</td></tr>
+  <tr><td>... the result repeats what was entered as known</td><td>The measurement says nothing more about this parameter than the known value already did.</td></tr>
+  <tr><td>The fit has not settled</td><td>No errors are given, because they could not be trusted. Refit the model in X-Ray Calc 3 (more iterations, or a better start) and try again.</td></tr>
+  <tr><td>The model, the curve or the known values have changed since this result was made</td><td>The numbers shown belong to an earlier state of the project. Run again.</td></tr>
+  <tr><td>The model has ... per-period table values free</td><td>An irregular fit with more than 20 free table values cannot be analysed. Fit it with a profile, or pair or fix some of the values.</td></tr>
+  <tr><td>Nothing in the model is free to vary</td><td>Every value is fixed or has equal limits. Free the parameters of interest in X-Ray Calc 3, fit and save.</td></tr>
+  <tr><td>The result was not stored in the project</td><td>The project file could not be written (read-only, or in use). The result stays on the screen: use Copy table or Export.</td></tr>
+</table>
+
+<h2 id="details">Details, Copy table, Export</h2>
+<ul>
+  <li><strong>Details...</strong>: how the run went, the scale, background and noise of the measurement, how well the run agrees with itself for each parameter, and which parameters move together. Two parameters that move together cannot be told apart well by this measurement.</li>
+  <li><strong>Copy table</strong>: the list as text, to paste into a spreadsheet or a report.</li>
+  <li><strong>Export...</strong>: the list as a CSV file.</li>
+</ul>
+
+<h2 id="not">What it does not do</h2>
+<ul>
+  <li>It does not change the model, the limits or the fit.</li>
+  <li>It analyses one curve at a time. Several curves fitted together are not supported.</li>
+  <li>It works on angle scans only.</li>
+</ul>
+
+</div>
+</body>
+</html>

@@ -7,7 +7,7 @@ Delphi VCL application for X-ray reflectivity calculations. RAD Studio 37.0 (Emb
 Always use `/t:Build` — `/t:Make` does NOT work.
 
 **Win32 (x86) is the primary target** for the GUI and CLI. "Build all" = Win32 Release for
-XRayCalc3 / xrccmd / XRFCalc, plus Win64 Release for the same three; XRC_MCP is **Win64 only**
+XRayCalc3 / xrccmd / XRFCalc / XRCUncert, plus Win64 Release for the same four; XRC_MCP is **Win64 only**
 (it needs OmniThreadLibrary 3.08 — see Dependencies).
 
 The common prefix for all MSBuild commands:
@@ -23,6 +23,8 @@ cmd.exe //c "set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0&& set BDSCOM
 | XRC_CMD Win64 | `XRC_CMD\xrccmd.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
 | XRFCalc **Win32** | `XRFCalc\XRFCalc.dproj /t:Build /p:Config=Release /p:Platform=Win32 /nologo /v:minimal" 2>&1` |
 | XRFCalc Win64 | `XRFCalc\XRFCalc.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
+| XRCUncert **Win32** | `XRCUncert\XRCUncert.dproj /t:Build /p:Config=Release /p:Platform=Win32 /nologo /v:minimal" 2>&1` |
+| XRCUncert Win64 | `XRCUncert\XRCUncert.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
 | XRC_MCP Win64 (only) | `XRC_MCP\XRC_MCP.dproj /t:Build /p:Config=Release /p:Platform=Win64 /nologo /v:minimal" 2>&1` |
 | Tests (build) | `XRayCalc3\Tests\XRayCalc3Tests.dproj /t:Build /p:Config=Debug /nologo /v:minimal" 2>&1` |
 
@@ -31,7 +33,7 @@ cmd.exe //c "set BDS=C:\Program Files (x86)\Embarcadero\Studio\37.0&& set BDSCOM
 cmd.exe //c "set PATH=C:\Program Files (x86)\Embarcadero\Studio\37.0\bin;%PATH%&& XRayCalc3\Tests\_Out\BIN\XRayCalc3Tests.exe --exitbehavior:Continue" 2>&1
 ```
 
-**Group project** (`XRC3.groupproj`) build order: XRayCalc3 → XRayCalcVisualControls → xrccmd → XRFCalc → XRC_MCP
+**Group project** (`XRC3.groupproj`) build order: XRayCalc3 → XRayCalcVisualControls → xrccmd → XRFCalc → XRCUncert → XRC_MCP
 
 **If a Win32 build fails with `F2613: Unit '<third-party>' not found`**, the culprit is the Delphi
 library path, not the project. Command-line msbuild reads it from
@@ -55,10 +57,12 @@ XRayCalc3/          Main GUI application
   Tests/            DUnitX test suite — 14 test units, Win32 Debug only
 XRC_CMD/            Command-line interface variant
 XRFCalc/            XRF calculation GUI app
+XRCUncert/          Parameter-uncertainty tool (separate GUI app; Calc - Parameter uncertainties starts it)
 XRC_MCP/            MCP server for LLM agents; spec in docs/superpowers/specs/2026-09-09-xrc-mcp-design.md
                     smoke/session.ps1 drives all 18 tools end to end (exit 0 = pass)
 Shared/
   Math/             Calculation engine, complex math, materials database
+  Bayes/            Sampler core and the uncertainty tool's VCL-free units (unit_Uncert*)
   Universal/        Universal mirror types, IO, templates, XRF lines
 _Out/               Shared build output (BIN/, DCU/, DCU64/)
 _Installer/         InnoSetup script (XRayCalc3Setup.iss) + deploy.sh
@@ -71,6 +75,8 @@ groups, so a Win32 build lands in `XRFCalc/_Out/BIN/XRFCalc.exe` with DCUs in th
 `XRFCalc/_Out/DCU64`. Post-build events copy the help next to the executable on both platforms:
 `XRayCalc3.dproj` copies `XRayCalc3/Assets/Docs/Help/` to `<exe dir>/Help/`, and `XRFCalc.dproj` copies
 `XRFCalc/Help/` to `<exe dir>/Help/XRFCalc/` (its own subfolder, because both Win64 builds share `_Out/BIN`).
+`XRCUncert.dproj` puts both platforms into `_Out/BIN` (`XRCUncert.exe`, `XRCUncert.x64.exe`), DCUs into
+`_Out/DCU/XRCUncert/<Platform>`, and copies `XRCUncert/Help/` to `<exe dir>/Help/XRCUncert/`.
 
 ## Release / installer
 
@@ -127,6 +133,15 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   `assess_xrr` (handler in `unit_ToolsFiles`) and the GUI's Data - Assess XRR quality (`frm_XRRAssess`).
   The GUI links it and the MCP helpers it needs from `..\XRC_MCP\units` and `..\XRC_CMD\Units` on its
   unit search path; keep those units free of the inbox, the sandbox and the server.
+- `Shared/Bayes/unit_UncertSession.pas` and `unit_UncertView.pas` — where XRCUncert's behaviour lives and is
+  tested: the session opens a project (request or plain refusal, counts, known values, stored result,
+  out-of-date check) and writes back only `uncert_<model id>.json` / `counts_<data id>.dat`; the view turns
+  a result into rows, error text, table, CSV and Details. `XRCUncert/Forms/frm_UncertMain` only draws
+  them and runs `unit_UncertRun.RunUncertainty` on `unit_UncertThread`. The main app's part is two
+  places: `actCalcUncertainty` (saves, then starts the tool of its own bitness from its own folder) and
+  `unit_UncertKeep.KeepToolEntries` in `TfrmProjectPanel.SaveProject`, which takes the tool's entries
+  from the file on disk before the project is re-zipped. `unit_UncertKeep` links no part of the sampler;
+  keep it that way.
 
 ## Dependencies
 
