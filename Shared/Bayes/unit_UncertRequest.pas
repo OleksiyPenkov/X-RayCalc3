@@ -117,6 +117,9 @@ function BuildMap(const Req: TUncertRequest; const Priors: TArray<TUncertPrior>)
 /// <summary>'' when the fitted values are a feasible start, else a plain
 /// sentence naming what lies outside its limits.</summary>
 function StartProblem(Map: TParamMap; const Req: TUncertRequest): string;
+/// <summary>Req.Names[k] as a message names it: its caption, and the stack
+/// it belongs to when the model has several.</summary>
+function NameTitle(const Req: TUncertRequest; k: Integer): string;
 
 implementation
 
@@ -526,6 +529,15 @@ begin
   finally
     Map.Free;
   end;
+end;
+
+function NameTitle(const Req: TUncertRequest; k: Integer): string;
+begin
+  Result := Req.Names[k].Caption;
+  { a summary's caption already carries its stack }
+  if (Length(Req.Structure.Stacks) > 1) and (Req.Names[k].Kind <> unSummary) and
+     (Req.Names[k].Stack >= 0) then
+    Result := Format('%s (%s)', [Result, StackTitle(Req.Structure, Req.Names[k].Stack)]);
 end;
 
 function BuildMap(const Req: TUncertRequest; const Priors: TArray<TUncertPrior>): TParamMap;

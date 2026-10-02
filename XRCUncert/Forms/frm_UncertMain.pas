@@ -40,7 +40,7 @@ type
     lblProgress: TLabel;
     pnlBottom: TRzPanel;
     memWarnings: TMemo;
-    pnlButtons: TPanel;
+    pnlButtons: TRzPanel;
     btnDetails: TButton;
     btnCopy: TButton;
     btnExport: TButton;
@@ -90,6 +90,7 @@ type
     FEditRow, FEditColumn: Integer;
     FLastEdit: TCellEdit;           // what the last CommitCell came to
     FRefusedAt: Cardinal;           // tick of the last refusal message
+    FStopping: Boolean;             // Stop was pressed on the current run
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
     procedure WMEditCell(var Msg: TMessage); message WM_EDITCELL;
     function Running: Boolean;
@@ -158,11 +159,17 @@ end;
 
 procedure TfrmUncertMain.WMDropFiles(var Msg: TWMDropFiles);
 var
-  Name: array [0 .. MAX_PATH] of Char;
+  Name: string;
+  Len: Cardinal;
 begin
   try
-    if DragQueryFile(Msg.Drop, 0, Name, Length(Name)) > 0 then
+    Len := DragQueryFile(Msg.Drop, 0, nil, 0);       // its length: a path can be longer than MAX_PATH
+    if Len > 0 then
+    begin
+      SetLength(Name, Len);
+      DragQueryFile(Msg.Drop, 0, PChar(Name), Len + 1);
       OpenProject(Name);
+    end;
   finally
     DragFinish(Msg.Drop);
   end;
@@ -366,6 +373,7 @@ begin
   edCell.Visible := False;
   Inc(FSerial);
   Serial := FSerial;
+  FStopping := False;
   FNote := '';
   { Both callbacks arrive on the worker thread. What they queue belongs to
     that thread, so freeing it takes the calls not yet made with it. }
@@ -379,7 +387,7 @@ begin
       TThread.Queue(TThread.CurrentThread,
         procedure
         begin
-          if Serial = FSerial then
+          if (Serial = FSerial) and not FStopping then
             lblProgress.Caption := Text;
         end);
     end,
@@ -401,6 +409,7 @@ begin
   if not Running then
     Exit;
   FThread.Stop;
+  FStopping := True;              // a progress report still on its way must not overwrite the line
   btnStop.Enabled := False;
   lblProgress.Caption := 'Stopping...';
 end;
@@ -429,12 +438,16 @@ begin
   else if Res.Stopped then
     FNote := 'The run was stopped: nothing was changed.'
   else if not Res.Settled then
-    FNote := Res.Message
+  begin
+    FNote := Res.Message;
+    if FNote = '' then
+      FNote := MSG_NOT_SETTLED;
+  end
   else
   begin
     Why := StoreResult(FSession, Res);
     if Why <> '' then
-      FNote := 'The result was not stored in the project: ' + Why;
+      FNote := 'The result is shown here only. ' + Why;
   end;
   ShowSession;
 end;

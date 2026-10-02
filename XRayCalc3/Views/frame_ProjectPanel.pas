@@ -1925,13 +1925,14 @@ procedure TfrmProjectPanel.SaveProject(const FileName: string);
 begin
   if SaveProjectINI(FProjectDir + PARAMETERS_FILE_NAME) then
   begin
-    { The uncertainty tool writes its entries into the project file while the
-      project is open here; they are taken from it before it is replaced. }
-    KeepToolEntries(FProjectFileName, FProjectDir);
-
     FProject.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
 
     SeriesToFile(ActiveModelSeries, FProjectDir + 'calc.dat');
+
+    { The uncertainty tool writes its entries into the project file while the
+      project is open here; they are taken from it at the last moment before
+      it is replaced. }
+    KeepToolEntries(FProjectFileName, FProjectDir);
 
     if FileExists(FileName) then
       DeleteFile(FileName);

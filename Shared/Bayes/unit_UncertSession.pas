@@ -36,12 +36,15 @@ type
     Result: TUncertResult;
     OutOfDate: Boolean;              // the result was made for another model, curve, counts or known values
     StoredFingerprint: string;       // what the result was made for
+    EntryNote: string;               // '' or what to know about the entry found in the project
   end;
 
 const
   MSG_OUT_OF_DATE = 'The model, the curve or the known values have changed since this result ' +
     'was made. Run again.';
-  MSG_NO_COUNTS = 'No raw counts were found: the errors rely on the estimated noise only.';
+  MSG_OTHER_VERSION = 'The project holds uncertainties stored by another version of this tool, ' +
+    'which this one cannot read. Running, or entering a known value, replaces them.';
+  MSG_NO_COUNTS ='No raw counts were found: the errors rely on the estimated noise only.';
 
 /// <summary>'' and the session, or one plain sentence when the file cannot
 /// be opened at all (not found, not a project, a newer project). A project
@@ -125,10 +128,15 @@ begin
       Exit(Format('%s is not an X-Ray Calc project: %s', [ExtractFileName(FileName), E.Message]));
   end;
 
-  HasStored := ReadEntry(FileName, UncertEntryName(S.Project.ModelID), Text) and
-    StoredFromJSON(Text, Stored);
-  if HasStored then
-    S.Priors := Stored.Priors;
+  HasStored := False;
+  if ReadEntry(FileName, UncertEntryName(S.Project.ModelID), Text) then
+  begin
+    HasStored := StoredFromJSON(Text, Stored);
+    if HasStored then
+      S.Priors := Stored.Priors
+    else
+      S.EntryNote := MSG_OTHER_VERSION;
+  end;
 
   S.Refusal := BuildRequest(S.Project, S.Request);
   if S.Refusal <> '' then
@@ -218,6 +226,8 @@ begin
     Result := [S.Refusal];
     Exit;
   end;
+  if S.EntryNote <> '' then
+    Result := Result + [S.EntryNote];
   if S.HasResult and S.OutOfDate then
     Result := Result + [MSG_OUT_OF_DATE];
   if S.CountsNote <> '' then
@@ -227,7 +237,7 @@ begin
   if S.Result.Message <> '' then
     Result := Result + [S.Result.Message];
   for W in S.Result.Warnings do
-    if (S.CountsNote = '') or not W.StartsWith('No raw counts') then
+    if (S.CountsNote = '') or (W <> WARN_NO_COUNTS) then
       Result := Result + [W];
 end;
 

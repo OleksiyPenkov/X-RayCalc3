@@ -141,7 +141,9 @@ begin
   try
     T.WaitFor;
     Assert.IsFalse(T.Result.Settled);
-    Assert.AreNotEqual('', T.Result.Message + T.Failure, 'it says why in a sentence');
+    Assert.IsFalse(T.Result.Stopped);
+    Assert.AreEqual('', T.Failure, 'the engine refuses in its result; nothing was raised');
+    Assert.Contains(T.Result.Message, 'counts', True);
   finally
     T.Free;
   end;

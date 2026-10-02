@@ -444,7 +444,7 @@ begin
   if not TFile.Exists(ProjectFile) then
     Exit(Format('The project file %s was not found.', [ProjectFile]));
   if TFileAttribute.faReadOnly in TFile.GetAttributes(ProjectFile) then
-    Exit(Format('The project file %s is read-only: the result was not saved.',
+    Exit(Format('The project file %s is read-only: nothing was stored in it.',
       [TPath.GetFileName(ProjectFile)]));
 
   Tmp := ProjectFile + '.uncert-new';
@@ -483,7 +483,7 @@ begin
           TFile.Delete(Tmp);
         except
         end;
-      Result := Format('The result could not be saved into %s (%s). Close the project in the ' +
+      Result := Format('Nothing could be stored in %s (%s). Close the project in the ' +
         'main program, or check that the file can be written, and try again.',
         [TPath.GetFileName(ProjectFile), E.Message]);
     end;

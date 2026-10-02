@@ -44,6 +44,7 @@ type
     [Test] procedure KeepToolEntries_CopiesOnlyTheToolsEntries;
     [Test] procedure KeepToolEntries_ReplacesAnOlderFile;
     [Test] procedure KeepToolEntries_EntryWithAPath_IsSkipped;
+    [Test] procedure MainProgramSave_KeepsWhatTheToolWroteMeanwhile;
     [Test] procedure KeepToolEntries_MissingFile_DoesNothing;
   end;
 
@@ -327,6 +328,7 @@ begin
   TFile.SetAttributes(Path, [TFileAttribute.faReadOnly]);
   Why := WriteEntries(Path, ['uncert_1.json'], ['x']);
   Assert.Contains(Why, 'read-only');
+  Assert.IsFalse(Why.Contains('result'), 'it may be a known value that was being stored: ' + Why);
   Assert.IsTrue(SameBytes(Old, TFile.ReadAllBytes(Path)), 'the project is what it was');
   Assert.AreEqual(1, Length(TDirectory.GetFiles(FDir)), 'no temporary file is left behind');
 end;
@@ -345,7 +347,8 @@ begin
   finally
     Lock.Free;
   end;
-  Assert.Contains(Why, 'could not be saved');
+  Assert.Contains(Why, 'could be stored');
+  Assert.IsFalse(Why.Contains('result'), Why);
   Assert.IsTrue(SameBytes(Old, TFile.ReadAllBytes(Path)), 'the project is what it was');
   Assert.AreEqual(1, Length(TDirectory.GetFiles(FDir)), 'nothing else is left beside it');
 end;
@@ -419,6 +422,40 @@ begin
   Assert.AreEqual(1, Integer(Length(TDirectory.GetFiles(Dir, '*', TSearchOption.soAllDirectories))),
     'nothing but the plain entry, and nothing outside the folder');
   Assert.IsFalse(TFile.Exists(TPath.Combine(FDir, 'uncert_escaped.json')));
+end;
+
+{ The main program's save as it happens: the project was extracted into a
+  working folder when it was opened; the tool then writes into the file; the
+  save takes the tool's entries, deletes the file and zips the folder. }
+procedure TTestUncertFiles.MainProgramSave_KeepsWhatTheToolWroteMeanwhile;
+var
+  Path, Work, Text, F: string;
+  Before: TArray<string>;
+  Z: TZipFile;
+begin
+  Path := NewProject('open.xrcx');
+  Before := EntryList(Path);
+  Work := TPath.Combine(FDir, 'work');
+  TZipFile.ExtractZipFile(Path, Work);                       // File - Open
+
+  Assert.AreEqual('', WriteEntries(Path, ['uncert_1.json'], ['made while open']));   // the tool
+
+  KeepToolEntries(Path, Work);                               // File - Save
+  TFile.Delete(Path);
+  Z := TZipFile.Create;
+  try
+    Z.Open(Path, zmWrite);
+    for F in TDirectory.GetFiles(Work) do
+      Z.Add(F, TPath.GetFileName(F));
+    Z.Close;
+  finally
+    Z.Free;
+  end;
+
+  Assert.IsTrue(ReadEntry(Path, 'uncert_1.json', Text), 'the result is in the saved project');
+  Assert.AreEqual('made while open', Text);
+  Assert.AreEqual(Length(Before) + 1, Integer(Length(EntryList(Path))), 'beside everything the project had');
+  Assert.AreEqual('Model 1', ReadXRCX(Path).ModelTitle, 'which still opens');
 end;
 
 procedure TTestUncertFiles.KeepToolEntries_MissingFile_DoesNothing;

@@ -42,6 +42,8 @@ type
     [Test] procedure StoredResult_OfAnotherModelShape_IsDropped;
     [Test] procedure StoreResult_ReadOnlyFile_SaysSoAndKeepsTheFile;
     [Test] procedure StoredCounts_AreUsedWithoutTheSourceFile;
+    [Test] procedure Open_EntryOfAnotherVersion_IsSaidNotIgnored;
+    [Test] procedure StorePriors_ReadOnlyFile_SpeaksOfTheKnownValue;
     [Test] procedure SessionWarnings_Order;
   end;
 
@@ -332,6 +334,40 @@ begin
   Assert.IsFalse(S.OutOfDate, 'the counts it was made with are the counts it finds');
 end;
 
+{ An entry this build cannot read (another version of the tool wrote it) is
+  not passed over in silence: the next store replaces it. }
+procedure TTestUncertSession.Open_EntryOfAnotherVersion_IsSaidNotIgnored;
+var
+  S: TUncertSession;
+  Path: string;
+  W: TArray<string>;
+begin
+  Path := NewProject('a.xrcx', ProjectOf(WSi(10), 1));
+  Assert.AreEqual('', WriteEntries(Path, [UncertEntryName(XRCX_MODEL_ID)], ['{"format":99,"priors":[]}']));
+  S := Opened(Path);
+  Assert.IsFalse(S.HasResult);
+  Assert.AreEqual('', S.Refusal, 'the project can still be analysed');
+  W := SessionWarnings(S);
+  Assert.IsTrue(Length(W) >= 1);
+  Assert.Contains(W[0], 'another version');
+
+  S := Opened(NewProject('b.xrcx', ProjectOf(WSi(10), 1)));
+  Assert.AreEqual('', S.EntryNote, 'no entry, nothing to say');
+end;
+
+procedure TTestUncertSession.StorePriors_ReadOnlyFile_SpeaksOfTheKnownValue;
+var
+  S: TUncertSession;
+  Path, Why: string;
+begin
+  Path := NewProject('a.xrcx', ProjectOf(WSi(10), 1));
+  S := Opened(Path);
+  TFile.SetAttributes(Path, [TFileAttribute.faReadOnly]);
+  Why := StorePriors(S, [TotalPrior(500)]);
+  Assert.Contains(Why, 'read-only');
+  Assert.IsFalse(Why.Contains('result'), 'no result was being stored: ' + Why);
+end;
+
 procedure TTestUncertSession.SessionWarnings_Order;
 var
   S: TUncertSession;
@@ -340,7 +376,7 @@ var
 begin
   S := Opened(NewProject('a.xrcx', ProjectOf(WSi(10), 1)));
   Res := ResultFor(S);
-  Res.Warnings := ['No raw counts: the errors rely on the estimated noise only.',
+  Res.Warnings := [WARN_NO_COUNTS,
     'W  H sits at its limit: its error is cut off there.'];
   Assert.AreEqual('', StoreResult(S, Res));
   Assert.AreEqual('', StorePriors(S, [TotalPrior(500)]));

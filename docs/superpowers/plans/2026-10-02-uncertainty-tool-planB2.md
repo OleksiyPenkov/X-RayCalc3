@@ -364,6 +364,16 @@ fit period window of 100 % or more made a project impossible to analyse. The cel
 lives in `unit_UncertView.DecideCellEdit` with six tests. Deferred minors and every ruling are in the
 ledger (`.superpowers/sdd/2026-10-02-uncertainty-tool-planB2/progress.md`).
 
+**Minors round (same day, at the author's word).** The review's deferred minors were fixed: store
+messages no longer speak of "the result" when a known value was being stored; an entry written by
+another version of the tool is said, not passed over; the limit and known-value warnings name the stack
+in a model with several; "Stopping..." stays; a dropped path may be longer than 260 characters; a run
+that did not settle always says so; inner panels and charts have margins; tests for two repeating stacks
+and for the main program's save keeping what the tool wrote meanwhile. Whole suite after it: 1181 of
+1181; the test build on Z: was replaced (13:53). Two things were left: the instant between the main
+program reading the tool's entries and deleting the file was narrowed, not closed; the period window
+stays centred on the fitted period (the fit's start period is not stored).
+
 **Where the implementation differs from this plan**
 
 - A sampled period is one row, "Period": no separate period row beside an identical mean-period row.

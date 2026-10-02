@@ -78,7 +78,8 @@ const
   PROGRESS_EVERY = 50;        // steps between progress reports
   NEAR_LIMIT = 0.02;          // a range ending within this fraction of the limits' span reaches the limit
   PRIOR_REPEATED = 0.8;       // half the range at least this fraction of the entered +-: the entry decided
-  MSG_NOT_SETTLED = 'The fit has not settled: the uncertainties cannot be given. ' +
+  WARN_NO_COUNTS = 'No raw counts: the errors rely on the estimated noise only.';
+  MSG_NOT_SETTLED ='The fit has not settled: the uncertainties cannot be given. ' +
     'Refit the model and try again.';
 
 function RunUncertainty(const Req: TUncertRequest; const Priors: TArray<TUncertPrior>;
@@ -196,19 +197,19 @@ var
   k, j: Integer;
 begin
   if Length(Counts) = 0 then
-    Res.Warnings := Res.Warnings + ['No raw counts: the errors rely on the estimated noise only.'];
+    Res.Warnings := Res.Warnings + [WARN_NO_COUNTS];
   if R.GpuError <> '' then
     Res.Warnings := Res.Warnings + ['The graphics card stopped; the run finished on the processor.'];
   for k := 0 to High(Res.Values) do
     if Res.Values[k].AtLimit and (Req.Names[k].Kind in [unValue, unPeriod]) then
       Res.Warnings := Res.Warnings + [Format('%s sits at its limit: its error is cut off there.',
-        [Req.Names[k].Caption])];
+        [NameTitle(Req, k)])];
   for j := 0 to High(Priors) do
     for k := 0 to High(Res.Values) do
       if (Res.Values[k].Name = Priors[j].Name) and
          ((Res.Values[k].P84 - Res.Values[k].P16) / 2 >= PRIOR_REPEATED * Priors[j].SD) then
         Res.Warnings := Res.Warnings + [Format('%s: the result repeats what was entered as known.',
-          [Req.Names[k].Caption])];
+          [NameTitle(Req, k)])];
 end;
 
 function RunUncertainty(const Req: TUncertRequest; const Priors: TArray<TUncertPrior>;

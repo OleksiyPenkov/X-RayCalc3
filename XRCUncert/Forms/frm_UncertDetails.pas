@@ -17,12 +17,12 @@ unit frm_UncertDetails;
 interface
 
 uses
-  System.Classes, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls;
+  System.Classes, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, RzPanel, RzCommon;
 
 type
   TfrmUncertDetails = class(TForm)
     memDetails: TMemo;
-    pnlBottom: TPanel;
+    pnlBottom: TRzPanel;
     btnClose: TButton;
   public
     class procedure ShowText(AOwner: TComponent; const Text: string);

@@ -19,7 +19,7 @@ object frmUncertDetails: TfrmUncertDetails
     Left = 6
     Top = 6
     Width = 588
-    Height = 368
+    Height = 365
     Margins.Left = 6
     Margins.Top = 6
     Margins.Right = 6
@@ -36,20 +36,21 @@ object frmUncertDetails: TfrmUncertDetails
     TabOrder = 0
     WordWrap = False
   end
-  object pnlBottom: TPanel
-    Left = 0
-    Top = 374
-    Width = 600
-    Height = 46
+  object pnlBottom: TRzPanel
+    AlignWithMargins = True
+    Left = 3
+    Top = 377
+    Width = 594
+    Height = 40
     Align = alBottom
-    BevelOuter = bvNone
+    BorderOuter = fsNone
     TabOrder = 1
     DesignSize = (
-      600
-      46)
+      594
+      40)
     object btnClose: TButton
-      Left = 509
-      Top = 10
+      Left = 503
+      Top = 7
       Width = 85
       Height = 26
       Anchors = [akTop, akRight]

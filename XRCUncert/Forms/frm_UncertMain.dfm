@@ -107,18 +107,18 @@ object frmUncertMain: TfrmUncertMain
       ScrollBars = ssVertical
       TabOrder = 0
     end
-    object pnlButtons: TPanel
-      Left = 712
-      Top = 2
+    object pnlButtons: TRzPanel
+      AlignWithMargins = True
+      Left = 709
+      Top = 5
       Width = 380
-      Height = 92
+      Height = 86
       Align = alRight
-      BevelOuter = bvNone
-      ParentColor = True
+      BorderOuter = fsNone
       TabOrder = 1
       object btnDetails: TButton
         Left = 4
-        Top = 58
+        Top = 55
         Width = 88
         Height = 26
         Caption = 'Details...'
@@ -128,7 +128,7 @@ object frmUncertMain: TfrmUncertMain
       end
       object btnCopy: TButton
         Left = 98
-        Top = 58
+        Top = 55
         Width = 88
         Height = 26
         Caption = 'Copy table'
@@ -138,7 +138,7 @@ object frmUncertMain: TfrmUncertMain
       end
       object btnExport: TButton
         Left = 192
-        Top = 58
+        Top = 55
         Width = 88
         Height = 26
         Caption = 'Export...'
@@ -148,7 +148,7 @@ object frmUncertMain: TfrmUncertMain
       end
       object btnHelp: TButton
         Left = 286
-        Top = 58
+        Top = 55
         Width = 88
         Height = 26
         Caption = 'Help'
@@ -223,10 +223,11 @@ object frmUncertMain: TfrmUncertMain
     object tsCurve: TTabSheet
       Caption = 'Curve'
       object chCurve: TChart
-        Left = 0
-        Top = 0
-        Width = 536
-        Height = 434
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 530
+        Height = 428
         Legend.Visible = False
         Title.Visible = False
         BottomAxis.Title.Caption = 'Angle, deg'
@@ -303,10 +304,11 @@ object frmUncertMain: TfrmUncertMain
         OnChange = cbDepthChange
       end
       object chDepth: TChart
-        Left = 0
-        Top = 29
-        Width = 536
-        Height = 405
+        AlignWithMargins = True
+        Left = 3
+        Top = 32
+        Width = 530
+        Height = 399
         Legend.Visible = False
         Title.Visible = False
         BottomAxis.Title.Caption = 'Period number'

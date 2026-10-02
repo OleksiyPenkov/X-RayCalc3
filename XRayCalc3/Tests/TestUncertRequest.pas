@@ -28,6 +28,7 @@ type
     [Test] procedure Periodic_FreePeriod_AddsThePeriodSlot;
     [Test] procedure Periodic_HeldPeriod_IsSampledInASmallWindow;
     [Test] procedure Periodic_VeryWidePeriodWindow_IsCut;
+    [Test] procedure Periodic_TwoRepeatingStacks_EachHasItsPeriod;
     [Test] procedure Periodic_FixedOrNoRange_NotSampled;
     [Test] procedure Periodic_StaleTable_IsDropped;
     [Test] procedure Profile_UsesTheGradientExtension;
@@ -218,6 +219,39 @@ begin
   finally
     M.Free;
   end;
+end;
+
+procedure TTestUncertRequest.Periodic_TwoRepeatingStacks_EachHasItsPeriod;
+var
+  S: TFitStructure;
+  Req: TUncertRequest;
+  M: TParamMap;
+  k: Integer;
+begin
+  S := WSi(10);
+  SetLength(S.Stacks, 2);
+  S.Stacks[1] := WSi(5).Stacks[0];
+  S.Stacks[1].Header := 'Top';
+  S.Stacks[1].Layers[0].P[1].V := 10;                // W 10 A [8, 12], Si 30 A: a 40 A period
+  S.Stacks[1].Layers[0].P[1].min := 8;
+  S.Stacks[1].Layers[0].P[1].max := 12;
+  M := MapOf(ProjectOf(S, 1), Req);
+  try
+    Assert.AreEqual(50.0, M.Slots[M.IndexOf('s0.period')].Start, 1E-4);
+    Assert.AreEqual(40.0, M.Slots[M.IndexOf('s1.period')].Start, 1E-4);
+    Assert.AreEqual(2, Integer(Length(M.Derived)), 'one derived layer in each');
+  finally
+    M.Free;
+  end;
+  for k := 0 to High(Req.Names) do
+    if Req.Names[k].Name = 's1.period' then
+    begin
+      Assert.AreEqual('Top', Req.Names[k].Group);
+      Assert.AreEqual(Req.Names[k].Caption + ' (Top)', NameTitle(Req, k),
+        'with several stacks a message says which one');
+    end;
+  Assert.AreEqual('', BuildRequest(ProjectOf(WSi(10), 1), Req));
+  Assert.AreEqual(Req.Names[0].Caption, NameTitle(Req, 0), 'with one stack the caption is enough');
 end;
 
 procedure TTestUncertRequest.Periodic_FixedOrNoRange_NotSampled;
