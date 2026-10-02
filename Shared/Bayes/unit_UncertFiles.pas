@@ -134,7 +134,9 @@ begin
   if IsNan(V) or IsInfinite(V) then
     Result := TJSONNull.Create
   else
-    Result := TJSONNumber.Create(V);
+    { 17 significant digits: what a Double needs to come back to the last bit.
+      TJSONNumber.Create(Double) writes fewer. }
+    Result := TJSONNumber.Create(Num(V));
 end;
 
 function JArr(const A: TArray<Double>): TJSONArray;

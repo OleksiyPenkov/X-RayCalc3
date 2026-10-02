@@ -33,6 +33,7 @@ type
     [Test] procedure Json_RoundTrip;
     [Test] procedure Json_NotSettled_KeepsTheMessageAndNoRanges;
     [Test] procedure Json_Garbage_IsRefused;
+    [Test] procedure Json_NumbersComeBackToTheLastBit;
     [Test] procedure Fingerprint_FollowsWhatTheResultDependsOn;
     [Test] procedure WriteEntries_AddsAndLeavesTheRestAlone;
     [Test] procedure WriteEntries_ReplacesItsOwnEntry;
@@ -199,6 +200,27 @@ begin
   Assert.IsTrue(StoredFromJSON(StoredToJSON(A), B));
   Assert.IsFalse(B.HasResult);
   Assert.AreEqual(1, Length(B.Priors));
+end;
+
+{ Found by the end-to-end run: 34.0001358059798... came back one bit off. }
+procedure TTestUncertFiles.Json_NumbersComeBackToTheLastBit;
+const
+  Awkward: array [0 .. 3] of Double = (1 / 3, 34.000135805979752, 6.3861378180304703, 1.2345678901234567E-9);
+var
+  A, B: TStoredUncert;
+  i: Integer;
+begin
+  A := Sample;
+  for i := Low(Awkward) to High(Awkward) do
+  begin
+    A.Result.Values[0].P50 := Awkward[i];
+    A.Result.Band.P50[0] := Awkward[i];
+    A.Priors[0].Mean := Awkward[i];
+    Assert.IsTrue(StoredFromJSON(StoredToJSON(A), B));
+    Assert.AreEqual(Awkward[i], B.Result.Values[0].P50, 0.0);
+    Assert.AreEqual(Awkward[i], B.Result.Band.P50[0], 0.0);
+    Assert.AreEqual(Awkward[i], B.Priors[0].Mean, 0.0);
+  end;
 end;
 
 procedure TTestUncertFiles.Json_Garbage_IsRefused;

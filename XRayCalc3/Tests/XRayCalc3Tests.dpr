@@ -160,7 +160,8 @@ uses
   unit_UncertRun in '..\..\Shared\Bayes\unit_UncertRun.pas',
   TestUncertRun in 'TestUncertRun.pas',
   unit_UncertFiles in '..\..\Shared\Bayes\unit_UncertFiles.pas',
-  TestUncertFiles in 'TestUncertFiles.pas';
+  TestUncertFiles in 'TestUncertFiles.pas',
+  TestUncertEndToEnd in 'TestUncertEndToEnd.pas';
 
 {$R *.res}
 

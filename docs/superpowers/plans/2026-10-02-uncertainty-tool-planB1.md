@@ -231,4 +231,34 @@ Opt-in with `XRC_TRUTH_GATE=1`, like the gate, because it runs the full recipe.
 
 ## Outcome
 
-_Filled in by Task 6, Step 3._
+_2026-10-02. Win32 Debug, CPU, one seed per case. Each case: the truth gate's truth, counting noise at
+I0 = 1E7 and classic fit; the fitted model written as a project file; then the tool's own path (read the
+project, build the request, the standard recipe, write the result and the counts into the project,
+read both back)._
+
+| Case | Value | Truth | 2.5 % | 50 % | 97.5 % | R-hat | Time |
+|---|---|---|---|---|---|---|---|
+| Periodic, period free | period, Å | 34 | 33.9999 | 34.0001 | 34.0004 | 1.01 | 52 s |
+| | interlayer thickness, Å | 6 | 5.99991 | 6.00014 | 6.00036 | 1.01 | |
+| Profile | gradient, Å per period | 0.05 | 0.04997 | 0.05009 | 0.05022 | 1.03 | 52 s |
+| | thickness in period 20, Å | 6.45 | 6.4497 | 6.4510 | 6.4523 | 1.03 | |
+| | mean period, Å | 33.975 | 33.9749 | 33.9751 | 33.9754 | 1.02 | |
+| | drift, Å | 0.95 | 0.9494 | 0.9517 | 0.9541 | 1.03 | |
+| Table, 10 entries | mean period, Å | 34.0108 | 34.0089 | 34.0105 | 34.0121 | 1.07 | 36 s |
+| | total thickness, Å | 340.108 | 340.089 | 340.105 | 340.121 | 1.07 | |
+
+Every truth is inside its 2.5-97.5 % range; every run settled at the first attempt (32 walkers, 4000
+steps). The stored result equals the computed one to the last bit, the stored fingerprint matches the
+re-read project, and it stops matching once the model's structure string changes. A 40-entry table
+model is refused before anything runs and the project is not written to. Whole suite with the gate
+off: 1123 of 1123.
+
+One fault found by this run and fixed: the result file wrote numbers with too few digits, so a stored
+value came back one bit off (`Json_NumbersComeBackToTheLastBit`).
+
+What this does not show: one seed per case is a check that the path works, not a coverage rate (plan
+A's gate has those); no real measurement was used; the GPU was not used; the counts came from the
+test, not from an `.xrdml` (that path is unit-tested on its own).
+
+Tasks 1, 2 and 5 were written test and implementation together, so their tests were not seen failing
+first; Tasks 3, 4 and the precision fix were.

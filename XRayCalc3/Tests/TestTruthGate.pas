@@ -20,9 +20,14 @@ unit TestTruthGate;
 interface
 
 uses
-  DUnitX.TestFramework;
+  DUnitX.TestFramework, unit_Types;
+
+const
+  FREE_L = 2;                 // the W-on-B4C interlayer of TWB4CFixture's cell
 
 type
+  TMode = (gmPeriodic, gmProfile, gmTable);
+
   [TestFixture]
   TTestTruthGate = class
   public
@@ -33,11 +38,25 @@ type
     [Test] procedure LongRun_Report;
   end;
 
+{ Shared with TestUncertEndToEnd: the same truths, noise and classic fits. }
+
+/// TWB4CFixture's cell with N periods; every value paired and held, except the
+/// interlayer thickness, free in [3, 9].
+function Cell(N: Integer; H2: Single): TFitStructure;
+/// The truth's interlayer thickness in period k (from 1, at the surface).
+function TruthH(Mode: TMode; k: Integer): Double;
+function TruthStructure(Mode: TMode; N: Integer): TFitStructure;
+/// Counting noise at I0 = 1E7 on the clean curve R.
+procedure Noisy(const R: TDataArray; Seed: UInt64; out Data: TDataArray; out Counts: TArray<Double>);
+/// The classic fit from the design (interlayer 4.5 A everywhere).
+procedure ClassicFit(Mode: TMode; N: Integer; const Data: TDataArray;
+  const CP: TCalcThreadParams; Seed: Integer; out Fitted: TFitStructure; out C: TArray<Double>);
+
 implementation
 
 uses
   System.SysUtils, System.Math, System.IOUtils, System.Diagnostics,
-  unit_Types, unit_Xoshiro, unit_Likelihood, unit_ParamMap, unit_LogPosterior,
+  unit_Xoshiro, unit_Likelihood, unit_ParamMap, unit_LogPosterior,
   unit_JointPosterior, unit_SampleRun, unit_LFPSO_Base, unit_LFPSO_Periodic,
   unit_LFPSO_Poly, unit_LFPSO_Irregular, TestLogPosterior, TestPosteriorModes;
 
@@ -48,11 +67,8 @@ const
   STEPS  = 3000;
   BURN   = 1000;
   THIN   = 10;
-  FREE_L = 2;                 // the W-on-B4C interlayer of TWB4CFixture's cell
 
 type
-  TMode = (gmPeriodic, gmProfile, gmTable);
-
   TTally = record
     Trials, In68, In95: Integer;
     WorstRHat: Double;
