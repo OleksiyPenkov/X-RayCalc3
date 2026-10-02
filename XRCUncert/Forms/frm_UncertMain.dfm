@@ -247,6 +247,7 @@ object frmUncertMain: TfrmUncertMain
       Caption = 'Curve'
       object chCurve: TChart
         AlignWithMargins = True
+        Cursor = crCross
         Left = 3
         Top = 3
         Width = 530
@@ -330,6 +331,7 @@ object frmUncertMain: TfrmUncertMain
       end
       object chDepth: TChart
         AlignWithMargins = True
+        Cursor = crCross
         Left = 3
         Top = 32
         Width = 530

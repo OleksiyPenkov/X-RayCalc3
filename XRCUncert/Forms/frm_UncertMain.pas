@@ -257,6 +257,11 @@ begin
   btnExport.Enabled := Length(FRows) > 0;
   if not Running then
     lblProgress.Caption := '';
+  { the hourglass while a run is going, over the whole window; Stop still takes a click }
+  if Running then
+    Screen.Cursor := crHourGlass
+  else
+    Screen.Cursor := crDefault;
 
   DrawCurve;
   DrawDepth;
@@ -479,6 +484,7 @@ begin
   T.Stop;
   T.WaitFor;
   T.Free;
+  Screen.Cursor := crDefault;
   FNote := 'The run was stopped: nothing was changed.';
 end;
 
