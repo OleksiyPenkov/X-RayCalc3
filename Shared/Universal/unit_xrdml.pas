@@ -84,6 +84,7 @@ type
     Corrected: Boolean;        // True: the file held "intensities", i.e. already corrected
     AttenuationApplied: Boolean;
     Points: Integer;
+    Counts: TArray<Double>;    // raw detector counts in file order ("counts" files); empty for "intensities"
     /// <summary>Header lines for a data node or a measurement, each starting
     /// with '*' the way counter-file headers do.</summary>
     function DescriptionLines: TArray<string>;
@@ -106,6 +107,26 @@ function ReadXRDMLText(const Text: string): TXRDMLScan;
 /// with 1000 as the seed when none has been seen yet.</summary>
 procedure FloorNonPositive(var Curve: TDataArray);
 
+/// <summary>A copy of Scan.Curve with t in the chart's unit - 2theta when
+/// TwoTheta, else theta - as Load Data brings it: a 2Theta scan is halved for a
+/// theta chart, an Omega (rocking) scan doubled for a 2theta chart.</summary>
+function ScanCurveInChartUnit(const Scan: TXRDMLScan; TwoTheta: Boolean): TDataArray;
+
+/// <summary>True when A and B have the same number of points at the same
+/// angles, within what a project's data_&lt;id&gt;.dat keeps of an angle
+/// (unit_SeriesIO writes FloatToStrF(x, ffFixed, 5, 3): 3 decimals below 100,
+/// 5 significant digits from 100 up, i.e. up to 5E-4 or 5E-5 of the angle off).
+/// The tolerance is 6E-4 or 6E-5 of the angle, whichever is larger.</summary>
+function SameScanAngles(const A, B: TDataArray): Boolean;
+
+/// <summary>True when Curve's intensities are Scan's up to one factor (a
+/// normalisation), within 1E-3 relative - what data_&lt;id&gt;.dat keeps (5
+/// significant digits) and a Single survives. The factor is taken at the scan's
+/// peak among the points with a positive count; points with Counts &lt;= 0 are
+/// skipped, their intensity was floored. False when the lengths differ, so a
+/// smoothed curve is told from a merely normalised one.</summary>
+function SameScanIntensities(const Scan, Curve: TDataArray; const Counts: TArray<Double>): Boolean;
+
 implementation
 
 uses
@@ -116,6 +137,51 @@ const
   XRDML_EXT = '.xrdml';
 
 { ------------------------------------------------------------------ helpers -- }
+
+function ScanCurveInChartUnit(const Scan: TXRDMLScan; TwoTheta: Boolean): TDataArray;
+var
+  I: Integer;
+begin
+  Result := Copy(Scan.Curve);
+  if SameText(Scan.XAxis, '2Theta') and not TwoTheta then
+    for I := 0 to High(Result) do
+      Result[I].t := Result[I].t / 2
+  else if SameText(Scan.XAxis, 'Omega') and TwoTheta then
+    for I := 0 to High(Result) do
+      Result[I].t := Result[I].t * 2;
+end;
+
+function SameScanAngles(const A, B: TDataArray): Boolean;
+var
+  I: Integer;
+begin
+  Result := Length(A) = Length(B);
+  if Result then
+    for I := 0 to High(A) do
+      { half the last digit kept, and a little }
+      if Abs(A[I].t - B[I].t) > Max(6E-4, 6E-5 * Abs(A[I].t)) then
+        Exit(False);
+end;
+
+function SameScanIntensities(const Scan, Curve: TDataArray; const Counts: TArray<Double>): Boolean;
+var
+  I, P: Integer;
+  K: Double;
+begin
+  if (Length(Scan) <> Length(Curve)) or (Length(Counts) <> Length(Scan)) then
+    Exit(False);
+  P := -1;
+  for I := 0 to High(Scan) do
+    if (Counts[I] > 0) and ((P < 0) or (Scan[I].r > Scan[P].r)) then
+      P := I;
+  if P < 0 then
+    Exit(True);   // no positive count: nothing a count could weight
+  K := Curve[P].r / Scan[P].r;
+  for I := 0 to High(Scan) do
+    if (Counts[I] > 0) and (Abs(Curve[I].r - K * Scan[I].r) > 1E-3 * Abs(Curve[I].r)) then
+      Exit(False);
+  Result := True;
+end;
 
 function IsXRDMLFile(const FileName: string): Boolean;
 begin
@@ -333,6 +399,10 @@ begin
     raise EXRDMLError.Create('dataPoints has neither a counts nor an intensities element');
   Result.IntensityUnit := Attr(CountsNode, 'unit');
   Values := ParseList(VarToStr(CountsNode.NodeValue), 'counts');
+  if not Result.Corrected then
+    Result.Counts := Copy(Values)
+  else
+    Result.Counts := nil;
   N := Length(Values);
   if N = 0 then
     raise EXRDMLError.Create('The counts element is empty');

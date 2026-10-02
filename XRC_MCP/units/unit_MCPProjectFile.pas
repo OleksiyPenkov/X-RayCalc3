@@ -124,6 +124,12 @@ type
     DataTitle: string;                  // '' = the project has no data node
     DataCurve: unit_Types.TDataArray;   // data_<id>.dat, theta
     Version: Integer;                   // [INFO] Version; set by ReadXRCX
+    { Set by ReadXRCX, for the uncertainty tool, whose entries in the archive
+      are named after them. WriteXRCX always writes XRCX_MODEL_ID / XRCX_DATA_ID. }
+    ModelID: Integer;                   // the ID of the model node read
+    DataID: Integer;                    // the ID of the data node read; -1 without one
+    DataNote: string;                   // the data node's Description ('* Source file: ...')
+    CalcMode: Integer;                  // [PARAMS] Mode: 0 = theta scan; set by ReadXRCX
   end;
 
 const
@@ -429,6 +435,14 @@ begin
     // TfrmCalcSettings.SaveAdvancedParams
     INF.WriteString('FIT', 'Window', F(C.Window));
     INF.WriteString('FIT', 'Tol', F(C.Tol));
+    { frame_CalcSettings' Free period keys (INI_FREE_PERIOD / INI_PERIOD_WINDOW,
+      the window in per cent). Written only when the period was free, so a
+      project that held it is the bytes it always was. }
+    if C.LFPSO.FreePeriod then
+    begin
+      INF.WriteBool('FIT', 'FreePeriod', True);
+      INF.WriteString('FIT', 'PeriodWindow', F(C.LFPSO.PeriodWindow * 100));
+    end;
 
     INF.WriteString('LFPSO', 'Vmax', FS(C.LFPSO.Vmax));
     INF.WriteString('LFPSO', 'Jmax', IntToStr(C.LFPSO.JammingMax));
@@ -515,6 +529,12 @@ begin
     P.Params.LFPSO.MovAvgWindow := P.Params.Window;
     P.Params.LFPSO.ThetaWeight  := P.Params.TWChi;
     P.Params.LFPSO.MaxPOrder    := P.Params.PolyOrder;
+
+    P.CalcMode := INF.ReadInteger('PARAMS', 'Mode', 0);
+    P.Params.LFPSO.FreePeriod := INF.ReadBool('FIT', 'FreePeriod', False);
+    P.Params.LFPSO.PeriodWindow := ReadFloat(INF, 'FIT', 'PeriodWindow', 10) / 100;
+    if P.Params.LFPSO.PeriodWindow <= 0 then
+      P.Params.LFPSO.PeriodWindow := 0.1;   // frame_CalcSettings.DEF_PERIOD_WINDOW
 
     P.Version   := INF.ReadInteger('INFO', 'Version', 0);
     ActiveModel := INF.ReadInteger('STATE', 'ActiveModel', -1);
@@ -724,7 +744,7 @@ begin
         Node := Tree.AddChild(GroupNode, nil);
         PD := Tree.GetNodeData(Node);
         PD.Title := P.DataTitle;
-        PD.Description := '';
+        PD.Description := P.DataNote;
         PD.Data := '';
         PD.Group := gtData;
         PD.RowType := prItem;
@@ -804,6 +824,7 @@ begin
           'the project has no model node', TPath.GetFileName(FileName));
 
       PD := Tree.GetNodeData(Chosen);
+      P.ModelID := PD.ID;
       P.ModelTitle := PD.Title;
       P.Note := PD.Description;
       P.XRCData := PD.Data;
@@ -840,6 +861,7 @@ begin
       begin
         PD := Tree.GetNodeData(ChosenData);
         P.DataTitle := PD.Title;
+        P.DataNote := PD.Description;
         DataID := PD.ID;
       end;
     finally
@@ -918,6 +940,7 @@ begin
 
     ReadParams(TPath.Combine(Dir, PARAMETERS_FILE_NAME), Result, ActiveModel, LinkedData);
     ReadTree(ProjectFile, Result, ActiveModel, LinkedData, DataID);
+    Result.DataID := DataID;
 
     Result.CalcCurve := ReadCurveText(TPath.Combine(Dir, CALC_CURVE_NAME));
     if (Result.DataTitle <> '') and (DataID >= 0) then

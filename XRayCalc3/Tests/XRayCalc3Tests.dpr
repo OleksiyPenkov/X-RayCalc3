@@ -152,7 +152,9 @@ uses
   TestSampleRun in 'TestSampleRun.pas',
   TestPosteriorModes in 'TestPosteriorModes.pas',
   TestParamMapModes in 'TestParamMapModes.pas',
-  TestTruthGate in 'TestTruthGate.pas';
+  TestTruthGate in 'TestTruthGate.pas',
+  unit_UncertCounts in '..\..\Shared\Bayes\unit_UncertCounts.pas',
+  TestUncertCounts in 'TestUncertCounts.pas';
 
 {$R *.res}
 

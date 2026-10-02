@@ -79,6 +79,9 @@ type
     [Test] procedure SaveProject_FromJob_ExplicitRangeAndPointsKeepPrecedence;
     [Test] procedure SaveProject_InboxCurve_PeriodicStructure_WritesMode1;
     [Test] procedure SaveProject_NoCurve_SingleLayers_WritesMode0;
+    [Test] procedure ReadXRCX_HandsOverIDsDataNoteAndFreePeriod;
+    [Test] procedure ReadXRCX_NoData_DataIDIsMinusOne;
+    [Test] procedure WriteXRCX_HeldPeriod_WritesNoFreePeriodKeys;
   end;
 
 implementation
@@ -861,6 +864,59 @@ begin
     end;
   finally
     Args.Free;
+  end;
+end;
+
+{ What the uncertainty tool needs beyond the model and the curve. }
+procedure TTestMCPProjectFile.ReadXRCX_HandsOverIDsDataNoteAndFreePeriod;
+var
+  P, R: TXRCXProject;
+  Path: string;
+begin
+  Path := TPath.Combine(FTemp, 'uncert.xrcx');
+  P := SampleProject;
+  P.DataNote := '* Sample: A'#13#10'* Source file: D:\data\XRR 1.xrdml';
+  P.Params.LFPSO.FreePeriod := True;
+  P.Params.LFPSO.PeriodWindow := 0.05;
+  WriteXRCX(Path, P);
+  R := ReadXRCX(Path);
+  Assert.AreEqual(XRCX_MODEL_ID, R.ModelID, 'model ID');
+  Assert.AreEqual(XRCX_DATA_ID, R.DataID, 'data ID');
+  Assert.AreEqual(P.DataNote, R.DataNote, 'data note');
+  Assert.AreEqual(0, R.CalcMode, 'a theta scan');
+  Assert.IsTrue(R.Params.LFPSO.FreePeriod, 'free period');
+  Assert.AreEqual(0.05, Double(R.Params.LFPSO.PeriodWindow), 1E-6, 'period window as a fraction');
+end;
+
+procedure TTestMCPProjectFile.ReadXRCX_NoData_DataIDIsMinusOne;
+var
+  P, R: TXRCXProject;
+  Path: string;
+begin
+  Path := TPath.Combine(FTemp, 'nodata.xrcx');
+  P := SampleProject;
+  P.DataTitle := '';
+  P.DataCurve := nil;
+  WriteXRCX(Path, P);
+  R := ReadXRCX(Path);
+  Assert.AreEqual(-1, R.DataID);
+  Assert.IsFalse(R.Params.LFPSO.FreePeriod, 'held unless the project says otherwise');
+  Assert.AreEqual(0.1, Double(R.Params.LFPSO.PeriodWindow), 1E-6, 'the GUI''s default window');
+end;
+
+procedure TTestMCPProjectFile.WriteXRCX_HeldPeriod_WritesNoFreePeriodKeys;
+var
+  Path: string;
+  INF: TMemIniFile;
+begin
+  Path := TPath.Combine(FTemp, 'held.xrcx');
+  WriteXRCX(Path, SampleProject);
+  INF := ParamsOf(Path);
+  try
+    Assert.IsFalse(INF.ValueExists('FIT', 'FreePeriod'), 'a held period leaves params.dsc as it always was');
+    Assert.IsFalse(INF.ValueExists('FIT', 'PeriodWindow'));
+  finally
+    INF.Free;
   end;
 end;
 

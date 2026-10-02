@@ -11,7 +11,7 @@ interface
 
 uses
   DUnitX.TestFramework, System.SysUtils, System.IOUtils,
-  unit_Types, unit_xrdml;
+  unit_Types, unit_xrdml, unit_DataProcessing;
 
 type
   [TestFixture]
@@ -35,6 +35,11 @@ type
     [Test] procedure Lambda_HybridMirror_IsKAlpha1;
     [Test] procedure Lambda_Monochromator_IsKAlpha1;
     [Test] procedure ZerosFloored_AreCountedAndInTheHeader;
+    [Test] procedure Counts_RawDetectorCounts_InFileOrder;
+    [Test] procedure Counts_IntensitiesFile_HasNone;
+    [Test] procedure ChartUnit_HalvesA2ThetaScan_DoublesARockingCurve;
+    [Test] procedure SameScanAngles_ToleratesTheStoredRounding_NotAShift;
+    [Test] procedure SameScanIntensities_ExactAndNormalisedPass_SmoothedFails;
   end;
 
 const
@@ -205,6 +210,23 @@ begin
   Assert.IsFalse(S.Corrected);
   Assert.IsTrue(S.AttenuationApplied);
   Assert.AreEqual('Completed', S.Status);
+end;
+
+procedure TTestXRDML.Counts_RawDetectorCounts_InFileOrder;
+var
+  Scan: TXRDMLScan;
+begin
+  Scan := ReadXRDMLText(XRDML_10);
+  Assert.AreEqual(3, Length(Scan.Counts));
+  Assert.AreEqual(10.0, Scan.Counts[0], 0.0, 'before the factor and the time');
+  Assert.AreEqual(20.0, Scan.Counts[1], 0.0);
+  Assert.AreEqual(30.0, Scan.Counts[2], 0.0, 'not 30 * 100 / 4');
+end;
+
+procedure TTestXRDML.Counts_IntensitiesFile_HasNone;
+begin
+  Assert.AreEqual(0, Length(ReadXRDMLText(XRDML_16).Counts),
+    'corrected intensities are not Poisson counts');
 end;
 
 procedure TTestXRDML.Read_Intensities_IgnoreAttenuationFactors;
@@ -394,6 +416,70 @@ begin
   H := string.Join(#10, S.DescriptionLines);
   Assert.IsTrue(Pos('Zero counts: 2 of 5', H) > 0, H);
   Assert.IsTrue(Pos('; peak rate 16', H) > 0, H);
+end;
+
+{ Data - Read counts from source file brings the scan to the chart's unit the
+  way Load Data does, and matches it against a curve read back from a saved
+  project, whose angles keep 3 decimals. }
+procedure TTestXRDML.ChartUnit_HalvesA2ThetaScan_DoublesARockingCurve;
+var
+  S: TXRDMLScan;
+  C: TDataArray;
+begin
+  S := ReadXRDMLText(XRDML_10);
+  C := ScanCurveInChartUnit(S, False);
+  Assert.AreEqual(0.75, C[1].t, 1e-6, '2Theta 1.5 on a theta chart');
+  Assert.AreEqual(1.5, S.Curve[1].t, 1e-6, 'the scan itself is left alone');
+  Assert.AreEqual(1.5, ScanCurveInChartUnit(S, True)[1].t, 1e-6);
+  S := ReadXRDMLText(XRDML_OMEGA);
+  Assert.AreEqual(0.8, ScanCurveInChartUnit(S, True)[0].t, 1e-6, 'Omega 0.4 on a 2theta chart');
+  Assert.AreEqual(0.4, ScanCurveInChartUnit(S, False)[0].t, 1e-6);
+end;
+
+procedure TTestXRDML.SameScanAngles_ToleratesTheStoredRounding_NotAShift;
+var
+  A, B: TDataArray;
+begin
+  SetLength(A, 2);
+  A[0].t := 0.10125;
+  A[1].t := 0.1025;
+  B := Copy(A);
+  B[0].t := 0.101;   // FloatToStrF(0.10125, ffFixed, 5, 3)
+  B[1].t := 0.103;
+  Assert.IsTrue(SameScanAngles(A, B));
+  B[1].t := 0.104;
+  Assert.IsFalse(SameScanAngles(A, B), 'a point 1.5 millidegrees away');
+  Assert.IsFalse(SameScanAngles(A, Copy(A, 0, 1)), 'a trimmed curve');
+end;
+
+{ Read counts refuses a smoothed curve (Poisson weights on smoothed data would
+  understate the uncertainty) but not a normalised one read back from a saved
+  project (5 significant digits). A zero count's floored intensity is ignored. }
+procedure TTestXRDML.SameScanIntensities_ExactAndNormalisedPass_SmoothedFails;
+var
+  Scan, Curve: TDataArray;
+  Counts: TArray<Double>;
+  i: Integer;
+begin
+  SetLength(Scan, 30);
+  SetLength(Counts, 30);
+  for i := 0 to High(Scan) do
+  begin
+    Scan[i].t := 0.1 + 0.01 * i;
+    Scan[i].r := Exp(-i / 5) * (1 + 0.5 * Sin(i));
+    Counts[i] := 1E5 * Scan[i].r;
+  end;
+  Counts[29] := 0;
+  Assert.IsTrue(SameScanIntensities(Scan, Copy(Scan), Counts), 'an exact copy');
+
+  Curve := Copy(Scan);
+  for i := 0 to High(Curve) do
+    Curve[i].r := StrToFloat(FloatToStrF(Curve[i].r / 0.37, ffExponent, 5, 4));
+  Curve[29].r := 123;   // a floored zero count: not compared
+  Assert.IsTrue(SameScanIntensities(Scan, Curve, Counts), 'normalised, stored to 5 digits');
+
+  Assert.IsFalse(SameScanIntensities(Scan, MovAvg(Scan, 5), Counts), 'smoothed');
+  Assert.IsFalse(SameScanIntensities(Scan, Copy(Scan, 0, 29), Counts), 'trimmed');
 end;
 
 initialization
