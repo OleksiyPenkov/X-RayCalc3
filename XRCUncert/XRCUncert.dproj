@@ -1,0 +1,171 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{E6728A4A-7CB6-400C-A053-57B17250B3C4}</ProjectGuid>
+        <ProjectVersion>20.4</ProjectVersion>
+        <FrameworkType>VCL</FrameworkType>
+        <Base>True</Base>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <TargetedPlatforms>3</TargetedPlatforms>
+        <AppType>Application</AppType>
+        <MainSource>XRCUncert.dpr</MainSource>
+        <ProjectName Condition="'$(ProjectName)'==''">XRCUncert</ProjectName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+        <Cfg_1_Win32>true</Cfg_1_Win32>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+        <Cfg_2_Win32>true</Cfg_2_Win32>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+        <Cfg_2_Win64>true</Cfg_2_Win64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_UnitSearchPath>..\Shared\Bayes;..\Shared\Math;..\Shared\Universal;..\XRC_MCP\units;..\XRC_CMD\Units;..\XRayCalc3\Units;..\XRayCalc3\LFPSO;..\XRayCalc3\Components;Units;D:\DelphiProjects\X-RayCalc\FastMath\FastMath;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_DcuOutput>..\_Out\DCU\XRCUncert\$(Platform)</DCC_DcuOutput>
+        <DCC_ExeOutput>..\_Out\BIN\</DCC_ExeOutput>
+        <DCC_E>false</DCC_E>
+        <DCC_N>false</DCC_N>
+        <DCC_S>false</DCC_S>
+        <DCC_F>false</DCC_F>
+        <DCC_K>false</DCC_K>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
+        <SanitizedProjectName>XRCUncert</SanitizedProjectName>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <Icon_MainIcon>..\XRayCalc3\Assets\XRayCalc3_Icon.ico</Icon_MainIcon>
+        <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>
+        <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+        <PostBuildEvent>xcopy "$(MSBuildProjectDirectory)\Help" "$(DCC_ExeOutput)\Help\XRCUncert\" /E /I /Y /Q &gt;nul</PostBuildEvent>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <DCC_UsePackage>RaizeComponentsVcl;vclwinx;DataSnapServer;fmx;emshosting;vclie;DbxCommonDriver;bindengine;IndyIPCommon;VCLRESTComponents;DBXMSSQLDriver;FireDACCommonODBC;emsclient;FireDACCommonDriver;appanalytics;IndyProtocols;vclx;IndyIPClient;dbxcds;vcledge;bindcompvclwinx;FmxTeeUI;emsedge;bindcompfmx;DBXFirebirdDriver;inetdb;vclribbon;ibmonitor;FireDACSqliteDriver;DbxClientDriver;FireDACASADriver;Tee;soapmidas;vclactnband;TeeUI;fmxFireDAC;dbexpress;FireDACInfxDriver;DBXMySQLDriver;VclSmp;inet;DataSnapCommon;AsyncProDR;vcltouch;fmxase;DBXOdbcDriver;dbrtl;FireDACDBXDriver;FireDACOracleDriver;fmxdae;TeeDB;FireDACMSAccDriver;CustomIPTransport;FireDACMSSQLDriver;AbbreviaVCLD;DataSnapIndy10ServerTransport;DataSnapConnectors;vcldsnap;DBXInterBaseDriver;FireDACMongoDBDriver;IndySystem;OmniThreadLibraryRuntime;FireDACTDataDriver;vcldb;ibxbindings;SynEditDR;vclFireDAC;bindcomp;FireDACCommon;DataSnapServerMidas;FireDACODBCDriver;emsserverresource;IndyCore;RESTBackendComponents;bindcompdbx;rtl;FireDACMySQLDriver;FireDACADSDriver;RaizeComponentsVclDb;RESTComponents;DBXSqliteDriver;vcl;IndyIPServer;dsnapxml;dsnapcon;DataSnapClient;DataSnapProviderClient;adortl;VirtualTreesDR;DBXSybaseASEDriver;DBXDb2Driver;vclimg;DataSnapFireDAC;emsclientfiredac;FireDACPgDriver;FireDAC;FireDACDSDriver;inetdbxpress;xmlrtl;tethering;ibxpress;bindcompvcl;dsnap;CloudService;DBXSybaseASADriver;DBXOracleDriver;FireDACDb2Driver;DBXInformixDriver;vclib;fmxobj;bindcompvclsmp;DataSnapNativeClient;FMXTee;DatasnapConnectorsFreePascal;soaprtl;soapserver;FireDACIBDriver;$(DCC_UsePackage)</DCC_UsePackage>
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+        <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>
+        <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
+        <DCC_ExeOutput>..\_Out\BIN\</DCC_ExeOutput>
+        <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+        <DCC_BplOutput>..\_Out\DCU\</DCC_BplOutput>
+        <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
+        <OutputExt>x64.exe</OutputExt>
+        <PostBuildEvent>xcopy "$(MSBuildProjectDirectory)\Help" "$(DCC_ExeOutput)\Help\XRCUncert\" /E /I /Y /Q &gt;nul</PostBuildEvent>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
+        <DCC_Optimize>false</DCC_Optimize>
+        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_RemoteDebug>true</DCC_RemoteDebug>
+        <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+        <DCC_RangeChecking>true</DCC_RangeChecking>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <DCC_ExeOutput>..\_Out\BIN\</DCC_ExeOutput>
+        <DCC_BplOutput>..\_Out\DCU\</DCC_BplOutput>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="Forms\frm_UncertMain.pas">
+            <Form>frmUncertMain</Form>
+        </DCCReference>
+        <DCCReference Include="Forms\frm_UncertDetails.pas">
+            <Form>frmUncertDetails</Form>
+        </DCCReference>
+        <DCCReference Include="Units\unit_UncertThread.pas"/>
+        <DCCReference Include="..\Shared\Bayes\unit_UncertView.pas"/>
+        <DCCReference Include="..\Shared\Bayes\unit_UncertSession.pas"/>
+        <DCCReference Include="..\Shared\Bayes\unit_UncertRequest.pas"/>
+        <DCCReference Include="..\Shared\Bayes\unit_UncertRun.pas"/>
+        <DCCReference Include="..\Shared\Bayes\unit_UncertFiles.pas"/>
+        <DCCReference Include="..\Shared\Bayes\unit_UncertCounts.pas"/>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Application</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Source>
+                    <Source Name="MainSource">XRCUncert.dpr</Source>
+                </Source>
+                <Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k370.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp370.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                </Excluded_Packages>
+            </Delphi.Personality>
+            <Deployment Version="5"/>
+            <Platforms>
+                <Platform value="Win32">False</Platform>
+                <Platform value="Win64">True</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+    <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+    <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
+</Project>

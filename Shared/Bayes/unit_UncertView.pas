@@ -70,6 +70,9 @@ function ParsePrior(const Name, KnownText, ErrorText, Note: string;
 /// taken out.</summary>
 function WithPrior(const Priors: TArray<TUncertPrior>; const Prior: TUncertPrior;
   Remove: Boolean): TArray<TUncertPrior>;
+/// <summary>The progress line: 'about 1 min 10 s left', 'about 12 min left',
+/// 'a few seconds left'; '' when the time is not known.</summary>
+function TimeLeftText(Seconds: Double): string;
 
 implementation
 
@@ -389,6 +392,25 @@ begin
     end;
   if not Remove and not Found then
     Result := Result + [Prior];
+end;
+
+function TimeLeftText(Seconds: Double): string;
+var
+  S: Integer;
+begin
+  if IsNan(Seconds) or IsInfinite(Seconds) or (Seconds <= 0) then
+    Exit('');
+  if Seconds < 5 then
+    Exit('a few seconds left');
+  if Seconds < 60 then
+    Exit(Format('about %d s left', [Ceil(Seconds / 5) * 5]));
+  if Seconds >= 600 then
+    Exit(Format('about %d min left', [Round(Seconds / 60)]));
+  S := Round(Seconds / 10) * 10;
+  if S mod 60 = 0 then
+    Result := Format('about %d min left', [S div 60])
+  else
+    Result := Format('about %d min %d s left', [S div 60, S mod 60]);
 end;
 
 end.

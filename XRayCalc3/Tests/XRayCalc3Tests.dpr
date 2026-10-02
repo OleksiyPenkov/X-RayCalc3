@@ -166,7 +166,9 @@ uses
   TestUncertView in 'TestUncertView.pas',
   unit_UncertKeep in '..\..\Shared\Bayes\unit_UncertKeep.pas',
   unit_UncertSession in '..\..\Shared\Bayes\unit_UncertSession.pas',
-  TestUncertSession in 'TestUncertSession.pas';
+  TestUncertSession in 'TestUncertSession.pas',
+  unit_UncertThread in '..\..\XRCUncert\Units\unit_UncertThread.pas',
+  TestUncertThread in 'TestUncertThread.pas';
 
 {$R *.res}
 

@@ -41,6 +41,7 @@ type
     [Test] procedure ParsePrior_NotANumber;
     [Test] procedure ParsePrior_ErrorNotPositive;
     [Test] procedure WithPrior_ReplacesAddsRemoves;
+    [Test] procedure TimeLeftText_RoundsAndStaysQuietWhenUnknown;
   end;
 
 implementation
@@ -117,6 +118,18 @@ begin
     if Rows[k].Name = Name then
       Exit(Rows[k]);
   Assert.Fail('no row ' + Name);
+end;
+
+procedure TTestUncertView.TimeLeftText_RoundsAndStaysQuietWhenUnknown;
+begin
+  Assert.AreEqual('about 1 min 10 s left', TimeLeftText(72));
+  Assert.AreEqual('about 12 min left', TimeLeftText(725));
+  Assert.AreEqual('about 35 s left', TimeLeftText(33));
+  Assert.AreEqual('a few seconds left', TimeLeftText(4));
+  Assert.AreEqual('', TimeLeftText(0));
+  Assert.AreEqual('', TimeLeftText(-1));
+  Assert.AreEqual('', TimeLeftText(NaN));
+  Assert.AreEqual('', TimeLeftText(Infinity));
 end;
 
 procedure TTestUncertView.ErrorText_Symmetric;
