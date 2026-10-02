@@ -218,6 +218,8 @@
         <DCCReference Include="TestUncertCounts.pas"/>
         <DCCReference Include="..\..\Shared\Bayes\unit_UncertRequest.pas"/>
         <DCCReference Include="TestUncertRequest.pas"/>
+        <DCCReference Include="..\..\Shared\Bayes\unit_UncertRun.pas"/>
+        <DCCReference Include="TestUncertRun.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
