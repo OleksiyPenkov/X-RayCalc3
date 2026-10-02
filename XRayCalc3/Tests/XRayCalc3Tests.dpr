@@ -154,7 +154,9 @@ uses
   TestParamMapModes in 'TestParamMapModes.pas',
   TestTruthGate in 'TestTruthGate.pas',
   unit_UncertCounts in '..\..\Shared\Bayes\unit_UncertCounts.pas',
-  TestUncertCounts in 'TestUncertCounts.pas';
+  TestUncertCounts in 'TestUncertCounts.pas',
+  unit_UncertRequest in '..\..\Shared\Bayes\unit_UncertRequest.pas',
+  TestUncertRequest in 'TestUncertRequest.pas';
 
 {$R *.res}
 

@@ -130,6 +130,10 @@ type
     DataID: Integer;                    // the ID of the data node read; -1 without one
     DataNote: string;                   // the data node's Description ('* Source file: ...')
     CalcMode: Integer;                  // [PARAMS] Mode: 0 = theta scan; set by ReadXRCX
+    { [ANGLE] 2teta as read: a GUI project saved with the 2theta box ticked
+      keeps its curves in 2theta (DataCurve, CalcCurve are then 2theta, and
+      the calculation runs with K = 2). WriteXRCX always writes theta. }
+    TwoTheta: Boolean;
   end;
 
 const
@@ -531,6 +535,7 @@ begin
     P.Params.LFPSO.MaxPOrder    := P.Params.PolyOrder;
 
     P.CalcMode := INF.ReadInteger('PARAMS', 'Mode', 0);
+    P.TwoTheta := INF.ReadBool('ANGLE', '2teta', True);
     P.Params.LFPSO.FreePeriod := INF.ReadBool('FIT', 'FreePeriod', False);
     P.Params.LFPSO.PeriodWindow := ReadFloat(INF, 'FIT', 'PeriodWindow', 10) / 100;
     if P.Params.LFPSO.PeriodWindow <= 0 then

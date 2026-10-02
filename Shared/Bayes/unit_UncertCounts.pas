@@ -24,10 +24,11 @@ interface
 uses
   unit_Types;
 
-/// <summary>The counts for Curve (theta, as the project stores it), one per
-/// point, or nil with Why saying why there are none.</summary>
+/// <summary>The counts for Curve, one per point, or nil with Why saying why
+/// there are none. TwoTheta: the project keeps its curves in 2theta
+/// (TXRCXProject.TwoTheta).</summary>
 function CountsFromSource(const SourceFile: string; const Curve: TDataArray;
-  out Why: string): TArray<Double>;
+  TwoTheta: Boolean; out Why: string): TArray<Double>;
 /// <summary>The path on the '* Source file: ' line of a data node's
 /// description; '' when there is no such line.</summary>
 function SourceFileOf(const Description: string): string;
@@ -54,7 +55,7 @@ begin
 end;
 
 function CountsFromSource(const SourceFile: string; const Curve: TDataArray;
-  out Why: string): TArray<Double>;
+  TwoTheta: Boolean; out Why: string): TArray<Double>;
 var
   Scan: TXRDMLScan;
   C: TDataArray;
@@ -90,7 +91,7 @@ begin
     Why := 'The measurement file holds no raw counts (its intensities are already corrected).';
     Exit;
   end;
-  C := ScanCurveInChartUnit(Scan, False);
+  C := ScanCurveInChartUnit(Scan, TwoTheta);
   if not SameScanAngles(C, Curve) or not SameScanIntensities(C, Curve, Scan.Counts) then
   begin
     Why := 'The curve no longer matches its measurement file (it was trimmed, smoothed or edited).';

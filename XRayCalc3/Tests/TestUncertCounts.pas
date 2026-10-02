@@ -33,6 +33,7 @@ type
     [Test] procedure TrimmedCurve_NoneAndWhy;
     [Test] procedure IntensitiesFile_NoneAndWhy;
     [Test] procedure NoSourceLine_NoneAndWhy;
+    [Test] procedure TwoThetaProject_MatchesIn2Theta;
     [Test] procedure SourceFileOf_FindsTheLine;
     [Test] procedure CountsText_RoundTrip;
   end;
@@ -82,7 +83,7 @@ var
   Counts: TArray<Double>;
   Why: string;
 begin
-  Counts := CountsFromSource(Save('a.xrdml', WITH_COUNTS), CurveOf(WITH_COUNTS), Why);
+  Counts := CountsFromSource(Save('a.xrdml', WITH_COUNTS), CurveOf(WITH_COUNTS), False, Why);
   Assert.AreEqual(4, Length(Counts), Why);
   Assert.AreEqual(1000.0, Counts[0], 0.0);
   Assert.AreEqual(4.0, Counts[3], 0.0);
@@ -93,7 +94,7 @@ procedure TTestUncertCounts.MissingFile_NoneAndWhy;
 var
   Why: string;
 begin
-  Assert.AreEqual(0, Length(CountsFromSource(TPath.Combine(FDir, 'gone.xrdml'), CurveOf(WITH_COUNTS), Why)));
+  Assert.AreEqual(0, Length(CountsFromSource(TPath.Combine(FDir, 'gone.xrdml'), CurveOf(WITH_COUNTS), False, Why)));
   Assert.Contains(Why, 'was not found');
   Assert.Contains(Why, 'gone.xrdml');
 end;
@@ -105,7 +106,7 @@ var
 begin
   Curve := CurveOf(WITH_COUNTS);
   Delete(Curve, 0, 1);                                     // trimmed in the main app
-  Assert.AreEqual(0, Length(CountsFromSource(Save('a.xrdml', WITH_COUNTS), Curve, Why)));
+  Assert.AreEqual(0, Length(CountsFromSource(Save('a.xrdml', WITH_COUNTS), Curve, False, Why)));
   Assert.Contains(Why, 'no longer matches');
 end;
 
@@ -114,7 +115,7 @@ var
   Why: string;
 begin
   Assert.AreEqual(0, Length(CountsFromSource(Save('i.xrdml', WITH_INTENSITIES),
-    CurveOf(WITH_INTENSITIES), Why)));
+    CurveOf(WITH_INTENSITIES), False, Why)));
   Assert.Contains(Why, 'no raw counts');
 end;
 
@@ -122,8 +123,19 @@ procedure TTestUncertCounts.NoSourceLine_NoneAndWhy;
 var
   Why: string;
 begin
-  Assert.AreEqual(0, Length(CountsFromSource('', CurveOf(WITH_COUNTS), Why)));
+  Assert.AreEqual(0, Length(CountsFromSource('', CurveOf(WITH_COUNTS), False, Why)));
   Assert.Contains(Why, 'does not name');
+end;
+
+procedure TTestUncertCounts.TwoThetaProject_MatchesIn2Theta;
+var
+  Why: string;
+  Curve: TDataArray;
+begin
+  Curve := ScanCurveInChartUnit(ReadXRDMLText(WITH_COUNTS), True);
+  Assert.AreEqual(4, Length(CountsFromSource(Save('a.xrdml', WITH_COUNTS), Curve, True, Why)), Why);
+  Assert.AreEqual(0, Length(CountsFromSource(Save('a.xrdml', WITH_COUNTS), Curve, False, Why)),
+    'a 2theta curve is not the theta scan');
 end;
 
 procedure TTestUncertCounts.SourceFileOf_FindsTheLine;
