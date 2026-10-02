@@ -194,7 +194,8 @@ type
     AssessXRRquality1: TMenuItem;
     actCalcFitJobs: TAction;
     actCalcUncertainty: TAction;
-    miCalcUncertainty: TMenuItem;
+    miToolsSepUncertainty: TMenuItem;
+    miToolsUncertainty: TMenuItem;
     FitExportJSON: TAction;
     dlgSaveFitJSON: TSaveDialog;
     N16: TMenuItem;

@@ -78,7 +78,7 @@ mkdir -p "$DEPLOY_DIR/Help/XRCUncert"
 echo "Copying executables..."
 cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
 cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
-# The uncertainty tool: Calc - Parameter uncertainties starts the one of the
+# The uncertainty tool: Tools - Parameter uncertainties starts the one of the
 # same bitness from the program's own folder.
 cp "$PROJECT_DIR/_Out/BIN/XRCUncert.exe"     "$DEPLOY_DIR/Win32/"
 cp "$PROJECT_DIR/_Out/BIN/XRCUncert.x64.exe" "$DEPLOY_DIR/Win64/"

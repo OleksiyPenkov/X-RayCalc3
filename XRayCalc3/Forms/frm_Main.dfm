@@ -903,9 +903,6 @@ object frmMain: TfrmMain
         ImageIndex = 36
         Action = actCalcFitJobs
       end
-      object miCalcUncertainty: TMenuItem
-        Action = actCalcUncertainty
-      end
       object N14: TMenuItem
         Caption = '-'
       end
@@ -996,6 +993,12 @@ object frmMain: TfrmMain
         Caption = 'Materials Library'
         Enabled = False
         Visible = False
+      end
+      object miToolsSepUncertainty: TMenuItem
+        Caption = '-'
+      end
+      object miToolsUncertainty: TMenuItem
+        Action = actCalcUncertainty
       end
     end
     object Calc2: TMenuItem
@@ -2163,7 +2166,7 @@ object frmMain: TfrmMain
       OnExecute = actCalcFitJobsExecute
     end
     object actCalcUncertainty: TAction
-      Category = 'Calc'
+      Category = 'Tools'
       Caption = 'Parameter uncertainties...'
       OnExecute = actCalcUncertaintyExecute
     end

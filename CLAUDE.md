@@ -57,7 +57,7 @@ XRayCalc3/          Main GUI application
   Tests/            DUnitX test suite — 14 test units, Win32 Debug only
 XRC_CMD/            Command-line interface variant
 XRFCalc/            XRF calculation GUI app
-XRCUncert/          Parameter-uncertainty tool (separate GUI app; Calc - Parameter uncertainties starts it)
+XRCUncert/          Parameter-uncertainty tool (separate GUI app; Tools - Parameter uncertainties starts it)
 XRC_MCP/            MCP server for LLM agents; spec in docs/superpowers/specs/2026-09-09-xrc-mcp-design.md
                     smoke/session.ps1 drives all 18 tools end to end (exit 0 = pass)
 Shared/

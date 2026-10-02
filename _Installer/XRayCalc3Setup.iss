@@ -43,7 +43,7 @@ Source: "deploy\Win64\XRC_MCP.exe";                 DestDir: "{app}"; Flags: ign
 ; the server does not start without its XRF line table beside it
 Source: "deploy\Win64\xrf_lines.json";              DestDir: "{app}"; Flags: ignoreversion
 
-; --- The uncertainty tool (Calc - Parameter uncertainties starts the one of its own bitness) ---
+; --- The uncertainty tool (Tools - Parameter uncertainties starts the one of its own bitness) ---
 Source: "deploy\Win64\XRCUncert.x64.exe";           DestDir: "{app}"; Flags: ignoreversion
 Source: "deploy\Win32\XRCUncert.exe";               DestDir: "{app}"; Flags: ignoreversion
 Source: "deploy\Help\XRCUncert\*";                   DestDir: "{app}\Help\XRCUncert";    Flags: ignoreversion
