@@ -317,4 +317,61 @@ No new logic of its own: everything shown comes from Task 1's functions, which a
 
 ## Outcome
 
-_To be filled in by Task 7._
+_2026-10-02. Tasks 1 to 6 implemented, reviewed once by a fresh reviewer, fixed; the test build is on
+`Z:\files\Software\XRayCalc3_Setup_3.9.5-uncert-test.exe` (`Z:\index.html` not touched). Nothing is on
+master; nothing is pushed._
+
+**What was checked, and how**
+
+| Check | Result |
+|---|---|
+| Whole suite, Win32 Debug, gate off | 1177 of 1177 (was 1129 before this plan) |
+| End to end on project files, gate on (`TestUncertEndToEnd`) | 5 of 5 |
+| Build: XRayCalc3, xrccmd, XRFCalc, XRCUncert (Win32 + Win64 Release), XRC_MCP (Win64) | no errors; no hints or warnings from the new units |
+| `XRC_MCP\smoke\session.ps1` | PASS |
+| `deploy.sh` + Inno Setup | installer built, 13.2 MB |
+
+The held-period case at the standard recipe (the truth gate's cell, counting noise at I0 = 1E7, the
+project saved without Free period, 32 walkers, 4000 steps, CPU, 52 s, settled at the first attempt):
+
+| Value | Truth | 2.5 % | 50 % | 97.5 % | R-hat |
+|---|---|---|---|---|---|
+| period, Å | 34 | 33.9999 | 34.0001 | 34.0004 | 1.02 |
+| interlayer thickness, Å | 6 | 5.99991 | 6.00014 | 6.00036 | 1.02 |
+
+The other four end-to-end cases give the numbers of plan B1's Outcome to the last digit shown.
+
+**What this does not show**
+
+- **The window has never been run.** By the project's rule nobody launched XRCUncert or the main program
+  to look at them. The form and its DFM are checked by the compiler and by one reader only; whether the
+  form loads, how it looks, and how the cell editor behaves under real clicks are the author's checklist
+  (Task 7, Step 7). The most likely first-run fault is a DFM property the form does not accept.
+- The truth-gate fixture was not re-run to the end (stopped at its one-hour limit). It tests plan A's
+  sampler core through its own map, which this plan did not change.
+- The graphics-card path was not exercised by any test here (the tests run on the CPU); the window asks
+  for the card and falls back as plan B1's runner does.
+- No real measurement was used; no `.xrdml` with raw counts was opened through the window.
+- Whether a stored result still counts as current after an unchanged save in the main program was not
+  tested (checklist step 4). If it shows as out of date there, the fingerprint must be taken over the
+  parsed structure instead of its text.
+
+**Review.** One fresh reviewer over the whole range, reading only. No Critical finding. Fixed: a known
+value entered with the mouse was refused and lost; after a refusal the editor opened on a cell nobody
+clicked; a dropped file that was not a project stopped a running run before being refused; a zip entry
+with a folder in its name was written outside the working folder by the main program's save step; a
+fit period window of 100 % or more made a project impossible to analyse. The cell-edit decision now
+lives in `unit_UncertView.DecideCellEdit` with six tests. Deferred minors and every ruling are in the
+ledger (`.superpowers/sdd/2026-10-02-uncertainty-tool-planB2/progress.md`).
+
+**Where the implementation differs from this plan**
+
+- A sampled period is one row, "Period": no separate period row beside an identical mean-period row.
+- `KeepToolEntries` is in `Shared/Bayes/unit_UncertKeep.pas`, so the main program links no sampler code.
+- Calc - Parameter uncertainties always asks before saving (the main program does not track changes).
+- A known value typed before its ± stays on the row, unsaved, until the ± is given; Enter moves on to
+  the ± cell.
+- Tasks 3 and 4 are one commit. The thread was written with its tests (no failing run seen first).
+- The tool has no icon of its own; it uses the main program's.
+- The series' point sizes are set in `FormCreate`, not in the DFM.
+- A fit's own period window is cut to 50 % of the period.
