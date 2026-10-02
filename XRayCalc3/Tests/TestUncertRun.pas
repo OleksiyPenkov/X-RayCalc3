@@ -33,6 +33,8 @@ type
     [Test] procedure StartOutsideLimits_RefusedBeforeRunning;
     [Test] procedure NarrowPrior_PullsTheResult_AndIsReported;
     [Test] procedure CountsOfAnotherLength_RefusedInPlainWords;
+    [Test] procedure CurveNoise_IsThePointToPointScatter;
+    [Test] procedure MisfitWarning_OnlyWellAboveTheNoise;
   end;
 
 /// TWB4CFixture's cell with interlayer thickness H2 as a periodic project whose
@@ -43,7 +45,7 @@ implementation
 
 uses
   System.SysUtils, System.Math, unit_MCPStructure, unit_ParamMap, unit_LogPosterior,
-  unit_UncertRun, TestLogPosterior;
+  unit_UncertRun, unit_Xoshiro, TestLogPosterior;
 
 const
   I0 = 1E6;
@@ -315,6 +317,46 @@ begin
   Assert.IsFalse(Res.Stopped);
   Assert.Contains(Res.Message, 'counts');
   Assert.Contains(Res.Message, 'points');
+end;
+
+{ A falling curve with fringes, Sigma of relative noise on every point. }
+function NoisyCurve(Sigma: Double): TDataArray;
+var
+  Rng: TXoshiro256;
+  i: Integer;
+begin
+  Rng.Seed(5);
+  SetLength(Result, 2000);
+  for i := 0 to High(Result) do
+  begin
+    Result[i].t := 0.5 + i * 0.005;
+    Result[i].r := Exp(-Result[i].t) * (1 + 0.5 * Sin(Result[i].t * 20)) * Exp(Sigma * Rng.NextGaussian);
+  end;
+end;
+
+procedure TTestUncertRun.CurveNoise_IsThePointToPointScatter;
+var
+  D: TDataArray;
+begin
+  Assert.AreEqual(0.05, CurveNoise(NoisyCurve(0.05)), 0.01);
+  Assert.AreEqual(0.0, CurveNoise(NoisyCurve(0)), 0.002, 'the curve''s own shape is not noise');
+  D := NoisyCurve(0.05);
+  D[10].r := 0;
+  D[500].r := -1;
+  Assert.AreEqual(0.05, CurveNoise(D), 0.01, 'points that are not positive are left out');
+  Assert.AreEqual(0.0, CurveNoise(Copy(D, 0, 2)), 0.0, 'too short to tell');
+end;
+
+procedure TTestUncertRun.MisfitWarning_OnlyWellAboveTheNoise;
+var
+  D: TDataArray;
+begin
+  D := NoisyCurve(0.05);
+  Assert.Contains(MisfitWarning(D, 0.2), '20 %');
+  Assert.Contains(MisfitWarning(D, 0.2), '5 %');
+  Assert.AreEqual('', MisfitWarning(D, 0.08), 'under the least misfit worth a line');
+  Assert.AreEqual('', MisfitWarning(NoisyCurve(0.15), 0.2), 'the curve is that noisy itself');
+  Assert.AreEqual('', MisfitWarning(D, NaN));
 end;
 
 initialization

@@ -395,6 +395,10 @@ begin
       Text: string;
     begin
       Text := TimeLeftText(SecondsLeft);
+      { a longer total is the second attempt: say so, or the time left
+        jumps from seconds to minutes with no reason given }
+      if Total > TUncertRecipe.Standard.Settle + TUncertRecipe.Standard.Steps then
+        Text := 'Not settled yet, running once more, longer: ' + Text;
       TThread.Queue(TThread.CurrentThread,
         procedure
         begin

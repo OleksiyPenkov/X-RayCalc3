@@ -81,6 +81,20 @@ const
   WARN_NO_COUNTS = 'No raw counts: the errors rely on the estimated noise only.';
   MSG_NOT_SETTLED ='The fit has not settled: the uncertainties cannot be given. ' +
     'Refit the model and try again.';
+  WARN_MISFIT_MIN = 0.1;      // a model within 10 % of the curve is not called a misfit
+  WARN_MISFIT_FACTOR = 2;     // nor one within twice the curve's own noise
+  MISFIT_WIDENS = ' The errors are that wide because of it; a model that follows the curve closer ' +
+    'will narrow them.';
+
+/// <summary>The relative noise of a measured curve from its own points: the
+/// scatter of ln I about its two neighbours' mean (median-based, so fringes
+/// and a few outliers do not count). 0 with fewer than three positive points
+/// in a row.</summary>
+function CurveNoise(const Data: TDataArray): Double;
+/// <summary>One sentence when the model's misfit F (relative, the sampled
+/// noise floor) is at least WARN_MISFIT_MIN and more than WARN_MISFIT_FACTOR
+/// times the curve's own noise; '' otherwise.</summary>
+function MisfitWarning(const Data: TDataArray; F: Double): string;
 
 function RunUncertainty(const Req: TUncertRequest; const Priors: TArray<TUncertPrior>;
   const Counts: TArray<Double>; UseGPU: Boolean; Seed: UInt64;
@@ -93,8 +107,39 @@ function RunUncertainty(const Req: TUncertRequest; const Priors: TArray<TUncertP
 implementation
 
 uses
-  System.Math, System.Diagnostics, unit_ParamMap, unit_LogPosterior, unit_JointPosterior,
+  System.Math, System.Diagnostics, System.Generics.Collections, unit_ParamMap, unit_LogPosterior, unit_JointPosterior,
   unit_SampleRun;
+
+function CurveNoise(const Data: TDataArray): Double;
+var
+  D: TArray<Double>;
+  i: Integer;
+begin
+  D := nil;
+  for i := 1 to High(Data) - 1 do
+    if (Data[i - 1].r > 0) and (Data[i].r > 0) and (Data[i + 1].r > 0) then
+      D := D + [Abs(Ln(Data[i - 1].r) - 2 * Ln(Data[i].r) + Ln(Data[i + 1].r))];
+  if D = nil then
+    Exit(0);
+  TArray.Sort<Double>(D);
+  { median |x| of a Gaussian is 0.6745 sigma; the second difference of
+    independent points has variance 6 sigma^2 }
+  Result := D[Length(D) div 2] / 0.6745 / Sqrt(6);
+end;
+
+function MisfitWarning(const Data: TDataArray; F: Double): string;
+var
+  Noise: Double;
+begin
+  Result := '';
+  if IsNan(F) or (F < WARN_MISFIT_MIN) then
+    Exit;
+  Noise := CurveNoise(Data);
+  if F <= WARN_MISFIT_FACTOR * Noise then
+    Exit;
+  Result := Format('The model misses the measured curve by about %.0f %% (the curve''s own noise is about %.0f %%).',
+    [F * 100, Noise * 100]);
+end;
 
 class function TUncertRecipe.Standard: TUncertRecipe;
 begin
@@ -224,8 +269,8 @@ var
   R: TSampleResult;
   Total: TStopwatch;
   St: TStage;
-  Attempt, F, st_, Settle, Steps: Integer;
-  Why: string;
+  Attempt, F, st_, Settle, Steps, k: Integer;
+  Why, Misfit: string;
 
   function Stop: Boolean;
   begin
@@ -315,11 +360,21 @@ begin
 
     Result.Device := R.DeviceUsed;
     FillValues(Result, Req, Map, R, Result.Settled);
+    { from the chain itself: an unsettled run has no ranges, but its noise
+      floor still says why }
+    Misfit := '';
+    for k := 0 to High(R.Params) do
+      if R.Params[k].Name = 'c0.f' then
+        Misfit := MisfitWarning(Req.Data, R.Params[k].Summary.P50);
     if not Result.Settled then
     begin
       Result.Message := MSG_NOT_SETTLED;
+      if Misfit <> '' then
+        Result.Message := Result.Message + ' ' + Misfit;
       Exit;
     end;
+    if Misfit <> '' then
+      Result.Warnings := Result.Warnings + [Misfit + MISFIT_WIDENS];
     if (Length(R.Bands) > 0) and R.Bands[0].Present then
     begin
       Result.Band.Theta := R.Bands[0].Theta;
