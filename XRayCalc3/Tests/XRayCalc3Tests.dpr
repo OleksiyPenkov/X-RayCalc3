@@ -158,7 +158,9 @@ uses
   unit_UncertRequest in '..\..\Shared\Bayes\unit_UncertRequest.pas',
   TestUncertRequest in 'TestUncertRequest.pas',
   unit_UncertRun in '..\..\Shared\Bayes\unit_UncertRun.pas',
-  TestUncertRun in 'TestUncertRun.pas';
+  TestUncertRun in 'TestUncertRun.pas',
+  unit_UncertFiles in '..\..\Shared\Bayes\unit_UncertFiles.pas',
+  TestUncertFiles in 'TestUncertFiles.pas';
 
 {$R *.res}
 
