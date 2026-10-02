@@ -205,7 +205,7 @@ begin
   Stored.Names := Req.Names;
   Assert.AreEqual('', WriteEntries(Path,
     [UncertEntryName(Proj.ModelID), CountsEntryName(Proj.DataID)],
-    [StoredToJSON(Stored), CountsToText(Counts)]));
+    [StoredToJSON(Stored), CountsToText(Counts, Proj.DataCurve)]));
 
   { and back, as the tool would find it tomorrow }
   Again := ReadXRCX(Path);
@@ -217,10 +217,10 @@ begin
     Assert.AreEqual(Result.Values[k].P50, Back.Result.Values[k].P50, 0.0,
       Result.Values[k].Name + ' is stored as it was computed');
   Assert.IsTrue(ReadEntry(Path, CountsEntryName(Again.DataID), Text));
-  Assert.AreEqual(Back.Fingerprint, Fingerprint(Again, CountsFromText(Text), nil),
+  Assert.AreEqual(Back.Fingerprint, Fingerprint(Again, CountsFromText(Text, Again.DataCurve, Why), nil),
     'the stored result is current for the project as it now is');
   Again.XRCData := StringReplace(Again.XRCData, '"B4C"', '"C"', []);
-  Assert.AreNotEqual(Back.Fingerprint, Fingerprint(Again, CountsFromText(Text), nil),
+  Assert.AreNotEqual(Back.Fingerprint, Fingerprint(Again, CountsFromText(Text, Again.DataCurve, Why), nil),
     'and out of date once the model changes');
 end;
 

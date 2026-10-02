@@ -38,6 +38,7 @@ type
     [Test] procedure WriteEntries_AddsAndLeavesTheRestAlone;
     [Test] procedure WriteEntries_ReplacesItsOwnEntry;
     [Test] procedure WriteEntries_ReadOnlyFile_SaysSoAndTouchesNothing;
+    [Test] procedure WriteEntries_FileInUse_SaysSoAndTouchesNothing;
     [Test] procedure ReadEntry_Missing_IsFalse;
     [Test] procedure EntryNames;
   end;
@@ -255,6 +256,9 @@ begin
   Q.DataCurve[3].r := Q.DataCurve[3].r * 1.01;
   Assert.AreNotEqual(Base, Fingerprint(Q, [100, 200], nil), 'a data point');
   Assert.AreNotEqual(Base, Fingerprint(P, [100, 201], nil), 'a count');
+  Q := P;
+  Q.Params.MinLimit := P.Params.MinLimit * 100;
+  Assert.AreNotEqual(Base, Fingerprint(Q, [100, 200], nil), 'the lower limit the model curve is cut at');
   Assert.AreNotEqual(Base, Fingerprint(P, nil, nil), 'no counts');
   Q := P;
   Q.Params.FitMode := 2;
@@ -321,6 +325,25 @@ begin
   Assert.Contains(Why, 'read-only');
   Assert.IsTrue(SameBytes(Old, TFile.ReadAllBytes(Path)), 'the project is what it was');
   Assert.AreEqual(1, Length(TDirectory.GetFiles(FDir)), 'no temporary file is left behind');
+end;
+
+procedure TTestUncertFiles.WriteEntries_FileInUse_SaysSoAndTouchesNothing;
+var
+  Path, Why: string;
+  Old: TBytes;
+  Lock: TFileStream;
+begin
+  Path := NewProject('busy.xrcx');
+  Old := TFile.ReadAllBytes(Path);
+  Lock := TFileStream.Create(Path, fmOpenRead or fmShareDenyWrite);   // another program has it open
+  try
+    Why := WriteEntries(Path, ['uncert_1.json'], ['x']);
+  finally
+    Lock.Free;
+  end;
+  Assert.Contains(Why, 'could not be saved');
+  Assert.IsTrue(SameBytes(Old, TFile.ReadAllBytes(Path)), 'the project is what it was');
+  Assert.AreEqual(1, Length(TDirectory.GetFiles(FDir)), 'nothing else is left beside it');
 end;
 
 procedure TTestUncertFiles.ReadEntry_Missing_IsFalse;

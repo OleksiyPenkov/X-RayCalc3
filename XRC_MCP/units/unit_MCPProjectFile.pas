@@ -129,6 +129,10 @@ type
     ModelID: Integer;                   // the ID of the model node read
     DataID: Integer;                    // the ID of the data node read; -1 without one
     DataNote: string;                   // the data node's Description ('* Source file: ...')
+    { True when the data node read is the one [STATE] LinkedData names. False:
+      ReadXRCX fell back to the first data node, which the main program would
+      not fit against (it fits a linked curve only). }
+    DataLinked: Boolean;
     CalcMode: Integer;                  // [PARAMS] Mode: 0 = theta scan; set by ReadXRCX
     { [ANGLE] 2teta as read: a GUI project saved with the 2theta box ticked
       keeps its curves in 2theta (DataCurve, CalcCurve are then 2theta, and
@@ -798,7 +802,9 @@ begin
       Tree.LoadFromFile(FileName);
 
       { RecoverProjectTree takes the model named by [STATE] ActiveModel and falls
-        back to the first one; RecoverDataCurves does the same with LinkedData. }
+        back to the first one. For the data node the fallback is this unit's own:
+        the GUI links a curve only when its ID is LinkedData, and P.DataLinked
+        says which of the two happened here. }
       Node := Tree.GetFirst;
       while Node <> nil do
       begin
@@ -867,6 +873,7 @@ begin
         PD := Tree.GetNodeData(ChosenData);
         P.DataTitle := PD.Title;
         P.DataNote := PD.Description;
+        P.DataLinked := MatchData <> nil;
         DataID := PD.ID;
       end;
     finally

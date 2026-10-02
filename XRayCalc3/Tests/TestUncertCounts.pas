@@ -146,17 +146,32 @@ begin
   Assert.AreEqual('', SourceFileOf(''));
 end;
 
+{ The stored counts say which curve they belong to: the main program keeps
+  the entry when the curve is trimmed or smoothed, and counts on other points
+  would weigh the wrong data. }
 procedure TTestUncertCounts.CountsText_RoundTrip;
 var
   C: TArray<Double>;
+  Curve, Other: TDataArray;
+  Text, Why: string;
 begin
-  C := CountsFromText(CountsToText([1000, 0, 3.5, 12345678]));
-  Assert.AreEqual(4, Length(C));
+  Curve := CurveOf(WITH_COUNTS);
+  Text := CountsToText([1000, 0, 3.5, 12345678], Curve);
+  C := CountsFromText(Text, Curve, Why);
+  Assert.AreEqual(4, Length(C), Why);
   Assert.AreEqual(1000.0, C[0], 0.0);
   Assert.AreEqual(0.0, C[1], 0.0);
   Assert.AreEqual(3.5, C[2], 0.0);
   Assert.AreEqual(12345678.0, C[3], 0.0);
-  Assert.AreEqual(0, Length(CountsFromText('')));
+
+  Other := Copy(Curve);
+  Other[2].r := Other[2].r * 0.9;                          // smoothed: the same length, other values
+  Assert.AreEqual(0, Length(CountsFromText(Text, Other, Why)));
+  Assert.Contains(Why, 'another curve');
+
+  Assert.AreEqual(0, Length(CountsFromText('', Curve, Why)));
+  Assert.AreEqual(0, Length(CountsFromText(Text.Replace('3.5', 'x'), Curve, Why)),
+    'a line that is not a number spoils the whole entry: the later counts would shift');
 end;
 
 initialization

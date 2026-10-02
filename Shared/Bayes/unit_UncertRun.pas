@@ -234,11 +234,19 @@ var
 begin
   Result := Default(TUncertResult);
   Total := TStopwatch.StartNew;
-  Map := BuildMap(Req, Priors);
+  if (Length(Counts) > 0) and (Length(Counts) <> Length(Req.Data)) then
+  begin
+    Result.Message := Format('The stored counts do not belong to this curve (%d counts for %d ' +
+      'points). Read the counts again from the measurement file.', [Length(Counts), Length(Req.Data)]);
+    Exit;
+  end;
+  Map := nil;
   Post := nil;
   Joint := nil;
   Run := nil;
   try
+   try
+    Map := BuildMap(Req, Priors);
     Why := StartProblem(Map, Req);
     if Why <> '' then
     begin
@@ -321,6 +329,17 @@ begin
     end;
     Result.Correlation := R.Correlation;
     FillWarnings(Result, Req, Priors, Counts, R);
+   except
+     { Whatever the engine raises - no feasible start near a limit, a material
+       table that is missing - is told as a sentence: the caller shows
+       Message and has nothing to catch. }
+     on E: Exception do
+     begin
+       Result.Settled := False;
+       Result.Stopped := False;
+       Result.Message := 'The uncertainties could not be computed: ' + E.Message;
+     end;
+   end;
   finally
     Run.Free;
     Joint.Free;

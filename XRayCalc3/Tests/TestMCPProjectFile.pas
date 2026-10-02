@@ -28,7 +28,7 @@ uses
   VirtualTrees, VirtualTrees.Types,
   unit_Types, unit_XRCProjectTree,
   unit_MCPSandbox, unit_MCPErrors, unit_MCPTools, unit_MCPStructure,
-  unit_MCPProjectFile, unit_ToolsFiles, unit_Config, unit_consts;
+  unit_MCPProjectFile, unit_ToolsFiles, unit_Config, unit_consts, unit_UncertFiles;
 
 type
   [TestFixture]
@@ -82,6 +82,7 @@ type
     [Test] procedure ReadXRCX_HandsOverIDsDataNoteAndFreePeriod;
     [Test] procedure ReadXRCX_NoData_DataIDIsMinusOne;
     [Test] procedure WriteXRCX_HeldPeriod_WritesNoFreePeriodKeys;
+    [Test] procedure ReadXRCX_SaysWhetherTheCurveIsLinked;
   end;
 
 implementation
@@ -918,6 +919,35 @@ begin
   finally
     INF.Free;
   end;
+end;
+
+{ ReadXRCX falls back to the first data node when none is linked, which suits
+  the server; the main program fits only a linked curve, so the uncertainty
+  tool must be able to tell the two apart. }
+procedure TTestMCPProjectFile.ReadXRCX_SaysWhetherTheCurveIsLinked;
+var
+  Path: string;
+  INF: TMemIniFile;
+  Lines: TStringList;
+  R: TXRCXProject;
+begin
+  Path := TPath.Combine(FTemp, 'linked.xrcx');
+  WriteXRCX(Path, SampleProject);
+  Assert.IsTrue(ReadXRCX(Path).DataLinked, 'the curve the project links');
+
+  INF := ParamsOf(Path);
+  Lines := TStringList.Create;
+  try
+    INF.DeleteKey('STATE', 'LinkedData');
+    INF.GetStrings(Lines);
+    Assert.AreEqual('', WriteEntries(Path, ['params.dsc'], [Lines.Text]));
+  finally
+    Lines.Free;
+    INF.Free;
+  end;
+  R := ReadXRCX(Path);
+  Assert.IsFalse(R.DataLinked, 'nothing is linked');
+  Assert.AreEqual(XRCX_DATA_ID, R.DataID, 'the first curve is still handed over, as before');
 end;
 
 initialization

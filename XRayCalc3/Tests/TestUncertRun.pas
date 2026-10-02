@@ -32,6 +32,7 @@ type
     [Test] procedure WalkersDisagree_RepeatsThenRefusesInPlainWords;
     [Test] procedure StartOutsideLimits_RefusedBeforeRunning;
     [Test] procedure NarrowPrior_PullsTheResult_AndIsReported;
+    [Test] procedure CountsOfAnotherLength_RefusedInPlainWords;
   end;
 
 /// TWB4CFixture's cell with interlayer thickness H2 as a periodic project whose
@@ -65,6 +66,7 @@ begin
   Result.ModelID := 1;
   Result.DataID := 2;
   Result.DataTitle := 'curve';
+  Result.DataLinked := True;
   Result.DataCurve := TWB4CFixture.Angles;
 
   { the truth's curve, through the request the tool itself would build }
@@ -288,6 +290,27 @@ begin
   Assert.AreEqual(6.0005, ValueOf(Res, THICKNESS).P50, 2E-4, 'the entered value wins');
   Assert.IsTrue(ValueOf(Res, THICKNESS).P50 > 6.0002, 'and not the curve''s 6.0000');
   Assert.IsTrue(HasWarning(Res, 'repeats what was entered'));
+end;
+
+{ Whatever goes wrong inside the engine comes back as a sentence, never as an
+  exception: the window has nothing to catch. }
+procedure TTestUncertRun.CountsOfAnotherLength_RefusedInPlainWords;
+var
+  P: TXRCXProject;
+  Counts: TArray<Double>;
+  Req: TUncertRequest;
+  Res: TUncertResult;
+begin
+  if not TWB4CFixture.TablesPresent then
+    Assert.Pass('Henke tables W, B4C, Si are not installed');
+  P := WB4CProject(6, Counts);
+  Assert.AreEqual('', BuildRequest(P, Req));
+  SetLength(Counts, Length(Counts) - 5);
+  Res := RunUncertainty(Req, nil, Counts, False, 7, nil, nil, ShortRecipe);
+  Assert.IsFalse(Res.Settled);
+  Assert.IsFalse(Res.Stopped);
+  Assert.Contains(Res.Message, 'counts');
+  Assert.Contains(Res.Message, 'points');
 end;
 
 initialization

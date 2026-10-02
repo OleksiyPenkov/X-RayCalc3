@@ -32,17 +32,40 @@ function CountsFromSource(const SourceFile: string; const Curve: TDataArray;
 /// <summary>The path on the '* Source file: ' line of a data node's
 /// description; '' when there is no such line.</summary>
 function SourceFileOf(const Description: string): string;
-/// <summary>One count per line, invariant format: the counts_&lt;id&gt;.dat entry.</summary>
-function CountsToText(const Counts: TArray<Double>): string;
-function CountsFromText(const Text: string): TArray<Double>;
+/// <summary>The counts_&lt;id&gt;.dat entry: a first line naming the curve the
+/// counts belong to (a hash of its points), then one count per line,
+/// invariant format.</summary>
+function CountsToText(const Counts: TArray<Double>; const Curve: TDataArray): string;
+/// <summary>The counts of the entry when it was written for exactly this
+/// Curve; nil, with Why, for any other curve or a damaged entry. The main
+/// program keeps the entry when the curve is trimmed or smoothed.</summary>
+function CountsFromText(const Text: string; const Curve: TDataArray; out Why: string): TArray<Double>;
 
 implementation
 
 uses
-  System.SysUtils, System.Classes, unit_xrdml;
+  System.SysUtils, System.Classes, System.Hash, unit_xrdml;
 
 const
   SOURCE_TAG = '* Source file: ';
+  CURVE_TAG = '# curve ';
+
+{ What the counts belong to: the curve's points, as the project stores them. }
+function CurveHash(const Curve: TDataArray): string;
+var
+  SB: TStringBuilder;
+  i: Integer;
+begin
+  SB := TStringBuilder.Create;
+  try
+    for i := 0 to High(Curve) do
+      SB.Append(FloatToStrF(Curve[i].t, ffGeneral, 9, 0, TFormatSettings.Invariant)).Append(':')
+        .Append(FloatToStrF(Curve[i].r, ffGeneral, 9, 0, TFormatSettings.Invariant)).Append(' ');
+    Result := THashSHA2.GetHashString(SB.ToString);
+  finally
+    SB.Free;
+  end;
+end;
 
 function SourceFileOf(const Description: string): string;
 var
@@ -100,13 +123,14 @@ begin
   Result := Copy(Scan.Counts);
 end;
 
-function CountsToText(const Counts: TArray<Double>): string;
+function CountsToText(const Counts: TArray<Double>; const Curve: TDataArray): string;
 var
   SB: TStringBuilder;
   i: Integer;
 begin
   SB := TStringBuilder.Create;
   try
+    SB.Append(CURVE_TAG).Append(CurveHash(Curve)).Append(#10);
     for i := 0 to High(Counts) do
       SB.Append(FloatToStrF(Counts[i], ffGeneral, 17, 0, TFormatSettings.Invariant)).Append(#10);
     Result := SB.ToString;
@@ -115,15 +139,42 @@ begin
   end;
 end;
 
-function CountsFromText(const Text: string): TArray<Double>;
+function CountsFromText(const Text: string; const Curve: TDataArray; out Why: string): TArray<Double>;
 var
   L: string;
   V: Double;
+  First: Boolean;
 begin
   Result := nil;
+  Why := '';
+  First := True;
   for L in Text.Split([#13#10, #10]) do
-    if TryStrToFloat(L.Trim, V, TFormatSettings.Invariant) then
-      Result := Result + [V];
+  begin
+    if First then
+    begin
+      First := False;
+      if L <> CURVE_TAG + CurveHash(Curve) then
+      begin
+        Why := 'The stored counts belong to another curve: this one was trimmed, smoothed or replaced since.';
+        Exit;
+      end;
+      Continue;
+    end;
+    if L.Trim = '' then
+      Continue;
+    if not TryStrToFloat(L.Trim, V, TFormatSettings.Invariant) then
+    begin
+      { one bad line would shift every count after it onto the wrong point }
+      Why := 'The stored counts are damaged.';
+      Exit(nil);
+    end;
+    Result := Result + [V];
+  end;
+  if Length(Result) <> Length(Curve) then
+  begin
+    Why := 'The stored counts belong to another curve: this one was trimmed, smoothed or replaced since.';
+    Result := nil;
+  end;
 end;
 
 end.

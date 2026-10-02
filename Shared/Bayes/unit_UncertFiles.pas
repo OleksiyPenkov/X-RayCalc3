@@ -71,8 +71,8 @@ function WriteEntries(const ProjectFile: string; const Names, Texts: TArray<stri
 implementation
 
 uses
-  System.Classes, System.Math, System.IOUtils, System.JSON, System.Hash, System.Zip,
-  System.Generics.Collections;
+  Winapi.Windows, System.Classes, System.Math, System.IOUtils, System.JSON, System.Hash,
+  System.Zip, System.Generics.Collections;
 
 function UncertEntryName(ModelID: Integer): string;
 begin
@@ -104,7 +104,8 @@ begin
     SB.Append('|period ').Append(Ord(P.Params.LFPSO.FreePeriod)).Append(' ')
       .Append(Num(P.Params.LFPSO.PeriodWindow));
     SB.Append('|calc ').Append(Num(P.Params.Lambda)).Append(' ').Append(Num(P.Params.Width))
-      .Append(' ').Append(P.Params.Polarisation).Append(' ').Append(Ord(P.TwoTheta));
+      .Append(' ').Append(P.Params.Polarisation).Append(' ').Append(Ord(P.TwoTheta))
+      .Append(' ').Append(Num(P.Params.MinLimit));   // the model curve is cut off there
     for i := 0 to High(P.Extensions) do
     begin
       SB.Append('|ext ').Append(P.Extensions[i].StackID).Append(' ').Append(P.Extensions[i].LayerID)
@@ -433,7 +434,7 @@ end;
 function WriteEntries(const ProjectFile: string; const Names, Texts: TArray<string>): string;
 var
   Src, Dst: TZipFile;
-  Tmp, Old, Entry: string;
+  Tmp, Entry: string;
   Bytes: TBytes;
   i: Integer;
 begin
@@ -447,7 +448,6 @@ begin
       [TPath.GetFileName(ProjectFile)]));
 
   Tmp := ProjectFile + '.uncert-new';
-  Old := ProjectFile + '.uncert-old';
   try
     Src := TZipFile.Create;
     Dst := TZipFile.Create;
@@ -469,18 +469,12 @@ begin
       Src.Free;
     end;
 
-    { The swap: the project steps aside, the new archive takes its name, the
-      old one goes. If the second step fails the project is put back. }
-    if TFile.Exists(Old) then
-      TFile.Delete(Old);
-    TFile.Move(ProjectFile, Old);
-    try
-      TFile.Move(Tmp, ProjectFile);
-    except
-      TFile.Move(Old, ProjectFile);
-      raise;
-    end;
-    TFile.Delete(Old);
+    { One step: the new archive takes the project's name. Either it happens
+      or the project is what it was; there is no moment without a project
+      and nothing to put back. }
+    if not MoveFileEx(PChar(Tmp), PChar(ProjectFile),
+      MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH) then
+      RaiseLastOSError;
   except
     on E: Exception do
     begin

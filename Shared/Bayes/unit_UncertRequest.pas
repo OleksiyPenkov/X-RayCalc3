@@ -232,7 +232,10 @@ end;
 
 function NewMap(const Req: TUncertRequest): TParamMap;
 begin
-  Result := TParamMap.Create(Req.Structure, (Req.Mode = fmTable) and Req.KeepTables);
+  { Profile mode keeps the tables BuildRequest wrote for the held graded
+    values (HoldFrozenProfiles); every other table it has already dropped. }
+  Result := TParamMap.Create(Req.Structure,
+    ((Req.Mode = fmTable) and Req.KeepTables) or (Req.Mode = fmProfile));
   try
     Populate(Result, Req);
   except
@@ -380,6 +383,48 @@ begin
       (HasDerived or not ThicknessSlot);
 end;
 
+{ Profile mode. TLFPSO_Poly gives every unpaired value of a repeating stack
+  its polynomial whether it is free or not, and holds a frozen one at its
+  gradient. A value the tool does not sample must therefore keep that
+  gradient: it is written into the layer's table, which the model reads.
+  Every table left over from an earlier table fit is dropped first. }
+procedure HoldFrozenProfiles(var Req: TUncertRequest);
+var
+  i, j, p, k, q: Integer;
+  C: TArray<Double>;
+  V, Pw: Double;
+  Graded: Boolean;
+begin
+  for i := 0 to High(Req.Structure.Stacks) do
+    for j := 0 to High(Req.Structure.Stacks[i].Layers) do
+      for p := 1 to 3 do
+      begin
+        Req.Structure.Stacks[i].Layers[j].PP[p] := nil;
+        if (Req.Structure.Stacks[i].N < 2) or Req.Structure.Stacks[i].Layers[j].P[p].Paired or
+           Free(Req.Structure.Stacks[i].Layers[j].P[p]) then
+          Continue;
+        C := ProfileStart(Req, i, j, p);
+        Graded := False;
+        for q := 1 to High(C) do
+          if C[q] <> 0 then
+            Graded := True;
+        if not Graded then
+          Continue;
+        SetLength(Req.Structure.Stacks[i].Layers[j].PP[p], Req.Structure.Stacks[i].N);
+        for k := 1 to Req.Structure.Stacks[i].N do
+        begin
+          V := 0;
+          Pw := 1;
+          for q := 0 to High(C) do
+          begin
+            V := V + C[q] * Pw;
+            Pw := Pw * (k - 1);
+          end;
+          Req.Structure.Stacks[i].Layers[j].PP[p][k - 1] := V;
+        end;
+      end;
+end;
+
 function BuildRequest(const P: TXRCXProject; out Req: TUncertRequest): string;
 var
   Info: TStructureInfo;
@@ -393,7 +438,7 @@ begin
 
   if P.CalcMode <> 0 then
     Exit('A wavelength scan cannot be analysed: the uncertainties need an angle scan.');
-  if (P.DataID < 0) or (Length(P.DataCurve) < 3) then
+  if (P.DataID < 0) or not P.DataLinked or (Length(P.DataCurve) < 3) then
     Exit('The model has no measured curve linked to it. Link one in the main program and save the project.');
 
   try
@@ -415,6 +460,8 @@ begin
   Req.PeriodWindow := P.Params.LFPSO.PeriodWindow;
   Req.Data := Copy(P.DataCurve);
   Req.RMin := P.Params.MinLimit;
+  if Req.Mode = fmProfile then
+    HoldFrozenProfiles(Req);
 
   MinR := Infinity;
   for i := 0 to High(Req.Data) do
@@ -493,8 +540,29 @@ var
   Nuis: TNuisance;
   i, k: Integer;
   Caption: string;
+  Fitted: Double;
 begin
   Result := '';
+  { A table entry starts inside its limits whatever the fit left (AddTable
+    moves it there), so the fitted table is checked here: starting from a
+    model that is not the fitted one must not pass in silence. }
+  for i := 0 to Map.Count - 1 do
+    if Map.Slots[i].Kind = skTable then
+    begin
+      Fitted := Req.Structure.Stacks[Map.Slots[i].Stack].Layers[Map.Slots[i].Layer].PeriodValue(
+        Map.Slots[i].P, Map.Slots[i].Period, Req.Structure.Stacks[Map.Slots[i].Stack].N,
+        Req.KeepTables);
+      if not ((Fitted >= Map.Slots[i].Lower) and (Fitted <= Map.Slots[i].Upper)) then
+      begin
+        Caption := Map.Slots[i].Name;
+        for k := 0 to High(Req.Names) do
+          if Req.Names[k].Name = Map.Slots[i].Name then
+            Caption := Format('%s (%s)', [Req.Names[k].Caption, Req.Names[k].Group]);
+        Exit(Format('%s is %.5g, outside its limits %.5g to %.5g. Correct the value or its ' +
+          'limits in the main program and fit again.',
+          [Caption, Fitted, Map.Slots[i].Lower, Map.Slots[i].Upper]));
+      end;
+    end;
   Map.Template.CopyContent(S);
   if Map.Apply(Map.StartVector, S, Nuis) then
     Exit;

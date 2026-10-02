@@ -41,6 +41,9 @@ type
     [Test] procedure StartProblem_NamesTheValue;
     [Test] procedure Names_CaptionsGroupsAndKinds;
     [Test] procedure CalcParams_FollowTheProject;
+    [Test] procedure UnlinkedCurve_Refused;
+    [Test] procedure Profile_FrozenGradedValue_KeepsItsGradient;
+    [Test] procedure Table_EntryOutsideItsLimits_IsNamed;
   end;
 
 /// W / Si, N periods: W 20 A [15, 25], Si 30 A [25, 35]; sigma and density held.
@@ -90,6 +93,7 @@ begin
   Result.ModelID := 1;
   Result.DataTitle := 'curve';
   Result.DataID := 2;
+  Result.DataLinked := True;
   SetLength(Result.DataCurve, 50);
   for i := 0 to 49 do
   begin
@@ -444,6 +448,73 @@ begin
   P.TwoTheta := True;
   Assert.AreEqual('', BuildRequest(P, Req));
   Assert.AreEqual(2, Req.CalcParams.K, 'a 2theta project is calculated as the main program does');
+end;
+
+procedure TTestUncertRequest.UnlinkedCurve_Refused;
+var
+  P: TXRCXProject;
+  Req: TUncertRequest;
+begin
+  P := ProjectOf(WSi(10), 1);
+  P.DataLinked := False;                             // a curve in the project, linked to nothing
+  Assert.Contains(BuildRequest(P, Req), 'no measured curve');
+end;
+
+{ The profile fit holds a frozen value at its gradient (TLFPSO_Poly), so the
+  model the tool samples around must keep that gradient too. }
+procedure TTestUncertRequest.Profile_FrozenGradedValue_KeepsItsGradient;
+var
+  S: TFitStructure;
+  P: TXRCXProject;
+  Req: TUncertRequest;
+  M: TParamMap;
+  k: Integer;
+begin
+  S := WSi(4);
+  S.Stacks[0].Layers[0].P[1].Fixed := True;          // W thickness: graded, then frozen
+  S.Stacks[0].Layers[1].PP[1] := [1, 2, 3, 4];       // a stale table on Si, from an earlier table fit
+  P := ProjectOf(S, 2);
+  SetLength(P.Extensions, 1);
+  P.Extensions[0].StackID := 0;
+  P.Extensions[0].LayerID := 0;
+  P.Extensions[0].Subj := ptH;
+  P.Extensions[0].Coeffs := [0, 0.5];
+  M := MapOf(P, Req);
+  try
+    Assert.AreEqual(-1, M.IndexOf('s0.l0.thickness.c0'), 'a frozen value is not sampled');
+    for k := 1 to 4 do
+      Assert.AreEqual(20 + 0.5 * (k - 1),
+        Double(M.Template.Stacks[0].Layers[0].PeriodValue(1, k, 4, True)), 1E-5,
+        Format('period %d keeps the fitted gradient', [k]));
+    Assert.IsTrue(M.IndexOf('s0.l1.thickness.c0') >= 0, 'Si is sampled as a profile');
+    Assert.AreEqual(30.0, M.Slots[M.IndexOf('s0.l1.thickness.c0')].Start, 1E-5, 'not from the stale table');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TTestUncertRequest.Table_EntryOutsideItsLimits_IsNamed;
+var
+  S: TFitStructure;
+  P: TXRCXProject;
+  Req: TUncertRequest;
+  M: TParamMap;
+  Why: string;
+begin
+  S := WSi(4);
+  S.Stacks[0].Layers[0].PP[1] := [19, 20, 26, 22];   // period 3 past the limit of 25
+  S.Stacks[0].Layers[1].P[1].Paired := True;
+  P := ProjectOf(S, 0);
+  P.TableExtension := True;
+  M := MapOf(P, Req);
+  try
+    Why := StartProblem(M, Req);
+    Assert.Contains(Why, '26');
+    Assert.Contains(Why, 'period 3');
+    Assert.Contains(Why, 'limits');
+  finally
+    M.Free;
+  end;
 end;
 
 initialization
