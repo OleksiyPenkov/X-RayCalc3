@@ -28,6 +28,7 @@ type
     [Test] procedure ErrorText_Asymmetric;
     [Test] procedure ErrorText_NaN;
     [Test] procedure ValueText_FollowsTheError;
+    [Test] procedure Digits_SetTheErrorsDigitsAndTheValueFollows;
     [Test] procedure Rows_GroupsAndOrder;
     [Test] procedure Rows_HeldNumber_HasNoError;
     [Test] procedure Rows_NoResult_ShowsPriorsOnly;
@@ -162,6 +163,27 @@ begin
   Assert.AreEqual('2785.3', ValueText(2785.3, 4.2, 4.0));
   Assert.AreEqual('18.235', ValueText(18.23456, NaN, NaN), 'five significant digits without an error');
   Assert.AreEqual('18.235', ValueText(18.23456, 0, 0), 'and for a number that does not move');
+end;
+
+procedure TTestUncertView.Digits_SetTheErrorsDigitsAndTheValueFollows;
+var
+  Names: TArray<TUncertName>;
+  Res: TUncertResult;
+begin
+  Assert.AreEqual('0.3', ErrorText(0.31, 0.29, 1));
+  Assert.AreEqual('0.300', ErrorText(0.31, 0.29, 3));
+  Assert.AreEqual('10', ErrorText(12.3, 12.1, 1));
+  Assert.AreEqual('12.2', ErrorText(12.3, 12.1, 3));
+  Assert.AreEqual('+0.3 / ' + MINUS + '0.1', ErrorText(0.1, 0.3, 1));
+  Assert.AreEqual('55.7', ValueText(55.7234, 0.11, 0.12, 1));
+  Assert.AreEqual('55.723', ValueText(55.7234, 0.11, 0.12, 3));
+  Assert.AreEqual('18.235', ValueText(18.23456, NaN, NaN, 1), 'a number without an error is not cut');
+  Assert.AreEqual('0.30', ErrorText(0.31, 0.29, 0), 'out of range is two digits');
+  Assert.AreEqual('0.30', ErrorText(0.31, 0.29, 9));
+
+  Periodic(Names, Res);
+  Assert.AreEqual('55.723', RowOf(RowsOf(Names, Res, True, nil, 3), 's0.period_mean').Value);
+  Assert.AreEqual('0.120', RowOf(RowsOf(Names, Res, True, nil, 3), 's0.period_mean').Error);
 end;
 
 procedure TTestUncertView.Rows_GroupsAndOrder;

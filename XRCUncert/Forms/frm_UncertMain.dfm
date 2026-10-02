@@ -116,6 +116,29 @@ object frmUncertMain: TfrmUncertMain
       Align = alRight
       BorderOuter = fsNone
       TabOrder = 1
+      object lblDigits: TLabel
+        Left = 4
+        Top = 28
+        Width = 103
+        Height = 15
+        Caption = 'Digits in the error:'
+      end
+      object cbDigits: TComboBox
+        Left = 116
+        Top = 24
+        Width = 48
+        Height = 23
+        Style = csDropDownList
+        ItemIndex = 1
+        TabOrder = 4
+        Text = '2'
+        OnChange = cbDigitsChange
+        Items.Strings = (
+          '1'
+          '2'
+          '3'
+          '4')
+      end
       object btnDetails: TButton
         Left = 4
         Top = 55
@@ -228,7 +251,8 @@ object frmUncertMain: TfrmUncertMain
         Top = 3
         Width = 530
         Height = 428
-        Legend.Visible = False
+        Legend.Alignment = laBottom
+        Legend.LegendStyle = lsSeries
         Title.Visible = False
         BottomAxis.Title.Caption = 'Angle, deg'
         LeftAxis.Logarithmic = True
@@ -252,7 +276,7 @@ object frmUncertMain: TfrmUncertMain
         end
         object serLow: TLineSeries
           SeriesColor = 16744448
-          Title = '16 %'
+          Title = 'Error range (68 %)'
           Brush.BackColor = clDefault
           LinePen.Color = 16744448
           Pointer.InflateMargins = True
@@ -264,6 +288,7 @@ object frmUncertMain: TfrmUncertMain
         end
         object serHigh: TLineSeries
           SeriesColor = 16744448
+          ShowInLegend = False
           Title = '84 %'
           Brush.BackColor = clDefault
           LinePen.Color = 16744448
@@ -309,7 +334,8 @@ object frmUncertMain: TfrmUncertMain
         Top = 32
         Width = 530
         Height = 399
-        Legend.Visible = False
+        Legend.Alignment = laBottom
+        Legend.LegendStyle = lsSeries
         Title.Visible = False
         BottomAxis.Title.Caption = 'Period number'
         View3D = False
@@ -321,7 +347,7 @@ object frmUncertMain: TfrmUncertMain
         ColorPaletteIndex = 13
         object serDepthLow: TLineSeries
           SeriesColor = 16744448
-          Title = '16 %'
+          Title = 'Error range (68 %)'
           Brush.BackColor = clDefault
           LinePen.Color = 16744448
           Pointer.InflateMargins = True
@@ -333,6 +359,7 @@ object frmUncertMain: TfrmUncertMain
         end
         object serDepthHigh: TLineSeries
           SeriesColor = 16744448
+          ShowInLegend = False
           Title = '84 %'
           Brush.BackColor = clDefault
           LinePen.Color = 16744448

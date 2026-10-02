@@ -45,6 +45,8 @@ type
     btnCopy: TButton;
     btnExport: TButton;
     btnHelp: TButton;
+    lblDigits: TLabel;
+    cbDigits: TComboBox;
     lvParams: TRzListView;
     edCell: TEdit;
     splMain: TSplitter;
@@ -75,6 +77,7 @@ type
     procedure btnExportClick(Sender: TObject);
     procedure btnHelpClick(Sender: TObject);
     procedure cbDepthChange(Sender: TObject);
+    procedure cbDigitsChange(Sender: TObject);
     procedure lvParamsClick(Sender: TObject);
     procedure edCellExit(Sender: TObject);
     procedure edCellKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -222,7 +225,8 @@ begin
     Caption := 'XRCUncert - ' + ExtractFileName(FSession.FileName);
     lblModel.Caption := Format('Model: %s      Curve: %s',
       [FSession.Project.ModelTitle, FSession.Project.DataTitle]);
-    FRows := RowsOf(FSession.Request.Names, FSession.Result, FSession.HasResult, FSession.Priors);
+    FRows := RowsOf(FSession.Request.Names, FSession.Result, FSession.HasResult, FSession.Priors,
+      cbDigits.ItemIndex + 1);
     FDepth := DepthSeriesOf(FSession.Request.Names, FSession.Result, FSession.HasResult);
   end
   else
@@ -340,6 +344,13 @@ begin
   if Length(FDepth) > 0 then
     cbDepth.ItemIndex := Keep;
   cbDepthChange(nil);       // setting ItemIndex in code does not fire OnChange
+end;
+
+{ The table again with the digits chosen; a cell being edited is given up. }
+procedure TfrmUncertMain.cbDigitsChange(Sender: TObject);
+begin
+  edCell.Visible := False;
+  ShowSession;
 end;
 
 procedure TfrmUncertMain.cbDepthChange(Sender: TObject);

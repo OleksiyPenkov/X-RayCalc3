@@ -21,6 +21,12 @@ interface
 uses
   System.SysUtils, unit_UncertRequest, unit_UncertRun;
 
+const
+  { the significant digits an error is shown with }
+  MIN_DIGITS = 1;
+  DEF_DIGITS = 2;
+  MAX_DIGITS = 4;
+
 type
   TUncertRow = record
     Name: string;                 // the reported name
@@ -39,17 +45,19 @@ type
 
 /// <summary>'0.30', or '+0.30 / -0.10' (a true minus sign) when the halves
 /// differ by more than a factor 1.5; two significant digits; '' when either
-/// half is NaN.</summary>
-function ErrorText(Minus, Plus: Double): string;
-/// <summary>The value to the decimal place of its error's second digit; five
-/// significant digits when there is no error.</summary>
-function ValueText(Value, Minus, Plus: Double): string;
+/// half is NaN. Digits: the significant digits shown, MIN_DIGITS..MAX_DIGITS
+/// (anything else is DEF_DIGITS).</summary>
+function ErrorText(Minus, Plus: Double; Digits: Integer = DEF_DIGITS): string;
+/// <summary>The value to the decimal place of its error's last shown digit;
+/// five significant digits when there is no error.</summary>
+function ValueText(Value, Minus, Plus: Double; Digits: Integer = DEF_DIGITS): string;
 /// <summary>The list: summaries first, then the plain values, each in Names'
 /// order. A table entry, a profile coefficient, a period slot and the
 /// measurement's values have no row; a stack whose period is sampled shows
 /// its mean period as 'Period'.</summary>
 function RowsOf(const Names: TArray<TUncertName>; const Res: TUncertResult;
-  HasResult: Boolean; const Priors: TArray<TUncertPrior>): TArray<TUncertRow>;
+  HasResult: Boolean; const Priors: TArray<TUncertPrior>;
+  Digits: Integer = DEF_DIGITS): TArray<TUncertRow>;
 /// <summary>Tab-separated: a header line, each group as a line of its own,
 /// a line per row.</summary>
 function TableText(const Rows: TArray<TUncertRow>): string;
@@ -107,15 +115,23 @@ begin
   Result := TFormatSettings.Invariant;
 end;
 
-{ E > 0 rounded to two significant digits, and the decimals that show them. }
-function TwoDigits(E: Double): Double;
+function DigitsOf(Digits: Integer): Integer;
 begin
-  Result := RoundTo(E, Floor(Log10(E)) - 1);
+  if (Digits < MIN_DIGITS) or (Digits > MAX_DIGITS) then
+    Result := DEF_DIGITS
+  else
+    Result := Digits;
 end;
 
-function DecimalsFor(E: Double): Integer;
+{ E > 0 rounded to Digits significant digits, and the decimals that show them. }
+function Rounded(E: Double; Digits: Integer): Double;
 begin
-  Result := Max(0, 1 - Floor(Log10(E)));
+  Result := RoundTo(E, Floor(Log10(E)) - (Digits - 1));
+end;
+
+function DecimalsFor(E: Double; Digits: Integer): Integer;
+begin
+  Result := Max(0, Digits - 1 - Floor(Log10(E)));
 end;
 
 function Fixed(X: Double; Decimals: Integer): string;
@@ -123,31 +139,33 @@ begin
   Result := FloatToStrF(X, ffFixed, 18, Decimals, Inv);
 end;
 
-function ErrorText(Minus, Plus: Double): string;
+function ErrorText(Minus, Plus: Double; Digits: Integer): string;
 var
   E: Double;
   D: Integer;
 begin
+  Digits := DigitsOf(Digits);
   if IsNan(Minus) or IsNan(Plus) then
     Exit('');
   if (Minus <= 0) and (Plus <= 0) then
     Exit('0');
   if Max(Minus, Plus) > 1.5 * Min(Minus, Plus) then
   begin
-    D := DecimalsFor(TwoDigits(Max(Minus, Plus)));
+    D := DecimalsFor(Rounded(Max(Minus, Plus), Digits), Digits);
     Exit('+' + Fixed(Plus, D) + ' / ' + MINUS_SIGN + Fixed(Minus, D));
   end;
-  E := TwoDigits((Minus + Plus) / 2);
-  Result := Fixed(E, DecimalsFor(E));
+  E := Rounded((Minus + Plus) / 2, Digits);
+  Result := Fixed(E, DecimalsFor(E, Digits));
 end;
 
-function ValueText(Value, Minus, Plus: Double): string;
+function ValueText(Value, Minus, Plus: Double; Digits: Integer): string;
 begin
+  Digits := DigitsOf(Digits);
   if IsNan(Value) then
     Exit('');
   if IsNan(Minus) or IsNan(Plus) or (Max(Minus, Plus) <= 0) then
     Exit(FloatToStrF(Value, ffGeneral, 5, 0, Inv));
-  Result := Fixed(Value, DecimalsFor(TwoDigits(Max(Minus, Plus))));
+  Result := Fixed(Value, DecimalsFor(Rounded(Max(Minus, Plus), Digits), Digits));
 end;
 
 function PriorOf(const Priors: TArray<TUncertPrior>; const Name: string; out Prior: TUncertPrior): Boolean;
@@ -164,7 +182,7 @@ begin
 end;
 
 function RowsOf(const Names: TArray<TUncertName>; const Res: TUncertResult;
-  HasResult: Boolean; const Priors: TArray<TUncertPrior>): TArray<TUncertRow>;
+  HasResult: Boolean; const Priors: TArray<TUncertPrior>; Digits: Integer): TArray<TUncertRow>;
 var
   Rows: TArray<TUncertRow>;
 
@@ -201,9 +219,9 @@ var
         Row.Value := ValueText(V.Best, NaN, NaN)
       else
       begin
-        Row.Value := ValueText(V.P50, V.Minus, V.Plus);
+        Row.Value := ValueText(V.P50, V.Minus, V.Plus, Digits);
         if not Names[k].Held and (Max(V.Minus, V.Plus) > 0) then
-          Row.Error := ErrorText(V.Minus, V.Plus);
+          Row.Error := ErrorText(V.Minus, V.Plus, Digits);
       end;
     end;
     if PriorOf(Priors, Row.Name, Prior) then
