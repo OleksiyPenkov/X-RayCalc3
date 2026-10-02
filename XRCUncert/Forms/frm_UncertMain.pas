@@ -47,6 +47,7 @@ type
     btnHelp: TButton;
     lblDigits: TLabel;
     cbDigits: TComboBox;
+    btnClear: TButton;
     lvParams: TRzListView;
     edCell: TEdit;
     splMain: TSplitter;
@@ -78,6 +79,7 @@ type
     procedure btnHelpClick(Sender: TObject);
     procedure cbDepthChange(Sender: TObject);
     procedure cbDigitsChange(Sender: TObject);
+    procedure btnClearClick(Sender: TObject);
     procedure lvParamsClick(Sender: TObject);
     procedure edCellExit(Sender: TObject);
     procedure edCellKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -253,6 +255,7 @@ begin
   btnRun.Enabled := FOpen and (FSession.Refusal = '') and not Running;
   btnStop.Enabled := Running;
   btnDetails.Enabled := FOpen and FSession.HasResult;
+  btnClear.Enabled := FOpen and not Running;
   btnCopy.Enabled := Length(FRows) > 0;
   btnExport.Enabled := Length(FRows) > 0;
   if not Running then
@@ -349,6 +352,27 @@ begin
   if Length(FDepth) > 0 then
     cbDepth.ItemIndex := Keep;
   cbDepthChange(nil);       // setting ItemIndex in code does not fire OnChange
+end;
+
+{ Everything the tool stored leaves the project file; the model and the curve
+  are not touched. }
+procedure TfrmUncertMain.btnClearClick(Sender: TObject);
+var
+  Why: string;
+begin
+  if not FOpen or Running then
+    Exit;
+  if MessageDlg('Remove the uncertainties, the known values and the stored counts from this ' +
+    'project file?' + sLineBreak + sLineBreak + 'The model and the curve are not changed.',
+    mtConfirmation, [mbOK, mbCancel], 0) <> mrOk then
+    Exit;
+  edCell.Visible := False;
+  Why := ClearStored(FSession);
+  if Why <> '' then
+    MessageDlg(Why, mtWarning, [mbOK], 0)
+  else
+    FNote := '';
+  ShowSession;
 end;
 
 { The table again with the digits chosen; a cell being edited is given up. }

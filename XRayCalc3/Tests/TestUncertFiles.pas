@@ -46,6 +46,9 @@ type
     [Test] procedure KeepToolEntries_EntryWithAPath_IsSkipped;
     [Test] procedure MainProgramSave_KeepsWhatTheToolWroteMeanwhile;
     [Test] procedure KeepToolEntries_MissingFile_DoesNothing;
+    [Test] procedure RemoveToolEntries_TakesOnlyTheToolsEntries;
+    [Test] procedure RemoveToolEntries_ReadOnlyFile_SaysSoAndTouchesNothing;
+    [Test] procedure MainProgramSave_AfterTheToolCleared_DoesNotBringTheEntriesBack;
   end;
 
 implementation
@@ -476,6 +479,67 @@ begin
   TFile.WriteAllText(Bad, 'not an archive');
   KeepToolEntries(Bad, Dir);
   Assert.AreEqual(0, Integer(Length(TDirectory.GetFiles(Dir))));
+end;
+
+procedure TTestUncertFiles.RemoveToolEntries_TakesOnlyTheToolsEntries;
+var
+  Path, E: string;
+  Before: TArray<string>;
+  Old: TArray<TBytes>;
+  i: Integer;
+begin
+  Path := NewProject('a.xrcx');
+  Before := EntryList(Path);
+  SetLength(Old, Length(Before));
+  for i := 0 to High(Before) do
+    Old[i] := EntryBytes(Path, Before[i]);
+  Assert.AreEqual('', WriteEntries(Path, ['uncert_1.json', 'uncert_7.json', 'counts_2.dat'], ['a', 'b', 'c']));
+
+  Assert.AreEqual('', RemoveToolEntries(Path));
+
+  Assert.AreEqual(Length(Before), Length(EntryList(Path)), 'every entry of the tool is gone, of any model');
+  for i := 0 to High(Before) do
+    Assert.IsTrue(SameBytes(Old[i], EntryBytes(Path, Before[i])), Before[i] + ' is byte for byte what it was');
+  Assert.AreEqual('Model 1', ReadXRCX(Path).ModelTitle, 'the project still opens');
+  for E in TDirectory.GetFiles(FDir) do
+    Assert.AreEqual('a.xrcx', TPath.GetFileName(E), 'no temporary file is left behind');
+  Assert.AreEqual('', RemoveToolEntries(Path), 'nothing to remove is not a failure');
+end;
+
+procedure TTestUncertFiles.RemoveToolEntries_ReadOnlyFile_SaysSoAndTouchesNothing;
+var
+  Path, Why: string;
+  Old: TBytes;
+begin
+  Path := NewProject('ro.xrcx');
+  Assert.AreEqual('', WriteEntries(Path, ['uncert_1.json'], ['x']));
+  Old := TFile.ReadAllBytes(Path);
+  TFile.SetAttributes(Path, [TFileAttribute.faReadOnly]);
+  Why := RemoveToolEntries(Path);
+  Assert.Contains(Why, 'read-only');
+  Assert.IsFalse(Why.Contains('stored'), 'nothing was being stored: ' + Why);
+  Assert.IsTrue(SameBytes(Old, TFile.ReadAllBytes(Path)), 'the project is what it was');
+end;
+
+{ The project is open in the main program, its working folder holding the
+  entries it was extracted with; the tool clears them from the file; the next
+  save must not zip the folder's copies back in. }
+procedure TTestUncertFiles.MainProgramSave_AfterTheToolCleared_DoesNotBringTheEntriesBack;
+var
+  Path, Work: string;
+begin
+  Path := NewProject('open.xrcx');
+  Assert.AreEqual('', WriteEntries(Path, ['uncert_1.json', 'counts_2.dat'], ['r', 'c']));
+  Work := TPath.Combine(FDir, 'work');
+  TZipFile.ExtractZipFile(Path, Work);                       // File - Open
+  Assert.IsTrue(TFile.Exists(TPath.Combine(Work, 'uncert_1.json')));
+
+  Assert.AreEqual('', RemoveToolEntries(Path));              // the tool's Clear
+
+  KeepToolEntries(Path, Work);                               // File - Save, before the folder is zipped
+  Assert.IsFalse(TFile.Exists(TPath.Combine(Work, 'uncert_1.json')), 'the result');
+  Assert.IsFalse(TFile.Exists(TPath.Combine(Work, 'counts_2.dat')), 'the counts');
+  Assert.IsTrue(TFile.Exists(TPath.Combine(Work, 'project.dsc')), 'the project''s own files stay');
 end;
 
 initialization

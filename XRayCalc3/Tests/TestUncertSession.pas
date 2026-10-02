@@ -46,6 +46,7 @@ type
     [Test] procedure StorePriors_ReadOnlyFile_SpeaksOfTheKnownValue;
     [Test] procedure SessionWarnings_Order;
     [Test] procedure SessionWarnings_MisfitComesFirst;
+    [Test] procedure ClearStored_LeavesAProjectAsIfNeverAnalysed;
   end;
 
 implementation
@@ -415,6 +416,28 @@ begin
   W := SessionWarnings(S);
   Assert.Contains(W[0], 'misses the measured curve by about 20 %');
   Assert.Contains(W[High(W)], 'limit');
+end;
+
+procedure TTestUncertSession.ClearStored_LeavesAProjectAsIfNeverAnalysed;
+var
+  S, Again: TUncertSession;
+  Path, Text: string;
+begin
+  Path := NewProject('a.xrcx', ProjectOf(WSi(10), 1));
+  S := Opened(Path);
+  Assert.AreEqual('', StoreResult(S, ResultFor(S)));
+  Assert.AreEqual('', StorePriors(S, [TotalPrior(500)]));
+  Assert.IsTrue(S.HasResult);
+
+  Assert.AreEqual('', ClearStored(S));
+
+  Assert.IsFalse(S.HasResult, 'no result in the session');
+  Assert.AreEqual(0, Integer(Length(S.Priors)), 'no known values');
+  Assert.AreEqual(Path, S.FileName, 'the same project stays open');
+  Assert.IsFalse(ReadEntry(Path, UncertEntryName(S.Project.ModelID), Text), 'and nothing in the file');
+  Again := Opened(Path);
+  Assert.IsFalse(Again.HasResult);
+  Assert.AreEqual('', Again.EntryNote);
 end;
 
 initialization

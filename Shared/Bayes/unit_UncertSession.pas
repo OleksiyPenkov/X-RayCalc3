@@ -59,6 +59,11 @@ function StoreResult(var S: TUncertSession; const Res: TUncertResult): string;
 /// <summary>The lines under the list, in order: the refusal alone; else out
 /// of date, the misfit, the counts note, the result's message and warnings.</summary>
 function SessionWarnings(const S: TUncertSession): TArray<string>;
+/// <summary>Takes everything the tool stored out of the project file - the
+/// results, the known values and the counts, of every model - and opens the
+/// project again as one never analysed. '' or a plain sentence; S is what it
+/// was when it fails.</summary>
+function ClearStored(var S: TUncertSession): string;
 
 implementation
 
@@ -214,6 +219,18 @@ begin
   S.OutOfDate := False;
   S.StoredFingerprint := Fingerprint(S.Project, S.Counts, S.Priors);
   Result := WriteSession(S, True);
+end;
+
+function ClearStored(var S: TUncertSession): string;
+var
+  Fresh: TUncertSession;
+begin
+  Result := RemoveToolEntries(S.FileName);
+  if Result <> '' then
+    Exit;
+  Result := OpenSession(S.FileName, Fresh);
+  if Result = '' then
+    S := Fresh;
 end;
 
 function SessionWarnings(const S: TUncertSession): TArray<string>;

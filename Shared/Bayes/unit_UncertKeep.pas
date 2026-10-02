@@ -25,10 +25,15 @@ unit unit_UncertKeep;
 
 interface
 
-/// <summary>Extracts every 'uncert_*.json' and 'counts_*.dat' entry of
-/// ProjectFile into Dir, replacing files of the same name. Does nothing when
+/// <summary>Makes Dir hold the tool's entries ('uncert_*.json',
+/// 'counts_*.dat') exactly as ProjectFile has them: each is extracted,
+/// replacing a file of the same name, and a tool file in Dir that the project
+/// no longer has - the tool's Clear removed it - is deleted. Does nothing when
 /// ProjectFile is missing or not an archive. Never raises.</summary>
 procedure KeepToolEntries(const ProjectFile, Dir: string);
+/// <summary>A name the tool writes: 'uncert_*.json' or 'counts_*.dat', with no
+/// folder in it.</summary>
+function IsToolEntry(const Name: string): Boolean;
 
 implementation
 
@@ -49,7 +54,7 @@ end;
 procedure KeepToolEntries(const ProjectFile, Dir: string);
 var
   Z: TZipFile;
-  Entry: string;
+  Entry, F: string;
   Bytes: TBytes;
 begin
   if not FileExists(ProjectFile) then
@@ -58,6 +63,12 @@ begin
     Z := TZipFile.Create;
     try
       Z.Open(ProjectFile, zmRead);
+      { only once the project has been read as an archive: an unreadable one
+        costs the folder nothing }
+      if TDirectory.Exists(Dir) then
+        for F in TDirectory.GetFiles(Dir) do
+          if IsToolEntry(TPath.GetFileName(F)) and (Z.IndexOf(TPath.GetFileName(F)) < 0) then
+            TFile.Delete(F);
       for Entry in Z.FileNames do
         if IsToolEntry(Entry) then
         begin

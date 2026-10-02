@@ -71,12 +71,17 @@ function ReadEntry(const ProjectFile, Name: string; out Text: string): Boolean;
 /// bytes as they were. '' or a plain sentence; the project is untouched when
 /// it fails.</summary>
 function WriteEntries(const ProjectFile: string; const Names, Texts: TArray<string>): string;
+/// <summary>Takes every entry of the tool ('uncert_*.json', 'counts_*.dat', of
+/// any model or curve) out of the archive and leaves every other entry's bytes
+/// as they were. '' or a plain sentence; the project is untouched when it
+/// fails.</summary>
+function RemoveToolEntries(const ProjectFile: string): string;
 
 implementation
 
 uses
   Winapi.Windows, System.Classes, System.Math, System.IOUtils, System.JSON, System.Hash,
-  System.Zip, System.Generics.Collections;
+  System.Zip, System.Generics.Collections, unit_UncertKeep;
 
 function UncertEntryName(ModelID: Integer): string;
 begin
@@ -436,7 +441,11 @@ begin
       Exit(True);
 end;
 
-function WriteEntries(const ProjectFile: string; const Names, Texts: TArray<string>): string;
+{ The archive again without Names' entries (and, with DropAll, without any
+  entry of the tool), then Names' entries with Texts. Failed says what did not
+  happen, for the sentence. }
+function Rewrite(const ProjectFile: string; const Names, Texts: TArray<string>;
+  DropAll: Boolean; const Failed: string): string;
 var
   Src, Dst: TZipFile;
   Tmp, Entry: string;
@@ -444,13 +453,11 @@ var
   i: Integer;
 begin
   Result := '';
-  if Length(Names) <> Length(Texts) then
-    raise EArgumentException.Create('WriteEntries: one text per name');
   if not TFile.Exists(ProjectFile) then
     Exit(Format('The project file %s was not found.', [ProjectFile]));
   if TFileAttribute.faReadOnly in TFile.GetAttributes(ProjectFile) then
-    Exit(Format('The project file %s is read-only: nothing was stored in it.',
-      [TPath.GetFileName(ProjectFile)]));
+    Exit(Format('The project file %s is read-only: nothing was %s it.',
+      [TPath.GetFileName(ProjectFile), Failed]));
 
   Tmp := ProjectFile + '.uncert-new';
   try
@@ -460,7 +467,7 @@ begin
       Src.Open(ProjectFile, zmRead);
       Dst.Open(Tmp, zmWrite);
       for Entry in Src.FileNames do
-        if not IsOwn(Entry, Names) then
+        if not IsOwn(Entry, Names) and not (DropAll and IsToolEntry(Entry)) then
         begin
           Src.Read(Entry, Bytes);
           Dst.Add(Bytes, Entry);
@@ -488,11 +495,23 @@ begin
           TFile.Delete(Tmp);
         except
         end;
-      Result := Format('Nothing could be stored in %s (%s). Close the project in the ' +
+      Result := Format('Nothing could be %s %s (%s). Close the project in the ' +
         'main program, or check that the file can be written, and try again.',
-        [TPath.GetFileName(ProjectFile), E.Message]);
+        [Failed, TPath.GetFileName(ProjectFile), E.Message]);
     end;
   end;
+end;
+
+function WriteEntries(const ProjectFile: string; const Names, Texts: TArray<string>): string;
+begin
+  if Length(Names) <> Length(Texts) then
+    raise EArgumentException.Create('WriteEntries: one text per name');
+  Result := Rewrite(ProjectFile, Names, Texts, False, 'stored in');
+end;
+
+function RemoveToolEntries(const ProjectFile: string): string;
+begin
+  Result := Rewrite(ProjectFile, nil, nil, True, 'removed from');
 end;
 
 end.

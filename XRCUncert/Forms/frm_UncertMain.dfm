@@ -139,6 +139,16 @@ object frmUncertMain: TfrmUncertMain
           '3'
           '4')
       end
+      object btnClear: TButton
+        Left = 286
+        Top = 23
+        Width = 88
+        Height = 26
+        Caption = 'Clear...'
+        Enabled = False
+        TabOrder = 5
+        OnClick = btnClearClick
+      end
       object btnDetails: TButton
         Left = 4
         Top = 55
