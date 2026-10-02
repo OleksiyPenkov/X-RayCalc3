@@ -163,7 +163,10 @@ uses
   TestUncertFiles in 'TestUncertFiles.pas',
   TestUncertEndToEnd in 'TestUncertEndToEnd.pas',
   unit_UncertView in '..\..\Shared\Bayes\unit_UncertView.pas',
-  TestUncertView in 'TestUncertView.pas';
+  TestUncertView in 'TestUncertView.pas',
+  unit_UncertKeep in '..\..\Shared\Bayes\unit_UncertKeep.pas',
+  unit_UncertSession in '..\..\Shared\Bayes\unit_UncertSession.pas',
+  TestUncertSession in 'TestUncertSession.pas';
 
 {$R *.res}
 

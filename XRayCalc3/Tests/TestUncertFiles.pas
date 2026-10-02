@@ -41,6 +41,9 @@ type
     [Test] procedure WriteEntries_FileInUse_SaysSoAndTouchesNothing;
     [Test] procedure ReadEntry_Missing_IsFalse;
     [Test] procedure EntryNames;
+    [Test] procedure KeepToolEntries_CopiesOnlyTheToolsEntries;
+    [Test] procedure KeepToolEntries_ReplacesAnOlderFile;
+    [Test] procedure KeepToolEntries_MissingFile_DoesNothing;
   end;
 
 implementation
@@ -48,7 +51,7 @@ implementation
 uses
   System.SysUtils, System.Classes, System.IOUtils, System.Math, System.Zip,
   unit_Types, unit_MCPProjectFile, unit_UncertRequest, unit_UncertRun, unit_UncertFiles,
-  TestUncertRequest;
+  unit_UncertKeep, TestUncertRequest;
 
 procedure TTestUncertFiles.Setup;
 begin
@@ -358,6 +361,49 @@ procedure TTestUncertFiles.EntryNames;
 begin
   Assert.AreEqual('uncert_3.json', UncertEntryName(3));
   Assert.AreEqual('counts_12.dat', CountsEntryName(12));
+end;
+
+{ The main program's save: what the tool wrote into the file on disk goes into
+  the folder the project is zipped from. }
+procedure TTestUncertFiles.KeepToolEntries_CopiesOnlyTheToolsEntries;
+var
+  Path, Dir: string;
+begin
+  Path := NewProject('a.xrcx');
+  Assert.AreEqual('', WriteEntries(Path, ['uncert_1.json', 'counts_2.dat'], ['{"a":1}', '5' + sLineBreak + '7']));
+  Dir := TPath.Combine(FDir, 'work');
+  TDirectory.CreateDirectory(Dir);
+  KeepToolEntries(Path, Dir + PathDelim);
+  Assert.AreEqual('{"a":1}', TFile.ReadAllText(TPath.Combine(Dir, 'uncert_1.json'), TEncoding.UTF8));
+  Assert.IsTrue(SameBytes(EntryBytes(Path, 'counts_2.dat'), TFile.ReadAllBytes(TPath.Combine(Dir, 'counts_2.dat'))));
+  Assert.AreEqual(2, Integer(Length(TDirectory.GetFiles(Dir))), 'nothing of the project itself');
+end;
+
+procedure TTestUncertFiles.KeepToolEntries_ReplacesAnOlderFile;
+var
+  Path, Dir: string;
+begin
+  Path := NewProject('a.xrcx');
+  Assert.AreEqual('', WriteEntries(Path, ['uncert_1.json'], ['new']));
+  Dir := TPath.Combine(FDir, 'work');
+  TDirectory.CreateDirectory(Dir);
+  TFile.WriteAllText(TPath.Combine(Dir, 'uncert_1.json'), 'old');
+  KeepToolEntries(Path, Dir);
+  Assert.AreEqual('new', TFile.ReadAllText(TPath.Combine(Dir, 'uncert_1.json'), TEncoding.UTF8));
+end;
+
+procedure TTestUncertFiles.KeepToolEntries_MissingFile_DoesNothing;
+var
+  Dir, Bad: string;
+begin
+  Dir := TPath.Combine(FDir, 'work');
+  TDirectory.CreateDirectory(Dir);
+  KeepToolEntries(TPath.Combine(FDir, 'none.xrcx'), Dir);
+  KeepToolEntries('', Dir);
+  Bad := TPath.Combine(FDir, 'bad.xrcx');
+  TFile.WriteAllText(Bad, 'not an archive');
+  KeepToolEntries(Bad, Dir);
+  Assert.AreEqual(0, Integer(Length(TDirectory.GetFiles(Dir))));
 end;
 
 initialization
