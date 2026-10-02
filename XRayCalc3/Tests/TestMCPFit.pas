@@ -1538,6 +1538,7 @@ var
   Res: TJSONObject;
   Chi2, Chi2Start, Fitted: Double;
   Modes: TJSONArray;
+  Proj: TXRCXProject;
 begin
   if not HenkeTablesPresent then
   begin
@@ -1557,6 +1558,9 @@ begin
     Assert.AreEqual(0, Res.GetValue<Integer>('period_mode[0].stack'));
     Assert.AreEqual(Double(60), Res.GetValue<Double>('period_mode[0].start_A'), 1E-3);
     Assert.AreEqual(Double(60), Res.GetValue<Double>('period_mode[0].fitted_A'), 1E-3);
+    Proj := ReadXRCX(TPath.Combine(FTemp,
+      (Res.GetValue('files') as TJSONObject).GetValue<string>('xrcx')));
+    Assert.IsFalse(Proj.Params.LFPSO.FreePeriod, 'fit.xrcx says the period was held');
   finally
     Res.Free;
   end;
@@ -1585,6 +1589,13 @@ begin
     Assert.AreEqual(3, (Res.GetValue('bounds_used') as TJSONArray).Count,
       'two thicknesses and the period are reported');
     Assert.AreEqual('period', Res.GetValue<string>('bounds_used[2].target'));
+
+    { fit.xrcx carries it as the GUI's Free period setting: the widest side of
+      the bounds as a fraction of the start period, 20 A of 60 A }
+    Proj := ReadXRCX(TPath.Combine(FTemp,
+      (Res.GetValue('files') as TJSONObject).GetValue<string>('xrcx')));
+    Assert.IsTrue(Proj.Params.LFPSO.FreePeriod, 'fit.xrcx says the period was free');
+    Assert.AreEqual(20 / 60, Double(Proj.Params.LFPSO.PeriodWindow), 1E-4, 'and how far');
   finally
     Res.Free;
   end;
