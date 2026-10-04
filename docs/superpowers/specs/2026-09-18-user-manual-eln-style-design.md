@@ -87,7 +87,7 @@ clone command; branches (`master` = development since 2023, `main` and tag
 RAD Studio 37 IDE and with MSBuild (`/t:Build`, Win32 primary, XRC_MCP Win64 only);
 dependencies (OmniThreadLibrary 3.08+, FastMath, Raize, Virtual TreeView, Abbrevia, SynEdit,
 DUnitX); running the tests; reporting issues and pull requests on GitHub; GPL v3; citing the
-two papers. Source: `README.md`, `CLAUDE.md`. The internal Gitea mirror is not mentioned.
+two papers. Source: `README.md`, `CLAUDE.md`. The internal GitLab mirror is not mentioned.
 
 **Wiki.html — Online Wiki.** `https://github.com/OleksiyPenkov/X-RayCalc3/wiki`; the nine pages
 (Home, Getting started, How to create a model and calculate XRR, Working with experimental data,

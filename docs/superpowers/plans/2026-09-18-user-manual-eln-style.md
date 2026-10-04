@@ -17,7 +17,7 @@
 - Existing chapter text is kept verbatim; only structure changes.
 - Old `h3 id="…"` values are preserved on the new `h2`; `.warning` → `.warn`.
 - No `script.js`, no sidebar, no search box.
-- The internal Gitea address never appears in the manual.
+- The internal GitLab address never appears in the manual.
 - Manual version 9, copyright 2001–2026.
 
 ---
