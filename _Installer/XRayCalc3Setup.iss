@@ -54,7 +54,9 @@ Source: "deploy\Examples\*";                         DestDir: "{app}\Examples"; 
 Source: "deploy\Help\UserManual.html";               DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\style.css";                     DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\*.html";                        DestDir: "{app}\Help";              Flags: ignoreversion
-Source: "deploy\Help\images\*";                      DestDir: "{app}\Help\images";       Flags: ignoreversion
+Source: "deploy\Help\images\*";                       DestDir: "{app}\Help\images";       Flags: ignoreversion
+; the manual draws its toolbar/menu icons from images\icons (44 png)
+Source: "deploy\Help\images\icons\*";                 DestDir: "{app}\Help\images\icons"; Flags: ignoreversion
 Source: "deploy\XRayCalc3_Icon.ico";                 DestDir: "{app}";                   Flags: ignoreversion
 Source: "deploy\XRayCalc3_x64_Icon.ico";             DestDir: "{app}";                   Flags: ignoreversion
 
