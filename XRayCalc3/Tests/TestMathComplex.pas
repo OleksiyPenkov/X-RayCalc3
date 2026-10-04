@@ -105,7 +105,7 @@ type
 implementation
 
 uses
-  System.SysUtils, System.Math;
+  Neslib.FastMath, System.SysUtils, System.Math;
 
 { TTestMathComplex }
 

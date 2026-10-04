@@ -24,7 +24,7 @@ interface
 
 uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
-  System.JSON, System.Zip, System.IniFiles,
+  System.JSON, System.Zip, System.IniFiles, System.Generics.Collections,
   VirtualTrees, VirtualTrees.Types,
   unit_Types, unit_XRCProjectTree,
   unit_MCPSandbox, unit_MCPErrors, unit_MCPTools, unit_MCPStructure,

@@ -75,7 +75,7 @@ type
 implementation
 
 uses
-  unit_Config;
+  System.Generics.Collections, unit_Config;
 
 const
   { the peer session's numbers, read off the raw file }

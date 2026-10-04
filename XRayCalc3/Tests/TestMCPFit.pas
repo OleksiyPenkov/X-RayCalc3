@@ -218,6 +218,7 @@ implementation
 
 uses
   System.IOUtils, System.Classes, System.Diagnostics, System.Math,
+  System.Generics.Collections,
   System.Zip, System.IniFiles, unit_MCPTools, unit_ToolsFiles,
   unit_Config, unit_MCPErrors, unit_MCPCalc, unit_MCPProjectFile,
   unit_DataProcessing, unit_ToolsJobs, unit_gpu_calc;

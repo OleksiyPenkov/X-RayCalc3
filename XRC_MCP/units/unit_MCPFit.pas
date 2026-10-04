@@ -249,7 +249,7 @@ procedure RunFitJob(Job: TJob; const Req: TFitRequest);
 implementation
 
 uses
-  System.SysUtils, System.Math, System.IOUtils,
+  System.SysUtils, System.Math, System.IOUtils, System.Generics.Collections,
   unit_materials, unit_calc, unit_gpu_calc, unit_DataProcessing,
   unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly, unit_LFPSO_Irregular,
   unit_MCPCalc, unit_MCPErrors, unit_MCPFitReport, unit_MCPInbox,

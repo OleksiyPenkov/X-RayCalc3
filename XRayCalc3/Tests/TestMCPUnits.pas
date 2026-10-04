@@ -2,7 +2,7 @@ unit TestMCPUnits;
 
 interface
 
-uses DUnitX.TestFramework, System.SysUtils, System.Math, System.JSON, unit_MCPUnits, unit_MCPErrors;
+uses DUnitX.TestFramework, System.SysUtils, System.Math, System.JSON, System.Generics.Collections, unit_MCPUnits, unit_MCPErrors;
 
 type
   [TestFixture]

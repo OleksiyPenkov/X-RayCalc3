@@ -3,7 +3,7 @@
 interface
 
 uses
-  System.SysUtils, System.Classes, System.Types, System.IniFiles,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Types, System.IniFiles,
   System.UITypes,
   Vcl.Controls, Vcl.Graphics, Vcl.Forms, Vcl.StdCtrls, Vcl.Dialogs,
   Vcl.ExtCtrls,

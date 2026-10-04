@@ -59,7 +59,8 @@ type
 implementation
 
 uses
-  System.Classes, System.IOUtils, System.Math, System.Types;
+  System.Classes, System.IOUtils, System.Math, System.Types,
+  System.Generics.Collections;
 
 const
   CU_K_ALPHA = 1.5406;

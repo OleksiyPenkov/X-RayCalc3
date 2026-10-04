@@ -3,7 +3,7 @@ unit TestMCPStructure;
 interface
 
 uses
-  DUnitX.TestFramework, System.SysUtils, System.JSON,
+  DUnitX.TestFramework, System.SysUtils, System.JSON, System.Generics.Collections,
   unit_Types, unit_materials, unit_MCPStructure, unit_MCPErrors;
 
 type

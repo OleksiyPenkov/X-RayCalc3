@@ -59,7 +59,7 @@ implementation
 
 uses
   unit_SeriesIO, unit_DataProcessing, System.SysUtils, System.Math, VclTee.Series,
-  unit_sys_helpers;
+  unit_sys_helpers, VCLTee.TeEngine;
 
 { TTestHelpers }
 

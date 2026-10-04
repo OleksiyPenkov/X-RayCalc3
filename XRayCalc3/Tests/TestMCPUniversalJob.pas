@@ -52,6 +52,7 @@ implementation
 
 uses
   System.IOUtils, System.Math, System.Diagnostics, System.Zip,
+  System.Generics.Collections,
   Winapi.Windows, Winapi.PsAPI,
   unit_Config,
   unit_MCPUniversal;

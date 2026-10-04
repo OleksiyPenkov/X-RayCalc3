@@ -4,6 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.JSON, System.IOUtils,
+  System.Generics.Collections,
   unit_universal_types;
 
 function LoadTemplates(const FileName: string): TTemplateLibrary;
