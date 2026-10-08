@@ -142,17 +142,19 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   iteration 0 and cannot shut down. Win32 is unaffected, so the test suite passes either way.
   Upstream fixed it in commit 220e9d03 ("fixed bad 64-bit pointer casts"), included in 3.08.
   The IDE packages for Studio 37.0 are built from `packages\Delphi 13 Florence`.
-  **Local patch required:** the clone is on branch `xrc-unregisterwaitex` (release-3.08 + three commits,
-  0cc7a66f, f3627653 and 60b128c5). 60b128c5 (`OtlComm.pas`): `ReceiveWait` could dequeue a message and
+  **Patched build required:** the clone is on branch `xrc-unregisterwaitex` (release-3.08 + three commits,
+  0cc7a66f, f3627653 and 60b128c5), published in the fork `OleksiyPenkov/OmniThreadLibrary` (the
+  clone's `origin`; gabr42's repository is the remote `upstream`). The same fixes are offered upstream as PRs #229 (closes
+  issue #227, `TWaitFor`) and #230 (closes #228, `ReceiveWait`), opened 2026-10-08. 60b128c5 (`OtlComm.pas`): `ReceiveWait` could dequeue a message and
   still return False after a spurious wake-up, so a pool worker dropped `MSG_RUN` and a `Parallel.For`
   waited for ever (a rare full-suite hang, job thread in `TOmniParallelSimpleLoop.InternalExecute`).
-  Stock 3.08 (and upstream master as of 2026-09-30) has two races in `TWaitFor`
+  Stock 3.08 (and upstream master as of 2026-10-08) has two races in `TWaitFor`
   (`OtlSync.pas`) on its 64+ handle path, which the thread-pool manager takes once it has 60+ workers
   (back-to-back fits on a 30+-core machine): `UnregisterWaitHandles` uses `UnregisterWait`, which does not
   wait for a callback in flight, and `RegisterWaitHandles` fills the list a registered callback already
   reads. Either one kills the process with 0x0EEDFADE (exit 222) or an access violation (139) — in the
   tests, the GUI and XRC_MCP alike. The patches use `UnregisterWaitEx(h, INVALID_HANDLE_VALUE)` and hold
-  `FAwaitedLock` while registering. Keep them when moving to a newer OTL unless upstream has fixed it;
+  `FAwaitedLock` while registering. Keep them when moving to a newer OTL unless upstream has merged both PRs;
   after changing the clone, rebuild the IDE packages and every project.
   Any thread that runs `Parallel.For` and pumps no messages must call `DrainThreadMessages`
   (`Shared/Math/unit_otl_drain.pas`) after every loop: OTL frees a task's control only from the
