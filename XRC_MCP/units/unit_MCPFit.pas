@@ -12,27 +12,7 @@
 
 unit unit_MCPFit;
 
-(* The fit_xrr job: the GUI's LFPSO, driven headless.
-
-   TCalcOrchestrator.PrepareLFPSO / RunFitting / FinalizeFitting do this in the
-   GUI; everything here is the same sequence with the forms taken out. The
-   engine is unmodified - the same TLFPSO_Periodic, TLFPSO_Poly or
-   TLFPSO_Irregular (the GUI's three fitting modes, "mode" here), the same TCalc,
-   and therefore the same chi-squared as the number the GUI shows. An irregular
-   fit may start from per-period values instead of the stack's single value
-   ("start_profiles", TLFPSO_Irregular.StartFromTables - the switch the GUI's
-   Resume uses too).
-
-   What the client hands over is parsed and validated synchronously by
-   ParseFitRequest, on the calling thread, so that a bad bound or an unreadable
-   measurement is an error on the submitting call rather than a job that fails a
-   minute later. RunFitJob then runs on the job worker and touches nothing but
-   its own job folder.
-
-   Three engine properties shape the contract and are worth knowing before
-   reading the code:
-
-   - The substrate is not in the particle vector. TLFPSO_BASE.FillModel copies
+(* The substrate is not in the particle vector. TLFPSO_BASE.FillModel copies
      FStructure.Subs.P verbatim, and Set_Init_X is called for stack layers only,
      so substrate sigma and density cannot be fitted. Nor can scale, background
      or resolution: the engine has no such parameters. Asking for any of them is
@@ -59,8 +39,7 @@ unit unit_MCPFit;
      (it has no NormalizeD), so a profile fit lets it float within the thickness
      bounds and the result reports "floating". TLFPSO_Irregular has no
      NormalizeD either: it expands every repeating stack into its periods and
-     fits each period's layers on their own, so its periods float too. Since
-     2026-09-16 NormalizeD
+     fits each period's layers on their own, so its periods float too. NormalizeD
      spreads its correction only over layers with room inside their own
      thickness bounds, and XSeed clamps every seed, so no value the engine
      returns can lie outside the bounds given; the result's "out_of_bounds"
@@ -78,9 +57,6 @@ uses
   unit_Types, unit_MCPStructure, unit_MCPJobs;
 
 const
-  { The chi-squared TCalc.CalcChiSquare computes, which is the number this job
-    minimises and the number the GUI displays. describe_server aliases this
-    constant rather than restating it, so the two can never drift apart. }
   FIT_CHI2_DEFINITION =
     '1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 R_calc)^2 * w_point * w_theta) ' +
     'over the points i = tail .. n-2-tail of the n measured points, skipping any ' +
@@ -92,9 +68,6 @@ const
     'solved offset a of chi2_scale_definition; with "scale_solve": false a = 0 ' +
     'and this is the sum of every earlier version.';
 
-  { The measured scale as a nuisance parameter solved inside the sum above:
-    what a, scale_ratio and chi2_scale mean on a result. Reported beside every
-    chi2 so that a solved number is never read as an anchored one. }
   FIT_CHI2_SOLVED_DEFINITION =
     'With "scale_solve" (default true) log10 I_meas is replaced by log10 I_meas + a ' +
     'in chi2 and chi2_plain, a being the value that minimises chi2 for the ' +
@@ -107,9 +80,6 @@ const
     'solved one. With "scale_solve": false a = 0 and the numbers are those of ' +
     'every earlier version.';
 
-  { The same sum with both weights dropped: what the fit is worth as a bare
-    data-to-fit disagreement, on the same scale as chi2, so the two can be read
-    side by side. It is reported, never minimised. }
   FIT_CHI2_PLAIN_DEFINITION =
     'chi2_plain and chi2_start_plain are the same sum as chi2 with w_point = ' +
     'w_theta = 1: 1000/(n-1) * sum(((log10 I_meas - log10 R_calc)/log10 ' +
@@ -118,8 +88,6 @@ const
     'weighting the fit applies can be read off the difference. Nothing ' +
     'optimises it.';
 
-  { Said in every result: the two parameters a client coming from another
-    refinement program looks for first, and what became of them here. }
   FIT_NO_SCALE_NOTE =
     'scale is the anchored multiplier the client chose ("scale" argument), ' +
     'applied to the measured intensities before the fit and stored with them ' +
@@ -128,10 +96,6 @@ const
     '(scale_ratio, chi2_scale = "solved"); the files and the .xrcx keep the ' +
     'anchored scale. Background is never fitted.';
 
-  // Argument defaults, all of them the brief's - but for the population, which
-  // was 100 until 2026-09-17. The lab fits with 100 iterations and 500 to 1000
-  // particles ("population wins iterations"), so a request that names no
-  // optimizer now gets the lower end of that.
   DEF_RESOLUTION   = 0.015;    // theta FWHM, degrees
   DEF_POPULATION   = 500;
   DEF_ITERATIONS   = 100;
@@ -149,19 +113,12 @@ const
   DEF_MOVAVG       = 0.05;
   DEF_R_MIN        = 1E-7;
   DEF_INLINE_MAX   = 2000;
-  /// "scale": "auto" looks for the measured maximum below this angle.
   DEF_AUTO_THETA_MAX = 0.5;
   DEF_SCALE_SOLVE_WINDOW = 0.2;   // the solved scale stays within x1.2 of the anchor
 
-  { The range a free parameter gets when no explicit bound is given: the start
-    value plus and minus this fraction of it. }
   DEF_FREE_DEVIATION = 0.30;
 
-  /// Largest measured curve a fit will accept. Every particle of every
-  /// iteration is evaluated at every point, so this is the single biggest lever
-  /// on how long a run takes; it is the same ceiling calc_reflectivity uses.
   MAX_FIT_POINTS = 100000;
-  /// The engine smooths the last MVAWindow points of a convolved curve.
   FIT_MVA_WINDOW = 10;
   /// "smooth": the window of the GUI's Data - Smooth, which is
   /// MovAvg(Data, 5) in TfrmChartInfo.SmoothData, and the most passes taken.
@@ -171,14 +128,11 @@ const
   /// of the periods, at least 1), which is also the GUI's default.
   DEF_PERIOD_SMOOTH_WINDOW = -1;
 
-  /// "mode": the GUI's three fitting modes, by the names the result echoes.
   FIT_MODE_PERIODIC  = 'periodic';
   FIT_MODE_PROFILE   = 'profile';
   FIT_MODE_IRREGULAR = 'irregular';
 
 type
-  /// <summary>One fitted parameter: where it is in the client's JSON, where it
-  /// is in the GUI structure, and the range the engine searched.</summary>
   TFitParamRef = record
     StackLabel: string;     // 'cap' | 'buffer', '' when addressed by index
     StackJSON: Integer;     // index in the JSON "stacks" array, -1 for cap/buffer
@@ -189,9 +143,6 @@ type
     Min, Max: Double;
   end;
 
-  /// <summary>One repeating stack whose period is free: the engine lets the
-  /// sum of its layer thicknesses move inside [Min, Max] instead of holding
-  /// it at StartD.</summary>
   TPeriodRef = record
     StackJSON: Integer;     // index in the JSON "stacks" array
     GUIStack: Integer;      // index in TFitStructure.Stacks
@@ -199,31 +150,29 @@ type
     Min, Max: Double;
   end;
 
-  /// <summary>Everything one fit_xrr call asks for, fully validated. The job
-  /// body needs no JSON and no work directory lookups.</summary>
   TFitRequest = record
     MeasurementId: string;              // '' for an inline curve
-    DataTitle: string;                  // the measurement id, or 'inline'
+    DataTitle: string;
     Data: unit_Types.TDataArray;        // theta (deg), I - already range-restricted
     Lambda: Double;
     ThetaMin, ThetaMax: Double;         // the range of Data, after restriction
     Resolution: Double;                 // theta FWHM in degrees, 0 = no convolution
     RMin: Double;
     Polarization: unit_Types.TPolarisation;
-    PolarizationName: string;           // as echoed: 's' or 'sp'
+    PolarizationName: string;
     Structure: TFitStructure;           // the start model, bounds applied
     Info: TStructureInfo;
     FreeParams: TArray<TFitParamRef>;        // the free parameters, in argument order
     Fit: TFitParams;
     PointWeight: Boolean;
-    Mode: string;                       // FIT_MODE_PERIODIC, _PROFILE or _IRREGULAR
-    Profile: Boolean;                   // TLFPSO_Poly ("mode": "profile")
-    Irregular: Boolean;                 // TLFPSO_Irregular ("mode": "irregular")
+    Mode: string;
+    Profile: Boolean;
+    Irregular: Boolean;
     StartProfiles: Boolean;             // the start model's per-period values are
                                         // in Structure's TLayerData.PP tables
     InlineMax: Integer;
     Scale: Double;                      // multiplier already applied to Data
-    ScaleMode: string;                  // 'fixed' (the client's number) or 'auto'
+    ScaleMode: string;
     ScaleTheta: Double;                 // angle the auto scale was taken at
     ScaleCounts: Double;                // raw measured maximum there
     AutoThetaMax: Double;               // the range that maximum was sought in
@@ -231,19 +180,12 @@ type
     PeriodRefs: TArray<TPeriodRef>;     // repeating stacks whose period is free
     PairedParams: TArray<TFitParamRef>; // layer parameters held constant over
                                         // the periods of a profile or irregular fit
-    Device: string;                     // 'auto', 'cpu' or 'gpu' (optimizer.device)
+    Device: string;
     ScaleSolveWindow: Double;           // "scale_solve_window" as given (Fit holds its log10)
   end;
 
-/// <summary>Parses and validates one fit_xrr argument object. Raises
-/// EMCPError - invalid_argument, invalid_structure, unknown_material,
-/// not_found or not_fittable - for anything it cannot run.</summary>
 function ParseFitRequest(const Params: TJSONObject): TFitRequest;
 
-/// <summary>The job body. Runs the LFPSO to completion on the worker thread,
-/// writes measured.dat, calc.dat, residual.dat and fit.xrcx into the job
-/// folder and leaves the result in Job.ResultObj. A cancelled run returns
-/// without a result.</summary>
 procedure RunFitJob(Job: TJob; const Req: TFitRequest);
 
 implementation
@@ -256,12 +198,8 @@ uses
   unit_MCPProjectFile, unit_MCPSandbox, unit_MCPUnits;
 
 const
-  { The names section 3 of the requirements uses for the three per-layer
-    parameters, indexed by TLayerData.P. }
   PARAM_NAMES: array [1 .. 3] of string = ('thickness', 'sigma', 'density');
 
-  { free/bounds targets that name a parameter the GUI engine does not have. Each
-    is refused with not_fittable rather than ignored. }
   NOT_FITTABLE_NOTE =
     'The GUI engine v1 fits layer thickness, sigma and density, and the '    +
     'period of a repeating stack. The substrate is not in the particle '     +
@@ -274,7 +212,6 @@ const
     so anything above rounding is a real disagreement. }
   CHI2_CONSISTENCY_TOLERANCE = 1E-4;
 
-{ ------------------------------------------------------------- small helpers -- }
 
 function FitFmt: TFormatSettings;
 begin
@@ -326,7 +263,6 @@ begin
   Result := TJSONNumber.Create(GUIStack);
 end;
 
-{ --------------------------------------------------------------- the data -- }
 
 /// [[theta, I], ...] as the client wrote it. Intensities must be positive: the
 /// chi-squared takes their base-10 logarithm.
@@ -356,8 +292,6 @@ begin
   end;
 end;
 
-/// The points of C inside [AMin, AMax]. The bounds are inclusive; a range that
-/// keeps nothing is an argument error, not an empty fit.
 function RestrictToRange(const C: unit_Types.TDataArray;
   AMin, AMax: Double): unit_Types.TDataArray;
 var
@@ -404,9 +338,6 @@ begin
              FitFmt));
 end;
 
-/// The measured curve and the wavelength that goes with it. Fills
-/// MeasurementId, DataTitle, Data and Lambda; the range restriction is applied
-/// by the caller, which knows theta_range.
 procedure FillEngineDensities(var S: TFitStructure; Lambda: Double); forward;
 function ScanOnData(const Req: TFitRequest; Model: TLayeredModel;
   const MovAvgCurve: unit_Types.TDataArray;
@@ -519,13 +450,6 @@ end;
 /// further factor solved in closed form per candidate - scale_ratio on the
 /// result - so a chi2 cross-checked against the .xrcx is off by that factor
 /// unless "scale_solve" is false. See FIT_CHI2_SOLVED_DEFINITION.
-///
-/// There are two spellings because one of them is hard for a client to write.
-/// An agent on the exp-03 run of 2026-09-18 sent "scale": auto unquoted fifteen
-/// times running, and its own client refused every call as malformed JSON
-/// before the server ever saw it: a key whose type is number-or-string invites
-/// that. The boolean cannot be got wrong, so it is the one the schema names
-/// first.
 procedure ApplyScale(const Params: TJSONObject; var Req: TFitRequest);
 var
   i: Integer;
@@ -614,7 +538,6 @@ begin
     Req.Data := MovAvg(Req.Data, FIT_SMOOTH_WINDOW);
 end;
 
-/// A curve a fit can read: at least two points, ordered by increasing theta.
 procedure CheckMeasuredCurve(const Req: TFitRequest);
 var
   i: Integer;
@@ -632,9 +555,6 @@ begin
                [i, Req.Data[i].t, Req.Data[i - 1].t], FitFmt));
 end;
 
-/// theta_range {min, max}, defaulting to the range of the data, applied to the
-/// curve. Leaves Req.Data restricted and Req.ThetaMin / ThetaMax on the range
-/// the restricted curve actually spans.
 procedure ApplyThetaRange(const Params: TJSONObject; var Req: TFitRequest);
 var
   JRange: TJSONObject;
@@ -667,10 +587,7 @@ begin
   Req.ThetaMax := Req.Data[High(Req.Data)].t;
 end;
 
-{ ------------------------------------------------------- free and bounds -- }
 
-/// One "stack" value - an index into the JSON stacks array, or "cap"/"buffer" -
-/// resolved against the structure that was just parsed.
 procedure ResolveStack(const JEntry: TJSONObject; const Info: TStructureInfo;
   const Path: string; var Ref: TFitParamRef);
 var
@@ -747,8 +664,6 @@ begin
   Ref.GUILayer := j;
 end;
 
-/// A target the GUI engine has no parameter for. Everything the design note
-/// lists under "not fittable" ends here.
 procedure RefuseTarget(const Target, Path: string);
 begin
   raise EMCPError.Create('not_fittable',
@@ -756,8 +671,6 @@ begin
     Target);
 end;
 
-/// The "free" array: which layer parameters take part in the fit. Order is
-/// preserved so that bounds_used reads back in the order it was written.
 /// One "period" entry of "free": the stack must be addressed by index and
 /// repeat (N > 1). Profile and irregular fits are refused because neither
 /// TLFPSO_Poly nor TLFPSO_Irregular holds the period - it floats within the
@@ -967,8 +880,6 @@ begin
   Ref.Max := AMax;
 end;
 
-/// The "bounds" array, matched against the free parameters. A bound that names
-/// a parameter which is not free would silently do nothing, so it is an error.
 /// A period bound: {"target":"period","stack":k,"min":..,"max":..}, with an
 /// optional "parameter":"period". The stack's period must be free.
 procedure ParsePeriodBound(const JEntry: TJSONObject; const Info: TStructureInfo;
@@ -1137,7 +1048,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- the optimizer -- }
 
 /// ScaleSolveWindow is "scale_solve_window" as given, the value the result
 /// echoes; Result.ScaleWindowLog holds its log10(1 + w) for the engine.
@@ -1172,8 +1082,6 @@ begin
   Result.ThetaWeight     := JSONArgs.OptInt(JChi, 'theta_weight', 0);
   Result.MovAvgWindow    := JSONArgs.OptFloat(JChi, 'movavg_window', DEF_MOVAVG);
 
-  { The measured scale as a nuisance parameter solved inside the objective;
-    see FIT_CHI2_SOLVED_DEFINITION. On by default, on the author's decision. }
   Result.SolveScale := JSONArgs.OptBool(Params, 'scale_solve', True);
   Win := JSONArgs.OptFloat(Params, 'scale_solve_window', DEF_SCALE_SOLVE_WINDOW);
   if Win < 0 then
@@ -1212,8 +1120,6 @@ begin
       '"optimizer.poly_factor" must be at least 1', IntToStr(Result.PolyFactor));
 end;
 
-/// optimizer.device: where the population is evaluated. "gpu" is refused
-/// here, not discovered in the job, when this machine has no usable GPU.
 function ParseDevice(const Params: TJSONObject): string;
 var
   Name, Err: string;
@@ -1228,7 +1134,6 @@ begin
       '"optimizer.device" is "gpu" but this machine has no usable GPU', Err);
 end;
 
-{ ------------------------------------------------------------ the request -- }
 
 /// TLFPSO_Poly gives every non-paired parameter of a repeating stack a
 /// polynomial over the periods. Its GetPolynomes walks the stacks with a stride
@@ -1345,8 +1250,6 @@ const
   PROFILE_KEYS: array [1 .. 3] of string =
     ('thickness_profile', 'sigma_profile', 'density_profile');
 
-/// True when any layer of "structure" carries a per-period array - which a
-/// fitted_structure of a profile or irregular fit does.
 function StructureHasProfiles(const JStructure: TJSONObject): Boolean;
 var
   JStacks, JLayers: TJSONArray;
@@ -1528,15 +1431,6 @@ begin
     end;
 end;
 
-/// "paired": which layer parameters are held to one value over all the periods
-/// instead of getting a polynomial (profile mode) or a value of their own in
-/// each period (irregular mode). It is the GUI's Paired box - TFitValue.Paired,
-/// the HP / SP / RP flags of the project file, which TLFPSO_Poly.Set_Init_XPoly
-/// and TLFPSO_Irregular.SetStructure already honour - and the author's own
-/// practice is to pair sigma and density and leave the thicknesses free.
-///
-/// An item is either a bare parameter name, which pairs that parameter in every
-/// layer, or {"stack", "layer", "parameters"} addressed exactly as "free" is.
 procedure ParsePaired(const Params: TJSONObject; var S: TFitStructure;
   const Info: TStructureInfo; const Mode: string;
   out Refs: TArray<TFitParamRef>);
@@ -1553,8 +1447,6 @@ var
   var
     n: Integer;
   begin
-    { The same parameter named twice, by a global entry and a per-layer one, is
-      one pairing and one line in the result. }
     for n := 0 to Count - 1 do
       if (Refs[n].GUIStack = GUIStack) and (Refs[n].GUILayer = GUILayer) and
          (Refs[n].P = Param) then
@@ -1571,8 +1463,6 @@ var
     S.Stacks[GUIStack].Layers[GUILayer].P[Param].Paired := True;
   end;
 
-  /// A bare parameter name pairs that parameter in every layer of every stack,
-  /// which is what the GUI's Paired column does when it is ticked down the page.
   procedure AddEverywhere(Param: Integer);
   var
     gs, gl, js, j: Integer;
@@ -1647,7 +1537,6 @@ begin
   end;
 end;
 
-/// The parameters "paired" held constant, in the address shape of bounds_used.
 function PairedJSON(const Refs: TArray<TFitParamRef>;
   const Info: TStructureInfo): TJSONArray;
 var
@@ -1713,7 +1602,6 @@ begin
   PolStr := JSONArgs.OptStr(Params, 'polarization', 'sp');
   Result.Polarization := ParseFitPolarization(PolStr, Result.PolarizationName);
 
-  { The manual's data conditioning, in its order: normalize, smooth, trim. }
   ApplyScale(Params, Result);
   ApplySmooth(Params, Result);
   ApplyThetaRange(Params, Result);
@@ -1750,12 +1638,8 @@ begin
   Result.Device := ParseDevice(Params);
 end;
 
-{ ------------------------------------------------------- running the fit -- }
 
 type
-  /// <summary>Sinks TLFPSO_BASE.OnProgress into the job: reports the iteration,
-  /// frees the model the engine hands over, and stops the run when a cancel has
-  /// been asked for. It runs on the fitting thread.</summary>
   TFitRunner = class
   private
     FJob: TJob;
@@ -1952,7 +1836,6 @@ begin
     Result[i].r := Result[i].r * K;
 end;
 
-{ ------------------------------------------------------- result assembly -- }
 
 type
   /// <summary>One layer of a repeating stack and its thickness, sigma and
@@ -1969,8 +1852,6 @@ type
 function PerPeriodValues(const Req: TFitRequest; const Ref: TFitParamRef;
   const Profiles: TArray<TLayerProfile>): TArray<Single>; forward;
 
-/// One parameter's per-period values out of a TLayerProfile; nil when the
-/// layer has none.
 function ProfileValues(const Profiles: TArray<TLayerProfile>;
   GUIStack, GUILayer, P: Integer): TArray<Single>;
 var
@@ -1995,9 +1876,6 @@ begin
     Result := ProfileValues(Profiles, Ref.GUIStack, Ref.GUILayer, Ref.P);
 end;
 
-/// How many independent values an irregular fit searched: a free parameter of
-/// a repeating layer is a value in each of its stack's N periods, or one value
-/// for all of them when it is paired; a free parameter of an N = 1 stack is one.
 function FreeValueCount(const Req: TFitRequest): Integer;
 var
   n, GS, GL: Integer;
@@ -2014,9 +1892,6 @@ begin
   end;
 end;
 
-/// The period of each repetition of one stack, surface end first: the sum of
-/// its layers' thicknesses in that period. Empty when the profiles do not
-/// cover the stack.
 function PeriodsOf(const Profiles: TArray<TLayerProfile>;
   GUIStack: Integer): TArray<Double>;
 var
@@ -2044,10 +1919,6 @@ begin
     Result := Result / Length(V);
 end;
 
-/// The per-period values a structure's tables describe, in the shape
-/// CollectLayerProfiles gives a fitted model: every layer of every repeating
-/// stack, each parameter from its table where it has one and from its single
-/// value otherwise (TLayerData.PeriodValue, as the model is built).
 function TableProfiles(const S: TFitStructure): TArray<TLayerProfile>;
 var
   i, j, k, n: Integer;
@@ -2102,9 +1973,6 @@ begin
   end;
 end;
 
-/// The fitted periods as the layers' tables, which the .xrcx stores and the
-/// GUI's Table extension expands: what TXRCStructure.UpdateProfiles writes
-/// after an irregular fit, every unpaired parameter of every repeating layer.
 procedure SetFittedTables(var S: TFitStructure; const Profiles: TArray<TLayerProfile>);
 var
   n, k, c, GS, GL: Integer;
@@ -2161,7 +2029,6 @@ begin
   end;
 end;
 
-/// The sum of the layer thicknesses of one stack.
 function StackPeriod(const S: TFitStructure; GUIStack: Integer): Double;
 var
   j: Integer;
@@ -2177,9 +2044,6 @@ end;
 const
   NEAR_BOUND_FRACTION = 0.05;
 
-/// The period the report counts its orders on: the first repeating stack of the
-/// structure, which is the one calc_reflectivity reports peaks for. 0 when the
-/// structure has no repeating stack.
 function ReportPeriod(const S: TFitStructure; const Info: TStructureInfo): Double;
 begin
   if Info.PeriodicStackIndex < 0 then
@@ -2188,12 +2052,6 @@ begin
     Result := StackPeriod(S, Info.PeriodicStackIndex);
 end;
 
-/// Every fitted value within NEAR_BOUND_FRACTION of its own range of either end
-/// of it, in the shape of bounds_used plus the value, which end it is near and
-/// how far away it is as a fraction of the range. In an irregular fit a free
-/// parameter of a repeating layer is a value in every period, and each period
-/// is considered on its own: its entry carries "period_index", the index into
-/// that layer's *_profile array (0 = period 1, the surface end).
 function NearBoundsJSON(const Req: TFitRequest; const Fitted: TFitStructure;
   const Profiles: TArray<TLayerProfile>): TJSONArray;
 var
@@ -2342,13 +2200,6 @@ begin
   end;
 end;
 
-/// One entry per repeating stack, in JSON order: how its period was treated -
-/// "held" at the start value (the periodic engine's default), "free" inside
-/// the bounds given, or "floating" (a profile or irregular fit, where neither
-/// TLFPSO_Poly nor TLFPSO_Irregular constrains it) - with the start and fitted
-/// periods in Angstrom. In an irregular fit every period is fitted on its own:
-/// start_A and fitted_A are then the mean over the periods, and fitted_A_min
-/// and fitted_A_max the shortest and the longest.
 function PeriodModeJSON(const Req: TFitRequest; const Fitted: TFitStructure;
   const StartProfiles, FittedProfiles: TArray<TLayerProfile>): TJSONArray;
 var
@@ -2517,8 +2368,6 @@ begin
   SetLength(Result, n);
 end;
 
-/// True when not every period holds the same value: a paired parameter is one
-/// value copied into each period and has no profile worth reporting.
 function VariesOverPeriods(const V: TArray<Single>): Boolean;
 var
   c: Integer;
@@ -2611,7 +2460,6 @@ begin
     Result := Arr;
 end;
 
-{ --------------------------------------------------------- .xrcx packaging -- }
 
 /// A value that reached us through a Single and is about to be written into a
 /// Double field of params.dsc. 0.2 read back out of a Single is
@@ -2623,11 +2471,6 @@ begin
   Result := StrToFloat(FloatToStrF(V, ffGeneral, 7, 0, FitFmt), FitFmt);
 end;
 
-/// The optimizer the run used, every key of the "optimizer" argument with the
-/// defaults filled in. request.json stores the arguments as sent, so without
-/// this a job that named no population cannot be told apart from one that
-/// did, and a change of a default (500 particles since 2026-09-17) would be
-/// invisible in job_result.
 function OptimizerUsedJSON(const Req: TFitRequest): TJSONObject;
 begin
   Result := TJSONObject.Create;
@@ -2736,7 +2579,6 @@ begin
   WriteXRCX(Path, P);
 end;
 
-{ --------------------------------------------------------------- the body -- }
 
 procedure RunFitJob(Job: TJob; const Req: TFitRequest);
 var
@@ -2889,9 +2731,6 @@ begin
   if Job.CancelRequested then
     Exit;
 
-  { The densities the engine used, in both structures the result reports and in
-    the .xrcx: a layer that asked for the Henke bulk value is stored with the
-    value, exactly as save_project stores it. }
   FillEngineDensities(Fitted, Req.Lambda);
   Req.Structure.CopyContent(StartFS);
   FillEngineDensities(StartFS, Req.Lambda);
@@ -2966,8 +2805,6 @@ begin
 
     Res.AddPair('scale', JSONArgs.Num(Req.Scale));
     Res.AddPair('scale_mode', Req.ScaleMode);
-    { The solved scale, on every result, so that a number from before and one
-      from after this feature can never be compared without noticing. }
     Res.AddPair('scale_solve', TJSONBool.Create(Req.Fit.SolveScale));
     if Req.Fit.SolveScale then
       Res.AddPair('chi2_scale', 'solved')
@@ -3022,8 +2859,6 @@ begin
     Report.AddPair('chi2_start', JSONArgs.Num(Chi2Start));
     Report.AddPair('chi2_plain', JSONArgs.Num(Chi2Plain));
     Report.AddPair('chi2_start_plain', JSONArgs.Num(Chi2StartPlain));
-    { The scale mode beside every chi2 the file holds, so that report.json
-      read on its own, years later, still says what its numbers are. }
     Report.AddPair('scale_solve', TJSONBool.Create(Req.Fit.SolveScale));
     Report.AddPair('chi2_scale', Res.GetValue<string>('chi2_scale'));
     Report.AddPair('scale_solve_window', JSONArgs.Num(Req.ScaleSolveWindow));

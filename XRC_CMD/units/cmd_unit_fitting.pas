@@ -251,7 +251,7 @@ begin
   ExpValues  := LoadData;
 
   Seed;
-  Model := ConvertFit2Layers(FittingSet[0]);  // initial model
+  Model := ConvertFit2Layers(FittingSet[0]);
 
   CalculateCurrentSet;
 
@@ -281,11 +281,9 @@ begin
       BestFit := FittingSet[Min];
       writeln('ChiSQR ', ChiSquareMin:5:4, '  plain ', ChiSquareMinPlain:5:4);
       FinalCalc;
-      //w := w_max-(w_max - w_min) * i / Iterations;
     end;
   end;
 
-//  FinalCalc;
 
 end;
 

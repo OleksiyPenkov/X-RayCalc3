@@ -41,11 +41,9 @@ type
     procedure FGridSetEditText(Sender: TObject; ACol, ARow: Integer;
       const Value: string);
   private
-    { Private declarations }
     FTable: THenkeTable;
     FNa, FRho: single;
   public
-    { Public declarations }
   end;
 
 var

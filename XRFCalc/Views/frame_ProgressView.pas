@@ -101,7 +101,6 @@ begin
     lblHeader.Caption := ' ' + Line
   else
     MemoLog.Lines.Add(Line);
-  // Auto-scroll to bottom
   SendMessage(MemoLog.Handle, WM_VSCROLL, SB_BOTTOM, 0);
 end;
 

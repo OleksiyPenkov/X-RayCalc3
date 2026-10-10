@@ -23,9 +23,7 @@ type
     BitBtn1: TBitBtn;
     BitBtn2: TBitBtn;
   private
-    { Private declarations }
   public
-    { Public declarations }
     procedure SelectMaterial(var Name: string);
   end;
 
@@ -36,7 +34,6 @@ implementation
 
 {$R *.dfm}
 
-{ TfrmMaterialSelector }
 
 procedure TfrmMaterialSelector.SelectMaterial(var Name: string);
 begin

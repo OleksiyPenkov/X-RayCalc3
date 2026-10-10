@@ -10,7 +10,7 @@ uses
   function ReadINI:TCalcParams;
 
 
-  function LoadFittedStructure: TFittedStructure; // periodic structure
+  function LoadFittedStructure: TFittedStructure;
   function ConvertFit2Layers(const FitStructure: TFittedStructure):TLayeredModel;
   procedure UpdateFit2Layers(const FitStructure: TFittedStructure; var Model:TLayeredModel);
 
@@ -332,7 +332,6 @@ begin
   Ini := TIniFile.Create(FileName);
 
   try
-    // [Options]
     S := Ini.ReadString( 'Options', 'Mode', 'angle' );
     if S = 'angle' then
       Result.Mode := cmTheta
@@ -346,14 +345,12 @@ begin
       Result.P := cmSP;
     Result.N := Ini.ReadInteger('Options', 'N', 2000);
 
-    // [Angle]
     Result.StartT := Ini.ReadFloat('Angle', 'Start', 0.1);
     Result.EndT   := Ini.ReadFloat('Angle', 'End', 16);
     Result.Lambda := Ini.ReadFloat('Angle', 'Lambda', 1.54043);
     Result.DT     := Ini.ReadFloat('Angle', 'DTheta', 0.02);
     Result.K      := Ini.ReadInteger('Angle', 'Theta', 2);
 
-    // [Wavelength]
     Result.StartL :=  Ini.ReadFloat('Wavelength', 'Start', 1);
     Result.EndL   :=  Ini.ReadFloat('Wavelength', 'End', 10);
     Result.Theta  :=  Ini.ReadFloat('Wavelength', 'Theta', 85);

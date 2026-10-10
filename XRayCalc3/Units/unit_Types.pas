@@ -22,7 +22,7 @@ type
   TIntArray = array of Word;
   TPolyArray = array of single;
 
-  TLayer = array [1..3] of TPolyArray;   // Array of layer parameters
+  TLayer = array [1..3] of TPolyArray;
   TSolution = array of TLayer; // H, Sigma, rho x N Layers
   TPopulation = array of TSolution;
 
@@ -112,24 +112,23 @@ type
      PolyFactor: Integer;
          Smooth: Boolean;
    SmoothWindow: ShortInt;
-     SolveScale: Boolean;   // TCalc.SolveScale for every evaluation of the fit
- ScaleWindowLog: Single;    // TCalc.ScaleWindowLog
+     SolveScale: Boolean;
+ ScaleWindowLog: Single;
      FreePeriod: Boolean;   // periodic mode: every N > 1 stack's period may move
    PeriodWindow: Single;    //   by this fraction of its start value either way
            Seed: Integer;   // GUI: the random seed of the next fits, 0 = draw one;
                             //   typed in Advanced settings, not saved with a project
   end;
 
-  // Calculation data types
 
   TCalcLayer = record
-    e: TComplex; { Epsilon }
-    L, s, ro: single; { Thickness, sigma}
+    e: TComplex;
+    L, s, ro: single;
     K: TComplex; { kappa }
     RF, r: TComplex; { Fresnel coefficient }
-    eRatio: single; { epsilon ratio, precomputed per model }
+    eRatio: single;
     s2: single; { sigma^2 / 2, precomputed per model for rfError roughness }
-    RoughFactor: single; { cached roughness damping factor for cmSP reuse }
+    RoughFactor: single;
     delta: single; { 1 - Re epsilon = f1 * c, computed directly, not as 1 - e.re }
     oneMinusRatio: single; { 1 - eRatio, in Double on the host }
   end;
@@ -232,7 +231,6 @@ type
                      LayerID: word;
                    end;
 
-  // Fitting data types
 
 
   TFitStack = record
@@ -253,15 +251,11 @@ type
   end;
 
 const
-  /// TFitValue index -> the name the fit engines and the MCP report it under.
   FIT_PARAM_NAMES: array[1..3] of string = ('thickness', 'sigma', 'density');
 
 type
-  /// Raised by TLFPSO_BASE.Run for a structure with an inverted fit range.
   EInvertedRange = class(Exception);
 
-  /// One layer parameter whose fit range is inverted (min > max). Indices are
-  /// the GUI's: stack, layer within the stack, and P[1..3].
   TInvertedRange = record
     StackIdx, LayerIdx, Param: Integer;
     RangeMin, RangeMax: Single;
@@ -275,12 +269,10 @@ type
 /// one (a density range pasted onto the wrong layer, say).
 function InvertedRanges(const S: TFitStructure): TArray<TInvertedRange>;
 
-/// 'stack "W-B4C" (0) layer 1 "B4C": the density range is inverted, min 14 > max 2.5'
 function InvertedRangeText(const S: TFitStructure; const R: TInvertedRange): string;
 
 implementation
 
-{ TProjectData }
 
 function TProjectData.IsModel: Boolean;
 begin
@@ -313,7 +305,6 @@ begin
     Poly[i] := PolyD[i];
 end;
 
-{ TCalcModelSoA }
 
 procedure TCalcModelSoA.SetCount(N: Integer);
 begin
@@ -348,7 +339,6 @@ begin
   end;
 end;
 
-{ TCalcScratchSoA }
 
 procedure TCalcScratchSoA.SetCount(N: Integer);
 begin
@@ -362,7 +352,6 @@ begin
   SetLength(RoughFactor, N);
 end;
 
-{ TFitValue }
 
 procedure TFitValue.Init(const AMin, AMax: single);
 begin
@@ -420,7 +409,6 @@ begin
     Dest.Subs.PP[p] := Copy(Subs.PP[p]);
 end;
 
-{ TFitPeriodicStructure }
 
 function InvertedRanges(const S: TFitStructure): TArray<TInvertedRange>;
 var

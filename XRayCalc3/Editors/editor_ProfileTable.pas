@@ -54,7 +54,6 @@ type
 
     LastCol: array [1..3] of Integer;
 
-    { Private declarations }
     procedure PlotProfiles;
     procedure PlotProfile(const Data: TFloatArray; ChartIndex: integer);
     procedure AddCurve(const Title: string; ChartIndex: integer);
@@ -63,7 +62,6 @@ type
     procedure ClearCharts;
 
   public
-    { Public declarations }
     property Data: PProjectData read FData write FData;
     property Structure: TXRCStructure write FStructure;
   end;

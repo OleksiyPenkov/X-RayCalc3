@@ -25,25 +25,17 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { RefCalc — bare substrate physics }
     [Test] procedure Test_RefCalc_GrazingAngle_TotalReflection;
     [Test] procedure Test_RefCalc_MidAngle_PartialReflection;
     [Test] procedure Test_RefCalc_HighAngle_WeakReflection;
     [Test] procedure Test_RefCalc_Monotonic_AboveCritical;
 
-    { CalcTet }
     [Test] procedure Test_CalcTet_UniformGrid;
     [Test] procedure Test_CalcTet_UseDataMode;
 
-    { CalcLambda }
     [Test] procedure Test_CalcLambda_WavelengthScan;
-    { A model regenerated at another wavelength - the Lambda scan - must read
-      the optical constants at that wavelength, and a profile must count its
-      periods from 1 again, whichever layer it sits on. }
     [Test] procedure Test_Generate_NewWavelength_ReadsItsOwnF;
     [Test] procedure Test_Generate_Twice_ProfileRestartsAtPeriodOne;
-    { Every interface function is 1 at sigma = 0 and damps the reflectivity
-      as sigma grows (rfLinear damped only below 0.5 A, rfSinus gave 0). }
     [Test] procedure Test_RoughnessFunctions_AllDampFromOne;
 
     { delta = 1 - eps, carried directly rather than recovered from a Single
@@ -62,7 +54,6 @@ uses
   unit_Config, unit_materials, math_complex, System.SysUtils, System.Math,
   unit_parratt_ref;
 
-{ TTestableCalc }
 
 function TTestableCalc.TestRefCalc(const ATheta, Lambda: single; ALayers: TCalcLayers): single;
 var
@@ -92,7 +83,6 @@ begin
   SetLength(FResult, N);
 end;
 
-{ Helpers }
 
 procedure PrecomputeLayerConstants(var Layers: TCalcLayers);
 var
@@ -129,7 +119,6 @@ begin
   Result.Lambda := Lambda;
 end;
 
-{ TTestCalcPhysics }
 
 procedure TTestCalcPhysics.Setup;
 begin
@@ -142,7 +131,6 @@ begin
   TConfig.Section<TPathOptions>.HenkeDir := FSavedHenkeDir;
 end;
 
-{ --- RefCalc --- }
 
 procedure TTestCalcPhysics.Test_RefCalc_GrazingAngle_TotalReflection;
 var
@@ -151,8 +139,6 @@ var
   Layers: TCalcLayers;
   R: single;
 begin
-  // Si substrate, no roughness, at 0.1 deg (below critical angle ~0.22 deg)
-  // Expect total external reflection: R ~ 1
   Calc := TTestableCalc.Create;
   Model := BuildSubstrateModel('Si', 0, 2.33);
   try
@@ -177,7 +163,6 @@ var
   Layers: TCalcLayers;
   R: single;
 begin
-  // Si substrate at 1 deg — above critical angle
   Calc := TTestableCalc.Create;
   Model := BuildSubstrateModel('Si', 3, 2.33);
   try
@@ -203,7 +188,6 @@ var
   Layers: TCalcLayers;
   R: single;
 begin
-  // Si substrate at 10 deg — well above critical angle, very weak
   Calc := TTestableCalc.Create;
   Model := BuildSubstrateModel('Si', 3, 2.33);
   try
@@ -231,7 +215,6 @@ var
   Angles: array[0..4] of single;
   i: integer;
 begin
-  // Bare substrate (no roughness): reflectivity must decrease monotonically
   Calc := TTestableCalc.Create;
   Model := BuildSubstrateModel('Si', 0, 2.33);
   try
@@ -259,7 +242,6 @@ begin
   end;
 end;
 
-{ --- CalcTet --- }
 
 procedure TTestCalcPhysics.Test_CalcTet_UniformGrid;
 var
@@ -292,7 +274,6 @@ begin
 
     Calc.TestCalcTet(CP);
 
-    // Verify theta grid
     for i := 0 to N - 1 do
     begin
       ExpTheta := 0.5 + i * Step;
@@ -300,7 +281,6 @@ begin
         Format('Theta[%d]', [i]));
     end;
 
-    // Verify reflectivity in valid range
     for i := 0 to N - 1 do
       Assert.IsTrue((Calc.Results[i].r >= Calc.Limit) and (Calc.Results[i].r <= 1.0),
         Format('R[%d]=%.4e out of range', [i, Calc.Results[i].r]));
@@ -315,7 +295,6 @@ var
   Model: TLayeredModel;
   CP: TCalcParams;
 begin
-  // CalcTet with UseData=True reads theta from Points array
   Calc := TTestableCalc.Create;
   try
     Calc.Params := MakeCalcParams(rfError, cmS, 1, CU_KA);
@@ -337,12 +316,10 @@ begin
 
     Calc.TestCalcTet(CP);
 
-    // Theta values come from Points
     Assert.AreEqual(Single(0.5), Calc.Results[0].t, 1E-5, 'Point 0');
     Assert.AreEqual(Single(1.0), Calc.Results[1].t, 1E-5, 'Point 1');
     Assert.AreEqual(Single(2.0), Calc.Results[2].t, 1E-5, 'Point 2');
 
-    // Bare substrate: reflectivity must decrease with angle
     Assert.IsTrue(Calc.Results[0].r > Calc.Results[1].r, 'R(0.5) > R(1.0)');
     Assert.IsTrue(Calc.Results[1].r > Calc.Results[2].r, 'R(1.0) > R(2.0)');
   finally
@@ -350,7 +327,6 @@ begin
   end;
 end;
 
-{ --- CalcLambda --- }
 
 procedure TTestCalcPhysics.Test_Generate_NewWavelength_ReadsItsOwnF;
 const
@@ -415,7 +391,7 @@ begin
 
     for Pass := 1 to 3 do
     begin
-      Model.Generate(1.54 + Pass);   // as CalcLambda does, once per wavelength
+      Model.Generate(1.54 + Pass);
       L := Model.Layers;
       for n := 1 to 3 do
         Assert.AreEqual(Double(10 + (n - 1)), Double(L[1 + n].L), 1E-5,
@@ -482,7 +458,6 @@ var
 const
   N = 50;
 begin
-  // Wavelength scan from 1.0 to 2.0 A at theta = 1 deg
   Calc := TTestableCalc.Create;
   try
     FillChar(Params, SizeOf(Params), 0);
@@ -498,7 +473,6 @@ begin
 
     Assert.AreEqual(N, Length(Calc.Results), 'Result count');
 
-    // Verify lambda grid
     Step := (2.0 - 1.0) / N;
     for i := 0 to N - 1 do
     begin
@@ -507,7 +481,6 @@ begin
         Format('Lambda[%d]', [i]));
     end;
 
-    // Verify reflectivity in valid range
     for i := 0 to N - 1 do
       Assert.IsTrue((Calc.Results[i].r >= Calc.Limit) and (Calc.Results[i].r <= 1.0),
         Format('R[%d]=%.4e out of range', [i, Calc.Results[i].r]));
@@ -516,43 +489,12 @@ begin
   end;
 end;
 
-{ --- delta = 1 - eps --- }
 
 { delta_Si is about 1.5e-5; 2e-4 of it is about 3e-9, below the ~6e-8 step of
   a Single stored near 1. A Single Re epsilon therefore moves by zero or one
   ULP for this density change, giving the old engine a ratio of 0 or about
   0.4%, never the reference's — delta, computed directly as f1 * c, resolves
-  it instead.
-
-  History (2026-09-28-precision-followups): the angle window originally sat
-  just above Si's critical angle (~0.22 deg), not straddling it, because
-  below critical, math_complex.SqrtZ's small ("interference") component came
-  from Neslib.FastMath.InverseSqrt (SSE rsqrtss, no Newton refinement, ~3.7e-4
-  relative error) rather than a division, and right at grazing incidence that
-  term's contribution to R is leveraged enough (K0 and Im(K_substrate) are
-  comparable there) that its approximation noise could exceed this test's
-  2e-4 density signal - measured, not assumed (Task 2's per-angle scan from
-  0.10 to 0.40 deg showed sub-1% agreement failing intermittently below
-  ~0.205 deg, some points quantized to exactly 0, consistent 3-4 significant
-  digit agreement from ~0.22 deg up). Task 3 measured fixing it (a Newton
-  step, or the exact 1 / System.Sqrt) under the author's <= 10% CPU-fit-speed
-  rule: alone it cost only ~1.6-2.8%, but combined with Task 3's exact
-  TotalRecursiveRefraction phase functions (~9.3% alone) the fit measured
-  11.7-12.3% slower - over budget together at first, so Task 3's first
-  commit left SqrtZ unchanged and kept this window at 0.22-0.40 deg.
-
-  Fix round 2: the author decided to adopt both changes, accepting the
-  combined ~12% CPU fit cost for the accuracy. math_complex.SqrtZ now uses
-  the exact 1 / System.Sqrt (ExactInverseSqrt) in place of InverseSqrt; the
-  rsqrtss floor that limited this window is gone, and this test now passes
-  at the brief's originally-proposed 0.15-0.25 deg window with the tolerance
-  formula unchanged - restored below. Against the double-precision reference,
-  CpuRawCurve_CloseToDoublePrecision's combined-set mean is 3.79E-6..5.93E-6,
-  worst 4.45E-5..7.80E-5 (30 cases, down from the phase-only fix's
-  7.4E-6..1.02E-5 / 8.7E-5..9.98E-5, and from the original baseline's
-  2.537E-5..3.093E-5 / 5.440E-4..7.040E-4); its bounds are re-set to
-  MEAN_BOUND = 1.2E-5, WORST_BOUND = 2.0E-4, the geometric mean of the
-  pre-Task-3 baseline minimum and the combined set's maximum. }
+  it instead. }
 procedure TTestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps;
 const
   RHO1 = 2.33;
@@ -622,19 +564,14 @@ begin
   end;
 end;
 
-{ Ruling (controller, precision-followups Task 2): the vacuum inner layer is
-  built by setting LayersDirect fields after Generate, not by a layer density
-  of 0 — PrepareLayers treats a 0 density as "use the Henke bulk density",
-  not vacuum. }
+{ The vacuum inner layer is built by setting LayersDirect fields after
+  Generate, not by a layer density of 0 — PrepareLayers treats a 0 density
+  as "use the Henke bulk density", not vacuum. }
 procedure TTestCalcPhysics.Delta_AmbientAndVacuumMatchTheOldForm;
 const
   N = 41;
   THETA0 = 0.15;
   THETA1 = 0.25;
-  { The CPU bound of TestGpuCalc.CpuRawCurve_CloseToDoublePrecision, re-tightened
-    2026-09-28 (Task 3 fix round 2, exact math_complex.SqrtZ alongside the exact
-    phase term): measured here mean=2.275E-6 (5.3x margin), worst=3.254E-6
-    (61.5x margin) - comfortably under the tighter bound, so it moved too. }
   MEAN_BOUND = 1.2E-5;
   WORST_BOUND = 2.0E-4;
 var

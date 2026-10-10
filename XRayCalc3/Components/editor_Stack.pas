@@ -27,9 +27,7 @@ type
     Label2: TLabel;
     edTitle: TEdit;
   private
-    { Private declarations }
   public
-    { Public declarations }
     procedure Edit(var Name: string; var N: Integer);
   end;
 
@@ -41,7 +39,6 @@ implementation
 {$R *.dfm}
 
 
-{ TedtrPeriod }
 
 procedure TedtrStack.Edit(var Name: string; var N: Integer);
 begin

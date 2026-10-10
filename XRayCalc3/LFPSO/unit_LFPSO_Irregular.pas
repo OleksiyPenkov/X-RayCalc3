@@ -49,8 +49,6 @@ type
         to its own period's value. The GUI sets it for Resume and for Run with
         "Keep them" when the model has a Table; fit_xrr for "start_profiles". }
       property StartFromTables: Boolean read FStartFromTables write FStartFromTables;
-      { After Structure: how many per-period start values lay outside their
-        layer's limits and were moved onto the limit. }
       property ClampedStarts: Integer read FClampedStarts;
   end;
 
@@ -61,7 +59,6 @@ uses
   Neslib.FastMath,
   unit_DataProcessing;
 
-{ TLFPSO Periodic}
 
 procedure TLFPSO_Irregular.Smooth(const i: Word);
 var
@@ -103,16 +100,15 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 1 to High(X) do // for every member of the population
+  for i := 1 to High(X) do
   begin
-    // 30% chance: Levy toward random peer for exploration diversity
     if Random < 0.3 then
       randIdx := Random(Length(X))
     else
-      randIdx := -1;  // use gbest
+      randIdx := -1;
 
-    for j := 0 to High(X[I]) do // for every layer
-      for k := 1 to 3 do           // for H, s, rho
+    for j := 0 to High(X[I]) do
+      for k := 1 to 3 do
       begin
         if FLinks[j][k] = -1 then
         begin
@@ -142,10 +138,10 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 1 to High(X) do // for every member of the population
+  for i := 1 to High(X) do
   begin
-    for j := 0 to High(X[I]) do // for every layer
-      for k := 1 to 3 do           // for H, s, rho
+    for j := 0 to High(X[I]) do
+      for k := 1 to 3 do
       begin
         if FLinks[j][k] = -1 then
         begin
@@ -176,9 +172,9 @@ begin
   MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
-  for i := 0 to High(V) do // for every member of the population
-    for j := 0 to High(V[I]) do // for every layer
-      for k := 1 to 3 do           // for H, s, rho
+  for i := 0 to High(V) do
+    for j := 0 to High(V[I]) do
+      for k := 1 to 3 do
         if FLinks[j][k] > -1 then
            V[i][j][k][0] := 0
         else
@@ -190,11 +186,11 @@ procedure TLFPSO_Irregular.XSeed;
 var
   i, j, k: Word;
 begin
-  for i := 1 to High(X) do          // for every member of the population
+  for i := 1 to High(X) do
   begin
-    for j := 0 to High(X[i]) do     //for every layer
+    for j := 0 to High(X[i]) do
       for k := 1 to 3 do
-      begin            // for H, s, rho
+      begin
         { A paired parameter takes its first period's value, as in RangeSeed:
           the particle is scored before any update copies it across. }
         if FLinks[j][k] > -1 then
@@ -212,15 +208,15 @@ procedure TLFPSO_Irregular.RangeSeed;
 var
   i, j, k: Word;
 begin
-  for I := 1 to High(X) do // for every member of the population
+  for I := 1 to High(X) do
   begin
-    for j := 0 to High(X[I]) do // for every layer
-      for k := 1 to 3 do           // for H, s, rho
+    for j := 0 to High(X[I]) do
+      for k := 1 to 3 do
       begin
         if FLinks[j][k] > -1 then
           X[i][j][k][0] := X[i][FLinks[j][k]][k][0]
         else
-          X[i][j][k][0] := Xmin[0][j][k][0] + Random * (Xmax[0][j][k][0] - Xmin[0][j][k][0]);   // min + Random * (min-max)
+          X[i][j][k][0] := Xmin[0][j][k][0] + Random * (Xmax[0][j][k][0] - Xmin[0][j][k][0]);
 
         CheckLimits(i, j, k);
       end;
@@ -285,7 +281,6 @@ var
 begin
   FLayersCount := Inp.TotalNP;
 
-  // Init(FStructure)
   SetLength(FStructure.Stacks, 0);
   SetLength(FStructure.Stacks, 1);
   SetLength(FStructure.Stacks[0].Layers, FLayersCount);
@@ -296,9 +291,7 @@ begin
 
   { A re-initialisation (Shake) hands back the engine's own flattened structure:
     one stack of N = 1, from which the pairing cannot be read again. The links
-    and the smoothing groups built on the first call stay as they are. Zeroing
-    the links here, as this did until 2026-09-25, linked every parameter of
-    every layer to layer 0 after the first shake. }
+    and the smoothing groups built on the first call stay as they are. }
   if not FReInit then
   begin
     InitArray(FLayersCount, FLinks);
@@ -309,7 +302,7 @@ begin
   for i := 0 to High(Inp.Stacks) do
   begin
     NLayers := Length(Inp.Stacks[i].Layers);
-    for k := 1 to Inp.Stacks[i].N do         // for every layer in stack
+    for k := 1 to Inp.Stacks[i].N do
     begin
       if (k = 1) and not FReInit then
          InitArray(NLayers, Links);
@@ -340,7 +333,7 @@ begin
                  value it was given in each period, which need not be the same
                  in every one. }
                if FFitParams.Smooth and (Inp.Stacks[i].N > 1) and
-                  (Inp.Stacks[i].Layers[j].P[p].max > Inp.Stacks[i].Layers[j].P[p].min) then   // create Smooths indexes for this layer
+                  (Inp.Stacks[i].Layers[j].P[p].max > Inp.Stacks[i].Layers[j].P[p].min) then
                begin
                  s := Length(FSmoothies);
                  SetLength(FSmoothies, s + 1);

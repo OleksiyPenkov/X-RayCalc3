@@ -48,8 +48,6 @@ type
       identical X values and the plot zig-zags between their chi-squared
       levels. Set by PrepareConvergence, which runs before PrepareDiagnostics. }
     FStepOffset: Integer;
-    { The decades FitConvergenceAxis last labelled, so it rebuilds the labels
-      only when the range or the spacing changes, not on every point. }
     FAxisLoExp, FAxisHiExp, FAxisStep: Integer;
     procedure FitConvergenceAxis;
   public
@@ -84,7 +82,6 @@ uses
 
 {$R *.dfm}
 
-{ TfrmChartPages }
 
 procedure TfrmChartPages.btnCopyConvergenceClick(Sender: TObject);
 begin
@@ -329,7 +326,6 @@ begin
   DoScale(chDiagnostics);
 end;
 
-{ Diagnostics }
 
 procedure TfrmChartPages.ClearDiagnostics;
 begin
@@ -358,14 +354,13 @@ begin
   begin
     lsrDiversity    := CreateSeries('Diversity',  clBlue);
     lsrMeanVelocity := CreateSeries('Velocity',   clGreen);
-    lsrJamming      := CreateSeries('Jamming',     $000080FF, True);  // Orange, dashed
+    lsrJamming      := CreateSeries('Jamming',     $000080FF, True);
     lsrLevyScale    := CreateSeries('Levy Scale',  clPurple);
     lsrCFactor      := CreateSeries('CFactor',     clTeal);
   end
   else if not Append then
     ClearDiagnostics;
 
-  { PrepareConvergence has already set FStepOffset for this run. }
   chDiagnostics.BottomAxis.Minimum := 0;
   chDiagnostics.BottomAxis.Maximum := FStepOffset + NMax;
 end;
@@ -387,18 +382,15 @@ begin
   // MeanVelocity: already normalized by Vmax, cap at 1.0
   lsrMeanVelocity.AddXY(X, Min(MeanVelocity, 1.0));
 
-  // Jamming: normalized by JammingMax
   if JammingMax > 0 then
     normJam := Min(JammingCount / JammingMax, 1.0)
   else
     normJam := 0;
   lsrJamming.AddXY(X, normJam);
 
-  // LevyScale: map [0.01, 0.1] -> [0, 1]
   normLevy := Min(Max((LevyScale - 0.01) / 0.09, 0), 1.0);
   lsrLevyScale.AddXY(X, normLevy);
 
-  // CFactor: divide by 2.0, cap at 1.0
   normCF := Min(CFact / 2.0, 1.0);
   lsrCFactor.AddXY(X, normCF);
 end;

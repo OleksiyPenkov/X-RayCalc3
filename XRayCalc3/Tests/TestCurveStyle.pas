@@ -1,7 +1,5 @@
 unit TestCurveStyle;
 
-(* unit_CurveStyle: how a curve's transparency and the chart's draw order are
-   kept in params.dsc, keyed by the node's group and ID (M3, D3). *)
 
 interface
 

@@ -32,14 +32,14 @@ type
     class function OptFloat(const P: TJSONObject; const Key: string; Default: Double): Double; static;
     class function OptInt(const P: TJSONObject; const Key: string; Default: Integer): Integer; static;
     class function OptBool(const P: TJSONObject; const Key: string; Default: Boolean): Boolean; static;
-    class function Has(const P: TJSONObject; const Key: string): Boolean; static;   // present and not null
-    class function ReqStr(const P: TJSONObject; const Key: string): string; static; // raises invalid_argument
+    class function Has(const P: TJSONObject; const Key: string): Boolean; static;
+    class function ReqStr(const P: TJSONObject; const Key: string): string; static;
     class function ReqFloat(const P: TJSONObject; const Key: string): Double; static;
     class function ReqObj(const P: TJSONObject; const Key: string): TJSONObject; static; // not owned
     class function ReqArr(const P: TJSONObject; const Key: string): TJSONArray; static;
-    class function OptObj(const P: TJSONObject; const Key: string): TJSONObject; static; // nil if absent
+    class function OptObj(const P: TJSONObject; const Key: string): TJSONObject; static;
     class function OptArr(const P: TJSONObject; const Key: string): TJSONArray; static;
-    class function Num(const V: Double): TJSONNumber; static;      // 6 significant digits, integers as integers
+    class function Num(const V: Double): TJSONNumber; static;
     class function NumArr(const V: TArray<Double>): TJSONArray; static;
   end;
 
@@ -144,11 +144,8 @@ begin
   if IsNan(V) or IsInfinite(V) then Exit(TJSONNumber.Create(0));
   if (Frac(V) = 0) and (Abs(V) < 1e15) then Exit(TJSONNumber.Create(Int64(Round(V))));
   if V = 0 then Exit(TJSONNumber.Create(0));
-  // Six significant digits through the formatter, which takes any finite
-  // magnitude. This used to be RoundTo(V, Floor(Log10(Abs(V))) - 5): its digit
-  // argument is declared -37..37 but implemented -20..20, so every value below
-  // 1e-15 (a cubic profile coefficient, say) raised a bare EArgumentException
-  // 'Invalid argument' out of the fit result assembly and failed the job.
+  // RoundTo's digit argument is declared -37..37 but implemented -20..20.
+  // The formatter also handles values below 1e-15, such as cubic coefficients.
   R := StrToFloat(Format('%.6g', [V], TFormatSettings.Invariant),
                   TFormatSettings.Invariant);
   Result := TJSONNumber.Create(R);

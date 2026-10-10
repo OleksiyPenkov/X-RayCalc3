@@ -11,17 +11,12 @@ type
   public
     [Test]
     procedure EvaluateLayers_MatchesEvaluate_ForSameGenome;
-    { The genome's density factor reaches the layers: Evaluate builds each
-      layer at factor x its mixed bulk density (until 3.9.3 it passed 1.0). }
     [Test]
     procedure Evaluate_AppliesTheDensityFactor;
     { RefCalcStandalone's interface functions: 1 at sigma = 0, and the same
-      rms width as the Nevot-Croce factor (rfLinear damped only below
-      0.5 A and gave 0/0 at 0; rfSinus was undefined). }
+      rms width as the Nevot-Croce factor. }
     [Test]
     procedure RefCalcStandalone_RoughnessFunctions;
-    { RefCalcStandalone against the reference Parratt (unit_parratt_ref, in
-      Double), a 20-period W/B4C-on-Si stack, rfError, both polarisations. }
     [Test]
     procedure RefCalcStandalone_CloseToTheReferenceParratt;
   end;
@@ -85,10 +80,6 @@ begin
   end;
 end;
 
-{ A 20-period W/B4C-on-Si stack, built once as cmd_unit_types.TLayers (the
-  universal engine's own layer record) and once as unit_Types.TCalcLayers
-  (ParrattRef's, the Double reference), so RefCalcStandalone can be checked
-  against the reference Parratt with a realistic multilayer. }
 procedure TTestUniversalFitnessLayers.RefCalcStandalone_CloseToTheReferenceParratt;
 const
   LAMBDA = 1.5406;
@@ -123,8 +114,7 @@ const
 
   { The same stack as unit_Types.TCalcLayers, delta computed in Double from
     the same Single e.re (RefCalcStandalone has no independent delta - the
-    universal engine's TLayer keeps epsilon alone; see the precision-followups
-    plan, Task 5). }
+    universal engine's TLayer keeps epsilon alone). }
   function BuildRefLayers(const Uni: cmd_unit_types.TLayers): unit_Types.TCalcLayers;
   var
     i: Integer;
@@ -175,7 +165,6 @@ begin
   CheckPol(cmSP, 'SP');
 end;
 
-{ The two-line W/Si configuration both tests use. }
 function MakeConfig(const HenkePath: string): TUniversalConfig;
 begin
   Result := Default(TUniversalConfig);
@@ -250,7 +239,6 @@ begin
       SetLength(R2, Length(Config.Lines));
       SetLength(RBulk, Length(Config.Lines));
 
-      { The stack Evaluate should build: every layer at factor x bulk. }
       Builder :=
         procedure(TargetIdx: Integer; var Layers: TLayers)
         var
@@ -321,7 +309,6 @@ begin
     Exit;
   end;
 
-  // --- Config ---
   Config := Default(TUniversalConfig);
 
   SetLength(Config.Lines, 2);
@@ -368,7 +355,6 @@ begin
 
     Fitness := TUniversalFitness.Create(Mixer, Config, Templates);
     try
-      // --- Genome ---
       G := CreateGenome(2);
       G.Composition[0][0] := 1.0;
       G.Composition[0][1] := 0.0;
@@ -384,8 +370,6 @@ begin
       SetLength(R1, Length(Config.Lines));
       SetLength(R2, Length(Config.Lines));
 
-      // Builder reproduces the non-template bilayer branch of BuildLayers
-      // and records which targets it was asked to build.
       CallCount := 0;
       SetLength(CalledIdx, 0);
       Builder :=

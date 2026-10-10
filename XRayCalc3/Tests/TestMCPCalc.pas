@@ -1,12 +1,5 @@
 unit TestMCPCalc;
 
-{ unit_MCPCalc: peak finding, curve output and one end-to-end engine run.
-
-  FindBraggPeaks, CurveToJSON and WriteCurveFile are pure and always run: the
-  peak finder is checked against a synthetic curve whose peak positions, heights
-  and widths are known exactly. The engine test needs the GUI's Henke tables;
-  when they are not installed it passes with a note, the way the Henke tests in
-  TestMCPMaterials do. Nothing here writes TConfig. }
 
 interface
 
@@ -19,7 +12,6 @@ type
   private
     function HenkeAvailable(const Material: string): Boolean;
   public
-    { FindBraggPeaks }
     [Test] procedure FindBraggPeaks_SyntheticGaussians_OrdersAndPositions;
     [Test] procedure FindBraggPeaks_SyntheticGaussians_FWHM;
     [Test] procedure FindBraggPeaks_NoPeriod_UsesRunningIndex;
@@ -29,18 +21,15 @@ type
     [Test] procedure FindBraggPeaks_BroadOrderBesideASharpFringe_TakesTheOrder;
     [Test] procedure FindBraggPeaks_RefractionShiftedOrder_IsStillFound;
 
-    { CurveToJSON / WriteCurveFile }
     [Test] procedure CurveToJSON_ShortCurve_IsInline;
     [Test] procedure CurveToJSON_TooManyPoints_IsNil;
     [Test] procedure CurveToJSON_AtTheLimit_IsInline;
     [Test] procedure WriteCurveFile_HeaderAndColumns;
 
-    { the convolution guard - no Henke tables needed, it fires before the engine }
     [Test] procedure Convolution_CoarseGrid_Raises;
     [Test] procedure Convolution_NarrowRange_Raises;
     [Test] procedure Convolution_NoDivergence_CoarseGridIsFine;
 
-    { engine }
     [Test] procedure CriticalAngle_Ru_CuKAlpha;
     [Test] procedure CriticalAngle_ThinFilm_IsDominatedByTheSubstrate;
     [Test] procedure RunCalc_RuC_FirstBraggPeak;
@@ -63,9 +52,6 @@ const
   // 2 * 63.05 * sin(0.7 deg) / 1.5406 = 1.00.
   SYN_PERIOD  = 63.05;              // Angstrom
 
-  { The 20-period C/Co mirror of specimen P2-05, as the skill-test sessions of
-    2026-09-18 gave it to the server: the model whose peak summary named
-    satellites instead of orders. }
   CCO_JSON =
     '{"substrate":{"material":"SiO2","sigma":3.8,"density":2.65},' +
     '"stacks":[{"N":20,"layers":[' +
@@ -81,9 +67,6 @@ begin
   Result := TFile.Exists(HenkeDir + Material + '.bin');
 end;
 
-{ Three Gaussians of the given FWHM at 0.7, 1.4 and 2.1 degrees, on a background
-  that decays by two decades over the range - the shape of a real reflectivity
-  curve, without needing the engine or a Henke table. }
 function SyntheticCurve: TDataArray;
 const
   Positions: array [0 .. 2] of Double = (0.7, 1.4, 2.1);
@@ -106,7 +89,6 @@ begin
   end;
 end;
 
-{ --- FindBraggPeaks --- }
 
 procedure TTestMCPCalc.FindBraggPeaks_SyntheticGaussians_OrdersAndPositions;
 var
@@ -148,7 +130,6 @@ procedure TTestMCPCalc.FindBraggPeaks_NoPeriod_UsesRunningIndex;
 var
   Peaks: TArray<TPeak>;
 begin
-  // Period 0: nothing is known about d, so the orders are just 1, 2, 3 ...
   Peaks := FindBraggPeaks(SyntheticCurve, CU_K_ALPHA, 0, 0.3);
   Assert.AreEqual(3, Length(Peaks));
   Assert.AreEqual(1, Peaks[0].Order);
@@ -160,8 +141,6 @@ procedure TTestMCPCalc.FindBraggPeaks_BelowCriticalAngle_Ignored;
 var
   Peaks: TArray<TPeak>;
 begin
-  // A critical angle just below the first Gaussian: the 0.05 deg guard band
-  // swallows it and only the second and third orders survive.
   Peaks := FindBraggPeaks(SyntheticCurve, CU_K_ALPHA, SYN_PERIOD, 0.68);
   Assert.AreEqual(2, Length(Peaks), 'the first order is inside the guard band');
   Assert.AreEqual(2, Peaks[0].Order);
@@ -175,11 +154,8 @@ var
   i: Integer;
   TFringe, Sigma: Double;
 begin
-  { A strong maximum where 2 d sin(theta) / lambda = 0.57 - a Kiessig fringe
-    just past the plateau edge, the kind a 10-period Ru/C stack shows at
-    0.37 degrees. It rounds to order 1, and with the "stronger one wins" rule
-    it used to replace the real first-order peak. A Bragg peak sits within
-    +/-0.25 of an integer order; anything further off is not one. }
+  { A maximum at fractional order 0.57 rounds to 1, but a Bragg peak must
+    sit within +/-0.25 of an integer order. }
   TFringe := RadToDeg(ArcSin(0.57 * CU_K_ALPHA / (2 * SYN_PERIOD)));
   Sigma := SYN_FWHM / (2 * Sqrt(2 * Ln(2)));
   Curve := SyntheticCurve;
@@ -209,7 +185,6 @@ begin
     'a flat curve has no Bragg peaks');
 end;
 
-{ --- CurveToJSON / WriteCurveFile --- }
 
 function ShortCurve(N: Integer): TDataArray;
 var
@@ -285,7 +260,6 @@ begin
     Assert.AreEqual(2, Length(Cols), 'two tab separated columns');
     Assert.AreEqual(Double(0.5), StrToFloat(Cols[0], TFormatSettings.Invariant), 1E-6);
     Assert.AreEqual(Double(0.5), StrToFloat(Cols[1], TFormatSettings.Invariant), 1E-6);
-    // The first row cannot tell the columns apart (both 0.5); the second can.
     Cols := Lines[2].Split([#9]);
     Assert.AreEqual(Double(0.75), StrToFloat(Cols[0], TFormatSettings.Invariant), 1E-6,
       'theta is the first column');
@@ -298,11 +272,8 @@ begin
   end;
 end;
 
-{ --- engine --- }
 
 const
-  // d = 68.5 A, gamma = 0.215 -> Ru 14.7275 / C 53.7725, 30 periods on a
-  // 197 A Ru buffer over SiO2. The structure of task 5.
   RUC_JSON =
     '{"substrate":{"material":"SiO2"},' +
     '"buffer":{"material":"Ru","thickness":197},' +
@@ -310,9 +281,6 @@ const
     '{"material":"Ru","thickness":14.7275},' +
     '{"material":"C","thickness":53.7725}]}]}';
 
-{ A request for the structure above, with the grid the caller wants. Parsing the
-  structure reads no Henke table, and the convolution guard runs before TCalc is
-  created, so the three guard tests below need nothing installed. }
 function RuCRequest(ThetaMin, ThetaMax: Double; Points: Integer;
   DeltaTheta: Double): TCalcRequest;
 var
@@ -334,11 +302,6 @@ begin
   Result.RMin := 1E-7;
 end;
 
-{ Since 3.9.1 the substrate density is used as given (before, the engine took
-  the Henke bulk value whatever was given): 1.0 and 5.0 g/cm3 give different
-  curves, the critical angle moves up with the density, the echo is the given
-  value, and an omitted density is the bulk value - the same curve as giving
-  that bulk value explicitly. }
 procedure TTestMCPCalc.RunCalc_SubstrateDensity_IsHonoured;
 
   function CalcWith(Density: Double; out Used: TFitStructure): TDataArray;
@@ -359,7 +322,6 @@ procedure TTestMCPCalc.RunCalc_SubstrateDensity_IsHonoured;
       Result := Max(Result, Abs(A[i].r - B[i].r) / B[i].r);
   end;
 
-  { the first angle where R falls below half its plateau }
   function EdgeOf(const C: TDataArray): Double;
   var
     i: Integer;
@@ -397,7 +359,6 @@ begin
     'an omitted density is the bulk value: the same curve as giving it');
 end;
 
-{ The largest reflectivity between T1 and T2 degrees. }
 function MaxRIn(const Curve: TDataArray; T1, T2: Double): Double;
 var
   i: Integer;
@@ -449,9 +410,6 @@ var
   Req: TCalcRequest;
   Used: TFitStructure;
 begin
-  { The same coarse grid without divergence: TCalc.Convolute returns at once for
-    a zero width, so the guard must not fire. Nothing else here needs a table,
-    but the run itself does. }
   if not (HenkeAvailable('Ru') and HenkeAvailable('C') and HenkeAvailable('SiO2')) then
     Assert.Pass('Henke tables for Ru, C and SiO2 are not installed: ' + HenkeDir);
   Req := RuCRequest(0.1, 5.0, 20, 0);
@@ -469,8 +427,6 @@ begin
     Assert.Pass('Henke tables for Ru, C and SiO2 are not installed: ' + HenkeDir);
 
   Plain := RunCalc(RuCRequest(0.1, 4.0, 2000, 0), Used);
-  // 0.05 deg divergence against a first order about 0.054 deg wide: a fine grid,
-  // so the guard must not fire, and the peak must come back visibly lower.
   Convolved := RunCalc(RuCRequest(0.1, 4.0, 2000, 0.05), Used);
 
   Assert.AreEqual(2000, Length(Plain), 'unconvolved point count');
@@ -480,7 +436,6 @@ begin
   Assert.AreEqual(Double(Plain[High(Plain)].t), Double(Convolved[High(Convolved)].t),
     1E-6, 'same last angle');
 
-  // The first order sits near 0.687 deg; look at it in both curves.
   PlainPeak := MaxRIn(Plain, 0.6, 0.8);
   ConvolvedPeak := MaxRIn(Convolved, 0.6, 0.8);
   Assert.IsTrue(PlainPeak > 0.3,
@@ -622,29 +577,20 @@ begin
   Assert.AreEqual(BraggRefracted, Peaks[0].Theta, 0.05,
     Format('first order near the refracted Bragg angle %.4f deg', [BraggRefracted]));
 
-  { Height. Ideal interfaces (sigma = 0), so the first order is strong. The
-    task brief expected (0.3, 0.9); the engine gives 0.90 for this structure
-    because nothing damps the interfaces, so the upper bound is 0.95 here. }
+  { Ideal interfaces (sigma = 0) give R = 0.90 here, so the upper bound
+    is 0.95. }
   Assert.IsTrue((Peaks[0].R > 0.3) and (Peaks[0].R < 0.95),
     Format('first order reflectivity out of range: %.4f', [Peaks[0].R]));
 
-  { The orders must be consecutive and increasing in angle. }
   Assert.AreEqual(2, Peaks[1].Order);
   Assert.IsTrue(Peaks[1].Theta > Peaks[0].Theta, 'orders run outwards');
   Assert.IsTrue(Peaks[1].R < Peaks[0].R, 'higher orders are weaker');
 end;
 
-{ The defect four sessions reported on 2026-09-18: on a C/Co multilayer the
-  summary named a first order at 0.855 deg with R = 0.015 while the real one is
-  at 0.915 with R = 0.203 - a Kiessig satellite, thirteen times weaker.
-
-  The cause is in the shape of the two features, not in the physics. A generic
-  peak finder asks a maximum to stand three times above the smallest value
-  within a fixed number of points; a Bragg peak is broader than that window and
-  fails the test, while a sharp satellite beside it passes. Here the order at
-  0.7 deg is a Gaussian of 0.08 deg FWHM - much wider than the +/-20 points the
-  old test used - and the satellite at 0.63 is a tenth as high and eight times
-  narrower. }
+{ A fixed-point prominence window can reject a broad Bragg peak while a
+  sharp satellite beside it passes. Here the order at 0.7 deg has
+  0.08 deg FWHM, while the satellite at 0.63 is a tenth as high and eight
+  times narrower. }
 procedure TTestMCPCalc.FindBraggPeaks_BroadOrderBesideASharpFringe_TakesTheOrder;
 var
   Curve: TDataArray;
@@ -705,10 +651,6 @@ begin
   Assert.AreEqual(Shifted, Peaks[0].Theta, 0.005);
 end;
 
-{ The same defect on the structure the sessions actually ran: the 20-period
-  C/Co mirror P2-05, computed by the engine. Every order the summary reports has
-  to be the largest point of its own window - which is what a satellite next to
-  it is not. }
 procedure TTestMCPCalc.RunCalc_CCo_PeaksAreTheOrdersAndNotTheSatellites;
 var
   J: TJSONObject;

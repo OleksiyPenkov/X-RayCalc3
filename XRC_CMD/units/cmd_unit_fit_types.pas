@@ -35,7 +35,6 @@ type
   end;
 
 implementation
-{ TFitParam }
 
 procedure TFitParam.InitV(const k: Single);
 begin
@@ -60,5 +59,4 @@ begin
   if Val < min  then Val := min;
 end;
 
-{ TFittedStructure }
 end.

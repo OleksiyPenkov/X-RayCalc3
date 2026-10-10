@@ -48,7 +48,6 @@ procedure TTestSavitzkyGolay.Test_SmoothCurve_PreservesOuterBoundary;
 var
   D: TDataArray;
 begin
-  // Outermost points (index 0, 1 and last, second-last) should not be modified
   // NOTE: There is an off-by-one in SmoothCurve — the computation loop starts
   //   at halfWindowSize+1 but the copy loop starts at halfWindowSize,
   //   so data[halfWindowSize] gets zeroed. Only the outer boundary is truly safe.
@@ -66,7 +65,6 @@ var
   Changed: Boolean;
   i: Integer;
 begin
-  // Interior points should be modified after smoothing
   D := MakeUniformData([0, 0, 0, 0, 0, 10, 10, 10, 10, 10, 10, 10, 10]);
   SetLength(Orig, Length(D));
   for i := 0 to High(D) do
@@ -88,7 +86,6 @@ procedure TTestSavitzkyGolay.Test_SmoothCurve_NoCrash_SmallData;
 var
   D: TDataArray;
 begin
-  // Should not crash on data shorter than window
   D := MakeUniformData([1, 2, 3, 4, 5]);
   TSavitzkyGolay.SmoothCurve(D, 2, 5);
   Assert.AreEqual(5, Length(D));

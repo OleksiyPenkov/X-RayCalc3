@@ -6,13 +6,6 @@
   *
   * Authors             Oleksiy Penkov   oleksiy.penkov@gmail.com
   *                     Nick Rymanov     nrymanov@gmail.com
-  * Created             20.08.2008
-  * Description
-  *
-  * $Id: files_list.pas 1181 2015-04-01 02:06:36Z koreec $
-  *
-  * History
-  *
   ****************************************************************************** *)
 
 unit unit_files_list;

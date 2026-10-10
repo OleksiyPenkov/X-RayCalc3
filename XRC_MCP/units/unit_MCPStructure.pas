@@ -12,11 +12,7 @@
 
 unit unit_MCPStructure;
 
-(* Structure adapter: the server's JSON structure (requirements 3) <-> the GUI's
-   TFitStructure <-> the GUI's XRC data string, plus the expanded TLayeredModel
-   the calculation engine consumes.
-
-   Two orders are in play and they are opposites.
+(* Two orders are in play and they are opposites.
 
    The JSON lists stacks from the substrate up to the surface, with the optional
    cap and buffer named separately. The GUI (TXRCStructure) lists them the way a
@@ -32,10 +28,7 @@ unit unit_MCPStructure;
    StructureToJSON can put a structure back the way the client sent it, and so
    that the periodic tools can find the one multilayer stack without guessing.
 
-   Nothing here touches a VCL control: this is TXRCStructure.ToString /
-   FromString / ToFitStructure / Model and TLFPSO_BASE.FillModel with the
-   controls taken out, so the strings the server writes are byte-comparable with
-   the strings the GUI writes. *)
+*)
 
 interface
 
@@ -68,7 +61,6 @@ type
     CapIndex, BufferIndex: Integer; // TFitStructure.Stacks index of cap / buffer, -1 when absent
   end;
 
-/// <summary>An info record with no stacks: every index -1, every flag False.</summary>
 function EmptyStructureInfo: TStructureInfo;
 
 /// <summary>Parse the requirements 3 structure JSON into the GUI order (surface
@@ -85,12 +77,8 @@ function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo;
 /// The caller owns the result.</summary>
 function StructureToJSON(const S: TFitStructure; const Info: TStructureInfo): TJSONObject;
 
-/// <summary>The GUI's TXRCStructure.ToString format ("Stacks" / "Subs" with the
-/// 19 H, HP, HF, Hmin, ... keys per layer).</summary>
 function StructureToXRCData(const S: TFitStructure; const Info: TStructureInfo): string;
 
-/// <summary>The GUI's TXRCStructure.FromString without the controls. Derives
-/// Info from the stack headers.</summary>
 function StructureFromXRCData(const Data: string; out Info: TStructureInfo): TFitStructure;
 
 /// <summary>Every layer fit range in S whose min exceeds its max, as
@@ -108,10 +96,6 @@ function InvertedRangesJSON(const S: TFitStructure): TJSONArray;
 function BuildLayeredModel(const S: TFitStructure;
   ExpandProfiles: Boolean = False): TLayeredModel;
 
-/// <summary>After Model.Generate, copy the Henke bulk density back into every
-/// layer - the substrate included - that asked for it (r = 0), so the server
-/// can echo the value used. A density that was given is used as given (the
-/// substrate's too, since 3.9.1) and is left alone.</summary>
 procedure FillDefaultDensities(var S: TFitStructure; Model: TLayeredModel);
 
 /// <summary>'' when every material has a Henke table, otherwise the name of the
@@ -126,7 +110,6 @@ uses
   System.Math, System.IOUtils,
   unit_MCPErrors, unit_consts, unit_Config;
 
-{ ---------------------------------------------------------------- helpers -- }
 
 procedure StructErr(const Msg, Path: string);
 begin
@@ -211,7 +194,6 @@ begin
     StructErr(Format('"N" must be a whole number between 1 and %d', [MAX_LAYERS]), Path);
 end;
 
-/// One JSON layer object -> one TLayerData, fully validated.
 procedure ReadLayer(const JL: TJSONObject; const Path: string;
   const StackID, LayerID: Integer; var L: TLayerData);
 var
@@ -238,7 +220,6 @@ begin
   L.P[3].V := Ro;
   L.StackID := StackID;
   L.LayerID := LayerID;
-  // fixed by default; Task 15 opens the bounds of the free parameters
   for p := 1 to 3 do
   begin
     L.P[p].Paired := False;
@@ -247,7 +228,6 @@ begin
   end;
 end;
 
-/// A cap or buffer object -> a one-layer stack with N = 1.
 procedure ReadSingleLayerStack(const JL: TJSONObject; const Path, Header: string;
   const StackID: Integer; var Stack: TFitStack);
 begin
@@ -271,8 +251,6 @@ begin
   SetLength(Result.StackMap, 0);
 end;
 
-/// Fill Stacks[i].D (the period, as TXRCStructure.ToFitStructure writes it) and
-/// the periodic-stack part of Info. Shared by both readers.
 procedure FinishStructure(var S: TFitStructure; var Info: TStructureInfo);
 var
   i, j: Integer;
@@ -289,7 +267,6 @@ begin
 
   for i := 0 to High(S.Stacks) do
   begin
-    // guard the multiplication before making it, not after
     if S.Stacks[i].N < 1 then
       StructErr('"N" must be 1 or more', Format('stacks[%d].N', [i]));
     if S.Stacks[i].N > MAX_LAYERS then
@@ -319,7 +296,6 @@ begin
       [Total, MAX_LAYERS]), 'stacks');
 end;
 
-{ ------------------------------------------------------------- JSON input -- }
 
 function StructureFromJSON(const J: TJSONObject; out Info: TStructureInfo;
   AllowEmptyStacks: Boolean): TFitStructure;
@@ -424,7 +400,6 @@ begin
   FinishStructure(Result, Info);
 end;
 
-{ ------------------------------------------------------------ JSON output -- }
 
 function LayerToJSON(const L: TLayerData): TJSONObject;
 begin
@@ -495,7 +470,6 @@ begin
     JSubs.AddPair('density', JSONArgs.Num(S.Subs.P[3].V));
     Result.AddPair('substrate', JSubs);
 
-    // substrate -> surface, i.e. the StackMap order
     JStacks := TJSONArray.Create;
     for k := 0 to High(Info.StackMap) do
     begin
@@ -512,7 +486,6 @@ begin
     end;
     Result.AddPair('stacks', JStacks);
 
-    // CheckSingleLayerStack above has already established the shape
     if Info.CapIndex >= 0 then
       Result.AddPair('cap', LayerToJSON(S.Stacks[Info.CapIndex].Layers[0]));
 
@@ -524,7 +497,6 @@ begin
   end;
 end;
 
-{ ----------------------------------------------------- GUI data string I/O -- }
 
 function StructureToXRCData(const S: TFitStructure; const Info: TStructureInfo): string;
 var
@@ -578,7 +550,6 @@ begin
   end;
 end;
 
-// TXRCStructure.FindValue / FindBoolValue / FindStrValue, without the field
 function DataValue(const JL: TJSONValue; const Key: string; const Base: Single): Single;
 var
   V: TJSONValue;
@@ -728,7 +699,6 @@ begin
   FinishStructure(Result, Info);
 end;
 
-{ ------------------------------------------------------------ calculation -- }
 
 function BuildLayeredModel(const S: TFitStructure;
   ExpandProfiles: Boolean): TLayeredModel;
@@ -808,8 +778,6 @@ begin
         if BulkOf(S.Stacks[i].Layers[j].Material, Ro) then
           S.Stacks[i].Layers[j].P[3].V := Ro;
 
-  // Since 3.9.1 the substrate follows the same rule: TLayeredModel.PrepareLayers
-  // uses a given substrate density and the bulk value only for 0.
   if S.Subs.P[3].V = 0 then
     if BulkOf(S.Subs.Material, Ro) then
       S.Subs.P[3].V := Ro;

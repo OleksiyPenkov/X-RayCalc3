@@ -45,7 +45,6 @@ implementation
 
 {$R *.dfm}
 
-{ TfrmStructurePanel }
 
 procedure TfrmStructurePanel.ConnectActions(AImages: TCustomImageList;
   APeriodAdd, APeriodInsert, APeriodDelete,

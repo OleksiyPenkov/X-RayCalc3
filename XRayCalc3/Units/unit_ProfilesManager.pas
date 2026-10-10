@@ -19,8 +19,6 @@ type
       procedure PlotPeriodProfiles(const Stacks: TStacksData; const ExpandTables: Boolean);
       procedure PlotDensityProfile(const Stacks: TStacksData; const ExpandTables: Boolean);
     public
-      { ExpandTables is TfrmProjectPanel.IsNonPeriodicProfile, the flag the
-        calculation hands TXRCStructure.Model; PlotD draws the depth profile too. }
       procedure PlotProfile(const ExpandTables, PlotD: boolean);
       procedure ClearProfiles;
       procedure Prepare(AStructure: TXRCStructure; chThickness, chRoughness, chDensity: TChart);

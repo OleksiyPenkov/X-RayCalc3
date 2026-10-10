@@ -9,16 +9,6 @@
 
 unit frm_XRRAssess;
 
-(* Data - Assess XRR quality: is this measured curve worth fitting?
-
-   The eight checks of unit_MCPAssess (the same ones the MCP server's
-   assess_xrr runs) on the active measured curve, one row per check with its
-   verdict, value, threshold and the sentence that explains it, and the text
-   block underneath ready to paste into the specimen's record. The window
-   holds the instrument numbers nobody records in a file - the detector's
-   linear limit, the specimen length, the beam width - and re-runs the checks
-   with them when Assess is pressed; a number left empty leaves its check "unknown", which is
-   what the engine says rather than inventing a threshold. *)
 
 interface
 
@@ -63,9 +53,6 @@ type
     procedure RunAssessment;
     procedure ShowResult(Res: TJSONObject);
   public
-    /// <summary>Shows the window for one curve. Inp carries the curve, the
-    /// wavelength, the raw facts when there are any and the current structure;
-    /// Source is the line that says where the curve came from.</summary>
     procedure Assess(const Inp: TAssessInput; const Source: string);
   end;
 
@@ -79,9 +66,7 @@ uses
 
 {$R *.dfm}
 
-{ ------------------------------------------------------------- helpers -- }
 
-/// A cell's text for a JSON value: '-' for null, the number as JSON writes it.
 function CellText(V: TJSONValue): string;
 begin
   if (V = nil) or (V is TJSONNull) then
@@ -106,7 +91,6 @@ begin
       Result := Default;
 end;
 
-{ ------------------------------------------------------------- running -- }
 
 procedure TfrmXRRAssess.Assess(const Inp: TAssessInput; const Source: string);
 begin
@@ -184,7 +168,6 @@ begin
 
   Caption := 'XRR quality: ' + Res.GetValue<string>('verdict');
 
-  { the text block, headed by what it was computed from }
   Head := Format('%d points, theta %s to %s deg; lambda %s A (%s)',
     [Res.GetValue<Integer>('points'),
      CellText((Res.GetValue('theta_range_deg') as TJSONArray).Items[0]),
@@ -202,7 +185,6 @@ begin
   mmSummary.Text := FSummary;
 end;
 
-{ -------------------------------------------------------------- events -- }
 
 procedure TfrmXRRAssess.btnAssessClick(Sender: TObject);
 begin
@@ -231,7 +213,7 @@ begin
     Sender.Canvas.Font.Style := [fsBold];
   end
   else if Verdict = 'warn' then
-    Sender.Canvas.Font.Color := $00008CFF        // orange
+    Sender.Canvas.Font.Color := $00008CFF
   else if Verdict = 'pass' then
     Sender.Canvas.Font.Color := clGreen
   else

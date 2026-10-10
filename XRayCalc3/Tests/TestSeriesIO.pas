@@ -15,24 +15,18 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { SeriesToFile / SeriesFromFile roundtrip }
     [Test] procedure Test_SeriesToFile_CreatesFile;
     [Test] procedure Test_XColumn_FollowsTheAxis;
     [Test] procedure Test_SeriesToFile_HeaderNamesTheAxis;
     [Test] procedure Test_SeriesFromFile_Roundtrip;
     [Test] procedure Test_SeriesFromFile_SkipsCommentLines;
     [Test] procedure Test_SeriesFromFile_SkipsSampleHeader;
-    { A negative intensity (background-subtracted data) is floored like a
-      zero - to the smallest positive value before it - not dropped. }
     [Test] procedure Test_SeriesFromFile_FloorsNegativeIntensity;
 
-    { SeriesToString }
     [Test] procedure Test_SeriesToString_ContainsData;
 
-    { SeriesToClipboard / SeriesFromClipboard roundtrip }
     [Test] procedure Test_Clipboard_Roundtrip;
 
-    { DataToFile }
     [Test] procedure Test_DataToFile_CreatesFile;
     [Test] procedure Test_DataToFile_Roundtrip;
   end;
@@ -43,7 +37,6 @@ uses
   unit_SeriesIO, unit_types, VclTee.Series, Clipbrd,
   System.SysUtils, System.IOUtils, System.Classes;
 
-{ TTestSeriesIO }
 
 procedure TTestSeriesIO.Setup;
 begin
@@ -62,7 +55,6 @@ begin
   Result := TPath.Combine(FTempDir, Name);
 end;
 
-{ --- SeriesToFile / SeriesFromFile --- }
 
 procedure TTestSeriesIO.Test_SeriesToFile_CreatesFile;
 var
@@ -81,8 +73,6 @@ begin
   end;
 end;
 
-{ The chart holds what its axis shows, so the exported column is named after
-  the axis: it used to say 2Theta for a theta axis and for wavelengths too. }
 procedure TTestSeriesIO.Test_XColumn_FollowsTheAxis;
 var
   C, U: string;
@@ -153,7 +143,6 @@ var
   S: TLineSeries;
   fn, Descr: string;
 begin
-  // Lines starting with '*' are treated as description and stripped
   SL := TStringList.Create;
   S := TLineSeries.Create(nil);
   try
@@ -189,10 +178,10 @@ begin
   SL := TStringList.Create;
   S := TLineSeries.Create(nil);
   try
-    SL.Add('Sample: test');   // line 0 — triggers skip
+    SL.Add('Sample: test');
     for i := 1 to 20 do
       SL.Add('header_' + IntToStr(i));
-    SL.Add('');               // line 21 — blank, survives the skip, ignored by parser
+    SL.Add('');
     SL.Add('1.0' + #9 + '0.5');
     SL.Add('2.0' + #9 + '0.3');
     fn := TempFile('sample.dat');
@@ -238,7 +227,6 @@ begin
   end;
 end;
 
-{ --- SeriesToString --- }
 
 procedure TTestSeriesIO.Test_SeriesToString_ContainsData;
 var
@@ -251,7 +239,6 @@ begin
     S.AddXY(2.5, 0.456);
     Txt := SeriesToString(S);
 
-    // Should contain header and data
     Assert.IsTrue(Pos('2Theta', Txt) > 0, 'Should contain column header');
     Assert.IsTrue(Pos('1.500', Txt) > 0, 'Should contain X value');
   finally
@@ -259,7 +246,6 @@ begin
   end;
 end;
 
-{ --- Clipboard --- }
 
 procedure TTestSeriesIO.Test_Clipboard_Roundtrip;
 var
@@ -295,7 +281,6 @@ begin
   end;
 end;
 
-{ --- DataToFile --- }
 
 procedure TTestSeriesIO.Test_DataToFile_CreatesFile;
 var
@@ -322,7 +307,6 @@ begin
   fn := TempFile('data_rt.dat');
   DataToFile(fn, D);
 
-  // Read back and verify content has the values
   SL := TStringList.Create;
   try
     SL.LoadFromFile(fn);

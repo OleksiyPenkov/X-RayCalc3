@@ -1,13 +1,5 @@
 unit TestCalcSettingsScale;
 
-(* The GUI's solved-scale option (Fitting - Solve scale in chi2, Window).
-
-   The MCP server sets TFitParams.SolveScale from "scale_solve" and
-   ScaleWindowLog from "scale_solve_window" w as log10(1 + w)
-   (unit_MCPFit.ParseFitParams; TestMCPFit covers that side). The GUI must
-   make the same conversion from the same number, so a fit made in the
-   desktop program and one made through the server are the same fit, and the
-   choice must survive the project file. *)
 
 interface
 
@@ -169,7 +161,6 @@ begin
     Assert.IsFalse(B.SolveScale);
     Assert.AreEqual(Double(0.35), B.ScaleWindow, 1E-12);
 
-    { the key is invariant whatever the locale the field is typed in }
     Assert.AreEqual('0.35', INF.ReadString('FIT', 'ScaleWindow', ''));
 
     P := Default(TFitParams);

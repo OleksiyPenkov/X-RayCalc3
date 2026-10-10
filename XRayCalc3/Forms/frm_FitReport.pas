@@ -9,17 +9,6 @@
 
 unit frm_FitReport;
 
-(* Result - Fit report: is this fit any good? The numbers fit_xrr's report
-   gives, for the active model against the measured curve linked to it - the
-   Bragg orders measured against calculated, the critical edge, the fringe
-   contrast between orders 1 and 2 and the residual in eight bands of angle -
-   plus the fitted parameters that sit within 5 % of a bound. It is to a fit
-   what Data - Assess XRR quality is to a measurement.
-
-   Values only: no verdict, no colour. What a good fit looks like is the
-   fitting procedure's to say, not the program's. Angles are in the chart's
-   unit, 2theta or theta; the measured curve is at the solved scale of the
-   last calculation (unit_FitReportGUI). *)
 
 interface
 
@@ -51,7 +40,7 @@ type
     procedure btnCopyClick(Sender: TObject);
   private
     FK: Double;               // 2 on a 2theta chart, 1 on a theta chart
-    FAngle: string;           // the chart's angle name
+    FAngle: string;
     procedure SetAngleCaptions;
     function AngleText(const ThetaDeg: Double): string;
     procedure ShowOrders(Rep: TJSONObject);
@@ -62,9 +51,6 @@ type
     procedure GrowToOrders;
     procedure FitToWorkArea;
   public
-    /// <summary>Computes the report on Inp (theta, the solved scale applied)
-    /// and shows it. TwoTheta says how the chart shows angles; Source and
-    /// Facts are the two header lines.</summary>
     procedure ShowReport(const Inp: TFitReportInput; TwoTheta: Boolean;
       const Near: TArray<TNearBound>; const Source, Facts: string);
   end;
@@ -84,7 +70,6 @@ const
   DEG = #$00B0;
   PARAM_NAMES: array [1..3] of string = ('H', #$03C3, #$03C1);
 
-{ ------------------------------------------------------------- helpers -- }
 
 function NumOf(V: TJSONValue; out D: Double): Boolean;
 begin
@@ -95,7 +80,6 @@ begin
     D := 0;
 end;
 
-/// An intensity or a reflectivity: five significant digits.
 function RText(V: TJSONValue): string;
 var
   D: Double;
@@ -106,7 +90,6 @@ begin
     Result := '-';
 end;
 
-/// A ratio or a residual in decades: three decimals.
 function FText(V: TJSONValue): string;
 var
   D: Double;
@@ -139,7 +122,6 @@ begin
   lvBands.Columns[1].Caption := FAngle + ' to' + U;
 end;
 
-{ ------------------------------------------------------------ showing -- }
 
 procedure TfrmFitReport.ShowReport(const Inp: TFitReportInput; TwoTheta: Boolean;
   const Near: TArray<TNearBound>; const Source, Facts: string);
@@ -259,7 +241,6 @@ begin
       end
       else
       begin
-        { outside the measured range: where the order would be }
         if AngleOf(O, 'theta_bragg_deg', D) then
           Item.SubItems.Add(AngleText(D) + ' *')
         else
@@ -435,7 +416,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------------- copy -- }
 
 procedure TfrmFitReport.btnCopyClick(Sender: TObject);
 var

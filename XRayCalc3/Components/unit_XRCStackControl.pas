@@ -35,7 +35,6 @@ type
       FLinkedLayers: array [0..1] of Integer;
       FMenu: TPopupMenu;
 
-//      procedure ClearLayers;
       procedure SetSelected(const Value: Boolean);
       function GetLayersData: TLayersData;
       procedure SetIncrement(const Value: Single);
@@ -47,7 +46,6 @@ type
       procedure CreateMenu;
       procedure MenuOnClick(Sender: TObject);
     protected
-      { Protected declarations }
       procedure FOnClick(Sender: TObject);
       procedure FOnDoubleClick(Sender: TObject);
     public
@@ -87,7 +85,6 @@ const
   Captions : array [1..2] of string   = ('Freeze stack', 'Thaw stack');
   Tags     : array [1..2] of Cardinal = (WM_STR_STACK_FREEZE, WM_STR_STACK_THAW);
 
-{ TXRCStack }
 
 procedure TXRCStack.SetLayerColor(const ID: Integer);
 begin
@@ -164,15 +161,6 @@ begin
   FLayers[0].Top := ClientHeight - 10;
 end;
 
-//procedure TXRCStack.ClearLayers;
-//var
-//  i: Integer;
-//begin
-//  for I := 0 to High(FLayers) do
-//     FreeAndNil(FLayers[i]);
-//
-//  SetLength(FLayers, 0);
-//end;
 
 procedure TXRCStack.ClearSelection;
 var
@@ -248,8 +236,6 @@ begin
   FLayers[Index].Data  := AData;
   FLayers[Index].Onset := False;
 
-  { A fit writes every layer back through here. AData carries the freeze
-    flags, so the header's count can change with it. }
   UpdateInfo;
 end;
 
@@ -283,8 +269,6 @@ begin
   FTitle := Title;
 
   Parent := AOwner as TWinControl;
-//  Top := 10;
-//  Align := alNone;
   Height := ScaleForDPI(80);
 
   Alignment := taLeftJustify;
@@ -293,16 +277,11 @@ begin
   BorderHighlight := clTeal;
   BorderWidth := 2;
 
-//  Font.Color := clNavy;
-//  Font.Style := [fsBold];
 
- //lblLayers
   lblLayers := TRzLabel.Create(Self);
 
-  //RzSeparator1
   RzSeparator := TRzSeparator.Create(Self);
 
-  //lblLayers
   lblLayers.Name := 'lblLayers';
   lblLayers.Parent := Self;
   lblLayers.AlignWithMargins := True;
@@ -314,7 +293,6 @@ begin
   lblLayers.ParentFont := False;
 
 
-  //RzSeparator1
   RzSeparator.Name := 'RzSeparator1';
   RzSeparator.Parent := Self;
   RzSeparator.AlignWithMargins := True;
@@ -349,7 +327,6 @@ end;
 
 destructor TXRCStack.Destroy;
 begin
-//  ClearLayers;
   inherited;
 end;
 
@@ -426,7 +403,7 @@ begin
     if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
     begin
       FLayers[LayerID].LinkChecked := False;
-      Exit; // only 2 links ara allowed
+      Exit;
     end;
 
     Found := False;
@@ -451,7 +428,7 @@ begin
       begin
         if Assigned(FLayers[FLinkedLayers[i]].Linked) and
            Assigned(FLayers[FLinkedLayers[i]].Linked.Linked) then
-                       FLayers[FLinkedLayers[i]].Linked.Linked := nil;  //clear mutual link
+                       FLayers[FLinkedLayers[i]].Linked.Linked := nil;
 
         FLayers[FLinkedLayers[i]].Linked := nil;
         FLinkedLayers[i] := -1;
@@ -462,7 +439,7 @@ begin
 
   if (FLinkedLayers[0] <> -1) and (FLinkedLayers[1] <> -1) then
   begin
-    FLayers[FLinkedLayers[0]].Linked := FLayers[FLinkedLayers[1]]; //set mutual links
+    FLayers[FLinkedLayers[0]].Linked := FLayers[FLinkedLayers[1]];
     FLayers[FLinkedLayers[1]].Linked := FLayers[FLinkedLayers[0]];
   end;
 
@@ -536,7 +513,7 @@ procedure TXRCStack.SetSelected(const Value: Boolean);
 begin
   if Value then
   begin
-    BorderColor := clBlue; //clHighlight;
+    BorderColor := clBlue;
     BorderWidth := 2;
   end
   else begin

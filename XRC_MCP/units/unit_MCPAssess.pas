@@ -12,47 +12,13 @@
 
 unit unit_MCPAssess;
 
-(* Is this measured curve worth fitting?
-
-   The fitting procedure's first section turned around and pointed at the
-   measurement instead of at the model: before anyone fits, say whether the
-   scan can carry a fit at all. The decisive checks are count RATES, and the
-   counting time per step exists only in the raw .xrdml, which is why the
-   assessment wants the parsed scan and not the two columns a chart holds. A
-   two-column curve still works: every check that needs a fact the file does
-   not carry answers "unknown".
-
-   This unit is the assessment itself, shared by the MCP tool assess_xrr
-   (unit_ToolsFiles) and the GUI's Data - Assess XRR quality (frm_XRRAssess):
-   a TAssessInput in, one JSON object out, nothing read from disk and nothing
-   written anywhere.
-
-   Eight checks, each {value, threshold, verdict, why} plus the numbers it was
-   made from, and a text block ready to paste into the specimen's record:
-
-     counting                 peak count rate against the detector's linear limit
-     plateau_vs_first_order   I(first Bragg order) / I(low-angle maximum)
-     total_reflection         did the scan start below the critical angle
-     orders_visible           orders above background against the design
-     range_below_background   the part of the scan that bought nothing
-     sampling                 points per Kiessig fringe (or per resolution width
-                              when the fringes are finer than it) and per order
-     footprint                the knee where the beam overfills the specimen
-     zeros                    non-positive counts and where they start
-
-   Two rules the whole unit keeps:
-
-   - A verdict is "unknown" whenever the input it needs is missing: no
+(* A verdict is "unknown" whenever the input it needs is missing: no
      detector limit, no design, no raw file. No threshold is ever invented in
      code to fill the gap. The only numbers this unit brings of its own are
      the ones physics or sampling theory fixes: a reflectivity above the
      plateau is impossible, fewer than two points per fringe cannot
      resolve the fringe, and a fringe finer than the resolution has lost
      all but 3 % of its contrast before any step samples it.
-   - The engine returns numbers and verdicts. It never writes anything, not
-     to the inbox, not to the specimen's record; the client formats and files
-     the text block.
-
    Where a design is given, the checks that need a period, a total thickness
    or a critical angle read them from it, and the design's reflectivity on
    the measured range - convolved with the same resolution a fit would use,
@@ -118,21 +84,13 @@ type
   end;
 
 const
-  /// Below this many points per Kiessig fringe the check warns; it is the
-  /// number the fitting procedure names, and the caller may change it.
   ASSESS_MIN_POINTS_PER_FRINGE = 3;
   /// Below two points per fringe the fringe cannot be resolved at all
   /// (sampling theorem); the check fails whatever the caller's number.
   ASSESS_NYQUIST_POINTS_PER_FRINGE = 2;
 
-/// <summary>An input with the defaults filled in: VisibleFactor and
-/// MinPointsPerFringe set, every index -1, everything else empty or zero.</summary>
 function DefaultAssessInput: TAssessInput;
 
-/// <summary>The input an .xrdml scan gives: the curve brought to theta (a
-/// 2Theta scan halved, an Omega scan as it is), the wavelength the file
-/// implies, and every raw fact. The design and the instrument numbers are
-/// left for the caller.</summary>
 function AssessInputFromScan(const Scan: TXRDMLScan): TAssessInput;
 
 /// <summary>The assessment of one curve. Caller frees. Raises
@@ -140,8 +98,6 @@ function AssessInputFromScan(const Scan: TXRDMLScan): TAssessInput;
 /// a design without a wavelength to place it at.</summary>
 function AssessJSON(const Inp: TAssessInput): TJSONObject;
 
-/// <summary>AssessJSON into an object the caller has already started (the
-/// measurement's identity in front of the checks).</summary>
 procedure AssessInto(const Inp: TAssessInput; Res: TJSONObject);
 
 implementation
@@ -157,7 +113,6 @@ const
   VERDICT_WARN    = 'warn';
   VERDICT_FAIL    = 'fail';
 
-{ ------------------------------------------------------------- helpers -- }
 
 function StrOrNull(const S: string): TJSONValue;
 begin
@@ -167,9 +122,6 @@ begin
     Result := TJSONNull.Create;
 end;
 
-/// One check in the shape every check has: value and threshold (null when
-/// there is none), the verdict and one sentence saying why. The caller adds
-/// the numbers the verdict was made from after these four.
 function CheckJSON(Value, Threshold: TJSONValue; const Verdict, Why: string): TJSONObject;
 begin
   Result := TJSONObject.Create;
@@ -192,21 +144,18 @@ begin
   Result := Format(S, Args, TFormatSettings.Invariant);
 end;
 
-/// theta_deg and two_theta_deg of one angle, added to Obj under Prefix.
 procedure AddAngle(Obj: TJSONObject; const Prefix: string; Theta: Double);
 begin
   Obj.AddPair(Prefix + 'theta_deg', JSONArgs.Num(Theta));
   Obj.AddPair(Prefix + 'two_theta_deg', JSONArgs.Num(2 * Theta));
 end;
 
-/// The same two keys as null, where there is no angle to give.
 procedure AddNoAngle(Obj: TJSONObject; const Prefix: string);
 begin
   Obj.AddPair(Prefix + 'theta_deg', TJSONNull.Create);
   Obj.AddPair(Prefix + 'two_theta_deg', TJSONNull.Create);
 end;
 
-{ --------------------------------------------------------- curve reading -- }
 
 type
   TExtremum = record
@@ -280,7 +229,6 @@ begin
       Result := i;
 end;
 
-/// The median spacing of the grid, in degrees of theta.
 function MedianStep(const C: unit_Types.TDataArray): Double;
 var
   D: TArray<Double>;
@@ -294,9 +242,6 @@ begin
   Result := MedianOf(D);
 end;
 
-/// The curve ascending in theta, and the three indices that point into it
-/// carried along. A scan written high-to-low, or a text file in any order,
-/// reads the same as one written low-to-high.
 procedure SortAscending(var Inp: TAssessInput);
 var
   C, Sorted: unit_Types.TDataArray;
@@ -343,11 +288,7 @@ begin
     Inp.FirstNonPositive := Inverse[Inp.FirstNonPositive];
 end;
 
-{ --------------------------------------------------------------- design -- }
 
-/// The first stack with more than one period: the rule unit_MCPStructure
-/// applies, repeated here so that a structure the GUI built (no
-/// TStructureInfo) reads the same. -1 when there is none.
 function PeriodicStackIndex(const S: TFitStructure): Integer;
 var
   j: Integer;
@@ -358,7 +299,6 @@ begin
   Result := -1;
 end;
 
-/// The period of the design's repeating stack, 0 when it has none.
 function DesignPeriod(const S: TFitStructure): Double;
 var
   j, k: Integer;
@@ -371,8 +311,6 @@ begin
     Result := Result + S.Stacks[j].Layers[k].P[1].V;
 end;
 
-/// Every layer of every stack, N times over: the film's whole thickness, which
-/// sets the Kiessig fringe spacing.
 function DesignTotalThickness(const S: TFitStructure): Double;
 var
   j, k: Integer;
@@ -411,20 +349,17 @@ begin
   Result := RunCalc(Req, Used);
 end;
 
-{ ----------------------------------------------------------- the checks -- }
 
 type
-  /// What the checks share once the curve has been read: the low-angle
-  /// maximum, the first order, the background and the design's numbers.
   TAssessContext = record
     Inp: TAssessInput;
     Model: unit_Types.TDataArray;   // empty without a design
     Period, TotalThickness, ThetaC: Double;
-    Background: Double;             // ReportBackground of the curve
+    Background: Double;
     Step: Double;                   // median grid spacing, deg theta
     ILow: Integer;                  // the low-angle (plateau) maximum
     IFirst: Integer;                // the first Bragg order; -1 when not found
-    FirstOrderHow: string;          // how IFirst was chosen
+    FirstOrderHow: string;
     Order1Lo, Order1Hi, Order1Theta: Double;
     HasOrder1Window: Boolean;
     Extrema: TArray<TExtremum>;     // the turning points after the plateau, walked once
@@ -480,12 +415,8 @@ begin
     if ILow < 0 then
       ILow := IndexOfMax(Inp.Curve);
 
-    { walked once from the plateau; the orders check reads it again }
     Extrema := HysteresisExtrema(Inp.Curve, ILow);
 
-    { The first order: the largest point inside the design's window, or, with
-      no design, the highest maximum after the plateau has fallen to its
-      first minimum. }
     if HasOrder1Window then
     begin
       IFirst := MaxIndexInRange(Inp.Curve, Order1Lo, Order1Hi);
@@ -557,7 +488,6 @@ begin
                         Verdict, Why);
     Result.AddPair('unit', StrOrNull(IntensityUnit));
     Result.AddPair('counting_time_s', NumOrNull(CountingTime, CountingTime > 0));
-    { the rate the detector saw, at the point where it saw it }
     Result.AddPair('peak_counts', JSONArgs.Num(RawPeakCounts));
     Result.AddPair('peak_rate_cps', JSONArgs.Num(RawPeakRate));
     if RawPeakIndex >= 0 then
@@ -565,7 +495,6 @@ begin
     else
       AddNoAngle(Result, 'peak_');
     Result.AddPair('attenuation_factors', TJSONBool.Create(AttenuationApplied));
-    { the curve's maximum as a fit sees it; the same point when no factors }
     Result.AddPair('corrected_peak_counts', JSONArgs.Num(PeakCounts));
     Result.AddPair('corrected_peak_rate_cps', JSONArgs.Num(PeakRate));
     if PeakIndex >= 0 then
@@ -594,8 +523,6 @@ begin
 
   Ratio := Ctx.Inp.Curve[Ctx.IFirst].r / Ctx.Inp.Curve[Ctx.ILow].r;
 
-  { What the design says the ratio should be: its own first order over its
-    own plateau, read in the same windows. }
   HaveModel := False;
   ModelRatio := 0;
   if (Length(Ctx.Model) > 0) and Ctx.HasOrder1Window then
@@ -745,8 +672,6 @@ begin
     Exit;
   end;
 
-  { The design's orders inside the range: measured, and what the model of the
-    design puts there once it is scaled to the measured plateau. }
   ModelScale := 0;
   if Length(Ctx.Model) > 0 then
   begin
@@ -1071,7 +996,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------ assembly -- }
 
 function DefaultAssessInput: TAssessInput;
 begin
@@ -1194,8 +1118,6 @@ begin
   Checks.AddPair('footprint', FootprintCheck(Ctx));
   Checks.AddPair('zeros', ZerosCheck(Ctx));
 
-  { The overall verdict is the worst of the checks; unknown only when every
-    check is. The text block is one line per check, in the order above. }
   Worst := 0;
   SB := TStringBuilder.Create;
   try

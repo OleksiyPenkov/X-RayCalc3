@@ -55,7 +55,6 @@ type
     procedure cbLayerChange(Sender: TObject);
     procedure btnCopyClick(Sender: TObject);
   private
-    { Private declarations }
     FData: PProjectData;
     FStructure: TXRCStructure;
     FRealStackID: unit_types.TIntArray;
@@ -65,7 +64,6 @@ type
     procedure FillCoefficients;
     procedure GetCoefficients;
   public
-    { Public declarations }
     property Data: PProjectData read FData write FData;
     property Structure: TXRCStructure write FStructure;
   end;

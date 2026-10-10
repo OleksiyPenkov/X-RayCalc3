@@ -26,10 +26,6 @@ type
     [Test] procedure Convolute_SmoothsTheFirstTenthOfADegree;
   end;
 
-  { ChiSQRPlain is the sum CalcChiSquare builds with the peak and angle weights
-    left off. The weights are what the fit optimises against; the plain number
-    is the bare data-to-fit disagreement the GUI shows beside it, so what these
-    tests pin down is that no weight can move it. }
   [TestFixture]
   TTestChiSquare = class
   public
@@ -37,17 +33,10 @@ type
     [Test] procedure Test_Plain_MatchesHandSum;
     [Test] procedure Test_Plain_IgnoresThetaWeight;
     [Test] procedure Test_Plain_IgnoresPeakWeight;
-    { Without a resolution convolution every measured point is summed; the
-      last one used to be dropped as well as the convolution tails. }
     [Test] procedure Test_EveryPoint_IsSummed_WithoutConvolution;
-    { The convolution weights are a normalised kernel: their sum is 1, so a
-      curve convolved with them keeps its level whatever the grid step. }
     [Test] procedure Test_ConvolutionWeights_SumToOne;
   end;
 
-  { TCalc.SolveScale: the measured scale solved in closed form inside the
-    chi-squared. The curves are the four points above with a peak weight and
-    an angle weight, so that every term of the derivation is exercised. }
   [TestFixture]
   TTestSolvedScale = class
   private
@@ -68,7 +57,6 @@ implementation
 uses
   unit_materials, unit_calc, System.SysUtils, System.Math;
 
-{ TTestLayeredModel }
 
 procedure TTestLayeredModel.Test_Init_CreatesVacuumLayer;
 var
@@ -100,8 +88,8 @@ begin
     SetLength(LD, 1);
     LD[0].Material := 'Si';
     LD[0].P[1].New(100);  // H = 100 Angstrom
-    LD[0].P[2].New(3);    // sigma = 3
-    LD[0].P[3].New(2.33); // rho = 2.33
+    LD[0].P[2].New(3);
+    LD[0].P[3].New(2.33);
     LD[0].LayerID := 1;
     LD[0].StackID := 1;
 
@@ -128,7 +116,6 @@ begin
   try
     M.Init;
 
-    // Stack 1: 2 layers
     SetLength(LD1, 2);
     LD1[0].Material := 'Si';
     LD1[0].P[1].New(50);
@@ -140,7 +127,6 @@ begin
     LD1[1].P[3].New(10.2);
     M.AddLayers(1, LD1);
 
-    // Stack 2: 1 layer
     SetLength(LD2, 1);
     LD2[0].Material := 'Au';
     LD2[0].P[1].New(10);
@@ -170,8 +156,8 @@ begin
 
     SetLength(LD, 1);
     LD[0].Material := 'Glass';
-    LD[0].P[2].New(2.5);  // sigma
-    LD[0].P[3].New(2.2);  // rho
+    LD[0].P[2].New(2.5);
+    LD[0].P[3].New(2.2);
 
     M.AddSubstrate(LD);
     L := M.Layers;
@@ -192,7 +178,6 @@ var
   LD, SubLD: TLayersData;
   L: TCalcLayers;
 begin
-  // Build: Vacuum | Si(100A) | Substrate(Glass)
   M := TLayeredModel.Create;
   try
     M.Init;
@@ -220,7 +205,6 @@ begin
   end;
 end;
 
-{ TTestCalc }
 
 procedure TTestCalc.Test_Create_DefaultLimit;
 var
@@ -254,13 +238,6 @@ begin
 end;
 
 
-{ The resolution convolution covers the first 0.1 deg of the scan too. Until
-  3.9.4 those points were copied unconvolved, so a sharp feature of the model
-  there - CoC5 has a one-point dip at theta 0.208, between the C and Co
-  critical angles - reached the chart and the fit report at full depth, where
-  the measurement is smeared by the resolution; the report took it for the
-  first fringe minimum. A one-point notch in the first 0.1 deg must come back
-  smoothed like one anywhere else. }
 procedure TTestCalc.Convolute_SmoothsTheFirstTenthOfADegree;
 const
   NOTCH = 5;          // well inside the first 0.1 deg (25 points here)
@@ -298,7 +275,6 @@ begin
     C.Params := P;
     C.ExpValues := D;
     C.FinishRawCurve(Raw);
-    { how far the notch point sits below its neighbours' mean, relative }
     Dip := 1 - C.Results[NOTCH].r / ((C.Results[NOTCH - 1].r + C.Results[NOTCH + 1].r) / 2);
     Assert.IsTrue(Dip < DEPTH / 3,
       Format('the notch comes back %.1f %% deep; raw it is %.1f %%', [100 * Dip, 100 * DEPTH]));
@@ -308,12 +284,8 @@ begin
   end;
 end;
 
-{ TTestChiSquare }
 
 type
-  { CalcChiSquare scores FData against FResult; the calculated curve normally
-    comes from Run, and is put there directly here so the arithmetic is the
-    only thing under test. }
   TChiCalc = class(TCalc)
   public
     procedure SetResults(const A: TDataArray);
@@ -374,7 +346,7 @@ var
   i: Integer;
 begin
   MakeChiCurves(Data, Calc);
-  Calc[3].r := 1.3E-4;          // the last point now misses its measurement
+  Calc[3].r := 1.3E-4;
   Expected := 0;
   for i := 0 to High(Data) do
   begin
@@ -426,8 +398,6 @@ begin
   try
     C.CalcChiSquare(0);
 
-    { The same range CalcChiSquare walks: FTail is 0 without a resolution
-      convolution, so the points are 0 .. n - 2, normalised by n - 1. }
     Expected := 0;
     for i := 0 to High(Data) - 1 do
     begin
@@ -466,7 +436,6 @@ begin
         Format('theta_weight %d must not move the plain sum', [W]));
     end;
 
-    { And the weights really are doing something, or the test above is empty. }
     C.CalcChiSquare(1);
     Assert.AreNotEqual(Double(C.ChiSQRPlain), Double(C.ChiSQR), 1E-6,
       'theta_weight 1 should change the weighted sum');
@@ -509,10 +478,7 @@ begin
   end;
 end;
 
-{ TTestSolvedScale }
 
-{ The legacy sum on a copy of Data multiplied by 10^LogScale, with a peaky
-  moving average so that the point weight is on. }
 function TTestSolvedScale.ChiFixed(const Data, Calc: TDataArray; ThetaW: Integer;
   LogScale: Double; out Plain: Double): Double;
 var
@@ -554,7 +520,7 @@ begin
     C.MovAvg := Avg;
     Assert.IsFalse(C.SolveScale, 'off by default');
     C.SolveScale := True;
-    C.ScaleWindowLog := 0;           // pinned: the same objective in Double
+    C.ScaleWindowLog := 0;
     Pinned := C.CalcChiSquare(1);
     Assert.AreEqual(Off, Pinned, 1E-5 * Off, 'window 0 reproduces the legacy sum');
     Assert.AreEqual(0.0, Double(C.ScaleLog), 0);
@@ -609,8 +575,8 @@ begin
     C.ScaleWindowLog := 1;
     Solved := C.CalcChiSquare(1);
     BestFixed := 1E300; BestA := 0;
-    { a finer grid than the 0.001 of old: with every point summed the
-      parabola is steeper, so a coarse grid sits further above its minimum }
+    { With every point summed the parabola is steeper, so a coarse grid sits
+      further above its minimum. }
     for k := -1500 to 1500 do
     begin
       A := k * 0.0002;
@@ -663,7 +629,7 @@ var
   i: Integer;
 begin
   MakeChiCurves(Data, Calc);
-  for i := 0 to High(Data) do Data[i].r := Data[i].r * 3;   // the free a* is about -0.477
+  for i := 0 to High(Data) do Data[i].r := Data[i].r * 3;
   SetLength(Avg, Length(Data));
   for i := 0 to High(Data) do begin Avg[i].t := Data[i].t; Avg[i].r := Data[i].r / 4; end;
   C := MakeChiCalc(Data, Calc);

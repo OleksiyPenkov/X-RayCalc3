@@ -43,7 +43,6 @@ begin
   Result := True;
 end;
 
-{ TConsoleHandler }
 
 constructor TConsoleHandler.Create(const AConfig: TUniversalConfig;
   AVerbose: Boolean);
@@ -55,11 +54,8 @@ end;
 
 procedure TConsoleHandler.HandleIteration(const Data: TIterationData);
 begin
-  // IO.LogIteration already writes progress to stdout and log file.
-  // Here we only add verbose-specific messages.
   if FVerbose then
   begin
-    // Shake logging is handled by the optimizer's window-based detection
 
     if (Data.Iteration > 0) and (FConfig.Optimizer.CheckpointEvery > 0) and
        ((Data.Iteration mod FConfig.Optimizer.CheckpointEvery) = 0) then
@@ -86,7 +82,6 @@ begin
     [Data.BestGenome.d, Data.BestGenome.Gamma,
      NRound(Data.BestGenome.N), Data.BestGenome.Sigma]));
 
-  // Print composition
   for i := 0 to LAYERS_PER_PERIOD - 1 do
   begin
     Write(Format('Layer %d: ', [i + 1]));
@@ -111,7 +106,6 @@ var
 begin
   Config := TUniversalIO.LoadConfig(ConfigFile);
 
-  // Print banner
   WriteLn('Universal Mirror Optimizer v1.0');
   Write('Lines:');
   for i := 0 to High(Config.Lines) do
@@ -145,7 +139,6 @@ begin
     WriteLn(Format('Theta min: %.1f deg', [Config.Fitness.ThetaMin]));
   WriteLn('---');
 
-  // Print header
   Write(Format('%5s  %8s', ['Iter', 'FoM']));
   for i := 0 to High(Config.Lines) do
     Write(Format('  %5s', ['R_' + Config.Lines[i].Name]));
@@ -161,7 +154,6 @@ begin
       GOptimizer.OnError := Handler.HandleError;
       GOptimizer.Run;
 
-      // Package results into .xrfx
       if Handler.Completed then
       begin
         var PerElem: TArray<TXRFXElementResult>;

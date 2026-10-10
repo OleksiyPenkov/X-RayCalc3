@@ -26,7 +26,6 @@ type
     property BiDiMode;
     property BorderWidth;
     property BorderStyle;
-    //property Caption;
     property Color;
     property Constraints;
     property Ctl3D;
@@ -49,7 +48,6 @@ type
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
-    //property ShowCaption;
     property ShowHint;
     property TabOrder;
     property TabStop;
@@ -88,7 +86,6 @@ type
 
 implementation
 
-{ TXRCLayerControl }
 
 function TXRCPanel.ScaleForDPI(Value: Integer): integer;
 const

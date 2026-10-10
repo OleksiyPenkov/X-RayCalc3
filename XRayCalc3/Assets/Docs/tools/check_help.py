@@ -24,8 +24,8 @@ class PageScan(HTMLParser):
     def __init__(self):
         super().__init__()
         self.ids = set()
-        self.links = []          # (attr, value)
-        self.classes = []        # every class attribute, split
+        self.links = []
+        self.classes = []
         self.h2_ids = set()
         self.toc_links = []
         self._in_toc = 0
@@ -74,7 +74,6 @@ def main(help_dir):
         failures.append(f"{page}: {msg}")
 
     for page, s in scans.items():
-        # links
         for attr, value in s.links:
             if re.match(r"^(https?:|mailto:|javascript:|data:)", value):
                 continue
@@ -95,7 +94,6 @@ def main(help_dir):
                     fail(page, f"{value}: anchor not found in target")
         if page in INDEXES or page == PRINT:
             continue
-        # anatomy
         for cls, want in (("topbar", 1), ("bottom-nav", 1)):
             n = s.classes.count(cls)
             if n != want:

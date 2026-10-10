@@ -54,7 +54,6 @@ var
   Root: string;
 begin
   Root := ExtractFileDrive(FileName);
-  // relative path or UNC share - leave it alone
   if (Length(Root) <> 2) or (Root[2] <> ':') then
     Exit(False);
   if GetDriveType(PChar(Root + PathDelim)) <> DRIVE_FIXED then
@@ -62,7 +61,6 @@ begin
   Result := not FileExists(FileName);
 end;
 
-{ TRecentProjectsManager }
 
 constructor TRecentProjectsManager.Create(AMaxCapacity: Integer;
   AMenuParent: TMenuItem; APopupParent: TPopupMenu);
@@ -207,8 +205,6 @@ procedure TRecentProjectsManager.FillMenus;
   end;
 
 begin
-  // drop entries whose file has since been deleted or moved, so the list
-  // never offers a project that cannot be opened
   if PruneMissing then
     Save;
 

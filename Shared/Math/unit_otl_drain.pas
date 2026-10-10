@@ -12,21 +12,11 @@
 
 unit unit_otl_drain;
 
-(* OmniThreadLibrary frees a Parallel.For / Parallel.ForEach task's control
-   (two 10 000-slot message queues, ~400 KB) only when the thread that ran the
-   loop handles the task's "terminated" window message. So:
-
-   - after every loop, a thread that pumps no messages of its own (a job, fit
-     or sampling thread) calls DrainThreadMessages, or it keeps every task
-     control it ever created;
-
-   - before such a thread ends, it calls DrainParallelTasksBeforeExit. The
-     tasks post "terminated" after the loop has returned, so the last loop's
-     messages can arrive after the last drain. Once the thread is gone so is
-     its window: the pool worker's PostMessage fails with EOSError (invalid
-     window handle), which kills the worker, and the task control is never
-     freed. A thread started and ended 1800 times grew the process by up to
-     1.6 GB. *)
+(* OTL frees Parallel loop task controls only on the creating thread's
+   "terminated" window messages. Threads without a message pump must drain
+   after each loop and before exit. Tasks can post after the loop returns;
+   if the thread's window is already gone, PostMessage raises EOSError,
+   kills the pool worker and leaks the task control. *)
 
 interface
 

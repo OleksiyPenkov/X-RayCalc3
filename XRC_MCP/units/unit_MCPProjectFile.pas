@@ -12,29 +12,7 @@
 
 unit unit_MCPProjectFile;
 
-(* Reading and writing X-Ray Calc 3 `.xrcx` project files.
-
-   An `.xrcx` is a zip of four flat entries:
-
-     params.dsc    INI, exactly the keys TfrmCalcSettings.SaveToINI /
-                   SaveAdvancedParams and TfrmChartInfo.SaveToINI write, plus
-                   [INFO] Version and [STATE] ActiveModel / LinkedData / LogScale
-     project.dsc   a VirtualTreeView node stream written by TXRCProjectTree
-     calc.dat      the model curve, in the text format unit_SeriesIO writes
-     data_<id>.dat one file per data node, same format
-
-   **The headless tree.** project.dsc is written by the GUI's own
-   TXRCProjectTree with the GUI's own OnSaveNode, so the bytes are the GUI's
-   bytes rather than a reimplementation of them. The open question when this
-   unit was planned was whether a TVirtualStringTree can be created, filled,
-   saved and re-read in a console process that never shows a window; the plan
-   carried a hand-rolled byte writer (plan Appendix A) as the fallback.
-
-   It can. `TXRCProjectTree.Create(nil, 96)` needs no owner, no parent and no
-   window handle: SaveToFile and LoadFromFile only walk nodes and stream them.
-   The spike is TestMCPProjectFile.HeadlessTree_SaveLoad_RoundTrip, and it
-   passes. **The fallback writer was not needed and is not implemented.**
-   TXRCProjectTree is a VCL component, so the process still needs the VCL
+(* TXRCProjectTree is a VCL component, so the process still needs the VCL
    Application object to exist - XRC_MCP.dpr calls Application.Initialize.
 
    Three quirks of the GUI's node format that this unit has to live with,
@@ -82,22 +60,19 @@ uses
   unit_Types;
 
 type
-  /// <summary>Everything params.dsc carries. Defaults are
-  /// TfrmProjectPanel.CreateDefaultProject plus the defaults
-  /// TfrmCalcSettings.LoadFromINI / LoadAdvancedParams fall back on.</summary>
   TXRCXCalcParams = record
     Lambda: Double;                 // [ANGLE] lambbda  (sic: the GUI key is misspelled)
     ThetaStart, ThetaEnd: Double;   // [ANGLE] Start / End, written in theta ([ANGLE] 2teta=0)
     Width: Double;                  // [ANGLE] width, the convolution width in degrees
-    Points: Integer;                // [PARAMS] N
+    Points: Integer;
     Polarisation: Integer;          // [PARAMS] Polarisation, 0 = s, 1 = s+p
-    MinLimit: Double;               // [PARAMS] MinLimit, the chart's lower R limit
+    MinLimit: Double;
     FitMode: Integer;               // [FIT] Mode, 0 irregular 1 periodic 2 poly
-    FitIter, FitPop: Integer;       // [FIT] Namx / Pop
-    PolyOrder: Integer;             // [FIT] PolyOrder
-    PWChi: Boolean;                 // [FIT] PWChi
-    TWChi: Integer;                 // [FIT] TWChi
-    Tol, Window: Double;            // [FIT] Tol / Window
+    FitIter, FitPop: Integer;
+    PolyOrder: Integer;
+    PWChi: Boolean;
+    TWChi: Integer;
+    Tol, Window: Double;
     LFPSO: TFitParams;              // [LFPSO] and the [FIT] mirrors of the same fields
   end;
 
@@ -136,32 +111,17 @@ const
 
   CALC_CURVE_NAME = 'calc.dat';
 
-/// <summary>The parameter block of a freshly created GUI project.</summary>
 function DefaultCalcParams: TXRCXCalcParams;
 
-/// <summary>The name of the data curve file of a data node with this ID,
-/// TfrmProjectPanel.DataName without the directory.</summary>
 function DataCurveName(ID: Integer): string;
 
-/// <summary>Writes a complete .xrcx. Builds the four members in a temporary
-/// directory, zips it with flat entry names and removes the directory again.
-/// An existing file at Path is replaced.</summary>
 procedure WriteXRCX(const Path: string; const P: TXRCXProject);
 
-/// <summary>Reads an .xrcx written by this unit or by the GUI. Raises
-/// EMCPError('invalid_argument') when Path is not a readable zip archive, and
-/// EMCPError('unsupported_project') when the archive has no project.dsc or
-/// when the project's model structure is not in it (v2 projects keep it in a
-/// separate model_N.bin).</summary>
 function ReadXRCX(const Path: string): TXRCXProject;
 
-/// <summary>The unit_SeriesIO text format: two header lines, a blank line, then
-/// FloatToStrF(x, ffFixed, 5, 3) TAB FloatToStrF(y, ffExponent, 5, 4).</summary>
 procedure WriteCurveText(const Path: string; const C: unit_Types.TDataArray;
   const ColX, ColY, UnitX: string);
 
-/// <summary>unit_SeriesIO.SeriesFromText: tab-separated (space as a fallback),
-/// a comma accepted as the decimal mark, non-numeric lines skipped.</summary>
 function ReadCurveText(const Path: string): unit_Types.TDataArray;
 
 implementation
@@ -174,7 +134,6 @@ uses
   unit_consts, unit_XRCProjectTree, unit_MCPErrors, unit_MCPStructure;
 
 const
-  { TfrmProjectPanel.GradientLabels - the label the gradient node title uses. }
   GRADIENT_LABELS: array [0 .. 2] of string = ('H', 'S', 'rho');
 
   { The [WAVE] section describes the wavelength-scan mode, which the server
@@ -185,7 +144,6 @@ const
   WAVE_THETA = '85';
   WAVE_WIDTH = '0';
 
-{ ------------------------------------------------------------- utilities -- }
 
 function Inv: TFormatSettings;
 begin
@@ -248,7 +206,6 @@ begin
   Result := Format('data_%d.dat', [ID]);
 end;
 
-{ ------------------------------------------------------------ curve files -- }
 
 procedure WriteCurveText(const Path: string; const C: unit_Types.TDataArray;
   const ColX, ColY, UnitX: string);
@@ -338,7 +295,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- params.dsc ----- }
 
 function DefaultCalcParams: TXRCXCalcParams;
 begin
@@ -361,7 +317,6 @@ begin
   Result.Tol       := 0.005;
   Result.Window    := 0.05;
 
-  // CreateDefaultProject, plus the LoadFromINI / LoadAdvancedParams fallbacks
   Result.LFPSO.NMax            := Result.FitIter;
   Result.LFPSO.Pop             := Result.FitPop;
   Result.LFPSO.Tolerance       := Result.Tol;
@@ -396,7 +351,6 @@ begin
 
   INF := TMemIniFile.Create(FileName);
   try
-    // TfrmCalcSettings.SaveToINI + TfrmChartInfo.SaveToINI
     INF.WriteString('PARAMS', 'N', IntToStr(C.Points));
     INF.WriteInteger('PARAMS', 'Mode', 0);            // 0 = theta scan
     INF.WriteInteger('PARAMS', 'Polarisation', C.Polarisation);
@@ -426,7 +380,6 @@ begin
     INF.WriteString('FIT', 'PolyOrder', IntToStr(C.PolyOrder));
     INF.WriteBool('FIT', 'PWChi', C.PWChi);
     INF.WriteInteger('FIT', 'TWChi', C.TWChi);
-    // TfrmCalcSettings.SaveAdvancedParams
     INF.WriteString('FIT', 'Window', F(C.Window));
     INF.WriteString('FIT', 'Tol', F(C.Tol));
 
@@ -524,13 +477,7 @@ begin
   end;
 end;
 
-{ --------------------------------------------------------- project.dsc ----- }
 
-/// TfrmProjectPanel.GradientTitle: 'F(<label> <stack title>/<material>)'.
-/// The stack title and the material come out of the model's own structure
-/// string, so the node reads in the GUI exactly as a GUI-made one does. A
-/// structure that cannot be parsed, or indices that do not point into it,
-/// fall back to the numeric form rather than failing the save.
 function GradientTitle(const Ext: TXRCXProfileExt; const XRCData: string): string;
 var
   S: TFitStructure;
@@ -554,15 +501,11 @@ begin
     S.Stacks[Ext.StackID].Layers[Ext.LayerID].Material]);
 end;
 
-{ ------------------------------------------------------ the headless tree -- }
 
 (* TXRCProjectTree is a VCL control, and VirtualTrees says in so many words that
    parts of it "must only be called from UI thread": building one walks through
    TBaseVirtualTree code that reaches System.Classes.CheckSynchronize, which
    raises EThread on every thread except the one System.MainThreadID names.
-   fit_xrr writes its .xrcx from the job worker, so that is exactly what
-   happened - the fit finished and then died in TXRCProjectTree.Create with
-   "CheckSynchronize called from thread $..., which is NOT the main thread".
 
    This process has no UI thread. XRC_MCP calls Application.Initialize so that
    VCL components can exist, but it never creates a window, never runs a message
@@ -744,8 +687,6 @@ begin
   end;
 end;
 
-/// Walks the loaded tree and fills the model title, the structure string, the
-/// gradient extensions and the data node's title and ID.
 procedure ReadTree(const FileName: string; var P: TXRCXProject;
   ActiveModel, LinkedData: Integer; out DataID: Integer);
 var
@@ -850,7 +791,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------- the file ---- }
 
 procedure WriteXRCX(const Path: string; const P: TXRCXProject);
 var
@@ -875,8 +815,6 @@ begin
     if TFile.Exists(TmpPath) then
       TFile.Delete(TmpPath);
     try
-      // Flat entry names: every member sits directly in Dir, and
-      // ZipDirectoryContents strips the root path from each one.
       TZipFile.ZipDirectoryContents(TmpPath, Dir);
     except
       if TFile.Exists(TmpPath) then

@@ -40,7 +40,6 @@
   </ul>
 </div>
 
-<!-- =============================== -->
 <h2 id="overview">Overview</h2>
 
 <p><strong>XRC_MCP</strong> is a console program that exposes the X-Ray Calc 3 calculation engine to AI assistants over the <strong>Model Context Protocol</strong> (MCP). An MCP client such as Claude Code starts <code>XRC_MCP.exe</code>, talks to it as JSON-RPC 2.0 over standard input and output, and calls its <strong>tools</strong>: calculate a reflectivity curve, score a mirror design, run the universal optimizer, fit a measured curve, and read or write <code>.xrcx</code> project files.</p>
@@ -59,7 +58,6 @@
   <tr><td>Record</td><td>Every call and result appended to <code>log\calls.jsonl</code></td></tr>
 </table>
 
-<!-- =============================== -->
 <h2 id="installation">Installation and Registration</h2>
 
 <p>The server needs no configuration file. It takes one mandatory argument, the <strong>working directory</strong> that becomes its sandbox (see <a href="#workdir">below</a>):</p>
@@ -78,7 +76,6 @@
   <strong>OmniThreadLibrary 3.08:</strong> If you build the server yourself, it needs OmniThreadLibrary 3.08 or later. With an older library a job stays at iteration 0 for ever and the server will not exit. See <a href="SourceCode.html#dependencies">Source Code &gt; Dependencies</a>.
 </div>
 
-<!-- =============================== -->
 <h2 id="workdir">The Working Directory</h2>
 
 <p>Every path the server reads or writes lies under the working directory. It is created on first start with four subfolders:</p>
@@ -97,7 +94,6 @@
   <strong>The journal is the record.</strong> <code>log\calls.jsonl</code> holds one line per call with a timestamp, the tool name, the full arguments and the full result or error. Long numeric arrays such as curves are replaced by their length and the SHA-256 of the file they were written to. Keep it with the experiment.
 </div>
 
-<!-- =============================== -->
 <h2 id="conventions">Units and the Structure JSON</h2>
 
 <p>The conventions are the program's: thickness, roughness &sigma; and wavelength in <strong>&aring;ngstr&ouml;m</strong>, density in <strong>g/cm&sup3;</strong>, angles as the grazing angle <strong>&theta; in degrees</strong> (not 2&theta;). Wherever a wavelength is expected, a photon energy in eV is accepted instead and converted with &lambda;[&Aring;] = 12398.42 / E[eV]; the wavelength actually used is echoed back. (The engine itself looks the Henke tables up with 12398.6; <code>describe_server</code> reports both constants.)</p>
@@ -123,7 +119,6 @@
   <li>Numbers in the JSON replies are rounded to 6 significant digits; the curve files keep full precision (&theta; to 7 digits, R as <code>%.8e</code>).</li>
 </ul>
 
-<!-- =============================== -->
 <h2 id="reference-tools">Reference Tools</h2>
 
 <table>
@@ -137,7 +132,6 @@
   <tr><td><code>list_templates</code></td><td>The multilayer design templates (one period each: sub-layers with thickness rule, &sigma;, density, capping variants) that <code>optimize_mirror</code> can start from, optionally filtered by a material pool.</td></tr>
 </table>
 
-<!-- =============================== -->
 <h2 id="calculation-tools">Calculation Tools</h2>
 
 <table>
@@ -150,7 +144,6 @@
   <tr><td><code>evaluate_lines</code></td><td>Scores a structure against a set of X-ray emission lines (<code>name</code>, <code>lambda</code> or <code>energy</code>, <code>weight</code>) with the universal optimizer's own figure of merit; optional <code>fitness</code> overrides. A line may also be a bare symbol or a range such as <code>"B-Si"</code>; at most 16 lines, and exactly one stack must repeat. Refused with <code>server_busy</code> while <code>optimize_mirror</code> runs. The number is directly comparable with what <code>optimize_mirror</code> reports (see <a href="UniversalMirror.html#fom">Universal Mirror &gt; Figure of Merit</a>).</td></tr>
 </table>
 
-<!-- =============================== -->
 <h2 id="optimisation-and-jobs">Optimisation and Jobs</h2>
 
 <p>Two tools take longer than a request should wait for. They return a <code>job_id</code> at once and run in a background thread; the client waits with <code>job_wait</code> or polls <code>job_status</code>. One job runs at a time, and up to 16 more can queue behind it.</p>
@@ -171,7 +164,6 @@
   <strong>Determinism and lifetime:</strong> With the same <code>seed</code> and inputs, <code>optimize_mirror</code> and <code>fit_xrr</code> give identical results on the same device; the seed used is echoed. With <code>device: "auto"</code> a machine with a GPU and one without can differ in the last digits, so pin <code>"cpu"</code> or <code>"gpu"</code> for bit-for-bit repeats; the CPU engine is accurate to about 4&ndash;6&times;10<sup>&minus;6</sup> (worst about 5&ndash;8&times;10<sup>&minus;5</sup>) and the GPU engine to about 6&times;10<sup>&minus;6</sup> (worst about 1.2&times;10<sup>&minus;4</sup>) in log<sub>10</sub> R against a double-precision reference (see <a href="Calculation.html#precision">Numerical Precision</a>), so the last-digit differences between them are not a sign either one is wrong. On its first use in a process, the GPU self-checks against that same reference and falls back to IEEE-strict shaders, or to the CPU, if it disagrees; <code>describe_server</code> reports the outcome as <code>gpu_shader</code>, <code>gpu_self_check</code> and <code>gpu_self_check_worst</code> alongside <code>server.gpu</code>. Jobs do not survive the server: if the process ends, running jobs are lost and <code>job_status</code> reports <code>unknown</code> after a restart. Each job's folder <code>jobs\&lt;job_id&gt;\</code> keeps its request, progress log and outputs.
 </div>
 
-<!-- =============================== -->
 <h2 id="fitting">Fitting</h2>
 
 <table>
@@ -205,7 +197,6 @@
 
 <p>The result holds the fitted structure &mdash; in the profile and irregular modes each layer of a repeating stack also carries <code>thickness_profile</code>, <code>sigma_profile</code> and <code>density_profile</code> for every parameter that varies over the periods (N values, surface end first; the layer's plain value is period 1's, as the GUI writes it back) &mdash; &chi;&sup2; beside <code>chi2_start</code> and <code>chi2_plain</code> (the same sum without point and &theta; weights, at the scale solved for <code>chi2</code>; reported, never minimised; <code>chi2_start</code> is scored at the start model's own solved scale, <code>scale_start_ratio</code>), the scale mode and values, <code>period_mode</code>, <code>out_of_bounds</code> (in the irregular mode it and the report's <code>near_bounds</code> check every period and name it by <code>period_index</code>, the index into the profile array; <code>free_values</code> counts the values searched), <code>iterations_run</code>, <code>elapsed_s</code>, <code>background</code> (always 0), the start model, a <code>report</code> (the Bragg orders measured against calculated, the plateau edge, the Kiessig fringe contrast, the residual by band, values within 5&nbsp;% of the range from a bound; also written as <code>report.json</code> with the scale mode beside every &chi;&sup2; it holds; the report reads the measured curve at the solved scale, <code>scale_ratio</code> for the fit and <code>scale_start_ratio</code> for the start model, as &chi;&sup2;, <code>residual.dat</code> and the GUI chart do; before 3.9.4.1050 it read the anchored curve, and with <code>scale_solve</code> its ratios and bands were off by the factor <code>scale_ratio</code>), the measured, calculated and residual curves as files under the job folder, and the path of the <code>fit.xrcx</code> written for the fit (an irregular fit's opens in Irregular mode with the periods in a Table extension). Open that file in the GUI to check the fit yourself.</p>
 
-<!-- =============================== -->
 <h2 id="inbox">Inbox: Measured Curves</h2>
 
 <p>Measured curves reach the server through the <code>inbox\</code> folder, one subfolder per specimen. You copy the files there; the server only reads them and never modifies them.</p>
@@ -235,7 +226,6 @@
 </table>
 <p>The result carries <code>checks</code> &mdash; <code>counting</code>, <code>plateau_vs_first_order</code>, <code>total_reflection</code>, <code>orders_visible</code>, <code>range_below_background</code>, <code>sampling</code>, <code>footprint</code>, <code>zeros</code>, each <code>{value, threshold, verdict, why}</code> with the numbers behind it &mdash; the background, the design's period, thickness and critical angle, the overall <code>verdict</code> (the worst check) and <code>summary_text</code>, one line per check for the client to file with the specimen. Every angle is <code>theta_deg</code> with the file's <code>two_theta_deg</code> beside it. No count-rate or fraction limit is built in. The fixed rules are: a first order above the plateau fails; a scan that starts at its own maximum, or at or above the design's critical angle, fails; fewer than two points per fringe fails. The warnings compare the measurement with the design scaled to the measured plateau (a plateau-to-first-order ratio above the design's; fewer visible orders than it predicts), with the footprint knee (the low-angle maximum below it), or flag any zero or negative count. <code>range_below_background</code> only reports the fraction and is always <code>"unknown"</code>. The background is the median of the last 100 points; the fringe spacing is &lambda;/(2&thinsp;&times;&thinsp;total thickness) and the order spacing &lambda;/(2d), converted to degrees; the design is always computed unpolarized (<code>sp</code>).</p>
 
-<!-- =============================== -->
 <h2 id="projects">Projects</h2>
 
 <table>
@@ -248,7 +238,6 @@
   <tr><td><code>list_projects</code></td><td>The <code>.xrcx</code> files in <code>projects\</code> with size, SHA-256 and modified time. Nothing is written.</td></tr>
 </table>
 
-<!-- =============================== -->
 <h2 id="example">Example Session</h2>
 
 <p>A typical exchange, with the assistant's tool calls in order. The curve <code>RuC-07\xrr.dat</code> was copied into the inbox beforehand.</p>
@@ -268,7 +257,6 @@
   <strong>Practice:</strong> The lab's rule of thumb for the LFPSO is 100 iterations with 500 to 1000 particles: population wins over iterations. The server's defaults are 500 particles and 100 iterations, the lower end of that rule. They are not the GUI's defaults (the GUI's own population is 1000); the result's <code>optimizer_used</code> lists every value the run used.
 </div>
 
-<!-- =============================== -->
 <h2 id="security">Security</h2>
 
 <ul>
@@ -279,7 +267,6 @@
   <li><strong>Structured errors:</strong> failures are returned as <code>{code, message, detail}</code>. The process never shows a dialog or waits for a key, so it is safe to run unattended.</li>
 </ul>
 
-<!-- =============================== -->
 <h2 id="smoke-test">Smoke Test</h2>
 
 <p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 18 tools over one live stdio session (jobs are submitted, polled, waited for with <code>job_wait</code> and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>

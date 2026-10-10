@@ -39,19 +39,17 @@ type
     function HasTool(const Name: string): Boolean;
   end;
 
-// Schema builders shared by all tools units
 function SchemaObject(const Required: array of string): TJSONObject;
 procedure AddProp(Schema: TJSONObject; const Name, TypeName, Description: string);
 procedure AddEnumProp(Schema: TJSONObject; const Name, Description: string; const Values: array of string);
 procedure AddRefProp(Schema: TJSONObject; const Name, Description: string; Def: TJSONObject);
 function ArraySchema(Items: TJSONObject): TJSONObject;
-function StructureSchema: TJSONObject;   // the structure object of the design note, section 3
+function StructureSchema: TJSONObject;
 
 implementation
 
 uses unit_MCPErrors;
 
-{ TToolRegistry }
 
 constructor TToolRegistry.Create;
 begin
@@ -114,7 +112,7 @@ begin
     S := FTools[I].Description;
     P := Pos('. ', S);
     if P > 0 then
-      S := Copy(S, 1, P);          // keep the closing period of the first sentence
+      S := Copy(S, 1, P);
     Obj := TJSONObject.Create;
     Obj.AddPair('name', FTools[I].Name);
     Obj.AddPair('summary', S.Trim);
@@ -142,9 +140,7 @@ begin
   Result := False;
 end;
 
-{ Schema builders }
 
-/// <summary>The "properties" object of a schema built by SchemaObject.</summary>
 function SchemaProps(Schema: TJSONObject): TJSONObject;
 begin
   Result := Schema.GetValue('properties') as TJSONObject;

@@ -62,14 +62,12 @@ begin
     JSON.Free;
   end;
 
-  // Sort by Z to maintain element ordering
   TArray.Sort<TXRFLineRec>(FLines, TComparer<TXRFLineRec>.Construct(
     function(const A, B: TXRFLineRec): Integer
     begin
       Result := Integer(A.Z) - Integer(B.Z);
     end));
 
-  // Build lookup index
   FreeAndNil(FIndex);
   FIndex := TDictionary<string, Integer>.Create(Count);
   for i := 0 to High(FLines) do
@@ -107,7 +105,6 @@ begin
   IdxFrom := FindElementIndex(Trim(Parts[0]));
   IdxTo := FindElementIndex(Trim(Parts[1]));
 
-  // Silently reverse if needed
   if IdxFrom > IdxTo then
   begin
     Temp := IdxFrom;

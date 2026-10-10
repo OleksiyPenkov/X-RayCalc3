@@ -6,24 +6,19 @@ import cairosvg
 SVG_DIR = os.path.join(os.path.dirname(__file__), "SVG")
 PNG_DIR = os.path.dirname(__file__)
 
-# Map SVG files to their target subdirectories
 TARGET_DIRS = {
-    # Project icons -> Projects/
     "01_New": "Projects", "02_OpenProject": "Projects", "03_Reopen": "Projects",
     "04_Save": "Projects", "05_Print": "Projects", "06_AddModel": "Projects",
     "07_Export": "Projects", "08_Copy": "Projects", "09_Paste": "Projects",
     "10_Edit": "Projects", "11_AddExtension": "Projects", "12_DeleteExtension": "Projects",
-    # Model icons -> Model/
     "layer_add": "Model", "layer_insert": "Model", "layer_delete": "Model",
     "layer_up": "Model", "layer_down": "Model",
     "stack_add": "Model", "stack_insert": "Model", "stack_delete": "Model",
     "clipboard_cut_32_h": "Model", "clipboard_copy_lined_32": "Model",
     "clipboard_paste_lined_32": "Model",
-    # Calc icons -> Calc/
     "40_Play": "Calc", "41_Forward": "Calc", "42_AutoFit": "Calc",
     "43_DataLoad": "Calc", "44_DataPaste": "Calc", "45_ResultSave": "Calc",
     "46_CopyResult": "Calc", "47_CopyImage": "Calc", "48_Resume": "Calc",
-    # Project tree markers -> Tree/
     "Tree_ActiveModel": "Tree", "Tree_LinkedData": "Tree",
 }
 

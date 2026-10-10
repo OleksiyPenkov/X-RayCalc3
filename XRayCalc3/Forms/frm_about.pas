@@ -27,9 +27,7 @@ type
     lblVersionInfo: TLabel;
     procedure FormCreate(Sender: TObject);
   private
-    { Private declarations }
   public
-    { Public declarations }
   end;
 
 var

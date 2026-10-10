@@ -1,15 +1,5 @@
 unit TestMCPInbox;
 
-(* The measurement inbox: the text parser, meta.json and the two read-only
-   tools that sit on top of them.
-
-   Every test runs against its own temporary work directory, assigned to the
-   global WorkDir in Setup and restored in TearDown, so that nothing here can
-   reach the real inbox of a running server.
-
-   The last test is the one the requirements ask for by name: the inbox is
-   read-only, and the proof is that the SHA-256 of every file in it is the same
-   after list_measurements and get_measurement have run as it was before. *)
 
 interface
 
@@ -24,13 +14,8 @@ type
   private
     FTemp: string;
     FSavedWorkDir: TWorkDir;
-    /// <summary>Splits Text on line breaks into a TStringList the caller frees.</summary>
     function LinesOf(const Text: string): TStringList;
-    /// <summary>Writes Text to inbox\<Specimen>\<FileName> and returns the
-    /// absolute path. The only writer of the test inbox: the code under test
-    /// never writes there.</summary>
     function WriteInboxFile(const Specimen, FileName, Text: string): string;
-    /// <summary>SHA-256 of every file under the inbox, keyed by absolute path.</summary>
     function InboxHashes: TDictionary<string, string>;
   public
     [Setup] procedure Setup;
@@ -71,7 +56,6 @@ type
 
 implementation
 
-{ ----------------------------------------------------------------- fixture -- }
 
 procedure TTestMCPInbox.Setup;
 begin
@@ -124,7 +108,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------ ParseCurveText -- }
 
 procedure TTestMCPInbox.ParseCurve_TabSeparated_WithHeader;
 var
@@ -190,8 +173,6 @@ var
   Curve: TDataArray;
   Header: TArray<string>;
 begin
-  { 1e-2 is the smallest positive intensity seen when the zero is reached, so
-    the zero and the negative that follows both become 1e-2. }
   SL := LinesOf('0.1 1.0E-1'#13#10'0.2 1.0E-2'#13#10'0.3 0'#13#10'0.4 -5.0E-3');
   try
     Assert.AreEqual(4, ParseCurveText(SL, Curve, Header));
@@ -242,7 +223,6 @@ begin
     'the negative intensity is replaced by the running minimum');
 end;
 
-{ ----------------------------------------------------------------- ReadMeta -- }
 
 procedure TTestMCPInbox.ReadMeta_Parses_Lambda_ThetaUnit;
 var
@@ -341,7 +321,6 @@ begin
   Assert.AreEqual('invalid_argument', Code);
 end;
 
-{ ---------------------------------------------------------- LoadMeasurement -- }
 
 procedure TTestMCPInbox.LoadMeasurement_2Theta_Converted;
 var
@@ -428,7 +407,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------ DecimateCurve -- }
 
 procedure TTestMCPInbox.Decimate_KeepsEnds;
 var
@@ -452,7 +430,6 @@ begin
   Assert.AreEqual(1000, Length(D), 'a short enough curve is returned unchanged');
 end;
 
-{ --------------------------------------------------------- ListMeasurements -- }
 
 procedure TTestMCPInbox.ListMeasurements_ListsSpecimensAndFilters;
 var
@@ -471,7 +448,7 @@ begin
     Arr.Free;
   end;
 
-  Arr := ListMeasurements('s1');   // exact but case-insensitive
+  Arr := ListMeasurements('s1');
   try
     Assert.AreEqual(1, Arr.Count);
     Obj := Arr.Items[0] as TJSONObject;
@@ -579,7 +556,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------- get_measurement JSON -- }
 
 procedure TTestMCPInbox.GetMeasurementJSON_HasTheShapeTheClientExpects;
 var
@@ -680,7 +656,6 @@ begin
     'list_measurements degrades, get_measurement does not');
 end;
 
-{ ------------------------------------------------------------ inbox is read-only -- }
 
 procedure TTestMCPInbox.Inbox_SHA256_Unchanged_AfterListAndGet;
 var
@@ -718,7 +693,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------------- XRDML -- }
 
 const
   INBOX_XRDML =
@@ -736,7 +710,6 @@ var
   M: TMeasurement;
 begin
   WriteInboxFile('S1', 'xrr.xrdml', INBOX_XRDML);
-  // a meta.json that disagrees: the file's axis wins, the caller's lambda wins
   WriteInboxFile('S1', 'meta.json', '{"lambda": 0.71, "theta_unit": "theta", "instrument": "Empyrean"}');
   M := LoadMeasurement('S1/xrr.xrdml', 0);
   try

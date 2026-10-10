@@ -1,7 +1,5 @@
 ﻿(* *****************************************************************************
   *
-  *   X-Ray Calc CMD
-  *
   *   Copyright (C) 2001-2020 Oleksiy Penkov
   *   e-mail: oleksiy.penkov@gmail.com
   *
@@ -39,7 +37,6 @@ type
     procedure InitLayer(const index: Integer; AName: string; AH, ASigma, Arho: single);
     procedure InitSubstrate(AName: string; AH, Asigma, Arho: single);
     procedure CalcOpticalConstants(const Lambda: single);
-//    procedure Update(const NewValues: TFitLayers);
 
     property Size:integer read GetSize write SetSize;
     property Layers:TLayers Read GetLayers write SetLayers;
@@ -51,7 +48,6 @@ implementation
 const
   kk = 0.54014E-5;
 
-{ TLayeredModel }
 
 procedure TLayeredModel.AddMaterial(AName: string; Lambda: single);
 var
@@ -173,16 +169,5 @@ begin
   LayersCount := Value;
 end;
 
-//procedure TLayeredModel.Update(const NewValues: TFitLayers);
-//var
-//  i: Integer;
-//begin
-//  for i := 1 to High(FLayers) - 1 do
-//  begin
-//    FLayers[i].H   := NewValues[i].H.val;
-//    FLayers[i].s   := NewValues[i].s.val;
-//    FLayers[i].Rho := NewValues[i].r.val;
-//  end;
-//end;
 
 end.

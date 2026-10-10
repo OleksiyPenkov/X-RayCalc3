@@ -8,8 +8,6 @@ uses
   function SingleProcessorMask(const ProcessorIndex: Integer): DWORD_PTR;
   function CombinedProcessorMask(const Processors: array of Integer): DWORD_PTR;
   function GetNThreads: Integer;
-  { A duration for people, its precision following its size: '0.84 s',
-    '12.3 s', '7 min 25.3 s', '1 h 02 min 05 s'. }
   function FormatDuration(const Seconds: Double): string; overload;
   function FormatDuration(const Seconds: Double; const FS: TFormatSettings): string; overload;
 
@@ -19,9 +17,7 @@ uses
   Dialogs, unit_Config, OtlCommon;
 
 const
-    CPUS : array [0..7] of Integer = (0,1,2,3,4,5,6,7); // (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-//
-//
+    CPUS : array [0..7] of Integer = (0,1,2,3,4,5,6,7);
 function SingleProcessorMask(const ProcessorIndex: Integer): DWORD_PTR;
 begin
   //When shifting constants the compiler will force the result to be 32-bit
@@ -64,7 +60,7 @@ begin
     m := Trunc(t / 60);
     s := t - m * 60;
     Result := Format('%d min %.1f s', [m, s], FS);
-    if s < 10 then                      // '7 min 05.3 s'
+    if s < 10 then
       Result := Format('%d min 0%.1f s', [m, s], FS);
     Exit;
   end;
@@ -81,11 +77,7 @@ begin
   else
     Result := TConfig.Section<TCalcOptions>.NumberOfThreads;
 
-//  Result := Length(CPUS);
-//  Environment.Process.Affinity.Mask := CombinedProcessorMask(CPUS);
 
-//  if not SetProcessAffinityMask(GetCurrentProcess, SingleProcessorMask(16)) then
-//   ShowMessage(SysErrorMessage(GetLastError));
 
 end;
 

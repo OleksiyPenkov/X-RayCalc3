@@ -24,8 +24,6 @@ procedure SeriesToClipboard(Series: TChartSeries; const Mode: byte;
 procedure SeriesToClipboard(const cX, cY, uX, uY: string; Series: TChartSeries); overload;
 
 procedure SeriesToFile(Series: TChartSeries; const FileName: string); overload;
-/// <summary>A user export: the header names the x column as the chart shows
-/// it. The one-argument overload writes the project's own .dat files.</summary>
 procedure SeriesToFile(Series: TChartSeries; const FileName: string;
   const Mode: byte; TwoTheta: Boolean); overload;
 function SeriesToString(Series: TChartSeries): string;

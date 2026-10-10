@@ -1,11 +1,5 @@
 unit TestXRDML;
 
-{ unit_xrdml: the PANalytical XRDML reader shared by the GUI's Load Data and
-  XRC_MCP's inbox. The fixtures are the two spellings the schema versions use
-  for the same things (counts / intensities, start-end / listPositions,
-  commonCountingTime / countingTimes), a namespace-prefixed document, a rocking
-  curve without a 2Theta axis, and, when the file is present on this machine,
-  a real Empyrean 1.6 export from the exp-03 raw folder. }
 
 interface
 
@@ -38,8 +32,6 @@ type
   end;
 
 const
-  { the shape of a 2026 Empyrean export: schema 1.6, "intensities", start/end,
-    common counting time, a moving Omega axis beside 2Theta }
   XRDML_16 =
     '<?xml version="1.0" encoding="UTF-8"?>' +
     '<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.6" status="Aborted">' +
@@ -61,8 +53,6 @@ const
     '<intensities unit="counts">100 200 300 400 500</intensities>' +
     '</dataPoints></scan></xrdMeasurement></xrdMeasurements>';
 
-  { the old spelling: "counts" with attenuation factors, explicit positions,
-    per-point counting times, a version attribute and no namespace }
   XRDML_10 =
     '<?xml version="1.0"?>' +
     '<xrdMeasurements version="1.0" status="Completed">' +
@@ -312,8 +302,6 @@ procedure TTestXRDML.FloorNonPositive_UsesTheRunningMinimum;
 var
   C: TDataArray;
 begin
-  { the same rule as unit_SeriesIO and ParseCurveText: a zero becomes the
-    smallest positive value seen so far, 1000 when nothing positive came first }
   SetLength(C, 5);
   C[0].r := 0;    C[1].r := 20;  C[2].r := 5;  C[3].r := 0;  C[4].r := -1;
   FloorNonPositive(C);
@@ -356,7 +344,7 @@ procedure TTestXRDML.Lambda_KAlpha1Only_IsKAlpha1;
 var
   S: TXRDMLScan;
 begin
-  S := ReadXRDMLText(XRDML_10);   // kAlpha1 only, no ratio
+  S := ReadXRDMLText(XRDML_10);
   Assert.AreEqual(1.540598, S.Lambda, 1e-9);
   Assert.IsTrue(Pos('kAlpha1', S.LambdaRule) > 0, S.LambdaRule);
 end;

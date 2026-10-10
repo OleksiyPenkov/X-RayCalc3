@@ -12,30 +12,21 @@ uses
   cmd_unit_types;
 
 type
-  /// <summary>
-  /// Layer properties from JSON: {"SiO2": [18, 4, 3.5]}
-  /// </summary>
   TLayer = record
     MaterialName: string;
-    H: Double;  // T1
-    Sigma: Double;  // T2
-    Density: Double;     // T3
+    H: Double;
+    Sigma: Double;
+    Density: Double;
     class function FromJSON(const AJsonObj: TJSONObject): TLayer; static;
   end;
 
-  /// <summary>
-  /// Section properties: "top", "main", "bottom" blocks
-  /// </summary>
   TStack = record
-    SectionName: string;  // 'top', 'main', 'bottom'
+    SectionName: string;
     N: Integer;
     Layers: TArray<TLayer>;
     class function FromJSON(const AItemObj: TJSONObject): TStack; static;
   end;
 
-  /// <summary>
-  /// Override settings from JSON
-  /// </summary>
   TOverride = record
     Lambda: Double;
     Mode: Integer;
@@ -45,9 +36,6 @@ type
     class function FromJSON(const AJsonObj: TJSONObject): TOverride; static;
   end;
 
-  /// <summary>
-  /// Full config from JSON file
-  /// </summary>
   TStructure = record
     Name: string;
     Override: TOverride;
@@ -59,7 +47,6 @@ type
 
 implementation
 
-{ TLayer }
 
 class function TLayer.FromJSON(const AJsonObj: TJSONObject): TLayer;
 var
@@ -81,7 +68,6 @@ begin
   Result.Density    := (LArr.Items[2] as TJSONNumber).AsDouble;
 end;
 
-{ TStack }
 
 class function TStack.FromJSON(const AItemObj: TJSONObject): TStack;
 var
@@ -112,7 +98,6 @@ begin
   end;
 end;
 
-{ TOverride }
 
 class function TOverride.FromJSON(const AJsonObj: TJSONObject): TOverride;
 begin
@@ -123,7 +108,6 @@ begin
   Result.EndVal   := AJsonObj.GetValue<Double>('end');
 end;
 
-{ TStructure }
 
 class function TStructure.LoadFromFile(const AFileName: string): TStructure;
 var

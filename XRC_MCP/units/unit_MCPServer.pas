@@ -24,12 +24,6 @@ uses
   unit_ToolsReference, unit_ToolsCalc, unit_ToolsJobs, unit_ToolsFiles, unit_MCPJobs,
   unit_MCPMaterials, unit_xrf_lines;
 
-/// <summary>Resolves the XRF lines and template files and loads the lines
-/// table, once, before any tool can run. The lines table is a process-wide
-/// global of unit_xrf_lines and every universal-engine call needs it, so a
-/// server that cannot find one is not usable: it says so on stderr, naming the
-/// switch that fixes it, and exits. Templates are optional - without them
-/// list_templates simply returns nothing.</summary>
 procedure LoadReferenceData;
 begin
   LinesFile := ResolveLinesFile;
@@ -67,11 +61,7 @@ var
   ToolsList: TJSONArray;
   SW: TStopwatch;
 begin
-  // Every object gets its own try/finally from the moment it exists, so a raise
-  // in a later constructor cannot strand an earlier one. The globals are set
-  // back to nil after they are freed: nothing may reach a dangling WorkDir,
-  // Journal or Jobs after RunServer has torn them down.
-  WorkDir := TWorkDir.CreateFromCommandLine;   // raises with a plain message when --workdir missing
+  WorkDir := TWorkDir.CreateFromCommandLine;
   try
     WorkDir.EnsureLayout;
     LoadReferenceData;

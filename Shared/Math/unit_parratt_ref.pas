@@ -12,23 +12,17 @@
 
 unit unit_parratt_ref;
 
-(* The reference Parratt recursion in double precision: TCalc.RefCalc's
-   algorithm, redone in Double so the tests can measure both the CPU's
-   (Single) and the GPU's own precision against it. unit_gpu_calc.TGpuEvaluator
-   calls it at run time too, once per process, as the reference for its own
-   self-check (Create's SelfCheck); the DUnitX suite is its other caller, in
-   place of TestGpuCalc's own former copy. *)
+(* This reference must stay in Double: CPU/GPU precision checks depend on
+   an independent higher-precision result. *)
 
 interface
 
 uses
   unit_Types;
 
-/// The roughness factor TCalc.RefCalc's Roughness computes, in Double.
 function RoughnessRef(RF: TRoughnessFunction; Sigma, s: Double): Double;
 
-/// TCalc.RefCalc in Double on the layers TLayeredModel.Generate leaves,
-/// ambient first; ThetaDeg is the grazing angle. No Limit clamp.
+/// Layers are ambient first; ThetaDeg is the grazing angle. No Limit clamp.
 function ParrattRef(const L: TCalcLayers; ThetaDeg, Lambda: Double; SP: Boolean;
   RF: TRoughnessFunction): Double;
 
@@ -78,9 +72,6 @@ begin
   end;
 end;
 
-{ TCalc.RefCalc's Roughness (Shared/Math/unit_calc.pas), in Double: the 3.9.3
-  forms (rfLinear damps at every sigma, not only below 0.5 A; rfSinus is the
-  Stearns form, not 0). }
 function RoughnessRef(RF: TRoughnessFunction; Sigma, s: Double): Double;
 const
   Sqrt3 = 1.7320508075688772;

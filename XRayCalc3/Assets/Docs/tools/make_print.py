@@ -56,7 +56,6 @@ def chapter_body(name):
     title = re.search(r"<h1>(.*?)</h1>", body, re.S).group(1)
     body = re.sub(r'<div class="page-toc">.*?</div>\s*</div>', "", body, count=1, flags=re.S)
     body = re.sub(r'<div class="bottom-nav">.*?</div>', "", body, count=1, flags=re.S)
-    # prev/next removed; internal cross-links become in-document anchors
     anchor = os.path.splitext(name)[0]
     for other in CHAPTERS:
         body = body.replace(f'href="{other}"', f'href="#{os.path.splitext(other)[0]}"')

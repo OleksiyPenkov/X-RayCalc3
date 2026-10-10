@@ -1,17 +1,5 @@
 unit TestMCPUniversalJob;
 
-(* The optimize_mirror job body, run for real through a job manager.
-
-   The other MCP fixtures test the pieces - the top-k rule on a hand-built
-   swarm, the genome-to-structure mapping, the configuration parser. This one
-   tests the two properties that only show up when the whole thing runs: that
-   the same seed gives the same answer, and that a cancelled run stops and
-   leaves no result behind.
-
-   Both tests drive a real TUniversalOptimizer over the real Henke tables, so
-   they are skipped when the tables are not on this machine. The configuration
-   is deliberately tiny (twenty particles, three iterations); the point is
-   reproducibility, not a good mirror. *)
 
 interface
 
@@ -25,11 +13,8 @@ type
   private
     FTemp: string;
     FSavedWorkDir: TWorkDir;
-    /// <summary>One complete run through a manager of its own, so that two
-    /// runs share nothing but the seed. The result is the caller's to free.</summary>
     function RunOnce(out JobDir: string): TJSONObject;
     function RunConfig(const Config: TUniversalConfig; out JobDir: string): TJSONObject;
-    /// <summary>Polls Job.State until it is Wanted or TimeoutMs elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
   public
     [Setup] procedure Setup;
@@ -37,14 +22,10 @@ type
 
     [Test] procedure SameSeedTwice_GivesTheSameAnswer;
     [Test] procedure Cancel_StopsTheRun_AndLeavesNoResult;
-    { checkpoint_every = 0 means no periodic checkpoint; until 3.9.3 it
-      divided by zero after the first iteration. }
     [Test] procedure CheckpointEveryZero_RunsToTheEnd;
-    { Parallel.For on the job thread, which pumps no messages: OTL frees each
-      task's control only when this thread handles its "terminated" message,
-      so every iteration that skips the drain keeps ~12 MB for good. Win32 ran
-      out of address space in a full test run, and OTL turned that
-      EOutOfMemory into a hang in TOmniParallelSimpleLoop.Destroy. }
+    { The job thread pumps no messages; OTL frees a task control only when
+      that thread handles its "terminated" message, so skipping the drain
+      keeps ~12 MB per iteration. }
     [Test] procedure LongRun_OnTheJobThread_GivesItsMemoryBack;
   end;
 
@@ -60,9 +41,6 @@ const
   TEST_SEED = 12345;
   TEST_TOP_K = 3;
 
-  { The brief's tiny run: ten light-element lines, eight candidate materials,
-    the XRFCalc default search space, and however many particles and iterations
-    the caller asks for. }
   TINY_CONFIG =
     '{"lines":["Be","B","C","N","O","F","Na","Mg","Al","Si"],' +
     '"element_pool":["W","Mo","Cr","Si","B","B4C","Sc","C"],' +
@@ -71,15 +49,12 @@ const
     '"N":{"min":40,"max":200},"sigma":3},' +
     '"optimizer":{"population":%d,"iterations":%d}}';
 
-{ ----------------------------------------------------------------- helpers -- }
 
 function HenkePath: string;
 begin
   Result := IncludeTrailingPathDelimiter(TConfig.SystemDir[sdHenke]);
 end;
 
-/// The materials the tiny run picks from. Without them there is nothing to
-/// optimise and the test says so rather than failing.
 function HenkeTablesPresent: Boolean;
 const
   Needed: array [0 .. 4] of string = ('W', 'Mo', 'Si', 'B4C', 'Sc');
@@ -100,16 +75,12 @@ begin
     Format(TINY_CONFIG, [Population, Iterations])) as TJSONObject;
   Assert.IsNotNull(J, 'the fixture configuration does not parse');
   try
-    // The output directory is the job folder; RunOptimizeJob overwrites it.
     Result := ConfigFromJSON(J, '');
   finally
     J.Free;
   end;
 end;
 
-/// The dominant material of each role of a genome as GenomeToJSON reports it:
-/// the composition array holds one object per role, whose keys are the
-/// materials with a non-zero fraction.
 function PairOfGenome(G: TJSONObject): string;
 var
   Comp: TJSONArray;
@@ -163,7 +134,6 @@ begin
   Result := Abs(dA - dB) / Abs(dB) > 0.05;
 end;
 
-/// The consistency warning of a result, or '' when there is none.
 function WarningOf(R: TJSONObject): string;
 var
   V: TJSONValue;
@@ -175,9 +145,6 @@ begin
     Result := V.Value;
 end;
 
-/// The period and the repeat count of the stack in a package's
-/// best_structure_xrc.json - what XRFCalc shows when it opens the file. The
-/// period is the sum of the layer thicknesses of the repeating stack.
 procedure PackagedStack(const XRFXPath: string; out Period: Double; out N: Integer);
 var
   Zip: TZipFile;
@@ -201,7 +168,6 @@ begin
   Assert.IsNotNull(J, 'best_structure_xrc.json in ' + XRFXPath + ' does not parse');
   try
     Stacks := J.GetValue('Stacks') as TJSONArray;
-    // The multilayer is the stack that repeats; a cap or a buffer has N = 1.
     Best := -1;
     for i := 0 to Stacks.Count - 1 do
       if (Stacks.Items[i] as TJSONObject).GetValue<Integer>('N') > N then
@@ -220,8 +186,6 @@ begin
   end;
 end;
 
-/// The candidate object with its file path taken out, so that two runs in two
-/// different job folders can be compared as text.
 function WithoutPaths(Src: TJSONObject): string;
 var
   Copy_: TJSONObject;
@@ -247,7 +211,6 @@ begin
     Result := Result + WithoutPaths(Arr.Items[i] as TJSONObject) + sLineBreak;
 end;
 
-{ ----------------------------------------------------------------- fixture -- }
 
 procedure TTestMCPUniversalJob.Setup;
 begin
@@ -378,7 +341,6 @@ begin
     [ITERATIONS, Grown div (1024 * 1024)]));
 end;
 
-{ ------------------------------------------------------------ determinism -- }
 
 procedure TTestMCPUniversalJob.SameSeedTwice_GivesTheSameAnswer;
 var
@@ -408,15 +370,11 @@ begin
       Best1 := R1.GetValue('best') as TJSONObject;
       Best2 := R2.GetValue('best') as TJSONObject;
 
-      { The figure of merit to every digit the server prints. }
       Assert.AreEqual(
         (Best1.GetValue('fom') as TJSONNumber).ToJSON,
         (Best2.GetValue('fom') as TJSONNumber).ToJSON,
         'the same seed must give the same figure of merit');
 
-      { And the whole candidate with it - genome, structure and per-line
-        results - so that a difference anywhere is caught, not only in the one
-        number. Only the .xrfx path differs, because the job ids do. }
       Assert.AreEqual(WithoutPaths(Best1), WithoutPaths(Best2),
         'the same seed must give the same best candidate');
 
@@ -425,8 +383,6 @@ begin
       Assert.AreEqual(3, R1.GetValue<Integer>('iterations_run'),
         'three iterations were asked for');
 
-      { Top-k: at most what was asked for, and every pair genuinely different
-        by the published rule. }
       TopK := R1.GetValue('top_k') as TJSONArray;
       Assert.IsTrue(TopK.Count >= 1, 'there is always at least the winner');
       Assert.IsTrue(TopK.Count <= TEST_TOP_K,
@@ -443,21 +399,16 @@ begin
             Format('top_k entries %d and %d are not distinct by the rule',
               [i + 1, j + 1]));
 
-      { The whole ranking, not only the winner, is reproducible. }
       Assert.AreEqual(
         RankingWithoutPaths(R1.GetValue('top_k') as TJSONArray),
         RankingWithoutPaths(R2.GetValue('top_k') as TJSONArray),
         'the same seed must give the same top_k, entry for entry');
 
-      { Nothing may disagree with itself: a consistency_warning means the
-        structure the client is shown does not reproduce the figure of merit it
-        is shown, or that rank 1 re-scores differently from the run. }
       Assert.IsTrue(R1.FindValue('consistency_warning') = nil,
         'run 1 reported a consistency warning: ' + WarningOf(R1));
       Assert.IsTrue(R2.FindValue('consistency_warning') = nil,
         'run 2 reported a consistency warning: ' + WarningOf(R2));
 
-      { The packages, and the state on disk. }
       Assert.IsTrue(TFile.Exists(TPath.Combine(Dir1, 'rank_1.xrfx')),
         'rank_1.xrfx must be written next to the job files');
       Assert.IsTrue(TFile.Exists(TPath.Combine(Dir1, 'config.json')),
@@ -500,7 +451,6 @@ begin
   end;
 end;
 
-{ ----------------------------------------------------------- cancellation -- }
 
 procedure TTestMCPUniversalJob.Cancel_StopsTheRun_AndLeavesNoResult;
 var
@@ -518,8 +468,6 @@ begin
     Exit;
   end;
 
-  { Two hundred particles and five hundred iterations: far more work than the
-    test will wait for, so the run can only end by being stopped. }
   Config := TinyConfig(200, 500);
   Mgr := TJobManager.Create(WorkDir);
   try
@@ -555,8 +503,6 @@ begin
       'a run that was cut short must not leave a result: the job is cancelled, ' +
       'not finished');
 
-    { What the engine did write is still there, which is the point of leaving
-      the folder alone. }
     Assert.IsTrue(
       TFile.Exists(TPath.Combine(TPath.Combine(Job.Dir, 'results'), 'progress.log')),
       'the partial progress log stays in the job folder');

@@ -14,9 +14,9 @@ unit unit_MCPVersion;
 
 interface
 
-function ServerVersionString: string;   // FileVersion resource of XRC_MCP.exe, 'unversioned' if none
-function GitRevision: string;           // GIT_REV from gitrev.inc
-function EngineVersionString: string;   // FileVersion of XRayCalc3.exe beside the server exe, or 'not found'
+function ServerVersionString: string;
+function GitRevision: string;
+function EngineVersionString: string;
 
 implementation
 

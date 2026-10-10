@@ -12,15 +12,6 @@
 
 unit unit_ToolsReference;
 
-(* Reference tools: the four calls an agent makes before it calculates anything.
-
-   describe_server is the entry point. It answers, in one round trip, every
-   question the requirements say a client must not have to guess: which build
-   this is, which Henke tables it is reading, what the units are, which
-   parameters can be fitted and which cannot, where the work directory is, and
-   what the other tools are called. list_materials, optical_constants and
-   list_templates then let the agent check a material before it puts it in a
-   structure. *)
 
 interface
 
@@ -37,8 +28,6 @@ uses
   unit_MCPMaterials, unit_MCPUniversal, unit_MCPFit, unit_gpu_calc;
 
 const
-  // Reported by describe_server.limits. The values are the requirements'
-  // ceilings; the units that enforce them cite the same numbers.
   MAX_LAYERS         = 20000;
   MAX_POINTS         = 100000;
   MAX_INLINE_POINTS  = 2000;
@@ -58,11 +47,8 @@ const
 
   FIT_ENGINE = 'GUI LFPSO (TLFPSO_Periodic / TLFPSO_Poly / TLFPSO_Irregular)';
 
-  { The definition lives in the unit that computes it, so describe_server and
-    every fit_xrr result can never describe two different chi-squareds. }
   FIT_CHI2 = FIT_CHI2_DEFINITION;
 
-  { Reported beside it, never minimised. }
   FIT_CHI2_PLAIN = FIT_CHI2_PLAIN_DEFINITION;
 
   FIT_FREE_PARAMETERS =
@@ -74,16 +60,11 @@ const
     'The engine has no scale, background or resolution parameters either; asking for ' +
     'any of them is refused with error not_fittable.';
 
-  { The one rule, kept in the unit that applies it: DistinctTopK is what
-    optimize_mirror ranks its candidates with, and describe_server must not
-    describe a different one. }
   FIT_TOP_K_RULE = TOP_K_RULE;
 
   ENGINE_DESCRIPTION =
     'X-Ray Calc 3 (Shared/Math, XRayCalc3/LFPSO, Shared/Universal) compiled into this binary';
 
-  // Every error code a tool of this server can return, so a client can branch
-  // on them without scraping messages.
   ERROR_CODES: array [0 .. 18] of string = (
     'invalid_argument', 'invalid_request', 'tool_not_found', 'path_outside_workdir',
     'inbox_readonly', 'not_found', 'invalid_structure', 'unknown_material', 'not_fittable',
@@ -104,7 +85,6 @@ begin
   Result := FloatToStr(V, TFormatSettings.Invariant);
 end;
 
-{ ---------------- describe_server ---------------- }
 
 { A finite Double as a TJSONNumber, or JSON null for a NaN/infinite one -
   TJSONNumber.Create has no representation for either, and JSON itself has
@@ -129,16 +109,6 @@ begin
     Result.AddPair('git_revision', GitRevision);
     Result.AddPair('engine', ENGINE_DESCRIPTION);
     Result.AddPair('xraycalc3_exe_version', EngineVersionString);
-    { The GPU fit_xrr's optimizer.device "auto" and "gpu" would use: its name,
-      or null and the reason there is none. gpu_shader reports which shaders
-      that GPU ended up running: 'precise' (the targeted qualifiers,
-      unit_gpu_calc's default) or 'ieee_strict' (the first-use self-check
-      against the reference Parratt fell back to D3DCOMPILE_IEEE_STRICTNESS
-      on this GPU/driver). gpu_self_check and gpu_self_check_worst are that
-      self-check's measured mean and worst |log10 R/R_ref| over its 200
-      angles - a general guard against a grossly wrong GPU result, not a
-      targeted measurement of `precise` alone (see unit_gpu_calc's header
-      comment). }
     if TGpuEvaluator.Available(GpuName, GpuErr) then
     begin
       Result.AddPair('gpu', GpuName);
@@ -265,7 +235,6 @@ begin
   end;
 end;
 
-{ ---------------- list_materials ---------------- }
 
 function FormulaJSON(const Entry: TMaterialEntry): TJSONValue;
 var
@@ -326,7 +295,6 @@ begin
   end;
 end;
 
-{ ---------------- optical_constants ---------------- }
 
 function OpticalConstantsResult(const Params: TJSONObject): TJSONObject;
 var
@@ -381,7 +349,6 @@ begin
   end;
 end;
 
-{ ---------------- list_templates ---------------- }
 
 function ThicknessJSON(const Layer: TTemplateLayer): TJSONValue;
 begin
@@ -393,8 +360,6 @@ begin
   end;
 end;
 
-/// <summary>True when both materials of a "A/B" template key are in the pool.
-/// An empty pool matches every template.</summary>
 function TemplateInPool(const Key: string; const Pool: TArray<string>): Boolean;
 var
   SlashPos, I: Integer;
@@ -490,7 +455,6 @@ begin
   end;
 end;
 
-{ ---------------- registration ---------------- }
 
 procedure RegisterReferenceTools(Registry: TToolRegistry);
 var

@@ -1,17 +1,5 @@
 unit TestLFPSOProgress;
 
-{ TLFPSO_BASE.OnProgress / Seed / BestChiSquare / BestCurve.
-
-  The default-seed check is pure. The other three drive a real, deliberately
-  tiny TLFPSO_Periodic fit (eight particles, fifteen iterations) of a Si/Mo
-  multilayer whose "experimental" curve is produced by the engine itself, so
-  the fit needs the GUI's Henke tables; when they are not installed the tests
-  pass with a note, the way the Henke tests in TestMCPCalc do.
-
-  The progress test also proves the ownership rule: with OnProgress assigned
-  the engine never posts WM_CHI_UPDATE, and the callee - here the fixture -
-  frees Msg.LayeredModel. If that rule were wrong the suite would report a
-  leak. }
 
 interface
 
@@ -24,8 +12,6 @@ uses
   unit_LFPSO_Periodic;
 
 type
-  { Raised from the progress callback to prove that a callee that blows up
-    still leaves nothing behind. }
   ETestProgressAbort = class(Exception);
 
   { Stops the fit at the last moment before FindTheBest can assign abest.
@@ -42,11 +28,11 @@ type
   TTestLFPSOProgress = class
   private
     FSavedHenkeDir: string;
-    FRaiseOnProgress: Boolean;   // make HandleProgress raise once it has freed
-    FFullCount: Integer;         // Full = True  callbacks seen
-    FStepCount: Integer;         // Full = False callbacks seen
-    FFullWithModel: Integer;     // of those, how many carried a model
-    FStepWithModel: Integer;     // must stay 0: a step update carries none
+    FRaiseOnProgress: Boolean;
+    FFullCount: Integer;
+    FStepCount: Integer;
+    FFullWithModel: Integer;
+    FStepWithModel: Integer;
 
     procedure HandleProgress(const Msg: TUpdateFitProgressMsg);
     function HenkeAvailable(const Material: string): Boolean;
@@ -84,10 +70,9 @@ const
   CU_KA         = 1.5406;   // Cu K-alpha, Angstrom
 
   N_PERIODS = 10;
-  // the true model - the "measurement"
-  TRUE_H1 = 40.0;  TRUE_S1 = 3.0;  TRUE_R1 = 2.33;   // Si
-  TRUE_H2 = 20.0;  TRUE_S2 = 3.0;  TRUE_R2 = 10.20;  // Mo
-  SUB_S   = 3.0;   SUB_R   = 2.33;                   // Si substrate
+  TRUE_H1 = 40.0;  TRUE_S1 = 3.0;  TRUE_R1 = 2.33;
+  TRUE_H2 = 20.0;  TRUE_S2 = 3.0;  TRUE_R2 = 10.20;
+  SUB_S   = 3.0;   SUB_R   = 2.33;
   // the starting guess - off the truth, but with the same period, because the
   // periodic engine holds the stack period constant
   INIT_H1 = 38.0;  INIT_S1 = 2.5;  INIT_R1 = 2.60;
@@ -96,7 +81,6 @@ const
   TEST_SEED  = 7;
   OTHER_SEED = 99;
 
-{ ---------------- helpers ---------------- }
 
 function BuildTrueModel: TLayeredModel;
 var
@@ -131,7 +115,6 @@ begin
   Result.AddSubstrate(SubData);
 end;
 
-{ ---------------- fixture ---------------- }
 
 procedure TTestLFPSOProgress.Setup;
 begin
@@ -174,7 +157,7 @@ begin
     if Msg.LayeredModel <> nil then
       Inc(FStepWithModel);
   end;
-  Msg.LayeredModel.Free;   // the callee owns it; Free copes with nil
+  Msg.LayeredModel.Free;   // the callee owns it
 
   if FRaiseOnProgress then
     raise ETestProgressAbort.Create('the callee blew up after freeing the model');
@@ -190,7 +173,7 @@ begin
   Result.N      := 200;
   Result.StartT := 0.3;
   Result.EndT   := 3.0;
-  Result.DT     := 0;        // no convolution
+  Result.DT     := 0;
   Result.Lambda := CU_KA;
 end;
 
@@ -253,8 +236,6 @@ begin
   Result.Subs.P[3].New(SUB_R);
 end;
 
-{ The measurement: the true model run through the engine on the same grid the
-  fit will use. Deterministic, so both seeded runs see the same data. }
 function TTestLFPSOProgress.MakeExpData(const ACalcParams: TCalcThreadParams): TDataArray;
 var
   Calc: TCalc;
@@ -302,7 +283,6 @@ begin
   end;
 end;
 
-{ ---------------- tests ---------------- }
 
 procedure TTestLFPSOProgress.Test_Seed_DefaultIsMinusOne;
 var
@@ -352,9 +332,6 @@ begin
     Format('the same seed must give the same answer: %.10g vs %.10g', [Chi1, Chi2]));
 end;
 
-{ The reproducibility test above would pass just as well on an engine that
-  ignored the seed entirely, so pin down the other half: a different seed must
-  take the swarm somewhere else. }
 procedure TTestLFPSOProgress.Test_Seed_DifferentSeedsGiveDifferentAnswers;
 var
   Chi1, Chi2: Single;
@@ -370,15 +347,9 @@ begin
     Format('two seeds must not give the same answer: %.10g vs %.10g', [Chi1, Chi2]));
 end;
 
-{ The classic engine's answer for TEST_SEED, pinned before ParticleCost was
-  extracted from EvaluateOnCpu (phase A of the Bayesian fitting work), and
-  re-pinned whenever the engine itself deliberately changes. }
 procedure TTestLFPSOProgress.Test_Seed_PinnedBestChiSquare;
 const
-  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
-    term (plan 2026-09-28-precision-followups, Task 3)
-    re-pinned 2026-09-28: exact SqrtZ (plan 2026-09-28-precision-followups) }
-  PINNED_CHI: Single = 2.91917348;   // the classic engine's answer for TEST_SEED
+  PINNED_CHI: Single = 2.91917348;
 var
   Chi: Single;
   Curve: TDataArray;
@@ -433,7 +404,6 @@ begin
     'BestCurve must cover the whole measured grid');
 end;
 
-{ TTerminateBeforeBestPSO }
 
 procedure TTerminateBeforeBestPSO.InitVelocity;
 begin
@@ -441,13 +411,6 @@ begin
   Terminate;
 end;
 
-{ Stopping a fit before it has recorded a single solution used to raise an
-  access violation: FindTheBest returns at its own FTerminated check, which
-  sits above the only line that assigns abest, and the post-loop update then
-  indexed that empty abest - reading address $24 inside GetPolynomes for a
-  gradient fit, or address 0 via FillModel for any other mode. Run must now
-  finish quietly instead, because a fit stopped that early has nothing to
-  report. }
 procedure TTestLFPSOProgress.Test_StopBeforeFirstBest_DoesNotRaise;
 var
   PSO: TTerminateBeforeBestPSO;
@@ -478,9 +441,6 @@ begin
   end;
 end;
 
-{ A range with min > max has no inside. Run must refuse it up front, naming
-  the layer and the parameter, rather than fit a value that only ever bounces
-  between the two bounds. No Henke table is touched before the check. }
 procedure TTestLFPSOProgress.Test_Run_InvertedRange_RaisesBeforeFitting;
 var
   PSO: TLFPSO_Periodic;
@@ -495,7 +455,7 @@ begin
   Data[1].t := 1.0; Data[1].r := 0.1;
   Data[2].t := 1.5; Data[2].r := 0.01;
   S := MakeStructure;
-  S.Stacks[0].Layers[1].P[3].min := 12.0;   // Mo density: min > max
+  S.Stacks[0].Layers[1].P[3].min := 12.0;
   S.Stacks[0].Layers[1].P[3].max := 8.0;
   PSO := TLFPSO_Periodic.Create;
   try

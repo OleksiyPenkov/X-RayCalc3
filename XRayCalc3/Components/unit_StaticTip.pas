@@ -5,16 +5,8 @@
   * Copyright (C) 2008-2023 Oleksiy Penkov (aka Koreec)
   *
   * Author(s)           Nick Rymanov (nrymanov@gmail.com)
-  * Created             20.08.2008
-  * Description
-  *
-  * $Id: unit_StaticTip.pas 1181 2015-04-01 02:06:36Z koreec $
-  *
-  * History
-  *
   ****************************************************************************** *)
 
-{ TODO -oNickR : добавить поддержку тени }
 
 unit unit_StaticTip;
 
@@ -78,7 +70,6 @@ begin
   RegisterComponents('X-RayCalcComponents', [TStaticTip]);
 end;
 
-{ TMHLStaticTip }
 
 constructor TStaticTip.Create(AOwner: TComponent);
 begin
@@ -119,9 +110,6 @@ var
 begin
   PaintBuffer := BeginBufferedPaint(Canvas.Handle, Rect, BPBF_TOPDOWNDIB, nil, MemDC);
   try
-    //
-    // TODO -oNickR -cподдержка Vista : заменить на RoundRect
-    //
     FillRect(MemDC, Rect, Canvas.Brush.Handle);
     BufferedPaintMakeOpaque(PaintBuffer, @Rect);
   finally

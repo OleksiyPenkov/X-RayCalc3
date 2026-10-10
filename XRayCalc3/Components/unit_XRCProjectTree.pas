@@ -104,7 +104,6 @@ const
   { The marker icons' outline colour, so swatch and markers look related. }
   SwatchBorderColor = TColor($005F3719);
 
-{ Rounded rectangle as a GDI+ path - GDI+ has no AddRoundedRect of its own. }
 procedure AddRoundedRect(const Path: TGPGraphicsPath; const R: TGPRectF;
   const Radius: Single);
 var
@@ -118,7 +117,6 @@ begin
   Path.CloseFigure;
 end;
 
-{ TXRCProjectTree }
 
 function TXRCProjectTree.ScaleForDPI(Value: Integer): integer;
 begin
@@ -133,7 +131,6 @@ begin
   inherited Create(AOwner);
   FTargetDPI := DPI;
 
-  //Project
   AlignWithMargins := True;
   Align := alClient;
   ButtonFillMode := fmTransparent;
@@ -160,7 +157,7 @@ begin
   DragMode := dmAutomatic;
   DragType := dtVCL;
   Font.Color := clWindowText;
-  Font.Height := -13;//ScaleForDPI(16);
+  Font.Height := -13;
   Font.Name := 'Tahoma';
   Font.Style := [];
   { Wide enough for the Explorer chevron, which GetThemePartSize reports as
@@ -205,7 +202,7 @@ begin
   Header.Columns[0].CheckBox := True;
   Header.Columns[0].Options  := [coAllowClick,coDraggable,coEnabled,coFixed,coParentBidiMode,coParentColor,coShowDropMark,coVisible,coAllowFocus];
 
-  Header.Columns[1].Width    := 180; //ScaleForDPI(180);
+  Header.Columns[1].Width    := 180;
   Header.Columns[1].CheckBox := False;
   Header.Columns[1].Options  := [coAllowClick,coDraggable,coEnabled,coParentBidiMode,coParentColor,coResizable,coShowDropMark,coVisible,coAllowFocus];
   Header.Columns[1].Text := 'Project Items';
@@ -249,9 +246,9 @@ procedure TXRCProjectTree.ProjectAdvancedHeaderDraw(Sender: TVTHeader;
 begin
   if hpeBackground in Elements then
   begin
-    PaintInfo.TargetCanvas.Brush.Color := clSkyBlue; // <-- your color here
+    PaintInfo.TargetCanvas.Brush.Color := clSkyBlue;
     if Assigned(PaintInfo.Column) then
-      DrawFrameControl(PaintInfo.TargetCanvas.Handle, PaintInfo.PaintRectangle, DFC_BUTTON, DFCS_FLAT or DFCS_ADJUSTRECT); // <-- I think, that this keeps the style of the header background, but I'm not sure about that
+      DrawFrameControl(PaintInfo.TargetCanvas.Handle, PaintInfo.PaintRectangle, DFC_BUTTON, DFCS_FLAT or DFCS_ADJUSTRECT);
     PaintInfo.TargetCanvas.FillRect(PaintInfo.PaintRectangle);
   end;
 end;
@@ -386,18 +383,7 @@ var
     TProjectData, which shares memory with prItem's ID, CurveID, Color, Active
     and Visible. ProjectSaveNode writes those fields for every node, so they
     have to be read back for every node - but they may only be STORED on a node
-    that really is an extension.
-
-    Reading them straight into Data worked only while the branch's layout was
-    frozen. It is not: FromFit was inserted after Enabled and PolyCount before
-    Poly, which moved ExtType from the second byte of ID onto the third and put
-    PolyCount right on top of Active and Visible. An older project whose data
-    items carry a Unix-timestamp ID then loaded with an ID matching neither
-    [STATE] LinkedData nor its own data_<ID>.dat, and RecoverDataCurves dropped
-    the node - the linked measured curve simply vanished.
-
-    So: read into locals, copy into Data only for a real extension. The file
-    format is untouched; only where the bytes land has been fixed. }
+    that really is an extension. }
   LEnabled: Boolean;
   LExtType: TExtentionType;
   LStackID, LLayerID, LPolyCount: Integer;
@@ -549,10 +535,8 @@ begin
             Data.Data := GetString;
        end;
 
-  end; // case
+  end;
 
-  // Only an extension owns these fields; on any other node they would land on
-  // ID, CurveID, Color, Active and Visible.
   if Data.RowType = prExtension then
   begin
     Data.Enabled := LEnabled;
@@ -581,8 +565,6 @@ begin
   if (FProjectVersion < 8) and (Data.Group = gtModel) and (Data.RowType = prItem) then
     Data.Data := LegacySubstrateDensity(Data.Data);
 
-  { the two root groups get their canonical names back; an item or a folder
-    whose title merely contains the word ("Data 3.dat") keeps its own }
   if Data.RowType = prGroup then
   begin
     if pos('Models', Data.Title) > 0 then Data.Title := 'Models';

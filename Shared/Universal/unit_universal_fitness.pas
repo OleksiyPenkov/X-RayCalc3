@@ -8,7 +8,6 @@ uses
   unit_universal_templates;
 
 type
-  // Fills the layer stack for the given target wavelength index.
   TLayerSetBuilder = reference to procedure(TargetIdx: Integer;
     var Layers: TLayers);
 
@@ -33,7 +32,6 @@ type
     // Thickness-weighted delta of everything in FLayersBuf above the
     // substrate - the effective medium whose critical angle bounds the scan.
     function StackDeltaAvg: Single;
-    // Where to look for the peak of one line, and how finely.
     procedure PeakWindow(Lambda, ThetaBragg, d: Single; NInt: Integer;
       out ThetaPeak, ThetaC, Half, FWHMRefKin, DeltaAvg: Single);
     function GridPoints(Span, FWHMRefKin: Single): Integer;
@@ -49,7 +47,6 @@ type
     function HighestFirstOrderMax(Lambda, d, DeltaAvg: Single): Integer;
     function WindowMax: Integer;
     function ExtractFWHM(PeakIdx: Integer; out Clipped: Boolean): Single;
-    // Scans one line and fills R.RPeak, R.FWHM and the R.Theta*/R.Scan* facts.
     // FLayersBuf must already hold the stack built for this line.
     procedure MeasureLine(Lambda, ThetaBragg, d: Single; NInt: Integer;
       var R: TTargetResult);
@@ -63,11 +60,6 @@ type
     function Evaluate(const Genome: TGenome;
       var Results: TTargetResults): Single;
 
-    // Same FoM code as Evaluate, but the layer stack for each target comes
-    // from Builder; d and NInt drive the Bragg angles and FWHM_ref.
-    // Contract: Results is grown to the configured target count if the caller
-    // passed a shorter (or empty) array, so it is always safe to index
-    // 0..High(Config.Lines) on return. d must be > 0; NInt is clamped to >= 1.
     function EvaluateLayers(const Builder: TLayerSetBuilder; d: Single;
       NInt: Integer; var Results: TTargetResults): Single;
 
@@ -80,8 +72,6 @@ uses
   unit_universal_refcalc;
 
 const
-  // DEFAULT_SCAN_POINTS, DEFAULT_SCAN_HALF_RANGE and the rest of the scan rule
-  // live in unit_universal_types: the MCP adapter echoes the same numbers.
   PENALTY_DARK = 100.0;
   PENALTY_DEGENERATE = 1.0;
 
@@ -98,8 +88,6 @@ begin
     FScanPoints := AConfig.Fitness.ScanPoints
   else
     FScanPoints := DEFAULT_SCAN_POINTS;
-  // A client-set half-range stays a fixed half-range; 0 means the window is
-  // chosen per line from the kinematic width (see PeakWindow).
   FAdaptiveWindow := AConfig.Fitness.ScanHalfRange <= 0;
   if FAdaptiveWindow then
     FScanHalfRange := DEFAULT_SCAN_HALF_RANGE
@@ -139,7 +127,6 @@ var
 begin
   NInt := NRound(Genome.N);
 
-  // Determine if template applies
   UseTemplate := False;
   if FConfig.Structure.PureElements and (Length(FTemplates) > 0) then
   begin
@@ -155,7 +142,6 @@ begin
 
   if UseTemplate then
   begin
-    // Select cap variant (if any)
     HasCap := Length(Templ.Caps) > 0;
     if HasCap then
     begin
@@ -165,13 +151,11 @@ begin
       Cap := Templ.Caps[CapIdx];
     end;
 
-    // Template path: variable layers per period
     TotalLayers := 2 + NInt * Length(Templ.Layers);
     if HasCap then
       Inc(TotalLayers);
     SetLength(FLayersBuf, TotalLayers);
 
-    // Layer 0: vacuum
     FLayersBuf[0].e.re := 1.0;
     FLayersBuf[0].e.im := 0.0;
     FLayersBuf[0].H := 0;
@@ -179,7 +163,6 @@ begin
 
     LayerIdx := 1;
 
-    // Cap layer (if present)
     if HasCap then
     begin
       ElemIdx := FMixer.FindElementIndex(Cap.Material);
@@ -195,7 +178,6 @@ begin
     begin
       for j := 0 to High(Templ.Layers) do
       begin
-        // Compute thickness
         case Templ.Layers[j].ThicknessType of
           ttGamma:
             SubH := Genome.d * Genome.Gamma - Templ.GammaReduction;
@@ -206,7 +188,6 @@ begin
         end;
         if SubH < 0 then SubH := 0;
 
-        // Compute epsilon from template material at fixed density
         ElemIdx := FMixer.FindElementIndex(Templ.Layers[j].Material);
         FMixer.CalcSingleEpsilon(ElemIdx, Templ.Layers[j].Density,
           TargetIdx, Eps);
@@ -219,7 +200,6 @@ begin
       end;
     end;
 
-    // Substrate
     FMixer.CalcSubstrateEpsilon(TargetIdx, Eps);
     FLayersBuf[LayerIdx].e := Eps;
     FLayersBuf[LayerIdx].H := 1e8;
@@ -227,7 +207,6 @@ begin
   end
   else
   begin
-    // Original bilayer path (unchanged)
     TotalLayers := 2 + NInt * LAYERS_PER_PERIOD;
     SetLength(FLayersBuf, TotalLayers);
 
@@ -244,8 +223,6 @@ begin
     begin
       for Role := 0 to LAYERS_PER_PERIOD - 1 do
       begin
-        { the searched density factor; until 3.9.3 1.0 was passed here and
-          the factor never reached the reflectivity }
         FMixer.CalcMixedEpsilon(
           Genome.Composition[Role],
           Genome.DensityFactor[Role],
@@ -287,7 +264,6 @@ begin
   begin
     if FLayersBuf[i].H <= 0 then
       Continue;
-    // CalcSingleEpsilon builds e.re = 1 - 2 delta, so delta = (1 - e.re) / 2.
     Delta := (1 - FLayersBuf[i].e.re) / 2;
     if Delta <= 0 then
       Continue;
@@ -317,7 +293,6 @@ begin
   else
     ThetaPeak := RadToDeg(ArcSin(Sqrt(SinSqr)));
 
-  // The kinematic width AT the peak: the unit the window is measured in.
   FWHMRefKin := RadToDeg(Lambda / (NInt * d * Cos(DegToRad(ThetaPeak))));
 
   if FAdaptiveWindow then
@@ -379,7 +354,6 @@ begin
             (FCurveBuf[i].r > FCurveBuf[i + 1].r)) then
       Continue;
 
-    // The corrected Bragg condition read backwards: which order is this?
     SinSqr := Sqr(Sin(DegToRad(FCurveBuf[i].t))) - 2 * DeltaAvg;
     if SinSqr < 0 then
       SinSqr := 0;
@@ -417,7 +391,6 @@ begin
 
   HalfMax := FCurveBuf[PeakIdx].r / 2;
 
-  // Walk left from peak to find half-max crossing
   FoundLeft := False;
   ThetaLeft := FCurveBuf[0].t;
   for i := PeakIdx downto 1 do
@@ -429,7 +402,6 @@ begin
       Break;
     end;
 
-  // Walk right from peak to find half-max crossing
   FoundRight := False;
   ThetaRight := FCurveBuf[FCurveLen - 1].t;
   for i := PeakIdx to FCurveLen - 2 do
@@ -542,7 +514,6 @@ begin
   if N < 1 then N := 1;
   if N >= Size div 2 then N := Size div 2 - 1;
 
-  // Compute discrete kernel sum for proper normalization
   KernelSum := 0;
   for k := -N to N do
     KernelSum := KernelSum + Exp(-2 * Sqr(k * Delta) / sqrW);
@@ -566,7 +537,6 @@ begin
     Inc(p);
   end;
 
-  // Copy convolved data back into FCurveBuf without resizing (no heap allocation)
   Move(FConvBuf[0], FCurveBuf[0], NewLen * SizeOf(TDataPoint));
   FCurveLen := NewLen;
 end;
@@ -587,13 +557,9 @@ var
 begin
   FoM := 0;
 
-  // Results is written unchecked below and Release builds have range checking
-  // off, so make sure it is at least FTargetCount long. Existing callers
-  // already size it correctly, for which this is a no-op.
   if Length(Results) < FTargetCount then
     SetLength(Results, FTargetCount);
 
-  // --- Phase 1: Pre-compute Bragg angles ---
   for i := 0 to FTargetCount - 1 do
   begin
     ValidArr[i] := False;
@@ -628,7 +594,6 @@ begin
     Results[i].Valid := True;
   end;
 
-  // --- Phase 1b: Evaluate each target + compute cross-reflectivities ---
   for i := 0 to FTargetCount - 1 do
   begin
     if not ValidArr[i] then
@@ -640,7 +605,6 @@ begin
     RPeakArr[i] := Results[i].RPeak;
     FWHMArr[i] := Results[i].FWHM;
 
-    // While layer stack is built for lambda_i, evaluate at other targets' angles.
     // CrossR[j, i] = reflectivity of lambda_i at target j's Bragg angle.
     // lambda_i must be passed (not lambda_j) because FLayersBuf has epsilon for lambda_i.
     if FConfig.Fitness.wPurity > 0 then
@@ -650,13 +614,11 @@ begin
             FLayersBuf, FConfig.Fitness.Polarization, rfError);
   end;
 
-  // --- Phase 2+3: Compute purity and accumulate FoM ---
   for i := 0 to FTargetCount - 1 do
   begin
     if not ValidArr[i] then
       Continue;
 
-    // Purity calculation
     if FConfig.Fitness.wPurity > 0 then
     begin
       ContamSum := 0;
@@ -688,7 +650,6 @@ begin
       FConfig.Fitness.wFWHM * FWHMArr[i] / FWHMRef
     );
 
-    // Penalty for dark elements
     if RPeakArr[i] < FConfig.Fitness.RMinThreshold then
       Penalty := Penalty + PENALTY_DARK;
   end;
@@ -706,7 +667,6 @@ var
 begin
   Penalty := 0;
 
-  // Template negative-thickness penalty
   if FConfig.Structure.PureElements and (Length(FTemplates) > 0) then
   begin
     Key := GetDominantMaterial(Genome.Composition[0]) + '/' +

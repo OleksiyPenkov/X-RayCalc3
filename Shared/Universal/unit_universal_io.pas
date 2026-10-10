@@ -19,9 +19,7 @@ type
     destructor Destroy; override;
 
     class function LoadConfig(const FileName: string): TUniversalConfig;
-    // The whole of LoadConfig except reading and parsing the file. Callers that
-    // already hold the parsed object (the MCP server builds one from tool
-    // arguments) use this and keep ownership of JSON: it is not freed here.
+    // Callers keep ownership of JSON: it is not freed here.
     class function ConfigFromJSONObject(JSON: TJSONObject): TUniversalConfig;
     class procedure SaveConfig(const Config: TUniversalConfig;
       const FileName: string);
@@ -163,7 +161,6 @@ begin
   for i := 0 to JPool.Count - 1 do
     Result.ElementPool[i] := JPool.Items[i].Value;
 
-  // Parse excluded material pairs
   SetLength(Result.ExcludedPairs, 0);
   if JSON.FindValue('excluded_pairs') <> nil then
   begin
@@ -266,7 +263,7 @@ begin
   if JFitness.FindValue('w_purity') <> nil then
     Result.Fitness.wPurity := JFitness.GetValue<Double>('w_purity')
   else
-    Result.Fitness.wPurity := 1.0;  // default: full purity weighting
+    Result.Fitness.wPurity := 1.0;
   if JFitness.FindValue('scan_points') <> nil then
     Result.Fitness.ScanPoints := JFitness.GetValue<Integer>('scan_points')
   else
@@ -280,7 +277,6 @@ begin
   else
     Result.Fitness.NRef := DEFAULT_N_REF;
 
-  // Polarization
   if JFitness.FindValue('polarization') <> nil then
   begin
     if SameText(JFitness.GetValue<string>('polarization'), 's') then
@@ -289,7 +285,7 @@ begin
       Result.Fitness.Polarization := cmSP;
   end
   else
-    Result.Fitness.Polarization := cmSP;  // default
+    Result.Fitness.Polarization := cmSP;
 
   JOptimizer := JSON.GetValue<TJSONObject>('optimizer');
   Result.Optimizer.Population := JOptimizer.GetValue<Integer>('population');
@@ -331,7 +327,6 @@ var
 begin
   JSON := TJSONObject.Create;
   try
-    // Lines
     JTargets := TJSONArray.Create;
     for i := 0 to High(Config.Lines) do
     begin
@@ -343,13 +338,11 @@ begin
     end;
     JSON.AddPair('lines', JTargets);
 
-    // Element pool
     JPool := TJSONArray.Create;
     for i := 0 to High(Config.ElementPool) do
       JPool.Add(Config.ElementPool[i]);
     JSON.AddPair('element_pool', JPool);
 
-    // Excluded pairs
     if Length(Config.ExcludedPairs) > 0 then
     begin
       var JExcl := TJSONArray.Create;
@@ -359,7 +352,6 @@ begin
       JSON.AddPair('excluded_pairs', JExcl);
     end;
 
-    // Structure
     JStructure := TJSONObject.Create;
     JStructure.AddPair('type', Config.Structure.StructureType);
     JStructure.AddPair('layers_per_period', TJSONNumber.Create(Config.Structure.LayersPerPeriod));
@@ -401,7 +393,6 @@ begin
     end;
     JSON.AddPair('structure', JStructure);
 
-    // Fitness
     JFitness := TJSONObject.Create;
     JFitness.AddPair('w_R', TJSONNumber.Create(Config.Fitness.wR));
     JFitness.AddPair('w_FWHM', TJSONNumber.Create(Config.Fitness.wFWHM));
@@ -421,7 +412,6 @@ begin
       JFitness.AddPair('n_ref', TJSONNumber.Create(Config.Fitness.NRef));
     JSON.AddPair('fitness', JFitness);
 
-    // Optimizer
     JOptimizer := TJSONObject.Create;
     JOptimizer.AddPair('population', TJSONNumber.Create(Config.Optimizer.Population));
     JOptimizer.AddPair('iterations', TJSONNumber.Create(Config.Optimizer.Iterations));
@@ -433,7 +423,6 @@ begin
     JOptimizer.AddPair('checkpoint_every', TJSONNumber.Create(Config.Optimizer.CheckpointEvery));
     JSON.AddPair('optimizer', JOptimizer);
 
-    // Top-level fields
     JSON.AddPair('substrate', Config.Substrate);
     if Config.HenkePath = '' then
       JSON.AddPair('henke_path', TJSONNull.Create)
@@ -460,12 +449,10 @@ procedure TUniversalIO.ClearOutputDir(const OutputDir: string);
 var
   CurvesDir: string;
 begin
-  // Remove previous best_curves
   CurvesDir := TPath.Combine(OutputDir, 'best_curves');
   if TDirectory.Exists(CurvesDir) then
     TDirectory.Delete(CurvesDir, True);
 
-  // Remove previous result files
   if TFile.Exists(TPath.Combine(OutputDir, 'best_structure.json')) then
     TFile.Delete(TPath.Combine(OutputDir, 'best_structure.json'));
   if TFile.Exists(TPath.Combine(OutputDir, 'best_structure_xrc.json')) then
@@ -674,7 +661,6 @@ begin
 
     JLayers := TJSONArray.Create;
 
-    // Check for template
     TemplIdx := -1;
     if Config.Structure.PureElements and (Length(Templates) > 0) then
     begin
@@ -692,7 +678,6 @@ begin
 
     if TemplIdx >= 0 then
     begin
-      // Cap layer as separate stack (if present)
       Templ := Templates[TemplIdx];
       if (Length(Templ.Caps) > 0) and (Best.CapH > 0) then
       begin
@@ -727,7 +712,6 @@ begin
         JStacks.Add(JCapStack);
       end;
 
-      // Template-expanded layers
       for i := 0 to High(Templ.Layers) do
       begin
         case Templ.Layers[i].ThicknessType of
@@ -759,7 +743,6 @@ begin
     end
     else
     begin
-      // Original 2-layer output
       for i := 0 to LAYERS_PER_PERIOD - 1 do
       begin
         DomIdx := 0;
@@ -776,7 +759,7 @@ begin
         EffDensity := 0;
         for j := 0 to High(Config.ElementPool) do
           EffDensity := EffDensity + Best.Composition[i][j] * Mixer.GetElementDensity(j);
-        EffDensity := EffDensity * Best.DensityFactor[i];   // as the fitness built it
+        EffDensity := EffDensity * Best.DensityFactor[i];
 
         JLayer := TJSONObject.Create;
         JLayer.AddPair('M', MatName);
@@ -959,7 +942,6 @@ begin
       JParticle.AddPair('x', GenomeToJSON(State.Particles[i].X));
       JParticle.AddPair('pbest', GenomeToJSON(State.Particles[i].PBest));
       JParticle.AddPair('pbest_fom', TJSONNumber.Create(State.Particles[i].PBestFoM));
-      // Velocity
       JVel := TJSONObject.Create;
       JVComp := TJSONArray.Create;
       for j := 0 to LAYERS_PER_PERIOD - 1 do
@@ -1057,7 +1039,6 @@ begin
       Result.Particles[i].X := JSONToGenome(JParticle.GetValue<TJSONObject>('x'));
       Result.Particles[i].PBest := JSONToGenome(JParticle.GetValue<TJSONObject>('pbest'));
       Result.Particles[i].PBestFoM := JParticle.GetValue<Double>('pbest_fom');
-      // Restore velocity
       JVel := JParticle.GetValue<TJSONObject>('v');
       Result.Particles[i].V := CreateVelocity(Length(Config.ElementPool));
       JVComp := JVel.GetValue<TJSONArray>('composition');

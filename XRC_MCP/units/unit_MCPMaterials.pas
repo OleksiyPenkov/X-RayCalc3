@@ -12,21 +12,10 @@
 
 unit unit_MCPMaterials;
 
-(* The Henke material database, seen from the MCP side.
-
-   The server never has its own table directory: it reads exactly the tables
+(* The server never has its own table directory: it reads exactly the tables
    the GUI reads, through TConfig.SystemDir[sdHenke]. It never *writes* the
    configuration - assigning TConfig.SystemDir persists xrc3.ini, so the path
    is only ever read here.
-
-   Two things the GUI never needed and this unit adds:
-
-   - Canonical names. The .bin files on disk are inconsistently cased
-     ("RU.bin", "Si.bin", "B4C.bin"). Windows file lookups are case-insensitive
-     so the engine does not care, but list_materials has to report *a* name and
-     an agent that echoes it back must get a hit. The directory is listed once
-     and cached; ResolveHenkeName maps any casing onto the name as it appears
-     on disk.
 
    - Formulae. A table name such as "B4C" is decomposed into element symbols so
      that list_materials can be filtered by an element pool and optical_constants
@@ -49,9 +38,9 @@ type
     Name: string;                  // file base name exactly as it is on disk
     AtomicMass: Double;            // A, g/mol      - from the .bin header
     BulkDensity: Double;           // rho, g/cm^3   - from the .bin header
-    Parsed: Boolean;               // the name decomposes into element symbols
+    Parsed: Boolean;
     Parts: TArray<TFormulaPart>;
-    IsElement: Boolean;            // the name is a single element symbol
+    IsElement: Boolean;
   end;
 
 const
@@ -60,20 +49,10 @@ const
     '- see open question 4';
   DEFAULT_EDGE_WINDOW = 0.25;
 
-/// <summary>The GUI's Henke directory, with a trailing path delimiter.</summary>
 function HenkeDir: string;
-/// <summary>True when a table exists for this name, in any casing.</summary>
 function HenkeExists(const Material: string): Boolean;
-/// <summary>Maps any casing of a table name onto the base name as it is
-/// spelled on disk. False (and Canonical = '') when there is no such table.</summary>
 function ResolveHenkeName(const Material: string; out Canonical: string): Boolean;
-/// <summary>Every table, or - when ElementFilter is not empty - every table
-/// whose name decomposes into element symbols that are all in the filter.
-/// Names that do not decompose are dropped by a non-empty filter.</summary>
 function ListMaterials(const ElementFilter: TArray<string>): TArray<TMaterialEntry>;
-/// <summary>Decomposes a chemical formula: 'B4C' -> [B:4, C:1],
-/// 'W0.7Si0.3' -> [W:0.7, Si:0.3]. False when the string is empty, does not
-/// parse completely, or names something that is not an element symbol.</summary>
 function ParseFormula(const S: string; out Parts: TArray<TFormulaPart>): Boolean;
 /// <summary>delta and beta of n = 1 - delta + i*beta at LambdaA Angstrom.
 /// Density <= 0 means the bulk value from the table header. False when there
@@ -87,17 +66,10 @@ function NearestEdges(const Material: string; EeV, WindowFraction: Double): TJSO
 /// <summary>{path, table_count, newest_file_utc, source_note}. Caller frees.</summary>
 function HenkeSummary: TJSONObject;
 
-/// <summary>The XRF lines file: --lines &lt;file&gt;, else XRFLinesPath from
-/// XRFCalc.ini beside the exe, else ..\..\Shared\Universal\xrf_lines.json,
-/// else xrf_lines.json beside the exe. '' when none of them exists.</summary>
 function ResolveLinesFile: string;
-/// <summary>The template library: --templates &lt;file&gt;, else TemplatePath
-/// from XRFCalc.ini beside the exe. '' when there is none - the server runs
-/// without templates and list_templates then returns an empty array.</summary>
 function ResolveTemplatesFile: string;
 
 var
-  // Filled once at startup by RunServer, reported by describe_server.
   LinesFile: string = '';
   TemplatesFile: string = '';
 
@@ -114,8 +86,6 @@ uses
   unit_MCPErrors, unit_MCPSandbox;
 
 const
-  // The 118 element symbols, canonical casing. A formula token has to be one
-  // of these; nothing else is accepted as an element.
   ELEMENT_SYMBOLS: array [0 .. 117] of string = (
     'H',  'He', 'Li', 'Be', 'B',  'C',  'N',  'O',  'F',  'Ne',
     'Na', 'Mg', 'Al', 'Si', 'P',  'S',  'Cl', 'Ar', 'K',  'Ca',
@@ -136,10 +106,6 @@ const
   EDGE_MAX_STEP = 0.02;
 
 var
-  // The directory listing and the parsed table headers, built once. FCacheDir
-  // is the directory the cache was built for; if the configuration ever
-  // pointed somewhere else the cache rebuilds itself.
-  //
   // Guarded by FCacheLock: a job body looks materials up from the worker thread
   // while the main loop is answering list_materials, so the build-once and the
   // reads of FEntries would otherwise race - two threads could both find the
@@ -157,7 +123,6 @@ begin
   Result := IncludeTrailingPathDelimiter(TConfig.SystemDir[sdHenke]);
 end;
 
-{ ---------------- formula parsing ---------------- }
 
 function IsElementSymbol(const S: string): Boolean;
 var
@@ -169,8 +134,6 @@ begin
   Result := False;
 end;
 
-/// <summary>The canonical spelling of an element symbol written in any case,
-/// or '' when there is no such element.</summary>
 function CanonicalElement(const S: string): string;
 var
   I: Integer;
@@ -195,7 +158,6 @@ begin
   N := Length(S);
   while I <= N do
   begin
-    // symbol: an upper-case letter and an optional lower-case letter
     if not CharInSet(S[I], ['A' .. 'Z']) then
       Exit(False);
     Sym := S[I];
@@ -208,7 +170,6 @@ begin
     if not IsElementSymbol(Sym) then
       Exit(False);
 
-    // count: an optional number, integer or decimal
     Start := I;
     while (I <= N) and CharInSet(S[I], ['0' .. '9']) do
       Inc(I);
@@ -216,7 +177,7 @@ begin
     begin
       Inc(I);
       if (I > N) or not CharInSet(S[I], ['0' .. '9']) then
-        Exit(False);           // a trailing '.' is not a number
+        Exit(False);
       while (I <= N) and CharInSet(S[I], ['0' .. '9']) do
         Inc(I);
     end;
@@ -261,7 +222,6 @@ begin
   Result := True;
 end;
 
-{ ---------------- the table directory ---------------- }
 
 /// <summary>Atomic mass and bulk density from a .bin header: an int32-prefixed
 /// name string followed by two singles.</summary>
@@ -413,7 +373,6 @@ begin
   end;
 end;
 
-{ ---------------- optical constants ---------------- }
 
 function OpticalConstants(const Material: string; LambdaA, Density: Double;
   out DensityUsed, Delta, Beta: Double): Boolean;
@@ -485,7 +444,7 @@ begin
     for I := 0 to High(Parts) do
     begin
       if not ResolveHenkeName(Parts[I].Symbol, SymFile) then
-        Continue;               // no table for this element: nothing to report
+        Continue;
       SetLength(Table, 0);      // ReadHenkeTable appends, so start empty
       ReadHenkeTable(SymFile, Na, Nro, Table);
       for J := 0 to High(Table) - 1 do
@@ -573,10 +532,7 @@ begin
   end;
 end;
 
-{ ---------------- file resolution ---------------- }
 
-/// <summary>`--name <value>` / `--name=<value>` / `-name <value>` /
-/// `/name <value>`, the same spellings TWorkDir accepts for --workdir.</summary>
 function SwitchValue(const Name: string; out Value: string): Boolean;
 var
   I: Integer;
@@ -607,8 +563,6 @@ begin
   Result := IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)));
 end;
 
-/// <summary>A key of [General] in the XRFCalc.ini beside the exe, or '' when
-/// there is no ini or no such key.</summary>
 function XRFCalcIniValue(const Key: string): string;
 var
   IniPath: string;

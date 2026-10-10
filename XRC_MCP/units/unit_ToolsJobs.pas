@@ -12,26 +12,13 @@
 
 unit unit_ToolsJobs;
 
-(* The job tools: optimize_mirror and fit_xrr, which submit one, and
-   job_status, job_result and cancel_job, which drive every job whatever
-   submitted it.
-
-   A submitting tool returns a job id and nothing else; the client then polls it
-   here. Keeping the polling tools next to the submission means the contract
-   they share (what a state name means, what happens to an id the server has
-   never seen, where the files land) is written down in one place.
-
-   An unknown id is deliberately *not* an error for job_status and cancel_job:
+(* An unknown id is deliberately *not* an error for job_status and cancel_job:
    the registry is in memory, so every id from before a restart is unknown, and
    an agent that polls one should be told the state plainly rather than have a
    failed call to interpret. job_result is the exception - there the client is
    asking for data that does not exist, and an error is the honest answer.
 
-   Both submitting tools validate their whole request synchronously - an
-   argument that cannot be read is an error on the submitting call, not a job
-   that fails a minute later - and hand the parsed record to the body. The
-   bodies themselves live next to their engines: RunOptimizeJob in
-   unit_MCPUniversal, RunFitJob in unit_MCPFit. *)
+*)
 
 interface
 
@@ -71,7 +58,6 @@ begin
       [DEF_JOB_WAIT_S, MAX_JOB_WAIT_S, DEF_JOB_WAIT_S]));
 end;
 
-/// job_wait's "wait_s" in milliseconds.
 function ParseWaitMs(const Params: TJSONObject): Integer;
 var
   Wait: Double;
@@ -87,7 +73,6 @@ begin
   Result := Round(Wait * 1000);
 end;
 
-{ ------------------------------------------------------- optimize_mirror -- }
 
 { AddRefProp fills in the description, so nothing here adds one: two
   "description" keys in the same schema object is not a schema. }
@@ -104,8 +89,6 @@ begin
   Result.AddPair('type', 'string');
 end;
 
-/// One item of "lines": the full object or a bare element symbol, exactly as
-/// evaluate_lines accepts it.
 function OptimizeLineSchema: TJSONObject;
 var
   Obj, Str: TJSONObject;
@@ -249,10 +232,6 @@ begin
     'the server was started with is used.');
 end;
 
-/// Submits one optimisation. The configuration is parsed and validated here so
-/// that a client learns about a bad argument on this call rather than from a
-/// job that fails a minute later; the record it produces is captured by the
-/// body.
 function SubmitOptimize(const Params: TJSONObject): TJSONObject;
 var
   Work, Request: TJSONObject;
@@ -307,8 +286,6 @@ begin
                     and $7FFFFFFF);
   end;
 
-  { request.json records the arguments as they arrived, with the seed and top_k
-    the server resolved, so a run can be repeated from the file alone. }
   Request := Params.Clone as TJSONObject;
   try
     if Request.FindValue('seed') <> nil then
@@ -387,7 +364,6 @@ begin
     end);
 end;
 
-{ ---------------------------------------------------------------- fit_xrr -- }
 
 function FitCurveItemSchema: TJSONObject;
 var
@@ -572,12 +548,6 @@ begin
       'one click of Data - Smooth.', [MAX_SMOOTH_PASSES]));
 end;
 
-/// Submits one fit. The whole request is parsed and validated here - the
-/// measurement is read, the structure is built and the bounds are resolved - so
-/// that a client learns about a bad argument on this call rather than from a
-/// job that fails a minute later.
-/// One item of "paired": a bare parameter name, or the same {stack, layer,
-/// parameters} address "free" uses.
 function FitPairedItemSchema: TJSONObject;
 var
   Obj, Str, Names: TJSONObject;
@@ -653,8 +623,6 @@ begin
                     and $7FFFFFFF);
   end;
 
-  { request.json records the arguments as they arrived, with the seed the
-    server resolved, so a run can be repeated from the file alone. }
   Request := Params.Clone as TJSONObject;
   try
     if Request.FindValue('seed') <> nil then
@@ -909,7 +877,6 @@ begin
     end);
 end;
 
-{ ------------------------------------------------------------ the polling -- }
 
 procedure RegisterJobTools(Registry: TToolRegistry);
 begin

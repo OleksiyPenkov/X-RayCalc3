@@ -9,80 +9,16 @@
 
 unit unit_gpu_calc;
 
-(* Evaluates a whole LFPSO population on the GPU: for every particle the
-   Parratt reflectivity on the measured angles, the resolution convolution and
-   the chi-squared TCalc.CalcChiSquare computes, in two compute dispatches.
-
-   Direct3D 11 compute shaders, so there is no runtime to install: d3d11.dll,
-   dxgi.dll and d3dcompiler_47.dll ship with Windows 10 and later, and the same
-   code runs in the Win32 and the Win64 builds. The shader is compiled from the
-   HLSL below once per process.
-
-   The recursion mirrors TCalc.RefCalc layer for layer, including its
-   cancellation-free form of eps - sin^2(t): sin^2(theta) - delta, delta = 1 -
-   Re epsilon carried directly from the materials (TCalcLayer.delta,
-   unit_materials.PrepareLayers) into the layer buffer's first float, rather
-   than recovered from a Single epsilon near 1 (both engines since
-   2026-09-28). The grazing sine itself comes from the host, in Double,
-   exactly as TCalc.CalcTet's angle reaches TCalc.RefCalc: Setup computes
-   Single ThetaK := Theta[i] / KScale, then System.Sin(Pi * Double(ThetaK) /
-   180) in Double, stored as Single, and uploads it per angle in the SinG
-   buffer the Reflect kernel reads directly - the same Single value
-   TCalc.RefCalc itself uses. KScale stays in TParamsCB/cbuffer Params even
-   though Reflect no longer reads it, so the 80-byte constant-buffer layout is
-   unchanged.
-
-   Carrying delta end to end (task 2, 2026-09-28) still leaves cancellation-
-   sensitive sums in the kernel: sin_g^2 - delta feeding the Fresnel argument,
-   and the delta/beta form of 1 - |ei/eB| (EpsRatio's Double math, done here in
-   Single) feeding s1. The compiler/driver, compiled with
-   D3DCOMPILE_OPTIMIZATION_LEVEL3 and without D3DCOMPILE_IEEE_STRICTNESS, may
-   still reassociate those sums with their neighbours. Marking them, and the
-   intermediates that feed them, `precise` - source-order, unfused IEEE
-   evaluation for just those expressions (see the comments at KB/Ki and at s1
-   in Reflect below) - keeps the GPU close to TCalc's own accuracy; see
-   TestGpuCalc's GpuRawCurve_CloseToDoublePrecision for the measured mean and
-   worst |log10 R/R_ref| against a double-precision Parratt, before and after
-   this task, and CpuRawCurve_CloseToDoublePrecision for TCalc's own.
-   D3DCOMPILE_IEEE_STRICTNESS globally reaches the same accuracy but costs
-   ~13% more time per Evaluate; the targeted `precise` qualifiers cost nothing
-   measurable, which is why they were chosen over the global flag.
-
-   Each fit owns one TGpuEvaluator and uses it from the fitting thread only:
+(* Each fit owns one evaluator and uses it only from its fitting thread:
    a D3D11 immediate context is not thread-safe.
 
-   The first Create in the process also self-checks (SelfCheck) the compiled
-   shaders against the double-precision reference ParrattRef
-   (unit_parratt_ref) on a fixed W/B4C multilayer, 200 angles from 0.1 deg to
-   4 deg: the mean and the worst |log10 R/R_ref| must stay under
-   SelfCheckBound (3E-4) and SelfCheckWorstBound. This is a general guard
-   against a grossly wrong GPU result - a bad driver/compiler, a
-   transcendental (sqrt/sin/cos/log/exp) that is far less accurate than this
-   one's, a broken division - measured against the same reference the CPU is
-   measured against, not a targeted test of `precise` alone: on this GPU
-   (RTX 5080), removing every `precise` qualifier does not move the
-   self-check's own numbers outside its bounds (mean 7.61E-6 without
-   `precise` vs 7.27E-6 with it, worst 7.89E-5 with it - see TestGpuCalc's
-   SelfCheck_PassesWithPrecise/SelfCheck_FallsBackToIeeeStrict for the full
-   measurement), because carrying delta end to end (task 2, 2026-09-28) already
-   turned sin_g^2 - delta into a well-conditioned subtraction (delta is
-   small, not recovered from a near-1 epsilon) regardless of reassociation.
-   `precise` stays in place as defence in depth - `num` below (the epsilon
-   ratio's numerator) is the one expression where an increasingly aggressive
-   compiler could still reintroduce a cancellation the self-check would then
-   catch - and GpuRawCurve_CloseToDoublePrecision keeps measuring the
-   `precise` build's own accuracy directly. If the self-check fails, the
-   shaders are recompiled once with D3DCOMPILE_IEEE_STRICTNESS (globally
-   disabling reassociation) and checked again; if that also fails, Create
-   raises and the caller falls back to the CPU, same as any other EGpuError,
-   and the whole sequence retries from a clean state on the next Create
-   (Available's own 60-second retry, or the caller's next attempt). ShaderMode
-   ('precise' or 'ieee_strict'), SelfCheckError and SelfCheckErrorWorst are
-   reported by XRC_MCP's describe_server as the server section's gpu_shader,
-   gpu_self_check and gpu_self_check_worst, so an agent can see which path a
-   remote machine took. A successful Create's self-check runs once per
-   process: later Creates skip it, since it validates the shader bytes, not
-   the device state. *)
+   Cancellation-sensitive shader expressions need targeted `precise`
+   qualifiers to prevent compiler/driver reassociation. Global IEEE
+   strictness reaches the same accuracy but costs more per evaluation.
+
+   Self-check validates shader bytes, not device state, so a successful
+   check is shared process-wide. It guards against gross driver/compiler
+   errors, not every loss caused by removing `precise`. *)
 
 interface
 
@@ -112,16 +48,16 @@ type
     FProbeName, FProbeError: string;
     FProbeTick: UInt64;
     FFailAfter: Integer;
-    FStrict: Boolean;            // shaders compiled with D3DCOMPILE_IEEE_STRICTNESS
-    FShaderMode: string;         // '' | 'precise' | 'ieee_strict', after the self-check
-    FSelfChecked: Boolean;       // the self-check has settled on a usable compilation
+    FStrict: Boolean;
+    FShaderMode: string;
+    FSelfChecked: Boolean;
     FSelfCheckError: Double;
     FSelfCheckErrorWorst: Double;
     FSelfCheckBound: Double;
     FSelfCheckWorstBound: Double;
     FFailSelfChecks: Integer;
-    FSelfCheckFailMsg: string;   // cached message of a double self-check failure; '' = none cached
-    FSelfCheckFailTick: UInt64;  // GetTickCount64 when FSelfCheckFailMsg was set
+    FSelfCheckFailMsg: string;
+    FSelfCheckFailTick: UInt64;
   private
     FDev: ID3D11Device;
     FCtx: ID3D11DeviceContext;
@@ -135,7 +71,7 @@ type
     FNLay, FNAng, FNPart, FChunk: Integer;
     FStepsPerDispatch: Int64;
     FAdapterName: string;
-    FInSelfCheck: Boolean;   // true while SelfCheck's own Evaluate/RunKernels run
+    FInSelfCheck: Boolean;
     class procedure Check(HR: HRESULT; const What: string); static;
     class procedure CompileShaders; static;
     class function CompileEntry(const Entry: AnsiString; Strict: Boolean): TBytes; static;
@@ -144,28 +80,16 @@ type
     procedure SetOffset(Offset, Count: Integer);
     procedure RunKernels(const Layers: TArray<Single>; Second: ID3D11ComputeShader;
       var Output: TArray<Single>);
-    /// <summary>Evaluates a fixed W/B4C multilayer (200 angles, 0.1..4 deg)
-    /// against the double-precision ParrattRef and returns the mean
-    /// |log10 R/R_ref|, also left in FSelfCheckError; the worst of the 200
-    /// is left in FSelfCheckErrorWorst. Does not consume or trigger
-    /// FailAfter (FInSelfCheck). Uses Self's own Setup/Evaluate/RawCurve, so
-    /// it leaves its buffers sized for one particle of this layer count -
-    /// the caller's own Setup below replaces them.</summary>
+    /// <summary>Does not consume FailAfter. Leaves buffers sized for one
+    /// particle; the caller must replace them with its own Setup.</summary>
     function SelfCheck: Double;
   public
     class constructor Create;
     class destructor Destroy;
-    /// <summary>Whether a GPU evaluator can be created on this machine: a
-    /// hardware adapter, feature level 11_0 and the shader compiler. A success
-    /// holds for the process, a failure is tried again after a minute; Name is
-    /// the adapter, Error why it cannot.</summary>
     class function Available(out Name, Error: string): Boolean; static;
 
-    /// <summary>Opens the hardware adapter with the most dedicated memory.
-    /// Raises EGpuError when there is none that can run the shaders.</summary>
     constructor Create;
-    /// <summary>Sizes every buffer for NPart particles of NLay layers
-    /// (ambient and substrate included) on the angles of Inputs.</summary>
+    /// <summary>NLay includes ambient and substrate.</summary>
     procedure Setup(const Inputs: TGpuEvalInputs; NLay, NPart: Integer;
       Pol: TPolarisation; RF: TRoughnessFunction; Lambda, KScale, Limit: Single);
     /// <summary>Layers holds NPart * NLay records of four Singles, particle
@@ -178,53 +102,27 @@ type
     property AdapterName: string read FAdapterName;
     property LayerCount: Integer read FNLay;
     property ParticleCount: Integer read FNPart;
-    /// <summary>Angle x layer steps one Reflect dispatch may take; more
-    /// particles than that are split over several dispatches. Set before
-    /// Setup. Tests lower it to exercise the split.</summary>
+    /// <summary>Angle x layer steps per dispatch. Set before Setup.</summary>
     property StepsPerDispatch: Int64 read FStepsPerDispatch write FStepsPerDispatch;
-    /// <summary>Particles per dispatch after Setup.</summary>
     property ParticlesPerDispatch: Integer read FChunk;
-    /// <summary>Test hook: when positive, the N-th Evaluate of any
-    /// evaluator in the process raises EGpuError instead of running, once, and the
-    /// hook resets itself. It exercises the engines' fallback to the CPU.
-    /// Does not count the self-check's own internal Evaluate (SelfCheck runs
-    /// before Create hands the evaluator to anyone, and must not consume a
-    /// count meant for the caller's own evaluations).</summary>
+    /// <summary>Process-wide one-shot failure on the N-th Evaluate.
+    /// Self-check evaluations must not consume the caller's count.</summary>
     class property FailAfter: Integer read FFailAfter write FFailAfter;
-    /// <summary>'precise' or 'ieee_strict': how the shaders were compiled,
-    /// after the self-check; '' before the first evaluator is created, or
-    /// again whenever the self-check has just failed under both
-    /// compilations (the next Create retries the whole sequence).</summary>
+    /// <summary>'precise' or 'ieee_strict'; empty until a check succeeds.</summary>
     class property ShaderMode: string read FShaderMode;
-    /// <summary>The self-check's mean |log10 R/R_ref| on its reference
-    /// multilayer, at whichever compilation it finally settled on (or the
-    /// IEEE-strict attempt's value, if both failed).</summary>
+    /// <summary>Mean |log10 R/R_ref|; the strict attempt's value if both fail.</summary>
     class property SelfCheckError: Double read FSelfCheckError;
-    /// <summary>The self-check's worst |log10 R/R_ref| over its 200 angles,
-    /// at whichever compilation it finally settled on.</summary>
+    /// <summary>Worst |log10 R/R_ref| over the reference angles.</summary>
     class property SelfCheckErrorWorst: Double read FSelfCheckErrorWorst;
-    /// <summary>Mean |log10 R/R_ref| above which the self-check fails.
-    /// 3E-4.</summary>
+    /// <summary>Failure bound for mean |log10 R/R_ref|.</summary>
     class property SelfCheckBound: Double read FSelfCheckBound write FSelfCheckBound;
-    /// <summary>Worst-point |log10 R/R_ref| above which the self-check
-    /// fails, alongside SelfCheckBound on the mean. Default is about 40x
-    /// the worst measured on the reference GPU with `precise` (the same
-    /// ratio as SelfCheckBound to that GPU's measured mean), rounded up to
-    /// one significant digit.</summary>
     class property SelfCheckWorstBound: Double read FSelfCheckWorstBound write FSelfCheckWorstBound;
-    /// <summary>Test hook: the next N self-checks fail whatever they
-    /// measure; resets itself.</summary>
     class property FailSelfChecks: Integer read FFailSelfChecks write FFailSelfChecks;
-    /// <summary>Test hook: forget the compiled shaders, the self-check and
-    /// the probe, so the next Create compiles and checks again.</summary>
     class procedure ResetShaders; static;
   end;
 
-/// <summary>Writes one particle's expanded layers into Layers the way
-/// TGpuEvaluator.Evaluate reads them: four Singles
-/// per layer (delta = 1 - Re epsilon, e.im, thickness, sigma), the particle's
-/// block starting at 4 * Length(L) * Particle. Distinct particles may be
-/// packed from several threads at once.</summary>
+/// Distinct particles may be packed concurrently; each occupies a separate
+/// block of 4 * Length(L) Singles.
 procedure PackModelLayers(const L: TCalcLayers; var Layers: TArray<Single>; Particle: Integer);
 
 implementation
@@ -245,7 +143,7 @@ const
     {
         uint  NLay;       // layers incl. ambient (0) and substrate (NLay-1)
         uint  NAng;
-        uint  NPart;      // particles in this dispatch
+        uint  NPart;
         uint  Pol;        // 0 = S, 1 = S+P averaged
         float c1;         // 4 pi / lambda
         float c2;         // c1 / 2
@@ -259,7 +157,7 @@ const
         uint  PartOffset; // first particle of this dispatch
         float ChiNorm;    // 1000 / High(data)
         float Pad;
-        uint  SolveScale; // 1: score at the scale that minimises chi2 (TCalc.SolveScale)
+        uint  SolveScale;
         float ScaleWindow;// |log10 scale| bound; 0 pins it
         float Pad2;
         float Pad3;
@@ -279,7 +177,6 @@ const
         float d = 1.0 / (b.x*b.x + b.y*b.y);
         return float2((a.x*b.x + a.y*b.y) * d, (a.y*b.x - a.x*b.y) * d);
     }
-    // the branch of math_complex.SqrtZ
     float2 csqrt(float2 z)
     {
         if (z.x == 0 && z.y == 0) return float2(0, 0);
@@ -293,8 +190,6 @@ const
         float im = sqrt(m * 0.5);
         return float2(abs(z.y) * rsqrt(m * 2), z.y < 0 ? -im : im);
     }
-    // TCalc.RefCalc's Roughness (the 3.9.3 forms: rfLinear damps at every
-    // sigma, not only below 0.5 A; rfSinus is the Stearns form, not 0)
     float Roughness(float sigma, float s)
     {
         if (RF == 0) return exp(-(sigma * sigma * 0.5) * s * s);
@@ -333,9 +228,9 @@ const
         float sin_g2 = sin_g * sin_g;
 
         uint base = p * NLay;
-        float4 lb = Layers[base + NLay - 1];            // the layer below, i + 1
+        float4 lb = Layers[base + NLay - 1];
         float dB = lb.x, bB = lb.y;
-        float2 eB = float2(1 - dB, bB);            // for the P ratio and |eB|
+        float2 eB = float2(1 - dB, bB);
         // precise: without it, the compiler/driver may reassociate
         // sin_g2 - dB against surrounding sums, undoing the cancellation-free
         // form.
@@ -343,7 +238,7 @@ const
         float2 KB = c2 * csqrt(float2(reB, bB));
         float2 R  = float2(0, 0);
         float2 Rp = float2(0, 0);
-        bool first = true;   // R = 0 below the first interface: no phase term
+        bool first = true;
 
         for (int i = (int)NLay - 2; i >= 0; --i)
         {
@@ -462,7 +357,6 @@ const
 
     ''';
 
-{ TGpuEvaluator }
 
 class constructor TGpuEvaluator.Create;
 begin
@@ -522,7 +416,7 @@ begin
     begin
       Reflect := CompileEntry('Reflect', FStrict);
       Chi := CompileEntry('ChiSquare', FStrict);
-      FReflectCode := Reflect;       // both or neither
+      FReflectCode := Reflect;
       FChiCode := Chi;
     end;
   finally
@@ -611,28 +505,15 @@ begin
     D3D11_CREATE_DEVICE_SINGLETHREADED, @FL, 1, D3D11_SDK_VERSION, FDev, OutFL, FCtx),
     'D3D11CreateDevice on ' + FAdapterName);
 
-  { Locked for the whole compile-and-self-check sequence, not just the
-    self-check: CompileShaders, FStrict, FSelfChecked and FReflectCode/
-    FChiCode are process-global, and the fallback below rewrites them after
-    this instance's own compute shaders were already created from the
-    pre-fallback bytes. Holding FLock across all of it means a second thread
-    creating an evaluator at the same time either finishes its own compile-
-    create-check sequence entirely before this one starts (so it never
-    observes a half-updated FReflectCode/FChiCode/FStrict), or blocks here
-    until this one is done and then compiles/creates from the settled
-    result. Available already holds FLock for its whole body, including the
-    throwaway Create its probe calls; TCriticalSection is re-entrant for the
-    same thread (it wraps a Windows critical section), so that nested Enter
-    succeeds immediately instead of deadlocking. }
+  { Lock the whole compile/create/check sequence: fallback rewrites global
+    code blobs and FStrict after instance shaders have been created.
+    Other constructors must see only the settled state. Available can
+    already hold FLock here; Windows critical sections are re-entrant. }
   FLock.Enter;
   try
-    { A double self-check failure (below) is cached for 60 seconds, the same
-      window Available retries on: only Available's own probe caches a
-      failure otherwise, so a direct Create (unit_LFPSO_Base's classic-fit
-      evaluator, unit_PosteriorBatch's) would otherwise recompile both
-      compilations and re-run the self-check every single time within that
-      window, since FSelfChecked stays False forever after a double failure.
-      ResetShaders clears this cache too. }
+    { Direct Create bypasses Available's failure cache. Cache a double
+      self-check failure too, or every particle fit attempt recompiles and
+      checks both shader variants during the retry window. }
     if (FSelfCheckFailMsg <> '') and (GetTickCount64 - FSelfCheckFailTick <= 60000) then
       raise EGpuError.Create(FSelfCheckFailMsg);
 
@@ -658,9 +539,6 @@ begin
       end;
       if Bad and not FStrict then
       begin
-        { The self-check did not hold on this GPU/driver with `precise`:
-          fall back to compiling every kernel with D3DCOMPILE_IEEE_STRICTNESS
-          and check again before this evaluator is handed to a caller. }
         FStrict := True;
         FReflectCode := nil;
         FChiCode := nil;
@@ -672,13 +550,8 @@ begin
         try
           Err := SelfCheck;
         except
-          { A failure inside the IEEE-strict self-check itself (for example
-            the device was removed mid-dispatch) still leaves this Create
-            failing, but must not leave the process stuck compiling strict
-            forever: reset FStrict and the code blobs so a later retry
-            (Available's 60-second retry, or the caller's next Create) tries
-            `precise` again from scratch instead of skipping straight to
-            IEEE strictness because of an unrelated transient error. }
+          { A transient device error must not leave future attempts stuck
+            in strict mode; restart from targeted precise compilation. }
           FStrict := False;
           FReflectCode := nil;
           FChiCode := nil;
@@ -694,16 +567,8 @@ begin
       end;
       if Bad then
       begin
-        { Both compilations failed (or only `precise` was tried and it was
-          already strict): leave FSelfChecked False and reset FStrict and
-          every code blob, so a later Create - Available's 60-second retry
-          after a transient driver problem, or the caller's own next
-          attempt - runs the whole compile-and-check sequence again from
-          `precise`, instead of failing instantly forever. The failure
-          message itself IS cached for that same 60 seconds (FSelfCheckFailMsg/
-          FSelfCheckFailTick, checked at the top of this method), so a direct
-          Create within the window raises at once instead of recompiling and
-          re-checking both compilations again first. }
+        { Reset shader state so the next retry starts from precise, but cache
+          the failure message to prevent repeated checks for 60 seconds. }
         FShaderMode := '';
         FStrict := False;
         FReflectCode := nil;
@@ -805,17 +670,14 @@ begin
   FParams.SolveScale := Ord(Inputs.SolveScale);
   FParams.ScaleWindow := Inputs.ScaleWindow;
 
-  // particles per dispatch: bounded by the step budget and the group limit
   Steps := Int64(FNAng) * FNLay;
   FChunk := FStepsPerDispatch div Steps;
   if FChunk < 1 then FChunk := 1;
   if FChunk > MAX_GROUPS then FChunk := MAX_GROUPS;
 
-  { The grazing sine, computed once per angle on the host in Double, exactly
-    as TCalc.CalcTet's angle reaches TCalc.RefCalc: ThetaK is Single, as
-    CalcTet's (t / K), and Sin runs in Double before narrowing back to Single.
-    KScale stays in FParams/cbuffer Params below even though Reflect no
-    longer reads it, so the 80-byte layout is unchanged. }
+  { Match CPU rounding: ThetaK is Single, then Sin runs in Double.
+    KScale remains in the cbuffer despite being unused by Reflect;
+    Delphi and HLSL must keep the same 80-byte layout. }
   SetLength(SinG, FNAng);
   for i := 0 to FNAng - 1 do
   begin
@@ -902,14 +764,8 @@ begin
   end;
 end;
 
-{ A fixed W/B4C multilayer on Si, built by hand (no Henke tables, no
-  TLayeredModel) so the self-check runs on every machine the same way: 20
-  periods of W (delta 9.6E-5, beta 7.8E-6, 12 A) and B4C (delta 1.66E-5, beta
-  1.6E-8, 22 A), sigma 3 A throughout, on a Si substrate (delta 1.52E-5, beta
-  3.5E-7). 200 angles, 0.1..4 deg, Cu-Kalpha, rfError, S polarisation. The
-  substrate's L uses the same 1E8 A sentinel TLayeredModel.AddSubstrate does
-  (unit_materials.pas): Reflect's comment at "first" explains why the
-  sentinel's exact value never reaches the result. }
+{ Fixed optical constants, without Henke tables or TLayeredModel, make the
+  self-check independent of machine-local data. }
 function TGpuEvaluator.SelfCheck: Double;
 const
   LAMBDA = 1.5406;
@@ -930,7 +786,7 @@ begin
   FInSelfCheck := True;
   try
     SetLength(L, 2 + 2 * N_PERIODS);
-    L[0].e.re := 1; L[0].e.im := 0; L[0].delta := 0; L[0].L := 0; L[0].s := 0;   // ambient
+    L[0].e.re := 1; L[0].e.im := 0; L[0].delta := 0; L[0].L := 0; L[0].s := 0;
     Idx := 1;
     for i := 1 to N_PERIODS do
     begin
@@ -947,7 +803,7 @@ begin
       L[Idx].s := 3;
       Inc(Idx);
     end;
-    L[Idx].delta := 1.52E-5;                  // substrate, Si
+    L[Idx].delta := 1.52E-5;
     L[Idx].e.re := 1 - L[Idx].delta;
     L[Idx].e.im := 3.5E-7;
     L[Idx].L := SUBSTRATE_L;
@@ -969,9 +825,6 @@ begin
     Inputs.ChiLast := N_ANG - 1;
     Inputs.ChiNorm := 1;
 
-    { Setup/Evaluate/RawCurve on Self: sizes this evaluator's buffers for one
-      particle of Length(L) layers. The caller's own Setup, right after Create
-      returns, replaces every one of them before any real evaluation runs. }
     Setup(Inputs, Length(L), 1, cmS, rfError, LAMBDA, 1, LIMIT);
     SetLength(Layers, 4 * Length(L));
     PackModelLayers(L, Layers, 0);

@@ -1,5 +1,4 @@
 #!/bin/bash
-# deploy.sh — Stage all X-Ray Calc 3 artifacts into deploy/ for InnoSetup
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -7,7 +6,6 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEPLOY_DIR="$SCRIPT_DIR/deploy"
 STORAGE_DIR="/d/SoftwareStorage/X-RayCalc3"
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -34,7 +32,6 @@ mkdir -p "$DEPLOY_DIR"
 echo "=== X-Ray Calc 3 Deploy ==="
 echo ""
 
-# --- Validate sources ---
 echo "Checking source files..."
 
 check_file "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"
@@ -58,7 +55,6 @@ fi
 echo -e "${GREEN}All sources found.${NC}"
 echo ""
 
-# --- Clean and create staging directory ---
 if [ -d "$DEPLOY_DIR" ]; then
   echo "Cleaning previous deploy/..."
   rm -rf "$DEPLOY_DIR"
@@ -70,7 +66,6 @@ mkdir -p "$DEPLOY_DIR/Henke"
 mkdir -p "$DEPLOY_DIR/Examples"
 mkdir -p "$DEPLOY_DIR/Help/images"
 
-# --- Copy files ---
 echo "Copying executables..."
 cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.exe"     "$DEPLOY_DIR/Win32/"
 cp "$PROJECT_DIR/_Out/BIN/XRayCalc3.x64.exe" "$DEPLOY_DIR/Win64/"
@@ -102,7 +97,6 @@ cp -r "$PROJECT_DIR/XRayCalc3/Assets/Docs/Help/images/"*     "$DEPLOY_DIR/Help/i
 help_count=$(ls -1 "$DEPLOY_DIR/Help/"*.html 2>/dev/null | wc -l)
 echo "  $help_count HTML files + style.css + images/"
 
-# --- Summary ---
 echo ""
 echo -e "${GREEN}=== Deploy complete ===${NC}"
 echo ""

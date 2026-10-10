@@ -1,22 +1,5 @@
 unit TestMCPFit;
 
-(* fit_xrr: the argument parser and one real fit.
-
-   Two halves. The first drives ParseFitRequest and looks at the ranges it
-   leaves on the structure, because that mapping is the whole contract of
-   "free" and "bounds": a free parameter must come out with a real range and
-   everything else with min = max = V, which is how the engine is told to hold
-   it still. Getting that wrong does not crash - it silently fits the wrong
-   thing, or nothing.
-
-   The second runs a fit end to end through a job manager, on a curve the engine
-   itself calculated from a known structure, and asserts the two properties a
-   client depends on: the chi-squared comes out below the one the start model
-   scored, and the same seed gives the same answer twice.
-
-   The engine reads the GUI's Henke tables, so every test that needs a material
-   skips with Assert.Pass when they are not installed, as the other MCP
-   fixtures do. *)
 
 interface
 
@@ -30,67 +13,31 @@ type
   private
     FTemp: string;
     FSavedWorkDir: TWorkDir;
-    FOptimizerExtra: string;   // spliced into SubmitOn's "optimizer" object
-    FDeviceOverride: string;   // replaces RunRequest's optimizer.device when set
-    /// <summary>ParseFitRequest over a JSON literal. The caller owns nothing.</summary>
+    FOptimizerExtra: string;
+    FDeviceOverride: string;
     function Parse(const JSONText: string): TFitRequest;
-    /// <summary>The range one layer parameter came out with.</summary>
     procedure RangeOf(const Req: TFitRequest; GUIStack, GUILayer, P: Integer;
       out AMin, AMax: Double);
-    /// <summary>The code of the EMCPError ParseFitRequest raises, or '' when it
-    /// raises nothing.</summary>
     function ErrorCodeOf(const JSONText: string): string;
-    /// <summary>[[theta, I], ...] of the reference structure, as fit_xrr takes
-    /// it inline.</summary>
     function SyntheticCurveJSON: string;
-    /// <summary>Submits one fit on an existing manager and returns the job.</summary>
     function SubmitOn(Mgr: TJobManager; Seed, Population, Iterations: Integer;
       const CurveJSON: string; const FreeJSON: string = '';
       const Extra: string = ''; const StructureJSON: string = ''): TJob;
-    /// <summary>One complete fit through a manager of its own. The result is
-    /// the caller's to free; nil when the job did not finish.</summary>
     function RunFit(Seed: Integer; const CurveJSON: string;
       const FreeJSON: string = ''; const Extra: string = '';
       Population: Integer = 0; Iterations: Integer = 0;
       const StructureJSON: string = ''): TJSONObject;
-    /// <summary>Polls until the job reaches Wanted, ends in some other final
-    /// state, or the timeout elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
-    /// <summary>Copies Tests\Data\P2-02 (xrr.dat + meta.json) into the work
-    /// directory's inbox, so a request can name "P2-02/xrr.dat".</summary>
     procedure StageP2Inbox;
-    /// <summary>One string value out of fit_xrr's input schema, by its path
-    /// under inputSchema.properties (for instance
-    /// 'optimizer.properties.population.description'). Fails the test when
-    /// fit_xrr is not registered.</summary>
     function FitXrrSchemaValue(const Path: string): string;
-    /// <summary>One fit_xrr request exactly as a client sent it - a JSON
-    /// literal with "measurement_id" and "seed" - through a manager of its
-    /// own. The result is the caller's to free.</summary>
     function RunRequest(const RequestJSON: string): TJSONObject;
-    /// <summary>The data of a parser-only request on CurveJSON; Extra is spliced
-    /// in verbatim and starts with a comma.</summary>
     function DataOf(const CurveJSON: string; const Extra: string = ''): TDataArray;
-    /// <summary>Every fitted value that lies outside the bound the same result
-    /// echoes in bounds_used, one per line; '' when the result is clean.</summary>
     function BoundViolations(const Res: TJSONObject): string;
-    /// <summary>[[theta, I], ...] of the START structure, every intensity
-    /// multiplied by Multiplier, on the grid and with the settings a parse of
-    /// it will use. "scale": "auto" must give back 1 / Multiplier.</summary>
     function StartCurveJSON(Multiplier: Double): string;
-    /// <summary>Copies Tests\Data\&lt;Specimen&gt; into the work directory's
-    /// inbox.</summary>
     procedure StageInbox(const Specimen: string);
-    /// <summary>The "report" object of a result, with the test failing when
-    /// there is none.</summary>
     function ReportOf(const Res: TJSONObject): TJSONObject;
-    /// <summary>The file the result names under "files", read back as JSON.
-    /// Caller frees.</summary>
     function ReadResultFile(const Res: TJSONObject; const Key: string): TJSONValue;
-    /// <summary>The two-column curve file the result names under Key.</summary>
     function ReadResultCurve(const Res: TJSONObject; const Key: string): TDataArray;
-    /// <summary>A profile fit with thickness, sigma and density free and
-    /// unpaired in both layers. The result is the caller's to free.</summary>
     function RunUnpairedProfileFit: TJSONObject;
   public
     [Test] procedure Fit_SolvedScale_OnByDefault_ReportsTheMode;
@@ -223,9 +170,6 @@ uses
   unit_DataProcessing, unit_ToolsJobs, unit_gpu_calc;
 
 const
-  { The reference sample: a 10-period Ru/C multilayer on Si, the same materials
-    the design note's worked example uses. Layers are listed surface-first: layers[0]
-    is nearest the surface, the last entry is nearest the substrate. }
   TRUE_STRUCTURE =
     '{"substrate":{"material":"Si","sigma":3},' +
     '"stacks":[{"N":10,"layers":[' +
@@ -246,22 +190,17 @@ const
     (5E-6 relative) and no better: 5E-9 on 0.001. }
   SCALE_TOL = 5E-9;
 
-  { The same stack with the wrong period: 60 A against the true 68.5 A. The
-    periodic engine holds the period unless "period" is freed, so this start
-    can only reach the answer when it is. }
   START_WRONG_PERIOD =
     '{"substrate":{"material":"Si","sigma":3},' +
     '"stacks":[{"N":10,"layers":[' +
     '{"material":"C","thickness":47.5,"sigma":3},' +
     '{"material":"Ru","thickness":12.5,"sigma":3}]}]}';
 
-  { thicknesses of both layers plus the period of the stack }
   PERIOD_FREE =
     '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
     '{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]},' +
     '{"target":"period","stack":0}]';
 
-  { One stack, a cap and a buffer, for the addressing tests. }
   CAP_BUFFER_STRUCTURE =
     '{"substrate":{"material":"Si","sigma":3},' +
     '"stacks":[{"N":10,"layers":[' +
@@ -270,8 +209,6 @@ const
     '"cap":{"material":"C","thickness":30,"sigma":2},' +
     '"buffer":{"material":"Ru","thickness":100,"sigma":4}}';
 
-  { Two repeating stacks, substrate-first: stacks[0] is the one next to the
-    substrate. }
   TWO_STACK_STRUCTURE =
     '{"substrate":{"material":"Si","sigma":3},' +
     '"stacks":[' +
@@ -287,23 +224,16 @@ const
     at "free" (which is what Resolution_TooCoarseAGrid_Refused pins down). }
   DUMMY_CURVE = '[[0.5,1],[0.6,0.9],[0.7,0.8],[0.8,0.7],[0.9,0.6],[1.0,0.5]]';
 
-  { A curve whose largest point is at 1.0 deg and whose largest point below
-    0.5 deg is at 0.4: what "scale": "auto" takes depends on auto_theta_max. }
   RISING_CURVE =
     '[[0.2,0.2],[0.3,0.3],[0.4,0.4],[0.5,0.35],[0.6,0.3],[0.7,0.5],' +
     '[0.8,0.6],[0.9,0.8],[1.0,1.0],[1.1,0.7],[1.2,0.4],[1.3,0.2]]';
 
-  { The start model of the P2-05 fit of 2026-09-18 (job fit-20260918-170706-196b):
-    a 20-period C/Co mirror on oxidised silicon, as the request.json of that job
-    holds it. }
   P2_05_START =
     '{"substrate":{"material":"SiO2","sigma":3.8,"density":2.65},' +
     '"stacks":[{"N":20,"layers":[' +
     '{"material":"C","thickness":33,"sigma":5,"density":2},' +
     '{"material":"Co","thickness":17,"sigma":5,"density":8}]}]}';
 
-  { Twelve points that zigzag, so that a moving average visibly changes every
-    inner one. For the smoothing tests of the parser; never fitted. }
   NOISY_CURVE =
     '[[0.30,1.0],[0.35,0.5],[0.40,0.9],[0.45,0.2],[0.50,0.6],[0.55,0.1],' +
     '[0.60,0.4],[0.65,0.05],[0.70,0.3],[0.75,0.02],[0.80,0.2],[0.85,0.01]]';
@@ -312,9 +242,8 @@ const
   FIT_POPULATION = 12;
   FIT_ITERATIONS = 8;
   { The polynomial engine perturbs every coefficient, so most of its early
-    particles are worse than a uniform start; it needs a larger swarm than the
-    periodic engine before anything beats the start model (probe of
-    2026-09-10: 12 x 8 stays at chi2_start, 30 x 15 reaches a fifth of it). }
+    particles are worse than a uniform start; it needs a larger swarm than
+    the periodic engine before anything beats the start model. }
   PROFILE_POPULATION = 30;
   PROFILE_ITERATIONS = 15;
   { The cancel test's budget: big enough that the run cannot possibly finish
@@ -327,12 +256,6 @@ const
   CURVE_THETA_MAX = 3.0;
   CU_K_ALPHA = 1.5406;
 
-  { The four fit_xrr requests of the paper-2 agent session of 2026-09-16 whose
-    results carried values outside bounds_used (registered binary 02e7b63):
-    docs\superpowers\specs\2026-09-16-fit-bounds-defect.md. A 20-period C/Co
-    mirror on the P2-02 curve (Tests\Data\P2-02, 2theta 0.5..3.6 deg of the
-    scan), the period free, every layer parameter free with tight bounds.
-    Verbatim, seed included: the same seed reproduces the same swarm. }
   P2_FREE =
     '[{"target":"period","stack":0},' +
     '{"stack":0,"layer":0,"parameters":["thickness","sigma","density"]},' +
@@ -397,15 +320,12 @@ const
     '"points_inline_max":0,"seed":950002}';
   P2_JOBS: array [0 .. 3] of string = ('e49e', '1763', 'f2d6', 'c3d5');
 
-{ ----------------------------------------------------------------- helpers -- }
 
 function HenkePath: string;
 begin
   Result := IncludeTrailingPathDelimiter(TConfig.SystemDir[sdHenke]);
 end;
 
-/// The materials every test in this fixture uses. Without them the engine
-/// cannot build a model and the test says so rather than failing.
 function HenkeTablesPresent: Boolean;
 const
   Needed: array [0 .. 2] of string = ('Ru', 'C', 'Si');
@@ -418,7 +338,6 @@ begin
   Result := True;
 end;
 
-{ ----------------------------------------------------------------- fixture -- }
 
 procedure TTestMCPFit.Setup;
 begin
@@ -516,9 +435,6 @@ begin
   begin
     if Job.State = Wanted then
       Exit(True);
-    { A job that has ended in some other way is never going to reach Wanted, so
-      say so at once: a broken fit should fail the suite in a second rather than
-      hold it for the whole timeout. }
     if (Job.State in [jsFinished, jsFailed, jsCancelled]) and (Job.State <> Wanted) then
       Exit(False);
     Sleep(20);
@@ -526,7 +442,6 @@ begin
   Result := Job.State = Wanted;
 end;
 
-/// Why a job ended the way it did, for an assertion message.
 function JobErrorText(Job: TJob): string;
 var
   E: TJSONObject;
@@ -811,7 +726,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------- free and bounds -- }
 
 procedure TTestMCPFit.Free_NoBounds_GivesPlusMinusThirtyPercent;
 var
@@ -829,7 +743,6 @@ begin
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]}]}',
     [START_STRUCTURE, DUMMY_CURVE]));
 
-  // stacks[0] is the only stack, so it is GUI stack 0; layer 1 is the Ru at 13 A
   RangeOf(Req, 0, 1, 1, Lo, Hi);
   Assert.AreEqual(13.0 * 0.7, Lo, 1E-4, 'lower bound');
   Assert.AreEqual(13.0 * 1.3, Hi, 1E-4, 'upper bound');
@@ -870,7 +783,6 @@ begin
                    [i, j, p]));
       end;
 
-  // the substrate is never in the particle vector; its range stays empty too
   Assert.AreEqual(Req.Structure.Subs.P[2].max - Req.Structure.Subs.P[2].min, 0.0, 0.0,
     'substrate sigma must be fixed');
 end;
@@ -966,8 +878,6 @@ begin
     '"min":-5,"max":0}]}',
     [START_STRUCTURE, DUMMY_CURVE])));
 
-  { the same for sigma, where 0 is a legitimate value and the empty range is the
-    only thing wrong with it }
   Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["sigma"]}],' +
@@ -1030,7 +940,6 @@ begin
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["sigma"]}]}',
     [Zero, DUMMY_CURVE])));
 
-  { with an explicit bound the same request is fine }
   Assert.AreEqual('', ErrorCodeOf(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["sigma"]}],' +
@@ -1123,7 +1032,6 @@ begin
   Assert.AreEqual(100.0 * 0.7, Lo, 1E-4, 'buffer lower bound');
   Assert.AreEqual(100.0 * 1.3, Hi, 1E-4, 'buffer upper bound');
 
-  // the multilayer between them is untouched
   RangeOf(Req, Req.Info.PeriodicStackIndex, 0, 1, Lo, Hi);
   Assert.AreEqual(Hi - Lo, 0.0, 0.0, 'the stack layers stay fixed');
 end;
@@ -1154,7 +1062,6 @@ begin
   Assert.AreEqual(12.0 * 0.7, Lo, 1E-4, 'lower bound of the 12 A layer');
   Assert.AreEqual(12.0 * 1.3, Hi, 1E-4, 'upper bound of the 12 A layer');
 
-  // the other stack is untouched
   RangeOf(Req, Req.Info.StackMap[1], 1, 1, Lo, Hi);
   Assert.AreEqual(Hi - Lo, 0.0, 0.0, 'stacks[1] stays fixed');
 end;
@@ -1208,8 +1115,6 @@ begin
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["thickness"]}]}',
     [START_STRUCTURE, DUMMY_CURVE]));
 
-  { 0.65 to 0.85 keeps 0.7 and 0.8 of the six-point curve, and the reported
-    range is the one the kept points span, not the one that was asked for. }
   Assert.AreEqual(2, Length(Req.Data), 'the points inside the range');
   Assert.AreEqual(0.7, Req.ThetaMin, 1E-6, 'reported range start');
   Assert.AreEqual(0.8, Req.ThetaMax, 1E-6, 'reported range end');
@@ -1253,7 +1158,6 @@ begin
     [Flat, DUMMY_CURVE])));
 end;
 
-{ ------------------------------------------------------------- the fit -- }
 
 procedure TTestMCPFit.Free_OmittedDensity_StartsAtBulkInsideItsBounds;
 var
@@ -1267,18 +1171,16 @@ begin
   end;
 
   { START_STRUCTURE gives no densities, which means "the bulk value" to the
-    engine. A free density must then START at that bulk value, inside its
-    bounds - not at the 0 the JSON left behind. TLFPSO_Poly seeds the swarm
-    around the start value and clamps it to the bounds, so a start of 0 under
-    a lower bound of 8 pins every particle at 8 while particle 0 keeps bulk,
-    and the fit never moves (paper-2 session, jobs fit-20260910-08*). }
+    engine. TLFPSO_Poly seeds around the start and clamps to the bounds:
+    a start of 0 under a lower bound of 8 pins every particle at 8 while
+    particle 0 keeps bulk, and the fit never moves. }
   Req := Parse(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["density"]}],' +
     '"bounds":[{"target":"layer","stack":0,"layer":1,"parameter":"density",' +
     '"min":8,"max":12.5}]}', [START_STRUCTURE, DUMMY_CURVE]));
 
-  V := Req.Structure.Stacks[0].Layers[1].P[3].V;       // Ru
+  V := Req.Structure.Stacks[0].Layers[1].P[3].V;
   RangeOf(Req, 0, 1, 3, AMin, AMax);
   Assert.IsTrue(V > 8,
     Format('the start density must be the Ru bulk value, not %.3g', [V]));
@@ -1287,7 +1189,6 @@ begin
   Assert.AreEqual(Double(8), AMin, 1E-9, 'explicit lower bound kept');
   Assert.AreEqual(Double(12.5), AMax, 1E-9, 'explicit upper bound kept');
 
-  { the layer that was not freed carries its bulk density too, held fixed }
   Assert.IsTrue(Req.Structure.Stacks[0].Layers[0].P[3].V > 0,
     'C gets its bulk density as well');
   Assert.AreEqual(Req.Structure.Stacks[0].Layers[0].P[3].V,
@@ -1307,8 +1208,6 @@ begin
     Exit;
   end;
 
-  { With the bulk value as the start, the usual +/-30% default applies; an
-    omitted density is not "a parameter starting at zero". }
   Req := Parse(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["density"]}]}',
@@ -1350,9 +1249,6 @@ begin
     Exit;
   end;
 
-  { The paper-2 session's case: profile fit, the Ru density free with explicit
-    bounds and no start density in the structure. Before the fix chi2 stayed
-    at chi2_start for any population, order or seed. }
   Res := RunFit(7, SyntheticCurveJSON,
     '[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]},' +
     '{"target":"layer","stack":0,"layer":1,"parameters":["thickness","density"]}]',
@@ -1409,7 +1305,6 @@ begin
     Exit;
   end;
 
-  { "parameter":"period" is accepted (and optional) on a period bound }
   Req := Parse(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"free":%s,' +
     '"bounds":[{"target":"period","stack":0,"parameter":"period","min":60,"max":75}]}',
@@ -1417,7 +1312,6 @@ begin
   Assert.AreEqual(Double(60), Req.PeriodRefs[0].Min, 1E-9);
   Assert.AreEqual(Double(75), Req.PeriodRefs[0].Max, 1E-9);
 
-  { a period bound on a stack whose period is not free is an error }
   Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":0,"layer":0,"parameters":["thickness"]}],' +
@@ -1433,7 +1327,6 @@ begin
     Exit;
   end;
 
-  { a cap has no period; neither has a stack with N = 1 }
   Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":"cap","parameters":["thickness"]},' +
@@ -1455,8 +1348,6 @@ begin
     Exit;
   end;
 
-  { the period is the sum of the layer thicknesses: with every thickness of
-    the stack held, nothing could move it }
   Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"free":[{"target":"layer","stack":0,"layer":1,"parameters":["sigma"]},' +
@@ -1545,7 +1436,6 @@ begin
     Exit;
   end;
 
-  { with the period held, a start of 60 A stays at 60 A exactly }
   Res := RunFit(7, SyntheticCurveJSON, '', '', 0, 0, START_WRONG_PERIOD);
   try
     Fitted := Res.GetValue<Double>('fitted_structure.stacks[0].layers[0].thickness') +
@@ -1561,7 +1451,6 @@ begin
     Res.Free;
   end;
 
-  { with the period free it moves towards the true 68.5 A }
   Res := RunFit(7, SyntheticCurveJSON, PERIOD_FREE,
     ',"bounds":[{"target":"period","stack":0,"min":50,"max":80}]',
     PROFILE_POPULATION, PROFILE_ITERATIONS, START_WRONG_PERIOD);
@@ -1611,7 +1500,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------------ smooth -- }
 
 function TTestMCPFit.DataOf(const CurveJSON, Extra: string): TDataArray;
 begin
@@ -1635,8 +1523,6 @@ begin
   end;
 end;
 
-{ One pass is one click of the GUI's Data - Smooth, which is MovAvg(Data, 5)
-  (TfrmChartInfo.SmoothData): the same function, so the same numbers. }
 procedure TTestMCPFit.Smooth_OnePass_EqualsMovAvgFive;
 var
   Raw, Smoothed, Data: TDataArray;
@@ -1651,11 +1537,9 @@ begin
   Smoothed := DataOf(NOISY_CURVE, ',"smooth":{"passes":1}');
   AssertSameCurve(MovAvg(Raw, 5), Smoothed, 'one pass');
 
-  { The GUI writes the call as Data := MovAvg(Data, 5), input and result in one
-    local. Should a compiler ever hand MovAvg that local as its Result, the
-    filter would run in place over values it has already replaced and the GUI
-    would no longer do what the server does. Checked on dcc32 and dcc64 of
-    Studio 37.0, optimization on and off, 2026-09-17: it does not. }
+  { Input and result share one local. If the compiler hands MovAvg that
+    local as its Result, the filter runs in place over replaced values
+    and the GUI no longer does what the server does. }
   Data := Copy(Raw);
   Data := MovAvg(Data, 5);
   AssertSameCurve(Data, Smoothed, 'the call form of TfrmChartInfo.SmoothData');
@@ -1696,7 +1580,6 @@ begin
     Whole[i].r := Whole[i].r * 2.0;
   Whole := MovAvg(Whole, 5);
 
-  { 0.44 .. 0.71 keeps the six points 0.45 .. 0.70, indices 3 .. 8 }
   SetLength(Kept, 6);
   for n := 0 to 5 do
     Kept[n] := Whole[n + 3];
@@ -1768,8 +1651,6 @@ begin
     'six points are enough');
 end;
 
-{ What was fitted is what is stored: measured.dat, the data node of fit.xrcx and
-  the project save_project builds from the job all hold the smoothed curve. }
 procedure TTestMCPFit.Fit_Smooth_IsEchoedAndStoredAsFitted;
 
   procedure SameAsFitted(const Expected, Stored: TDataArray; const What: string);
@@ -1860,60 +1741,16 @@ begin
   end;
 end;
 
-{ Smoothing is off by default, and off means the fit of revision 06035de: the
-  numbers below are what that revision answers (captured 2026-09-17, before
-  "smooth" existed) to the synthetic fit with seed 7, 12 x 8, and to the
-  paper-2 request c3d5 on the measured P2-02 curve, which is scaled, trimmed,
-  noisy and does not end on a round answer. Those are the CPU engine's
-  answers, so both fits run with optimizer.device "cpu": the GPU (3.9.0)
-  minimises the same chi-squared to single precision and takes a different
-  path through the swarm.
-
-  The P2-02 numbers were recaptured for 3.9.4: the chi-squared now sums the
-  last measured point as well (it was dropped whether or not there was a
-  convolution) and the resolution kernel is normalised, which moved that
-  fit's chi2 from 2.16926 to 2.17153 and its layers in the fourth digit.
-  The synthetic fit, which has no resolution and whose last point carries no
-  residual, is unchanged. 3.9.4 also sets the roughness exponent to exactly
-  sigma^2 s^2 / 2 (it was 0.50299): the synthetic chi2 went from 0.000413109
-  to 0.000413763 on the same structure, and P2-02 from 2.17153 to 2.16063,
-  its sigmas up by 0.14 and 0.18 %. A number published before 3.9.4 reproduces on the
-  binary it was made with (D:\SoftwareStorage\X-RayCalc3\Releases), not on
-  this source.
-
-  2026-09-28: TCalc.RefCalc took the GPU kernel's cancellation-free form of
-  eps - sin^2(t) (plan 2026-09-28-tcalc-precision). The synthetic fit lands on
-  the same structure - it was already the right one - but now matches the
-  noise-free curve far more closely: chi2 fell from 0.000413763 to 2.96477E-6.
-  P2-02's chi2 moved from 2.16063 to 2.16446 and its layers by similarly small
-  amounts, up to 0.2 % (the C density, its third significant digit).
-
-  2026-09-28-precision-followups re-pins, same synthetic/P2-02 fits, CPU
-  device throughout: Task 2 (delta = 1 - Re eps carried directly, not
-  recovered from eps' Single step) moved the synthetic chi2 2.96477E-6 ->
-  2.86735E-6 and P2-02's chi2 2.16446 -> 2.16757 (layers similarly, in the
-  fourth-fifth digit). Task 3's exact System.Exp/System.Math.SinCos phase
-  term (first commit) moved the synthetic chi2 to 2.87046E-6 and P2-02's chi2
-  to 2.16726 (no further P2 layer re-pin needed). Task 3 fix round 2's exact
-  math_complex.SqrtZ (1/System.Sqrt in place of InverseSqrt, adopted together
-  with the phase term for a combined ~12 % slower CPU fit) moved the
-  synthetic chi2 to 2.8691E-6, its current pinned value; P2-02 needed no
-  further re-pin at this precision. }
+{ These are CPU-engine answers: both fits run with optimizer.device "cpu"
+  because the GPU takes a different path through the swarm. }
 procedure TTestMCPFit.Fit_NoSmooth_MatchesRevision06035de;
 const
-  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
-    term (plan 2026-09-28-precision-followups, Task 3)
-    re-pinned 2026-09-28: exact SqrtZ (plan 2026-09-28-precision-followups) }
   CHI2_06035DE = '2.8691E-6';
   FITTED_06035DE =
     '{"substrate":{"material":"Si","sigma":3,"density":2.332},"stacks":[{"N":10,' +
     '"layers":[{"material":"C","thickness":53.8002,"sigma":3,"density":2.266},' +
     '{"material":"Ru","thickness":14.6998,"sigma":3,"density":12.437}]}]}';
-  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
-    term (plan 2026-09-28-precision-followups, Task 3) }
   P2_CHI2_06035DE = '2.16726';
-  { re-pinned 2026-09-28: exact System.Exp/System.Math.SinCos in the phase
-    term (plan 2026-09-28-precision-followups, Task 3) }
   P2_FITTED_06035DE =
     '{"substrate":{"material":"SiO2","sigma":5,"density":2.65},"stacks":[{"N":20,' +
     '"layers":[{"material":"C","thickness":25.3875,"sigma":9.88962,"density":2.74997},' +
@@ -1960,19 +1797,10 @@ begin
   end;
 end;
 
-{ The tool text is what an agent follows. The manual normalizes by comparing
-  the measured with the calculated curve at about 0.4 degrees, not to the
-  total-reflection plateau: the paper-2 agent read "plateau" here and set every
-  scale to 0.96 / max count, which the author rejected (2026-09-17). }
 procedure TTestMCPFit.Schema_DescribesTheManualsDataConditioning;
 var
   Scale: string;
 begin
-  { Until 2026-09-18 this said the opposite: compare the two curves at about
-    theta 0.4 deg and do not normalise to the total-reflection region. That is
-    not what the laboratory does - Data - Normalize Auto sets the measured
-    maximum of the plateau equal to the model there - and the skill had to talk
-    the agent out of the tool's own description. }
   Scale := FitXrrSchemaValue('scale.description');
   Assert.IsTrue(Scale.Contains('normalize'), 'scale: the step of the manual');
   Assert.IsTrue(Scale.Contains('scale_auto'),
@@ -1992,11 +1820,6 @@ begin
     'movavg_window says it is not the smoothing of the fitted curve');
 end;
 
-{ The lab fits with 100 iterations and 500 to 1000 particles - "population
-  wins iterations" (author, 2026-09-17) - so that is what a request that says
-  nothing gets, and what the schema tells an agent that wants to choose. The
-  schema half needs no Henke tables, so it runs on every machine; only the
-  parse half is behind the guard. }
 procedure TTestMCPFit.Optimizer_Default_IsTheLabsPractice;
 var
   Req: TFitRequest;
@@ -2013,8 +1836,6 @@ begin
     FitXrrSchemaValue('optimizer.properties.iterations.description').Contains('population'),
     'iterations: raise the population first');
 
-  { The GUI's own default population is 1000 (frame_CalcSettings), so the
-    schema must not send an agent there for the defaults. }
   Optimizer := FitXrrSchemaValue('optimizer.description');
   Assert.IsTrue(Optimizer.Contains('not the GUI''s'),
     'optimizer: says the defaults are not the GUI''s');
@@ -2084,8 +1905,6 @@ begin
     Assert.AreEqual(Chi2StartPlain,
       Res.GetValue<Double>('report.chi2_start_plain'), 1E-12,
       'the report repeats chi2_start_plain');
-    { the optimizer that ran, defaults filled in, so a job that named no
-      population is reproducible from its result alone }
     Assert.AreEqual(FIT_POPULATION, Res.GetValue<Integer>('optimizer_used.population'),
       'optimizer_used.population');
     Assert.AreEqual(FIT_ITERATIONS, Res.GetValue<Integer>('optimizer_used.iterations'),
@@ -2104,7 +1923,6 @@ begin
     Assert.AreEqual(0, (Res.GetValue('out_of_bounds') as TJSONArray).Count,
       'a fit inside its bounds lists no violation');
 
-    { the files the result names must be there }
     Assert.IsTrue(TFile.Exists(TPath.Combine(WorkDir.Root,
       Res.GetValue<string>('files.xrcx'))), 'fit.xrcx');
     Assert.IsTrue(TFile.Exists(TPath.Combine(WorkDir.Root,
@@ -2119,10 +1937,6 @@ begin
 end;
 
 
-{ With no weight asked for, the weighted sum and the plain one are the same
-  arithmetic, so fit_xrr must report the same number twice. That is the check
-  that chi2_plain really is chi2 with the weights removed, and not some other
-  residual. }
 procedure TTestMCPFit.Fit_PlainChiSquared_IsTheUnweightedSum;
 var
   Res: TJSONObject;
@@ -2198,8 +2012,6 @@ begin
 
   Mgr := TJobManager.Create(WorkDir);
   try
-    { A budget far larger than the test is willing to wait for, so that the run
-      can only end because it was asked to. }
     Job := SubmitOn(Mgr, 7, CANCEL_POPULATION, CANCEL_ITERATIONS,
                     SyntheticCurveJSON);
 
@@ -2276,10 +2088,6 @@ begin
   Assert.AreEqual('', Report, 'fitted values outside bounds_used:'#13#10 + Report);
 end;
 
-{ A project saved from a finished periodic fit must open in the GUI as that fit:
-  the same [FIT], [LFPSO], [PARAMS] and [ANGLE] the job's own fit.xrcx carries,
-  not the server's defaults (Mode 0 irregular, 100 x 1000), which is how the
-  paper-2 fits were read as "not periodic" on 2026-09-16. }
 procedure TTestMCPFit.SaveProject_FromFitJob_CarriesTheJobsFitSettings;
 
   function ParamsOf(const XRCXPath: string): TMemIniFile;
@@ -2367,11 +2175,7 @@ begin
   end;
 end;
 
-{ ------------------------------------------------- "scale": "auto" -- }
 
-{ The curve is the start model's own reflectivity times a known number, so the
-  normalisation the server computes must be exactly its reciprocal. Nothing
-  about the measurement enters: this is the arithmetic of NormalizeAuto. }
 procedure TTestMCPFit.Scale_Auto_RecoversAKnownMultiplier;
 var
   Req: TFitRequest;
@@ -2403,8 +2207,6 @@ begin
     Exit;
   end;
 
-  { The curve starts at 0.3 deg on the total-reflection plateau and only falls,
-    so its maximum below 0.5 deg is its first point. }
   Req := Parse(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"scale":"auto",' +
@@ -2428,8 +2230,6 @@ begin
     Exit;
   end;
 
-  { A curve that rises to a peak at 1.0 deg: with auto_theta_max at 0.5 the
-    peak is ignored, with auto_theta_max at 2 it is the maximum. }
   Low_ := Parse(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,' +
     '"scale":"auto",' +
@@ -2477,10 +2277,6 @@ begin
     [START_STRUCTURE, DUMMY_CURVE])));
 end;
 
-{ Two spellings, one normalisation. The boolean exists because "scale" takes a
-  number or a string, and on the exp-03 run of 2026-09-18 an agent wrote
-  "scale": auto unquoted fifteen times running - malformed JSON its own client
-  refused before the server saw any of it. A boolean cannot be got wrong. }
 procedure TTestMCPFit.ScaleAuto_Boolean_IsTheSameAsTheString;
 var
   ByString, ByBoolean: TFitRequest;
@@ -2552,9 +2348,6 @@ begin
   Assert.AreEqual(Double(2.5), Req.Scale, 1E-12);
 end;
 
-{ The number test A of the 2026-09-18 skill run computed by hand from
-  get_measurement and calc_reflectivity, on the same specimen, the same start
-  model and the same instrument settings: the server must reach it on its own. }
 procedure TTestMCPFit.Scale_Auto_P2_05_MatchesTheHandComputation;
 var
   Req: TFitRequest;
@@ -2575,25 +2368,10 @@ begin
 
   Assert.AreEqual('auto', Req.ScaleMode);
 
-  { The maximum of the raw scan, which is what Data - Normalize Auto takes and
-    what the procedure of the skill describes: get_measurement, find the
-    maximum, read the model there. Test A, by hand, instead took the value at
-    theta 0.20975 - the angle it had chosen as the start of the fitting range,
-    not the maximum - and got 7.798e-7 from 1064515 counts. The maximum is
-    1074961 counts at 0.20075, and the model is higher there too, so the scale
-    the server computes is about 2.58 % above the one test A wrote down
-    (7.99925737633178e-7, this test's current pinned Req.Scale, vs 7.798e-7;
-    re-pinned 2026-09-28 from an original 8.0128e-7/2.75 % once delta = 1 - eps
-    was carried directly - see the assertion's own comment below). Both are
-    arithmetically right; only one of them is the procedure. }
   Assert.AreEqual(Double(0.20075), Req.ScaleTheta, 1E-6,
     'the largest measured intensity below 0.5 deg is at theta 0.20075');
   Assert.AreEqual(Double(1074961), Req.ScaleCounts, 0.5,
     'and holds 1074961 counts (2theta 0.4015 of the raw file)');
-  { re-pinned 2026-09-28: delta = 1 - eps carried directly from the materials
-    (plan 2026-09-28-precision-followups) - R_calc(0.20075) is near the
-    critical angle, where the fix moves precision the most; the hand
-    computation used the same engine, so it moves too. }
   Assert.AreEqual(Double(7.99925737633178E-7), Req.Scale, 1E-10,
     'R_calc(0.20075) / 1074961, the normalisation of the raw maximum');
 end;
@@ -2621,7 +2399,6 @@ begin
   end;
 end;
 
-{ --------------------------------------------------------- "paired" -- }
 
 procedure TTestMCPFit.Paired_WithoutProfile_Refused;
 begin
@@ -2749,9 +2526,6 @@ begin
         'without "paired" every parameter gets its own polynomial');
 end;
 
-{ A paired parameter has no polynomial, and TLFPSO_Poly.GetPolynomes leaves it
-  out of the profiles it reports: what comes back is one curve per unpaired
-  parameter and nothing for the paired ones. }
 procedure TTestMCPFit.ProfileFit_SigmaAndDensityPaired_HaveNoPolynomial;
 var
   Res: TJSONObject;
@@ -2794,13 +2568,9 @@ begin
   end;
 end;
 
-{ Rewrites a fitted_structure with per-period profiles as the same multilayer
-  written out period by period: every repeating stack becomes N stacks of
-  N = 1 whose layers take the i-th value of thickness_profile, sigma_profile
-  and density_profile where the layer has one, and its single value otherwise.
-  The profiles run from the surface end (period 1) down, the JSON stacks from
-  the substrate up, so the periods are emitted last profile entry first;
-  WrongWay emits them in array order, the mistake the rebuild must not make. }
+{ The profiles run from the surface end (period 1) down, the JSON stacks
+  from the substrate up, so the periods are emitted last profile entry
+  first; WrongWay emits them in array order. }
 function UnrollProfiles(const Fitted: TJSONObject; WrongWay: Boolean): string;
 
   function Pick(const L: TJSONObject; const ProfileKey, Key: string;
@@ -2846,7 +2616,7 @@ begin
         if WrongWay then
           j := step
         else
-          j := N - 1 - step;           // substrate end first
+          j := N - 1 - step;
         NewLayers := TJSONArray.Create;
         for i := 0 to Layers.Count - 1 do
         begin
@@ -2871,8 +2641,6 @@ end;
 
 function TTestMCPFit.RunUnpairedProfileFit: TJSONObject;
 const
-  { START_STRUCTURE with the densities written out, so that a free density has
-    a start value to take its default bounds from. }
   START_WITH_DENSITIES =
     '{"substrate":{"material":"Si","sigma":3},' +
     '"stacks":[{"N":10,"layers":[' +
@@ -2885,9 +2653,6 @@ begin
     ',"profile":true', PROFILE_POPULATION, PROFILE_ITERATIONS, START_WITH_DENSITIES);
 end;
 
-{ A sigma or density with a polynomial of its own varies over the periods, so
-  the result must carry its per-period values the way it carries the
-  thicknesses; otherwise the fitted curve cannot be rebuilt from the result. }
 procedure TTestMCPFit.ProfileFit_UnpairedSigmaAndDensity_ReportTheirProfiles;
 const
   KEYS: array [0..2] of string = ('thickness_profile', 'sigma_profile', 'density_profile');
@@ -2923,11 +2688,6 @@ begin
   end;
 end;
 
-{ The acceptance test of the 2026-09-21 spec: a profile fit written out period
-  by period from the reported arrays gives back the fit's own curve (through
-  the calc_reflectivity engine path) and the fit's own chi2 (as the chi2_start
-  of a second fit that starts from it). Emitting the periods in array order
-  instead turns the gradient upside down, and the curve must then differ. }
 procedure TTestMCPFit.ProfileFit_UnrolledIntoSinglePeriods_ReproducesTheFit;
 
   function CalcOn(const StructureJSON: string; const Grid: TDataArray): TDataArray;
@@ -3007,7 +2767,6 @@ begin
       [Chi2Rebuilt, Chi2]));
 end;
 
-{ ------------------------------------------------------ optimizer.device -- }
 
 procedure TTestMCPFit.Device_Default_IsAuto;
 begin
@@ -3082,7 +2841,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- the report -- }
 
 procedure TTestMCPFit.Report_IsInTheResultAndInTheJobFolder;
 var
@@ -3169,10 +2927,6 @@ begin
   end;
 end;
 
-{ The true thickness is 53.8 A and the bound stops the fit at 55.4, so the best
-  value the engine may reach is the bound itself - which is exactly the case the
-  report has to name, because the answer is then the client's limit and not the
-  data's. }
 procedure TTestMCPFit.Report_ValueDrivenOntoItsBound_IsNamedInNearBounds;
 var
   Res: TJSONObject;
@@ -3204,7 +2958,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- the schema -- }
 
 procedure TTestMCPFit.Schema_DescribesNormalizeAutoAndPairing;
 var
@@ -3266,7 +3019,6 @@ begin
   Assert.IsTrue(Found, 'job_wait is registered');
 end;
 
-{ ------------------------------------------------------- solved scale -- }
 
 procedure TTestMCPFit.Fit_SolvedScale_OnByDefault_ReportsTheMode;
 var
@@ -3297,7 +3049,6 @@ begin
         Assert.IsTrue(Res.GetValue<Double>('scale_start_ratio') > 0);
         Assert.AreEqual(Res.GetValue<Double>('chi2'), Res.GetValue<Double>('chi2_recalc'),
           1E-6 * Res.GetValue<Double>('chi2'), 'the CPU rescore and the recalculation agree at the solved scale');
-        { the same start structure can only score better with its scale solved }
         Assert.IsTrue(Res.GetValue<Double>('chi2_start') <= ResOff.GetValue<Double>('chi2_start') * (1 + 1E-9),
           Format('chi2_start solved %.9g against anchored %.9g',
             [Res.GetValue<Double>('chi2_start'), ResOff.GetValue<Double>('chi2_start')]));
@@ -3362,11 +3113,6 @@ begin
 end;
 
 
-{ The report reads the measured curve at the scale chi2 was taken at. A curve
-  at 0.9 of the model solves to scale_ratio ~ 1/0.9; the first order's i_meas
-  must then be scale_ratio times the anchored run's, at the same point - until
-  3.9.4 the report stayed at the anchored scale and disagreed with chi2 and the
-  chart by that factor. }
 procedure TTestMCPFit.Fit_SolvedScale_ReportReadsTheMeasuredCurveAtIt;
 var
   ResOn, ResOff: TJSONObject;
@@ -3403,10 +3149,8 @@ begin
   end;
 end;
 
-{ A GUI project stores a value that stopped on its bound as the same number
-  twice: the author's Sb/B4C fit has a sigma of 7.7 on a floor of 7.7. The
-  start is a Single and 7.7 is not one, so the start used to be refused as
-  2E-7 under its own bound. }
+{ The start is a Single and 7.7 is not exactly representable, so a start
+  stored on a bound of 7.7 can round 2E-7 under its own bound. }
 procedure TTestMCPFit.Bounds_StartOnItsBound_Accepted;
 begin
   if not HenkeTablesPresent then
@@ -3432,22 +3176,16 @@ begin
     [DUMMY_CURVE])), 'on the ceiling');
 end;
 
-{ ------------------------------------------------------- "mode": "irregular" -- }
 
 const
-  { The swarm of the irregular fits below starts around the start model. }
   IRREGULAR_NEAR_START = ',"range_seed":false';
-  { Thickness and sigma of both layers free: forty values over ten periods. }
   IRREGULAR_FREE =
     '[{"stack":0,"layer":0,"parameters":["thickness","sigma"]},' +
     '{"stack":0,"layer":1,"parameters":["thickness","sigma"]}]';
-  { Tight bounds around START_STRUCTURE that hold the answer. With the default
-    +/-30% every period of every seeded particle is a different multilayer,
-    and a test-sized swarm never beats the start (probe of 2026-09-25: 8.12
-    to 8.12 at 30 x 15, 8.03 at 200 x 40; the GUI's own fits of such a mirror
-    run 5000 x 200). A fit that returns its start would test nothing. The same
-    bounds serve a continuation, which must start inside them in every
-    period. }
+  { With the default +/-30% every period of every seeded particle is a
+    different multilayer, and a test-sized swarm never beats the start.
+    A fit that returns its start would test nothing. These tight bounds
+    also serve a continuation, which must start inside them in every period. }
   IRREGULAR_BOUNDS =
     ',"bounds":[{"stack":0,"layer":0,"parameter":"thickness","min":53,"max":56.5},' +
     '{"stack":0,"layer":1,"parameter":"thickness","min":12.5,"max":15.5},' +
@@ -3456,7 +3194,6 @@ const
   { Ten per-period C thicknesses for START_STRUCTURE, surface end first. }
   C_TABLE = '[55.5,55.4,55.3,55.2,55.1,55.0,54.9,54.8,54.7,54.6]';
 
-/// START_STRUCTURE with a thickness_profile on its C layer.
 function StartWithCTable(const Table: string): string;
 begin
   Result :=
@@ -3466,8 +3203,6 @@ begin
     '{"material":"Ru","thickness":13.0,"sigma":3}]}]}';
 end;
 
-/// The curve of StructureJSON on the angles of Grid, as calc_reflectivity
-/// computes it with fit_xrr's defaults.
 function CalcOnGrid(const StructureJSON: string; const Grid: TDataArray): TDataArray;
 var
   Req: TCalcRequest;
@@ -3591,8 +3326,6 @@ begin
     [START_STRUCTURE, DUMMY_CURVE, PERIOD_FREE])));
 end;
 
-{ The author's Sb/B4C project pairs a different set on each layer: all three
-  on one, the density alone on the next, sigma and density on the third. }
 procedure TTestMCPFit.Irregular_Paired_PerLayer_IsAccepted;
 var
   Req: TFitRequest;
@@ -3763,7 +3496,6 @@ begin
     Assert.Pass('Henke tables not installed on this machine');
     Exit;
   end;
-  { 54.6, the last period, lies under a floor of 55 }
   Assert.AreEqual('invalid_argument', ErrorCodeOf(Format(
     '{"structure":%s,"curve":%s,"lambda":1.5406,"resolution":0,"mode":"irregular",' +
     '"start_profiles":true,"free":[{"stack":0,"layer":0,"parameters":["thickness"]}],' +
@@ -3902,9 +3634,6 @@ begin
   end;
 end;
 
-{ A paired parameter is one value, so a paired value on its bound is one entry
-  of near_bounds, without a period_index - not N copies of it. The true sigma
-  is 3, on the floor given here, where the fit leaves it. }
 procedure TTestMCPFit.Irregular_PairedValueNearItsBound_IsOneEntry;
 var
   Res: TJSONObject;
@@ -3942,11 +3671,6 @@ begin
   end;
 end;
 
-{ The per-period structure the result reports is the structure the fit scored:
-  written out period by period it gives back the fit's curve and chi2. The
-  sigma of the Ru layer is paired, so this also holds the engine to one value
-  in every period for it - UnrollProfiles uses the layer's single value where
-  there is no array. }
 procedure TTestMCPFit.Irregular_UnrolledIntoSinglePeriods_ReproducesTheFit;
 var
   Res, Res2: TJSONObject;
@@ -3995,9 +3719,6 @@ begin
       [Chi2Rebuilt, Chi2]));
 end;
 
-{ fit.xrcx is what the GUI opens: Irregular mode, the Smooth settings, the
-  pairing flags, and the periods in the layers' tables with a Table
-  extension to expand them - the state the GUI leaves after its own fit. }
 procedure TTestMCPFit.Irregular_Xrcx_IsAnIrregularProjectWithItsTable;
 var
   Res: TJSONObject;
@@ -4046,11 +3767,6 @@ begin
   end;
 end;
 
-{ period_smooth averages each parameter over the periods; a paired parameter is
-  one value in every period already, so with everything paired the smoothing
-  has nothing to do, and the same seed gives the same fit with it and without
-  it. With nothing paired it does change the fit - otherwise the first half of
-  the test would prove nothing. }
 procedure TTestMCPFit.Irregular_SmoothWithEveryParameterPaired_ChangesNothing;
 
   function Run(const Paired: string; Smooth: Boolean): TJSONObject;
@@ -4105,10 +3821,6 @@ begin
   end;
 end;
 
-{ A continuation: the fitted_structure of one irregular fit, sent back with
-  "start_profiles", starts the next fit from every period's own value, so its
-  chi2_start is the first fit's chi2. Without the flag the GUI's Run would
-  start every period from period 1's value instead. }
 procedure TTestMCPFit.Irregular_StartProfiles_ContinueFromAPreviousFit;
 var
   Res, Res2: TJSONObject;

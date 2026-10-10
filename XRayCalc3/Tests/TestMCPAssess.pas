@@ -1,23 +1,5 @@
 unit TestMCPAssess;
 
-(* assess_xrr: is this curve worth fitting?
-
-   The fixture is the worked example of the fitting skill's measurement-quality
-   section: Tests\Data\xrdml\W-B4C_260201B_0293.xrdml, a W/B4C multilayer
-   scanned on the lab's Empyrean on 2026-02-02 with a PIXcel3D detector. The
-   acceptance numbers were read off the raw file by the paper session, not by
-   this code: 3182 points, 2theta 0.0935 to 15.9985 in 0.0050 steps, 0.176 s
-   per point, a peak of 1400062 counts at 2theta 0.4785 (7.955e6 counts/s), the
-   first Bragg order 1352479 counts at 2theta 1.6735 (0.966 of the plateau -
-   the two features that should differ by an order of magnitude are within 4 %
-   of each other, both near 8e6 counts/s, which is what a clipped detector
-   looks like), and 998 non-positive counts from 2theta 5.213 on.
-
-   Everything the checks are fed is TAssessInput, so most tests run on the
-   parsed scan without the sandbox; the one that goes through the tool proper
-   puts the file in a throwaway inbox the way TestMCPInbox does. The design
-   test needs the W, B4C and Si Henke tables and passes with a note without
-   them, the way TestMCPFit does. *)
 
 interface
 
@@ -35,13 +17,8 @@ type
     FTemp: string;
     FSavedWorkDir: TWorkDir;
     function ExamplePath: string;
-    /// <summary>The scan as the inbox hands it to the tool: theta, normalised,
-    /// with the raw facts copied over.</summary>
     function InputFromScan(const Scan: TXRDMLScan): TAssessInput;
     function CheckOf(Res: TJSONObject; const Name: string): TJSONObject;
-    /// <summary>A plateau rising to 1 at 0.3 deg, a theta^-4 fall, and one
-    /// Gaussian "order" at 1.0 deg of the given height; or, with MaxAtStart, a
-    /// curve that only falls from its first point.</summary>
     function Synthetic(FirstOrderHeight: Double; MaxAtStart: Boolean): TAssessInput;
     function DesignJSON: TJSONObject;
     function HenkePresent: Boolean;
@@ -78,7 +55,6 @@ uses
   unit_Config;
 
 const
-  { the peer session's numbers, read off the raw file }
   EX_POINTS         = 3182;
   EX_2THETA_FIRST   = 0.0935;
   EX_2THETA_LAST    = 15.9985;
@@ -87,18 +63,15 @@ const
   EX_PEAK_COUNTS    = 1400062.0;
   EX_PEAK_2THETA    = 0.4785;
   EX_PEAK_RATE      = 7954897.7;      // 1400062 / 0.176
-  { The paper session read 1348865 counts at 2theta 1.6785; the raw list has
-    1352479 one step earlier, at 1.6735, and that is the maximum. }
   EX_FIRST_ORDER_2T = 1.6735;
   EX_FIRST_ORDER_R  = 0.9660;         // 1352479 / 1400062
   EX_ZEROS          = 998;
-  EX_FIRST_ZERO_2T  = 5.2135;         // 0.0935 + 1024 * 0.0050
+  EX_FIRST_ZERO_2T  = 5.2135;
   EX_KALPHA1        = 1.5405980;
   EX_KALPHA2        = 1.5444260;
   EX_RATIO          = 0.5;
   EX_LAMBDA         = 1.541874;       // (kAlpha1 + r kAlpha2) / (1 + r)
 
-{ ------------------------------------------------------------- fixture -- }
 
 procedure TTestMCPAssess.Setup;
 begin
@@ -145,7 +118,7 @@ var
   t: Double;
 begin
   Result := DefaultAssessInput;
-  n := 591;                                    // 0.05 .. 3.0 in 0.005
+  n := 591;
   SetLength(Result.Curve, n);
   for i := 0 to n - 1 do
   begin
@@ -182,7 +155,6 @@ begin
             TFile.Exists(Dir + 'Si.bin');
 end;
 
-{ ---------------------------------------------------------- the parser -- }
 
 procedure TTestMCPAssess.Parser_WorkedExample_MatchesThePeerSessionsNumbers;
 var
@@ -221,7 +193,6 @@ begin
   Assert.AreEqual(EX_LAMBDA, FScan.Lambda, 1E-5, 'K-Alpha through a non-hybrid mirror: the doublet');
 end;
 
-{ ---------------------------------------------------------- the checks -- }
 
 procedure TTestMCPAssess.Counting_UnknownWithoutALimit_FailAboveIt_PassBelowIt;
 var
@@ -334,8 +305,6 @@ begin
     Res.Free;
   end;
 
-  { a 0.1 mm beam over a 10 mm specimen: knee at asin(0.01) = 0.573 deg, above
-    the plateau maximum at 0.239 deg theta }
   Inp.SampleLengthMm := 10;
   Inp.BeamWidthMm := 0.1;
   Res := AssessJSON(Inp);
@@ -349,7 +318,6 @@ begin
     Res.Free;
   end;
 
-  { a 0.1 mm beam over a 100 mm specimen: knee at 0.057 deg, below the maximum }
   Inp.SampleLengthMm := 100;
   Res := AssessJSON(Inp);
   try
@@ -394,8 +362,6 @@ begin
     Assert.IsTrue(C.GetValue<Integer>('points_at_or_below_background') >= EX_ZEROS,
       'every floored zero sits at the background floor');
     Assert.IsTrue(C.GetValue<Double>('value') >= EX_ZEROS / EX_POINTS);
-    { with a one-count background, a four-count point anywhere in the tail is
-      "above" it: the last such point is a fact of the scan, not a threshold }
     Assert.IsTrue(InRange(C.GetValue<Double>('last_above_background_two_theta_deg'),
       EX_FIRST_ZERO_2T, EX_2THETA_LAST));
     Assert.AreEqual(EX_2THETA_LAST, C.GetValue<Double>('scan_end_two_theta_deg'), 1E-4);
@@ -492,7 +458,7 @@ begin
     J.Free;
   end;
   Inp.HasStructure := True;
-  Inp.Resolution := 0.015;                 // what fit_xrr convolves with
+  Inp.Resolution := 0.015;
 
   Res := AssessJSON(Inp);
   try
@@ -520,8 +486,6 @@ begin
     Assert.IsTrue((C.GetValue('orders') as TJSONArray).Count = 9);
     Assert.IsTrue(C.GetValue<string>('verdict') <> 'unknown', 'a design and a scaled model give a verdict');
 
-    { the design's own first order over its plateau is well under the 0.963
-      the file shows: that is the point of the check }
     C := CheckOf(Res, 'plateau_vs_first_order');
     Assert.IsTrue(C.GetValue<Double>('model_ratio') < EX_FIRST_ORDER_R,
       'model ratio: ' + C.GetValue<string>('model_ratio'));
@@ -543,7 +507,6 @@ var
 begin
   J := TJSONObject.ParseJSONValue(GLASS) as TJSONObject;
   try
-    { the calculating and fitting tools keep refusing it }
     Code := '';
     try
       StructureFromJSON(J, Info);
@@ -594,7 +557,6 @@ var
 
 begin
   Up := InputFromScan(FScan);
-  { the same scan written high-to-low, its indices pointing where they did }
   Down := Up;
   n := Length(Up.Curve);
   SetLength(Down.Curve, n);
@@ -690,7 +652,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------ the tool -- }
 
 procedure TTestMCPAssess.Tool_ReadsTheInboxFile_RawAndText;
 var
@@ -728,7 +689,6 @@ begin
     Params.Free;
   end;
 
-  { the same curve as two columns: the rate checks have nothing to read }
   FS := TFormatSettings.Invariant;
   SB := TStringBuilder.Create;
   try
@@ -782,7 +742,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------- the visibility floor -- }
 
 procedure TTestMCPAssess.AboveFloor_ARoundingStepOverIsNotAbove;
 const
@@ -794,12 +753,6 @@ begin
   Assert.IsTrue(AboveFloor(4 * ONE_COUNT, 3 * ONE_COUNT), 'four counts are more than three');
 end;
 
-{ The peer session's CoC5 case (Zenodo deposit of the XRR fitting paper): 20
-  periods of C/Co, a tail of floored zeros that makes the background exactly one
-  count, and orders 5 to 7 at 3 counts each. Those three are noise, 3 x a
-  one-count background; before 3.9.4 a Single rounding step made them "visible"
-  and the check reported 7 of 7. The real orders are 268742, 3623, 99 and 16
-  counts. }
 procedure TTestMCPAssess.OrdersVisible_ThreeCountsOnAFlooredBackground_AreNoise;
 const
   COC5_DESIGN =
@@ -854,12 +807,11 @@ begin
   end;
 end;
 
-{ The author's case: a thick stack at a usual step. 200 periods of 53 A are
-  10 600 A, fringes 0.00416 deg theta apart, 1.67 points each at the example's
-  0.0025 deg step - "aliased" by the fringe rule alone. At 0.015 deg resolution
-  only exp(-Pi^2 (0.015/0.00416)^2 / (4 ln 2)) of their contrast survives,
-  nothing: no step would show them, and the step is judged against the
-  resolution instead. }
+{ 200 periods of 53 A are 10 600 A, fringes 0.00416 deg theta apart,
+  1.67 points each at the example's 0.0025 deg step - "aliased" by the
+  fringe rule alone. At 0.015 deg resolution only
+  exp(-Pi^2 (0.015/0.00416)^2 / (4 ln 2)) of their contrast survives:
+  no step would show them, so the step is judged against the resolution. }
 procedure TTestMCPAssess.Sampling_FringesFinerThanTheResolution_JudgedByTheResolution;
 const
   THICK_DESIGN =

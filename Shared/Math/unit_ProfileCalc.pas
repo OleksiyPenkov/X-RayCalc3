@@ -22,20 +22,13 @@ type
 
 function Erf(const sigma, xmax: Single): Single;
 
-/// The value parameter ValIdx (1 = H, 2 = sigma, 3 = rho) of layer LayerIdx
-/// takes in period PeriodIdx (from 1) of stack StackIdx in the calculated model.
-/// TXRCStructure.Model(ExpandTables) sets it from the table or the layer's value
-/// (TLayerData.PeriodValue), then TLayeredModel.PrepareLayers replaces it with
-/// every gradient in Profiles aimed at (StackIdx, LayerIdx, ValIdx) in turn -
-/// Poly of the period number counted in its own stack - so the last one wins.
-/// Every profile plot reads its values here.
+/// ValIdx: 1 = H, 2 = sigma, 3 = rho. PeriodIdx starts at 1 in each stack.
+/// Gradients override table/layer values in the same order as PrepareLayers;
+/// the last matching gradient wins.
 function ModelValue(const Stacks: TStacksData; const Profiles: TProfileFunctions;
   StackIdx, LayerIdx, PeriodIdx, ValIdx: Integer; ExpandTables: Boolean): Single;
 
-/// The layers of the depth profile, surface first, with the values of
-/// ModelValue, so the plot shows the structure that is calculated. ExpandTables
-/// is TfrmProjectPanel.IsNonPeriodicProfile; Profiles the model's gradient
-/// extensions (TfrmProjectPanel.GetProfileFunctions).
+/// Layers are surface first, matching the calculated structure.
 function BuildLayers(const Stacks: TStacksData; ExpandTables: Boolean;
   const Profiles: TProfileFunctions = nil): TArray<TPLayer>;
 

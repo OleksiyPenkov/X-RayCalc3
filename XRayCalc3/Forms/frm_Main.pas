@@ -295,7 +295,7 @@ type
     FDPI: Integer;
     FLockOwner: Boolean;
     FLockFile: File;
-    FPendingSetup: string;   // a downloaded setup to run once the form is gone
+    FPendingSetup: string;
 
     procedure CheckForUpdate(const Silent: Boolean);
     procedure OfferUpdate(const Info: TReleaseInfo; const Error: string; const Silent: Boolean);
@@ -329,7 +329,6 @@ type
     procedure OpenHelpPage(const PageName: string);
     procedure OpenURL(const URL: string);
   public
-    { Public declarations }
     procedure WMStackClick(var Msg: TMessage); message WM_STR_STACK_CLICK;
     procedure WMLayerClick(var Msg: TMessage); message WM_STR_LAYER_CLICK;
     procedure WMLayerDoubleClick(var Msg: TMessage); message WM_STR_LAYER_DOUBLECLICK;
@@ -695,8 +694,6 @@ begin
               'and zero-count checks are unknown';
   end;
 
-  { the wavelength and the resolution the calculation settings hold, the
-    structure the editor shows: what a fit from this window would use }
   Inp.Lambda := FCalcSettings.Lambda;
   Inp.LambdaSource := 'calculation settings';
   Inp.Resolution := FCalcSettings.Resolution;
@@ -947,8 +944,6 @@ begin
   CheckForUpdate(False);
 end;
 
-{ The network calls run on their own thread; the answer comes back through
-  TThread.Queue. Silent (the startup check) speaks only of a newer version. }
 procedure TfrmMain.CheckForUpdate(const Silent: Boolean);
 var
   URL: string;
@@ -1128,7 +1123,7 @@ begin
       Data := FProjectPanel.Project.GetNodeData(Node);
       if Data = Current then
         CurrentNode := Node
-      else if Data.Data <> '' then   // never given a structure: nothing to calculate
+      else if Data.Data <> '' then
         CalcModel(Node, Data);
     end;
     { The active model last, so the structure panel, chi-squared and profile
@@ -1232,8 +1227,6 @@ end;
 
 procedure TfrmMain.FitExportJSONExecute(Sender: TObject);
 begin
-  { The project's fit record: this session's last fit, or the one saved with
-    the project. }
   if not FOrchestrator.HasFitRecord then
   begin
     ShowMessage('This project has no fitting record. Run fitting first.');
@@ -1444,7 +1437,7 @@ begin
   FOrchestrator.OnEnableControls := EnableControls;
   FOrchestrator.OnCalcTimeUpdate := UpdateCalcTime;
   FOrchestrator.OnFitTimeUpdate := UpdateFitTime;
-  FOrchestrator.OnFitCurve := OnCurvesChanged;   // the residual strip follows the fit
+  FOrchestrator.OnFitCurve := OnCurvesChanged;
 
   FBatchRunner := TBatchRunner.Create(FOrchestrator, FProjectPanel);
 
@@ -1505,7 +1498,6 @@ begin
   FreeAndNil(FOrchestrator);
   FreeAndNil(Structure);
   FreeAndNil(FChartMgr);
-  // TConfig uses class constructor/destructor; no instance to free
 
   // Setup asks for elevation itself; /CLOSEAPPLICATIONS covers this process's last moments
   if FPendingSetup <> '' then

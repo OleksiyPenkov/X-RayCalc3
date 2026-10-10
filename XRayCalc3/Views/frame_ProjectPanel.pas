@@ -22,7 +22,6 @@ uses
 type
   TStringProc = procedure(const S: string) of object;
 
-  { A gradient extension's target at the time an undo point was taken. }
   TGradientTarget = record
     Ext: PProjectData;
     StackID, LayerID: Integer;
@@ -120,11 +119,7 @@ type
 
     FOnCaptionChange: TStringProc;
     FOnCalcRun: TNotifyEvent;
-    { Fired whenever the live structure is replaced by another model - a
-      project loaded or created, or a different model node focused. }
     FOnModelChanged: TNotifyEvent;
-    { The curves on the chart changed: which are visible, which data is
-      linked, or the set itself (after RefreshChartLegend). }
     FOnCurvesChanged: TNotifyEvent;
     FProjectSerial: Integer;
 
@@ -181,7 +176,6 @@ type
     procedure SetToolbarsEnabled(Value: Boolean);
     procedure SetDescription(const Text: string);
 
-    { Project file operations }
     procedure NewProject;
     procedure OpenProject;
     { Both return False when the user cancels the Save As dialog. }
@@ -196,7 +190,6 @@ type
     function  ProjectReadable(const FileName: string): Boolean;
     procedure ReopenProject;
 
-    { Tree operations }
     procedure CreateModel;
     procedure DuplicateModel;
     procedure CopyModel;
@@ -209,27 +202,22 @@ type
     procedure AddFolder;
     procedure AddExtension;
 
-    { Data operations }
     procedure LoadData;
     procedure PasteData;
     procedure SaveData;
     procedure SaveActiveData;
-    /// Appends Line to the active data item's description.
     procedure AppendActiveDataNote(const Line: string);
 
-    { Project loading/saving }
     procedure LoadProject(const FileName: string);
     procedure SaveProject(const FileName: string);
     procedure CreateDefaultProject;
 
-    { Tree event handlers }
     procedure ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure ProjectDblClick(Sender: TObject);
     procedure ProjectFocusChanging(Sender: TBaseVirtualTree; OldNode,
       NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
       var Allowed: Boolean);
 
-    { Fit/profile support }
     function  GetProfileFunctions: TProfileFunctions;
     function  IsProfileEnabled: Boolean;
     function  HasFitExtensions: Boolean;
@@ -242,11 +230,9 @@ type
     /// Structure back into the active model.
     procedure PlotProfiles;
 
-    { Utilities }
     procedure CreateProfileExtension(const AFromFit: Boolean = False);
     procedure RescaleChart;
     procedure RefreshChartLegend;
-    { The chart series of the models shown on the chart, in tree order. }
     function  VisibleModelSeries: TArray<TFastLineSeries>;
     { The linked data's chart series and node ID, nil when no data is linked.
       Found by walking the tree, so a LinkedData left pointing at a freed node
@@ -254,8 +240,6 @@ type
     function  LinkedDataSeries(out ID: Integer): TFastLineSeries;
     procedure SyncSeriesVisibility(Series: TChartSeries);
     procedure SaveHistory;
-    { Restores the structure and the gradients' targets saved by the last
-      SaveHistory. False when there is nothing to undo. }
     function  Undo: Boolean;
     procedure AutoSave;
     procedure GenerateAutosaveName;
@@ -264,7 +248,6 @@ type
     function  ActiveDataSeries: TFastLineSeries; inline;
     function  IsNonPeriodicProfile: Boolean; inline;
 
-    { Properties }
     property Project: TXRCProjectTree read FProject;
     property ProjectDir: string read FProjectDir;
     property ProjectName: string read FProjectName;
@@ -341,7 +324,6 @@ begin
   INF.WriteString(FIT_RECORD_SECTION, 'Record', RecordJSON);
 end;
 
-{ --- Old XRCX format (v2) support --- }
 
 function ModelBinToJSON(const FileName: string): string;
 { Parses old X-RayCalc model_*.bin files (VirtualTreeView binary format).
@@ -504,7 +486,6 @@ begin
 
   if StackCount = 0 then Exit;
 
-  // Build JSON matching TXRCStructure.FromString format
   JRoot := TJSONObject.Create;
   try
     JStacks := TJSONArray.Create;
@@ -549,7 +530,6 @@ begin
   end;
 end;
 
-{ TfrmProjectPanel }
 
 destructor TfrmProjectPanel.Destroy;
 begin
@@ -691,7 +671,6 @@ begin
   mmDescription.Lines.Text := Text;
 end;
 
-{ --- Popup menu handlers --- }
 
 procedure TfrmProjectPanel.pmiEnabledClick(Sender: TObject);
 begin
@@ -790,7 +769,6 @@ begin
   end;
 end;
 
-{ --- Internal helpers --- }
 
 function TfrmProjectPanel.CreateNewModel(Node: PVirtualNode): PVirtualNode;
 var
@@ -1236,7 +1214,7 @@ var
 begin
   Node := FProject.GetFirstSelected;
   Data := FProject.GetNodeData(Node);
-  if Data = nil then   // Properties, or a double-click, with nothing selected
+  if Data = nil then
     Exit;
   case Data.RowType of
     prFolder:
@@ -1338,7 +1316,6 @@ begin
   Count := 0;
   SetLength(Items, 0);
 
-  // Iterate all nodes collecting prItem entries
   Node := FProject.GetFirstChild(FProject.GetFirst);
   while Node <> nil do
   begin
@@ -1441,13 +1418,12 @@ begin
       FOnCalcRun(Self);
 end;
 
-{ --- Public project file operations --- }
 
 procedure TfrmProjectPanel.NewProject;
 begin
   Structure.Clear;
   FProfileMgr.ClearProfiles;
-  FChartPages.ClearConvergence;   // and the diagnostics: the last fit's
+  FChartPages.ClearConvergence;
   CreateDefaultProject;
 end;
 
@@ -1478,7 +1454,7 @@ end;
 function TfrmProjectPanel.MayReplaceProject(const Caption, Question: string): Boolean;
 begin
   case ConfirmSaveBefore(Caption, Question) of
-    sbaSave:    Result := SaveCurrentProject;   // False: the Save As was cancelled
+    sbaSave:    Result := SaveCurrentProject;
     sbaDiscard: Result := True;
   else
     Result := False;
@@ -1535,13 +1511,7 @@ begin
   LoadProject(FProjectFileName);
 end;
 
-{ --- Tree operations --- }
 
-{ A new model, holding AStructure, focused in the tree as a click would focus
-  it. Until 3.9.4.1150 the new model became active while the tree's focus
-  stayed on the old one: its stored structure never took the edits made to
-  it, and the next click on it in the tree saved those edits into the old
-  model instead. }
 procedure TfrmProjectPanel.AddModel(const AStructure: string);
 var
   Node: PVirtualNode;
@@ -1564,7 +1534,6 @@ end;
 
 procedure TfrmProjectPanel.CreateModel;
 begin
-  { Starts from the structure on screen, as it always has. }
   AddModel(Structure.ToString);
 end;
 
@@ -1592,8 +1561,6 @@ begin
   finally
     JObj.Free;
   end;
-  { Loading it raised an access violation, and with the new model now
-    focused first it would leave that model behind without a structure. }
   if not IsStructure then
   begin
     MessageDlg('The clipboard holds no X-Ray Calc structure.' + sLineBreak +
@@ -1761,7 +1728,6 @@ begin
   end;
 end;
 
-{ --- Data operations --- }
 
 function TfrmProjectPanel.CreateDataNode(ParentNode: PVirtualNode;
   const Title: string): PProjectData;
@@ -1819,8 +1785,6 @@ begin
       Descr := Descr + '* Loaded as 2Theta' + #13#10
     else
       Descr := Descr + '* Loaded as theta (incidence angle)' + #13#10;
-    { the file states the wavelength it was measured at; taking it from there
-      removes one thing the operator can get wrong }
     if Scan.Lambda > 0 then
     begin
       FCalcSettings.SetLambda(Scan.Lambda);
@@ -1895,7 +1859,6 @@ begin
     SetDescription(FProject.ActiveData.Description);
 end;
 
-{ --- Project loading/saving --- }
 
 procedure TfrmProjectPanel.LoadProject(const FileName: string);
 var
@@ -1904,7 +1867,7 @@ begin
   Inc(FProjectSerial);
   FIgnoreFocusChange := True;
   FProfileMgr.ClearProfiles;
-  FChartPages.ClearConvergence;   // and the diagnostics: the last fit's
+  FChartPages.ClearConvergence;
   ExtractProject(FileName);
   LoadProjectParams(LinkedID, ActiveID);
   RecoverProjectTree(ActiveID);
@@ -2019,7 +1982,7 @@ begin
   FFitParams.w1           := 0.3;
   FFitParams.w2           := 0.3;
   FFitParams.AdaptVel     := False;
-  FFitParams.UseConstriction := True;   // as LoadAdvancedParams' default; was left False
+  FFitParams.UseConstriction := True;
   FFitParams.SmoothWindow := -1;
   FFitParams.Ksxr         := 0.2;
   FFitParams.PolyFactor   := 10;
@@ -2031,7 +1994,6 @@ begin
     FOnModelChanged(Self);
 end;
 
-{ --- Tree event handlers --- }
 
 procedure TfrmProjectPanel.ProjectChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
@@ -2092,7 +2054,6 @@ begin
   FProject.Repaint;
 end;
 
-{ --- Fit/profile support --- }
 
 function TfrmProjectPanel.GetProfileFunctions: TProfileFunctions;
 var
@@ -2277,7 +2238,6 @@ begin
   FProject.ActiveModel.Data := Structure.ToString;
 end;
 
-{ --- Utilities --- }
 
 procedure TfrmProjectPanel.SaveHistory;
 begin
@@ -2375,7 +2335,6 @@ procedure TfrmProjectPanel.AutoSave;
 begin
   if TConfig.Section<TOtherOptions>.AutoSave then
   begin
-    { The Output folder is not created anywhere else. }
     ForceDirectories(ExtractFilePath(FAutoSaveFileName));
     SaveProject(FAutoSaveFileName);
   end;

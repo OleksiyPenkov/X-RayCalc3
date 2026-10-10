@@ -107,11 +107,9 @@ var
 begin
   ExeDir := ExtractFilePath(Application.ExeName);
 
-  // Production: same directory as XRFCalc.exe
   Result := TPath.Combine(ExeDir, 'xrccmd.exe');
   if TFile.Exists(Result) then Exit;
 
-  // Development: XRFCalc/_Out/BIN/ -> XRC_CMD/Out/CMDBin/
   DevPath := TPath.GetFullPath(TPath.Combine(ExeDir, '..\..\XRC_CMD\Out\CMDBin\xrccmd.exe'));
   if TFile.Exists(DevPath) then
   begin
@@ -142,7 +140,6 @@ begin
   FConfigPath := ConfigPath;
   FOutputPath := ChangeFileExt(ConfigPath, '.xrfx');
 
-  // Create anonymous pipe for stdout+stderr capture
   SA := Default(TSecurityAttributes);
   SA.nLength := SizeOf(SA);
   SA.bInheritHandle := True;
@@ -151,7 +148,6 @@ begin
   if not CreatePipe(FReadPipe, WritePipe, @SA, 0) then
     RaiseLastOSError;
 
-  // Ensure read handle is not inherited by child
   SetHandleInformation(FReadPipe, HANDLE_FLAG_INHERIT, 0);
 
   try
@@ -159,7 +155,7 @@ begin
     SI.cb := SizeOf(SI);
     SI.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
     SI.hStdOutput := WritePipe;
-    SI.hStdError := WritePipe;  // merge stderr into same pipe
+    SI.hStdError := WritePipe;
     SI.hStdInput := 0;  // GUI app has no stdin -- use null handle
     SI.wShowWindow := SW_HIDE;
 
@@ -214,10 +210,8 @@ begin
 
   if Length(FBuffer) = 0 then Exit;
 
-  // Convert buffer to string (xrccmd outputs ANSI/UTF-8)
   Text := TEncoding.Default.GetString(FBuffer);
 
-  // Split on line endings
   Lines := Text.Split([#13#10, #10], TStringSplitOptions.None);
 
   // Last element is incomplete (no trailing newline) -- keep in buffer
@@ -248,14 +242,12 @@ var
 begin
   Trimmed := Trim(Line);
 
-  // Check for "Package saved:" -> completion
   if Trimmed.StartsWith('Package saved:') then
   begin
     FOutputPath := Trim(Copy(Trimmed, 16, MaxInt));
     Exit;
   end;
 
-  // Check for error (stderr merged into pipe)
   if Trimmed.StartsWith('Error:') or Trimmed.Contains('Exception') then
   begin
     FState := rsFailed;
@@ -264,7 +256,6 @@ begin
     Exit;
   end;
 
-  // Detect header line to learn R-column count
   if Trimmed.StartsWith('Iter') then
   begin
     FRColumnCount := 0;
@@ -275,11 +266,10 @@ begin
     Exit;
   end;
 
-  // Try to parse as iteration data line: starts with digits
   if (Length(Trimmed) = 0) or not CharInSet(Trimmed[1], ['0'..'9']) then
     Exit;
 
-  if FRColumnCount = 0 then Exit; // haven't seen header yet
+  if FRColumnCount = 0 then Exit;
 
   Parts := Line.Split([' '], TStringSplitOptions.ExcludeEmpty);
   MinParts := 2 + FRColumnCount + 1 + 1 + 1; // Iter,FoM,Rs,Div,>=1 Best part,Time
@@ -288,7 +278,6 @@ begin
   if not TryStrToInt(Parts[0], Data.Iteration) then Exit;
   if not TryStrToFloat(Parts[1], Data.FoM) then Exit;
 
-  // R values: indices 2 through 1+FRColumnCount
   SetLength(Data.ElementR, FRColumnCount);
   for i := 0 to FRColumnCount - 1 do
   begin
@@ -296,7 +285,6 @@ begin
       Data.ElementR[i] := RValD;
   end;
 
-  // Diversity: index 2+FRColumnCount
   DivIdx := 2 + FRColumnCount;
   TryStrToFloat(Parts[DivIdx], Data.Diversity);
 
@@ -310,7 +298,6 @@ begin
       Data.ElapsedSec := Min * 60.0 + Sec;
   end;
 
-  // BestInfo: parts between Div and Time
   Data.BestInfo := '';
   for i := DivIdx + 1 to High(Parts) - 1 do
   begin
@@ -331,10 +318,8 @@ begin
   if FProcessHandle = INVALID_HANDLE_VALUE then Exit;
   if WaitForSingleObject(FProcessHandle, 0) <> WAIT_OBJECT_0 then Exit;
 
-  // Process has exited -- drain remaining pipe data
   ReadPipeData;
 
-  // Flush any remaining buffer (FBuffer is TBytes)
   if Length(FBuffer) > 0 then
   begin
     LastLine := TEncoding.Default.GetString(FBuffer);

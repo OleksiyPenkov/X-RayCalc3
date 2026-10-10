@@ -12,18 +12,6 @@
 
 unit unit_MCPSandbox;
 
-{ The work directory every tool is confined to.
-
-  All tool arguments that name a file are *relative* paths interpreted against
-  the work directory root. ResolvePath turns such a relative path into an
-  absolute one and refuses anything that could escape the sandbox; RelativePath
-  turns an absolute path back into the root-relative form echoed to the client.
-
-  Layout created by EnsureLayout:
-    <root>\projects   .xrcx projects written by the server
-    <root>\jobs       per-job folders (inputs, results, logs)
-    <root>\inbox      read-only drop box for measured data
-    <root>\log        the server journal }
 
 interface
 
@@ -39,15 +27,8 @@ type
     /// Exception (not EMCPError) when it is missing: at that point there is
     /// no protocol session to report a structured error into.</summary>
     class function CreateFromCommandLine: TWorkDir;
-    procedure EnsureLayout;   // creates root, projects, jobs, inbox, log
-    /// <summary>Absolute path under Root for a client-supplied relative path.
-    /// Raises EMCPError('invalid_argument') when empty and
-    /// EMCPError('path_outside_workdir') for rooted / drive-qualified / UNC
-    /// paths and for anything containing a '..' segment. When ForWrite is
-    /// True, paths inside the inbox raise EMCPError('inbox_readonly').</summary>
+    procedure EnsureLayout;
     function ResolvePath(const Rel: string; ForWrite: Boolean): string;
-    /// <summary>Root-relative form (backslashes) of an absolute path, for
-    /// echoing back to the client. Paths outside Root are returned as-is.</summary>
     function RelativePath(const Abs: string): string;
     function ProjectsDir: string;
     function JobsDir: string;
@@ -56,7 +37,7 @@ type
     property Root: string read FRoot;
   end;
 
-function FileSHA256(const Path: string): string;       // lowercase hex
+function FileSHA256(const Path: string): string;
 function FileSizeOf(const Path: string): Int64;
 function FileModifiedUTC(const Path: string): string;  // ISO-8601, UTC
 function NowUTCString: string;                         // ISO-8601 with millis, UTC
@@ -68,7 +49,6 @@ implementation
 
 uses System.Hash, System.DateUtils, System.StrUtils, unit_MCPErrors;
 
-{ TWorkDir }
 
 constructor TWorkDir.Create(const ARoot: string);
 begin

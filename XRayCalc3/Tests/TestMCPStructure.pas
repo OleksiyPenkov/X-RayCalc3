@@ -25,14 +25,12 @@ type
     [Test] procedure XRCData_MissingFixedKeyIsThawed;
     [Test] procedure BuildLayeredModel_LayerCount;
     [Test] procedure BuildLayeredModel_TopLayerIsCap;
-    // fix round 1
     [Test] procedure FromJSON_HugeN_Raises;
     [Test] procedure FromJSON_NonFiniteN_Raises;
     [Test] procedure XRCData_MultiLayerCapStaysAStack;
     [Test] procedure ToJSON_BadCapIndex_RaisesInternal;
     [Test] procedure FillDefaultDensities_SubstrateFollowsTheLayerRule;
     [Test] procedure ValidateMaterials_EmptyNameIsReported;
-    // inverted fit ranges (min > max) in a project file
     [Test] procedure InvertedRanges_FindsSwappedDensityRange;
     [Test] procedure InvertedRanges_FrozenParameterIsListedToo;
     [Test] procedure InvertedRanges_EmptyRangeIsNotInverted;
@@ -52,15 +50,11 @@ const
     '"stacks":[{"N":10,"layers":[{"material":"W","thickness":10.0}]},' +
     '{"N":5,"layers":[{"material":"Mo","thickness":20.0}]}]}';
 
-  // an XRC data string whose first stack is titled 'Cap' but is a real stack:
-  // three repeats of two layers. It must not be flattened into a JSON "cap".
   FAT_CAP_XRC = '{"Stacks":[{"T":"Cap","N":3,"Layers":[' +
     '{"M":"Ru","H":10.0,"s":3.0,"r":12.4},' +
     '{"M":"C","H":20.0,"s":3.0,"r":2.2}]}],' +
     '"Subs":{"M":"Si","s":2.0,"r":0.0}}';
 
-  // the RFIS-III 260201B case: a WC density range pasted onto a B4C layer,
-  // so Rmin 14 > Rmax 2.5, with the density free (RF false)
   INVERTED_XRCDATA_JSON = '{"Stacks":[{"T":"W-B4C","N":30,"Layers":[' +
     '{"M":"W","H":5.0,"HP":false,"HF":false,"Hmin":0.0,"Hmax":20.0,"ProfileH":"",' +
     '"s":2.7,"SP":true,"SF":false,"Smin":0.0,"Smax":8.8,"ProfileS":"",' +
@@ -227,7 +221,6 @@ begin
     S1 := StructureFromJSON(J1, I1);
     J2 := StructureToJSON(S1, I1);
     try
-      // stacks are reported substrate -> surface, cap and buffer are labelled
       Assert.IsNotNull(J2.FindValue('cap'), 'cap');
       Assert.IsNotNull(J2.FindValue('buffer'), 'buffer');
       Assert.IsNotNull(J2.FindValue('substrate'), 'substrate');
@@ -391,7 +384,6 @@ var
   Back: TFitStructure;
   Info: TStructureInfo;
 begin
-  // A project written before the flag existed: no HF/SF/RF anywhere.
   Back := StructureFromXRCData(LEGACY_XRCDATA_JSON, Info);
 
   Assert.IsFalse(Back.Stacks[0].Layers[0].P[1].Fixed, 'absent key means thawed');
@@ -415,7 +407,6 @@ begin
 
   M := BuildLayeredModel(S);
   try
-    // vacuum + cap + 30 * 2 + buffer + substrate
     Assert.AreEqual(64, Length(M.Layers));
   finally
     M.Free;
@@ -446,7 +437,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- fix round 1 -- }
 
 procedure TTestMCPStructure.FromJSON_HugeN_Raises;
 var
@@ -534,7 +524,7 @@ var
 begin
   S := StructureFromXRCData(FAT_CAP_XRC, Info);
   Bad := Info;
-  Bad.CapIndex := 0;   // point at the three-repeat, two-layer stack
+  Bad.CapIndex := 0;
   Bad.HasCap := True;
   try
     var J: TJSONObject := StructureToJSON(S, Bad);
@@ -554,19 +544,16 @@ var
   M: TLayeredModel;
   Mats: TMaterials;
 begin
-  J := Parse(RUC_JSON);   // substrate SiO2 with an explicit density of 2.2
+  J := Parse(RUC_JSON);
   try
     S := StructureFromJSON(J, Info);
   finally
     J.Free;
   end;
-  // the C layer of the ML stack asks for the bulk value
   S.Stacks[1].Layers[1].P[3].V := 0;
 
   M := TLayeredModel.Create;
   try
-    // stand in for what Generate/ReadHenke would have filled in, so the test
-    // needs no Henke tables
     SetLength(Mats, 3);
     Mats[0].Name := 'SiO2'; Mats[0].ro := 2.65;
     Mats[1].Name := 'Ru';   Mats[1].ro := 12.41;
@@ -578,16 +565,12 @@ begin
     M.Free;
   end;
 
-  // since 3.9.1 the engine uses a given substrate density, so it is echoed
   Assert.AreEqual(2.2, Double(S.Subs.P[3].V), 1E-4,
     'a given substrate density is the one the engine used');
-  // a layer that asked for bulk gets it
   Assert.AreEqual(2.26, Double(S.Stacks[1].Layers[1].P[3].V), 1E-4);
-  // a layer that supplied one keeps it
   Assert.AreEqual(12.4, Double(S.Stacks[1].Layers[0].P[3].V), 1E-4);
   Assert.AreEqual(12.4, Double(S.Stacks[0].Layers[0].P[3].V), 1E-4, 'cap keeps its density');
 
-  // an omitted substrate density is the bulk value
   S.Subs.P[3].V := 0;
   M := TLayeredModel.Create;
   try
@@ -655,9 +638,9 @@ var
   Info: TStructureInfo;
 begin
   S := StructureFromXRCData(INVERTED_XRCDATA_JSON, Info);
-  S.Stacks[0].Layers[1].P[3].min := 2.5;     // min = max: pinned, not inverted
+  S.Stacks[0].Layers[1].P[3].min := 2.5;
   Assert.AreEqual(0, Length(InvertedRanges(S)));
-  S.Stacks[0].Layers[1].P[3].min := 2.0;     // an ordinary range
+  S.Stacks[0].Layers[1].P[3].min := 2.0;
   Assert.AreEqual(0, Length(InvertedRanges(S)));
 end;
 

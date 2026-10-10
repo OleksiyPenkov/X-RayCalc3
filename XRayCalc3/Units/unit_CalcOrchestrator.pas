@@ -25,7 +25,6 @@ type
 
   TCalcOrchestrator = class
   private
-    { Owned state - moved from frm_Main }
     FLFPSO: TLFPSO_Base;
     FFitThread: TThread;
     FCalcWatch, FFitWatch: TStopwatch;
@@ -36,7 +35,7 @@ type
     FBenchmarkMode, FFirstUpdate, FKeepExtensions: Boolean;
     FFitDuration: string;
     FFitSeconds: Double;
-    FFitDevice: string;          // what evaluated the last fit: 'CPU' or the GPU's name
+    FFitDevice: string;
     FHasFitResults: Boolean;
     { The last fit as it ran, captured when it starts - the settings may be
       changed while it runs or afterwards - and written into the project's
@@ -52,12 +51,9 @@ type
     FFitTwoTheta: Boolean;
     FFitPoly: TProfileFunctions;
     FFitBestChi: Single;
-    { The weighted and the plain chi-squared of the last calculation }
     FLastChi, FLastChiPlain: Single;
-    { The scale the last chi-squared shown was taken at (RunCalc) }
     FLastSolveScale, FLastScaleClamped: Boolean;
     FLastScaleLog: Single;
-    { Which measured curve that scale belongs to: its node ID and project. }
     FLastScaleDataID, FLastScaleProject: Integer;
 
     { Dependencies - not owned }
@@ -68,13 +64,11 @@ type
     FChartMgr: TChartManager;
     FProfileMgr: TProfileManager;
 
-    { Callbacks }
     FOnEnableControls: TEnableControlsEvent;
     FOnCalcTimeUpdate: TStatusUpdateEvent;
     FOnFitTimeUpdate: TStatusUpdateEvent;
     FOnFitCurve: TNotifyEvent;
 
-    { Internal }
     function PrepareCalc: Boolean;
     procedure GetThreadParams;
     procedure FinalizeCalc(Calc: TCalc);
@@ -106,8 +100,6 @@ type
     property LastChiSquare: Single read FLastChiSquare write FLastChiSquare;
     property BenchmarkMode: Boolean read FBenchmarkMode write FBenchmarkMode;
     property HasFitResults: Boolean read FHasFitResults;
-    /// The open project carries a record of a fit (this session's or a saved
-    /// one), which Result - Export fit results writes out.
     function HasFitRecord: Boolean;
     /// The scale the last calculation's chi2 was taken at: solved or not,
     /// and log10 of its ratio to the anchored one (0 when anchored).
@@ -118,7 +110,6 @@ type
     property OnEnableControls: TEnableControlsEvent write FOnEnableControls;
     property OnCalcTimeUpdate: TStatusUpdateEvent write FOnCalcTimeUpdate;
     property OnFitTimeUpdate: TStatusUpdateEvent write FOnFitTimeUpdate;
-    /// A running fit has just plotted its best curve so far on the chart.
     property OnFitCurve: TNotifyEvent write FOnFitCurve;
   end;
 
@@ -169,7 +160,6 @@ begin
     Result := 1;
 end;
 
-{ TCalcOrchestrator }
 
 constructor TCalcOrchestrator.Create(ACalcSettings: TfrmCalcSettings;
   AProjectPanel: TfrmProjectPanel; AChartInfo: TfrmChartInfo;
@@ -409,10 +399,6 @@ begin
     Exit;
   end;
 
-  { Free period (periodic mode): each repeating stack's period may move by the
-    window around the value it starts from - this run's model, so a resumed
-    fit carries on from where the last one ended. The engine is the one
-    fit_xrr's "target": "period" drives. }
   if (FCalcSettings.FittingMode = fmPeriodic) and FProjectPanel.FitParams.FreePeriod then
   begin
     Ranges := PeriodRanges(FFitStructure, FProjectPanel.FitParams.PeriodWindow);
@@ -580,7 +566,7 @@ begin
     FProjectPanel.Project.ActiveModel.Data := Structure.ToString;
     FFitSeconds := FFitWatch.Elapsed.TotalSeconds;
     DecodeTime(FFitSeconds / SecsPerDay, Hour, Min, Sec, MSec);
-    FFitDuration := Format('%2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);   // the export's hh:mm:ss
+    FFitDuration := Format('%2.2d:%2.2d:%2.2d', [Hour, Min, Sec]);
     FFitDevice := FLFPSO.DeviceUsed;
     FHasFitResults := True;
     if Assigned(FOnFitTimeUpdate) then
@@ -636,7 +622,7 @@ end;
 
 procedure TCalcOrchestrator.RecalcFromStructure;
 begin
-  RunCalc(False);   // redraws the profile pages too
+  RunCalc(False);
 end;
 
 procedure TCalcOrchestrator.HandleFitUpdate(var Msg: TMessage);
@@ -685,11 +671,6 @@ begin
   Result := FProjectPanel.FitRecord <> '';
 end;
 
-{ Everything about the fit that just ended, as it ran: the settings captured in
-  PrepareLFPSO, not the ones the panels hold now, the chi-squareds of the model
-  it ended on, and that model with its limits, pairing, freezing and tables.
-  It is kept with the project ([FITRESULT] in params.dsc), so Result - Export
-  fit results writes the same object after the project is reopened. }
 function TCalcOrchestrator.BuildFitRecord: TJSONObject;
 const
   FittingModeNames: array[TFittingMode] of string = ('Irregular', 'Periodic', 'Polynomial');
@@ -877,8 +858,6 @@ begin
     JSubstrate.AddPair('roughness', TJSONNumber.Create(FitStruct.Subs.P[2].V));
     JSubstrate.AddPair('density', TJSONNumber.Create(FitStruct.Subs.P[3].V));
 
-    { A polynomial fit's depth profiles: C[0] + C[1] n + ... over the periods,
-      as the gradient extensions hold them. }
     if FFitMode = fmPoly then
     begin
       JPolys := TJSONArray.Create;

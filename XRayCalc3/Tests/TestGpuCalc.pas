@@ -1,20 +1,5 @@
 unit TestGpuCalc;
 
-{ The GPU evaluation of an LFPSO population (unit_gpu_calc) and the two TCalc
-  methods it rests on.
-
-  TTestGpuInputs runs on the CPU only: the chi-squared rebuilt from
-  TCalc.GpuInputs and TCalc.FinishRawCurve must be the chi-squared
-  CalcChiSquare computes, for every theta weight, with and without the peak
-  weight and the resolution. That is the whole contract the GPU kernels
-  implement.
-
-  TTestGpuCalc needs a Direct3D 11 GPU and passes with a note where there is
-  none. Its references are a double-precision Parratt recursion written out
-  here (the GPU's accuracy) and the CPU engine (its agreement).
-
-  Both need the Henke tables for Si, Mo and W and pass with a note without
-  them, the way TestLFPSOProgress does. }
 
 interface
 
@@ -98,8 +83,6 @@ begin
             TFile.Exists(TPath.Combine(HENKE_DB_PATH, 'Mo.bin'));
 end;
 
-{ A W/Si multilayer on Si; Jitter moves the thicknesses, sigma and density of
-  every layer by up to a few percent, so that particles differ. }
 procedure FillModel(Model: TLayeredModel; Jitter, Sigma: Single);
 var
   Data, SubData: TLayersData;
@@ -142,7 +125,6 @@ begin
   Result.Lambda := CU_KA;
 end;
 
-{ The measurement: the unjittered model through the CPU engine. }
 function MakeData(DT: Single; Pol: TPolarisation; RF: TRoughnessFunction;
   Sigma: Single): TDataArray;
 var
@@ -191,7 +173,6 @@ begin
   Result.Limit := LIMIT;
 end;
 
-{ The raw curve of Model on Data's angles, as CalcTet leaves it. }
 function RawOnCpu(Model: TLayeredModel; const Data: TDataArray; Pol: TPolarisation;
   RF: TRoughnessFunction): TArray<Single>;
 var
@@ -229,21 +210,16 @@ end;
 
 function Jitter(p: Integer): Single;
 begin
-  Result := 0.04 * ((p mod 9) / 8 - 0.5);    // -2% .. +2%
+  Result := 0.04 * ((p mod 9) / 8 - 0.5);
 end;
 
-{ ------------------------------------------------ double-precision Parratt -- }
 
-{ A thin wrapper over unit_parratt_ref.ParrattRef (the reference Parratt now
-  lives there, shared with production code from Task 4 on), with the Limit
-  clamp the tests here expect. }
 function ParrattDouble(const L: TCalcLayers; ThetaDeg: Double; SP: Boolean;
   RF: TRoughnessFunction): Double;
 begin
   Result := Max(ParrattRef(L, ThetaDeg, CU_KA, SP, RF), LIMIT);
 end;
 
-{ ============================================================ TTestGpuInputs }
 
 procedure TTestGpuInputs.Setup;
 begin
@@ -293,9 +269,6 @@ begin
   end;
 end;
 
-{ The GPU sums ((log D - log R) / log R)^2 x PointWeight over ChiFirst..ChiLast
-  of the convolved curve and scales by ChiNorm. Done here in Double on the CPU
-  engine's own curve, it must give CalcChiSquare's number. }
 procedure TTestGpuInputs.GpuInputs_RebuildCalcChiSquare_EveryWeighting;
 var
   Data, Avg: TDataArray;
@@ -329,7 +302,6 @@ begin
           Chi := Calc.CalcChiSquare(tw);
 
           In_ := Calc.GpuInputs(tw);
-          { Results is already convolved; the sum below is the GPU's }
           Sum := 0;
           for i := In_.ChiFirst to In_.ChiLast do
           begin
@@ -363,7 +335,6 @@ begin
   end;
 end;
 
-{ ============================================================== TTestGpuCalc }
 
 procedure TTestGpuCalc.Setup;
 begin
@@ -414,7 +385,6 @@ begin
     for RF := rfError to rfSinus do
       for Pol := cmS to cmSP do
       begin
-        // rfLinear damps at every sigma since 3.9.3; rfSinus is the Stearns form
         Sigma := 3;
         What := Format('roughness %d, polarisation %d', [Ord(RF), Ord(Pol)]);
         Data := MakeData(0, Pol, RF, Sigma);
@@ -465,38 +435,10 @@ begin
   end;
 end;
 
-{ TCalc against the double-precision Parratt, every roughness function and
-  polarisation, on the same particles RawCurve_MatchesDoublePrecision_* and
-  GpuRawCurve_CloseToDoublePrecision use for the GPU.
-
-  Task 3 (2026-09-28-precision-followups), first commit: TotalRecursiveRefraction's
-  FastExp/FastSinCos replaced with System.Exp/System.Math.SinCos (the author's
-  <= 10% rule on a representative CPU fit: measured about 9.3%
-  slower, n=11 vs n=15 baseline trials). Measured here (30 cases: 5 roughness
-  functions x 2 polarisations x 3 particles): mean moved from 2.54E-5..3.09E-5
-  to 7.4E-6..1.02E-5, worst from 5.44E-4..7.04E-4 to 8.7E-5..9.98E-5.
-
-  A second candidate, refining math_complex.SqrtZ's InverseSqrt (a Newton
-  step, or the exact 1 / System.Sqrt), was measured alongside it: alone it
-  cost only ~1.6-2.8% on the same fit and fixed the sub-critical density test
-  (see TestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps),
-  but combined with the phase change the fit measured 11.7-12.3% slower
-  (n=14 vs n=15) - over the <= 10% budget for the first commit, which left
-  SqrtZ unchanged.
-
-  Fix round 2: the author decided to accept the combined ~12% CPU fit cost.
-  math_complex.SqrtZ now uses the exact 1 / System.Sqrt (ExactInverseSqrt).
-  Measured here with both changes: mean 3.79E-6..5.93E-6, worst
-  4.45E-5..7.80E-5 (30 cases). The bounds below are the geometric mean of the
-  ORIGINAL baseline's minimum (before either change: mean 2.537E-5, worst
-  5.440E-4) and this combined set's maximum (mean 5.927E-6, worst 7.802E-5):
-  MeanBound = Sqrt(2.537E-5 x 5.927E-6) = 1.226E-5, rounded to 1.2E-5;
-  WorstBound = Sqrt(5.440E-4 x 7.802E-5) = 2.060E-4, rounded to 2.0E-4 - each
-  sits strictly between the two states, so it passes the combined form and
-  catches a regression to either the phase-only or the fully-unrefined form.
-  Engine agreement between the CPU and the GPU is asserted by
-  GpuRawCurve_CloseToDoublePrecision, not here: this test needs only the
-  Henke tables, not a GPU. }
+{ MeanBound = Sqrt(2.537E-5 x 5.927E-6) = 1.226E-5, rounded to 1.2E-5;
+  WorstBound = Sqrt(5.440E-4 x 7.802E-5) = 2.060E-4, rounded to 2.0E-4.
+  Each sits between the baseline and exact-math results, so it catches a
+  regression to either the phase-only or the fully-unrefined form. }
 procedure TTestGpuCalc.CpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
@@ -550,54 +492,6 @@ begin
   end;
 end;
 
-{ The GPU raw curve against the double-precision Parratt, on the same
-  particles RawCurve_MatchesDoublePrecision_* uses, with the grazing sine
-  computed on the host in Double (2026-09-28) and the Reflect kernel's
-  cancellation-sensitive sums marked `precise` (2026-09-28, and again after
-  delta-carrying below).
-
-  Originally (before delta was carried end to end): the Fresnel term was
-  `(eps.re - 1) + sin_g^2`, a genuine near-1 cancellation, and fxc/the
-  driver - compiled without D3DCOMPILE_IEEE_STRICTNESS - could reassociate
-  it (and `(1 - eRatio) + eRatio * sin_g^2`) back into a cancelling form;
-  measured then, mean stayed ~1.2E-3..1.4E-3 without `precise`, falling to
-  7.9E-6..3.2E-5 (worst 7.6E-5..6.1E-4) with it - roughly 40x/20x better.
-
-  Since delta is carried directly into the kernel (2026-09-28-precision-
-  followups, Task 2, commit cd5ea6f): the Fresnel term is `sin_g2 - delta`
-  (Layers.x, never recovered from a near-1 epsilon), which is already a
-  well-conditioned subtraction - delta itself is small (~1E-5 for these
-  materials) - regardless of reassociation. Re-measured with `precise`
-  removed entirely (2026-09-28-precision-followups, Task 4, fix round 1):
-  this test still passes its bounds below on this GPU (RTX 5080), and
-  TGpuEvaluator's own self-check reference multilayer (TestGpuCalc's
-  SelfCheck_* tests) measures mean 7.61E-6 without `precise` vs 7.27E-6 with
-  it - `precise` no longer visibly changes the result on this machine, and
-  is kept as defence in depth (see unit_gpu_calc's header comment and
-  TGpuEvaluator.SelfCheck).
-
-  Bounds re-tightened (2026-09-28-precision-followups, final review): the
-  bounds above (mean 1E-4, worst 2E-3, agree-mean 2E-4, agree-worst 2.5E-3)
-  had 14-26x slack once delta was carried (and, for the agree bounds, once
-  Task 3 also made the CPU exact). Re-set to the geometric mean of a "before
-  delta" figure and the current maximum, the same rule TestCalcPhysics used
-  for the CPU bounds: mean and worst against `before` = Task 2's own
-  pre-delta measurement of this test (mean-of-means 1.960E-5, worst-of-worst
-  6.054E-4); agree-mean and agree-worst against `before` = Task 2's pre-delta
-  agreement with the CPU (mean-of-means 4.063E-5, worst-of-worst 7.189E-4,
-  itself pre-Task-3's exact CPU). `current` = this test's own measurement
-  today (30 cases: 5 roughness functions x 2 polarisations x 3 particles):
-  mean-of-means 5.991E-6, max-of-means 7.119E-6, worst-of-worst 1.199E-4;
-  agree-mean-of-means 7.546E-6, max-of-agree-means 8.848E-6, agree-worst-of-
-  worst 1.227E-4 (measured with temporary instrumentation, reverted before
-  commit). MEAN_BOUND = Sqrt(1.960E-5 x 7.119E-6) = 1.181E-5, rounded to
-  1.2E-5 (1.7x the current max). WORST_BOUND = Sqrt(6.054E-4 x 1.199E-4) =
-  2.695E-4, rounded to 2.7E-4 (2.25x). AGREE_MEAN_BOUND =
-  Sqrt(4.063E-5 x 8.848E-6) = 1.896E-5, rounded to 1.9E-5 (2.1x).
-  AGREE_WORST_BOUND = Sqrt(7.189E-4 x 1.227E-4) = 2.969E-4, rounded to 3.0E-4
-  (2.4x). No case exceeded any bound; RED not re-proven here (would need the
-  pre-delta packing/kernel restored, which is not cheap) - the separation
-  factors above (2.25-26x before this tightening) stand in its place. }
 procedure TTestGpuCalc.GpuRawCurve_CloseToDoublePrecision;
 const
   PARTICLES = 3;
@@ -782,7 +676,7 @@ begin
     Model.Generate(CU_KA);
     NLay := Length(Model.LayersDirect);
     Whole.Setup(Calc.GpuInputs(0), NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
-    Split.StepsPerDispatch := Int64(7) * NLay * Length(Data);   // 7 particles a dispatch
+    Split.StepsPerDispatch := Int64(7) * NLay * Length(Data);
     Split.Setup(Calc.GpuInputs(0), NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
     Assert.AreEqual(7, Split.ParticlesPerDispatch);
 
@@ -901,7 +795,6 @@ begin
     Assert.AreEqual('', Err, 'and no GPU error');
     Assert.AreEqual(Length(Data), Length(BestCurve), 'the best curve is on the data''s angles');
 
-    { The start model, as the structure states it }
     S := FitStructure;
     SetLength(Lay, 2);
     for j := 0 to 1 do
@@ -1022,7 +915,7 @@ begin
   if not Ready then Exit;
   Data := MakeData(0.01, cmS, rfError, 3);
   PSO := TLFPSO_Periodic.Create;
-  TGpuEvaluator.FailAfter := 4;         // the fourth Evaluate fails
+  TGpuEvaluator.FailAfter := 4;
   try
     PSO.Params := FitParams(40, 8);
     PSO.Limit := LIMIT;
@@ -1101,10 +994,6 @@ begin
   end;
 end;
 
-{ The same population scored both ways with TCalc.SolveScale on: the
-  measured curve is 1.3 times the true one, so every particle's solved log10
-  scale is about -0.114, and the true model (particle 4) scores near zero
-  again because the solved scale takes the factor out. }
 procedure TTestGpuCalc.Chi_MatchesTheCpuEngine_WithTheScaleSolved;
 const
   PARTICLES = 9;
@@ -1174,7 +1063,6 @@ begin
   end;
 end;
 
-{ Needs no GPU: the shared packing is the test's own Pack, value for value. }
 procedure TTestGpuCalc.PackModelLayers_MatchesPack;
 var
   Model: TLayeredModel;
@@ -1200,17 +1088,10 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------- the GPU self-check -- }
 
-{ ResetShaders forces the whole compile-and-check sequence to run again: the
-  next Available (and this test's own Available call) creates a throwaway
-  evaluator whose Create runs the self-check fresh. On this machine (RTX
-  5080) that must pass with the targeted `precise` qualifiers - asserting
-  ShaderMode = 'precise' holds specifically for this machine/driver; a GPU
-  whose self-check correctly fell back to 'ieee_strict' would fail this
-  exact assertion (see SelfCheck_FallsBackToIeeeStrict for that path,
-  exercised deterministically via FailSelfChecks rather than by relying on
-  a real GPU/driver difference). }
+{ ShaderMode = 'precise' holds specifically for this machine/driver
+  (RTX 5080); a GPU whose self-check correctly fell back to 'ieee_strict'
+  would fail this exact assertion. }
 procedure TTestGpuCalc.SelfCheck_PassesWithPrecise;
 var
   Name, Err: string;
@@ -1228,12 +1109,6 @@ begin
   end;
 end;
 
-{ FailSelfChecks := 1 forces only the first (precise) self-check to fail,
-  whatever it actually measures: Create must then fall back to compiling
-  with D3DCOMPILE_IEEE_STRICTNESS, check again for real, and this time
-  succeed. Runs GpuRawCurve_CloseToDoublePrecision's first case (roughness
-  rfError, polarisation cmS, particle 0) through the now IEEE-strict shaders,
-  to show they still work and not just that Available reports True. }
 procedure TTestGpuCalc.SelfCheck_FallsBackToIeeeStrict;
 var
   Name, Err: string;
@@ -1304,10 +1179,6 @@ begin
   end;
 end;
 
-{ FailSelfChecks := 2 forces both the precise and the IEEE-strict self-checks
-  to fail: Create must raise, Available must report False, and the message
-  must name the self-check so a client (and describe_server's gpu_error) can
-  tell this apart from every other reason a GPU is unavailable. }
 procedure TTestGpuCalc.SelfCheck_BothFail_GpuUnavailable;
 var
   Name, Err, SecondErr: string;
@@ -1343,8 +1214,6 @@ begin
   end;
 end;
 
-{ describe_server's server section, through the registered tool: when a GPU is
-  available, gpu_shader and gpu_self_check must be there alongside gpu. }
 procedure TTestGpuCalc.DescribeServer_ReportsGpuShaderAndSelfCheck;
 var
   Name, Err: string;

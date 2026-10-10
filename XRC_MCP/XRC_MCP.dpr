@@ -19,7 +19,6 @@ uses
   FastMM5,
   System.SysUtils,
   Vcl.Forms,
-  // transport / server
   unit_MCPProtocol in 'units\unit_MCPProtocol.pas',
   unit_MCPTools in 'units\unit_MCPTools.pas',
   unit_MCPErrors in 'units\unit_MCPErrors.pas',
@@ -28,7 +27,6 @@ uses
   unit_MCPUnits in 'units\unit_MCPUnits.pas',
   unit_MCPJournal in 'units\unit_MCPJournal.pas',
   unit_MCPJobs in 'units\unit_MCPJobs.pas',
-  // engine units the structure adapter maps onto
   math_complex in '..\Shared\Math\math_complex.pas',
   math_globals in '..\Shared\Math\math_globals.pas',
   unit_Types in '..\XRayCalc3\Units\unit_Types.pas',
@@ -40,7 +38,6 @@ uses
   unit_gpu_calc in '..\Shared\Math\unit_gpu_calc.pas',
   unit_parratt_ref in '..\Shared\Math\unit_parratt_ref.pas',
   unit_MCPStructure in 'units\unit_MCPStructure.pas',
-  // universal engine units: the template library and the XRF line table
   cmd_unit_types in '..\XRC_CMD\Units\cmd_unit_types.pas',
   cmd_math_globals in '..\XRC_CMD\Units\cmd_math_globals.pas',
   unit_materials_mix in '..\Shared\Math\unit_materials_mix.pas',

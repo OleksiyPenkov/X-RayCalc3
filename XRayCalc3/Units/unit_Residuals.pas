@@ -9,12 +9,6 @@
 
 unit unit_Residuals;
 
-(* The residual strip under the main chart: log10(R_calc / (I_meas K)) at each
-   measured point, from the same report input the Fit report is computed from
-   (unit_FitReportGUI.FitReportInput: the model resampled onto the measured
-   angles, the measured curve at the solved scale), so the strip, the report
-   and chi2 agree. The bands are the report's own (ReportBands). No VCL here,
-   so the tests can reach it. *)
 
 interface
 
@@ -22,16 +16,14 @@ uses
   unit_MCPFitReport;
 
 const
-  /// A model point within this factor of R min is taken to sit on the floor.
   FLOOR_MARGIN = 1.01;
-  /// A measured point this close above R min, relative, counts as on it.
   MEASURED_FLOOR_TOL = 1E-5;
 
 type
   TResidualPoint = record
     X: Double;          // the chart's unit: 2theta on a 2theta chart
     D: Double;          // log10(R_calc / (I_meas K))
-    Floored: Boolean;   // the model on the R min floor, or I_meas K at or below it
+    Floored: Boolean;
   end;
 
   TResidualCurve = record
@@ -70,7 +62,7 @@ begin
     if (Meas <= 0) or (Calc <= 0) then
       Continue;
     Result.Points[Count].X := Inp.Measured[i].t * Mul;
-    Result.Points[Count].D := Log10(Inp.Calculated[i].r / Inp.Measured[i].r);  // as ReportBands
+    Result.Points[Count].D := Log10(Inp.Calculated[i].r / Inp.Measured[i].r);
     { A measured point typed in at R min is a Single, a rounding step off the
       Single R min; the margin (as AboveFloor's) keeps "at" meaning at. }
     Result.Points[Count].Floored := (Calc <= RMin * FLOOR_MARGIN) or

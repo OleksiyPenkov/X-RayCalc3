@@ -9,7 +9,6 @@ uses
 type
   TFastSeriesList = array of TFastLineSeries;
 
-  { Where a curve goes in the draw order: the curve painted last is on top. }
   TDrawOrderMove = (dmToFront, dmForward, dmBackward, dmToBack);
 
   TChartManager = class
@@ -38,9 +37,6 @@ type
     { The CurveIDs of the live curves in the order they are painted, bottom to top. }
     function DrawOrder: TArray<Integer>;
     procedure MoveSeries(CurveID: Integer; Move: TDrawOrderMove);
-    { Paints the listed curves first, in the order given, and every other live
-      curve above them in its present order. Unknown, deleted and repeated
-      CurveIDs are ignored. }
     procedure ApplyDrawOrder(const CurveIDs: array of Integer);
 
     property Series: TFastSeriesList read FSeriesList;
@@ -53,7 +49,6 @@ implementation
 uses
   Winapi.Windows, System.SysUtils, System.Generics.Collections, unit_CurveStyle;
 
-{ TChartManager }
 
 constructor TChartManager.Create(AChart: TChart; ALineWidth: Integer);
 begin

@@ -47,9 +47,7 @@ type
     Tip: TStaticTip;
     procedure ShowParamHint(Sender: TObject);
   private
-    { Private declarations }
   public
-    { Public declarations }
     procedure ShowSettings(var Params: TFitParams);
   end;
 
@@ -63,7 +61,6 @@ uses
 
 {$R *.dfm}
 
-{ TfrmFitSettings }
 
 procedure TfrmFitSettings.ShowParamHint(Sender: TObject);
 begin

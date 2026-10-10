@@ -58,7 +58,6 @@ uses
   Neslib.FastMath,
   math_globals;
 
-{ TLFPSO Periodic}
 
 function TLFPSO_Poly.TP(const n: Integer): LongInt;
 var
@@ -77,19 +76,18 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 0 to High(X) do       // for every member of the population
+  for i := 0 to High(X) do
   begin
-    // 30% chance: Levy toward random peer for exploration diversity
     if Random < 0.3 then
       randIdx := Random(Length(X))
     else
-      randIdx := -1;  // use gbest
+      randIdx := -1;
 
-    for j := 0 to High(X[I]) do // for every layer
-      for k := 1 to 3 do        // for H, s, rho
+    for j := 0 to High(X[I]) do
+      for k := 1 to 3 do
       begin
         Ord := High(X[0][j][k]);
-        for c := 0 to Ord do  // for every coefficient
+        for c := 0 to Ord do
         begin
           if randIdx >= 0 then
             LTarget := X[randIdx][j][k][c]
@@ -112,13 +110,13 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 0 to High(X) do // for every member of the population
+  for i := 0 to High(X) do
   begin
-    for j := 0 to High(X[I]) do // for every layer
+    for j := 0 to High(X[I]) do
       for k := 1 to 3 do
       begin
         Ord := High(X[0][j][k]);
-        for c := 0 to Ord do  // for every coefficient
+        for c := 0 to Ord do
         begin
             V[i][j][k][c] := Omega(t, FTMax) * V[i][j][k][c]  +
                       c1 * Random * (pbest[j][k][c] - X[i][j][k][c]) +
@@ -209,7 +207,6 @@ begin
         if p = 1 then CheckRange;
       end;
     end;
-//    else CheckRange;
   end
   else CheckRange;
 end;
@@ -221,9 +218,9 @@ begin
   MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
-  for i := 0 to High(V) do          // for every member of the population
-    for j := 0 to High(V[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
+  for i := 0 to High(V) do
+    for j := 0 to High(V[i]) do
+      for k := 1 to 3 do
       begin
         Order := High(X[0][j][k]);
         for p := 0 to Order do
@@ -242,13 +239,13 @@ procedure TLFPSO_Poly.XSeed;
 var
   i, j, k, p, Ord: integer;
 begin
-  for i := 1 to High(X) do          // for every member of the population
+  for i := 1 to High(X) do
   begin
-    for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
+    for j := 0 to High(X[i]) do
+      for k := 1 to 3 do
       begin
         Ord := High(X[0][j][k]);
-        for p := 0 to Ord do  // for every oefficient of polynome
+        for p := 0 to Ord do
         if p = 0 then
            X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr)
         else
@@ -293,7 +290,7 @@ begin
     for k := 0 to StackLen - 1 do
     begin
       SetMaterial(Data[k], FStructure.Stacks[i].Layers[k].Material);
-      Data[k].Index    := LayerIndex;                              // Layer index accross Solution
+      Data[k].Index    := LayerIndex;
 
       Data[k].StackID := FStructure.Stacks[i].Layers[k].StackID;
       Data[k].LayerID := FStructure.Stacks[i].Layers[k].LayerID;
@@ -430,7 +427,7 @@ begin
     for p := 1 to MO - 1 do
       Xrange[0][Index][ValueType][p] := Xrange[0][Index][ValueType][0] / TP(p);
 
-    for i := 1 to High(X) do          // for every member of the population
+    for i := 1 to High(X) do
     begin
       SetLength(X[i][Index][ValueType], MO);
       SetLength(V[i][Index][ValueType], MO);
@@ -474,7 +471,7 @@ begin
     if Src.PIndex <> Word(ValueType) then
       Continue;
 
-    Count := Length(Src.C);          // fewer leaves the rest at 0, more truncates
+    Count := Length(Src.C);
     if Count > MO then
       Count := MO;
 

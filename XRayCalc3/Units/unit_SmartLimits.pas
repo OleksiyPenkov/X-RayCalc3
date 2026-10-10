@@ -26,9 +26,6 @@ type
 
 const
   MAX_DENSITY = 23.0;  // Osmium — densest stable element
-  /// A value this close to a bound, as a fraction of the range, is "at" it:
-  /// the limits dialog flags it and Widen moves that bound. It is the lab
-  /// fitting procedure's near_bound_fraction.
   NEAR_BOUND_FRACTION = 0.05;
 
 { The Henke table's bulk density of every layer, in the order the stacks and
@@ -63,15 +60,12 @@ function CellState(const Issues: TArray<TLimitIssue>;
   that same number is what OnCustomDrawSubItem reports as SubItem, so one set
   of helpers serves both. }
 
-{ 1..3 for the Fix column of H, S or Rho, 0 for any other column. }
 function FreezeParamOf(const Column: Integer): Integer;
 
 { The index CellState expects: 0..5 over (Hmin, Hmax, Smin, Smax, Rmin, Rmax),
   or -1 for a Fix column, which carries no limit and is never validated. }
 function LimitCellOf(const Column: Integer): Integer;
 
-{ The SubItems index of the Fix cell governing the column's parameter:
-  columns 1..3 -> 0, 4..6 -> 3, 7..9 -> 6. }
 function FreezeCellOf(const Column: Integer): Integer;
 
 procedure ApplyMaterialDensity(var Structure: TFitStructure;
@@ -222,33 +216,27 @@ begin
         if FV.min <> FV.max then
           AllLocked := False;
 
-        // Min > Max
         if FV.min > FV.max then
           AddIssue(Result, likError, Index, p,
             Format('%s: %s min > max', [LayerName, ParamNames[p]]));
 
-        // Value below min
         if FV.V < FV.min then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s value below min', [LayerName, ParamNames[p]]));
 
-        // Value above max
         if FV.V > FV.max then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s value above max', [LayerName, ParamNames[p]]));
 
-        // Range too wide
         if (FV.min > 0) and (FV.max / FV.min > 100) then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s range very wide', [LayerName, ParamNames[p]]));
 
-        // Range too narrow
         if (FV.min <> FV.max) and (FV.V <> 0) and
            (Abs(FV.max - FV.min) < 0.01 * Abs(FV.V)) then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: %s range very narrow', [LayerName, ParamNames[p]]));
 
-        // Value at limit (within NEAR_BOUND_FRACTION of range from boundary)
         if (FV.min <> FV.max) and (FV.max > FV.min) then
         begin
           if (FV.V - FV.min) < NEAR_BOUND_FRACTION * (FV.max - FV.min) then
@@ -259,12 +247,10 @@ begin
               Format('%s: %s value at upper limit', [LayerName, ParamNames[p]]));
         end;
 
-        // Physics: negative min for H, S, Rho
         if (p in [1, 2, 3]) and (FV.min < 0) then
           AddIssue(Result, likError, Index, p,
             Format('%s: %s min is negative', [LayerName, ParamNames[p]]));
 
-        // Physics: Rho max exceeds densest element
         if (p = 3) and (FV.max > MAX_DENSITY) then
           AddIssue(Result, likWarning, Index, p,
             Format('%s: Rho max exceeds densest element (23 g/cm'#179')',
@@ -275,7 +261,6 @@ begin
     end;
   end;
 
-  // Global: nothing to fit
   if AllLocked and (Index > 0) then
     AddIssue(Result, likWarning, -1, 0,
       'All parameters are locked '#8212' nothing to fit');
@@ -292,14 +277,12 @@ begin
         if Structure.Stacks[i].Layers[j].P[p].Fixed then
           Continue;
 
-        // H and S: min >= 0
         if p in [1, 2] then
         begin
           if Structure.Stacks[i].Layers[j].P[p].min < 0 then
             Structure.Stacks[i].Layers[j].P[p].min := 0;
         end;
 
-        // Rho: min >= 0, max <= MAX_DENSITY
         if p = 3 then
         begin
           if Structure.Stacks[i].Layers[j].P[p].min < 0 then
@@ -308,7 +291,6 @@ begin
             Structure.Stacks[i].Layers[j].P[p].max := MAX_DENSITY;
         end;
 
-        // Ensure value stays within clamped bounds
         if Structure.Stacks[i].Layers[j].P[p].V < Structure.Stacks[i].Layers[j].P[p].min then
           Structure.Stacks[i].Layers[j].P[p].V := Structure.Stacks[i].Layers[j].P[p].min;
         if Structure.Stacks[i].Layers[j].P[p].V > Structure.Stacks[i].Layers[j].P[p].max then
@@ -360,10 +342,6 @@ function CellState(const Issues: TArray<TLimitIssue>;
 var
   i, ParamIdx: Integer;
 begin
-  // SubItemIndex 0..5 maps to ParamIndex 1..3:
-  //   0,1 -> param 1 (H min/max)
-  //   2,3 -> param 2 (S min/max)
-  //   4,5 -> param 3 (Rho min/max)
   ParamIdx := (SubItemIndex div 2) + 1;
 
   Result := likNone;
@@ -437,7 +415,6 @@ begin
         if Structure.Stacks[i].Layers[j].P[p].Fixed then
           Continue;
 
-        // Skip locked params (min == max)
         if Structure.Stacks[i].Layers[j].P[p].min = Structure.Stacks[i].Layers[j].P[p].max then
           Continue;
 
@@ -478,7 +455,6 @@ begin
           if (V - min) < NEAR_BOUND_FRACTION * Range then
             min := min - Range * ExpandFactor;
 
-          { a density maximum held at bulk is not widened past it }
           if (max - V) < NEAR_BOUND_FRACTION * Range then
             max := System.Math.Min(max + Range * ExpandFactor, System.Math.Max(max, Ceiling));
         end;
@@ -501,7 +477,6 @@ begin
         if Structure.Stacks[i].Layers[j].P[p].Fixed then
           Continue;
 
-        // Fix inverted min/max
         if Structure.Stacks[i].Layers[j].P[p].min > Structure.Stacks[i].Layers[j].P[p].max then
         begin
           Tmp := Structure.Stacks[i].Layers[j].P[p].min;
@@ -547,13 +522,10 @@ begin
       H_self := Structure.Stacks[i].Layers[j].P[1].V;
 
       if j > 0 then
-        // Same stack, not first layer
         H_above := Structure.Stacks[i].Layers[j - 1].P[1].V
       else if Structure.Stacks[i].N > 1 then
-        // Periodic stack, first layer — wraps to last layer
         H_above := Structure.Stacks[i].Layers[High(Structure.Stacks[i].Layers)].P[1].V
       else if i > 0 then
-        // Non-periodic, cross-stack boundary
         H_above := Structure.Stacks[i - 1].Layers[High(Structure.Stacks[i - 1].Layers)].P[1].V
       else
         // First layer of first stack, non-periodic — borders the ambient, no layer above
@@ -593,7 +565,6 @@ var
   i, j, p, Index: Integer;
   Hi: Single;
 
-  { The upper bound ClampToPhysics would enforce on this parameter. }
   function HiBound(const ParamIndex: Integer): Single;
   begin
     if ParamIndex = 3 then

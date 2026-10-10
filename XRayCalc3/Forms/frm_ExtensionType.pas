@@ -36,9 +36,7 @@ type
     rbProfile: TRadioButton;
     btnOk: TBitBtn;
   private
-    { Private declarations }
   public
-    { Public declarations }
   end;
 
 var

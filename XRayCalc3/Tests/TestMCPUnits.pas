@@ -19,9 +19,6 @@ type
     [Test] procedure TwoThetaToTheta_Halves;
   end;
 
-  /// JSONArgs.Num: six significant digits for any finite magnitude. The
-  /// fit result puts profile polynomial coefficients and residuals through
-  /// it, and a cubic term of 1e-17 is an ordinary value there.
   [TestFixture]
   TTestJSONArgsNum = class
   private
@@ -41,7 +38,6 @@ implementation
 
 procedure TTestMCPUnits.EnergyToLambda_CuKa;
 begin
-  // Cu Kalpha: 8047.8 eV is 1.5406 A
   Assert.AreEqual(1.5406, EnergyToLambda(8047.8), 0.0002);
 end;
 
@@ -130,7 +126,6 @@ begin
   Assert.AreEqual(1.25, TwoThetaToTheta(2.5), 1e-12);
 end;
 
-{ TTestJSONArgsNum }
 
 function TTestJSONArgsNum.NumOf(const V: Double): Double;
 var
@@ -146,8 +141,6 @@ end;
 
 procedure TTestJSONArgsNum.Num_Tiny_DoesNotRaise;
 begin
-  // Below 1e-15 the old code asked RoundTo for more than 20 decimals, which
-  // System.Math refuses with a bare EArgumentException ('Invalid argument').
   Assert.AreEqual(1.5e-17, NumOf(1.5e-17), 1.5e-17 * 1e-5);
 end;
 
@@ -163,7 +156,6 @@ end;
 
 procedure TTestJSONArgsNum.Num_Denormal_DoesNotRaise;
 begin
-  // A denormal is finite and non-zero; it must come back as some finite number.
   Assert.IsFalse(IsInfinite(NumOf(5e-320)));
   Assert.IsFalse(IsNan(NumOf(5e-320)));
 end;

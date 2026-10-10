@@ -28,9 +28,6 @@ type
   [TestFixture]
   TTestOtlDrain = class
   public
-    { 200 threads x three 32-task loops. Before the exit drain ~5-10 % of them
-      ended with messages still in flight (7-19 pool-worker EOSErrors per run
-      on the 32-core reference machine); after it, none. }
     [Test] procedure ThreadsThatRunParallelFor_EndWithoutLosingATask;
   end;
 
@@ -50,7 +47,7 @@ const
 
 var
   OSErrors: Integer;
-  FirstOSError: string;   // written by the thread that raised the first one only
+  FirstOSError: string;
 
 { Sees every first-chance exception in the process. A Delphi raise carries the
   exception object as its second parameter; the pool worker's failed post is
@@ -129,7 +126,7 @@ end;
 procedure TTestOtlDrain.ThreadsThatRunParallelFor_EndWithoutLosingATask;
 const
   THREADS = 200;
-  ALLOWED = 64 * 1024 * 1024;   // pool growth only; ~10-20 MB lost before, 0-10 MB after
+  ALLOWED = 64 * 1024 * 1024;   // pool growth only
 var
   Handler: Pointer;
   Before, Grown: Int64;

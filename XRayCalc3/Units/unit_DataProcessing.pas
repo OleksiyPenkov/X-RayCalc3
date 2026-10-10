@@ -18,10 +18,6 @@ uses
 procedure AutoMerge(Series: TChartSeries);
 procedure ManualMerge( X, K: single; Series: TChartSeries);
 procedure Normalize(K: single; Series: TChartSeries);
-/// <summary>Scales the measured curve so that its maximum below SearchBelow
-/// (every point when SearchBelow <= 0, or when no point lies below it) equals
-/// the calculated curve at that angle. Factor is what the data were divided
-/// by, AnchorX the angle of the maximum used.</summary>
 procedure NormalizeAuto(Calc, Exp: TChartSeries; SearchBelow: Single;
   out Factor, AnchorX: Single);
 
@@ -140,8 +136,6 @@ begin
   AX := Exp.XValue[IMax];
   AnchorX := AX;
 
-  { the first calculated point at or above the data maximum's angle; none
-    (the model stops short of it) or a zero there leaves the data as they are }
   i := 0;
   while (i < Calc.XValues.Count) and (Calc.XValues[i] < AX) do inc(i);
   if (i >= Calc.XValues.Count) or (Calc.YValues[i] <= 0) then

@@ -12,22 +12,6 @@
 
 unit unit_ToolsCalc;
 
-(* The calculation tools: calc_reflectivity and evaluate_lines.
-
-   calc_reflectivity is synchronous. A theta scan of a few thousand points over
-   a few hundred layers takes well under a second on every core of the machine,
-   so there is nothing to queue: the tool creates its job folder, runs the
-   engine, writes curve.dat, structure.json and request.json into it and returns
-   the result in the same round trip. The folder is still called a job and still
-   carries a job id, so that a curve produced here is referred to the same way
-   as one produced by a fit.
-
-   evaluate_lines is synchronous for a different reason: it is a handful of
-   short scans, one per emission line, and it writes nothing. It answers the
-   question the mirror optimizer asks of every candidate - "how good is this
-   multilayer for these lines" - for a structure the client already has, using
-   the optimizer's own figure of merit so that the number is comparable with the
-   one optimize_mirror reports. *)
 
 interface
 
@@ -51,7 +35,6 @@ const
   DEFAULT_INLINE_MAX   = 2000;
   DEFAULT_R_MIN        = 1E-7;
 
-{ --------------------------------------------------------- argument input -- }
 
 /// 's' -> cmS; 'p' and 'sp' -> cmSP. The engine has two modes only: cmSP is
 /// (Rs + Rp)/2, and there is no pure-p path, so 'p' is answered with 'sp' and
@@ -94,7 +77,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------ calc_reflectivity -- }
 
 function CalcReflectivityResult(const Params: TJSONObject): TJSONObject;
 var
@@ -191,7 +173,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- evaluate_lines -- }
 
 function EvaluateLinesResult(const Params: TJSONObject): TJSONObject;
 var
@@ -236,9 +217,6 @@ begin
       Line.AddPair('lambda_used', JSONArgs.Num(Lines[i].Lambda));
       Line.AddPair('weight', JSONArgs.Num(Lines[i].Weight));
       Line.AddPair('theta_bragg_deg', JSONArgs.Num(Res[i].ThetaBragg));
-      // Where the peak really is, and the window and grid it was measured on:
-      // the scan is centred on the refraction-corrected angle, starts above the
-      // total-reflection plateau, and is fine enough to resolve the width.
       Line.AddPair('theta_peak_deg', JSONArgs.Num(Res[i].ThetaPeak));
       Line.AddPair('r_peak', JSONArgs.Num(Res[i].RPeak));
       Line.AddPair('fwhm_deg', JSONArgs.Num(Res[i].FWHM));
@@ -259,10 +237,7 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- registration -- }
 
-/// One item of the "lines" array: either the full object or a bare element
-/// symbol.
 function LineItemSchema: TJSONObject;
 var
   Obj, Str: TJSONObject;

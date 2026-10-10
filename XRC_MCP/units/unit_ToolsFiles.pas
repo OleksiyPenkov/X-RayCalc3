@@ -12,19 +12,6 @@
 
 unit unit_ToolsFiles;
 
-(* The file tools: the measurement inbox and the .xrcx projects.
-
-   Both inbox tools are read-only, and deliberately so: inbox\ holds the
-   experimental data, the one thing in the work directory the server has no
-   business changing. list_measurements says what is there and what its SHA-256
-   is, get_measurement hands the parsed curve back, and neither ever opens a
-   file for writing.
-
-   The three project tools are the other side of that: projects\ is the one
-   place the server writes files a person opens by hand. save_project computes
-   the model curve and writes a .xrcx that the X-Ray Calc 3 GUI opens with no
-   conversion step; load_project reads one back; list_projects says what is
-   there. The file format lives in unit_MCPProjectFile. *)
 
 interface
 
@@ -49,7 +36,6 @@ uses
   unit_MCPStructure, unit_MCPCalc, unit_MCPProjectFile, unit_MCPAssess,
   unit_MCPFit, unit_consts;
 
-{ ----------------------------------------------------------- assess_xrr -- }
 
 function AssessMeasurementJSON(const Params: TJSONObject): TJSONObject;
 var
@@ -62,7 +48,7 @@ begin
   M := LoadMeasurement(JSONArgs.ReqStr(Params, 'measurement_id'), 0);
   try
     if M.IsXRDML then
-      Inp := AssessInputFromScan(M.XRDML)     // the raw facts, the curve in theta
+      Inp := AssessInputFromScan(M.XRDML)
     else
     begin
       Inp := DefaultAssessInput;
@@ -70,9 +56,6 @@ begin
       Inp.TwoThetaScan := M.Converted2Theta;
     end;
 
-    { the same rule as fit_xrr: "lambda" or "energy" from the arguments,
-      the measurement's own wavelength (the file's, else meta.json's) when
-      neither is given }
     Inp.Lambda := GetLambdaArg(Params, 'lambda', 'energy', True, M.Meta.Lambda);
     if (Params.GetValue('lambda') <> nil) or (Params.GetValue('energy') <> nil) then
       Inp.LambdaSource := 'argument'
@@ -241,7 +224,6 @@ begin
     end);
 end;
 
-{ ---------------------------------------------------------- project tools -- }
 
 const
   { The calculation defaults of save_project. They are calc_reflectivity's, so
@@ -263,9 +245,6 @@ const
     'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
     'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9');
 
-/// True when S is one of the Windows reserved device names, comparing only
-/// the part of S before its first '.' (so 'CON', 'con.xrcx' and
-/// 'CON.foo.xrcx' are all reserved, but 'CONsole' is not).
 function IsReservedDeviceName(const S: string): Boolean;
 var
   Base, R: string;
@@ -322,12 +301,6 @@ begin
   end;
 end;
 
-/// The data curve named by the tool's "curves" argument, in theta. For a job
-/// curve, Proj.Params is also replaced by the parameter block of the job's own
-/// fit.xrcx (the engine that ran, its iterations and population, the chi-squared
-/// weighting, the resolution width and the range), and FromJob says so; before
-/// 2026-09-16 a project saved from a periodic fit carried the GUI defaults
-/// instead and opened in X-Ray Calc 3 as an irregular fit of 100 x 1000.
 procedure LoadRequestedCurve(const Curves: TJSONObject; var Proj: TXRCXProject;
   out FromJob: Boolean);
 var
@@ -375,9 +348,6 @@ begin
   end;
 end;
 
-/// [FIT] Mode for a project that does not come from a fit job: 1 (periodic)
-/// when the structure has a repeating stack, else 0 (irregular) - what the
-/// GUI's own fit dialog would pick for it.
 function FitModeFor(const S: TFitStructure): Integer;
 var
   i: Integer;
@@ -402,8 +372,6 @@ begin
   Req := Default(TCalcRequest);
   Req.Structure := StructureFromJSON(JSONArgs.ReqObj(Params, 'structure'), Req.Info);
 
-  { The cheap argument checks first: a client that names an existing project
-    learns so without waiting for a Henke lookup or a calculation. }
   Name := ValidateProjectName(JSONArgs.ReqStr(Params, 'name'));
   FileName := WorkDir.ResolvePath(TPath.Combine('projects', Name + PROJECT_EXT), True);
   if TFile.Exists(FileName) and not JSONArgs.OptBool(Params, 'overwrite', False) then
@@ -538,11 +506,6 @@ begin
     Result.AddPair('structure', StructureToJSON(S, Info));
     Result.AddPair('inverted_ranges', InvertedRangesJSON(S));
 
-    { Every child JSON value is attached to its parent immediately after it is
-      created, before anything that could raise (a float conversion, a file
-      read) runs on it. That way the whole tree is owned by Result at every
-      point, and "Result.Free; raise;" below can never leak a node that was
-      built but not yet linked in. }
     Profiles := TJSONArray.Create;
     Result.AddPair('profiles', Profiles);
     for i := 0 to High(Proj.Extensions) do
@@ -604,10 +567,6 @@ begin
     TArray.Sort<string>(Files);
     for FileName in Files do
     begin
-      // Obj is attached to Arr (and so to Result) immediately after creation,
-      // before FileSHA256/FileModifiedUTC - which can raise on a file that
-      // disappears or locks up mid-listing - run on it, so the exception
-      // path below never leaks a half-built entry.
       Obj := TJSONObject.Create;
       Arr.AddElement(Obj);
       Obj.AddPair('name', TPath.GetFileNameWithoutExtension(FileName));

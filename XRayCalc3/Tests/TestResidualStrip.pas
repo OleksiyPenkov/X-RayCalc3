@@ -1,8 +1,5 @@
 unit TestResidualStrip;
 
-(* TResidualStrip: the residual axis in the bottom quarter of the main chart -
-   its layout shown and hidden, the series it draws, the range it holds after
-   a zoom, and that the chart manager clearing every series cannot trip it. *)
 
 interface
 
@@ -151,7 +148,6 @@ procedure TTestResidualStrip.Plot_AllOptions_ReferenceLinesCurveFlooredAndBands;
 begin
   FStrip.Visible := True;
   FStrip.Plot(OnePlot);
-  { zero, +0.1, -0.1, the residual, its floored points, its band steps }
   Assert.AreEqual(6, FStrip.SeriesCount);
 end;
 
@@ -237,9 +233,6 @@ begin
   end;
 end;
 
-{ What the window would show: the chart drawn off screen through its GDI+
-  canvas, a red residual at +0.5 over the whole range. Its pixels must be
-  red, in the strip, below the reflectivity axis. }
 procedure TTestResidualStrip.Rendered_TheResidualLineIsInTheStrip;
 var
   Plots: TArray<TResidualPlot>;
@@ -301,8 +294,6 @@ begin
   end;
 end;
 
-{ Two plots, not one: the gap between them in the panel's color, not the
-  plot's, and a frame line along the top of the strip. }
 procedure TTestResidualStrip.Rendered_TheStripIsASeparatePlot;
 var
   Bmp: TBitmap;
@@ -386,8 +377,6 @@ begin
   Assert.AreEqual(0, Integer(Length(FStrip.LegendKeys)));
 end;
 
-{ The model's key, a short red line, is drawn in the top left of the strip;
-  the residual itself runs at -0.6, well below it. }
 procedure TTestResidualStrip.Rendered_TheLegendIsAtTheTopOfTheStrip;
 var
   Plots: TArray<TResidualPlot>;
@@ -443,8 +432,6 @@ begin
   Assert.IsTrue(OnAxis > 0, 'a series on the strip''s axis');
 end;
 
-{ The frame edges drawn around the plots match the axis lines the chart draws
-  on the other edges: a 4-pixel axis gives a frame at least 3 pixels deep. }
 procedure TTestResidualStrip.Rendered_FramesAreAsWideAsTheAxisLine;
 var
   Bmp: TBitmap;

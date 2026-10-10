@@ -1,8 +1,6 @@
 unit TestStructureWriteBack;
 
-(* Writing a fit result back into the structure panel.
-
-   The irregular engine (TLFPSO_Irregular) flattens the model into ONE stack
+(* The irregular engine (TLFPSO_Irregular) flattens the model into ONE stack
    holding every physical layer, repeats expanded; UpdateInterfaceNP walks that
    flattened stack. The periodic and poly engines keep the model's own shape;
    UpdateInterfaceP walks it stack by stack.
@@ -36,7 +34,6 @@ uses
   unit_Types, unit_XRCStructure;
 
 const
-  { Three single-layer stacks on SiO2, as the MCP saved the accepted fit. }
   MODEL =
     '{"Stacks":[' +
       '{"T":"Main","N":1,"Layers":[{"M":"C","H":11.8,"s":4.8,"r":2.6}]},' +
@@ -60,7 +57,7 @@ begin
   Host := TForm.CreateNew(nil);
   try
     S := Build(Host);
-    Res := S.ToFitStructure;                 // the periodic engine's shape
+    Res := S.ToFitStructure;
     Assert.AreEqual(3, Length(Res.Stacks));
     Res.Stacks[2].Layers[0].P[1].V := 300;
     Res.Stacks[1].Layers[0].P[3].V := 5.5;
@@ -84,7 +81,7 @@ begin
   Host := TForm.CreateNew(nil);
   try
     S := Build(Host);
-    Res := S.ToFitStructure;                 // three stacks, not one
+    Res := S.ToFitStructure;
     Assert.WillRaise(
       procedure begin S.UpdateInterfaceNP(Res, True); end,
       EArgumentException);
@@ -104,8 +101,6 @@ begin
   try
     S := Build(Host);
     Own := S.ToFitStructure;
-    { What TLFPSO_Irregular.SetStructure makes of it: one stack, N = 1, the
-      three layers in order. }
     SetLength(Flat.Stacks, 1);
     Flat.Stacks[0].N := 1;
     SetLength(Flat.Stacks[0].Layers, 3);
@@ -126,7 +121,7 @@ end;
 { A model text that cannot be read (an empty model node, a project from a
   newer version) used to clear the structure first and fail afterwards, leaving
   Substrate pointing at the freed control: every later FromString - every
-  project opened from then on - freed it a second time (3.9.5.1450). }
+  project opened from then on - freed it a second time. }
 procedure TTestStructureWriteBack.FromString_RejectedText_LeavesTheStructureUsable;
 const
   BAD: array [0..2] of string = ('', 'not json', '{"Stacks":[]}');

@@ -1,16 +1,5 @@
 unit TestMCPJobs;
 
-(* The job manager, exercised with trivial bodies rather than with the engines.
-
-   What is being tested here is the machinery - the queue, the single worker,
-   the state transitions, cancellation and the files on disk - so the bodies are
-   short Sleep loops that poll CancelRequested and report progress exactly as a
-   fit or an optimisation does. A real engine would make these tests slow and
-   would test the engine, not the manager.
-
-   Every test uses its own temp work directory and frees the manager in
-   TearDown, which is also what proves the destructor joins the worker: if it
-   did not, the directory delete that follows would fail on a locked file. *)
 
 interface
 
@@ -26,19 +15,10 @@ type
     FTemp: string;
     FWD: TWorkDir;
     FMgr: TJobManager;
-    /// <summary>A body that loops Iterations times, sleeping 10 ms and
-    /// reporting progress each time, stops when cancellation is requested and
-    /// otherwise leaves {"ok":true,"iterations":n} behind.</summary>
     function LoopBody(Iterations: Integer): TJobBody;
-    /// <summary>A body that raises EMCPError with this code.</summary>
     function FailingBody(const Code, Msg: string): TJobBody;
-    /// <summary>A body that raises a plain Exception - the kind the manager has
-    /// to turn into an 'internal' failure rather than let out.</summary>
     function RaisingBody(const Msg: string): TJobBody;
-    /// <summary>A body that replaces its own job folder with a file, so every
-    /// job.json write fails, and then reports progress Iterations times.</summary>
     function BreakDirBody(Iterations: Integer): TJobBody;
-    /// <summary>Polls Job.State until it is Wanted or TimeoutMs elapses.</summary>
     function WaitForState(Job: TJob; Wanted: TJobState; TimeoutMs: Integer): Boolean;
     function StateOf(Status: TJSONObject): string;
   public
@@ -72,7 +52,6 @@ type
 
 implementation
 
-{ ------------------------------------------------------------- fixture -- }
 
 procedure TTestMCPJobs.Setup;
 begin
@@ -100,7 +79,7 @@ begin
       I: Integer;
       R: TJSONObject;
     begin
-      RandSeed := Job.Seed;          // what a real body does first
+      RandSeed := Job.Seed;
       Job.MaxIterations := Iterations;
       for I := 1 to Iterations do
       begin
@@ -144,8 +123,6 @@ begin
       I: Integer;
       R: TJSONObject;
     begin
-      { A file where the folder should be: every write into it fails, which is
-        what a read-only or deleted work directory looks like from here. }
       TDirectory.Delete(Job.Dir, True);
       TFile.WriteAllText(Job.Dir, 'not a directory');
       for I := 1 to Iterations do
@@ -184,7 +161,6 @@ begin
   end;
 end;
 
-{ --------------------------------------------------------------- tests -- }
 
 procedure TTestMCPJobs.Submit_RunsAndFinishes_WithResult;
 var
@@ -273,7 +249,7 @@ procedure TTestMCPJobs.ResultOf_RunningJob_RaisesJobNotFinished;
 var
   Job: TJob;
 begin
-  Job := FMgr.Submit(jkFit, 1, LoopBody(500), nil);   // 5 s of work
+  Job := FMgr.Submit(jkFit, 1, LoopBody(500), nil);
   Assert.IsTrue(WaitForState(Job, jsRunning, 2000), 'the job must start');
   try
     FMgr.ResultOf(Job.Id).Free;
@@ -298,7 +274,6 @@ begin
   Queued := FMgr.Submit(jkFit, 2, LoopBody(1), nil);
   Assert.AreEqual('queued', StateOf(FMgr.Status(Queued.Id)), 'the worker is busy');
 
-  // No sleeping: a queued job is cancelled synchronously.
   Assert.AreEqual('cancelled', StateOf(FMgr.Cancel(Queued.Id)));
   Assert.AreEqual(0, FMgr.QueuedCount, 'it is taken out of the queue');
   Assert.IsTrue(TFile.Exists(TPath.Combine(Queued.Dir, 'job.json')),
@@ -313,8 +288,6 @@ begin
   Job := FMgr.Submit(jkOptimize, 1, LoopBody(500), nil);
   Assert.IsTrue(WaitForState(Job, jsRunning, 2000), 'the job must start');
 
-  // The status returned by cancel_job is the current one: the body has not
-  // noticed yet, so it is still running.
   StateNow := StateOf(FMgr.Cancel(Job.Id));
   Assert.AreEqual('running', StateNow);
 
@@ -405,7 +378,7 @@ var
 begin
   Job := FMgr.Submit(jkFit, 1, LoopBody(500), nil);
   Assert.IsTrue(WaitForState(Job, jsRunning, 2000), 'the job must start');
-  Sleep(200);   // several iterations of the body
+  Sleep(200);
 
   Status := FMgr.Status(Job.Id);
   try
@@ -453,7 +426,7 @@ begin
   AssignFile(ErrOutput, ErrPath);
   Rewrite(ErrOutput);
   try
-    Job := FMgr.Submit(jkFit, 1, BreakDirBody(50), nil);   // ~500 ms of progress
+    Job := FMgr.Submit(jkFit, 1, BreakDirBody(50), nil);
     Assert.IsTrue(WaitForState(Job, jsFinished, 10000),
       'a job.json that cannot be written must not stop the job');
   finally
@@ -461,7 +434,6 @@ begin
     Move(SavedErr, TTextRec(ErrOutput), SizeOf(TTextRec));
   end;
 
-  // The in-memory status is unaffected by the file having failed.
   Assert.AreEqual('finished', StateOf(FMgr.Status(Job.Id)));
   Res := FMgr.ResultOf(Job.Id);
   try
@@ -509,7 +481,6 @@ begin
     end;
   end;
 
-  // The worker is the only one there is: it has to still be there.
   Good := FMgr.Submit(jkOptimize, 2, LoopBody(2), nil);
   Assert.IsTrue(WaitForState(Good, jsFinished, 5000),
     'the queue survives a job that blew up');
@@ -520,7 +491,7 @@ var
   Job: TJob;
   Status: TJSONObject;
 begin
-  Job := FMgr.Submit(jkOptimize, 1, LoopBody(5), nil);     // about 50 ms
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(5), nil);
   Status := FMgr.WaitFor(Job.Id, 10000);
   try
     Assert.AreEqual('finished', Status.GetValue<string>('state'),
@@ -538,7 +509,7 @@ var
   Status: TJSONObject;
   Waited: Double;
 begin
-  Job := FMgr.Submit(jkOptimize, 1, LoopBody(500), nil);   // about 5 s
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(500), nil);
   Status := FMgr.WaitFor(Job.Id, 300);
   try
     Assert.AreEqual('running', Status.GetValue<string>('state'),
@@ -593,7 +564,7 @@ var
   Canceller: TThread;
   Id: string;
 begin
-  Job := FMgr.Submit(jkOptimize, 1, LoopBody(2000), nil);   // about 20 s
+  Job := FMgr.Submit(jkOptimize, 1, LoopBody(2000), nil);
   Assert.IsTrue(WaitForState(Job, jsRunning, 5000), 'the job must start');
 
   Id := Job.Id;
@@ -631,7 +602,7 @@ begin
   Assert.IsTrue(WaitForState(First, jsRunning, 5000), 'the first job must start');
   Assert.AreEqual(Ord(jsQueued), Ord(Second.State), 'the second one waits');
 
-  FMgr.Cancel(Second.Id).Free;        // a queued job is cancelled at once
+  FMgr.Cancel(Second.Id).Free;
   Status := FMgr.WaitFor(Second.Id, 5000);
   try
     Assert.AreEqual('cancelled', Status.GetValue<string>('state'));

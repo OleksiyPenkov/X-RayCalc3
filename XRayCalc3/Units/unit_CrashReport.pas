@@ -19,7 +19,6 @@ type
   public
     class function BuildReport(E: Exception; Addr: Pointer): string;
     class procedure SaveToFile(const ReportText: string);
-    /// The executable's file version, a.b.c.d; 'Unknown' when it has none.
     class function GetAppVersion: string;
   private
     class function GetOSInfo: string;
@@ -100,7 +99,6 @@ begin
   Dispose(PStackFrames(Info));
 end;
 
-{ TCrashReport }
 
 class function TCrashReport.GetAppVersion: string;
 var
@@ -268,7 +266,6 @@ begin
   end;
 end;
 
-{ TExceptionHelper }
 
 class procedure TExceptionHelper.HandleException(Sender: TObject; E: Exception);
 var

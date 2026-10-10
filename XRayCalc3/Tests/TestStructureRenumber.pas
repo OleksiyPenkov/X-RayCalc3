@@ -1,15 +1,9 @@
 unit TestStructureRenumber;
 
-(* Layers addressed by (stack, layer) index.
-
-   A gradient extension names its layer by index. When a layer or stack is
+(* A gradient extension names its layer by index. When a layer or stack is
    inserted, deleted or moved, TXRCStructure.OnLayersRenumbered reports where
    every layer went, so the gradient can follow its layer rather than stay on
-   the index and land on whichever layer takes its old place.
-
-   Also here: the per-period table rule of TXRCStructure.Model, which the
-   profile plots share (TLayerData.PeriodValue), and the table read back by
-   FromString. *)
+   the index and land on whichever layer takes its old place. *)
 
 interface
 
@@ -49,7 +43,6 @@ uses
   System.SysUtils, unit_materials;
 
 const
-  { Two stacks: W/Si/C x 3, then Cr x 1, on Si. }
   MODEL =
     '{"Stacks":[' +
       '{"T":"ML","N":3,"Layers":[' +
@@ -97,7 +90,7 @@ var
   S: TXRCStructure;
 begin
   S := Build(MODEL);
-  S.MoveLayer(0, 0, 1);                        // W below Si
+  S.MoveLayer(0, 0, 1);
 
   Assert.AreEqual(1, FFired);
   Assert.AreEqual('Si', S.Stacks[0].LayerData[0].Material);
@@ -112,7 +105,7 @@ var
   S: TXRCStructure;
 begin
   S := Build(MODEL);
-  S.DeleteLayer(0, 0);                         // W
+  S.DeleteLayer(0, 0);
 
   Assert.AreEqual(1, FFired);
   CheckPos(FMap[0][0], -1, -1, 'W deleted');
@@ -128,7 +121,7 @@ begin
   S := Build(MODEL);
   Data := S.Stacks[0].LayerData[0];
   Data.Material := 'Mo';
-  S.SelectLayer(0, 1);                         // before Si
+  S.SelectLayer(0, 1);
   S.InsertLayer(Data);
 
   Assert.AreEqual('Mo', S.Stacks[0].LayerData[1].Material);
@@ -143,7 +136,7 @@ var
 begin
   S := Build(MODEL);
   S.Select(0);
-  S.InsertStack(1, 'New');                     // before ML
+  S.InsertStack(1, 'New');
 
   Assert.AreEqual(3, Length(S.Stacks));
   CheckPos(FMap[0][1], 1, 1, 'Si');
@@ -201,7 +194,6 @@ begin
   end;
 end;
 
-// A table made for N = 2 after N was raised to 3 used to be read past its end.
 procedure TTestStructureRenumber.Model_IgnoresATableShorterThanN;
 var
   S: TXRCStructure;

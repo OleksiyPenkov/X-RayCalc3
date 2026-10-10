@@ -1,18 +1,5 @@
 unit TestMCPFitReport;
 
-(* The fit report: the numbers a client is given instead of two long curves.
-
-   Everything here is pure - two arrays in, one JSON object out - so the whole
-   fixture runs without the engine and without a Henke table.
-
-   The centrepiece is Reference_Orders_MatchTheOrchestratorsNumbers. The two
-   curves under Tests\Data\report-ref are measured.dat and calc.dat of job
-   fit-20260918-170706-196b, the C/Co mirror P2-05 fitted on 2026-09-18, and the
-   four ratios the report must produce for them - 0.98, 1.22, 1.09 and 0.72 at
-   theta 0.9163, 1.7772, 2.6578 and 3.5322 - were computed independently from
-   the same files by the paper session's skilltest_compare.py. If the order
-   finder is ever changed, that test says whether it still finds the orders a
-   physicist found by hand. *)
 
 interface
 
@@ -24,17 +11,9 @@ type
   [TestFixture]
   TTestMCPFitReport = class
   private
-    /// <summary>Tests\Data\report-ref\&lt;Name&gt;, read as theta / value pairs
-    /// with the one-line header WriteCurveFile puts there.</summary>
     function LoadReference(const Name: string): TDataArray;
-    /// <summary>A slowly decaying curve modulated by a cosine of period
-    /// FringeStep and depth Depth, with its maxima at 0.9 + k * FringeStep so
-    /// that the first two Bragg orders of REF_PERIOD_FRINGE fall on two of
-    /// them. Depth 0.5 gives a fringe contrast of 3.</summary>
     function FringeCurve(FringeStep: Double; Depth: Double = 0.5): TDataArray;
-    /// <summary>The orders array of a report over the two curves.</summary>
     function OrdersOf(Rep: TJSONObject): TJSONArray;
-    /// <summary>One order of the report, by its n.</summary>
     function OrderN(Rep: TJSONObject; N: Integer): TJSONObject;
   public
     [Test] procedure Background_IsTheMedianOfTheLastHundredPoints;
@@ -64,15 +43,12 @@ uses
 const
   CU_K_ALPHA = 1.5406;
 
-  { The fitted model of job fit-20260918-170706-196b: C 31.0259 + Co 19.1109. }
   REF_PERIOD = 50.136783599852905;
-  { The critical angle of that C/Co stack, near enough for the order window. }
   REF_THETA_C = 0.30;
 
   { A period whose first two orders sit at 0.9 and 1.8 degrees. }
   REF_PERIOD_FRINGE = 49.0381;
 
-{ --------------------------------------------------------------- helpers -- }
 
 function TTestMCPFitReport.LoadReference(const Name: string): TDataArray;
 var
@@ -98,7 +74,7 @@ begin
       if Length(Parts) <> 2 then
         Continue;
       if not TryStrToFloat(Parts[0], Result[n].t, FS) then
-        Continue;                     // the header line
+        Continue;
       Result[n].r := StrToFloat(Parts[1], FS);
       Inc(n);
     end;
@@ -113,7 +89,7 @@ function TTestMCPFitReport.FringeCurve(FringeStep, Depth: Double): TDataArray;
 const
   TMin = 0.2;
   TMax = 3.0;
-  Points = 2801;                      // a step of exactly 0.001 degrees
+  Points = 2801;
 var
   i: Integer;
   T: Double;
@@ -147,7 +123,6 @@ begin
   Assert.Fail(Format('the report has no order %d', [N]));
 end;
 
-/// The input for one report over two curves.
 function InputOf(const Meas, Calc: TDataArray; Period, ThetaC: Double): TFitReportInput;
 begin
   Result := Default(TFitReportInput);
@@ -158,15 +133,12 @@ begin
   Result.ThetaC := ThetaC;
 end;
 
-{ ------------------------------------------------------------ background -- }
 
 procedure TTestMCPFitReport.Background_IsTheMedianOfTheLastHundredPoints;
 var
   C: TDataArray;
   i: Integer;
 begin
-  { 300 points: the first 200 are large, the last 100 run 1 .. 100, whose
-    median is 50.5. Only the tail may count. }
   SetLength(C, 300);
   for i := 0 to 199 do
   begin
@@ -190,16 +162,14 @@ begin
   for i := 0 to 4 do
   begin
     C[i].t := i * 0.1;
-    C[i].r := i + 1;                  // 1 2 3 4 5, median 3
+    C[i].r := i + 1;
   end;
   Assert.AreEqual(Double(3), ReportBackground(C), 1E-9);
 end;
 
-{ ------------------------------------------------------- the reference -- }
 
 procedure TTestMCPFitReport.Reference_Orders_MatchTheOrchestratorsNumbers;
 const
-  { theta of the measured maximum, and R_calc / I_meas, per order. }
   Theta: array [1 .. 4] of Double = (0.9163, 1.7772, 2.6578, 3.5322);
   Ratio: array [1 .. 4] of Double = (0.98, 1.22, 1.09, 0.72);
 var
@@ -232,10 +202,6 @@ var
   A, B: TJSONObject;
   n: Integer;
 begin
-  { The window is widened by the refraction shift, which moves a Bragg maximum
-    up and never down. On this mirror the shift is small enough that the orders
-    come out the same either way; the test is here so that a change to the
-    window has to be a deliberate one. }
   Meas := LoadReference('measured.dat');
   Calc := LoadReference('calc.dat');
   A := FitReportJSON(InputOf(Meas, Calc, REF_PERIOD, REF_THETA_C));
@@ -294,7 +260,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- the pieces -- }
 
 procedure TTestMCPFitReport.Orders_NoPeriod_AreNull;
 var
@@ -320,9 +285,6 @@ var
   Rep: TJSONObject;
   i: Integer;
 begin
-  { A flat measured curve: nothing anywhere stands three times above the
-    median of its own tail, so no order is visible - and every order is still
-    reported, which is the point. }
   Calc := FringeCurve(0.15);
   SetLength(Meas, Length(Calc));
   for i := 0 to High(Calc) do
@@ -352,7 +314,7 @@ begin
   Meas := FringeCurve(0.15);
   Calc := FringeCurve(0.15);
   for i := 0 to High(Calc) do
-    Calc[i].r := Calc[i].r * 10;      // one decade above the data everywhere
+    Calc[i].r := Calc[i].r * 10;
 
   Rep := FitReportJSON(InputOf(Meas, Calc, 0, 0));
   try
@@ -403,10 +365,6 @@ begin
 end;
 
 
-{ CoC5's fitted curve: a plateau that dips 0.1 % at theta 0.207, between the
-  C and Co critical angles, then the edge from 0.25 with fringes. The first
-  minimum is the first fringe's, past the edge; the wiggle is not one (it
-  took the whole edge window until 3.9.4). }
 procedure TTestMCPFitReport.Edge_PlateauWiggleIsNotTheFirstMinimum;
 var
   C: TDataArray;
@@ -446,9 +404,6 @@ begin
   end;
 end;
 
-{ Maxima every 0.15 degrees from 0.9: the first two orders of REF_PERIOD_FRINGE
-  are the ones at 0.9 and 1.8, and five secondary maxima - each with a minimum
-  after it - lie between them. }
 procedure TTestMCPFitReport.Fringes_PairEverySecondaryMaximumWithTheMinimumAfterIt;
 var
   C: TDataArray;
@@ -520,10 +475,6 @@ begin
   end;
 end;
 
-{ What the resolution of the calculation is chosen by: the same fringes read off
-  both curves. The calculated curve here is modulated 1.8 to 0.2 - a contrast of
-  9 against the measured 3 - and the report has to show that difference at the
-  same angles rather than compare two sets of extrema found separately. }
 procedure TTestMCPFitReport.Fringes_BothCurvesAreReadAtTheSamePositions;
 var
   Meas, Calc: TDataArray;
@@ -566,7 +517,6 @@ var
   C: TDataArray;
   Rep: TJSONObject;
 begin
-  { A period so long that only the first order falls inside the range. }
   C := FringeCurve(0.15);
   Rep := FitReportJSON(InputOf(C, C, 20, 0));
   try

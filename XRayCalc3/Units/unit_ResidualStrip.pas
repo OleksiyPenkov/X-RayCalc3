@@ -9,22 +9,7 @@
 
 unit unit_ResidualStrip;
 
-(* The residual strip: a linear vertical axis in the bottom quarter of the main
-   chart, under the reflectivity axis, with log10(R_calc / (I_meas K)) of each
-   visible model on it. Being part of the same chart, it shares the angle axis,
-   so zoom, pan, undo-zoom, copy, export and print take it along. A zoom or a
-   pan would also rescale its vertical axis; HoldRange puts it back.
-
-   It is drawn as a plot of its own: before the series the gap between the
-   two axes is painted in the panel's color, over the plot background, the
-   frame and the grid, and after them each plot gets its own frame. For that
-   the strip takes the chart's OnBeforeDrawSeries and OnAfterDraw, calling
-   whatever handlers were there before. After the frames it draws its legend
-   in the top left corner of the strip, small - each model in its color, then a key for
-   the band means, the floored points and the +-0.1 lines when they show - on
-   the chart itself, so copies, exports and prints carry it.
-
-   The strip keeps no reference to its series: it finds them by their Tag. So
+(* The strip keeps no reference to its series: it finds them by their Tag. So
    whatever frees the chart's series (TChartManager.ClearAll, the chart itself)
    cannot leave it holding a dangling one. *)
 
@@ -35,9 +20,9 @@ uses
   unit_Residuals;
 
 const
-  RESIDUAL_SERIES_TAG = $52455344;   // 'RESD'
+  RESIDUAL_SERIES_TAG = $52455344;
   STRIP_START = 78;                  // percent of the plot height, from the top
-  MAIN_END = 72;                     // where the reflectivity axis ends while the strip shows
+  MAIN_END = 72;
   STRIP_RANGE = 1;                   // decades either side of zero
   STRIP_TOLERANCE = 0.1;             // a tenth of a decade: 26 % high, 21 % low
 
@@ -85,16 +70,11 @@ type
     constructor Create(AChart: TChart);
     destructor Destroy; override;
 
-    { Replaces what the strip shows. Drawn only while Visible. }
     procedure Plot(const Plots: array of TResidualPlot);
     procedure Clear;
-    { The strip's vertical range back to +-STRIP_RANGE, after a zoom or a pan. }
     procedure HoldRange;
     procedure SetOptions(ShowTolerance, ShowBands, ShowFloored: Boolean);
-    { The strip's series now on the chart, for the tests. }
     function SeriesCount: Integer;
-    { What the legend lists, left to right: the models drawn, then a key for
-      each option that is on and shows something. Empty while hidden. }
     function LegendKeys: TArray<TLegendKey>;
 
     property Visible: Boolean read FVisible write SetVisible;
@@ -225,7 +205,6 @@ begin
     FPrevAfterDraw(Sender);
   if not FVisible then
     Exit;
-  { As wide as the axis lines the chart draws on the other edges. }
   FChart.Canvas.Brush.Style := bsClear;
   FChart.Canvas.Pen.Style := psSolid;
   FChart.Canvas.Pen.Width := FChart.LeftAxis.Axis.Width;
@@ -292,7 +271,7 @@ begin
   C.AssignFont(FAxis.LabelsFont);   // as the chart scales it for the DPI and zoom
   C.Font.Height := Round(C.Font.Height * LEGEND_FONT_SCALE);
   TH := C.TextHeight('Ag');
-  Sym := TH;                  // the width of a symbol, in the font's own scale
+  Sym := TH;
   Gap := TH div 2;
   Pad := Max(2, TH div 5);
 
@@ -480,7 +459,6 @@ begin
     X1 := FChart.BottomAxis.Maximum;
   end;
 
-  { The reference lines first, so the residuals are drawn over them. }
   RefLine(0, psSolid);
   if FShowTolerance then
   begin
@@ -507,8 +485,6 @@ begin
       else
         Line.AddXY(P.X, Held(P.D));
 
-    { Each band its own level, from its start to its end, then a break: an
-      empty band leaves a gap and takes nothing else with it. }
     if FShowBands and (Length(Item.Curve.Bands) > 0) then
     begin
       Steps := AddLine(Item.Color, 2);

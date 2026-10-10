@@ -12,60 +12,6 @@
 
 unit unit_MCPInbox;
 
-(* The measurement inbox: the read-only half of the work directory.
-
-   inbox\ is the one folder the server never writes to. The client (or the
-   person at the instrument) drops measured curves into inbox\<specimen>\, and
-   the two tools here list what is there and hand a parsed curve back. The
-   sandbox enforces the read-only part - ResolvePath(..., ForWrite=True) refuses
-   anything under inbox\ - and no handle here is ever opened for writing. The
-   curve and meta.json are read fmOpenRead + fmShareDenyNone, so a running
-   acquisition program can keep its own handle on the file while we read it; the
-   SHA-256 in the listing comes from the sandbox's FileSHA256, which opens
-   fmOpenRead + fmShareDenyWrite.
-
-   The parser mirrors the GUI's unit_SeriesIO.SeriesFromText, so that a curve
-   read through this server is the same curve the GUI would draw from the same
-   file: tab or space separated, a comma accepted as the decimal mark, lines
-   that do not start with two numbers skipped, and a non-positive intensity
-   replaced by the smallest positive one seen so far (so that a log plot has no
-   holes in it). Four deliberate differences, all of them widening what is
-   accepted rather than changing what is parsed:
-
-     - the separator can fall back either way. SeriesFromText starts with a tab
-       and, once a line without one has pushed it to a space, never goes back;
-       here whichever of the two the line actually contains is used.
-     - whitespace around a line and around either column is tolerated.
-     - the intensity may carry a sign. SeriesFromText tests the first character
-       of both columns with IsNumber, so a leading '-' makes the whole line a
-       comment; here only the intensity column is allowed the sign, which is
-       what lets the rule below apply. The angle column keeps the GUI's rule to
-       the letter - it has to start with a digit - so a negative theta is
-       skipped here exactly as the GUI skips it.
-     - a negative intensity is replaced by the running minimum, as a zero is.
-       SeriesFromText replaces only an exact zero (and could never see a
-       negative anyway), and no log plot and no fit can use one.
-
-   Numbers are read with the invariant format settings rather than the machine's
-   locale: the comma fix-up that SeriesFromText does only makes sense if '.' is
-   the decimal separator afterwards.
-
-   meta.json, if a specimen folder has one, carries the wavelength (as "lambda"
-   in Angstrom or "energy" in eV - "lambda" wins and "energy" is ignored when a
-   file gives both), the date, the instrument and "theta_unit".
-   That last one is the important one: a diffractometer usually records 2theta,
-   and a curve handed to the engine has to be theta. When it says "2theta" every
-   angle is halved on the way out and the result says so; when it is missing,
-   theta is assumed and the result says that too, so a client is never left
-   guessing which of the two it got. Every other key in meta.json is passed
-   through untouched.
-
-   A meta.json that cannot be read is fatal to get_measurement - the client
-   asked for that curve and would otherwise get a wavelength or an angle unit
-   the file does not actually claim - but not to list_measurements, which is how
-   the client finds out what is in the inbox in the first place. There the
-   specimen is still listed, with "meta": null and a "meta_error" saying what is
-   wrong with it. *)
 
 interface
 
@@ -90,7 +36,7 @@ type
   /// caller and has to be freed by it.</summary>
   TMeasurement = record
     Id: string;                     // '<specimen>/<file>', normalised
-    Path: string;                   // absolute
+    Path: string;
     Curve: unit_Types.TDataArray;   // theta (deg), I - decimated when asked for
     Points: Integer;                // points in the file, before decimation
     ThetaMin: Double;               // both from the full curve, after conversion
@@ -100,35 +46,21 @@ type
     HeaderLines: TArray<string>;
     Meta: TInboxMeta;
     LambdaSource: string;           // 'meta.json', 'file: <rule>' or '' when there is none
-    IsXRDML: Boolean;               // the file was an .xrdml: XRDML holds its raw facts
+    IsXRDML: Boolean;
     XRDML: TXRDMLScan;              // counting time, peak rate, zeros ... (Curve is in the file's axis)
   end;
 
 const
-  /// <summary>The extensions a measurement_id may carry. Anything else in a
-  /// specimen folder (meta.json included) is not a measurement.</summary>
   MEASUREMENT_EXTENSIONS: array [0 .. 3] of string = ('.dat', '.txt', '.xy', '.xrdml');
   DEFAULT_MAX_POINTS = 2000;
 
-/// <summary>Parses two numeric columns out of Lines. Returns the number of
-/// points; the lines that yielded none come back in Header.</summary>
 function ParseCurveText(const Lines: TStrings; out Curve: unit_Types.TDataArray;
   out Header: TArray<string>): Integer;
 
-/// <summary>Reads Dir\meta.json. False (and a Meta with Present=False, Raw=nil
-/// and the assumed 'theta') when there is none. "lambda" wins over "energy"
-/// when a file gives both. Raises EMCPError('invalid_argument') when the file is
-/// not a JSON object, when "lambda" is not a positive number or when
-/// "theta_unit" is neither "theta" nor "2theta".</summary>
 function ReadMeta(const Dir: string; out Meta: TInboxMeta): Boolean;
 
-/// <summary>Reads '<specimen>/<file>' from the inbox. MaxPoints &lt;= 0 returns
-/// the whole curve. Raises EMCPError('invalid_argument') for a malformed id and
-/// EMCPError('not_found') when the file is not there.</summary>
 function LoadMeasurement(const Id: string; MaxPoints: Integer): TMeasurement;
 
-/// <summary>Every k-th point, first and last always kept, at most MaxPoints
-/// points. MaxPoints &lt;= 0, or a curve already short enough, returns C.</summary>
 function DecimateCurve(const C: unit_Types.TDataArray; MaxPoints: Integer): unit_Types.TDataArray;
 
 /// <summary>[{specimen, files:[{name, id, size, sha256, modified_utc}],
@@ -156,7 +88,6 @@ uses
   System.Generics.Collections, System.Generics.Defaults,
   unit_MCPErrors, unit_MCPSandbox, unit_MCPUnits;
 
-{ ------------------------------------------------------------------ helpers -- }
 
 procedure AppendStr(var A: TArray<string>; const S: string);
 begin
@@ -199,7 +130,6 @@ begin
     Result := Result + IfThen(I > Low(MEASUREMENT_EXTENSIONS), ', ') + MEASUREMENT_EXTENSIONS[I];
 end;
 
-{ ------------------------------------------------------------ ParseCurveText -- }
 
 /// <summary>The angle column, by SeriesFromText's rule to the letter: it has to
 /// start with a digit, so '-0.5' is a comment and not an angle.</summary>
@@ -243,7 +173,7 @@ begin
   begin
     Line := Lines[I];
     if Trim(Line) = '' then
-      Continue;             // blank lines are neither data nor header
+      Continue;
 
     S := TrimLeft(Line);    // trailing whitespace is left alone: it can be the separator
     P := Pos(Separator, S);
@@ -257,7 +187,7 @@ begin
 
     if P > 0 then
     begin
-      S1 := Trim(Copy(S, 1, P - 1));            // TryStrToFloat accepts no padding
+      S1 := Trim(Copy(S, 1, P - 1));
       S2 := Trim(Copy(S, P + 1, MaxInt));
       if StartsAngle(S1) and StartsIntensity(S2) then
       begin
@@ -283,7 +213,6 @@ begin
   Result := N;
 end;
 
-{ ----------------------------------------------------------------- ReadMeta -- }
 
 /// <summary>A key read as text whatever its JSON type, so that
 /// {"date": 20260901} is not an error.</summary>
@@ -357,10 +286,7 @@ begin
   Result := True;
 end;
 
-{ ---------------------------------------------------------------- the id -- }
 
-/// <summary>'<specimen>/<file>' - exactly one separator ('\' accepted and
-/// normalised), no '.' or '..' segment, an extension we read.</summary>
 procedure SplitMeasurementId(const Id: string; out Specimen, FileName: string);
 const
   SHAPE = 'measurement_id must be "<specimen>/<file>", one folder deep';
@@ -390,7 +316,6 @@ begin
       IfThen(Ext = '', Id, Ext));
 end;
 
-{ ------------------------------------------------------------ DecimateCurve -- }
 
 function DecimateCurve(const C: unit_Types.TDataArray; MaxPoints: Integer): unit_Types.TDataArray;
 var
@@ -402,15 +327,14 @@ begin
   if MaxPoints < 2 then
     MaxPoints := 2;                 // both ends have to fit
 
-  K := Ceil(N / MaxPoints);         // stride
+  K := Ceil(N / MaxPoints);
   M := Ceil(N / K);                 // <= MaxPoints, because K >= N / MaxPoints
   SetLength(Result, M);
   for I := 0 to M - 1 do
     Result[I] := C[I * K];
-  Result[M - 1] := C[N - 1];        // the true last point, in place of the last sample
+  Result[M - 1] := C[N - 1];
 end;
 
-{ ---------------------------------------------------------- LoadMeasurement -- }
 
 /// <summary>Drops the two headers SeriesFromFile knows about: the 21-line block
 /// a "Sample" first line announces, and the leading '*' description, which is
@@ -454,8 +378,6 @@ begin
       Format('No measurement "%s" in the inbox', [Result.Id]),
       WorkDir.RelativePath(Result.Path));
 
-  { An XRDML file carries its curve, its angle axis and its wavelength itself;
-    a text file carries two columns and leaves the rest to meta.json. }
   IsXRDML := IsXRDMLFile(Result.Path);
   SetLength(Parsed, 0);
   if IsXRDML then
@@ -548,7 +470,6 @@ begin
   end;
 end;
 
-{ --------------------------------------------------------- ListMeasurements -- }
 
 function SortedNames(const A: TArray<string>): TArray<string>;
 begin
@@ -636,7 +557,6 @@ begin
   end;
 end;
 
-{ ----------------------------------------------------------- get_measurement -- }
 
 function CurveToJSONArray(const Curve: unit_Types.TDataArray): TJSONArray;
 var

@@ -7,23 +7,14 @@
   *
   ****************************************************************************** *)
 
-{ Parsing and formatting for the lower limit of a chart's reflectivity axis -
-  the "R min" combo in the XRayCalc3 and XRFCalc chart status bars.
-
-  The combo is free text so that a fit can be tuned to values the drop-down
-  does not list, which means anything at all can arrive here: half-typed
-  exponents, a locale's comma decimal separator, zero, or a number above the
-  axis maximum. The axis is logarithmic and the same value is handed to the
-  calculation engine, so every one of those has to be rejected before it is
-  assigned anywhere. Kept free of VCL so the test suite can cover it. }
+{ The logarithmic axis limit is also passed to the calculation engine,
+  so invalid free-text input must be rejected before either assignment. }
 
 unit unit_AxisLimit;
 
 interface
 
 const
-  { Values offered in the drop-down. Ten decades is well past anything a
-    measurement resolves, but the list costs nothing and saves typing. }
   AXIS_LIMIT_ITEMS: array [0 .. 9] of string = (
     '1E-3', '1E-4', '1E-5', '1E-6', '1E-7',
     '1E-8', '1E-9', '1E-10', '1E-11', '1E-12');
@@ -31,13 +22,9 @@ const
   DEFAULT_AXIS_LIMIT = 1E-7;
   DEFAULT_AXIS_LIMIT_TEXT = '1E-7';
 
-{ Returns False - leaving AValue at zero - for anything the axis cannot take.
-  AAxisMaximum is the axis' own upper bound; a minimum at or above it would
-  leave the axis with no range. }
 function TryParseAxisLimit(const AText: string; const AAxisMaximum: Single;
   out AValue: Single): Boolean;
 
-{ Canonical spelling of a limit, matching AXIS_LIMIT_ITEMS: '1E-8', '3.5E-8'. }
 function AxisLimitToText(const AValue: Single): string;
 
 implementation

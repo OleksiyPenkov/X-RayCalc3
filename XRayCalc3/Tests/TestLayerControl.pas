@@ -1,12 +1,5 @@
 unit TestLayerControl;
 
-(* TXRCLayerControl - the layer card in the structure panel.
-
-   Two routes write a layer's data back into its card. The card's own Edit
-   opens the layer editor itself; frmMain's WM_STR_LAYER_DOUBLECLICK handler
-   opens the same editor and writes the result through Structure.LayerData /
-   SubstrateData, which ends in the card's Data property. The card must show
-   the new material on both routes, not only on the first. *)
 
 interface
 

@@ -38,11 +38,9 @@ type
     procedure btnPrevClick(Sender: TObject);
 
   private
-    { Private declarations }
     FData: TLayerData;
     FSeq: boolean;
   public
-    { Public declarations }
     procedure SetData(const IsSubstrate: Boolean; Data: TLayerData);
     function GetData: TLayerData;
     property Seq: boolean read FSeq;
@@ -56,7 +54,6 @@ implementation
 uses
   unit_SMessages;
 
-//uses frm_MList;
 
 {$R *.dfm}
 

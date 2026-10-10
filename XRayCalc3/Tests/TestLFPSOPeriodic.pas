@@ -44,13 +44,11 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { SetStructure }
     [Test] procedure Test_SetStructure_SetsLayerCount;
     [Test] procedure Test_SetStructure_ComputesPeriodD;
     [Test] procedure Test_SetStructure_InitializesX0;
     [Test] procedure Test_SetStructure_InitializesXminXmax;
 
-    { NormalizeD }
     [Test] procedure Test_NormalizeD_PreservesPeriod;
     [Test] procedure Test_NormalizeD_SkipsNonPeriodicStack;
     [Test] procedure Test_SetPeriodRange_LetsDMoveWithinBounds;
@@ -60,17 +58,14 @@ type
     [Test] procedure Test_NormalizeD_LeavesAFixedThicknessAlone;
     [Test] procedure Test_NormalizeD_UnreachablePeriod_StaysInsideTheBounds;
 
-    { InitVelocity }
     [Test] procedure Test_InitVelocity_SetsVmaxFromXrange;
     [Test] procedure Test_InitVelocity_VminIsNegativeVmax;
     [Test] procedure Test_InitVelocity_VWithinBounds;
 
-    { XSeed }
     [Test] procedure Test_XSeed_X0Unchanged;
     [Test] procedure Test_XSeed_OtherParticlesPerturbed;
     [Test] procedure Test_XSeed_AllWithinBounds;
 
-    { RangeSeed }
     [Test] procedure Test_RangeSeed_AllWithinBounds;
   end;
 
@@ -79,7 +74,6 @@ implementation
 uses
   System.SysUtils, System.Math;
 
-{ TTestablePeriodic }
 
 function TTestablePeriodic.GetX: TPopulation; begin Result := X; end;
 function TTestablePeriodic.GetV: TPopulation; begin Result := V; end;
@@ -107,7 +101,6 @@ begin RangeSeed; end;
 procedure TTestablePeriodic.TestSetParams(const Value: TFitParams);
 begin SetParams(Value); end;
 
-{ TTestLFPSOPeriodic — helpers }
 
 function TTestLFPSOPeriodic.MakeParams: TFitParams;
 begin
@@ -132,12 +125,10 @@ function TTestLFPSOPeriodic.MakePeriodicStructure: TFitStructure;
 var
   p: integer;
 begin
-  // One periodic stack with N=3 repeats, 2 layers per stack
   SetLength(Result.Stacks, 1);
   Result.Stacks[0].N := 3;
   SetLength(Result.Stacks[0].Layers, 2);
 
-  // Layer 0: H=20, s=2, rho=5
   Result.Stacks[0].Layers[0].Material := 'Si';
   Result.Stacks[0].Layers[0].StackID := 0;
   Result.Stacks[0].Layers[0].LayerID := 0;
@@ -146,11 +137,10 @@ begin
     Result.Stacks[0].Layers[0].P[p].min := 1.0;
     Result.Stacks[0].Layers[0].P[p].max := 100.0;
   end;
-  Result.Stacks[0].Layers[0].P[1].V := 20.0;  // H
-  Result.Stacks[0].Layers[0].P[2].V := 2.0;   // s
-  Result.Stacks[0].Layers[0].P[3].V := 5.0;   // rho
+  Result.Stacks[0].Layers[0].P[1].V := 20.0;
+  Result.Stacks[0].Layers[0].P[2].V := 2.0;
+  Result.Stacks[0].Layers[0].P[3].V := 5.0;
 
-  // Layer 1: H=30, s=3, rho=7
   Result.Stacks[0].Layers[1].Material := 'Mo';
   Result.Stacks[0].Layers[1].StackID := 0;
   Result.Stacks[0].Layers[1].LayerID := 1;
@@ -159,17 +149,15 @@ begin
     Result.Stacks[0].Layers[1].P[p].min := 1.0;
     Result.Stacks[0].Layers[1].P[p].max := 100.0;
   end;
-  Result.Stacks[0].Layers[1].P[1].V := 30.0;  // H
-  Result.Stacks[0].Layers[1].P[2].V := 3.0;   // s
-  Result.Stacks[0].Layers[1].P[3].V := 7.0;   // rho
+  Result.Stacks[0].Layers[1].P[1].V := 30.0;
+  Result.Stacks[0].Layers[1].P[2].V := 3.0;
+  Result.Stacks[0].Layers[1].P[3].V := 7.0;
 
-  // Substrate
   Result.Subs.Material := 'Si';
   for p := 1 to 3 do
     Result.Subs.P[p].V := 5.0;
 end;
 
-{ Setup / TearDown }
 
 procedure TTestLFPSOPeriodic.Setup;
 begin
@@ -181,7 +169,6 @@ begin
   FPSO.Free;
 end;
 
-{ SetStructure }
 
 procedure TTestLFPSOPeriodic.Test_SetStructure_SetsLayerCount;
 var
@@ -190,7 +177,6 @@ begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
   FPSO.TestSetStructure(S);
-  // 2 layers per stack, Total counts unique layers = 2
   Assert.AreEqual(2, FPSO.Pub_FLayersCount, 'LayersCount = Total unique layers');
 end;
 
@@ -201,7 +187,6 @@ begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
   FPSO.TestSetStructure(S);
-  // D = H[0] + H[1] = 20 + 30 = 50
   Assert.AreEqual(Double(50.0), FPSO.Pub_FStructure.Stacks[0].D, 1E-5, 'Period D = sum of H');
 end;
 
@@ -212,7 +197,6 @@ begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
   FPSO.TestSetStructure(S);
-  // X[0] should hold initial values
   Assert.AreEqual(Single(20.0), FPSO.GetX[0][0][1][0], 1E-5, 'X[0] layer0 H=20');
   Assert.AreEqual(Single(2.0),  FPSO.GetX[0][0][2][0], 1E-5, 'X[0] layer0 s=2');
   Assert.AreEqual(Single(30.0), FPSO.GetX[0][1][1][0], 1E-5, 'X[0] layer1 H=30');
@@ -229,7 +213,6 @@ begin
   Assert.AreEqual(Single(100.0), FPSO.GetXmax[0][0][1][0], 1E-5, 'Xmax layer0 H');
 end;
 
-{ NormalizeD }
 
 procedure TTestLFPSOPeriodic.Test_NormalizeD_PreservesPeriod;
 var
@@ -239,15 +222,13 @@ begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
   FPSO.TestSetStructure(S);
-  D_before := FPSO.Pub_FStructure.Stacks[0].D;  // 50
+  D_before := FPSO.Pub_FStructure.Stacks[0].D;
 
-  // Perturb thicknesses of particle 1
-  FPSO.GetX[1][0][1][0] := 25.0;  // was 20
-  FPSO.GetX[1][1][1][0] := 35.0;  // was 30 -> sum = 60, not 50
+  FPSO.GetX[1][0][1][0] := 25.0;
+  FPSO.GetX[1][1][1][0] := 35.0;
 
   FPSO.TestNormalizeD(1);
 
-  // After normalization, sum should equal D_before = 50
   D_after := FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0];
   Assert.AreEqual(D_before, D_after, 1E-3, 'Sum of H should equal period D');
 end;
@@ -258,10 +239,9 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
-  FPSO.TestSetStructure(S);             // D = 50
+  FPSO.TestSetStructure(S);
   FPSO.SetPeriodRange(0, 45.0, 60.0);
 
-  // sum 55, inside the range: NormalizeD leaves both thicknesses alone
   FPSO.GetX[1][0][1][0] := 25.0;
   FPSO.GetX[1][1][1][0] := 30.0;
   FPSO.TestNormalizeD(1);
@@ -275,17 +255,15 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
-  FPSO.TestSetStructure(S);             // D = 50
+  FPSO.TestSetStructure(S);
   FPSO.SetPeriodRange(0, 45.0, 60.0);
 
-  // sum 75, above the range: rescaled to 60, the ratio kept (40:35)
   FPSO.GetX[1][0][1][0] := 40.0;
   FPSO.GetX[1][1][1][0] := 35.0;
   FPSO.TestNormalizeD(1);
   Assert.AreEqual(Double(60.0), Double(FPSO.GetX[1][0][1][0] + FPSO.GetX[1][1][1][0]), 1E-3, 'clamped to the upper bound');
   Assert.AreEqual(Double(40.0 / 35.0), Double(FPSO.GetX[1][0][1][0] / FPSO.GetX[1][1][1][0]), 1E-4, 'ratio kept');
 
-  // sum 30, below the range: rescaled to 45
   FPSO.GetX[1][0][1][0] := 10.0;
   FPSO.GetX[1][1][1][0] := 20.0;
   FPSO.TestNormalizeD(1);
@@ -299,8 +277,8 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
-  S.Stacks[0].Layers[0].P[1].min := 15.0;   // H0 in [15, 100]
-  FPSO.TestSetStructure(S);                 // D = 50 held
+  S.Stacks[0].Layers[0].P[1].min := 15.0;
+  FPSO.TestSetStructure(S);
 
   // H0 sits on its lower bound; the sum 60 must come down to 50. Scaling both
   // by 50/60 would put H0 at 12.5, under its bound: H1 takes the whole cut.
@@ -318,11 +296,10 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
-  S.Stacks[0].Layers[0].P[1].min := 15.0;   // H0 in [15, 100]
-  FPSO.TestSetStructure(S);                 // D = 50
+  S.Stacks[0].Layers[0].P[1].min := 15.0;
+  FPSO.TestSetStructure(S);
   FPSO.SetPeriodRange(0, 45.0, 48.0);
 
-  // sum 60 is above the range: pulled back to 48 without crossing H0's bound
   FPSO.GetX[1][0][1][0] := 15.0;
   FPSO.GetX[1][1][1][0] := 45.0;
   FPSO.TestNormalizeD(1);
@@ -337,12 +314,12 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
-  S.Stacks[0].Layers[0].P[1].min := 20.0;   // H0 fixed: min = max = V
+  S.Stacks[0].Layers[0].P[1].min := 20.0;
   S.Stacks[0].Layers[0].P[1].max := 20.0;
-  FPSO.TestSetStructure(S);                 // D = 50 held
+  FPSO.TestSetStructure(S);
 
   FPSO.GetX[1][0][1][0] := 20.0;
-  FPSO.GetX[1][1][1][0] := 35.0;            // sum 55
+  FPSO.GetX[1][1][1][0] := 35.0;
   FPSO.TestNormalizeD(1);
   Assert.AreEqual(Single(20.0), FPSO.GetX[1][0][1][0], 1E-5, 'a fixed thickness never moves');
   Assert.AreEqual(Single(30.0), FPSO.GetX[1][1][1][0], 1E-3, 'the free thickness holds the period');
@@ -354,9 +331,9 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   S := MakePeriodicStructure;
-  S.Stacks[0].Layers[0].P[1].min := 15.0;   // H0 in [15, 20]
+  S.Stacks[0].Layers[0].P[1].min := 15.0;
   S.Stacks[0].Layers[0].P[1].max := 20.0;
-  S.Stacks[0].Layers[1].P[1].max := 25.0;   // H1 in [1, 25]
+  S.Stacks[0].Layers[1].P[1].max := 25.0;
   FPSO.TestSetStructure(S);                 // D = 50 held, but at most 45 is reachable
 
   FPSO.GetX[1][0][1][0] := 20.0;
@@ -373,7 +350,6 @@ var
   p: integer;
 begin
   FPSO.TestSetParams(MakeParams);
-  // Make a non-periodic structure (N=1)
   SetLength(S.Stacks, 1);
   S.Stacks[0].N := 1;
   SetLength(S.Stacks[0].Layers, 1);
@@ -392,17 +368,14 @@ begin
 
   FPSO.TestSetStructure(S);
 
-  // Perturb thickness
   FPSO.GetX[1][0][1][0] := 42.0;
   H_before := FPSO.GetX[1][0][1][0];
 
   FPSO.TestNormalizeD(1);
 
-  // Should be unchanged — N=1 means non-periodic, NormalizeD skips it
   Assert.AreEqual(H_before, FPSO.GetX[1][0][1][0], 1E-5, 'Non-periodic H unchanged');
 end;
 
-{ InitVelocity }
 
 procedure TTestLFPSOPeriodic.Test_InitVelocity_SetsVmaxFromXrange;
 var
@@ -412,8 +385,6 @@ begin
   S := MakePeriodicStructure;
   FPSO.TestSetStructure(S);
   FPSO.TestInitVelocity;
-  // Vmax = Xrange * FitParams.Vmax(0.3)
-  // Xrange[0][0][1] = 100-1 = 99 -> Vmax = 99*0.3 = 29.7
   Assert.AreEqual(Single(99.0 * 0.3), FPSO.GetVmax[0][0][1][0], 1E-3, 'Vmax = Xrange * params.Vmax');
 end;
 
@@ -453,7 +424,6 @@ begin
       end;
 end;
 
-{ XSeed }
 
 procedure TTestLFPSOPeriodic.Test_XSeed_X0Unchanged;
 var
@@ -483,7 +453,6 @@ begin
   FPSO.TestSetStructure(S);
   FPSO.TestXSeed;
 
-  // At least one particle should differ from X[0]
   allSame := True;
   for i := 1 to High(FPSO.GetX) do
     if Abs(FPSO.GetX[i][0][1][0] - FPSO.GetX[0][0][1][0]) > 1E-5 then
@@ -521,7 +490,6 @@ begin
       end;
 end;
 
-{ RangeSeed }
 
 procedure TTestLFPSOPeriodic.Test_RangeSeed_AllWithinBounds;
 var

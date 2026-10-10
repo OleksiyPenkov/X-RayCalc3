@@ -40,7 +40,6 @@ implementation
 uses
   unit_consts, unit_config, unit_files_list, unit_ProjectVersion, frm_Benchmark;
 
-{ TBatchRunner }
 
 constructor TBatchRunner.Create(AOrchestrator: TCalcOrchestrator;
   AProjectPanel: TfrmProjectPanel);
@@ -90,7 +89,7 @@ var
 begin
   Application.ProcessMessages;
   if FTerminated then Exit;
-  if not CheckProjectFile(FBenchmarkPath + F.Name, Why) then Exit;   // skipped, as above
+  if not CheckProjectFile(FBenchmarkPath + F.Name, Why) then Exit;
 
   FProjectPanel.ProjectFileName := FBenchmarkPath + F.Name;
 

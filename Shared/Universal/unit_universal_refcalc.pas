@@ -1,10 +1,5 @@
 (* *****************************************************************************
  *
- *   X-Ray Calc - Universal Reflectivity Calculation
- *
- *   Standalone RefCalc extracted from cmd_unit_calc.pas (TCalc.RefCalc).
- *   No dependency on TCalc or OmniThreadLibrary.
- *
  *   Copyright (C) 2001-2022 Oleksiy Penkov
  *   e-mail: oleksiy.penkov@gmail.com
  *
@@ -60,15 +55,11 @@ var
         rfError:
           // The Nevot-Croce factor, exp(-2 k_z^2 sigma^2): s is 2 k_z here
           // (c = 4 Pi / Lambda), so the coefficient is one half, as in
-          // unit_calc.pas, which this engine has to match. Until 3.9.4 both
-          // used 0.50299, sqr(1/1.41) for sqr(1/sqrt(2)), 0.6 % above a half.
-          // This was exp(-sigma^2 s^2) until 2026-09-12 - twice the exponent,
-          // every interface behaving as if it were sqrt(2) times rougher.
+          // unit_calc.pas, which this engine has to match.
           Result := exp(-0.5 * sqr(sigma) * sqr(s));
         rfExp:
           Result := 1 / (1 + (sqr(s) * sqr(sigma)) / 2);
         rfLinear:
-          // until 3.9.3 this damped only below sigma = 0.5 A (and 0/0 at 0)
           begin
             a := Sqrt3 * sigma * s;
             if Abs(a) < 1E-4 then
@@ -79,7 +70,7 @@ var
         rfStep:
           Result := cos(sigma * s);
         rfSinus:
-          // Stearns / IMD; the rms width is sigma. Undefined until 3.9.3.
+          // Stearns / IMD; the rms width is sigma.
           // u = a - pi/2 is 0/0 at a = pi/2; guarded like rfLinear above.
           // v = a + pi/2 guarded the same way.
           begin
@@ -95,7 +86,7 @@ var
       end;
   end;
 
-  procedure LayerAmplitudeRefractionS;     { Коэффициент отражения Rs}
+  procedure LayerAmplitudeRefractionS;
   var
     i: integer;
     b1, b2: TComplex;
@@ -115,7 +106,7 @@ var
     end;
   end;
 
-  procedure LayerAmplitudeRefractionP;     { Коэффициент отражения Rp }
+  procedure LayerAmplitudeRefractionP;
   var
     i: integer;
     a1, a2, b1, b2: TComplex;
@@ -137,13 +128,13 @@ var
     end;
   end;
 
-  procedure FresnelCoefficients;   { Френелевские коэффициенты (p-p) }
+  procedure FresnelCoefficients;
   var
     i: Integer;
     c: Single;
     a1: TComplex;
   begin
-    c := 2 * Pi / Lambda; {другое волновое число }
+    c := 2 * Pi / Lambda;
     for i := 0 to Length(ALayers) - 1 do
       begin
         a1 := SqrtZ(ToComplex((ALayers[i].e.re - 1) + sqr_sin_g, ALayers[i].e.im));
@@ -152,7 +143,7 @@ var
   end;
 
 begin
-  c := 4 * Pi / Lambda; { волновое число }
+  c := 4 * Pi / Lambda;
   { The grazing angle's sine in Double: eps - sin^2 of the angle to the normal
     is (eps - 1) + sin^2 of the grazing angle, as in unit_calc.TCalc.RefCalc;
     the naive form keeps only a few digits near the critical angle. }

@@ -18,7 +18,6 @@ type
     tabStructure: TRzTabSheet;
     tabOptimizer: TRzTabSheet;
     tabFitness: TRzTabSheet;
-    // Targets tab
     grpLines: TGroupBox;
     lvLines: TListView;
     pnlLineWeight: TPanel;
@@ -28,7 +27,6 @@ type
     clbPool: TCheckListBox;
     grpExcludedPairs: TGroupBox;
     clbExcludedPairs: TCheckListBox;
-    // Structure tab
     lblDMin: TLabel;
     lblDMax: TLabel;
     lblGammaMin: TLabel;
@@ -51,7 +49,6 @@ type
     grpTemplate: TGroupBox;
     edtTemplatePath: TEdit;
     btnBrowseTemplate: TButton;
-    // Optimizer tab
     lblPopulation: TLabel;
     lblIterations: TLabel;
     lblStagnation: TLabel;
@@ -68,7 +65,6 @@ type
     edtTolerance: TEdit;
     sedJammingMax: TSpinEdit;
     sedCheckpointEvery: TSpinEdit;
-    // Fitness tab
     lblWR: TLabel;
     lblWFWHM: TLabel;
     lblNRef: TLabel;
@@ -129,8 +125,6 @@ var
   PoolItems: TArray<string>;
   i: Integer;
 begin
-  // lvLines is populated from the loaded XRF lines JSON (see PopulateXRFLines).
-  // clbPool is a separate list of candidate materials (includes compounds like B4C).
   PoolItems := TArray<string>.Create('W', 'Mo', 'Cr', 'Si', 'B', 'B4C',
     'Sc', 'C', 'Ni', 'Co', 'La', 'Pt', 'Ru', 'V', 'Ti', 'Nb');
   for i := 0 to High(PoolItems) do
@@ -324,7 +318,6 @@ var
   i, j: Integer;
   PairStr: string;
 begin
-  // Lines
   for i := 0 to lvLines.Items.Count - 1 do
   begin
     lvLines.Items[i].Checked := False;
@@ -338,7 +331,6 @@ begin
       end;
   end;
 
-  // Pool
   for i := 0 to clbPool.Count - 1 do
   begin
     clbPool.Checked[i] := False;
@@ -350,7 +342,6 @@ begin
       end;
   end;
 
-  // Structure
   sedDMin.Value := Round(Config.Structure.dRange.Min);
   sedDMax.Value := Round(Config.Structure.dRange.Max);
   sedGammaMin.Value := Round(Config.Structure.GammaRange.Min * 100);
@@ -358,12 +349,10 @@ begin
   sedNMin.Value := Round(Config.Structure.NRange.Min);
   sedNMax.Value := Round(Config.Structure.NRange.Max);
 
-  // Optimizer
   sedPopulation.Value := Config.Optimizer.Population;
   sedIterations.Value := Config.Optimizer.Iterations;
   sedStagnation.Value := Config.Optimizer.StagnationLimit;
 
-  // Fitness
   edtWR.Text := FormatFloat('0.###', Config.Fitness.wR);
   edtWFWHM.Text := FormatFloat('0.###', Config.Fitness.wFWHM);
   // The width penalty is measured in the kinematic width of n_ref periods, not
@@ -384,7 +373,6 @@ begin
   sedScanPoints.Value := Config.Fitness.ScanPoints;
   edtScanHalfRange.Text := FormatFloat('0.#', Config.Fitness.ScanHalfRange);
 
-  // Structure advanced
   if Config.Structure.SigmaFixed >= 0 then
     edtSigma.Text := FormatFloat('0.#', Config.Structure.SigmaFixed)
   else
@@ -398,7 +386,6 @@ begin
   else
     edtDensityFactor.Text := FormatFloat('0.##', Config.Structure.DensityFactorRange.Min);
 
-  // Optimizer advanced
   edtW1.Text := FormatFloat('0.###', Config.Optimizer.w1);
   edtW2.Text := FormatFloat('0.###', Config.Optimizer.w2);
   edtTolerance.Text := FormatFloat('0.#####E+00', Config.Optimizer.Tolerance);
@@ -406,13 +393,11 @@ begin
   sedCheckpointEvery.Value := Config.Optimizer.CheckpointEvery;
   edtHenkePath.Text := Config.HenkePath;
 
-  // Rebuild excluded pairs list based on current pool
   clbExcludedPairs.Items.Clear;
   for i := 0 to High(Config.ElementPool) - 1 do
     for j := i + 1 to High(Config.ElementPool) do
       clbExcludedPairs.Items.Add(Config.ElementPool[i] + '/' + Config.ElementPool[j]);
 
-  // Check items that match existing exclusions
   for i := 0 to clbExcludedPairs.Count - 1 do
   begin
     clbExcludedPairs.Checked[i] := False;
@@ -438,7 +423,6 @@ var
 begin
   Result := Default(TUniversalConfig);
 
-  // Lines
   Count := 0;
   for i := 0 to lvLines.Items.Count - 1 do
     if lvLines.Items[i].Checked then Inc(Count);
@@ -453,7 +437,6 @@ begin
       Inc(Count);
     end;
 
-  // Pool
   Count := 0;
   for i := 0 to clbPool.Count - 1 do
     if clbPool.Checked[i] then Inc(Count);
@@ -466,7 +449,6 @@ begin
       Inc(Count);
     end;
 
-  // Excluded pairs
   SetLength(Result.ExcludedPairs, 0);
   for i := 0 to clbExcludedPairs.Count - 1 do
     if clbExcludedPairs.Checked[i] then
@@ -493,7 +475,6 @@ begin
       end;
     end;
 
-  // Structure
   Result.Structure.StructureType := 'bilayer';
   Result.Structure.LayersPerPeriod := 2;
   Result.Structure.PureElements := chkPureElements.Checked;
@@ -514,7 +495,6 @@ begin
   Result.Structure.DensityFactorRange.Min := DFVal;
   Result.Structure.DensityFactorRange.Max := DFVal;
 
-  // Fitness
   Result.Fitness.wR := StrToFloatDef(edtWR.Text, 1.0);
   Result.Fitness.wFWHM := StrToFloatDef(edtWFWHM.Text, 0.25);
   Result.Fitness.NRef := sedNRef.Value;
@@ -530,7 +510,6 @@ begin
   Result.Fitness.ScanPoints := sedScanPoints.Value;
   Result.Fitness.ScanHalfRange := StrToFloatDef(edtScanHalfRange.Text, 0);
 
-  // Optimizer
   Result.Optimizer.Population := sedPopulation.Value;
   Result.Optimizer.Iterations := sedIterations.Value;
   Result.Optimizer.StagnationLimit := sedStagnation.Value;
@@ -540,7 +519,6 @@ begin
   Result.Optimizer.JammingMax := sedJammingMax.Value;
   Result.Optimizer.CheckpointEvery := sedCheckpointEvery.Value;
 
-  // Top-level
   Result.Substrate := edtSubstrate.Text;
   Result.HenkePath := edtHenkePath.Text;
   Result.TemplatePath := edtTemplatePath.Text;

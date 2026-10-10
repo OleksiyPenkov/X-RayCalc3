@@ -49,7 +49,6 @@ begin
   Pair.GammaReduction := 0;
   Pair.OneMinusGammaReduction := 0;
 
-  // Find indices of gamma and 1-gamma layers
   GammaIdx := -1;
   OneMinusIdx := -1;
   for i := 0 to High(Pair.Layers) do
@@ -65,7 +64,6 @@ begin
       'Template "%s" must have exactly one "gamma" and one "1-gamma" layer',
       [Pair.Key]);
 
-  // Assign each fixed layer to its nearest main layer
   for i := 0 to High(Pair.Layers) do
   begin
     if Pair.Layers[i].ThicknessType <> ttFixed then
@@ -127,7 +125,6 @@ begin
 
       ComputeReductions(Result[PairIdx]);
 
-      // Parse optional cap variants: "caps" array or legacy "cap" object
       if JPairObj.FindValue('caps') <> nil then
       begin
         var JCapsArr := JPairObj.GetValue<TJSONArray>('caps');
@@ -191,7 +188,6 @@ begin
   SetLength(Result, 64);
   for i := 0 to High(Lib) do
   begin
-    // Only include materials from templates whose key materials are both in the pool
     SlashPos := Pos('/', Lib[i].Key);
     if SlashPos <= 0 then Continue;
     Mat1 := Copy(Lib[i].Key, 1, SlashPos - 1);
@@ -224,7 +220,6 @@ begin
       end;
     end;
 
-    // Also collect cap materials from all variants
     for j := 0 to High(Lib[i].Caps) do
     begin
       Found := False;

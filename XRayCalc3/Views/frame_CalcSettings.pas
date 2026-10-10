@@ -97,8 +97,6 @@ type
     procedure GetAxisRange(var AMin, AMax: Single);
     procedure LoadAdvancedParams(INF: TMemIniFile; var Params: TFitParams);
     procedure SaveAdvancedParams(INF: TMemIniFile; const Params: TFitParams);
-    /// <summary>Sets the wavelength field (Angstrom), as an imported file that
-    /// states its own wavelength does, so the operator need not type it.</summary>
     procedure SetLambda(const Value: Double);
 
     property CalcMode: Integer read GetCalcMode;
@@ -111,7 +109,6 @@ type
     property Resolution: Double read GetResolution;
     property IsPWChiSqr: Boolean read GetIsPWChiSqr;
     property ThetaWeightIndex: Integer read GetThetaWeightIndex;
-    /// <summary>Solve the measured scale inside the chi-squared.</summary>
     property SolveScale: Boolean read GetSolveScale;
     /// <summary>The solved-scale window as a fraction (0.2 = within x1.2 of
     /// the anchor; 0 pins it). Raises when the field is not a number >= 0.</summary>
@@ -159,7 +156,6 @@ begin
     Result := DEF_SCALE_SOLVE_WINDOW;
 end;
 
-{ TfrmCalcSettings }
 
 function TfrmCalcSettings.GetCalcMode: Integer;
 begin
@@ -190,7 +186,6 @@ end;
 
 function TfrmCalcSettings.GetLambda: Double;
 begin
-  { the same locale FillCalcThreadParams reads the field in }
   Result := StrToFloatDef(edLambda.Text, 0);
 end;
 
@@ -211,7 +206,6 @@ end;
 
 function TfrmCalcSettings.GetScaleWindow: Double;
 begin
-  { the system locale, as every other number field of the frame }
   Result := StrToFloat(Trim(edScaleWindow.Text));
   if Result < 0 then
     raise EConvertError.CreateFmt('The scale window cannot be negative (%s): ' +
@@ -500,8 +494,6 @@ begin
   Params.SmoothWindow := INF.ReadInteger('LFPSO', 'SmoothWindow', -1);
   Params.Ksxr := StrToFloat(INF.ReadString('LFPSO', 'Ksxr', '0.2'));
   Params.PolyFactor := INF.ReadInteger('LFPSO', 'PolyFactor', 10);
-  { The same keys LoadFromINI puts in the checkbox and the field; the
-    frame's controls own them and SaveToINI writes them. }
   Params.SolveScale := INF.ReadBool(INI_SECTION_SCALE, INI_SOLVE_SCALE, True);
   Params.ScaleWindowLog := ScaleWindowToLog(ReadScaleWindow(INF));
   Params.FreePeriod := INF.ReadBool(INI_SECTION_SCALE, INI_FREE_PERIOD, False);

@@ -1,24 +1,5 @@
 ﻿unit TestMCPProjectFile;
 
-(* .xrcx project files written and read by the server.
-
-   The first test is the spike the whole task rests on: TXRCProjectTree is a
-   TVirtualStringTree, and the question was whether one can be built, filled,
-   saved and re-read in a console process that never shows a window. If it can,
-   the bytes the server writes are the GUI's own bytes, written by the GUI's own
-   OnSaveNode. If it cannot, the writer has to reproduce the stream by hand.
-
-   It can, with no owner form and no window handle, so unit_MCPProjectFile uses
-   the real component and the plan's fallback byte writer was never needed.
-
-   The rest of the fixture pins the file down from both ends: the zip has the
-   four flat entries the GUI's Abbrevia reader expects, params.dsc is a version
-   7 parameter block whose angles are theta, and everything written comes back
-   out of ReadXRCX unchanged - with the one documented exception that the GUI's
-   own OnSaveNode does not store Poly[0] of a gradient extension.
-
-   Every test that touches a tool runs against its own temporary work directory,
-   assigned to the global WorkDir in Setup and restored in TearDown. *)
 
 interface
 
@@ -40,24 +21,12 @@ type
     function SampleProject: TXRCXProject;
     function Ramp(N: Integer; T0, DT: Double): TDataArray;
     function ZipEntryNames(const Path: string): TArray<string>;
-    /// <summary>Extracts one member of the archive into FTemp and returns its
-    /// path.</summary>
     function ExtractMember(const Path, Member: string): string;
-    /// <summary>Runs one registered file tool. The caller owns Args and the
-    /// result.</summary>
     function CallTool(const Name: string; Args: TJSONObject): TJSONObject;
-    /// <summary>A finished fit_xrr job folder, jobs\JobId with measured.dat
-    /// and a fit.xrcx carrying Params, as RunFitJob leaves it.</summary>
     procedure MakeJobFolder(const JobId: string; const Params: TXRCXCalcParams);
-    /// <summary>The fit settings a periodic fit_xrr job would have written,
-    /// every value away from the GUI default.</summary>
     function JobParams: TXRCXCalcParams;
-    /// <summary>save_project with RUC_JSON and the given extra arguments
-    /// spliced in (',"curves":{...}'); returns the written file's path.</summary>
     function SaveRuc(const Name, Extra: string): string;
-    /// <summary>params.dsc of an .xrcx, extracted; the caller frees it.</summary>
     function ParamsOf(const XRCXPath: string): TMemIniFile;
-    /// <summary>Asserts that every key of Section reads the same in both.</summary>
     procedure AssertSameSection(A, B: TMemIniFile; const Section, What: string);
   public
     [Setup] procedure Setup;
@@ -92,13 +61,10 @@ const
 
   ELN_SAMPLE = 'D:\APS\ELN\ELN3Plugins\TestFiles\Hard.xrcx';
 
-  { Two single layers, no repeating stack: an irregular structure. }
   IRREGULAR_JSON = '{"substrate":{"material":"SiO2","density":2.2,"sigma":3.0},' +
     '"stacks":[{"N":1,"layers":[{"material":"Ru","thickness":30,"sigma":3.0,"density":12.4}]},' +
     '{"N":1,"layers":[{"material":"C","thickness":50,"sigma":3.0,"density":2.2}]}]}';
 
-/// save_project calculates the curve, so it needs the Henke tables of the
-/// materials it stores; without them the test says so instead of failing.
 function HenkeTablesPresent: Boolean;
 const
   Needed: array [0 .. 2] of string = ('Ru', 'C', 'SiO2');
@@ -113,7 +79,6 @@ begin
   Result := True;
 end;
 
-{ ----------------------------------------------------------------- fixture -- }
 
 procedure TTestMCPProjectFile.Setup;
 begin
@@ -229,7 +194,7 @@ begin
   Result.Points       := 300;
   Result.Polarisation := 1;
   Result.MinLimit     := 1E-6;
-  Result.FitMode      := 1;          // periodic
+  Result.FitMode      := 1;
   Result.FitIter      := 200;
   Result.FitPop       := 150;
   Result.PolyOrder    := 2;
@@ -308,7 +273,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------- the spike --- }
 
 procedure TTestMCPProjectFile.HeadlessTree_SaveLoad_RoundTrip;
 var
@@ -358,7 +322,7 @@ begin
   Tree := TXRCProjectTree.Create(nil, 96);
   try
     Tree.NodeDataSize := SizeOf(TProjectData);
-    Tree.Version := CURRENT_PROJECT_VERSION;   // what the writer wrote
+    Tree.Version := CURRENT_PROJECT_VERSION;
     Tree.LoadFromFile(FileName);
 
     Titles := [];
@@ -383,7 +347,6 @@ begin
   Assert.AreEqual(SAMPLE_DATA, ModelData);
 end;
 
-{ ------------------------------------------------------------- the writer -- }
 
 procedure TTestMCPProjectFile.WriteXRCX_ContainsExpectedEntries;
 var
@@ -441,7 +404,6 @@ begin
     Assert.AreEqual(1, INF.ReadInteger('STATE', 'ActiveModel', -1), '[STATE] ActiveModel');
     Assert.AreEqual(2, INF.ReadInteger('STATE', 'LinkedData', -1), '[STATE] LinkedData');
     Assert.IsTrue(INF.ReadBool('STATE', 'LogScale', False), '[STATE] LogScale');
-    // the advanced block the GUI's LoadAdvancedParams reads back
     Assert.AreEqual('0.3', INF.ReadString('LFPSO', 'Vmax', ''), '[LFPSO] Vmax');
     Assert.AreEqual(10, INF.ReadInteger('LFPSO', 'PolyFactor', 0), '[LFPSO] PolyFactor');
     Assert.AreEqual(-1, INF.ReadInteger('LFPSO', 'SmoothWindow', 0), '[LFPSO] SmoothWindow');
@@ -477,7 +439,6 @@ begin
   Assert.AreEqual(3, Length(Read_.CalcCurve), 'the overwritten calc curve');
 end;
 
-{ ------------------------------------------------------------- the reader -- }
 
 procedure TTestMCPProjectFile.ReadXRCX_RoundTrip_Structure;
 var
@@ -522,7 +483,7 @@ begin
   Ext.StackID := 0;
   Ext.LayerID := 1;
   Ext.Subj := ptS;
-  Ext.Coeffs := [9.5, 2.5, 3.5, 4.5];     // C[0..3]: order 3, three stored coefficients
+  Ext.Coeffs := [9.5, 2.5, 3.5, 4.5];
   Written.Extensions := [Ext];
 
   Path := TPath.Combine(FTemp, 'ext.xrcx');
@@ -543,19 +504,10 @@ begin
     'C0 is not stored in the file, by design');
 end;
 
-{ Every extension WriteTree emits came out of a fit - WriteFitProject is the
-  only caller that fills Extensions, from FitExtensions(Poly) - so each node
-  must carry FromFit.
-
-  The GUI reads that flag through TProjectData.IsFitExtension. RunFitting asks
-  HasFitExtensions before it starts, and only offers to keep or clear the
-  gradients of an earlier fit when the answer is True. An .xrcx written here
-  without the flag opens in the GUI looking as if a human had drawn its
-  gradients by hand: no prompt, and the next fit silently stacks a second set
-  of gradients on top of the first.
-
-  ReadXRCX cannot see this - TXRCXProfileExt has no FromFit field - so the test
-  goes to the tree the file actually holds. }
+{ Without FromFit the GUI cannot offer to keep or clear an earlier fit's
+  gradients, and the next fit silently stacks another set on top.
+  ReadXRCX cannot see this - TXRCXProfileExt has no FromFit field -
+  so the test goes to the tree the file actually holds. }
 procedure TTestMCPProjectFile.WriteXRCX_Extension_IsMarkedFromFit;
 var
   Path, DscPath: string;
@@ -631,7 +583,6 @@ begin
   Assert.AreEqual('', P.DataTitle, 'the reference project has no data node');
 end;
 
-{ -------------------------------------------------------------- the tools -- }
 
 procedure TTestMCPProjectFile.ListProjects_ReportsEveryProject;
 var
@@ -644,7 +595,6 @@ begin
   P := SampleProject;
   WriteXRCX(TPath.Combine(WorkDir.ProjectsDir, 'alpha.xrcx'), P);
   WriteXRCX(TPath.Combine(WorkDir.ProjectsDir, 'beta.xrcx'), P);
-  // not a project: it must not be listed
   TFile.WriteAllText(TPath.Combine(WorkDir.ProjectsDir, 'notes.txt'), 'x');
 
   Args := TJSONObject.Create;
@@ -747,7 +697,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------- save_project fit settings ---- }
 
 procedure TTestMCPProjectFile.SaveProject_FromJob_UsesTheJobsFitSettings;
 var

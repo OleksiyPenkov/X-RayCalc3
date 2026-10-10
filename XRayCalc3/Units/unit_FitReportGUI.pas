@@ -9,12 +9,7 @@
 
 unit unit_FitReportGUI;
 
-(* Result - Fit report: the input unit_MCPFitReport needs, built from what the
-   GUI holds - the active model's calculated curve on the chart and the
-   measured curve linked to it - and the fitted parameters that sit near a
-   bound. No VCL here, so the tests can reach it.
-
-   The report wants the two curves on the same angles, point for point, in
+(* The report wants the two curves on the same angles, point for point, in
    theta. The chart's model curve is on the calculation grid, so it is
    resampled onto the measured angles (linear in log10 R between its two
    neighbours; measured points outside the calculated range are left out),
@@ -28,8 +23,6 @@ uses
   unit_Types, unit_MCPFitReport;
 
 type
-  /// <summary>A fitted parameter within NEAR_BOUND_FRACTION of its range of
-  /// one end of it.</summary>
   TNearBound = record
     Stack: string;
     Layer: string;
@@ -44,12 +37,8 @@ type
 function FitReportInput(const Measured, Model: TDataArray; TwoTheta: Boolean;
   ScaleLog, Lambda, Period, ThetaC: Double): TFitReportInput;
 
-/// <summary>The period the report counts orders on: the first stack with
-/// N &gt; 1, as fit_xrr's report takes it. 0 without one.</summary>
 function FirstPeriod(const S: TFitStructure): Double;
 
-/// <summary>Every free parameter of the layers within NEAR_BOUND_FRACTION of
-/// its range of a bound, frozen and zero-width ones left out.</summary>
 function NearBounds(const S: TFitStructure): TArray<TNearBound>;
 
 implementation

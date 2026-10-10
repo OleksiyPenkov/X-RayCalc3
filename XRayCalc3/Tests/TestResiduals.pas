@@ -1,8 +1,5 @@
 unit TestResiduals;
 
-(* unit_Residuals: the residual strip's numbers - log10(R_calc / (I_meas K))
-   per measured point, the points on the R min floor, and the bands, which
-   must be the Fit report's to the last digit. *)
 
 interface
 
@@ -28,8 +25,6 @@ implementation
 const
   RMIN = 1E-7;
 
-{ A reflectivity-like curve on 0.05 .. 3 deg: falls by 6 decades with a
-  wiggle, and never below the floor unless Floor is set. }
 function Model(Floor: Double = 0; Mul: Double = 1): TDataArray;
 var
   i: Integer;
@@ -46,8 +41,6 @@ begin
   end;
 end;
 
-{ The measured curve: the model divided by K, with a misfit that grows with
-  angle, on every third model angle. }
 function Measured(const M: TDataArray; K, Misfit: Double): TDataArray;
 var
   i, n: Integer;
@@ -89,7 +82,6 @@ var
   P: TResidualPoint;
   Floored, Clear: Integer;
 begin
-  { Floored from about 2.3 deg; the measured curve stays above it. }
   M := Model(Power(10, -4.6));
   C := ResidualCurve(FitReportInput(Measured(Model, 1, 0), M, False, 0, 1.54, 0, 0),
                      False, Power(10, -4.6));
@@ -114,8 +106,8 @@ var
 begin
   M := Model;
   D := Measured(M, 1, 0);
-  D[10].r := RMIN;        // at the floor
-  D[20].r := RMIN / 3;    // below it
+  D[10].r := RMIN;
+  D[20].r := RMIN / 3;
   C := ResidualCurve(FitReportInput(D, M, False, 0, 1.54, 0, 0), False, RMIN);
   Assert.IsTrue(C.Points[10].Floored, 'at the floor');
   Assert.IsTrue(C.Points[20].Floored, 'below the floor');

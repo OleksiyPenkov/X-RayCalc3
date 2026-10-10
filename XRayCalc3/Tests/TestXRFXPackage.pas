@@ -78,7 +78,6 @@ type
 
 implementation
 
-{ TTestXRFXPackage }
 
 procedure TTestXRFXPackage.Setup;
 begin
@@ -102,31 +101,25 @@ begin
   CurvesDir := TPath.Combine(Result, 'best_curves');
   TDirectory.CreateDirectory(CurvesDir);
 
-  // best_structure.json (minimal)
   TFile.WriteAllText(TPath.Combine(Result, 'best_structure.json'),
     '{"name":"test","optimizer_result":{"FoM":0.5}}');
 
-  // best_structure_xrc.json
   TFile.WriteAllText(TPath.Combine(Result, 'best_structure_xrc.json'),
     '{"Stacks":[{"T":"ML","N":20,"Layers":[' +
     '{"M":"W","H":15.0,"s":3.5,"r":19.3},' +
     '{"M":"Si","H":30.0,"s":3.5,"r":2.33}]}],' +
     '"Subs":{"M":"SiO2","s":1.0,"r":2.65}}');
 
-  // population.json
   TFile.WriteAllText(TPath.Combine(Result, 'population.json'), '[]');
 
-  // progress.log
   TFile.WriteAllText(TPath.Combine(Result, 'progress.log'),
     ' Iter       FoM  R_Na  R_Al    Div  Best               Time' + sLineBreak +
     '    0    0.0630  0.342  0.422  0.291  Mo/Si d=45.2         0:02' + sLineBreak +
     '   10    0.3013  0.361  0.435  0.179  Mo/Si d=42.8         0:05');
 
-  // checkpoint.json (should be excluded from .xrfx)
   TFile.WriteAllText(TPath.Combine(Result, 'checkpoint.json'),
     '{"iteration":10}');
 
-  // curve files
   TFile.WriteAllText(TPath.Combine(CurvesDir, 'Na.dat'),
     'Theta(deg)'#9'Reflectivity' + sLineBreak +
     '0.5000'#9'3.14159e-04' + sLineBreak +
@@ -236,9 +229,7 @@ begin
   end;
 end;
 
-// Test method stubs — implemented in subsequent tasks alongside their implementations
 
-{ TTestManifestGeneration }
 
 procedure TTestManifestGeneration.Test_CreateXRFXPackage_ProducesFile;
 var
@@ -367,7 +358,6 @@ begin
   Assert.AreEqual(XRFX_MANIFEST_VERSION, M.Version);
 end;
 
-{ TTestManifestLoading }
 
 procedure TTestManifestLoading.Test_LoadManifest_ParsesVersion;
 var
@@ -437,7 +427,6 @@ begin
   Assert.AreEqual('best_curves/Na.dat', M.CurveFiles[0]);
 end;
 
-{ TTestExtraction }
 
 procedure TTestExtraction.Test_ExtractXRFXPackage_CreatesFiles;
 var
@@ -467,7 +456,6 @@ begin
   Assert.AreEqual(Double(0.5), M.FoM, 1E-6);
 end;
 
-{ TTestXRCStructureLoading }
 
 procedure TTestXRCStructureLoading.Test_LoadXRCStructure_ParsesLayers;
 var
@@ -507,7 +495,6 @@ var
   S: TXRFXStructure;
   Path: string;
 begin
-  // SL cap (Si) + ML period (W/Si); mirrors xrccmd output with a cap layer.
   Path := TPath.Combine(FTempDir, 'multi_stack.json');
   TFile.WriteAllText(Path,
     '{"Stacks":[' +
@@ -534,7 +521,6 @@ begin
   Assert.AreEqual('Si', S.Stacks[1].Layers[1].Material);
 end;
 
-{ TTestCurveLoading }
 
 procedure TTestCurveLoading.Test_LoadCurveFiles_ParsesElements;
 var
@@ -582,7 +568,6 @@ begin
       'Curve ' + Curves[i].Element + ' should have 2 data points');
 end;
 
-{ TTestProgressLogLoading }
 
 procedure TTestProgressLogLoading.Test_LoadProgressLog_ParsesIterations;
 var
@@ -608,7 +593,6 @@ var
   Entries: TArray<TProgressEntry>;
 begin
   Entries := LoadProgressLog(CreateSampleProgressLog);
-  // 2 element columns: R_Na, R_Al
   Assert.AreEqual(2, Length(Entries[0].ElementR));
   Assert.AreEqual(Double(0.342), Entries[0].ElementR[0], 1E-3);
   Assert.AreEqual(Double(0.422), Entries[0].ElementR[1], 1E-3);

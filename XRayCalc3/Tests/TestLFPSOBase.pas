@@ -11,7 +11,6 @@ uses
 type
   TTestableLFPSO = class(TLFPSO_BASE)
   public
-    // Expose protected fields
     property Pub_FFitParams: TFitParams read FFitParams write FFitParams;
     property Pub_FStructure: TFitStructure read FStructure write FStructure;
     property Pub_FLayersCount: integer read FLayersCount write FLayersCount;
@@ -25,7 +24,6 @@ type
     property Pub_FGlobalBestChiSqr: single read FGlobalBestChiSqr write FGlobalBestChiSqr;
     property Pub_FAbsoluteBestChiSqr: single read FAbsoluteBestChiSqr write FAbsoluteBestChiSqr;
 
-    // Expose protected arrays
     function GetX: TPopulation;
     procedure SetX(const Value: TPopulation);
     function GetV: TPopulation;
@@ -40,7 +38,6 @@ type
     function GetVmin: TPopulation;
     procedure SetVmin(const Value: TPopulation);
 
-    // Expose protected methods
     function TestOmega(const t, TMax: integer): single;
     function TestRand(const dx: single): single;
     function TestLevyWalk(const X, gBest: single): single;
@@ -68,9 +65,6 @@ type
 
     [Test] procedure Test_RS_ReturnsOnlyPlusOrMinusOne;
 
-    // TODO: SolutionToString not yet implemented in unit_LFPSO_Base
-    // [Test] procedure Test_SolutionToString_SingleLayer;
-    // [Test] procedure Test_SolutionToString_Empty;
   end;
 
   [TestFixture]
@@ -84,57 +78,43 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { Omega — inertia weight }
     [Test] procedure Test_Omega_AtStart;
     [Test] procedure Test_Omega_AtEnd;
     [Test] procedure Test_Omega_AtMidpoint;
 
-    { SetParams }
     [Test] procedure Test_SetParams_SetsFields;
     [Test] procedure Test_SetParams_AllocatesBoundaryArrays;
 
-    { SetDomain }
     [Test] procedure Test_SetDomain_AllocatesCorrectDimensions;
 
-    { Init_Domains }
     [Test] procedure Test_Init_Domains_AllocatesAllArrays;
 
-    { Set_Init_X }
     [Test] procedure Test_Set_Init_X_SetsValues;
 
-    { CheckLimits — velocity clamping and position reflection }
     [Test] procedure Test_CheckLimits_ClampsVelocityHigh;
     [Test] procedure Test_CheckLimits_ClampsVelocityLow;
     [Test] procedure Test_CheckLimits_ReflectsPositionHigh;
     [Test] procedure Test_CheckLimits_ReflectsPositionLow;
     [Test] procedure Test_CheckLimits_NoClampNeeded;
 
-    { ApplyCFactor }
     [Test] procedure Test_ApplyCFactor_AdaptVelTrue_Positive;
     [Test] procedure Test_ApplyCFactor_AdaptVelFalse;
     [Test] procedure Test_ApplyCFactor_AdaptVelTrue_ZeroCFactor;
     [Test] procedure Test_ApplyCFactor_Constriction;
 
-    { Omega — constriction mode }
     [Test] procedure Test_Omega_Constriction;
 
-    { CalcDiversity }
     [Test] procedure Test_CalcDiversity_Uniform;
     [Test] procedure Test_CalcDiversity_Converged;
 
-    { Rand }
     [Test] procedure Test_Rand_StaysInRange;
 
-    { LevyWalk }
     [Test] procedure Test_LevyWalk_ReturnsFinite;
 
-    { UpdateStructure }
     [Test] procedure Test_UpdateStructure_WritesBackValues;
 
-    { FitModelToLayer }
     [Test] procedure Test_FitModelToLayer_CreatesCorrectLayers;
 
-    { Terminate }
     [Test] procedure Test_Terminate_SetsFlag;
   end;
 
@@ -143,7 +123,6 @@ implementation
 uses
   System.SysUtils, System.Math;
 
-{ TTestableLFPSO — accessor wrappers }
 
 function TTestableLFPSO.GetX: TPopulation; begin Result := X; end;
 procedure TTestableLFPSO.SetX(const Value: TPopulation); begin X := Value; end;
@@ -195,29 +174,24 @@ begin UpdateStructure(Solution); end;
 function TTestableLFPSO.TestFitModelToLayer(const Solution: TSolution): TLayeredModel;
 begin Result := FitModelToLayer(Solution); end;
 
-{ TTestLFPSOFreeFunctions }
 
 procedure TTestLFPSOFreeFunctions.Test_Gamma_OfOne;
 begin
-  // Gamma(1) = 0! = 1
   Assert.AreEqual(Single(1.0), Gamma(1.0), 1E-3, 'Gamma(1) should be 1');
 end;
 
 procedure TTestLFPSOFreeFunctions.Test_Gamma_OfTwo;
 begin
-  // Gamma(2) = 1! = 1
   Assert.AreEqual(Single(1.0), Gamma(2.0), 1E-3, 'Gamma(2) should be 1');
 end;
 
 procedure TTestLFPSOFreeFunctions.Test_Gamma_OfHalf;
 begin
-  // Gamma(0.5) = sqrt(pi)
   Assert.AreEqual(Single(Sqrt(Pi)), Gamma(0.5), 1E-3, 'Gamma(0.5) should be sqrt(pi)');
 end;
 
 procedure TTestLFPSOFreeFunctions.Test_Gamma_OfFive;
 begin
-  // Gamma(5) = 4! = 24
   Assert.AreEqual(Single(24.0), Gamma(5.0), 1E-2, 'Gamma(5) should be 24');
 end;
 
@@ -225,7 +199,6 @@ procedure TTestLFPSOFreeFunctions.Test_MultiplyVector_ScaleByTwo;
 var
   Pop, Res: TPopulation;
 begin
-  // 1 member, 1 layer, param index 1, order 0 (1 element)
   SetLength(Pop, 1);
   SetLength(Pop[0], 1);
   SetLength(Pop[0][0][1], 1);
@@ -235,7 +208,6 @@ begin
   Pop[0][0][2][0] := 5.0;
   Pop[0][0][3][0] := 7.0;
 
-  // Allocate result with same shape
   SetLength(Res, 1);
   SetLength(Res[0], 1);
   SetLength(Res[0][0][1], 1);
@@ -287,11 +259,7 @@ begin
   end;
 end;
 
-// TODO: SolutionToString not yet implemented in unit_LFPSO_Base
-//procedure TTestLFPSOFreeFunctions.Test_SolutionToString_SingleLayer;
-//procedure TTestLFPSOFreeFunctions.Test_SolutionToString_Empty;
 
-{ TTestLFPSOBase — helpers }
 
 function TTestLFPSOBase.MakeSimpleFitParams: TFitParams;
 begin
@@ -350,7 +318,6 @@ begin
     end;
 end;
 
-{ TTestLFPSOBase — Setup / TearDown }
 
 procedure TTestLFPSOBase.Setup;
 begin
@@ -362,16 +329,13 @@ begin
   FPSO.Free;
 end;
 
-{ Omega }
 
 procedure TTestLFPSOBase.Test_Omega_AtStart;
 var
   Params: TFitParams;
 begin
   Params := MakeSimpleFitParams;
-  // w1=0.4, w2=0.5
   FPSO.TestSetParams(Params);
-  // Omega(0, 100) = w1 + w2 * (1 - 0/100) = 0.4 + 0.5 = 0.9
   Assert.AreEqual(Single(0.9), FPSO.TestOmega(0, 100), 1E-5, 'Omega at t=0');
 end;
 
@@ -381,7 +345,6 @@ var
 begin
   Params := MakeSimpleFitParams;
   FPSO.TestSetParams(Params);
-  // Omega(100, 100) = w1 + w2 * (1 - 1) = 0.4
   Assert.AreEqual(Single(0.4), FPSO.TestOmega(100, 100), 1E-5, 'Omega at t=TMax');
 end;
 
@@ -391,11 +354,9 @@ var
 begin
   Params := MakeSimpleFitParams;
   FPSO.TestSetParams(Params);
-  // Omega(50, 100) = 0.4 + 0.5 * 0.5 = 0.65
   Assert.AreEqual(Single(0.65), FPSO.TestOmega(50, 100), 1E-5, 'Omega at midpoint');
 end;
 
-{ SetParams }
 
 procedure TTestLFPSOBase.Test_SetParams_SetsFields;
 var
@@ -419,7 +380,6 @@ begin
   Assert.AreEqual(1, Length(FPSO.GetVmin), 'Vmin allocated with length 1');
 end;
 
-{ SetDomain }
 
 procedure TTestLFPSOBase.Test_SetDomain_AllocatesCorrectDimensions;
 var
@@ -430,7 +390,7 @@ begin
   Params.Pop := 5;
   FPSO.TestSetParams(Params);
 
-  FPSO.TestSetDomain(3, 2, Pop);  // 3 layers, order 2 (3 coefficients)
+  FPSO.TestSetDomain(3, 2, Pop);
 
   Assert.AreEqual(5, Length(Pop), 'Population size = 5');
   Assert.AreEqual(3, Length(Pop[0]), 'Layers per member = 3');
@@ -439,7 +399,6 @@ begin
   Assert.AreEqual(3, Length(Pop[0][0][3]), 'rho poly order+1 = 3');
 end;
 
-{ Init_Domains }
 
 procedure TTestLFPSOBase.Test_Init_Domains_AllocatesAllArrays;
 var
@@ -450,7 +409,7 @@ begin
   FPSO.TestSetParams(Params);
   FPSO.Pub_FLayersCount := 2;
 
-  FPSO.TestInit_Domains(0);  // order 0 -> 1 coefficient
+  FPSO.TestInit_Domains(0);
 
   Assert.AreEqual(3, Length(FPSO.GetX), 'X population = 3');
   Assert.AreEqual(3, Length(FPSO.GetV), 'V population = 3');
@@ -458,7 +417,6 @@ begin
   Assert.AreEqual(1, Length(FPSO.GetX[0][0][1]), 'X[0][0][1] has 1 element');
 end;
 
-{ Set_Init_X }
 
 procedure TTestLFPSOBase.Test_Set_Init_X_SetsValues;
 var
@@ -482,7 +440,6 @@ begin
   Assert.AreEqual(Single(80.0), FPSO.GetXrange[0][0][1][0], 1E-5, 'Xrange = max - min');
 end;
 
-{ CheckLimits }
 
 procedure TTestLFPSOBase.Test_CheckLimits_ClampsVelocityHigh;
 var
@@ -495,7 +452,7 @@ begin
   FPSO.TestInit_Domains(0);
 
   FPSO.GetX[0][0][1][0] := 50.0;
-  FPSO.GetV[0][0][1][0] := 999.0;   // way above Vmax
+  FPSO.GetV[0][0][1][0] := 999.0;
   FPSO.GetVmax[0][0][1][0] := 10.0;
   FPSO.GetVmin[0][0][1][0] := -10.0;
   FPSO.GetXmax[0][0][1][0] := 100.0;
@@ -540,8 +497,6 @@ begin
   FPSO.Pub_FLayersCount := 1;
   FPSO.TestInit_Domains(0);
 
-  // X=95 + V=8 = 103, exceeds Xmax=100
-  // Reflection: 2*100 - 103 = 97, V reversed and damped: -8*0.5 = -4
   FPSO.GetX[0][0][1][0] := 95.0;
   FPSO.GetV[0][0][1][0] := 8.0;
   FPSO.GetVmax[0][0][1][0] := 10.0;
@@ -567,8 +522,6 @@ begin
   FPSO.Pub_FLayersCount := 1;
   FPSO.TestInit_Domains(0);
 
-  // X=3 + V=-8 = -5, below Xmin=0
-  // Reflection: 2*0 - (-5) = 5, V reversed and damped: 8*0.5 = 4
   FPSO.GetX[0][0][1][0] := 3.0;
   FPSO.GetV[0][0][1][0] := -8.0;
   FPSO.GetVmax[0][0][1][0] := 10.0;
@@ -607,7 +560,6 @@ begin
     'X = 50 + 5 = 55, no clamping');
 end;
 
-{ ApplyCFactor }
 
 procedure TTestLFPSOBase.Test_ApplyCFactor_AdaptVelTrue_Positive;
 var
@@ -651,7 +603,7 @@ begin
   Params := MakeSimpleFitParams;
   Params.AdaptVel := True;
   FPSO.TestSetParams(Params);
-  FPSO.Pub_CFactor := 0.0;  // not > 0 -> fallback to 1
+  FPSO.Pub_CFactor := 0.0;
 
   c1 := 0; c2 := 0;
   FPSO.TestApplyCFactor(c1, c2);
@@ -660,7 +612,6 @@ begin
   Assert.AreEqual(Single(1.0), c2, 1E-5, 'c2 = 1 when CFactor=0');
 end;
 
-{ Rand }
 
 procedure TTestLFPSOBase.Test_Rand_StaysInRange;
 var
@@ -676,7 +627,6 @@ begin
   end;
 end;
 
-{ LevyWalk }
 
 procedure TTestLFPSOBase.Test_LevyWalk_ReturnsFinite;
 var
@@ -690,7 +640,7 @@ begin
   num := Gamma(1 + beta) * Sin(Pi * beta / 2);
   den := Gamma((1 + beta) / 2) * beta * Power(2, (beta - 1) / 2);
   FPSO.Pub_FLevySigmaU := Power(num / den, 1 / beta);
-  FPSO.Pub_FLevyScale := 0.01;  // set adaptive scale
+  FPSO.Pub_FLevyScale := 0.01;
 
   RandSeed := 42;
   for i := 1 to 100 do
@@ -700,7 +650,6 @@ begin
   end;
 end;
 
-{ UpdateStructure }
 
 procedure TTestLFPSOBase.Test_UpdateStructure_WritesBackValues;
 var
@@ -711,8 +660,6 @@ begin
   FPSO.Pub_FStructure := Struct;
 
   Sol := MakeSimpleSolution(2);
-  // Sol[0][1][0]=1, Sol[0][2][0]=2, Sol[0][3][0]=3
-  // Sol[1][1][0]=2, Sol[1][2][0]=4, Sol[1][3][0]=6
 
   FPSO.TestUpdateStructure(Sol);
 
@@ -724,7 +671,6 @@ begin
   Assert.AreEqual(Single(6.0), FPSO.Pub_FStructure.Stacks[0].Layers[1].P[3].V, 1E-5, 'Layer1 rho');
 end;
 
-{ FitModelToLayer }
 
 procedure TTestLFPSOBase.Test_FitModelToLayer_CreatesCorrectLayers;
 var
@@ -738,20 +684,16 @@ begin
   Model := FPSO.TestFitModelToLayer(Sol);
   try
     Layers := Model.Layers;
-    // Vacuum (1) + 2 structure layers + 1 substrate = 4
     Assert.AreEqual(4, Length(Layers), 'Total layers = vacuum + 2 + substrate');
 
-    // First structure layer: H = Sol[0][1][0] = 1.0
     Assert.AreEqual(Single(1.0), Layers[1].L, 1E-5, 'Layer 1 thickness from solution');
 
-    // Second structure layer: H = Sol[1][1][0] = 2.0
     Assert.AreEqual(Single(2.0), Layers[2].L, 1E-5, 'Layer 2 thickness from solution');
   finally
     Model.Free;
   end;
 end;
 
-{ ApplyCFactor — Constriction }
 
 procedure TTestLFPSOBase.Test_ApplyCFactor_Constriction;
 const
@@ -776,7 +718,6 @@ begin
     'c2 = chi * 2.05 in constriction mode');
 end;
 
-{ Omega — constriction }
 
 procedure TTestLFPSOBase.Test_Omega_Constriction;
 var
@@ -789,7 +730,6 @@ begin
   FPSO.TestSetParams(Params);
   FPSO.Pub_FConstrictionChi := 2.0 / Abs(2.0 - PHI - Sqrt(PHI * PHI - 4 * PHI));
 
-  // Omega should return chi regardless of t
   Assert.AreEqual(FPSO.Pub_FConstrictionChi, FPSO.TestOmega(0, 100), 1E-5,
     'Omega returns chi at t=0');
   Assert.AreEqual(FPSO.Pub_FConstrictionChi, FPSO.TestOmega(50, 100), 1E-5,
@@ -798,7 +738,6 @@ begin
     'Omega returns chi at t=100');
 end;
 
-{ CalcDiversity }
 
 procedure TTestLFPSOBase.Test_CalcDiversity_Uniform;
 var
@@ -811,7 +750,6 @@ begin
   FPSO.Pub_FLayersCount := 1;
   FPSO.TestInit_Domains(0);
 
-  // Set up Xrange
   FPSO.GetXmax[0][0][1][0] := 100.0;
   FPSO.GetXmin[0][0][1][0] := 0.0;
   FPSO.GetXrange[0][0][1][0] := 100.0;
@@ -822,10 +760,9 @@ begin
   FPSO.GetXmin[0][0][3][0] := 0.0;
   FPSO.GetXrange[0][0][3][0] := 100.0;
 
-  // Spread particles across the range
   for i := 0 to 4 do
   begin
-    FPSO.GetX[i][0][1][0] := 20.0 * i;  // 0, 20, 40, 60, 80
+    FPSO.GetX[i][0][1][0] := 20.0 * i;
     FPSO.GetX[i][0][2][0] := 20.0 * i;
     FPSO.GetX[i][0][3][0] := 20.0 * i;
   end;
@@ -849,7 +786,6 @@ begin
   FPSO.GetXrange[0][0][2][0] := 100.0;
   FPSO.GetXrange[0][0][3][0] := 100.0;
 
-  // All particles at the same point
   for i := 0 to 4 do
   begin
     FPSO.GetX[i][0][1][0] := 50.0;
@@ -861,7 +797,6 @@ begin
     'Converged population should have zero diversity');
 end;
 
-{ Terminate }
 
 procedure TTestLFPSOBase.Test_Terminate_SetsFlag;
 begin

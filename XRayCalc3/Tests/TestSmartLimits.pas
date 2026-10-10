@@ -116,14 +116,12 @@ var
   Issues: TArray<TLimitIssue>;
 begin
   FS := MakeStructure(1);
-  // H: min > max
   FS.Stacks[0].Layers[0].P[1].min := 20.0;
   FS.Stacks[0].Layers[0].P[1].max := 5.0;
 
   Issues := ValidateLimits(FS);
   Assert.IsTrue(HasErrors(Issues));
 
-  // Check that the error targets the correct layer and param
   Assert.AreEqual(0, Issues[0].ItemIndex);
   Assert.AreEqual(1, Issues[0].ParamIndex);
   Assert.AreEqual(TLimitIssueKind.likError, Issues[0].Kind);
@@ -138,11 +136,9 @@ var
   FoundBelow, FoundAbove: Boolean;
 begin
   FS := MakeStructure(1);
-  // H: value below min
   FS.Stacks[0].Layers[0].P[1].V := 2.0;
   FS.Stacks[0].Layers[0].P[1].min := 5.0;
   FS.Stacks[0].Layers[0].P[1].max := 15.0;
-  // S: value above max
   FS.Stacks[0].Layers[0].P[2].V := 20.0;
   FS.Stacks[0].Layers[0].P[2].min := 5.0;
   FS.Stacks[0].Layers[0].P[2].max := 15.0;
@@ -173,7 +169,6 @@ var
   Found: Boolean;
 begin
   FS := MakeStructure(2);
-  // Lock all parameters: min = max
   for i := 0 to High(FS.Stacks[0].Layers) do
     for p := 1 to 3 do
     begin
@@ -200,7 +195,6 @@ var
   Found: Boolean;
 begin
   FS := MakeStructure(1);
-  // H: min=1, max=200 -> ratio 200 > 100
   FS.Stacks[0].Layers[0].P[1].V := 100.0;
   FS.Stacks[0].Layers[0].P[1].min := 1.0;
   FS.Stacks[0].Layers[0].P[1].max := 200.0;
@@ -221,7 +215,6 @@ var
   Found: Boolean;
 begin
   FS := MakeStructure(1);
-  // H: V=100, range = [99.999, 100.001] -> abs(max-min)=0.002, 0.01*100=1.0 -> narrow
   FS.Stacks[0].Layers[0].P[1].V := 100.0;
   FS.Stacks[0].Layers[0].P[1].min := 99.999;
   FS.Stacks[0].Layers[0].P[1].max := 100.001;
@@ -240,10 +233,8 @@ var
   Issues: TArray<TLimitIssue>;
 begin
   FS := MakeStructure(2);
-  // Layer 0, H: min > max (error)
   FS.Stacks[0].Layers[0].P[1].min := 20.0;
   FS.Stacks[0].Layers[0].P[1].max := 5.0;
-  // Layer 1, S: value below min (warning)
   FS.Stacks[0].Layers[1].P[2].V := 1.0;
   FS.Stacks[0].Layers[1].P[2].min := 5.0;
   FS.Stacks[0].Layers[1].P[2].max := 15.0;
@@ -257,18 +248,15 @@ procedure TTestValidateLimits.Test_HasErrors_HasWarnings;
 var
   Issues: TArray<TLimitIssue>;
 begin
-  // Empty
   SetLength(Issues, 0);
   Assert.IsFalse(HasErrors(Issues));
   Assert.IsFalse(HasWarnings(Issues));
 
-  // One error
   SetLength(Issues, 1);
   Issues[0].Kind := likError;
   Assert.IsTrue(HasErrors(Issues));
   Assert.IsFalse(HasWarnings(Issues));
 
-  // One warning
   Issues[0].Kind := likWarning;
   Assert.IsFalse(HasErrors(Issues));
   Assert.IsTrue(HasWarnings(Issues));
@@ -279,25 +267,19 @@ var
   Issues: TArray<TLimitIssue>;
 begin
   SetLength(Issues, 2);
-  // Error on item 0, param 1 (H)
   Issues[0].Kind := likError;
   Issues[0].ItemIndex := 0;
   Issues[0].ParamIndex := 1;
-  // Warning on item 0, param 2 (S)
   Issues[1].Kind := likWarning;
   Issues[1].ItemIndex := 0;
   Issues[1].ParamIndex := 2;
 
-  // SubItem 0,1 -> param 1 -> error
   Assert.AreEqual(TLimitIssueKind.likError, CellState(Issues, 0, 0));
   Assert.AreEqual(TLimitIssueKind.likError, CellState(Issues, 0, 1));
-  // SubItem 2,3 -> param 2 -> warning
   Assert.AreEqual(TLimitIssueKind.likWarning, CellState(Issues, 0, 2));
   Assert.AreEqual(TLimitIssueKind.likWarning, CellState(Issues, 0, 3));
-  // SubItem 4,5 -> param 3 -> no issue
   Assert.AreEqual(TLimitIssueKind.likNone, CellState(Issues, 0, 4));
   Assert.AreEqual(TLimitIssueKind.likNone, CellState(Issues, 0, 5));
-  // Different item -> no issue
   Assert.AreEqual(TLimitIssueKind.likNone, CellState(Issues, 1, 0));
 end;
 
@@ -391,7 +373,6 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  // Set negative mins and values below them
   FS.Stacks[0].Layers[0].P[1].V := -2.0;
   FS.Stacks[0].Layers[0].P[1].min := -5.0;
   FS.Stacks[0].Layers[0].P[2].V := -1.0;
@@ -401,11 +382,9 @@ begin
 
   ClampToPhysics(FS);
 
-  // Mins clamped to 0
   Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[1].min, 'H min should be 0');
   Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[2].min, 'S min should be 0');
   Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[3].min, 'Rho min should be 0');
-  // Values adjusted to min
   Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[1].V, 'H value should be clamped to min');
   Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[2].V, 'S value should be clamped to min');
   Assert.AreEqual(Single(0.0), FS.Stacks[0].Layers[0].P[3].V, 'Rho value should be clamped to min');
@@ -501,9 +480,9 @@ var
   Nro: array of Single;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 7.5;   // H
-  FS.Stacks[0].Layers[0].P[2].V := 3.0;   // S
-  FS.Stacks[0].Layers[0].P[3].V := 0;     // Rho = sentinel
+  FS.Stacks[0].Layers[0].P[1].V := 7.5;
+  FS.Stacks[0].Layers[0].P[2].V := 3.0;
+  FS.Stacks[0].Layers[0].P[3].V := 0;
 
   SetLength(Nro, 1);
   Nro[0] := 2.329;
@@ -519,11 +498,10 @@ procedure TTestValidateLimits.Test_Geometry_SMaxCappedByOwnH;
 var
   FS: TFitStructure;
 begin
-  // Single layer, non-periodic: S.max should be capped by own H
   FS := MakeStructure(1);
   FS.Stacks[0].N := 1;
-  FS.Stacks[0].Layers[0].P[1].V := 10.0;   // H = 10
-  FS.Stacks[0].Layers[0].P[2].max := 20.0;  // S.max = 20
+  FS.Stacks[0].Layers[0].P[1].V := 10.0;
+  FS.Stacks[0].Layers[0].P[2].max := 20.0;
 
   ApplyGeometryCoupling(FS);
 
@@ -535,12 +513,11 @@ procedure TTestValidateLimits.Test_Geometry_SMaxCappedByLowerNeighbor;
 var
   FS: TFitStructure;
 begin
-  // Two layers: Layer[1].S.max capped by Layer[0].H
   FS := MakeStructure(2);
   FS.Stacks[0].N := 1;
-  FS.Stacks[0].Layers[0].P[1].V := 8.0;    // Layer[0].H = 8
-  FS.Stacks[0].Layers[1].P[1].V := 20.0;   // Layer[1].H = 20
-  FS.Stacks[0].Layers[1].P[2].max := 15.0;  // Layer[1].S.max = 15
+  FS.Stacks[0].Layers[0].P[1].V := 8.0;
+  FS.Stacks[0].Layers[1].P[1].V := 20.0;
+  FS.Stacks[0].Layers[1].P[2].max := 15.0;
 
   ApplyGeometryCoupling(FS);
 
@@ -552,12 +529,11 @@ procedure TTestValidateLimits.Test_Geometry_NoOpWhenWithinBounds;
 var
   FS: TFitStructure;
 begin
-  // S.max already within bounds — should not be modified
   FS := MakeStructure(2);
   FS.Stacks[0].N := 1;
-  FS.Stacks[0].Layers[0].P[1].V := 12.0;   // Layer[0].H = 12
-  FS.Stacks[0].Layers[1].P[1].V := 10.0;   // Layer[1].H = 10
-  FS.Stacks[0].Layers[1].P[2].max := 5.0;   // S.max = 5, already < min(10, 12)
+  FS.Stacks[0].Layers[0].P[1].V := 12.0;
+  FS.Stacks[0].Layers[1].P[1].V := 10.0;
+  FS.Stacks[0].Layers[1].P[2].max := 5.0;
 
   ApplyGeometryCoupling(FS);
 
@@ -569,16 +545,14 @@ procedure TTestValidateLimits.Test_Geometry_PeriodicWrap;
 var
   FS: TFitStructure;
 begin
-  // Periodic stack (N > 1): first layer wraps to last layer's H
   FS := MakeStructure(2);
-  FS.Stacks[0].N := 5;  // periodic
-  FS.Stacks[0].Layers[0].P[1].V := 30.0;   // Layer[0].H = 30
-  FS.Stacks[0].Layers[0].P[2].max := 25.0;  // Layer[0].S.max = 25
-  FS.Stacks[0].Layers[1].P[1].V := 7.0;    // Layer[1].H = 7 (last layer, wraps)
+  FS.Stacks[0].N := 5;
+  FS.Stacks[0].Layers[0].P[1].V := 30.0;
+  FS.Stacks[0].Layers[0].P[2].max := 25.0;
+  FS.Stacks[0].Layers[1].P[1].V := 7.0;
 
   ApplyGeometryCoupling(FS);
 
-  // Layer[0]: H_self=30, H_below=Layer[1].H=7 (wrap), Bound=7
   Assert.AreEqual(Single(7.0), FS.Stacks[0].Layers[0].P[2].max,
     'S.max should be capped to last layer H via periodic wrap (7)');
 end;
@@ -587,7 +561,6 @@ procedure TTestValidateLimits.Test_Geometry_HAndRhoUntouched;
 var
   FS: TFitStructure;
 begin
-  // Verify that ApplyGeometryCoupling only modifies P[2].max
   FS := MakeStructure(1);
   FS.Stacks[0].N := 1;
   FS.Stacks[0].Layers[0].P[1].V := 10.0;
@@ -602,15 +575,12 @@ begin
 
   ApplyGeometryCoupling(FS);
 
-  // H limits untouched
   Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[1].min, 'H.min should be unchanged');
   Assert.AreEqual(Single(20.0), FS.Stacks[0].Layers[0].P[1].max, 'H.max should be unchanged');
   Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].V, 'H.V should be unchanged');
-  // Rho limits untouched
   Assert.AreEqual(Single(2.0), FS.Stacks[0].Layers[0].P[3].min, 'Rho.min should be unchanged');
   Assert.AreEqual(Single(15.0), FS.Stacks[0].Layers[0].P[3].max, 'Rho.max should be unchanged');
   Assert.AreEqual(Single(5.0), FS.Stacks[0].Layers[0].P[3].V, 'Rho.V should be unchanged');
-  // S.min and S.V untouched (only S.max modified)
   Assert.AreEqual(Single(3.0), FS.Stacks[0].Layers[0].P[2].min, 'S.min should be unchanged');
   Assert.AreEqual(Single(8.0), FS.Stacks[0].Layers[0].P[2].V, 'S.V should be unchanged');
 end;
@@ -635,7 +605,7 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 30.0;   // V == min
+  FS.Stacks[0].Layers[0].P[1].V := 30.0;
   FS.Stacks[0].Layers[0].P[1].min := 30.0;
   FS.Stacks[0].Layers[0].P[1].max := 70.0;
 
@@ -650,7 +620,7 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 70.0;   // V == max
+  FS.Stacks[0].Layers[0].P[1].V := 70.0;
   FS.Stacks[0].Layers[0].P[1].min := 30.0;
   FS.Stacks[0].Layers[0].P[1].max := 70.0;
 
@@ -683,7 +653,6 @@ var
   Found: Boolean;
 begin
   FS := MakeStructure(1);
-  // V at lower limit: V = min
   FS.Stacks[0].Layers[0].P[1].V := 5.0;
   FS.Stacks[0].Layers[0].P[1].min := 5.0;
   FS.Stacks[0].Layers[0].P[1].max := 15.0;
@@ -704,7 +673,6 @@ var
   Found: Boolean;
 begin
   FS := MakeStructure(1);
-  // V at upper limit: V = max
   FS.Stacks[0].Layers[0].P[1].V := 15.0;
   FS.Stacks[0].Layers[0].P[1].min := 5.0;
   FS.Stacks[0].Layers[0].P[1].max := 15.0;
@@ -724,7 +692,6 @@ var
   i: Integer;
 begin
   FS := MakeStructure(1);
-  // V at center — no "at limit" warnings expected
   FS.Stacks[0].Layers[0].P[1].V := 10.0;
   FS.Stacks[0].Layers[0].P[1].min := 5.0;
   FS.Stacks[0].Layers[0].P[1].max := 15.0;
@@ -744,13 +711,12 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 30.0;   // V == min (at lower limit)
+  FS.Stacks[0].Layers[0].P[1].V := 30.0;
   FS.Stacks[0].Layers[0].P[1].min := 30.0;
   FS.Stacks[0].Layers[0].P[1].max := 70.0;
 
   WidenAtLimit(FS, 0.5);
 
-  // Range=40, min extends by 40*0.5=20 downward
   Assert.AreEqual(Single(10.0), FS.Stacks[0].Layers[0].P[1].min, 'min should widen to 10');
   Assert.AreEqual(Single(70.0), FS.Stacks[0].Layers[0].P[1].max, 'max should stay at 70');
 end;
@@ -760,13 +726,12 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 70.0;   // V == max (at upper limit)
+  FS.Stacks[0].Layers[0].P[1].V := 70.0;
   FS.Stacks[0].Layers[0].P[1].min := 30.0;
   FS.Stacks[0].Layers[0].P[1].max := 70.0;
 
   WidenAtLimit(FS, 0.5);
 
-  // Range=40, max extends by 40*0.5=20 upward
   Assert.AreEqual(Single(30.0), FS.Stacks[0].Layers[0].P[1].min, 'min should stay at 30');
   Assert.AreEqual(Single(90.0), FS.Stacks[0].Layers[0].P[1].max, 'max should widen to 90');
 end;
@@ -776,7 +741,7 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 50.0;   // V at center
+  FS.Stacks[0].Layers[0].P[1].V := 50.0;
   FS.Stacks[0].Layers[0].P[1].min := 30.0;
   FS.Stacks[0].Layers[0].P[1].max := 70.0;
 
@@ -874,7 +839,6 @@ var
   Issues: TArray<TLimitIssue>;
 begin
   FS := MakeStructure(1);
-  // Inverted min/max (error) + negative min (error)
   FS.Stacks[0].Layers[0].P[1].min := 20.0;
   FS.Stacks[0].Layers[0].P[1].max := 5.0;
   FS.Stacks[0].Layers[0].P[2].min := -3.0;
@@ -936,7 +900,6 @@ var
   Issues: TArray<TLimitIssue>;
 begin
   FS := MakeStructure(1);
-  // A range that would certainly be reported if it were free.
   FS.Stacks[0].Layers[0].P[1].min := 20.0;
   FS.Stacks[0].Layers[0].P[1].max := 5.0;
   FS.Stacks[0].Layers[0].P[1].Fixed := True;
@@ -964,7 +927,7 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 15.0;   // hard against max, would widen
+  FS.Stacks[0].Layers[0].P[1].V := 15.0;
   FS.Stacks[0].Layers[0].P[1].Fixed := True;
 
   WidenAtLimit(FS, 0.5);
@@ -977,7 +940,7 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[2].min := -3.0;  // would be clamped to 0 if free
+  FS.Stacks[0].Layers[0].P[2].min := -3.0;
   FS.Stacks[0].Layers[0].P[2].Fixed := True;
 
   ClampToPhysics(FS);
@@ -990,7 +953,7 @@ var
   FS: TFitStructure;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 12.0;   // min 5, max 15, width 10
+  FS.Stacks[0].Layers[0].P[1].V := 12.0;
 
   RecentreOnValue(FS);
 
@@ -1004,7 +967,7 @@ var
   Rec: TFitValue;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 15.0;   // pinned against max
+  FS.Stacks[0].Layers[0].P[1].V := 15.0;
 
   RecentreOnValue(FS);
 
@@ -1071,7 +1034,6 @@ begin
     'the value never moved');
 end;
 
-{ The same at the other end: Rho is capped at MAX_DENSITY. }
 procedure TTestValidateLimits.Test_Recentre_KeepsWidthUnderRhoCap;
 var
   FS: TFitStructure;
@@ -1091,8 +1053,6 @@ begin
     'slid down against the cap, not truncated at it');
 end;
 
-{ The limits dialog reads one 9-column stride three different ways. Pin the
-  arithmetic here, where no VCL is needed to exercise it. }
 procedure TTestValidateLimits.Test_ColumnHelpers_Mapping;
 const
   ExpectedParam:   array [1..9] of Integer = ( 1, 0, 0,  2, 0, 0,  3, 0, 0);
@@ -1111,33 +1071,30 @@ begin
       Format('FreezeCellOf(%d)', [Col]));
   end;
 
-  // Column 0 is the layer caption: no parameter, and never a Fix column.
   Assert.AreEqual(0, FreezeParamOf(0), 'the Layer column freezes nothing');
 end;
 
 
 { The lab procedure's near_bound_fraction: a value within 5 % of the range of
-  a bound is "at" it. 3 % from the top was ignored at the old 1 %. }
+  a bound is "at" it. }
 procedure TTestValidateLimits.Test_NearBound_FivePercent_FlagsAndWidens;
 var
   FS: TFitStructure;
   Issues: TArray<TLimitIssue>;
 begin
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 14.7;   // min 5, max 15: 3 % of the range below max
+  FS.Stacks[0].Layers[0].P[1].V := 14.7;
   Issues := ValidateLimits(FS);
   Assert.IsTrue(HasWarnings(Issues), 'flagged at upper limit');
   WidenAtLimit(FS, 0.5);
   Assert.AreEqual(Single(20.0), FS.Stacks[0].Layers[0].P[1].max, 'widened by half the range');
 
   FS := MakeStructure(1);
-  FS.Stacks[0].Layers[0].P[1].V := 14.0;   // 10 %: not at the bound
+  FS.Stacks[0].Layers[0].P[1].V := 14.0;
   WidenAtLimit(FS, 0.5);
   Assert.AreEqual(Single(15.0), FS.Stacks[0].Layers[0].P[1].max, 'left alone');
 end;
 
-{ A density maximum set at the table's bulk value is the ceiling the
-  procedure treats as physical: Widen does not carry it past bulk. }
 procedure TTestValidateLimits.Test_Widen_HoldsARhoMaxAtBulk;
 var
   FS: TFitStructure;
@@ -1145,7 +1102,7 @@ begin
   FS := MakeStructure(1);
   FS.Stacks[0].Layers[0].P[3].V := 8.9;
   FS.Stacks[0].Layers[0].P[3].min := 6.6;
-  FS.Stacks[0].Layers[0].P[3].max := 8.9;    // Co bulk
+  FS.Stacks[0].Layers[0].P[3].max := 8.9;
 
   WidenAtLimit(FS, 0.5, [8.9]);
   Assert.AreEqual(Single(8.9), FS.Stacks[0].Layers[0].P[3].max, 'held at bulk');
@@ -1161,7 +1118,7 @@ begin
   FS := MakeStructure(1);
   FS.Stacks[0].Layers[0].P[3].V := 9.5;
   FS.Stacks[0].Layers[0].P[3].min := 7.0;
-  FS.Stacks[0].Layers[0].P[3].max := 9.5;    // set above bulk on purpose
+  FS.Stacks[0].Layers[0].P[3].max := 9.5;
 
   WidenAtLimit(FS, 0.5, [8.9]);
   Assert.AreEqual(Single(10.75), FS.Stacks[0].Layers[0].P[3].max, 'not a bulk ceiling: widened');
@@ -1180,13 +1137,11 @@ begin
   Assert.AreEqual(Single(8.9), FS.Stacks[0].Layers[0].P[3].max, 'the ceiling stays');
   Assert.AreEqual(Single(8.9), FS.Stacks[0].Layers[0].P[3].V, 'the value comes down to it');
 
-  FS.Stacks[0].Layers[0].P[1].V := 20;       // H is not density: max follows V
+  FS.Stacks[0].Layers[0].P[1].V := 20;
   AutoFixErrors(FS, [8.9]);
   Assert.AreEqual(Single(20), FS.Stacks[0].Layers[0].P[1].max);
 end;
 
-{ The book's example: C at 2.00 with limits 1.5-2.4 resumed as 1.55-2.45.
-  With 2.4 the bulk value, the window keeps its width and slides under it. }
 procedure TTestValidateLimits.Test_Recentre_SlidesUnderABulkCeiling;
 var
   FS: TFitStructure;
@@ -1238,19 +1193,17 @@ begin
 end;
 
 
-{ Free period: a window around each repeating stack's start period, and a
-  hold (0, 0) for a stack with no period or none of its thicknesses free. }
 procedure TTestValidateLimits.Test_PeriodRanges_WindowAroundTheStartPeriod;
 var
   FS: TFitStructure;
   R: TArray<TPeriodRange>;
 begin
-  FS := MakeStructure(2);                    // H 10 + 10, range 5..15 each
+  FS := MakeStructure(2);
   FS.Stacks[0].N := 20;
   SetLength(FS.Stacks, 2);
   FS.Stacks[1] := FS.Stacks[0];
   FS.Stacks[1].Layers := Copy(FS.Stacks[0].Layers);
-  FS.Stacks[1].N := 1;                       // a capping layer: no period
+  FS.Stacks[1].N := 1;
 
   R := PeriodRanges(FS, 0.05);
   Assert.AreEqual(2, Integer(Length(R)));

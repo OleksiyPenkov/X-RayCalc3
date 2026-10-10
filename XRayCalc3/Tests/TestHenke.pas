@@ -17,20 +17,16 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { ReadHenkeTable — real DB }
     [Test] procedure Test_ReadHenkeTable_Si_LoadsData;
     [Test] procedure Test_ReadHenkeTable_Si_EnergiesAscending;
     [Test] procedure Test_ReadHenkeTable_NonExistent_Raises;
 
-    { ReadHenke — real DB }
     [Test] procedure Test_ReadHenke_Si_ByEnergy;
     [Test] procedure Test_ReadHenke_Si_ByLambda;
     [Test] procedure Test_ReadHenke_NonExistent_Raises;
 
-    { WriteHenkeTable + ReadHenkeTable roundtrip }
     [Test] procedure Test_WriteRead_Roundtrip;
     [Test] procedure Test_WriteRead_Roundtrip_ReadHenke;
-    { B4C.bin, normalised 2026-09-21 - real DB }
     [Test] procedure Test_B4C_HeaderIsOnPerAtomScale;
     [Test] procedure Test_B4C_DeltaUnchangedByNormalisation;
   end;
@@ -56,7 +52,6 @@ begin
     TDirectory.Delete(FTempDir, True);
 end;
 
-{ --- ReadHenkeTable — real DB --- }
 
 procedure TTestHenke.Test_ReadHenkeTable_Si_LoadsData;
 var
@@ -105,7 +100,6 @@ begin
     EInOutError);
 end;
 
-{ --- ReadHenke — real DB --- }
 
 procedure TTestHenke.Test_ReadHenke_Si_ByEnergy;
 var
@@ -114,7 +108,6 @@ var
 begin
   TConfig.SystemDir[sdHenke] := HENKE_DB_PATH;
 
-  // Cu Ka energy = 8047.8 eV
   ReadHenke('Si', 8047.8, 0, f, Na, Nro);
 
   Assert.IsTrue(Na > 0, 'Na must be positive');
@@ -157,7 +150,6 @@ begin
     EInOutError);
 end;
 
-{ --- WriteHenkeTable + ReadHenkeTable roundtrip --- }
 
 procedure TTestHenke.Test_WriteRead_Roundtrip;
 var
@@ -168,8 +160,8 @@ begin
   TDirectory.CreateDirectory(FTempDir);
   TConfig.SystemDir[sdHenke] := FTempDir;
 
-  NaOut := 28.086;   // Si atomic mass
-  NroOut := 2.329;   // Si density
+  NaOut := 28.086;
+  NroOut := 2.329;
 
   SetLength(TableOut, 3);
   TableOut[0].e := 100;   TableOut[0].f1 := 10.5;  TableOut[0].f2 := 1.2;
@@ -209,25 +201,18 @@ begin
 
   WriteHenkeTable('TestEl2', 28.0, 2.33, TableOut);
 
-  // Read at E=550 — between first two points, should interpolate
   ReadHenke('TestEl2', 550, 0, f, Na, Nro);
 
   Assert.AreEqual(Single(28.0), Na, 1E-5, 'Na');
   Assert.AreEqual(Single(2.33), Nro, 1E-5, 'Nro');
 
-  // Linear interpolation between (100,10) and (1000,13) at E=550:
-  // f1 = 10 + (13-10)/(1000-100) * (550-100) = 10 + 3/900 * 450 = 11.5
   Assert.AreEqual(Single(11.5), f.Re, 0.01, 'f1 interpolated');
-  // f2 = 2 + (1-2)/(1000-100) * (550-100) = 2 - 1/900 * 450 = 1.5
   Assert.AreEqual(Single(1.5), f.Im, 0.01, 'f2 interpolated');
 end;
 
-{ B4C.bin was written by hand in 2020 with mass 9.24855 and f1/f2 on that
-  same reduced scale (0.837 of per-atom); the engine divides f by the header
-  mass, so the ratio was right and every pure-B4C layer scored correctly, but
-  material mixing weights components by the header mass and under-weighted
-  B4C by 0.837. On 2026-09-21 the mass and both f columns were multiplied by
-  11.051 / 9.24855 together, and the bulk density set to CXRO's 2.52. }
+{ The engine divides f by the header mass, but material mixing weights
+  components by that mass, so the header and f columns must use the same
+  per-atom scale. }
 procedure TTestHenke.Test_B4C_HeaderIsOnPerAtomScale;
 var
   f: TComplex;

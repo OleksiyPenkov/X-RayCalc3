@@ -28,8 +28,6 @@ function ClampTransparency(Value: Integer): Integer;
 function CurveKey(IsModel: Boolean; ID: Integer): string;
 
 function FormatDrawOrder(const Keys: array of string): string;
-{ Well-formed keys (M or D, then a non-negative integer) in the order given;
-  anything else and repeats are skipped. }
 function ParseDrawOrder(const S: string): TArray<string>;
 
 procedure WriteDrawOrder(INI: TCustomIniFile; const Keys: array of string);

@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <!-- Project tree marker: data linked to the active model.
-       Drawn on a 16 px grid so it stays sharp at its native size: the body's
+  <!-- Drawn on a 16 px grid so it stays sharp at its native size: the body's
        1 px stroke sits on half integers and the 2 px shackle legs land on
        whole pixel columns. Rendered at 16 and at 32 (a clean 2x) for high DPI. -->
   <path d="M5 8.5 V6.5 a3 3 0 0 1 6 0 V8.5"

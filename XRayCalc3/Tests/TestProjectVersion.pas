@@ -12,7 +12,6 @@
 
 unit TestProjectVersion;
 
-(* A project saved by a newer build is refused before anything is loaded. *)
 
 interface
 
@@ -57,7 +56,6 @@ begin
     TDirectory.Delete(FTemp, True);
 end;
 
-{ An archive holding one member called Name with ParamsText in it. }
 function TTestProjectVersion.ArchiveWith(const Name, ParamsText: string): string;
 var
   Z: TZipFile;

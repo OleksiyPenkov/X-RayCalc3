@@ -82,7 +82,6 @@ type
     procedure ToggleFreezeAt(Item: TListItem; const ParamIndex: Integer);
     procedure SetFreeze(const Frozen, AllRows, StackOnly: Boolean);
   public
-    { Public declarations }
 
     function ShowLimits(const ACaption: string; var Structure: TFitStructure): boolean;
   end;
@@ -121,7 +120,6 @@ begin
   dP[2] := StrToFloat(edFdS.Text);
   dP[3] := StrToFloat(edFdRho.Text);
 
-  // Look up Henke bulk density for each layer
   SetLength(NroValues, FStructure.Total);
   Index := 0;
   for i := 0 to High(FStructure.Stacks) do
@@ -225,7 +223,6 @@ end;
 
 procedure TfrmLimits.FormCreate(Sender: TObject);
 begin
-  //create the TEdit and assign the OnExit event
   ListViewEditor:=TRzEdit.Create(Self);
   ListViewEditor.Parent:=ListView;
   ListViewEditor.OnExit:=ListViewEditorExit;
@@ -270,11 +267,10 @@ begin
 
   ZeroMemory( @LVHitTestInfo, SizeOf(LVHitTestInfo));
   LVHitTestInfo.pt := LPoint;
-  //Check if the click was made in the column to edit
   If (ListView.perform( LVM_SUBITEMHITTEST, 0, LPARAM(@LVHitTestInfo))<>-1) and ( LVHitTestInfo.iSubItem = EDIT_COLUMN ) Then
     PostMessage( self.Handle, USER_EDITLISTVIEW, LVHitTestInfo.iItem, 0 )
   else
-    ListViewEditor.Visible:=False; //hide the TEdit
+    ListViewEditor.Visible:=False;
 end;
 
 { A native list view does not move focus or selection on a right-click, so the
@@ -322,8 +318,6 @@ begin
     end;
 end;
 
-{ Frozen: True freezes, False thaws. StackOnly limits the sweep to the stack the
-  focused row belongs to; AllRows ignores the selection entirely. }
 procedure TfrmLimits.SetFreeze(const Frozen, AllRows, StackOnly: Boolean);
 var
   i, j, p, Index, FocusStack: Integer;
@@ -399,7 +393,6 @@ procedure TfrmLimits.ListViewEditorExit(Sender: TObject);
 begin
   If Assigned(LItem) and (FreezeParamOf(EDIT_COLUMN) = 0) Then
   Begin
-    //assign the vslue of the TEdit to the Subitem
     LItem.SubItems[ EDIT_COLUMN-1 ] := ListViewEditor.Text;
     LItem := nil;
   End;
@@ -548,13 +541,9 @@ begin
   LRect.Left:= LVIR_BOUNDS;
   ListView.Perform( LVM_GETSUBITEMRECT, Message.wparam,  LPARAM(@LRect) );
   MapWindowPoints( ListView.Handle, ListViewEditor.Parent.Handle, LRect, 2 );
-  //get the current Item to edit
   LItem := ListView.Items[ Message.wparam ];
-  //set the text of the Edit
   ListViewEditor.Text := LItem.Subitems[ EDIT_COLUMN-1];
-  //set the bounds of the TEdit
   ListViewEditor.BoundsRect := LRect;
-  //Show the TEdit
   ListViewEditor.Visible:=True;
 end;
 
@@ -608,9 +597,9 @@ begin
 
   case Kind of
     likError:
-      Sender.Canvas.Brush.Color := $CCCCFF;  // light red
+      Sender.Canvas.Brush.Color := $CCCCFF;
     likWarning:
-      Sender.Canvas.Brush.Color := $CCFFFF;  // light yellow
+      Sender.Canvas.Brush.Color := $CCFFFF;
   end;
 end;
 

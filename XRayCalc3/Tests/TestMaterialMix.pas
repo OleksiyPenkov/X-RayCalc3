@@ -160,10 +160,8 @@ begin
 end;
 
 { The mixer weights each component's f and mass by atom fraction, so every
-  header mass has to be on the per-atom scale. B4C.bin was not until
-  2026-09-21 (mass 9.24855 against 11.051): a 20/80 W/B4C mix then behaved as
-  a mix with 3 % less B4C. The expected epsilon here uses the formula masses,
-  not the headers, so a table on the wrong scale fails it. }
+  header mass has to be on the per-atom scale. The expected epsilon uses
+  the formula masses, not the headers, so a table on the wrong scale fails it. }
 procedure TTestMaterialMix.TestB4CMixWeightsByPerAtomMass;
 const
   LAMBDA = 1.54187;
@@ -203,7 +201,7 @@ begin
     end;
 
     c := ClassicalElectronRadius * (0.2 * NroW + 0.8 * NroB) / (0.2 * A_W + 0.8 * A_B4C) * Sqr(LAMBDA);
-    Expected := (0.2 * fW.re + 0.8 * fB.re) * c;      // 1 - eps.re
+    Expected := (0.2 * fW.re + 0.8 * fB.re) * c;
     Assert.AreEqual(Expected, Double(1 - Eps.re), Expected * 0.01,
       '1 - eps.re of a 20/80 W/B4C mix, per-atom weighting (1 %)');
   finally

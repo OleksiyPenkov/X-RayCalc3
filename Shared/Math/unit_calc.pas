@@ -28,17 +28,15 @@ uses
 
 type
 
-  { What a GPU evaluator needs to compute the same chi-squared CalcChiSquare
-    does, for every particle at once, from raw (unconvolved) curves. }
   TGpuEvalInputs = record
-    Theta: TArray<Single>;        // measured angles, as the engine uses them
+    Theta: TArray<Single>;
     LogData: TArray<Single>;      // log10 of the measured intensities
     PointWeight: TArray<Single>;  // peak weight x theta weight of each point
     ConvWeights: TArray<Single>;  // [1] when there is no resolution
     ConvN: Integer;               // half-window of the convolution, 0 when none
     ChiFirst, ChiLast: Integer;   // inclusive range of points chi2 sums over
     ChiNorm: Single;              // 1000 / High(data)
-    SolveScale: Boolean;          // score every particle at its own best scale
+    SolveScale: Boolean;
     ScaleWindow: Single;          // |log10 scale| bound when solving; 0 pins it
   end;
 
@@ -92,13 +90,9 @@ type
       procedure Convolute(Width: single);
       procedure PrepareWorkers;
       procedure MVA(const N1, N2, W: integer); inline;
-      /// <summary>The point weight and the theta weight of measured point i,
-      /// multiplied into W in the order the chi-squared has always applied
-      /// them: w_point = I/movavg(I) where that ratio exceeds 3, then w_theta
-      /// from ThetaWeight 0..5. The one place the weighting lives: both CPU
-      /// sums and the GPU kernel's per-point factor come from here, so the
-      /// three can never disagree. Single throughout, so the legacy sum and
-      /// the GPU inputs stay bit-identical to what they were.</summary>
+      /// <summary>CPU sums and GPU point factors share this weighting.
+      /// Keep Single precision and peak-before-theta multiplication order
+      /// to preserve their matching results.</summary>
       procedure ApplyPointWeights(var W: Single; const i: Integer;
         const t: Single; const ThetaWeight: Integer); inline;
     public
@@ -109,9 +103,7 @@ type
       /// <summary>The inputs of a GPU evaluation that reproduces Run followed
       /// by CalcChiSquare(ThetaWeight) on ExpValues. Theta mode only.</summary>
       function GpuInputs(const ThetaWeight: Integer): TGpuEvalInputs;
-      /// <summary>Takes a raw reflectivity curve on ExpValues' angles (already
-      /// clamped to Limit, as CalcTet leaves it) and finishes it the way Run
-      /// does, so that Results and CalcChiSquare read as after a Run.</summary>
+      /// <summary>Raw must already be clamped to Limit, as CalcTet leaves it.</summary>
       procedure FinishRawCurve(const Raw: TArray<Single>);
       property Params: TCalcThreadParams write FParams;
       property ExpValues: TDataArray read FData write FData;
@@ -123,9 +115,6 @@ type
       property ChiSQRPlain: single read FChiSQRPlain;
       property Model: TLayeredModel read FLayeredModel write FLayeredModel;
       property MaxThreads: Integer read FMaxThreads write FMaxThreads;
-      /// <summary>Score the curve at the scale that minimises the chi-squared
-      /// for it, found in closed form (see CalcChiSquare). Off by default: the
-      /// legacy sum runs unchanged then.</summary>
       property SolveScale: Boolean read FSolveScale write FSolveScale;
       /// <summary>The solved log10 scale is held within +/- this; 0 pins it.</summary>
       property ScaleWindowLog: Single read FScaleWindowLog write FScaleWindowLog;
@@ -156,7 +145,6 @@ const
   InvTwoLn10 = 0.2171472409516259;       // 1/(2*ln(10)), for ln-to-log10 conversion
   FWHMToGaussianWidth = 0.849;            // 1/sqrt(2*ln(2)), FWHM to Gaussian width
 
-  { TCalc }
 
 procedure ClearArray(var A: TDataArray); inline;
 begin
@@ -168,10 +156,6 @@ begin
   Result := InvTwoLn10 * FastLn(Val);
 end;
 
-/// |e_upper / e_lower| and, in OneMinus, 1 minus it, both from delta and
-/// Im e in Double so that the difference of two numbers near 1 keeps its
-/// digits: 1 - |r| = (|e_l|^2 - |e_u|^2) / (|e_l| (|e_l| + |e_u|)), with
-/// |e_l|^2 - |e_u|^2 = (d_u - d_l)(2 - d_u - d_l) + b_l^2 - b_u^2.
 function EpsRatio(const Upper, Lower: TCalcLayer; out OneMinus: Single): Single;
 var
   du, dl, bu, bl, au, al: Double;
@@ -214,13 +198,12 @@ var
   Plain: single;
   LogResult: single;
 
-  { the solved-scale path }
   Wt: Single;
   D, W, Wp: Double;
   S0, S1, S2, Q0, Q1, Q2, A, AFree: Double;
 
 begin
-  // Pre-compute Log10 of experimental data once — FData never changes during fitting
+  // FData never changes during fitting, so the cached logarithms stay valid.
   if not FLogDataReady then
   begin
     SetLength(FLogData, Length(FData));
@@ -282,9 +265,6 @@ begin
     if FResult[i].r = 0 then Continue;
 
     LogResult := Log10(FResult[i].r);
-    { The unweighted residual of this point. It is summed on its own so that
-      ChiSQRPlain reports the bare data-to-fit disagreement on the same scale
-      as ChiSQR, which the peak and theta weights below then reshape. }
     Bare := Sqr((FLogData[i] - LogResult) / LogResult);
     Plain := Plain + Bare;
 
@@ -324,7 +304,6 @@ begin
       raise Exception.CreateFmt('Measured intensity %g at %g deg is not ' +
         'positive: the chi-squared takes its logarithm', [FData[i].r, t]);
     Result.LogData[i] := Ln(FData[i].r) / Ln(10);
-    { CalcChiSquare's weights, folded into one factor per point }
     w := 1;
     ApplyPointWeights(w, i, t, ThetaWeight);
     Result.PointWeight[i] := w;
@@ -443,17 +422,14 @@ begin
     L := StartL + i * Step;
     FLayeredModel.Generate(L);
     Layers := FLayeredModel.Layers;
-    // Precompute per-layer constants for this lambda
     for j := 0 to Length(Layers) - 2 do
     begin
       Layers[j].eRatio := EpsRatio(Layers[j], Layers[j + 1], Layers[j].oneMinusRatio);
       Layers[j + 1].s2 := Sqr(Layers[j + 1].s) * 0.5;
     end;
-    // Transpose AoS -> SoA
     Model.CopyFrom(Layers);
     if Scratch.Count <> Model.Count then
       Scratch.SetCount(Model.Count);
-    // Compute wave constants per lambda
     c1 := 4 * Pi / L;
     c2 := c1 * 0.5;
     FResult[i].t := L;
@@ -474,22 +450,19 @@ var
   Scratch: TCalcScratchSoA;
 begin
   if NThreads <= 1 then
-    Layers := FLayeredModel.LayersDirect  // single thread — no copy needed
+    Layers := FLayeredModel.LayersDirect
   else
     Layers := FLayeredModel.Layers;  // multi-thread — each thread needs its own copy
 
-  // Precompute per-layer constants — depend only on model, not on theta
   for i := 0 to Length(Layers) - 2 do
   begin
     Layers[i].eRatio := EpsRatio(Layers[i], Layers[i + 1], Layers[i].oneMinusRatio);
-    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.5; { sigma^2 / 2 for rfError (0.50299 until 3.9.4) }
+    Layers[i + 1].s2 := Sqr(Layers[i + 1].s) * 0.5;
   end;
 
-  // Transpose AoS -> SoA once before angle loop
   Model.CopyFrom(Layers);
   Scratch.SetCount(Model.Count);
 
-  // Precompute wave constants — constant across all angles
   c1 := 4 * Pi / FParams.Lambda;
   c2 := c1 * 0.5;
 
@@ -583,7 +556,6 @@ var
   begin
     for i := AModel.Count - 2 downto 0 do
     begin
-      { Fused: MulRZ(2L, K) * i -> ExpZ -> MulZZ(R, .) }
       L2 := AModel.L[i + 1] * 2;
       expVal := System.Exp(-L2 * AScratch.KIm[i + 1]);
       { Fully qualified: Neslib.FastMath declares its own approximate
@@ -610,16 +582,8 @@ var
     Result := Sqr(AScratch.RRe[0]) + Sqr(AScratch.RIm[0]);
   end;
 
-  { The Fourier transform of the interface profile's derivative (Stearns;
-    the forms Windt's IMD uses), each 1 at sigma = 0. Until 3.9.3 rfLinear
-    damped only below sigma = 0.5 A (the test was the wrong way round, and
-    0/0 at sigma = 0) and rfSinus returned 0. The GUI, the MCP server and
-    fit_xrr use rfError only. rfSinus itself has its own 0/0 at a = pi/2 (u =
-    a - pi/2 = 0), guarded below the same way as rfLinear's a = 0; unreachable
-    from the GUI/MCP today for the same reason (rfError only), so it needs no
-    new test beyond the existing suite passing. The same guard was applied to
-    unit_gpu_calc's HLSL Roughness, unit_parratt_ref.RoughnessRef and
-    unit_universal_refcalc's Roughness (2026-09-28). }
+  { Fourier transform of the interface profile derivative (Stearns;
+    the forms Windt's IMD uses). Each factor must be 1 at sigma = 0. }
   function Roughness(const RF: TRoughnessFunction; const sigma, s2, s: single): single; inline;
   const
     Sqrt3 = 1.7320508075688772;
@@ -644,10 +608,8 @@ var
         Result := cos(sigma * s);
       rfSinus:
         begin
-          { u = a - pi/2 is 0/0 at a = pi/2 (rare from the GUI/MCP - rfError
-            only - but reachable through rfSinus's own s scan); guarded like
-            rfLinear above. v = a + pi/2 guarded the same way, though s >= 0
-            in practice keeps it away from 0. }
+          { sin(u)/u is 0/0 at a = pi/2; both removable singularities
+            need the same limit guard as rfLinear's a = 0. }
           a := SinusK * sigma * s;
           u := a - Pi / 2;
           v := a + Pi / 2;
@@ -660,7 +622,7 @@ var
     end;
   end;
 
-  procedure LayerAmplitudeRefractionS;    { Reflection coefficient Rs }
+  procedure LayerAmplitudeRefractionS;
   var
     i: integer;
     Ki, Ki1, b1, b2, RF: TComplex;
@@ -679,14 +641,14 @@ var
       sv := c1 * sqrt(sin_g * sqrt(s1));
 
       rfVal := Roughness(FParams.RF, AModel.s[i + 1], AModel.s2[i + 1], sv);
-      AScratch.RoughFactor[i] := rfVal; { cache for P-polarization reuse }
+      AScratch.RoughFactor[i] := rfVal;
       RF := MulRZ(rfVal, RF);
       AScratch.RFRe[i] := RF.Re;
       AScratch.RFIm[i] := RF.Im;
     end;
   end;
 
-  procedure LayerAmplitudeRefractionP;      { Reflection coefficient Rp }
+  procedure LayerAmplitudeRefractionP;
   var
     i: integer;
     Ki, Ki1, ei, ei1, a1, a2, b1, b2, RF: TComplex;
@@ -707,13 +669,13 @@ var
       b2 := AddZZ(a1, a2);
       RF := DivZZ(b1, b2);
 
-      RF := MulRZ(AScratch.RoughFactor[i], RF); { reuse cached factor }
+      RF := MulRZ(AScratch.RoughFactor[i], RF);
       AScratch.RFRe[i] := RF.Re;
       AScratch.RFIm[i] := RF.Im;
     end;
   end;
 
-  procedure FresnelCoefficients;   { Fresnel coefficients }
+  procedure FresnelCoefficients;
   var
     i: integer;
     a1, K: TComplex;
@@ -728,20 +690,10 @@ var
   end;
 
 begin
-  { The grazing angle's sine, in double precision: eps - sin^2 of the angle to
-    the normal is sin^2(theta) - delta, delta = 1 - Re epsilon carried
-    directly from the materials (unit_materials.PrepareLayers) rather than
-    recovered from epsilon's own Single step near 1, as the GPU kernel does
-    (unit_gpu_calc). The 1 - |eRatio| term is likewise built from delta and
-    beta in Double (EpsRatio above), not from a Single ratio near 1. Neither
-    form now loses digits to a subtraction near 1: against a double-precision
-    Parratt this measures a mean |log10 R/R_ref| of ~4-6e-6 (worst ~5-8e-5;
-    2026-09-28), down from ~3e-5 (worst a few e-4) once delta was carried
-    directly (this comment), and down further once TotalRecursiveRefraction's
-    phase term (System.Exp/System.Math.SinCos in place of FastExp/FastSinCos)
-    and math_complex.SqrtZ's square root (an exact 1/System.Sqrt in place of
-    Neslib.FastMath.InverseSqrt) were made exact instead of approximate; the
-    naive eps - sin^2(t) form measured ~1.2e-3 before any of this. }
+  { sin^2(theta) - delta avoids cancellation near epsilon = 1. Carry delta
+    directly from materials; do not recover it from Single epsilon.
+    EpsRatio likewise computes 1 - |ratio| from delta and beta in Double.
+    Exact phase functions and SqrtZ are deliberate accuracy choices. }
   sin_g := Sin(Pi * Double(ATheta) / 180);
   sqr_sin_g := sqr(sin_g);
 
@@ -782,9 +734,6 @@ begin
   Result := c * FastExp(-2 * sqr(x) / sqr_Width);
 end;
 
-{ The Gaussian resolution window over +/-0.1 degree for a scan of Size points
-  from T0 to T1: FWHM Width, half-window N (odd). Shared by Convolute and the
-  GPU path so that both convolve with the very same weights. }
 function ConvolutionWeights(const ThetaFirst, ThetaLast: Single; const Size: Integer;
   Width: Single; out N: Integer): TArray<Single>;
 var
@@ -812,11 +761,8 @@ begin
     t1 := t1 + delta;
   end;
 
-  { The weights are a sampled Gaussian, not an integral: on a grid that is
-    coarse against the FWHM their total drifts from 1 (at 0.01 deg per point
-    and FWHM 0.005 it was 1.88), and the convolved curve was scaled by that
-    amount. Normalising keeps the level whatever the step, and also removes
-    what the +/-0.1 deg truncation cuts off. }
+  { A sampled, truncated Gaussian need not sum to 1, especially on a coarse
+    grid. Normalise to avoid scaling the curve with step size or truncation. }
   if Sum > 0 then
     for k := 0 to WinSize - 1 do
       Result[k] := Result[k] / Sum;
@@ -832,7 +778,6 @@ begin
 
   Size := Length(FResult);
 
-  // Compute Gaussian weights once — reuse across all subsequent calls
   if Length(FConvWeights) = 0 then
     FConvWeights := ConvolutionWeights(FResult[0].t, FResult[Size - 1].t, Size,
       Width, FConvN);
@@ -852,19 +797,9 @@ begin
     FTemp[i].R := Sum;
   end;
 
-  { The first N points are convolved too, with the angles below the scan
-    start taken at the first point's value - the plateau, when the scan starts
-    below the critical angle. Until 3.9.4 they were copied unconvolved
-    (Restore), and the seam where the raw part met the convolved one, 0.1 deg
-    above the start, could be a one-point dip on the plateau that the fit
-    report took for the first fringe minimum. chi2 skips these points (FTail)
-    either way. System.Math is in this unit's implementation uses (Task 3,
-    2026-09-28-precision-followups, for System.Math.SinCos), but this unit's
-    own Log10 (~166, half of base-10 log) still wins every unqualified call
-    here by scope - a declaration in the current unit always outranks one
-    from a used unit, regardless of uses order - so the chi-squared's Log10
-    calls are unaffected; System.Math.SinCos itself is called fully
-    qualified, to bypass Neslib.FastMath's own approximate SinCos(Single). }
+  { Extend the first value below the scan start to preserve the plateau.
+    Copying the first N points unconvolved creates a seam that can be mistaken
+    for a fringe minimum. Chi-squared skips these points via FTail. }
   for i := 0 to N - 1 do
   begin
     if i >= Size then

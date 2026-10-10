@@ -88,7 +88,6 @@ begin
   end;
 end;
 
-{ Curves }
 
 procedure TframeCurvesView.LoadCurves(const Curves: TArray<TXRFXCurveData>;
   const FileLabel: string);
@@ -132,7 +131,6 @@ begin
   end
   else
   begin
-    // Linear mode
     chrtCurves.LeftAxis.Logarithmic := False;
     chrtCurves.LeftAxis.Automatic := True;
   end;
@@ -148,7 +146,6 @@ begin
   chrtCurves.FreeAllSeries;
   pnlStructure.Visible := False;
 
-  // Clear legend
   for I := High(FLegendControls) downto 0 do
     FLegendControls[I].Free;
   SetLength(FLegendControls, 0);
@@ -195,7 +192,6 @@ begin
   if not chkTotal.Checked then Exit;
   if chrtCurves.SeriesCount = 0 then Exit;
 
-  // Find full theta range and max resolution across all series
   XMin := MaxDouble;
   XMax := -MaxDouble;
   TotalPts := 0;
@@ -232,7 +228,6 @@ begin
   RefreshLegend;
 end;
 
-{ Scale & limits }
 
 procedure TframeCurvesView.btnScaleClick(Sender: TObject);
 begin
@@ -272,7 +267,6 @@ begin
   if TryParseAxisLimit(cbMinLimit.Text, 1.0, V) then
   begin
     FMinLimit := V;
-    // Settle '1e-8' and '1,0E-8' into the same spelling the drop-down uses.
     cbMinLimit.Text := AxisLimitToText(V);
     if chrtCurves.LeftAxis.Logarithmic then
       chrtCurves.LeftAxis.Minimum := V;
@@ -304,7 +298,6 @@ begin
   end;
 end;
 
-{ Mouse tracking }
 
 procedure TframeCurvesView.ChartMouseMove(Sender: TObject;
   Shift: TShiftState; X, Y: Integer);
@@ -331,7 +324,6 @@ begin
     PositionStructurePanel;
 end;
 
-{ Floating legend }
 
 procedure TframeCurvesView.RefreshLegend;
 var
@@ -347,7 +339,6 @@ var
   end;
 
 begin
-  // Clear existing
   for I := High(FLegendControls) downto 0 do
     FLegendControls[I].Free;
   SetLength(FLegendControls, 0);
@@ -405,7 +396,6 @@ begin
   S.Visible := CB.Checked;
 end;
 
-{ Structure overlay }
 
 procedure TframeCurvesView.LoadStructure(const Structure: TXRFXStructure;
   const Summary: TXRFXStructureSummary);
@@ -553,7 +543,6 @@ begin
   DrawText(Grid.Canvas.Handle, PChar(S), Length(S), TextRect, Flags);
 end;
 
-{ Metrics charts }
 
 function FindPeakPosition(const Curve: TXRFXCurveData): Double;
 var
@@ -607,7 +596,6 @@ begin
   Result := 0;
   if Length(Curve.Refl) < 10 then Exit;
 
-  // Find peak position on the element's own curve
   PeakIdx := 0;
   PeakR := Curve.Refl[0];
   for i := 1 to High(Curve.Refl) do

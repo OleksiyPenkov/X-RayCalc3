@@ -15,7 +15,6 @@ uses
 type
   TGetFastSeriesEvent = function: TFastLineSeries of object;
   TLegendCheckEvent = procedure(Sender: TObject; Series: TChartSeries) of object;
-  /// A line for the active data item's description.
   TDataNoteEvent = procedure(Sender: TObject; const Line: string) of object;
 
   TLegendEntry = record
@@ -105,7 +104,6 @@ type
     /// clamped it) or anchored.</summary>
     procedure SetChiScale(const Solved: Boolean; const ScaleLog: Single;
       const Clamped: Boolean);
-    /// <summary>A fit is running: solved or anchored, ratio still to come.</summary>
     procedure SetChiScalePending(const Solved: Boolean);
     procedure ClearChiScale;
     procedure SetPeriod(const D: Single);
@@ -118,17 +116,14 @@ type
     procedure LoadFromINI(INF: TMemIniFile);
     procedure SaveToINI(INF: TMemIniFile);
 
-    { Plot clipboard/file operations }
     procedure CopyPlotBitmap;
     procedure CopyPlotMetafile;
     procedure ExportPlotToFile;
     procedure PrintChart;
 
-    { Result data operations }
     procedure SaveResultToFile;
     procedure CopyResultToClipboard;
 
-    { Experimental data operations }
     procedure CopyDataToClipboard;
     procedure ExportDataToFile;
     procedure NormalizeData;
@@ -145,9 +140,7 @@ type
     property OnSaveActiveData: TNotifyEvent read FOnSaveActiveData write FOnSaveActiveData;
     property OnDataNote: TDataNoteEvent read FOnDataNote write FOnDataNote;
     property OnLegendCheckBoxClick: TLegendCheckEvent read FOnLegendCheckBoxClick write FOnLegendCheckBoxClick;
-    { The residual strip at the bottom of Chart. }
     property ResidualStrip: TResidualStrip read FResidualStrip;
-    { R min was committed to a new value. }
     property OnMinLimitChange: TNotifyEvent read FOnMinLimitChange write FOnMinLimitChange;
   end;
 
@@ -159,12 +152,10 @@ uses
 
 {$R *.dfm}
 
-{ TfrmChartInfo }
 
 constructor TfrmChartInfo.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  // Seed the last-good value from the DFM before anything can read MinLimit.
   if not TryParseAxisLimit(cbMinLimit.Text, Chart.LeftAxis.Maximum, FMinLimit) then
   begin
     FMinLimit := DEFAULT_AXIS_LIMIT;
@@ -215,8 +206,6 @@ begin
   if TryParseAxisLimit(cbMinLimit.Text, Chart.LeftAxis.Maximum, V) then
   begin
     FMinLimit := V;
-    // Show back the canonical spelling, so '1e-8' and '1,0E-8' both settle
-    // into the same '1E-8' the drop-down uses.
     cbMinLimit.Text := AxisLimitToText(V);
     Chart.LeftAxis.Minimum := V;
     if Assigned(FOnMinLimitChange) then
@@ -276,9 +265,6 @@ begin
     Result := FloatToStrF(V, ffFixed, 7, 3);
 end;
 
-{ An angle or a wavelength: a fixed number of decimals at any size. The
-  precision is a Single's seven digits, so 11.3365 reads 11.337, not the
-  11.340 that four significant digits gave. }
 function ReadoutX(const V: Single; Decimals: Integer): string;
 begin
   Result := FloatToStrF(V, ffFixed, 7, Decimals);
@@ -454,7 +440,6 @@ begin
   SetPeakInfo(Series, Chart.BottomAxis.Minimum, Chart.BottomAxis.Maximum);
 end;
 
-{ Plot clipboard/file operations }
 
 procedure TfrmChartInfo.CopyPlotBitmap;
 begin
@@ -489,7 +474,6 @@ begin
   end;
 end;
 
-{ Result data operations }
 
 procedure TfrmChartInfo.SaveResultToFile;
 var
@@ -511,7 +495,6 @@ begin
   SeriesToClipboard(Series, FCalcSettings.CalcMode, FCalcSettings.Is2Theta);
 end;
 
-{ Experimental data operations }
 
 procedure TfrmChartInfo.CopyDataToClipboard;
 var
@@ -526,8 +509,6 @@ procedure TfrmChartInfo.ExportDataToFile;
 var
   Series: TFastLineSeries;
 begin
-  { the active data item, as Data - Export and the tree's Export Data say;
-    the model curve is Result - Save }
   Series := FGetActiveDataSeries;
   if Series = nil then Exit;
   if dlgSaveResult.Execute then
@@ -599,7 +580,6 @@ begin
     FOnSaveActiveData(Self);
 end;
 
-{ Legend panel }
 
 procedure TfrmChartInfo.ClearLegend;
 var
@@ -645,11 +625,10 @@ begin
   HeaderH := ScaleValue(18);
 
   Y := ScaleValue(4);
-  LastGroup := gtData; // force first header
+  LastGroup := gtData;
 
   for I := 0 to High(Items) do
   begin
-    // Group header
     if (I = 0) or (Items[I].Group <> LastGroup) then
     begin
       Lbl := TLabel.Create(sbLegend);
@@ -668,7 +647,6 @@ begin
       LastGroup := Items[I].Group;
     end;
 
-    // Row panel
     Row := TPanel.Create(sbLegend);
     Row.Parent := sbLegend;
     Row.BevelOuter := bvNone;
@@ -680,7 +658,6 @@ begin
     Row.Color := clWhite;
     AddControl(Row);
 
-    // Color swatch
     Shp := TShape.Create(Row);
     Shp.Parent := Row;
     Shp.Left := ScaleValue(4);
@@ -690,7 +667,6 @@ begin
     Shp.Brush.Color := Items[I].Color;
     Shp.Pen.Color := Items[I].Color;
 
-    // Checkbox
     CB := TCheckBox.Create(Row);
     CB.Parent := Row;
     CB.Left := ScaleValue(24);
@@ -707,14 +683,12 @@ begin
     Inc(Y, RowH);
   end;
 
-  // Auto-size panel height to content, capped at max
-  TotalH := Y + ScaleValue(6); // 4px top padding + 2px bottom
+  TotalH := Y + ScaleValue(6);
   MaxH := ScaleValue(MAX_LEGEND_HEIGHT);
   if TotalH > MaxH then
     TotalH := MaxH;
   pnlLegend.Height := TotalH;
 
-  // Position at 2% from top-right corner of chart
   pnlLegend.Left := Chart.ClientWidth - pnlLegend.Width - Chart.ClientWidth * 2 div 100;
   pnlLegend.Top := Chart.ClientHeight * 4 div 100;
   pnlLegend.Visible := True;
@@ -733,7 +707,6 @@ begin
     FOnLegendCheckBoxClick(Self, S);
 end;
 
-{ Data operations }
 
 procedure TfrmChartInfo.TrimData;
 var
@@ -741,7 +714,6 @@ var
   iFirst, iLast, LastIndex: integer;
   DataSeries: TFastLineSeries;
 
-  // First point with X >= val, or Count when every point is below val.
   function FirstAtOrAbove(const val: single): integer;
   var
     i: integer;
@@ -752,7 +724,6 @@ var
         Exit(i);
   end;
 
-  // Last point with X <= val, or -1 when every point is above val.
   function LastAtOrBelow(const val: single): integer;
   var
     i: integer;
@@ -772,7 +743,6 @@ begin
 
   iFirst := FirstAtOrAbove(t1);
   iLast := LastAtOrBelow(t2);
-  // No point falls inside [t1, t2] - leave the data alone rather than wipe it.
   if iFirst > iLast then
     Exit;
 

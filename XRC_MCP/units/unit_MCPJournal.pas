@@ -12,28 +12,13 @@
 
 unit unit_MCPJournal;
 
-(* The call journal: one JSON object per line in <workdir>\log\calls.jsonl.
-
-  Every tool invocation is appended as
-
-    {"ts":"...","tool":"...","args":{...},"result":{...}|"error":{...},"ms":n}
-
-  The file is only ever appended to (opened for write, seeked to the end); it is
-  never truncated, so the journal survives across server runs.
-
-  Large arrays are not written out. A curve of ten thousand points would drown
-  the journal and tell the reader nothing, so any array longer than 64 elements
-  is replaced by {"_len": n} -- plus {"_sha256": "..."} when the object holding
-  the array also carries a "file" or "path" pair naming an existing file, which
-  is how the tools that return curves report them. The journal therefore shows
-  what was returned and where the full data lives, in one short line. *)
 
 interface
 
 uses System.JSON, System.SyncObjs;
 
 const
-  JOURNAL_MAX_ARRAY = 64;   // arrays longer than this are compacted
+  JOURNAL_MAX_ARRAY = 64;
 
 type
   TJournal = class
@@ -69,9 +54,6 @@ uses
   Winapi.Windows, System.SysUtils, System.Classes, System.IOUtils,
   System.Generics.Collections, unit_MCPSandbox;
 
-{ Absolute path of the file named by a "file" or "path" string pair of Parent,
-  or '' when there is no such pair or it does not name an existing file.
-  A relative value is resolved against the work directory root. }
 function SiblingFilePath(const Parent: TJSONObject): string;
 
   function Candidate(const Key: string): string;
@@ -99,8 +81,6 @@ begin
   if Result = '' then Result := Candidate('path');
 end;
 
-{ Parent is the object the value sits in, or nil at the top level and inside
-  arrays; it is only consulted for the "file"/"path" sibling of a long array. }
 function CompactValue(const V: TJSONValue; const Parent: TJSONObject): TJSONValue;
 var
   I: Integer;
@@ -172,7 +152,6 @@ begin
   Result := CompactValue(V, nil);
 end;
 
-{ TJournal }
 
 constructor TJournal.Create(const LogDir: string);
 begin
@@ -209,7 +188,7 @@ begin
     try
       Stream := THandleStream.Create(H);
       try
-        Stream.Seek(Int64(0), soEnd);   // append; the journal is never truncated
+        Stream.Seek(Int64(0), soEnd);
         if Length(Bytes) > 0 then
           Stream.WriteBuffer(Bytes[0], Length(Bytes));
       finally

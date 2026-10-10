@@ -9,18 +9,15 @@ type
   [TestFixture]
   TTestMCPUniversal = class
   public
-    // --- the top-k rule ---
     [Test] procedure GenomeKey_IsTheDominantPair;
     [Test] procedure DistinctTopK_BestFirst_CollapsesNearDuplicates;
     [Test] procedure DistinctTopK_KeepsCandidatesThatDifferOnlyInN;
     [Test] procedure DistinctTopK_RespectsK;
     [Test] procedure DistinctTopK_EmptySwarmOrZeroK_IsEmpty;
 
-    // --- genome -> structure ---
     [Test] procedure GenomeToStructure_Bilayer_MirrorsBuildLayers;
     [Test] procedure GenomeToStructure_Template_EmitsSublayersAndCap;
 
-    // --- configuration ---
     [Test] procedure ConfigFromJSON_FillsTheMissingSections;
     [Test] procedure ConfigFromJSON_ResolvesLineSymbols;
     [Test] procedure ConfigFromJSON_KeepsWhatTheClientGave;
@@ -31,7 +28,6 @@ type
     [Test] procedure ConfigFromJSON_AbsoluteTemplateFile_IsOutsideTheWorkdir;
     [Test] procedure ConfigFromJSON_RelativeTemplateFile_ResolvesInTheWorkdir;
 
-    // --- fitness overrides ---
     [Test] procedure FitnessConfigFromJSON_NoOverrides_IsTheBase;
     [Test] procedure FitnessConfigFromJSON_AppliesEveryKey;
     [Test] procedure FitnessConfigFromJSON_PIsComputedAsSP;
@@ -42,13 +38,11 @@ type
     [Test] procedure FitnessConfigFromJSON_AppliesNRef;
     [Test] procedure FitnessConfigFromJSON_NonPositiveNRef_Raises;
 
-    // --- the engine ---
     [Test] procedure EvaluateStructure_NoPeriodicStack_Raises;
     [Test] procedure EvaluateStructure_TooManyLines_Raises;
     [Test] procedure EvaluateStructure_RuC_MatchesEvaluateLayersDirect;
     [Test] procedure EvaluateStructure_HenkeCwdLockHeld_RaisesServerBusy;
 
-    // --- the peak finder and the width reference (FoM defect, 2026-09-12) ---
     [Test] procedure EvaluateStructure_MoB4C_ShortLinesScoreTheBraggPeak;
     [Test] procedure EvaluateStructure_MoB4C_MorePeriodsScoreHigher;
     [Test] procedure EvaluateStructure_WB4CReference_ScoresTheDesign;
@@ -80,8 +74,6 @@ uses
   unit_MCPUniversal;
 
 const
-  // The Ru/C mirror the other MCP fixtures use: d = 68.5 A, N = 30, a Ru cap
-  // and a Ru buffer on fused silica.
   RUC_JSON =
     '{"substrate":{"material":"SiO2","density":2.2,"sigma":3.0},' +
     '"stacks":[{"N":30,"layers":[' +
@@ -93,7 +85,6 @@ const
   LAMBDA_B  = 67.6;    // B K-alpha
   LAMBDA_SI = 7.126;   // Si K-alpha
 
-{ ------------------------------------------------------------------ helpers -- }
 
 function ParseObj(const S: string): TJSONObject;
 begin
@@ -113,7 +104,6 @@ begin
       G.Composition[Role][i] := 0;
 end;
 
-/// A genome whose two roles are pure Element0 / Element1 of a two-element pool.
 function MakeGenome(Dom0, Dom1: Integer; d, Gamma, N: Single): TGenome;
 begin
   Result := CreateGenome(2);
@@ -126,13 +116,7 @@ begin
   Result.Sigma := 3.0;
 end;
 
-/// The five-particle swarm every top-k test works on. Deliberately out of FoM
-/// order, so that a DistinctTopK that forgot to sort cannot pass.
-///   [0] W/Si d 50   gamma 0.40 N 120  FoM -4.8
-///   [1] W/Si d 50   gamma 0.40 N 100  FoM -5.0   <- the global best
-///   [2] W/Si d 60   gamma 0.40 N 100  FoM -4.6
-///   [3] W/Si d 50.5 gamma 0.41 N 100  FoM -4.9   <- within tolerance of [1]
-///   [4] Si/W d 50   gamma 0.40 N 100  FoM -4.7
+/// Deliberately out of FoM order, so an omitted sort cannot pass.
 function MakeSwarm: TParticleArray;
 
   procedure Put(Idx, Dom0, Dom1: Integer; d, Gamma, N, FoM: Single;
@@ -171,7 +155,6 @@ begin
             TFile.Exists(HenkePath + 'SiO2.bin');
 end;
 
-{ ------------------------------------------------------------- the top-k rule -- }
 
 procedure TTestMCPUniversal.GenomeKey_IsTheDominantPair;
 var
@@ -183,7 +166,6 @@ begin
   G := MakeGenome(1, 0, 50, 0.4, 100);
   Assert.AreEqual('Si/W', GenomeKey(G, WSiNames));
 
-  // A mixed role reports whichever element has the larger fraction.
   G := CreateGenome(2);
   ClearComposition(G);
   G.Composition[0][0] := 0.3;
@@ -208,7 +190,6 @@ begin
   Assert.AreEqual(4, Ranks[2]);
   Assert.AreEqual(2, Ranks[3]);
 
-  // Best first, all the way down.
   for var i := 1 to High(Ranks) do
     Assert.IsTrue(Swarm[Ranks[i - 1]].PBestFoM <= Swarm[Ranks[i]].PBestFoM,
       Format('rank %d has a better FoM than rank %d', [i, i - 1]));
@@ -219,7 +200,6 @@ var
   Swarm: TParticleArray;
   Ranks: TArray<Integer>;
 begin
-  // Two candidates identical but for the period count: both are worth showing.
   SetLength(Swarm, 2);
   Swarm[0] := Default(TParticle);
   Swarm[0].PBest := MakeGenome(0, 1, 50.0, 0.40, 100);
@@ -231,8 +211,7 @@ begin
   Ranks := DistinctTopK(Swarm, 10, WSiNames);
   Assert.AreEqual(2, Length(Ranks));
 
-  // ... but the same N, and everything else within tolerance, is one candidate.
-  Swarm[1].PBest.N := 100.4;      // NRound -> 100
+  Swarm[1].PBest.N := 100.4;
   Ranks := DistinctTopK(Swarm, 10, WSiNames);
   Assert.AreEqual(1, Length(Ranks));
   Assert.AreEqual(0, Ranks[0]);
@@ -258,9 +237,7 @@ begin
   Assert.AreEqual(0, Length(DistinctTopK(MakeSwarm, -1, WSiNames)));
 end;
 
-{ --------------------------------------------------------- genome -> structure -- }
 
-/// The W/Si configuration both GenomeToStructure tests work on.
 function WSiConfig(PureElements: Boolean): TUniversalConfig;
 begin
   Result := Default(TUniversalConfig);
@@ -279,7 +256,6 @@ begin
   Result[1] := 2.33;
 end;
 
-/// The layers array of the one stack of a structure object.
 function StackLayers(S: TJSONObject): TJSONArray;
 begin
   Result := (S.GetValue<TJSONArray>('stacks').Items[0] as TJSONObject)
@@ -311,7 +287,7 @@ var
   Layers: TJSONArray;
   Subs: TJSONObject;
 begin
-  G := MakeGenome(0, 1, 50.0, 0.4, 100);   // W / Si, d 50, gamma 0.4, N 100
+  G := MakeGenome(0, 1, 50.0, 0.4, 100);
   G.Sigma := 3.0;
   C := WSiConfig(False);
   SetLength(Templates, 0);
@@ -325,7 +301,6 @@ begin
 
     Layers := StackLayers(J);
     Assert.AreEqual(2, Layers.Count);
-    // BuildLayers emits role 0 (d*gamma) first, then role 1 (d*(1-gamma)).
     AssertLayer(Layers, 0, 'W', 20.0, 3.0, 19.3);
     AssertLayer(Layers, 1, 'Si', 30.0, 3.0, 2.33);
 
@@ -347,8 +322,6 @@ var
   J, Cap: TJSONObject;
   Layers: TJSONArray;
 begin
-  // W / B4C(fixed 4 A) / Si, with the fixed sublayer taken out of the gamma
-  // layer, and one C cap variant - the shape LoadTemplates produces.
   SetLength(Templates, 1);
   Templates[0].Key := 'W/Si';
   Templates[0].Description := 'test';
@@ -386,10 +359,8 @@ begin
   try
     Layers := StackLayers(J);
     Assert.AreEqual(3, Layers.Count, 'one JSON layer per template sublayer');
-    // gamma layer: d*gamma - gamma_reduction = 50*0.4 - 4
     AssertLayer(Layers, 0, 'W', 16.0, 3.0, 19.3);
     AssertLayer(Layers, 1, 'B4C', 4.0, 2.0, 2.5);
-    // 1-gamma layer: d*(1-gamma) - one_minus_gamma_reduction = 50*0.6
     AssertLayer(Layers, 2, 'Si', 30.0, 3.5, 2.33);
 
     Cap := J.GetValue<TJSONObject>('cap');
@@ -402,7 +373,6 @@ begin
     J.Free;
   end;
 
-  // No cap thickness, no cap layer: a zero-thickness layer is no layer.
   G.CapH := 0;
   J := GenomeToStructure(G, C, Templates, WSiNames, WSiDensities, 2.33);
   try
@@ -413,7 +383,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------- configuration -- }
 
 procedure TTestMCPUniversal.ConfigFromJSON_FillsTheMissingSections;
 var
@@ -428,7 +397,6 @@ begin
     J.Free;
   end;
 
-  // optimizer: XRFCalc's own run-config defaults
   Assert.AreEqual(1000, C.Optimizer.Population, 'population');
   Assert.AreEqual(100, C.Optimizer.Iterations, 'iterations');
   Assert.AreEqual(Double(1E-6), Double(C.Optimizer.Tolerance), 1E-12, 'tolerance');
@@ -438,7 +406,6 @@ begin
   Assert.AreEqual(30, C.Optimizer.JammingMax, 'jamming_max');
   Assert.AreEqual(100, C.Optimizer.CheckpointEvery, 'checkpoint_every');
 
-  // structure
   Assert.AreEqual('bilayer', C.Structure.StructureType);
   Assert.AreEqual(2, C.Structure.LayersPerPeriod);
   Assert.IsTrue(C.Structure.PureElements, 'pure_elements defaults to true');
@@ -451,14 +418,12 @@ begin
   Assert.AreEqual(Double(3), Double(C.Structure.SigmaFixed), 1E-6, 'sigma is fixed at 3');
   Assert.AreEqual(Double(1), Double(C.Structure.DensityFactorFixed), 1E-6);
 
-  // fitness
   Assert.AreEqual(Double(1.0), Double(C.Fitness.wR), 1E-6);
   Assert.AreEqual(Double(0.25), Double(C.Fitness.wFWHM), 1E-6);
   Assert.AreEqual(Double(0.02), Double(C.Fitness.RMinThreshold), 1E-9);
   Assert.AreEqual(Double(1.0), Double(C.Fitness.wPurity), 1E-6);
   Assert.IsTrue(C.Fitness.Polarization = cmd_unit_types.cmSP, 'polarization defaults to sp');
 
-  // server-owned
   Assert.AreEqual('C:\out', C.OutputDir);
   Assert.AreEqual('', C.ResumeFrom);
   Assert.AreEqual('Si', C.Substrate);
@@ -553,8 +518,6 @@ begin
   end;
 end;
 
-/// The code of the EMCPError Body raises, or '' when it raises nothing. Fails
-/// the test when the exception is of some other class.
 function ErrorCodeOf(const Body: TProc): string;
 begin
   Result := '';
@@ -573,8 +536,8 @@ var
   J: TJSONObject;
   Code: string;
 begin
-  // v1 optimises pure elements only: a mixed composition cannot be written back
-  // as a structure, so a candidate would not reproduce its own figure of merit.
+  // A mixed composition cannot be written back as a structure, so a
+  // candidate would not reproduce its own figure of merit.
   J := ParseObj('{"lines":["B"],"element_pool":["Ru","C"],"substrate":"Si",' +
                 '"structure":{"pure_elements":false}}');
   try
@@ -610,8 +573,6 @@ begin
     'a "lines" that is not an array must not be reported as a missing one, got: ' + Msg);
 end;
 
-/// A work directory the sandbox tests resolve against, installed as the global
-/// one for the duration of Body and removed again afterwards.
 procedure WithWorkDir(const Body: TProc);
 var
   Saved: TWorkDir;
@@ -638,9 +599,6 @@ procedure TTestMCPUniversal.ConfigFromJSON_AbsoluteTemplateFile_IsOutsideTheWork
 var
   Code: string;
 begin
-  // "template_file" is a path the client chose, so it lives under the work
-  // directory like every other client path - an absolute one is refused even
-  // when it exists on this machine.
   WithWorkDir(
     procedure
     var
@@ -702,7 +660,6 @@ begin
     end);
 end;
 
-{ ---------------------------------------------------------- fitness overrides -- }
 
 procedure TTestMCPUniversal.FitnessConfigFromJSON_NoOverrides_IsTheBase;
 var
@@ -806,8 +763,6 @@ var
   J: TJSONObject;
   F: TFitnessConfig;
 begin
-  // evaluate_lines answers in the same round trip, so the scan grid a client
-  // can ask for is bounded at both ends.
   Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":500000000}'),
     'an unbounded scan would hang a synchronous call');
   Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":20001}'));
@@ -817,7 +772,6 @@ begin
   Assert.AreEqual('invalid_argument', CodeFor('{"scan_points":-1}'));
   Assert.AreEqual('invalid_argument', CodeFor('{"scan_half_range":-1}'));
 
-  // The limits themselves are accepted.
   J := ParseObj('{"scan_points":20000,"scan_half_range":90}');
   try
     F := FitnessConfigFromJSON(J, DefaultFitnessConfig);
@@ -833,15 +787,12 @@ var
   F: TFitnessConfig;
   J: TJSONObject;
 begin
-  F := DefaultFitnessConfig;      // ScanPoints, ScanHalfRange and NRef are 0
+  F := DefaultFitnessConfig;
   J := FitnessConfigToJSON(F);
   try
     Assert.AreEqual(200, J.GetValue<Integer>('scan_points'),
       'fitness_used must report the 200 the fitness class substitutes, not 0');
 
-    // The scan window of an unset configuration is chosen per line, so there is
-    // no single half-range to report: the echo carries the rule, each line
-    // carries what the rule came to.
     Assert.AreEqual(Double(0), J.GetValue<Double>('scan_half_range'), 1E-9,
       'an unset scan_half_range is adaptive and must not be echoed as a fixed 5 degrees');
     Assert.IsTrue(J.GetValue<string>('scan_half_range_note').Contains('adaptive'),
@@ -892,10 +843,6 @@ var
   Step: Double;
   EchoedFloor: Integer;
 begin
-  // TUniversalFitness computes with the scan-rule constants of
-  // unit_universal_types and fitness_used reports those same constants. This is
-  // the test that keeps the echo honest: what the engine really scanned for one
-  // line has to match what the echo and that line's own facts say it scanned.
   if not HenkeTablesPresent then
   begin
     Assert.Pass('Henke tables Ru/C/SiO2 not found in ' + HenkePath + ' - test skipped');
@@ -922,7 +869,7 @@ begin
   Config.ElementPool[0] := 'Ru';
   Config.ElementPool[1] := 'C';
   Config.Substrate := 'SiO2';
-  Config.Fitness := DefaultFitnessConfig;   // the adaptive window
+  Config.Fitness := DefaultFitnessConfig;
   Config.Structure.PureElements := False;
   SetLength(Templates, 0);
 
@@ -945,14 +892,12 @@ begin
 
   Assert.IsTrue(Length(Curve) > 2, 'the engine must return a curve');
 
-  // The curve a client plots is the window the FoM scored.
   Assert.AreEqual(Res[0].ScanPointsUsed, Length(Curve),
     'GetCurve must scan the same grid the figure of merit scored');
   Step := Curve[1].t - Curve[0].t;
   Assert.AreEqual(Double(Res[0].ScanStep), Step, 1E-6,
     'the reported step must be the step of the curve');
 
-  // The configured scan_points is a floor, and the window is the adaptive one.
   Assert.IsTrue(Res[0].ScanPointsUsed >= EchoedFloor,
     Format('scan_points is a floor: %d points scanned against a floor of %d',
       [Res[0].ScanPointsUsed, EchoedFloor]));
@@ -960,8 +905,6 @@ begin
     Format('the adaptive window must be narrower than the old fixed 5 degrees; ' +
       'got %.4f', [Res[0].ScanHalf]));
 
-  // The scan ends at the refraction-corrected peak plus the half-range, and
-  // refraction puts that peak above the kinematic Bragg angle.
   Assert.IsTrue(Res[0].ThetaPeak > Res[0].ThetaBragg,
     Format('refraction must shift the peak above the kinematic angle %.4f; got %.4f',
       [Res[0].ThetaBragg, Res[0].ThetaPeak]));
@@ -1198,10 +1141,8 @@ begin
 
   Fit := DefaultFitnessConfig;
 
-  // --- what the adapter computes ---
   FoMAdapter := EvaluateStructure(S, Info, Lines, Fit, ResAdapter);
 
-  // --- the same thing, built by hand ---
   // Materials in the order the adapter collects them: surface down, substrate
   // last. Cap Ru, then Ru/C of the period, then the Ru buffer, then SiO2.
   Elements := ['Ru', 'C', 'SiO2'];
@@ -1230,7 +1171,6 @@ begin
 
     Fitness := TUniversalFitness.Create(Mixer, Config, Templates);
     try
-      // vacuum | Ru cap 20 | 30 x (Ru 14.7, C 53.8) | Ru buffer 197 | SiO2
       Builder :=
         procedure(TargetIdx: Integer; var L: TLayers)
         var
@@ -1291,8 +1231,6 @@ begin
     Mixer.Free;
   end;
 
-  // Both lines must actually produce a Bragg peak, otherwise the comparison
-  // would be a comparison of two penalties.
   for i := 0 to High(Lines) do
     Assert.IsTrue(ResAdapter[i].Valid,
       Format('line %s must have a Bragg peak for this test to mean anything',
@@ -1313,27 +1251,13 @@ begin
       Format('FWHM mismatch for %s', [Lines[i].Name]));
   end;
 
-  // The Si Bragg angle is the textbook one for this period.
   Assert.AreEqual(RadToDeg(ArcSin(LAMBDA_SI / (2 * Info.Period))),
     Double(ResAdapter[1].ThetaBragg), 1E-4);
 end;
 
-{ ------------------------------- the peak finder and the width reference -- }
 
-{ The figure of merit had two defects, both measured on the 3.8.0.850 server:
-
-  - the scan window reached into the total-reflection plateau and the peak was
-    the GLOBAL maximum of that window, so for a long period the short-wavelength
-    lines (Na-Si) were scored R ~ 0.98 with a 1-2 degree "width" - the plateau,
-    not their Bragg peak;
-  - FWHM_ref was lambda / (N d cos theta), which shrinks as 1/N while the real
-    peak width saturates at the extinction-limited width, so the width penalty
-    grew proportionally to N and the optimizer was driven to N = 3..4.
-
-  These three tests pin the physics the fix has to deliver. }
 
 const
-  // The agent's Mo/B4C design, layers top-down as evaluate_lines takes them.
   // The Na-Si lines sit close enough to this period's plateau edge that a
   // +/-5 degree window around their Bragg angle reaches into it.
   MOB4C_JSON =
@@ -1343,7 +1267,6 @@ const
       '{"material":"Mo","thickness":12.0,"sigma":3.0,"density":10.22}]}],' +
     '"cap":{"material":"B4C","thickness":10.0,"sigma":3.0,"density":2.37}}';
 
-  // The author's reference design: four sublayers, d = 67.14 A, N = 50.
   WB4C_JSON =
     '{"substrate":{"material":"SiO2","density":2.65,"sigma":0.1},' +
     '"stacks":[{"N":%d,"layers":[' +
@@ -1352,7 +1275,6 @@ const
       '{"material":"WC","thickness":4.94,"sigma":9.82,"density":11.82},' +
       '{"material":"B4C","thickness":57.07,"sigma":2.66,"density":2.39}]}]}';
 
-  // The nine lines of the investigation, bare symbols, in this order.
   NINE_LINES_JSON = '["B","C","N","O","F","Na","Mg","Al","Si"]';
   IDX_NA = 5;
   IDX_AL = 7;
@@ -1367,8 +1289,6 @@ begin
             TFile.Exists(HenkePath + 'SiO2.bin');
 end;
 
-/// The nine lines, resolved from bare symbols the way evaluate_lines resolves
-/// them.
 function NineLines: TArray<TXRFLine>;
 var
   A: TJSONArray;
@@ -1382,9 +1302,6 @@ begin
   end;
 end;
 
-/// One evaluate_lines call without the tool layer: the structure as JSON, the
-/// nine lines, the fitness configuration, and the FoM the client would see
-/// (higher is better - EvaluateStructure un-negates the engine's value).
 function ScoreNineLines(const StructJSON: string; const Fit: TFitnessConfig;
   out Res: TTargetResults; out Info: TStructureInfo): Single;
 var
@@ -1400,8 +1317,6 @@ begin
   Result := EvaluateStructure(S, Info, NineLines, Fit, Res);
 end;
 
-/// Every line of one evaluation, for the message of a failing acceptance
-/// number: the angles, the peak, the width and the grid it was measured on.
 function LineTable(const Res: TTargetResults): string;
 var
   Lines: TArray<TXRFLine>;
@@ -1434,7 +1349,6 @@ begin
 
   Assert.IsTrue(Res[IDX_SI].Valid, 'Si must have a Bragg peak for this period');
 
-  // On the plateau Si scored 0.948 with a width of 0.87 degrees.
   Assert.IsTrue((Res[IDX_SI].RPeak >= 0.18) and (Res[IDX_SI].RPeak <= 0.23),
     Format('Si r_peak must be its Bragg peak (0.18..0.23), not the ' +
       'total-reflection plateau; got %.4f%s',
@@ -1470,10 +1384,6 @@ begin
   FoM20 := ScoreNineLines(Format(MOB4C_JSON, [20]), Fit, Res20, Info20);
   FoM50 := ScoreNineLines(Format(MOB4C_JSON, [50]), Fit, Res50, Info50);
 
-  // More periods reflect more: the B K-alpha peak of this design rises from
-  // 0.008 at N = 10 to 0.35 at N = 200. With FWHM_ref tied to N the FoM fell
-  // instead (-1.17 at N = 20 against -2.64 at N = 50), which is what drove the
-  // optimizer to three-period structures.
   Assert.IsTrue(Res50[0].RPeak > Res20[0].RPeak,
     Format('the B peak must grow with N: %.5f at N=20 against %.5f at N=50',
       [Res20[0].RPeak, Res50[0].RPeak]));
@@ -1514,13 +1424,9 @@ begin
     Format('Si fwhm must be below 0.15 degrees; got %.4f%s',
       [Res[IDX_SI].FWHM, LineTable(Res)]));
 
-  // The score itself is judged relatively. The remaining cost of this design is
-  // the width penalty on its long-wavelength lines, whose real peaks are
-  // extinction-broadened to 1.0-1.6 times the kinematic width of DEFAULT_N_REF
-  // periods - physics, not a defect - so the absolute number depends on w_FWHM
-  // and n_ref, which are the author's to set. What must hold for any sane pair
-  // of those is that the reference design beats its own shorter version and is
-  // nowhere near the -16.7 the plateau used to score it.
+  // Long-wavelength peaks are extinction-broadened to 1.0-1.6 times the
+  // kinematic width of DEFAULT_N_REF periods, so the absolute score depends
+  // on w_FWHM and n_ref. Compare this design with its shorter version.
   FoM20 := ScoreNineLines(Format(WB4C_JSON, [20]), Fit, Res20, Info20);
   Assert.IsTrue(FoM > FoM20,
     Format('N=50 must score better than N=20; got %.4f against %.4f%s',
@@ -1550,7 +1456,7 @@ begin
     if not Res[i].Valid then
       Continue;
     if Res[i].RPeak <= 0 then
-      Continue;   // a dark line measured nothing, and says so
+      Continue;
 
     Assert.IsTrue(Res[i].ScanPointsUsed >= DEFAULT_SCAN_POINTS,
       Format('line %d: scan_points is a floor, got %d points',
@@ -1559,9 +1465,6 @@ begin
       Format('line %d: %d points exceeds the cap', [i, Res[i].ScanPointsUsed]));
     Assert.IsTrue(Res[i].ScanStep > 0,
       Format('line %d: a scanned line must report its step', [i]));
-    // The window is the half-range either side of BOTH the kinematic and the
-    // refraction-corrected angle, so its span is 2 * half plus the shift
-    // between them.
     Assert.IsTrue(Res[i].ScanStep * Res[i].ScanPointsUsed <=
                   2 * Res[i].ScanHalf + Abs(Res[i].ThetaPeak - Res[i].ThetaBragg)
                   + Res[i].ScanStep,
@@ -1572,25 +1475,16 @@ begin
     Assert.IsTrue(Res[i].ThetaPeak >= Res[i].ThetaBragg,
       Format('line %d: refraction shifts the peak up, never down', [i]));
 
-    // The point of the grid rule: the width is measured over many steps, not
-    // read off two or three of them.
     Assert.IsTrue(Res[i].FWHM > 2 * Res[i].ScanStep,
       Format('line %d: fwhm %.5f is not resolved by a step of %.5f',
         [i, Res[i].FWHM, Res[i].ScanStep]));
   end;
 end;
 
-{ The B K-alpha line is the hard case for the peak rule: at 67.6 A its Bragg
-  angle is steep (64 deg for the agent design, 30 deg for the reference), its
-  peak is degrees wide, and refraction near the B K edge shifts it by more than
-  a degree. Taking the local maximum NEAREST the expected angle picked a
-  sidelobe at N = 100 and 200, and a window centred on an over-estimated
-  refraction shift lost the peak entirely. The peak is therefore the HIGHEST
-  interior local maximum of a window that spans both the kinematic and the
-  refraction-corrected angle: the plateau tail is monotonic and has no interior
-  maximum, so it still cannot win, and a sidelobe is by definition lower than
-  the main peak. Values measured on the engine at 12d22dc with the rule
-  corrected. }
+{ At 67.6 A the B K-alpha peak is degrees wide, and refraction near the
+  B K edge shifts it by more than a degree. The window must span both the
+  kinematic and refraction-corrected angle: the monotonic plateau tail has
+  no interior maximum, and a sidelobe is lower than the main peak. }
 
 procedure TTestMCPUniversal.EvaluateStructure_BLine_IsTheMainPeakAtEveryN;
 
@@ -1615,12 +1509,9 @@ begin
     Exit;
   end;
 
-  // A sidelobe scored 0.017 with a 3.4-3.6 degree width for both of these.
   CheckB(Format(MOB4C_JSON, [100]), 'Mo/B4C N=100', 0.299);
   CheckB(Format(MOB4C_JSON, [200]), 'Mo/B4C N=200', 0.403);
 
-  // This one went dark: the main peak fell outside a window centred on the
-  // refraction-corrected angle alone.
   CheckB(Format(WB4C_JSON, [200]), 'W/B4C reference N=200', 0.228);
 end;
 
@@ -1687,7 +1578,6 @@ var
   Info, Info20, Info50: TStructureInfo;
   FoM20, FoM50, FoMRef: Single;
 
-  // How many lines the engine scored below the dark threshold.
   function DarkCount(const R: TTargetResults; Threshold: Single): Integer;
   var
     i: Integer;
@@ -1706,18 +1596,11 @@ begin
     Exit;
   end;
 
-  // A line reflecting less than the shipped 2 % is not a usable channel: it
-  // counts as dark and carries PENALTY_DARK, which is 100 and is not tunable.
-  // The reflectivities themselves are untouched by the threshold - only the
-  // penalty, and so the figure of merit, move.
   Assert.AreEqual(Double(0.02), Double(DefaultFitnessConfig.RMinThreshold), 1E-9,
     'the shipped dark threshold is 2 %');
 
   FoM20 := ScoreNineLines(Format(MOB4C_JSON, [20]), DefaultFitnessConfig,
     Res20, Info20);
-  // C is the one dim line of this design at N = 20: about 0.005. B sits just
-  // above the threshold at about 0.026, so it is NOT dark, and every other line
-  // is well above it.
   Assert.IsTrue(Res20[1].RPeak < 0.02,
     Format('C at N=20 must be under the threshold%s', [LineTable(Res20)]));
   Assert.IsTrue(Res20[0].RPeak > 0.02,
@@ -1731,8 +1614,6 @@ begin
   Assert.IsTrue(FoM20 > -200,
     Format('and only one line is dark, so only one penalty; got %.4f', [FoM20]));
 
-  // At N = 50 the same line is still dim while B has climbed far clear of the
-  // threshold, so the design scores better while carrying the same one penalty.
   FoM50 := ScoreNineLines(Format(MOB4C_JSON, [50]), DefaultFitnessConfig,
     Res50, Info50);
   Assert.IsTrue(Res50[0].RPeak > 4 * Res20[0].RPeak,
@@ -1746,8 +1627,6 @@ begin
     Format('N=50 must still score better than N=20; %.4f against %.4f',
       [FoM50, FoM20]));
 
-  // The author's reference design takes one as well, for its C line. That is
-  // the author's choice of threshold, not a defect in the design.
   FoMRef := ScoreNineLines(Format(WB4C_JSON, [50]), DefaultFitnessConfig,
     Res, Info);
   Assert.IsTrue(Res[1].RPeak < 0.02,
@@ -1759,21 +1638,10 @@ begin
       [FoMRef]));
 end;
 
-{ The two reflectivity routines of this program must agree. unit_calc.pas is the
-  reference - the laboratory has fitted measured curves with it for years, and
-  fit_xrr uses it - and unit_universal_refcalc.pas is what the figure of merit
-  scores with. They shared every formula except the error-function roughness
-  factor, where the classic engine applies exp(-sigma^2 s^2 / 2) (0.50299 until
-  3.9.4), the Nevot-Croce factor for s = 2 k_z, and the universal one applied
-  exp(-sigma^2 s^2): twice the exponent, which is every interface behaving as
-  though it were sqrt(2) times rougher than specified. At sigma 0 the two agreed
-  to 0.2 %; at the roughnesses this laboratory actually deposits they differed by
-  a quarter. }
 
 procedure TTestMCPUniversal.EvaluateStructure_MatchesTheClassicEngine_AtEveryRoughness;
 const
-  // Co/C, the experiment's design family. One roughness is substituted
-  // everywhere: integers only, so the JSON cannot pick up a locale comma.
+  // Integer roughness avoids a locale comma in the JSON.
   COC_JSON =
     '{"substrate":{"material":"SiO2","density":2.65,"sigma":%0:d},' +
     '"stacks":[{"N":150,"layers":[' +
@@ -1818,8 +1686,6 @@ const
         Format('sigma %d: %s must have a peak for the comparison to mean ' +
           'anything%s', [Sigma, Lines[i].Name, LineTable(Res)]));
 
-      // The same peak, scanned by the classic engine on a much finer grid than
-      // the fitness uses, with no convolution.
       Req := Default(TCalcRequest);
       J := ParseObj(StructJSON);
       try
@@ -1828,13 +1694,11 @@ const
         J.Free;
       end;
       Req.Lambda := Lines[i].Lambda;
-      // The same interval the fitness searched, so neither engine is given a
-      // window the other did not have, and on a far finer grid than its own.
       Req.ThetaMin := Max(0.05, Res[i].ThetaPeak - Res[i].ScanHalf);
       Req.ThetaMax := Res[i].ThetaPeak + Res[i].ScanHalf;
       Req.Points := 10 * Res[i].ScanPointsUsed;
       Req.DeltaTheta := 0;
-      Req.Polarization := unit_Types.cmSP;   // TCalcRequest takes the GUI enum
+      Req.Polarization := unit_Types.cmSP;
       Req.RMin := 1E-9;
 
       Curve := RunCalc(Req, Used);
@@ -1866,12 +1730,8 @@ begin
     Exit;
   end;
 
-  // The control: with no roughness the factor is 1 in both engines, so this
-  // passes whatever the exponent is, and it is what proves the rest of the two
-  // routines agree.
   CompareAt(0, TOL_SMOOTH);
 
-  // What the laboratory deposits. These failed by 13 to 25 % before the fix.
   CompareAt(3, TOL_ROUGH);
   CompareAt(5, TOL_ROUGH);
 end;

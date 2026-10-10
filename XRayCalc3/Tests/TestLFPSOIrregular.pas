@@ -51,45 +51,35 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { SetStructure — flattening }
     [Test] procedure Test_SetStructure_FlattenedLayerCount;
     [Test] procedure Test_SetStructure_InitializesX0;
     [Test] procedure Test_SetStructure_LinksAllMinusOne_NoPairing;
 
-    { SetStructure — paired layers }
     [Test] procedure Test_SetStructure_Paired_LinksPointToFirst;
     [Test] procedure Test_SetStructure_Paired_FirstLayerUnlinked;
 
-    { SetStructure — smoothies }
     [Test] procedure Test_SetStructure_Smooth_CreatesSmoothies;
     [Test] procedure Test_SetStructure_NoSmooth_NoSmoothies;
 
-    { InitVelocity }
     [Test] procedure Test_InitVelocity_LinkedLayerVelocityZero;
     [Test] procedure Test_InitVelocity_UnlinkedLayerVelocityNonZero;
 
-    { XSeed }
     [Test] procedure Test_XSeed_X0Unchanged;
     [Test] procedure Test_XSeed_LinkedLayersCopied;
 
-    { Re-initialisation (Shake) }
     [Test] procedure Test_ReInit_KeepsTheLinks;
 
-    { Smooth with nothing to smooth }
     [Test] procedure Test_Smooth_EveryParameterPaired_DoesNothing;
     [Test] procedure Test_Smooth_SkipsHeldParameters;
     [Test] procedure Test_SetStructure_EmptyStack_IsSkipped;
 
-    { StartFromTables: the GUI's Resume and fit_xrr's start_profiles }
     [Test] procedure Test_StartFromTables_EachPeriodFromItsTable;
     [Test] procedure Test_StartFromTables_Off_IgnoresTheTables;
     [Test] procedure Test_StartFromTables_SurviveAShake;
 
-    { RangeSeed }
     [Test] procedure Test_RangeSeed_LinkedLayersCopied;
     [Test] procedure Test_RangeSeed_UnlinkedWithinBounds;
 
-    { Fixed parameters - Task 2: CollapseFixed pins an empty range }
     [Test] procedure Test_FrozenParam_HasEmptyDomain;
   end;
 
@@ -98,7 +88,6 @@ implementation
 uses
   System.SysUtils, System.Math;
 
-{ TTestableIrregular }
 
 function TTestableIrregular.GetX: TPopulation; begin Result := X; end;
 function TTestableIrregular.GetV: TPopulation; begin Result := V; end;
@@ -140,7 +129,6 @@ begin
   Result := Xrange[0][LIndex][PIndex][0];
 end;
 
-{ TTestLFPSOIrregular — helpers }
 
 function TTestLFPSOIrregular.MakeParams(ASmooth: Boolean): TFitParams;
 begin
@@ -167,8 +155,6 @@ function TTestLFPSOIrregular.MakeIrregularStructure_Simple: TFitStructure;
 var
   p: integer;
 begin
-  // 1 stack with N=2 repeats, 2 layers — no pairing
-  // TotalNP = 2 * 2 = 4 flattened layers
   SetLength(Result.Stacks, 1);
   Result.Stacks[0].N := 2;
   SetLength(Result.Stacks[0].Layers, 2);
@@ -204,7 +190,6 @@ function TTestLFPSOIrregular.MakeIrregularStructure_Paired: TFitStructure;
 var
   p: integer;
 begin
-  // 1 stack with N=2, 2 layers — H (P[1]) is paired, s and rho are not
   SetLength(Result.Stacks, 1);
   Result.Stacks[0].N := 2;
   SetLength(Result.Stacks[0].Layers, 2);
@@ -218,7 +203,7 @@ begin
     Result.Stacks[0].Layers[0].P[p].min := 1.0;
     Result.Stacks[0].Layers[0].P[p].max := 100.0;
   end;
-  Result.Stacks[0].Layers[0].P[1].Paired := True;   // H paired
+  Result.Stacks[0].Layers[0].P[1].Paired := True;
   Result.Stacks[0].Layers[0].P[2].Paired := False;
   Result.Stacks[0].Layers[0].P[3].Paired := False;
 
@@ -238,7 +223,6 @@ begin
     Result.Subs.P[p].V := 5.0;
 end;
 
-{ Setup / TearDown }
 
 procedure TTestLFPSOIrregular.Setup;
 begin
@@ -250,13 +234,11 @@ begin
   FPSO.Free;
 end;
 
-{ SetStructure — flattening }
 
 procedure TTestLFPSOIrregular.Test_SetStructure_FlattenedLayerCount;
 begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Simple);
-  // 2 layers * N=2 = 4 flattened layers
   Assert.AreEqual(4, FPSO.Pub_FLayersCount, 'FLayersCount = TotalNP = 4');
   Assert.AreEqual(4, Length(FPSO.Pub_FStructure.Stacks[0].Layers),
     'Flattened structure has 4 layers');
@@ -266,7 +248,6 @@ procedure TTestLFPSOIrregular.Test_SetStructure_InitializesX0;
 begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Simple);
-  // Flattened: [Si, Mo, Si, Mo] — layer 0 H=10, layer 1 H=5
   Assert.AreEqual(Single(10.0), FPSO.GetX[0][0][1][0], 1E-5, 'Flat[0] H=10');
   Assert.AreEqual(Single(5.0),  FPSO.GetX[0][1][1][0], 1E-5, 'Flat[1] H=5');
   Assert.AreEqual(Single(10.0), FPSO.GetX[0][2][1][0], 1E-5, 'Flat[2] H=10 (repeat)');
@@ -279,23 +260,17 @@ var
 begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Simple);
-  // No pairing -> all links = -1 for first period, but second period links back
-  // First period (layers 0,1): all -1
   for j := 0 to 1 do
     for k := 1 to 3 do
       Assert.AreEqual(SmallInt(-1), FPSO.GetLinks[j][k],
         Format('Links[%d][%d] = -1 (first period, no pairing)', [j, k]));
 end;
 
-{ SetStructure — paired layers }
 
 procedure TTestLFPSOIrregular.Test_SetStructure_Paired_LinksPointToFirst;
 begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Paired);
-  // Layer 0 has P[1].Paired=True
-  // Flattened: [0:Si, 1:Mo, 2:Si, 3:Mo]
-  // Layer 2 (second Si) should link H back to layer 0
   Assert.AreEqual(SmallInt(0), FPSO.GetLinks[2][1],
     'Layer 2 H linked to layer 0');
 end;
@@ -304,7 +279,6 @@ procedure TTestLFPSOIrregular.Test_SetStructure_Paired_FirstLayerUnlinked;
 begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Paired);
-  // First period layers have all links = -1
   Assert.AreEqual(SmallInt(-1), FPSO.GetLinks[0][1],
     'Layer 0 H not linked (first in period)');
   Assert.AreEqual(SmallInt(-1), FPSO.GetLinks[0][2],
@@ -313,25 +287,21 @@ begin
     'Layer 0 rho not linked');
 end;
 
-{ SetStructure — smoothies }
 
 procedure TTestLFPSOIrregular.Test_SetStructure_Smooth_CreatesSmoothies;
 begin
-  FPSO.TestSetParams(MakeParams(True));  // Smooth = True
+  FPSO.TestSetParams(MakeParams(True));
   FPSO.TestSetStructure(MakeIrregularStructure_Simple);
-  // No paired params, N>1, Smooth=True -> should create smoothies
-  // 2 layers * 3 params = 6 smoothie entries
   Assert.IsTrue(FPSO.GetSmoothies > 0, 'Smoothies created when Smooth=True');
 end;
 
 procedure TTestLFPSOIrregular.Test_SetStructure_NoSmooth_NoSmoothies;
 begin
-  FPSO.TestSetParams(MakeParams(False));  // Smooth = False
+  FPSO.TestSetParams(MakeParams(False));
   FPSO.TestSetStructure(MakeIrregularStructure_Simple);
   Assert.AreEqual(0, FPSO.GetSmoothies, 'No smoothies when Smooth=False');
 end;
 
-{ InitVelocity }
 
 procedure TTestLFPSOIrregular.Test_InitVelocity_LinkedLayerVelocityZero;
 begin
@@ -339,7 +309,6 @@ begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Paired);
   FPSO.TestInitVelocity;
-  // Layer 2, param 1 (H) is linked -> velocity must be 0
   Assert.AreEqual(Single(0.0), FPSO.GetV[1][2][1][0], 1E-5,
     'Linked layer H velocity = 0');
 end;
@@ -353,7 +322,6 @@ begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Paired);
   FPSO.TestInitVelocity;
-  // Layer 0, param 2 (s) is unlinked -> should have non-zero velocity
   anyNonZero := False;
   for i := 0 to High(FPSO.GetV) do
     if Abs(FPSO.GetV[i][0][2][0]) > 1E-6 then
@@ -364,7 +332,6 @@ begin
   Assert.IsTrue(anyNonZero, 'Unlinked layer s should have non-zero velocity');
 end;
 
-{ XSeed }
 
 procedure TTestLFPSOIrregular.Test_XSeed_X0Unchanged;
 var
@@ -397,14 +364,9 @@ begin
       Format('Linked H: layer 2 copies layer 0 for particle %d', [i]));
 end;
 
-{ Re-initialisation
-
-  Shake hands SetStructure the engine's own flattened structure with FReInit
+{ Shake hands SetStructure the engine's own flattened structure with FReInit
   set. That structure is one stack of N = 1, so the pairing cannot be read off
-  it again: the links built on the first call must survive. They used to be
-  zeroed, which linked every parameter of every layer to layer 0 - after the
-  first shake no parameter moved but by being copied from layer 0 and clamped
-  to its own bounds. }
+  it again: the links built on the first call must survive. }
 procedure TTestLFPSOIrregular.Test_ReInit_KeepsTheLinks;
 var
   Before: TIndexes;
@@ -426,9 +388,6 @@ begin
   Assert.IsTrue(FPSO.GetSmoothies > 0, 'and so do the smoothing groups');
 end;
 
-{ Smooth on with every parameter paired leaves no smoothing group. The loops
-  over the groups counted in Word, so an empty list ran from 0 to 65535 and
-  the fit died of an access violation in SetStructure or in the first XSeed. }
 procedure TTestLFPSOIrregular.Test_Smooth_EveryParameterPaired_DoesNothing;
 var
   Inp: TFitStructure;
@@ -463,8 +422,6 @@ begin
     'two layers times three parameters, less the held thickness');
 end;
 
-{ A stack without layers next to a real one: the layer loop counted in Word
-  and ran from 0 to 65535 over it, writing past the flattened structure. }
 procedure TTestLFPSOIrregular.Test_SetStructure_EmptyStack_IsSkipped;
 var
   Inp: TFitStructure;
@@ -479,10 +436,6 @@ begin
   Assert.AreEqual(4, Integer(Length(FPSO.Pub_FStructure.Stacks[0].Layers)));
 end;
 
-{ Flattened order: [0 Si p1, 1 Mo p1, 2 Si p2, 3 Mo p2]. Each period starts
-  from its entry of the table; a held parameter is pinned to its own period's
-  value; a start outside the bounds is clamped into them; a paired parameter
-  keeps one value whatever its (stale) table says. }
 function TableStructure: TFitStructure;
 var
   L0, L1: TLayerData;
@@ -498,13 +451,13 @@ begin
   L0.P[2].V := 3;  L0.P[2].min := 1; L0.P[2].max := 100;
   L0.P[3].V := 2;  L0.P[3].min := 1; L0.P[3].max := 5;
   L0.P[3].Paired := True;
-  L0.AddProfilePoint(12, 1); L0.AddProfilePoint(18, 1);    // free thickness
-  L0.AddProfilePoint(200, 2); L0.AddProfilePoint(30, 2);   // sigma: 200 is out of range
-  L0.AddProfilePoint(4, 3); L0.AddProfilePoint(4.5, 3);    // paired density: ignored
+  L0.AddProfilePoint(12, 1); L0.AddProfilePoint(18, 1);
+  L0.AddProfilePoint(200, 2); L0.AddProfilePoint(30, 2);
+  L0.AddProfilePoint(4, 3); L0.AddProfilePoint(4.5, 3);
   L1 := Default(TLayerData);
   L1.Material := 'Mo';
   L1.LayerID := 1;
-  L1.P[1].V := 5; L1.P[1].min := 5; L1.P[1].max := 5;      // held thickness
+  L1.P[1].V := 5; L1.P[1].min := 5; L1.P[1].max := 5;
   L1.P[2].V := 3; L1.P[2].min := 1; L1.P[2].max := 50;
   L1.P[3].V := 10; L1.P[3].min := 1; L1.P[3].max := 50;
   L1.AddProfilePoint(5, 1); L1.AddProfilePoint(7, 1);
@@ -539,8 +492,6 @@ begin
   Assert.AreEqual(1, FPSO.ClampedStarts, 'the one sigma outside its limits is counted');
 end;
 
-{ A shake hands SetStructure the flattened structure with FReInit set: the
-  pinned periods and their pinned bounds must come through unchanged. }
 procedure TTestLFPSOIrregular.Test_StartFromTables_SurviveAShake;
 var
   Flat: TFitStructure;
@@ -567,7 +518,6 @@ begin
   Assert.AreEqual(Single(5), FPSO.GetX[0][3][1][0], 1E-5);
 end;
 
-{ RangeSeed }
 
 procedure TTestLFPSOIrregular.Test_RangeSeed_LinkedLayersCopied;
 begin
@@ -575,7 +525,6 @@ begin
   FPSO.TestSetParams(MakeParams);
   FPSO.TestSetStructure(MakeIrregularStructure_Paired);
   FPSO.TestRangeSeed;
-  // Layer 2 H is linked to layer 0 -> should be equal for each particle
   Assert.AreEqual(FPSO.GetX[1][0][1][0], FPSO.GetX[1][2][1][0], 1E-5,
     'Linked H: layer 2 copies layer 0 for particle 1');
   Assert.AreEqual(FPSO.GetX[2][0][1][0], FPSO.GetX[2][2][1][0], 1E-5,
@@ -604,7 +553,6 @@ begin
       end;
 end;
 
-{ Fixed parameters - Task 2 }
 
 procedure TTestLFPSOIrregular.Test_FrozenParam_HasEmptyDomain;
 var

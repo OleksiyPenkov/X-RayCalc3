@@ -29,9 +29,7 @@ type
     btnCancel: TRzBitBtn;
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
-    { Private declarations }
   public
-    { Public declarations }
     function Edit(var InString: string): Boolean;
   end;
 
@@ -55,7 +53,6 @@ begin
   FreeAndNil(tmpJson);
 end;
 
-{ TfrmJsonEditor }
 
 { The editor keeps Esc for itself, so btnCancel's Cancel never fires while it
   has the focus - which is always. The form sees the key first instead. }

@@ -73,7 +73,6 @@ type
     Refl: TArray<Double>;
   end;
 
-// Write side (xrccmd)
 procedure CreateXRFXPackage(
   const Config: TUniversalConfig;
   const BestGenome: TGenome;
@@ -81,7 +80,6 @@ procedure CreateXRFXPackage(
   const PerElement: TArray<TXRFXElementResult>;
   const ResultsDir, ConfigFilePath, OutputPath: string);
 
-// Read side (XRFCalc)
 procedure ExtractXRFXPackage(const XRFXPath, TempDir: string);
 function  LoadManifest(const ManifestPath: string): TXRFXManifest;
 function  LoadXRCStructure(const JsonPath: string): TXRFXStructure;
@@ -109,13 +107,11 @@ begin
     JSON.AddPair('generator', 'xrccmd');
     JSON.AddPair('fom', TJSONNumber.Create(FoM));
 
-    // target_lines
     JTargets := TJSONArray.Create;
     for i := 0 to High(Config.Lines) do
       JTargets.Add(Config.Lines[i].Name);
     JSON.AddPair('target_lines', JTargets);
 
-    // element_pool
     JPool := TJSONArray.Create;
     for i := 0 to High(Config.ElementPool) do
       JPool.Add(Config.ElementPool[i]);
@@ -123,7 +119,6 @@ begin
 
     JSON.AddPair('substrate', Config.Substrate);
 
-    // structure_summary
     JStruct := TJSONObject.Create;
     JStruct.AddPair('type', Config.Structure.StructureType);
     JStruct.AddPair('d', TJSONNumber.Create(BestGenome.d));
@@ -132,14 +127,12 @@ begin
     JStruct.AddPair('sigma', TJSONNumber.Create(BestGenome.Sigma));
     JSON.AddPair('structure_summary', JStruct);
 
-    // optimizer
     JOpt := TJSONObject.Create;
     JOpt.AddPair('population', TJSONNumber.Create(Config.Optimizer.Population));
     JOpt.AddPair('iterations', TJSONNumber.Create(Config.Optimizer.Iterations));
     JOpt.AddPair('stagnation_limit', TJSONNumber.Create(Config.Optimizer.StagnationLimit));
     JSON.AddPair('optimizer', JOpt);
 
-    // per_element
     JPerElem := TJSONArray.Create;
     for i := 0 to High(PerElement) do
     begin
@@ -151,7 +144,6 @@ begin
     end;
     JSON.AddPair('per_element', JPerElem);
 
-    // files
     JFiles := TJSONObject.Create;
     JFiles.AddPair('config', 'config.json');
     JFiles.AddPair('best_structure', 'best_structure.json');
@@ -186,12 +178,10 @@ var
   CurveNames: TStringDynArray;
   i: Integer;
 begin
-  // 1. Copy config JSON into results dir
   ConfigDest := TPath.Combine(ResultsDir, 'config.json');
   if TFile.Exists(ConfigFilePath) then
     TFile.Copy(ConfigFilePath, ConfigDest, True);
 
-  // 2. Discover curve files for manifest
   CurvesDir := TPath.Combine(ResultsDir, 'best_curves');
   if TDirectory.Exists(CurvesDir) then
   begin
@@ -201,12 +191,10 @@ begin
       CurveFilesList[i] := 'best_curves/' + TPath.GetFileName(CurveNames[i]);
   end;
 
-  // 3. Generate manifest.json
   ManifestPath := TPath.Combine(ResultsDir, 'manifest.json');
   TFile.WriteAllText(ManifestPath,
     GenerateManifestJSON(Config, BestGenome, FoM, PerElement, CurveFilesList));
 
-  // 4. ZIP everything except checkpoint.json
   ZipFile := TZipFile.Create;
   try
     ZipFile.Open(OutputPath, zmWrite);
@@ -217,7 +205,6 @@ begin
       if SameText(TPath.GetFileName(FilePath), 'checkpoint.json') then
         Continue;
 
-      // Build relative path using forward slashes
       RelPath := FilePath.Substring(Length(IncludeTrailingPathDelimiter(ResultsDir)));
       RelPath := StringReplace(RelPath, '\', '/', [rfReplaceAll]);
       ZipFile.Add(FilePath, RelPath);
@@ -257,19 +244,16 @@ begin
     Result.FoM := JSON.GetValue<Double>('fom');
     Result.Substrate := JSON.GetValue<string>('substrate');
 
-    // target_lines
     JLines := JSON.GetValue<TJSONArray>('target_lines');
     SetLength(Result.TargetLines, JLines.Count);
     for i := 0 to JLines.Count - 1 do
       Result.TargetLines[i] := JLines.Items[i].Value;
 
-    // element_pool
     JPool := JSON.GetValue<TJSONArray>('element_pool');
     SetLength(Result.ElementPool, JPool.Count);
     for i := 0 to JPool.Count - 1 do
       Result.ElementPool[i] := JPool.Items[i].Value;
 
-    // structure_summary
     JStruct := JSON.GetValue<TJSONObject>('structure_summary');
     Result.Structure.StructureType := JStruct.GetValue<string>('type');
     Result.Structure.D := JStruct.GetValue<Double>('d');
@@ -277,13 +261,11 @@ begin
     Result.Structure.N := JStruct.GetValue<Integer>('N');
     Result.Structure.Sigma := JStruct.GetValue<Double>('sigma');
 
-    // optimizer
     JOpt := JSON.GetValue<TJSONObject>('optimizer');
     Result.Optimizer.Population := JOpt.GetValue<Integer>('population');
     Result.Optimizer.Iterations := JOpt.GetValue<Integer>('iterations');
     Result.Optimizer.StagnationLimit := JOpt.GetValue<Integer>('stagnation_limit');
 
-    // per_element
     JPerElem := JSON.GetValue<TJSONArray>('per_element');
     SetLength(Result.PerElement, JPerElem.Count);
     for i := 0 to JPerElem.Count - 1 do
@@ -294,7 +276,6 @@ begin
       Result.PerElement[i].FWHM := JElem.GetValue<Double>('fwhm');
     end;
 
-    // files.curves
     if JSON.FindValue('files') <> nil then
     begin
       JFiles := JSON.GetValue<TJSONObject>('files');
@@ -422,7 +403,6 @@ begin
   AllLines := TFile.ReadAllLines(LogPath);
   ResultList := TList<TProgressEntry>.Create;
   try
-    // Step 1: Parse header to count R_ columns
     NumElements := 0;
     for i := 0 to High(AllLines) do
     begin
@@ -440,7 +420,6 @@ begin
     // We need: Iter + FoM + NumElements R values + Div
     NumExpectedTokens := 2 + NumElements + 1;
 
-    // Step 2: Parse data lines
     for i := 0 to High(AllLines) do
     begin
       Line := Trim(AllLines[i]);

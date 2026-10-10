@@ -12,14 +12,7 @@
 
 unit unit_MCPCalc;
 
-(* The reflectivity calculation, without the GUI.
-
-   This is TCalcOrchestrator.PrepareCalc + RunCalc with the chart, the project
-   panel and the settings frame taken out: the same TCalc, the same
-   TLayeredModel, the same TCalcThreadParams, so acceptance 2 (the server's
-   curve is the GUI's curve for the same structure) holds by construction.
-
-   Three engine facts this unit depends on, all of them read out of
+(* Three engine facts this unit depends on, all of them read out of
    Shared\Math\unit_calc.pas rather than assumed:
 
    1. TCalc.Destroy frees FLayeredModel (unit_calc.pas:324). The model handed
@@ -45,33 +38,7 @@ unit unit_MCPCalc;
       (unit_calc.pas:359). With K = 1 the angles are theta, and Convolute
       returns immediately when the width is zero, so delta_theta = 0 means no
       convolution at all. CalcTet clamps every value below FLimit to FLimit
-      (unit_calc.pas:304), which is what r_min sets.
-
-   4. RunCalc sets Calc.MaxThreads := 1, so TCalc takes its single-threaded
-      branch (unit_calc.pas:343) and never reaches Parallel.ForEach.
-
-      This is a workaround, not a preference. OmniThreadLibrary before 3.08
-      cast pointers to Cardinal in TOmniTaskExecutor.GetMethodAddrAndSignature
-      (OtlTaskControl.pas), which truncates every address in a Win64 process
-      to 32 bits. OTL's thread pool schedules work by sending its manager
-      task a message naming a method (OtlThreadPool.pas,
-      otpWorkerTask.Invoke(@TOTPWorker.Schedule, ...)), so the first
-      Parallel.ForEach kills the pool manager with an access violation on a
-      truncated address and the calling thread then waits on the task counter
-      for ever. A thirty-line console program that only calls
-      Parallel.ForEach reproduces it: it hangs built with dcc64 and completes
-      built with dcc32.
-
-      Status 2026-09-09: the shared clone at
-      D:\DelphiProjects\_Libraries\OmniThreadLibrary is checked out at upstream
-      tag release-3.08, which carries the fix (commit 220e9d03), so the hang
-      is gone for optimize_mirror, fit_xrr, xrccmd -u, XRFCalc and the Win64
-      GUI alike; the build requirement is OTL >= 3.08 (CLAUDE.md,
-      Dependencies). RunCalc's MaxThreads := 1 is left in place even so,
-      because TCalc.PrepareWorkers depends on the machine's core count (fact 2
-      above) and a 2000-point scan over 262 layers takes about 80 ms single-
-      threaded, so calc_reflectivity loses nothing measurable. Delete the
-      assignment in RunCalc if reproducible thread counts stop mattering. *)
+      (unit_calc.pas:304), which is what r_min sets. *)
 
 interface
 
@@ -95,8 +62,6 @@ type
   end;
 
 const
-  /// Ceiling on Points, the same number describe_server reports as
-  /// limits.max_points.
   MAX_CALC_POINTS = 100000;
 
   /// Depth over which CriticalAngleDeg averages delta, in Angstrom: about what
@@ -110,15 +75,8 @@ const
   /// last MVAWindow points; see CheckConvolutionFits.
   CALC_MVA_WINDOW = 10;
 
-/// <summary>Runs one theta scan. Result is ascending in theta and holds
-/// exactly Req.Points points, the first at ThetaMin and the last at ThetaMax.
-/// DensitiesUsed is a deep copy of Req.Structure with every omitted density
-/// replaced by the Henke bulk value the engine actually used.</summary>
 function RunCalc(const Req: TCalcRequest; out DensitiesUsed: TFitStructure): unit_Types.TDataArray;
 
-/// <summary>The Bragg angle of one order in degrees: asin(n lambda / 2 d).
-/// False when the order is past the horizon (n lambda / 2 d >= 1) or the
-/// period is not positive.</summary>
 function BraggAngleDeg(Order: Integer; Lambda, Period: Double;
   out Theta: Double): Boolean;
 
@@ -134,9 +92,6 @@ function BraggAngleDeg(Order: Integer; Lambda, Period: Double;
 function BraggSearchWindow(Order: Integer; Lambda, Period, ThetaC: Double;
   out Lo, Hi, Theta: Double): Boolean;
 
-/// <summary>Index of the largest value of Curve with Lo &lt;= theta &lt;= Hi, the
-/// first of them when several are equal; -1 when the window holds no point.
-/// </summary>
 function MaxIndexInRange(const Curve: unit_Types.TDataArray;
   Lo, Hi: Double): Integer;
 
@@ -174,10 +129,6 @@ function FindBraggPeaks(const Curve: unit_Types.TDataArray;
 /// </summary>
 function CriticalAngleDeg(const S: TFitStructure; Lambda: Double): Double;
 
-/// <summary>Writes the curve as two tab-separated columns under one header
-/// line. Angles use 7 significant digits (ffGeneral, 7, 0, the same style
-/// unit_MCPProjectFile.WriteCurveText uses), reflectivities %.8e, both with
-/// the invariant decimal point.</summary>
 procedure WriteCurveFile(const Path: string; const Curve: unit_Types.TDataArray;
   const XLabel, YLabel: string);
 
@@ -253,8 +204,6 @@ begin
         [Req.Points, Req.ThetaMax - Req.ThetaMin, Delta, 2 * N + 1, Req.Points]));
 end;
 
-{ The angle grid the engine is asked to compute on: Points values from ThetaMin
-  to ThetaMax inclusive. Handed to TCalc as ExpValues; see the unit header. }
 function ThetaGrid(const Req: TCalcRequest): unit_Types.TDataArray;
 var
   i: Integer;
@@ -312,9 +261,7 @@ begin
     // TCalc.Destroy frees this (unit_calc.pas:324) - do not free it here.
     Calc.Model := BuildLayeredModel(Req.Structure);
 
-    // Single thread on purpose. See note 4 in the unit header: reproducible
-    // worker layout regardless of core count, and OTL < 3.08 deadlocked here on
-    // Win64. 2000 points over 262 layers take ~80 ms this way.
+    // Single thread keeps the worker layout reproducible regardless of core count.
     Calc.MaxThreads := 1;
     Calc.Run;
     Result := Copy(Calc.Results);
@@ -380,8 +327,6 @@ begin
         Result := i;
 end;
 
-/// The smallest value inside the same window, which is what the maximum has to
-/// stand above to be a peak rather than a point on a slope.
 function MinInRange(const Curve: unit_Types.TDataArray; Lo, Hi: Double): Double;
 var
   i: Integer;
@@ -398,18 +343,12 @@ begin
       end;
 end;
 
-/// A maximum of the sampled curve: strictly above the point on its left and at
-/// least as high as the one on its right, which is the rule the generic search
-/// has always used. The ends of the curve are not maxima.
 function IsLocalMax(const Curve: unit_Types.TDataArray; i: Integer): Boolean;
 begin
   Result := (i > 0) and (i < High(Curve)) and
             (Curve[i].r > Curve[i - 1].r) and (Curve[i].r >= Curve[i + 1].r);
 end;
 
-/// Distance between the linearly interpolated half-maximum crossings either
-/// side of Curve[i]; 0 when the curve does not fall to half the peak on both
-/// sides inside the curve.
 function PeakFWHM(const Curve: unit_Types.TDataArray; i: Integer): Double;
 var
   j: Integer;
@@ -490,8 +429,6 @@ begin
   end;
 end;
 
-/// Every local maximum that stands out from its neighbourhood, numbered from 1
-/// in angle order: what is left when the period is not known.
 function BraggPeaksGeneric(const Curve: unit_Types.TDataArray;
   ThetaC: Double): TArray<TPeak>;
 var

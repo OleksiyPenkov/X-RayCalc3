@@ -1,7 +1,5 @@
 ﻿(* *****************************************************************************
   *
-  *   X-Ray Calc CMD
-  *
   *   Copyright (C) 2001-2022 Oleksiy Penkov
   *   e-mail: oleksiy.penkov@gmail.com
   *
@@ -19,7 +17,6 @@ type
 
   TRoughnessFunction = (rfError, rfExp, rfLinear, rfStep, rfSinus);
 
-  // Inteface Data types
 
   TExtentionType = (etNone, etGradient, etProfile);
   TGradientForm = (gtLine, gtExp, gtSin, gtCos);
@@ -42,14 +39,13 @@ type
     DW: single;
   end;
 
-  // Calculation data types
 
   TLayer = record
     Name: string;
-    e: TComplex; { Epsilon }
-    H, S, Rho: single; { Thickness, sigma, rho }
-    K: TComplex; { kappa }
-    RF, r: TComplex; { Френелевский коэф. }
+    e: TComplex;
+    H, S, Rho: single;
+    K: TComplex;
+    RF, r: TComplex;
   end;
 
   TLayers = array of TLayer;

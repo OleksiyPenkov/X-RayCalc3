@@ -115,10 +115,6 @@ type
         route - the limits dialog writing the user's edits back. }
       procedure UpdateInterfaceP(const Inp: TFitStructure; const ValuesOnly: Boolean = False);
       procedure UpdateInterfaceNP(const Inp: TFitStructure; const ValuesOnly: Boolean = False);
-      { Sets or clears TFitValue.Fixed on H/sigma/rho for every layer of the given
-        stack. This is the structure-panel entry point onto the same flag the
-        fit-limits dialog edits; see UpdateInterfaceP for why the write-back must
-        seed Data from the live layer rather than starting from a fresh record. }
       procedure SetStackFrozen(const StackID: Integer; const Frozen: Boolean);
       procedure UpdateProfiles(const Inp: TLayeredModel);
       procedure UpdateProfilesP;
@@ -130,7 +126,6 @@ type
       procedure GetStacksList(PeriodicOnly: Boolean; List: TStrings; var RealID: TIntArray);
       procedure GetLayersList(const ID: integer; List: TStrings);
       function GetStackSize(const ID: Integer): Integer;
-//      procedure EnablePairing;
       function IfValidLayerSelected: Boolean; inline;
       function HasLayer(const StackID, LayerID: Integer): Boolean;
       property RealHeight: Integer read FRealHeight;
@@ -171,7 +166,6 @@ begin
   Result := TJSONNumber.Create(Double(V));
 end;
 
-{ TXRCStructure }
 
 procedure TXRCStructure.AddLayer(const StackID: Integer;
   const Data: TLayerData);
@@ -214,7 +208,6 @@ procedure TXRCStructure.RecreateFromFitStructure(const Inp: TFitStructure);
 var
   i: integer;
 begin
-  //
   Visible := False;
   Clear;
   AddSubstrate(Inp.Subs.Material, Inp.Subs.P[2].V, Inp.Subs.P[3].V);
@@ -330,25 +323,20 @@ constructor TXRCStructure.Create(AOwner: TComponent; const DPI: integer);
 begin
   inherited Create(AOwner);
   FTargetDPI := DPI;
-  { Pairing stays off until the owner sets the fitting mode, as it always did. }
   FPeriodicMode := True;
   Align := alClient;
   BorderInner := fsNone;
   BorderOuter := fsNone;
 
-  //RzPanel1
   Header := TRzPanel.Create(Self);
 
-  //Labels
   CreateLabel('Stack / Layer', 6, Label1);
   CreateLabel('H (Å)', 110, Label2);
   CreateLabel('σ (Å)', 185, Label3);
   CreateLabel('ρ (g/cm³)   N', 248, Label4);
 
-  //Box
   Box := TJvDesignScrollBox.Create(Self);
 
-  //Header
   Header.Name := 'rzpnlHeader';
   Header.Parent := Self;
   Header.Height := 30;
@@ -358,7 +346,6 @@ begin
   Header.Color := clSkyBlue;
   Header.TabOrder := 0;
 
-  //Box
   Box.Name := 'Box';
   Box.Parent := Self;
   Box.AlignWithMargins := True;
@@ -460,7 +447,6 @@ end;
 
 destructor TXRCStructure.Destroy;
 begin
-//  FreeAndNil(Substrate);
   inherited Destroy;
 end;
 
@@ -857,8 +843,6 @@ begin
     begin
       Result.Stacks[i].Layers[j].Material := FStacks[i].LayerData[j].Material;
       Result.Stacks[i].Layers[j].P := FStacks[i].LayerData[j].P;
-      { The per-period tables, which only an irregular fit that starts from
-        them reads (TLFPSO_Irregular.StartFromTables). }
       for p := 1 to 3 do
         Result.Stacks[i].Layers[j].PP[p] := Copy(FStacks[i].LayerData[j].PP[p]);
       Result.Stacks[i].Layers[j].StackID := i;

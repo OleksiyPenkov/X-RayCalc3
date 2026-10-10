@@ -105,7 +105,6 @@ type
       property NumberOfThreads : integer index 0 read getIntegerValue write SetIntegerValue;
       [DefaultValue(20)]
       property BenchmarkRuns   : integer index 1 read getIntegerValue write SetIntegerValue;
-      { Evaluate the fitting population on the GPU when one is usable. }
       [DefaultValue(True)]
       property UseGPU          : boolean index 2 read getBooleanValue write SetBooleanValue;
     end;
@@ -115,7 +114,6 @@ type
     public
       [DefaultValue(2)]
       property LineWidth: integer index 0 read getIntegerValue write SetIntegerValue;
-      { The residual strip under the main chart (Result - Residual strip). }
       [DefaultValue(True)]
       property ResidualStrip     : boolean index 1 read getBooleanValue write SetBooleanValue;
       [DefaultValue(True)]
@@ -162,9 +160,6 @@ type
         property SplitterPR : integer index 5 read getIntegerValue write SetIntegerValue;
     end;
 
-    /// <summary>
-    ///   Application configuration manager
-    /// </summary>
     TConfig = class(TObject)
     strict private
        class var
@@ -441,9 +436,6 @@ begin
     inherited;
 end;
 
-/// <summary>
-/// Extract DefaultValue attribute for a property
-/// </summary>
 function TBaseOptions.getDefaultAttribute(prop: TRttiProperty): DefaultValueAttribute;
 var attr : TCustomAttribute;
 begin
@@ -457,11 +449,6 @@ begin
 end;
 
 {$REGION '--------------------- get-Methods ---------------------------}
-/// <summary>
-///     Generic method to get a property value.
-///  If the property is absent from INI, returns the DefaultValue attribute.
-///  If no attribute is specified, returns Default(T).
-/// </summary>
 function TBaseOptions.getGenericValue<T>(index: integer): T;
 var prop : TRttiProperty;
     default : DefaultValueAttribute;
@@ -520,9 +507,6 @@ end;
 
 {$REGION '--------------------- set Methods ---------------------------'}
 
-/// <summary>
-///     Generic method to write a property to INI file.
-/// </summary>
 procedure TBaseOptions.SetGenericValue<T>(index: integer; value: T);
 var prop : TRttiProperty;
     newValue : TValue;
@@ -565,9 +549,6 @@ begin
 end;
 {$ENDREGION}
 
-/// <summary>
-///     Get property by its index
-/// </summary>
 function TBaseOptions.getProperty(index: integer): TRttiProperty;
 var t : TRttiType;
     props : TArray<TRttiProperty>;
@@ -583,7 +564,6 @@ end;
 {$ENDREGION}
 
 {$REGION '--------------------- Attributes --------------------------'}
-{ TSectionAttribute }
 
 constructor SectionAttribute.Create(SectionName: string);
 begin
@@ -591,7 +571,6 @@ begin
     FSection := SectionName;
 end;
 
-{ DefaultValueAttribute }
 
 constructor DefaultValueAttribute.Create(aIntValue: integer);
 begin

@@ -67,7 +67,6 @@ implementation
 uses
   System.SysUtils, System.Math;
 
-{ TTestFitValue }
 
 procedure TTestFitValue.Test_New;
 var FV: TFitValue;
@@ -83,9 +82,7 @@ procedure TTestFitValue.Test_Init_Deviation;
 var FV: TFitValue;
 begin
   FV.New(100.0);
-  FV.Init(0.1); // 10% deviation
-  // min = 100 * (1 - 0.1) = 90
-  // max = 100 * (1 + 0.1) = 110
+  FV.Init(0.1);
   Assert.AreEqual(Single(90.0), FV.min, 1E-4);
   Assert.AreEqual(Single(110.0), FV.max, 1E-4);
 end;
@@ -103,7 +100,7 @@ procedure TTestFitValue.Test_Init_NoArgs;
 var FV: TFitValue;
 begin
   FV.New(42.0);
-  FV.Init; // sets min = max = V
+  FV.Init;
   Assert.AreEqual(Single(42.0), FV.min);
   Assert.AreEqual(Single(42.0), FV.max);
 end;
@@ -124,12 +121,10 @@ begin
   end;
 end;
 
-{ TTestFitStructure }
 
 procedure TTestFitStructure.Test_Total_Empty;
 var FS: TFitStructure;
 begin
-  // Single stack with zero layers
   SetLength(FS.Stacks, 1);
   SetLength(FS.Stacks[0].Layers, 0);
   Assert.AreEqual(Word(0), FS.Total);
@@ -148,23 +143,18 @@ procedure TTestFitStructure.Test_TotalNP;
 var FS: TFitStructure;
 begin
   SetLength(FS.Stacks, 2);
-  // Stack 0: 3 layers, repeated 2 times
   FS.Stacks[0].N := 2;
   SetLength(FS.Stacks[0].Layers, 3);
-  // Stack 1: 1 layer, repeated 5 times
   FS.Stacks[1].N := 5;
   SetLength(FS.Stacks[1].Layers, 1);
-  // TotalNP = 3*2 + 1*5 = 11
   Assert.AreEqual(Word(11), FS.TotalNP);
 end;
 
-{ TTestLayerProfile }
 
 procedure TTestLayerProfile.Test_ProfileToString_Empty;
 var
   LD: TLayerData;
 begin
-  // H profile (ptH = 0, so p = 1)
   LD.ClearProfiles(1);
   Assert.AreEqual('', LD.ProfileToString(ptH));
 end;
@@ -223,13 +213,10 @@ begin
   Assert.AreEqual(Single(19.8308), LD2.PP[1][1], 1E-5);
 end;
 
-{ TTestFuncProfileRec }
 
 procedure TTestFuncProfileRec.Test_X_Counter;
 var FP: TFuncProfileRec;
 begin
-  // After ResetX each call returns the next period number, whatever the
-  // model layer index it is given (PrepareLayers resets before every pass)
   FP.ResetX;
   Assert.AreEqual(Word(1), FP.X(5));
   Assert.AreEqual(Word(2), FP.X(7));
@@ -242,7 +229,6 @@ begin
   FP.ResetX;
   FP.X(1);
   FP.X(2);
-  // X(1) no longer resets: a profile on model layer 1 counts on like any other
   Assert.AreEqual(Word(3), FP.X(1));
   FP.ResetX;
   Assert.AreEqual(Word(1), FP.X(4));
@@ -252,7 +238,6 @@ end;
 procedure TTestFuncProfileRec.Test_Ord;
 var FP: TFuncProfileRec;
 begin
-  // Ord returns High(C) — the polynomial order derived from array length
   SetLength(FP.C, 4);
   Assert.AreEqual(Word(3), FP.Ord);
 end;
@@ -260,10 +245,6 @@ end;
 procedure TTestFuncProfileRec.Test_PIndex;
 var FP: TFuncProfileRec;
 begin
-  // PIndex = System.Ord(Subj) + 1
-  // ptH = 0 -> PIndex = 1
-  // ptS = 1 -> PIndex = 2
-  // ptRho = 2 -> PIndex = 3
   FP.Subj := ptH;
   Assert.AreEqual(Word(1), FP.PIndex);
   FP.Subj := ptS;
@@ -272,7 +253,6 @@ begin
   Assert.AreEqual(Word(3), FP.PIndex);
 end;
 
-{ TTestProjectData }
 
 procedure TTestProjectData.Test_IsModel_True;
 var PD: TProjectData;
@@ -303,7 +283,6 @@ var
   PD: TProjectData;
   Src, Dst: TPolyArray;
 begin
-  // SetPoly stores coefficients into PD.Poly[0..9] + PolyCount, PolyD reads them back
   SetLength(Src, 3);
   Src[0] := 1.5;
   Src[1] := 2.5;
@@ -324,7 +303,6 @@ var
   PD: TProjectData;
   Src: TPolyArray;
 begin
-  // SetPoly stores High(PolyD) in PolyCount
   SetLength(Src, 4);
   Src[0] := 10; Src[1] := 20; Src[2] := 30; Src[3] := 40;
 
@@ -345,7 +323,6 @@ end;
 procedure TTestProjectData.Test_IsFitExtension_False_NotFromFit;
 var PD: TProjectData;
 begin
-  // A hand-added extension must never be reported as fit-generated
   PD.RowType := prExtension;
   PD.FromFit := False;
   Assert.IsFalse(PD.IsFitExtension);
@@ -361,7 +338,6 @@ begin
   Assert.IsFalse(PD.IsFitExtension);
 end;
 
-{ TTestFitStructureCopy }
 
 procedure TTestFitStructureCopy.Test_CopyContent;
 var

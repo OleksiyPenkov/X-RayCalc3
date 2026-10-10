@@ -127,7 +127,6 @@ begin
   Assert.AreEqual('U', All[89]);
 end;
 
-{ TTestConfigLines }
 
 procedure TTestConfigLines.Setup;
 begin

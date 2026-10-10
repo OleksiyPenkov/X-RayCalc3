@@ -1,9 +1,5 @@
 unit TestChartManager;
 
-(* TChartManager: a curve's transparency, and the draw order of the curves on
-   the main chart - which one is painted on top. The chart is drawn off screen
-   through the GDI+ canvas the main chart uses, so the blend test sees what the
-   window would show. *)
 
 interface
 

@@ -53,7 +53,6 @@ var
   Ini: TIniFile;
   Opts: TCalcOptions;
 begin
-  // Empty INI -> should return DefaultValue attributes
   Ini := TIniFile.Create(FIniPath);
   try
     Opts := TCalcOptions.Create(Ini);
@@ -124,7 +123,6 @@ begin
     Ini.Free;
   end;
 
-  // Re-open and read back
   Ini := TIniFile.Create(FIniPath);
   try
     Opts := TCalcOptions.Create(Ini);
@@ -203,13 +201,12 @@ begin
   end;
 end;
 
-{ TTestRecentEntryStale }
 
 procedure TTestRecentEntryStale.Test_ExistingFile_NotStale;
 var
   FileName: string;
 begin
-  FileName := TPath.GetTempFileName;   // created on the local temp drive
+  FileName := TPath.GetTempFileName;
   try
     Assert.IsFalse(IsRecentEntryStale(FileName),
       'A file that is there must not be pruned');

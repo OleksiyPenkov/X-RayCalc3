@@ -23,19 +23,10 @@ unit unit_ProjectVersion;
 
 interface
 
-/// <summary>[INFO] Version of an .xrcx archive, read from its params.dsc
-/// without extracting anything else. 0 when the archive has no params.dsc or
-/// the key is missing (the oldest projects). Raises when Path is not a zip
-/// archive.</summary>
 function XRCXFileVersion(const Path: string): Integer;
 
-/// <summary>What to tell the user about a project of version V this build
-/// cannot load.</summary>
 function NewerProjectMessage(V: Integer): string;
 
-/// <summary>Whether this build can open the project at Path, asked before
-/// anything of the open project is touched. False, with the reason in Why,
-/// for a newer version or a file that is not an archive; never raises.</summary>
 function CheckProjectFile(const Path: string; out Why: string): Boolean;
 
 implementation

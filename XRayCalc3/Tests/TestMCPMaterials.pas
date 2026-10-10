@@ -1,12 +1,7 @@
 unit TestMCPMaterials;
 
-{ unit_MCPMaterials: formula parsing and optical constants.
-
-  The formula tests are pure and always run. The Henke tests need the GUI's
-  real table directory; when it is not installed they pass with a note rather
-  than fail, exactly as the clipboard test in TestSeriesIO does. They never
-  assign TConfig.SystemDir - the MCP server must not rewrite xrc3.ini and
-  neither may its tests. }
+{ TConfig.SystemDir must not be assigned here: the MCP server and its tests
+  must not rewrite xrc3.ini. }
 
 interface
 
@@ -19,7 +14,6 @@ type
   private
     function HenkeAvailable(const Material: string): Boolean;
   public
-    { ParseFormula }
     [Test] procedure ParseFormula_B4C;
     [Test] procedure ParseFormula_SiO2;
     [Test] procedure ParseFormula_FractionalCounts;
@@ -29,7 +23,6 @@ type
     [Test] procedure ParseFormula_TrailingDot_IsNotAFormula;
     [Test] procedure ParseFormula_AllCapsElementName;
 
-    { Henke lookups }
     [Test] procedure ResolveHenkeName_IsCaseInsensitive;
     [Test] procedure HenkeExists_UnknownMaterial_False;
     [Test] procedure OpticalConstants_Si_CuKAlpha;
@@ -50,7 +43,6 @@ begin
   Result := TFile.Exists(HenkeDir + Material + '.bin');
 end;
 
-{ --- ParseFormula --- }
 
 procedure TTestMCPMaterials.ParseFormula_B4C;
 var
@@ -140,7 +132,6 @@ begin
   Assert.AreEqual(1.0, Parts[0].Count, 1E-9);
 end;
 
-{ --- Henke lookups --- }
 
 procedure TTestMCPMaterials.ResolveHenkeName_IsCaseInsensitive;
 var

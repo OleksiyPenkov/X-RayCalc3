@@ -32,7 +32,6 @@ type
     Refl: TArray<Double>;
   end;
 
-  // Snapshot of mixer-derived data captured before the mixer is freed in Run
   TFinalInfo = record
     ElementNames: TArray<string>;
     ElementDensities: TArray<Single>;
@@ -56,8 +55,8 @@ type
     FWorkerFitness: array of TUniversalFitness;
     FShakeCheckFoM: Single;     // ABestFoM at last shake/window start
     FShakeCheckIter: Integer;   // iteration at last shake/window start
-    FFinalState: TOptState;     // PSO state captured at the end of Run
-    FFinalInfo: TFinalInfo;     // mixer data captured before the mixer is freed
+    FFinalState: TOptState;
+    FFinalInfo: TFinalInfo;
     FOnIteration: TIterationEvent;
     FOnCompleted: TCompletionEvent;
     FOnError: TErrorEvent;
@@ -93,7 +92,6 @@ implementation
 uses
   Winapi.Windows, System.Diagnostics, OtlParallel, unit_otl_drain;
 
-{ TUniversalOptimizer }
 
 constructor TUniversalOptimizer.Create(const AConfig: TUniversalConfig);
 begin
@@ -204,7 +202,6 @@ var
 begin
   try
     SW := TStopwatch.StartNew;
-    // Build arrays from config
     SetLength(TargetLambdas, Length(FConfig.Lines));
     SetLength(TargetNames, Length(FConfig.Lines));
     for i := 0 to High(FConfig.Lines) do
@@ -217,10 +214,8 @@ begin
     for i := 0 to High(FConfig.ElementPool) do
       ElementNames[i] := FConfig.ElementPool[i];
 
-    // Load templates
     FTemplates := LoadTemplates(FConfig.TemplatePath);
 
-    // Collect interlayer materials and merge with element pool
     if Length(FTemplates) > 0 then
     begin
       var ExtraMats := CollectTemplateMaterials(FTemplates, ElementNames);
@@ -241,7 +236,6 @@ begin
       end;
     end;
 
-    // Compute CapHRange and CapVariantCount from matching templates
     var CapMin: Single := MaxSingle;
     var CapMax: Single := 0;
     var HasAnyCap := False;
@@ -287,7 +281,6 @@ begin
       FConfig.Structure.CapVariantCount := 0;
     end;
 
-    // Create engine objects
     FMixer := TMaterialMixer.Create;
     FPSO := TUniversalPSO.Create(FConfig);
     FFitness := TUniversalFitness.Create(FMixer, FConfig, FTemplates);
@@ -299,13 +292,11 @@ begin
       FMixer.Initialize(ElementNames, TargetLambdas,
         FConfig.Substrate, FConfig.HenkePath);
 
-      // Clear previous results for fresh runs
       if FConfig.ResumeFrom = '' then
         FIO.ClearOutputDir(FConfig.OutputDir);
 
       FIO.OpenLog(FConfig.OutputDir, TargetNames);
 
-      // Initialize or resume
       if FConfig.ResumeFrom <> '' then
       begin
         State := FIO.LoadCheckpoint(FConfig.ResumeFrom, FConfig);
@@ -318,7 +309,6 @@ begin
         StartIter := 0;
       end;
 
-      // Initial evaluation
       SetLength(BestResults, Length(FConfig.Lines));
       EvaluatePopulation;
       FPSO.UpdateBests;
@@ -331,16 +321,13 @@ begin
       if Assigned(FOnIteration) then
         FOnIteration(IterData);
 
-      // Initialize stagnation window tracking
       FShakeCheckFoM := FPSO.ABestFoM;
       FShakeCheckIter := StartIter;
 
-      // Main optimization loop
       for t := StartIter to FConfig.Optimizer.Iterations - 1 do
       begin
         if FCancelled then Break;
 
-        // Adaptive Levy/PSO switching
         LevyProb := 0.3 + 0.4 * (1 - t / FConfig.Optimizer.Iterations);
         LevyBoost := Min(0.2, FPSO.JammingCount * 0.05);
         LevyProb := Min(0.9, LevyProb + LevyBoost);
@@ -350,7 +337,6 @@ begin
         else
           FPSO.UpdateLFPSO(t, FConfig.Optimizer.Iterations);
 
-        // Fitness evaluation
         EvaluatePopulation;
         FPSO.UpdateBests;
 
@@ -362,32 +348,25 @@ begin
         if Assigned(FOnIteration) then
           FOnIteration(IterData);
 
-        // Window-based stagnation: compare FoM now vs JammingMax iterations ago
         if (t - FShakeCheckIter) >= FConfig.Optimizer.JammingMax then
         begin
-          // Check if FoM improved by at least 1% over the window
           if (Abs(FShakeCheckFoM) > 1e-10) and
              ((FShakeCheckFoM - FPSO.ABestFoM) / Abs(FShakeCheckFoM) > 0.01) then
           begin
-            // Meaningful progress — reset window
             FShakeCheckFoM := FPSO.ABestFoM;
             FShakeCheckIter := t;
           end
           else
           begin
-            // Stagnated — shake and reset window
             FPSO.Shake;
             FShakeCheckFoM := FPSO.ABestFoM;
             FShakeCheckIter := t;
           end;
         end;
 
-        // Convergence check
         if FPSO.JammingCount > FConfig.Optimizer.StagnationLimit then
           Break;
 
-        // Checkpoint
-        // checkpoint_every <= 0: no periodic checkpoint (the final one is always written)
         if (FConfig.Optimizer.CheckpointEvery > 0) and
            ((t + 1) mod FConfig.Optimizer.CheckpointEvery = 0) then
         begin
@@ -397,13 +376,11 @@ begin
         end;
       end;
 
-      // Save results
       FFitness.Evaluate(FPSO.ABest, BestResults);
       FIO.SaveBestStructure(FConfig, FPSO.ABest, -FPSO.ABestFoM, BestResults,
         FConfig.OutputDir);
       FIO.SaveXRCStructure(FConfig, FPSO.ABest, FMixer, FTemplates, FConfig.OutputDir);
 
-      // Compute curves once, use for both file saving and completion event
       SetLength(Curves, Length(FConfig.Lines));
       for i := 0 to High(FConfig.Lines) do
       begin
@@ -427,13 +404,11 @@ begin
       FIO.SaveCheckpoint(State, FConfig, FConfig.OutputDir);
 
       // Capture what callers need after Run: FPSO and FMixer are freed below.
-      // State is FPSO.GetState with Iteration already stamped (as checkpointed).
       FFinalState := State;
       CaptureFinalInfo;
 
       FIO.CloseLog;
 
-      // Fire completion event with cached curves
       SW.Stop;
       IterData := BuildIterationData(FConfig.Optimizer.Iterations, BestResults,
         SW.Elapsed.TotalSeconds);

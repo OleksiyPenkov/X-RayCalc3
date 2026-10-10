@@ -12,32 +12,7 @@
 
 unit unit_MCPUniversal;
 
-(* The universal (XRFCalc) engine, seen from the MCP side.
-
-   Three jobs live here.
-
-   1. Configuration. `TUniversalIO.ConfigFromJSONObject` parses XRFCalc's config
-      JSON; ConfigFromJSON below normalises a tool's arguments into exactly that
-      shape first - filling in the defaults XRFCalc's own run-config form
-      applies, so that a client can send `{"lines": ["B", "Si"],
-      "element_pool": ["Ru", "C"], "substrate": "Si"}` and get a runnable
-      configuration - and then hands the object to the engine. Nothing is
-      re-implemented: the numbers a missing section defaults to are here, the
-      parsing of the sections themselves is the engine's.
-
-   2. Evaluation of an explicit structure. `evaluate_lines` has a structure, not
-      a genome, so it cannot go through TUniversalFitness.Evaluate. It goes
-      through EvaluateLayers (task 8) with a builder that walks the expanded
-      TLayeredModel the GUI adapter produces. The FoM is therefore the
-      optimizer's own FoM, computed by the optimizer's own code, for a structure
-      the optimizer never proposed.
-
-   3. Genome reporting. The optimizer speaks genomes; clients speak structures.
-      GenomeToStructure mirrors TUniversalFitness.BuildLayers layer for layer, so
-      the structure a client is handed is the structure whose FoM was reported.
-      DistinctTopK picks the alternatives worth showing out of the final swarm.
-
-   Threading. TMaterialMixer.Initialize reads its tables through
+(* Threading. TMaterialMixer.Initialize reads its tables through
    cmd_math_globals.ReadHenke, which looks for '.\Henke\<name>.bin' and therefore
    changes the process working directory while it reads. That is process-global
    state: every Initialize in this server - here and in the optimizer tool - must
@@ -57,16 +32,8 @@ var
   /// Initialize in this server is made while holding it.</summary>
   HenkeCwdLock: TCriticalSection;
 
-/// <summary>The fitness settings a tool starts from when the client gives none:
-/// w_R 1, w_FWHM 0.25, R_min_threshold 0.02, unpolarised, no divergence, no
-/// dark zone, full purity weighting, engine default scan.</summary>
 function DefaultFitnessConfig: TFitnessConfig;
 
-/// <summary>A full TUniversalConfig from a tool's arguments. The object is
-/// normalised into the shape TUniversalIO.ConfigFromJSONObject reads (missing
-/// sections filled with the defaults XRFCalc applies) and then parsed by the
-/// engine. HenkePath, OutputDir, ResumeFrom and TemplatePath are set by the
-/// server, not by the client.</summary>
 function ConfigFromJSON(const J: TJSONObject; const OutputDir: string): TUniversalConfig;
 
 /// <summary>The TUniversalIO.SaveConfig shape, as an object rather than a file,
@@ -84,11 +51,6 @@ function FitnessConfigFromJSON(const J: TJSONObject; const Base: TFitnessConfig)
 /// Caller frees.</summary>
 function FitnessConfigToJSON(const F: TFitnessConfig): TJSONObject;
 
-/// <summary>The emission lines of a "lines" argument. Each item is either an
-/// object {name|element, lambda|energy, weight?} or a bare element symbol
-/// ("Si") or symbol range ("B-Si"), whose wavelength comes from the XRF line
-/// table. At least one line, at most MAX_LINES (the fitness function's fixed
-/// per-line arrays).</summary>
 function LinesFromJSON(const A: TJSONArray): TArray<TXRFLine>;
 
 /// <summary>The optimizer's figure of merit for a structure the optimizer did
@@ -105,20 +67,13 @@ function EvaluateStructure(const S: TFitStructure; const Info: TStructureInfo;
   const Lines: TArray<TXRFLine>; const Fit: TFitnessConfig;
   out Results: TTargetResults): Single;
 
-/// <summary>The dominant material of each of the two roles, 'W/Si' - the key
-/// TUniversalFitness.BuildLayers looks the template library up with.</summary>
 function GenomeKey(const G: TGenome; const ElementNames: TArray<string>): string;
 
 /// <summary>The genome itself: composition per role, period, gamma, N, sigma,
 /// cap and density factors. Caller frees.</summary>
 function GenomeToJSON(const G: TGenome; const ElementNames: TArray<string>): TJSONObject;
 
-/// <summary>The genome as a structure in the server's own JSON shape, mirroring
-/// TUniversalFitness.BuildLayers: the template path emits the cap as "cap" and
-/// one stack of the template's sublayers, the plain path emits one stack of two
-/// layers d*gamma and d*(1-gamma) of the dominant element at the composition's
-/// effective density. Densities are the ones the mixer used.
-/// The structure returned reproduces the FoM that was reported for the genome
+/// <summary>The structure returned reproduces the FoM that was reported for the genome
 /// <b>only when the run used pure elements</b>: the plain path names the
 /// dominant element of each role, and the structure JSON has no syntax for a
 /// mixed composition (see describe_server.material_syntax). ConfigFromJSON
@@ -140,13 +95,6 @@ function GenomeToStructure(const G: TGenome; const C: TUniversalConfig;
   const Templates: TTemplateLibrary; const ElementNames: TArray<string>;
   const ElementDensities: TArray<Single>; SubstrateDensity: Single): TJSONObject;
 
-/// <summary>Indices into Particles of the best K *distinct* personal bests,
-/// best first. Sorted by PBestFoM ascending (the PSO minimises), then walked:
-/// a particle joins the result when, against every particle already accepted,
-/// it differs in the dominant material pair, or by more than 5% in period, or by
-/// more than 0.05 in gamma, or in the rounded number of periods. Entry 0 is
-/// therefore the swarm's best particle; the optimizer's ABest, which is that
-/// same global best, is what the caller reports as entry 0.</summary>
 function DistinctTopK(const Particles: TParticleArray; K: Integer;
   const ElementNames: TArray<string>): TArray<Integer>;
 
@@ -159,14 +107,7 @@ function DistinctTopK(const Particles: TParticleArray; K: Integer;
 function GenomesDistinct(const A, B: TGenome;
   const ElementNames: TArray<string>): Boolean;
 
-/// <summary>The optimize_mirror job body (design note section 5). Seeds
-/// System.RandSeed from Job.Seed, runs TUniversalOptimizer over Config with the
-/// job folder as its output directory, and leaves in Job.ResultObj the best
-/// candidate, the distinct top-k alternatives, the files the run wrote and the
-/// configuration it used. One .xrfx package per rank is written next to them as
-/// rank_&lt;r&gt;.xrfx.
-///
-/// Cancellation: the optimizer is asked to stop from the progress callback, and
+/// <summary>Cancellation: the optimizer is asked to stop from the progress callback, and
 /// a run that was cut short returns <b>without</b> a result, so the job ends
 /// cancelled with whatever the engine wrote still on disk.
 ///
@@ -199,8 +140,6 @@ function GenomesDistinct(const A, B: TGenome;
 procedure RunOptimizeJob(Job: TJob; const Config: TUniversalConfig; TopK: Integer);
 
 const
-  /// The rule DistinctTopK applies, for describe_server and the optimize_mirror
-  /// tool description.
   TOP_K_RULE =
     'Candidates are ranked by figure of merit (best first) and a candidate is ' +
     'kept only when it differs from every candidate already kept: a different ' +
@@ -215,16 +154,9 @@ const
   /// distinct.
   TOPK_GAMMA_TOLERANCE = 0.05;
 
-  /// The largest top_k a client may ask optimize_mirror for.
   MAX_TOP_K = 20;
-  /// The default when it asks for none.
   DEFAULT_TOP_K = 5;
 
-  /// Said in the result of every optimize_mirror job: one results folder is
-  /// written per run, not per candidate. The manifest and the XRC structure
-  /// inside each package are rewritten for the rank being packaged; the curves
-  /// and the progress log are the winner's, because the engine computes them
-  /// once, for the run.
   XRFX_SHARED_RESULTS_NOTE =
     'results folder is shared; the manifest and best_structure_xrc.json inside ' +
     'each package are rank-specific, curves and progress log are the winner''s';
@@ -254,8 +186,6 @@ uses
   unit_MCPErrors, unit_MCPMaterials, unit_MCPSandbox, unit_MCPUnits;
 
 const
-  // DEFAULT_SCAN_POINTS and the rest of the scan rule are the engine's own, from
-  // unit_universal_types, so this unit cannot drift from what it reports.
 
   // evaluate_lines answers in the same round trip and the optimizer scans once
   // per line per particle per iteration, so the scan grid is bounded. 20000
@@ -285,7 +215,6 @@ const
     'Optimizer dark-zone threshold, not the scan start: a line whose Bragg ' +
     'angle falls below it is penalised, not moved.';
 
-{ --------------------------------------------------------------- defaults -- }
 
 function DefaultFitnessConfig: TFitnessConfig;
 begin
@@ -302,10 +231,7 @@ begin
   Result.NRef := DEFAULT_N_REF;
 end;
 
-{ ------------------------------------------------------------------ lines -- }
 
-/// The XRF table lookup, with the engine's EArgumentException turned into the
-/// structured error a client can act on.
 function LambdaOfSymbol(const Symbol: string): Double;
 begin
   try
@@ -361,7 +287,6 @@ begin
           Format('lines[%d] must be an element symbol', [i]));
       if Pos('-', S) > 0 then
       begin
-        // 'B-Si': the same symbol range the XRFCalc config accepts
         Expanded := ExpandElementRange(S);
         for k := 0 to High(Expanded) do
           AddLine(Result, Expanded[k], LambdaOfSymbol(Expanded[k]), 1.0);
@@ -377,8 +302,6 @@ begin
       if Name = '' then
         raise EMCPError.Create('invalid_argument',
           Format('lines[%d] must have a "name"', [i]));
-      // Either the wavelength or the energy, never both; neither means the line
-      // is named and its wavelength comes from the table.
       Lambda := GetLambdaArg(Obj, 'lambda', 'energy', True, 0);
       if Lambda <= 0 then
         Lambda := LambdaOfSymbol(Name);
@@ -399,7 +322,6 @@ begin
       IntToStr(Length(Result)));
 end;
 
-{ ---------------------------------------------------------------- fitness -- }
 
 function ParsePolarizationValue(const S: string): TPolarisation;
 begin
@@ -419,8 +341,6 @@ begin
     Result := 'sp';
 end;
 
-/// Every bound the fitness settings have to respect, wherever they came from -
-/// a tool's "fitness" overrides or a whole configuration parsed by the engine.
 procedure ValidateFitness(const F: TFitnessConfig);
 begin
   if F.RMinThreshold < 0 then
@@ -475,7 +395,6 @@ function FitnessConfigToJSON(const F: TFitnessConfig): TJSONObject;
 var
   Points, NRef: Integer;
 begin
-  // What TUniversalFitness.Create resolved them to, not what was asked for.
   if F.ScanPoints > 0 then
     Points := F.ScanPoints
   else
@@ -496,9 +415,6 @@ begin
     Result.AddPair('theta_min', JSONArgs.Num(F.ThetaMin));
     Result.AddPair('theta_min_note', THETA_MIN_NOTE);
     Result.AddPair('n_ref', TJSONNumber.Create(NRef));
-    // The grid is per line, so what belongs here is the rule. What it came to
-    // for each line is in that line's own scan_step_deg / scan_points_used /
-    // scan_half_deg.
     Result.AddPair('scan_points', TJSONNumber.Create(Points));
     Result.AddPair('scan_points_note', SCAN_POINTS_NOTE);
     Result.AddPair('scan_points_per_fwhm_ref',
@@ -515,7 +431,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------- configuration -- }
 
 function NumPair(const Value: Double): TJSONNumber;
 begin
@@ -539,8 +454,6 @@ begin
     Value.Free;
 end;
 
-/// The object under Key, created empty and inserted when it is not there. Raises
-/// invalid_argument when the key holds something that is not an object.
 function SectionOf(O: TJSONObject; const Key: string): TJSONObject;
 var
   V: TJSONValue;
@@ -623,9 +536,6 @@ begin
   if J = nil then
     raise EMCPError.Create('invalid_argument', 'The configuration must be a JSON object');
 
-  // A normalised copy so that the engine's parser - which is the definition of
-  // how a configuration is read - sees a complete document. The client's own
-  // object is never modified.
   N := TJSONObject(J.Clone);
   try
     // Lines. The engine's parser wants {element, lambda, weight}; the server
@@ -654,7 +564,6 @@ begin
       Arr.AddElement(Obj);
     end;
 
-    // The two things the server cannot invent.
     if not (N.FindValue('element_pool') is TJSONArray) then
       raise EMCPError.Create('invalid_argument',
         '"element_pool" must be an array of material names');
@@ -706,7 +615,6 @@ begin
     N.Free;
   end;
 
-  // The engine parsed the fitness section; the server's bounds still apply.
   ValidateFitness(Result.Fitness);
 
   Result.HenkePath := HenkeDir;
@@ -792,11 +700,7 @@ begin
   end;
 end;
 
-{ ------------------------------------------------- explicit-structure FoM -- }
 
-/// The distinct materials of a structure, in the order they are first met from
-/// the surface down, with the substrate material appended when it is not among
-/// them. This is the mixer's element list.
 function StructureMaterials(const S: TFitStructure): TArray<string>;
 
   procedure Add(const Name: string; var List: TArray<string>);
@@ -915,7 +819,6 @@ begin
         HenkeCwdLock.Release;
       end;
 
-      // Resolved once, not once per layer per line.
       SetLength(MatIdx, Last);      // 1 .. Last-1 are used; 0 is vacuum
       for i := 1 to Last - 1 do
       begin
@@ -976,7 +879,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------------- genomes -- }
 
 function DominantIndex(const Comp: TCompositionGenes): Integer;
 var
@@ -1075,7 +977,6 @@ var
   Cap: TTemplateCap;
   SubH, H: Double;
 begin
-  // The same test BuildLayers makes, in the same order.
   TemplIdx := -1;
   if C.Structure.PureElements and (Length(Templates) > 0) then
     TemplIdx := FindTemplate(Templates, GenomeKey(G, ElementNames));
@@ -1151,9 +1052,7 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------ top-k rule -- }
 
-/// True when A and B are far enough apart to both be worth reporting.
 function GenomesDistinct(const A, B: TGenome;
   const ElementNames: TArray<string>): Boolean;
 var
@@ -1222,7 +1121,6 @@ begin
   Result := Accepted;
 end;
 
-{ ------------------------------------------------------- the optimize job -- }
 
 type
   /// The optimizer's event sink for one run. It lives on the worker thread for
@@ -1291,7 +1189,6 @@ begin
   end;
 end;
 
-/// The path a client sees: relative to the work directory when it is under it.
 function JobRelPath(const Abs: string): string;
 begin
   if WorkDir <> nil then
@@ -1403,8 +1300,6 @@ begin
   C.OutputDir := ResultsDir;
   TDirectory.CreateDirectory(ResultsDir);
 
-  // The configuration exactly as the run will use it, next to the results the
-  // run writes. CreateXRFXPackage copies this file into the package.
   ConfigPath := TPath.Combine(Job.Dir, 'config.json');
   TUniversalIO.SaveConfig(C, ConfigPath);
 

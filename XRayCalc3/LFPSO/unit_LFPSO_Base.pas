@@ -70,20 +70,20 @@ type
       FWasShaken : Boolean;
       FFitParams: TFitParams;
       FCalcParams: TCalcThreadParams;
-      FStructure: TFitStructure;  // initial (input) structure
+      FStructure: TFitStructure;
 
       FLayersCount: integer;
       FMaterials: TMaterials;
 
-      X, V : TPopulation;  // solutions and velocityes
+      X, V : TPopulation;
       Xmax : TPopulation; // 1 column for upper boundary
       Xmin : TPopulation; // 1 column for lower boundary
       Xrange : TPopulation;   // 1 column for delta X
 
       Vmax, VMin: TPopulation; // 1 column for min/max velocity
 
-      pbest: TSolution; // best local solution
-      gbest: TSolution; // best global solution
+      pbest: TSolution;
+      gbest: TSolution;
       abest: TSolution;
 
       abest_val: single;
@@ -98,28 +98,27 @@ type
       FTMax: integer;
       FPopulation: integer;
       FData, FResultingCurve: TDataArray;
-      FBestCurve: TDataArray;   // curve of the absolute best solution
+      FBestCurve: TDataArray;
       FLimit: single;
       FTerminated: Integer;  // 0 = running, 1 = terminated (interlocked for thread safety)
       FMovAvg: TDataArray;
       CFactor: single;
-      FLevySigmaU: single;  // precomputed Levy walk constant
-      FLevyScale: single;   // adaptive Levy scale factor (0.01..0.1)
+      FLevySigmaU: single;
+      FLevyScale: single;
       FConstrictionChi: single;  // Clerc-Kennedy constriction coefficient
-      FDiversity: single;        // current population diversity
+      FDiversity: single;
       FMeanVelocity: single;     // current mean velocity (normalized)
 
       FWorkers: array of TCalcWorker;
       FNWorkers: Integer;
 
-      { GPU evaluation of the population (UseGPU): nil when the CPU evaluates }
       FUseGPU: Boolean;
       FGpu: TGpuEvaluator;
-      FGpuReady: Boolean;          // Setup done for this run's sizes
-      FGpuLayers: TArray<Single>;  // every particle's packed model
+      FGpuReady: Boolean;
+      FGpuLayers: TArray<Single>;
       FGpuChi: TArray<Single>;
-      FGpuBestIdx: Integer;        // best particle of the last GPU evaluation, -1 if none
-      FGpuUsed: Boolean;           // at least one iteration of this run was on the GPU
+      FGpuBestIdx: Integer;
+      FGpuUsed: Boolean;
       FTolCheckedChi: Single;      // the GPU chi2 whose incumbent the CPU last checked
       FDeviceUsed: string;
       FGpuError: string;
@@ -142,7 +141,7 @@ type
       procedure SendUpdateMessage(const Step: integer);
       procedure CheckLimits(const i, j, k: integer); virtual;
       procedure SetParams(const Value: TFitParams); virtual;
-      procedure Init(const Step: integer); //inline;
+      procedure Init(const Step: integer);
       function Omega(const t, TMax: integer): single; inline;
       procedure SetDomain(const Count, Order: integer; var X: TPopulation);
 
@@ -157,7 +156,7 @@ type
       function FitModelToLayer(const Solution: TSolution): TLayeredModel; virtual;
       procedure Set_Init_X(const LIndex, PIndex: Integer; Val: TFitValue);
       procedure Init_Domains(const Order: Integer);
-      procedure ApplyCFactor(var c1, c2: single);// inline;
+      procedure ApplyCFactor(var c1, c2: single);
       function CalcDiversity: single;
       function CalcMeanVelocity: single;
       function Rand(const dx: Single): single;
@@ -192,9 +191,6 @@ type
         only). Off by default: the GUI and the MCP server opt in. A GPU that
         cannot start or fails mid-run hands the work back to the CPU. }
       property UseGPU: Boolean read FUseGPU write FUseGPU;
-      { After Run: 'CPU', or the name of the GPU that evaluated the last
-        iteration. GpuError says why the GPU was not used, '' when it was or
-        was not asked for. }
       property DeviceUsed: string read FDeviceUsed;
       property GpuError: string read FGpuError;
 
@@ -223,11 +219,10 @@ uses
   unit_Config,
   unit_sys_helpers;
 
-{ Supplementary}
 
 function Gamma( x : single) : single;
 const COF : array [0..14] of single =
-                (  0.999999999999997092, // may as well include this in the array
+                (  0.999999999999997092,
                   57.1562356658629235,
                  -59.5979603554754912,
                   14.1360979747417471,
@@ -272,9 +267,9 @@ procedure MultiplyVector(const X: TPopulation; v: single; var Result: TPopulatio
 var
   i, j, k, p: integer;
 begin
-  for I := 0 to High(X) do                  // for every member of the population
-    for j := 0 to High(X[i]) do             // for every layer
-      for k := 1 to 3 do                    // for H, s, rho
+  for I := 0 to High(X) do
+    for j := 0 to High(X[i]) do
+      for k := 1 to 3 do
         for p := 0 to High(X[i][j][k]) do
           Result[i][j][k][p] := X[i][j][k][p] * v;
 end;
@@ -286,7 +281,6 @@ begin
        Result := 1;
 end;
 
-{ TLFPSO }
 
 function TLFPSO_BASE.Rand(const dx: Single):single;
 begin
@@ -320,7 +314,6 @@ end;
 
 procedure ClearSolution(var A: TSolution); inline;
 begin
-//  SetLength(A, 0);
   Finalize(A);
 end;
 
@@ -385,7 +378,6 @@ var
   i, k, j, p, LayerIndex, StackLen, MaxStackLen: Integer;
   Data: TLayersData;
 begin
-  // Find max stack layer count — the model's scratch holds the longest stack
   MaxStackLen := 1;  // at least 1 for substrate
   for I := 0 to High(FStructure.Stacks) do
     if Length(FStructure.Stacks[i].Layers) > MaxStackLen then
@@ -488,7 +480,6 @@ begin
         variance := variance + Sqr(X[i][j][k][0] - mean);
       variance := variance / (nPop - 1);
 
-      // Normalize by range squared to get relative diversity
       sumVar := sumVar + variance / Sqr(Xrange[0][j][k][0]);
       Inc(nParams);
     end;
@@ -540,7 +531,6 @@ begin
 
   XNew := X[i][j][k][0] + V[i][j][k][0];
 
-  // Reflective boundary handling: bounce off walls with damped velocity
   if XNew > Xmax[0][j][k][0] then
   begin
     XNew := 2 * Xmax[0][j][k][0] - XNew;
@@ -561,7 +551,7 @@ end;
 
 function TLFPSO_BASE.LevyWalk(const X, gBest: single): single;
 const
-  inv_beta = 1 / 1.5;  // 1/beta
+  inv_beta = 1 / 1.5;
 var
   dX, S: double;
   u, v, z: double;
@@ -594,7 +584,6 @@ var
   Err: Pointer;
 begin
   Err := nil;
-  // Initialize per-worker tracking
   SetLength(WorkerBests, FNWorkers);
   for i := 0 to FNWorkers - 1 do
   begin
@@ -603,7 +592,6 @@ begin
     WorkerBests[i].ParticleIdx := -1;
   end;
 
-  // Parallel particle evaluation
   Parallel.&For(0, High(X))
     .NumTasks(FNWorkers)
     .Execute(procedure(taskIndex, particleIndex: integer)
@@ -611,7 +599,7 @@ begin
       W: TCalcWorker;
       Chi: Single;
     begin
-      if Err <> nil then Exit;          // a sibling failed; the loop is lost anyway
+      if Err <> nil then Exit;
       try
         W := FWorkers[taskIndex];
         Chi := ParticleCost(W, X[particleIndex]);
@@ -630,11 +618,9 @@ begin
       end;
     end);
 
-  // Drain OTL task-completion messages from this thread's queue
   DrainThreadMessages;
   RaiseKept(Err);
 
-  // Sequential reduction — merge per-worker results
   FLastBestChiSqr  := 1e12;
   FLastWorseChiSQR := 0;
   BestIdx := -1;
@@ -652,12 +638,6 @@ begin
   end;
 end;
 
-{ The GPU evaluation of the whole population: every particle's model is built
-  on the CPU workers in parallel (Reset, FillModel, Generate - what TCalc.Run
-  does before CalcTet) and packed side by side, then one GPU call returns every
-  chi-squared. The best particle's curve is not fetched here: FindTheBest asks
-  for it only when that particle improves on the global best. False when the
-  GPU failed; it has then been shut down and the CPU takes over. }
 function TLFPSO_BASE.EvaluateOnGpu(out BestIdx: Integer): Boolean;
 var
   i, NLay: Integer;
@@ -701,7 +681,7 @@ begin
           if Length(L) <> NLay then
             raise EGpuError.CreateFmt('particle %d expands to %d layers, not %d',
               [particleIndex, Length(L), NLay]);
-          PackModelLayers(L, FGpuLayers, particleIndex);   // delta first, as the kernel reads it
+          PackModelLayers(L, FGpuLayers, particleIndex);
         except
           KeepFirstError(Err);
         end;
@@ -731,7 +711,7 @@ begin
     if FGpuChi[i] > FLastWorseChiSQR then
       FLastWorseChiSQR := FGpuChi[i];
   end;
-  SetLength(FResultingCurve, 0);   // fetched by FindTheBest when it is needed
+  SetLength(FResultingCurve, 0);
   FGpuBestIdx := BestIdx;
   FGpuUsed := True;
   Result := True;
@@ -782,8 +762,6 @@ begin
   end;
 end;
 
-{ Solution's curve and chi-squared from the CPU engine, one thread, as the MCP
-  server's chi2_recalc scores a model. }
 function TLFPSO_BASE.CpuCurveOf(const Solution: TSolution; out Chi: Single): TDataArray;
 begin
   FCalcModel.Reset;
@@ -840,7 +818,6 @@ begin
   if bestIdx >= 0 then
     pbest := CopySolution(X[bestIdx]);
 
-  // Handle first-iteration materials
   if Length(FMaterials) = 0 then
   begin
     FMaterials := Copy(FWorkers[0].Model.Materials);
@@ -909,7 +886,7 @@ begin
   if ReInitCount > FFitParams.ReInitMax then
   begin
     ReInitCount := 0;
-    gbest := CopySolution(abest);   // recover to absolute best solution
+    gbest := CopySolution(abest);
     FGlobalBestChiSqr := FAbsoluteBestChiSqr;
     FFitParams.Vmax := Vmax0;
     FFitParams.Ksxr := Ksxr0;
@@ -922,7 +899,7 @@ begin
     Inc(ReInitCount);
     dec(SuccessCount);
   end;
-  UpdateStructure(gbest);        // re-init based on current global best solution
+  UpdateStructure(gbest);
   FStructure.CopyContent(TmpStructure);
   SetStructure(TmpStructure);    // Don't use X[0] = abest! The full re-set is requred
 
@@ -960,18 +937,16 @@ begin
   else
     RandSeed := FSeed;
 
-  // Precompute Levy walk sigma_u (constant for beta=1.5)
   num := gamma(1 + levy_beta) * FastSin(pi * levy_beta / 2);
   den := gamma((1 + levy_beta) / 2) * levy_beta * FastPower(2, (levy_beta - 1) / 2);
   FLevySigmaU := FastPower(num / den, 1 / levy_beta);
 
-  // Precompute constriction coefficient if enabled
   if FFitParams.UseConstriction then
     FConstrictionChi := 2.0 / Abs(2.0 - CONSTR_PHI - Sqrt(CONSTR_PHI * CONSTR_PHI - 4 * CONSTR_PHI))
   else
     FConstrictionChi := 1.0;
 
-  FLevyScale := 0.01;  // initial scale (will be updated adaptively)
+  FLevyScale := 0.01;
 
   FReInit := False;
   FWasShaken := False;
@@ -1025,19 +1000,14 @@ begin
     begin
       if FTerminated <> 0 then Break;
 
-      // Adaptive Levy scale: larger steps early (exploration), smaller late (fine-tuning)
       FLevyScale := 0.01 + 0.09 * (1 - t / FTMax);
 
-      // Adaptive velocity: linearly decrease c1,c2 from (w1+w2) to w1
       if FFitParams.AdaptVel then
         CFactor := FFitParams.w1 + FFitParams.w2 * (1 - t / FTMax)
       else
         CFactor := 1;
 
-      // Adaptive PSO/Levy switching:
-      // Base: more Levy early (exploration), more PSO late (exploitation)
       LevyProb := 0.3 + 0.4 * (1 - t / FTMax);
-      // Stagnation boost: increase Levy probability when stuck
       if FJammingCount > 0 then
         LevyProb := LevyProb + 0.05 * FJammingCount;
       if LevyProb > 0.9 then LevyProb := 0.9;
@@ -1065,7 +1035,6 @@ begin
 
       if FFitParams.Shake and (FJammingCount > FFitParams.JammingMax) then
       begin
-        // Diversity-aware shake: delay shake while population is still diverse
         if (FDiversity < 0.01) or (FJammingCount > FFitParams.JammingMax + 3) then
         begin
           FWasShaken := True;

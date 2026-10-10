@@ -148,7 +148,6 @@ begin
       Comp[i] := Comp[i] / Sum;
   end;
 
-  // Pure elements mode: snap to one-hot (argmax)
   if FConfig.Structure.PureElements then
   begin
     BestIdx := 0;
@@ -205,14 +204,12 @@ begin
     NormalizeComposition(P.X.Composition[Role]);
   end;
 
-  // Enforce excluded pairs in PureElements mode
   if FConfig.Structure.PureElements and (Length(FConfig.ExcludedPairs) > 0) then
   begin
     var Dom0 := DominantElement(P.X.Composition[0]);
     var Dom1 := DominantElement(P.X.Composition[1]);
     if IsExcludedPair(Dom0, Dom1) then
     begin
-      // Re-randomize Layer 1 to a valid element
       var NewElem := Random(FPoolSize);
       while IsExcludedPair(Dom0, NewElem) or (NewElem = Dom0) do
         NewElem := (NewElem + 1) mod FPoolSize;
@@ -250,7 +247,6 @@ begin
     FParticles[i].CurrentFoM := MaxSingle;
     SetLength(FParticles[i].TargetResults, Length(FConfig.Lines));
 
-    // Random structural parameters
     FParticles[i].X.d := FdMin + Random * FdRange;
     FParticles[i].X.Gamma := FGammaMin + Random * FGammaRange;
     FParticles[i].X.N := FNMin + Random * FNRange;
@@ -269,16 +265,12 @@ begin
     else
       FParticles[i].X.CapVariant := 0;
 
-    // Composition initialization
     if FConfig.Structure.PureElements then
     begin
-      // Seed diverse element pairs systematically then random
       Elem0 := i mod FPoolSize;
       Elem1 := (i div FPoolSize) mod FPoolSize;
-      // Ensure different elements for each layer role
       if (Elem0 = Elem1) and (FPoolSize > 1) then
         Elem1 := (Elem1 + 1) mod FPoolSize;
-      // Skip excluded pairs
       while IsExcludedPair(Elem0, Elem1) or (Elem0 = Elem1) do
         Elem1 := (Elem1 + 1) mod FPoolSize;
 
@@ -306,7 +298,6 @@ begin
       else
         FParticles[i].X.DensityFactor[Role] := FDFMin + Random * FDFRange;
 
-    // Initial velocities (10% of range)
     FParticles[i].V.d := (Random - 0.5) * FdRange * 0.2;
     FParticles[i].V.Gamma := (Random - 0.5) * FGammaRange * 0.2;
     FParticles[i].V.N := (Random - 0.5) * FNRange * 0.2;
@@ -429,7 +420,6 @@ begin
 
   for i := 0 to High(FParticles) do
   begin
-    // 30% chance: random peer as Levy target
     if Random < 0.3 then
     begin
       RandIdx := Random(Length(FParticles));
@@ -576,7 +566,6 @@ var
 
     MeanVal := 0;
     Variance := 0;
-    // (mean and variance computed inline per parameter)
     Inc(nParams);
   end;
 
@@ -614,49 +603,42 @@ begin
   SumVar := 0;
   nParams := 0;
 
-  // d
   if FdRange > 1e-10 then
   begin
     for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.d;
     MeasureParam(Vals, FdRange);
   end;
 
-  // Gamma
   if FGammaRange > 1e-10 then
   begin
     for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.Gamma;
     MeasureParam(Vals, FGammaRange);
   end;
 
-  // N
   if FNRange > 1e-10 then
   begin
     for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.N;
     MeasureParam(Vals, FNRange);
   end;
 
-  // Sigma
   if (not FSigmaFixed) and (FSigmaRange > 1e-10) then
   begin
     for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.Sigma;
     MeasureParam(Vals, FSigmaRange);
   end;
 
-  // CapH
   if FHasCap and (FCapHRange > 1e-10) then
   begin
     for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.CapH;
     MeasureParam(Vals, FCapHRange);
   end;
 
-  // CapVariant
   if FHasCapVariants and (FCapVarRange > 1e-10) then
   begin
     for i := 0 to High(FParticles) do Vals[i] := FParticles[i].X.CapVariant;
     MeasureParam(Vals, FCapVarRange);
   end;
 
-  // DensityFactor per role
   if not FDFFixed then
     for Role := 0 to LAYERS_PER_PERIOD - 1 do
       if FDFRange > 1e-10 then
@@ -665,7 +647,6 @@ begin
         MeasureParam(Vals, FDFRange);
       end;
 
-  // Composition per role per element
   for Role := 0 to LAYERS_PER_PERIOD - 1 do
     for j := 0 to FPoolSize - 1 do
     begin
@@ -721,7 +702,6 @@ begin
     begin
       if FConfig.Structure.PureElements and (Random < 0.5) then
       begin
-        // 50% chance to pick a completely random element
         for j := 0 to FPoolSize - 1 do
           FParticles[i].X.Composition[Role][j] := 0;
         FParticles[i].X.Composition[Role][Random(FPoolSize)] := 1.0;

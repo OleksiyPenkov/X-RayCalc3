@@ -27,9 +27,7 @@ type
     edPos: TJvCalcEdit;
     edK: TJvCalcEdit;
   private
-    { Private declarations }
   public
-    { Public declarations }
   end;
 
 var

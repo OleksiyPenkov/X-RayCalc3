@@ -12,9 +12,7 @@
 
 unit unit_MCPUnits;
 
-(* Unit conversions shared by every tool that takes a wavelength.
-
-   The server speaks Angstrom for wavelength and length, eV for photon energy
+(* The server speaks Angstrom for wavelength and length, eV for photon energy
    and degrees for angles, and every angle argument is the *incidence* angle
    theta, never 2-theta. A tool that wants to accept a diffractometer reading
    converts it with TwoThetaToTheta first.
@@ -36,20 +34,9 @@ const
   HC_EV_ANGSTROM = 12398.42;   // requirements 2.4: the server's E <-> lambda constant
   ENGINE_HC      = 12398.6;    // math_globals.H, used by the engines for table lookup
 
-/// <summary>Photon energy in eV to wavelength in Angstrom.
-/// Raises EMCPError('invalid_argument') for a non-positive energy.</summary>
 function EnergyToLambda(EeV: Double): Double;
-/// <summary>Wavelength in Angstrom to photon energy in eV.
-/// Raises EMCPError('invalid_argument') for a non-positive wavelength.</summary>
 function LambdaToEnergy(LambdaA: Double): Double;
-/// <summary>Scattering angle 2-theta to incidence angle theta, in the same
-/// unit (the server uses degrees).</summary>
 function TwoThetaToTheta(TwoTheta: Double): Double;
-/// <summary>The wavelength an argument object asks for, in Angstrom. Exactly
-/// one of LambdaKey and EnergyKey must be present: both is ambiguous and
-/// neither is under-specified, and each raises
-/// EMCPError('invalid_argument'). When AllowMissing is True, neither present
-/// returns Default instead of raising.</summary>
 function GetLambdaArg(const P: TJSONObject; const LambdaKey: string = 'lambda';
   const EnergyKey: string = 'energy'; AllowMissing: Boolean = False;
   Default: Double = 0): Double;

@@ -1,5 +1,4 @@
-﻿; X-Ray Calc 3 — InnoSetup Installer Script
-; Run deploy.sh first to stage files into deploy/
+﻿; Run deploy.sh first to stage files into deploy/
 
 #define MyAppName "X-Ray Calc 3"
 #define MyAppVersion "3.9.5"
@@ -34,16 +33,13 @@ MinVersion=10.0
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; --- Both executables (the same speed; x64 can use more than ~2 GB of RAM) ---
 Source: "deploy\Win64\XRayCalc3.x64.exe";          DestDir: "{app}"; Flags: ignoreversion
 Source: "deploy\Win32\XRayCalc3.exe";               DestDir: "{app}"; Flags: ignoreversion
 
-; --- MCP server for LLM agents (Win64 console; register with "claude mcp add") ---
 Source: "deploy\Win64\XRC_MCP.exe";                 DestDir: "{app}"; Flags: ignoreversion
 ; the server does not start without its XRF line table beside it
 Source: "deploy\Win64\xrf_lines.json";              DestDir: "{app}"; Flags: ignoreversion
 
-; --- Shared data files ---
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
 Source: "deploy\Examples\*";                         DestDir: "{app}\Examples";          Flags: ignoreversion
 Source: "deploy\Help\UserManual.html";               DestDir: "{app}\Help";              Flags: ignoreversion
@@ -70,7 +66,6 @@ Type: files; Name: "{commondesktop}\{#MyAppName} x32 (Fast).lnk"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Registry]
-; --- .xrcx file association ---
 Root: HKLM; Subkey: "Software\Classes\{#MyAppAssocExt}";                          ValueType: string; ValueData: "XRayCalc3.Project";    Flags: uninsdeletevalue
 Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project";                         ValueType: string; ValueData: "{#MyAppAssocName}";     Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\XRayCalc3.Project\DefaultIcon";             ValueType: string; ValueData: "{app}\XRayCalc3_Icon.ico,0"
@@ -81,12 +76,10 @@ Filename: "{app}\XRayCalc3.exe"; Description: "Launch {#MyAppName} x32"; Flags: 
 Filename: "{app}\XRayCalc3.x64.exe"; Description: "Launch {#MyAppName} x64"; Flags: nowait postinstall skipifsilent unchecked
 
 [Code]
-// Notify Windows of file association change
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
-    // Notify shell of association change
     RegWriteStringValue(HKEY_LOCAL_MACHINE,
       'Software\Classes\{#MyAppAssocExt}', '', 'XRayCalc3.Project');
   end;

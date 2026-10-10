@@ -74,7 +74,6 @@ type
       destructor  Destroy; override;
       property Substrate: boolean read FSubstrate write SetSubstrate;
       procedure Edit;
-      { What the card shows as the layer's material. }
       function MaterialCaption: string;
       class property MenuImages: TCustomImageList read FMenuImages write FMenuImages;
     published
@@ -109,7 +108,6 @@ const
   // indices into vilModel: layer_up, layer_down, layer_insert, -, layer_delete
   ImgIndices: array [1..5] of Integer  = (9, 10, 2, -1, 7);
 
-{ TXRCLayerControl }
 
 function TXRCLayerControl.AddSpinEdit;
 begin
@@ -161,32 +159,25 @@ begin
   FHandler := Handler;
 
   FOnset := True;
-//  FData  := Data;
 
   AlignWithMargins := True;
   Align := alTop;
   BevelWidth := 2;
   BorderOuter := fsFlatRounded;
 
-  //Name
   Name := TRzLabel.Create(Self);
 
-  //Thickness
   Thickness := AddSpinEdit(1, 85, 9999, 80);
   PairedH   := AddCheckBox(1, 168);
 
-  //Sigma
   Sigma := AddSpinEdit(2, 186, 50);
   PairedS   := AddCheckBox(2, 240);
 
-  //Rho
   Rho := AddSpinEdit(3, 257, 30);
   PairedR   := AddCheckBox(3, 310);
 
-  //RzCheckBox1
   FLinkCheckBox := TRzCheckBox.Create(Self);
 
-  //Name
   Name.Name := 'Name';
   Name.Parent := Self;
   Name.Left := ScaleForDPI(25);
@@ -200,7 +191,6 @@ begin
   Name.Font.Style := [fsBold];
   Name.ParentFont := False;
 
-  //Link
   FLinkCheckBox.Name := '';
   FLinkCheckBox.Parent := Self;
   FLinkCheckBox.Left := ScaleForDPI(5);
@@ -382,8 +372,6 @@ procedure TXRCLayerControl.SetLayerData(const Value: TLayerData);
 begin
   FData := Value;
 
-  { frmMain writes an edited layer back through here (Structure.LayerData /
-    SubstrateData), so the material caption has to follow the data as well. }
   Name.Caption := FData.Material;
 
   Thickness.Value := FData.P[1].V;

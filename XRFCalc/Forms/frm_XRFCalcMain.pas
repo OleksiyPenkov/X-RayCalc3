@@ -430,7 +430,6 @@ begin
   end;
 end;
 
-{ --- Runner Integration --- }
 
 procedure TfrmXRFCalcMain.RunTimerTick(Sender: TObject);
 begin

@@ -12,13 +12,7 @@
 
 unit unit_MCPJobs;
 
-(* Long-running work: the job registry, the queue and the one worker thread.
-
-   Everything the client cannot wait for in a single round trip - a mirror
-   optimisation, an XRR fit - is submitted as a job and polled afterwards with
-   job_status / job_result / cancel_job.
-
-   One worker, one job at a time (design note section 5). The reasons are not
+(* One worker, one job at a time (design note section 5). The reasons are not
    about load: System.RandSeed is process-global, so two seeded jobs running at
    once would not be reproducible; both engines already use every core through
    Parallel.For, so a second job would only take cores away from the first; and
@@ -26,13 +20,6 @@ unit unit_MCPJobs;
    reads. The queue is therefore a genuine FIFO queue and is bounded
    (MAX_QUEUED_JOBS) so that a client cannot fill memory with work that will
    never run.
-
-   On disk, jobs\<job_id>\ holds request.json (the arguments exactly as they
-   arrived) and job.json (the status, rewritten on every state change and, at
-   most every JOB_SAVE_INTERVAL_MS, on progress). A failed job's job.json also
-   carries "error"; a cancelled job that produced something carries "partial".
-   The registry itself is in memory only: after a restart every id is unknown,
-   which is what the requirements ask for.
 
    Threading contract
    - Every mutable field of TJob is read and written under TJob.FLock, except
@@ -53,10 +40,10 @@ uses
 
 const
   MAX_QUEUED_JOBS      = 16;    // jobs waiting to run; the running one is extra
-  JOB_SAVE_INTERVAL_MS = 250;   // job.json is not rewritten more often than this
-  JOB_WAIT_POLL_MS     = 50;    // how often WaitFor looks at the state
-  DEF_JOB_WAIT_S       = 300;   // job_wait's default ceiling, seconds
-  MAX_JOB_WAIT_S       = 900;   // and the longest it will block for
+  JOB_SAVE_INTERVAL_MS = 250;
+  JOB_WAIT_POLL_MS     = 50;
+  DEF_JOB_WAIT_S       = 300;
+  MAX_JOB_WAIT_S       = 900;
 
 type
   TJobState = (jsQueued, jsRunning, jsFinished, jsFailed, jsCancelled);
@@ -64,12 +51,7 @@ type
 
   TJob = class;
 
-  /// <summary>The work itself, run on the worker thread. It sets RandSeed from
-  /// Job.Seed first thing, reports progress with Job.Progress, and leaves the
-  /// answer in Job.ResultObj. Raising EMCPError fails the job with that code;
-  /// any other exception fails it as 'internal'.
-  ///
-  /// Polling Job.CancelRequested is not optional. There is one worker, and
+  /// <summary>Polling Job.CancelRequested is not optional. There is one worker, and
   /// TJobManager.Destroy - which RunServer calls when the client closes the
   /// connection - requests cancellation and then joins the worker with no
   /// timeout. A body that never looks at the flag therefore holds the whole
@@ -99,7 +81,7 @@ type
     FResultObj: TJSONObject;     // owned
     FErrorObj: TJSONObject;      // owned
     FBody: TJobBody;
-    FSaveWarned: Boolean;        // job.json failed once and has been reported
+    FSaveWarned: Boolean;
     function StatusJSONLocked: TJSONObject;
     procedure SaveLocked;
     function GetState: TJobState;
@@ -129,15 +111,11 @@ type
     /// <summary>{job_id,state,kind,iteration,max_iterations,best_value,
     /// elapsed_s,last_message,seed}. Caller frees.</summary>
     function StatusJSON: TJSONObject;
-    /// <summary>Writes job.json: the status, plus "error" when the job failed
-    /// and "partial" when a cancelled job left a result behind.</summary>
     procedure SaveJobFile;
     /// <summary>A copy of the result, or nil when there is none. Caller frees.</summary>
     function CloneResult: TJSONObject;
     /// <summary>A copy of the error object, or nil. Caller frees.</summary>
     function CloneError: TJSONObject;
-    /// <summary>Sets the error the job failed with (takes no ownership of
-    /// anything; builds {code,message,detail} itself).</summary>
     procedure SetError(const ACode, AMessage, ADetail: string);
 
     property Id: string read FId;
@@ -170,41 +148,24 @@ type
     FLock: TCriticalSection;
     FWake: TEvent;
     FTerminating: Boolean;
-    FRunning: TJob;                            // the job the worker is in, or nil
-    /// <summary>Pops the next queued job, marks it running and returns it; nil
-    /// when the queue is empty or the manager is shutting down.</summary>
+    FRunning: TJob;
     function TakeNext: TJob;
-    /// <summary>Runs one job to completion on the worker thread.</summary>
     procedure RunJob(Job: TJob);
-    /// <summary>Last resort when an exception escapes TakeNext or RunJob: says
-    /// so on stderr, ends the job (if there was one) as failed rather than
-    /// leaving it running for ever, and clears the running slot so the worker
-    /// can carry on with the queue.</summary>
     procedure AbandonJob(Job: TJob; E: Exception);
     procedure RemoveFromQueueLocked(Job: TJob);
     function UnknownStatus(const Id: string): TJSONObject;
   public
     constructor Create(AWorkDir: TWorkDir);
     destructor Destroy; override;
-    /// <summary>Creates jobs\&lt;id&gt;\, writes request.json and job.json,
-    /// enqueues the job and wakes the worker. Raises EMCPError
-    /// ('too_many_jobs') when MAX_QUEUED_JOBS are already waiting. The job
-    /// comes back in state queued; it may already be running by the time the
+    /// <summary>The job comes back in state queued; it may already be running by the time the
     /// caller looks at it.</summary>
     function Submit(Kind: TJobKind; Seed: Integer; const Body: TJobBody;
       const Request: TJSONObject): TJob;
     /// <summary>The job with this id, or nil. The object stays alive until the
     /// manager is freed.</summary>
     function Find(const Id: string): TJob;
-    /// <summary>The status object; {"job_id","state":"unknown"} for an id this
-    /// server has never seen (the registry does not survive a restart).</summary>
     function Status(const Id: string): TJSONObject;
-    /// <summary>The same object as Status, plus "waited_s", returned as soon as
-    /// the job reaches a final state (finished, failed or cancelled) or
-    /// TimeoutMs has passed, whichever comes first. A job that has already
-    /// ended, and an id this server does not know, return at once.
-    ///
-    /// The wait is a poll of the job's own state every JOB_WAIT_POLL_MS on the
+    /// <summary>The wait is a poll of the job's own state every JOB_WAIT_POLL_MS on the
     /// calling thread; the work itself runs on the worker, so nothing here
     /// touches it. The caller is the stdio loop, which serves one request at a
     /// time: while this blocks, the server answers nothing else - including a
@@ -212,21 +173,14 @@ type
     /// somewhere else (a second client, the manager shutting down) does end the
     /// wait, because the job then reaches cancelled.</summary>
     function WaitFor(const Id: string; TimeoutMs: Integer): TJSONObject;
-    /// <summary>A clone of the result of a finished job. Raises EMCPError
-    /// job_unknown / job_not_finished / job_failed / job_cancelled otherwise.</summary>
     function ResultOf(const Id: string): TJSONObject;
-    /// <summary>Requests cancellation and returns the status. A queued job is
-    /// cancelled at once; a running one is asked to stop and the status
-    /// returned is still "running"; a job that has already ended is unchanged;
-    /// an unknown id is "unknown", not an error.</summary>
     function Cancel(const Id: string): TJSONObject;
-    /// <summary>Jobs waiting to run (the running one is not counted).</summary>
     function QueuedCount: Integer;
   end;
 
 function JobStateName(S: TJobState): string;
 function JobKindName(K: TJobKind): string;
-function JobKindPrefix(K: TJobKind): string;   // 'opt' | 'fit'
+function JobKindPrefix(K: TJobKind): string;
 
 /// <summary>Writes V to Path as UTF-8 without a byte order mark (a BOM in
 /// front of a '{' trips strict JSON parsers), through a temporary file in the
@@ -335,7 +289,6 @@ begin
   end;
 end;
 
-{ ------------------------------------------------------------------ TJob -- }
 
 constructor TJob.Create(const AId: string; AKind: TJobKind; const ADir: string);
 begin
@@ -645,7 +598,6 @@ begin
   end;
 end;
 
-{ ----------------------------------------------------------- the worker -- }
 
 type
   TJobWorker = class(TThread)
@@ -699,7 +651,6 @@ begin
   end;
 end;
 
-{ ----------------------------------------------------------- TJobManager -- }
 
 constructor TJobManager.Create(AWorkDir: TWorkDir);
 begin
@@ -720,7 +671,7 @@ begin
     try
       FTerminating := True;
       if FRunning <> nil then
-        FRunning.CancelRequested := True;   // ask the body to stop
+        FRunning.CancelRequested := True;
     finally
       FLock.Leave;
     end;
@@ -735,7 +686,7 @@ begin
     FWorker := nil;
   end;
   FQueue.Free;
-  FJobs.Free;                 // owns the jobs
+  FJobs.Free;
   FWake.Free;
   FLock.Free;
   inherited Destroy;
@@ -1067,7 +1018,7 @@ begin
           raise EMCPError.Create('job_cancelled', Msg, Detail);
         end;
 
-    else    // jsQueued, jsRunning
+    else
       Status := Job.StatusJSON;
       try
         Detail := Status.ToJSON;
@@ -1103,7 +1054,7 @@ begin
     end;
   end;
   for I := 0 to High(Kept) do
-    FQueue.Enqueue(Kept[I]);      // FIFO order is preserved
+    FQueue.Enqueue(Kept[I]);
 end;
 
 function TJobManager.Cancel(const Id: string): TJSONObject;
@@ -1135,9 +1086,6 @@ begin
       end;
     end
     else
-      { Running: it stays running until the body notices. Finished, failed or
-        already cancelled: unchanged. Either way the caller gets the state as
-        it is now. }
       Result := Job.StatusJSON;
   finally
     FLock.Leave;

@@ -45,7 +45,6 @@ begin
   RegisterComponents('X-RayCalcComponents', [TXRCGrid]);
 end;
 
-{ TXRCGrid }
 
 procedure TXRCGrid.SetAutofit(const Value: Boolean);
 begin

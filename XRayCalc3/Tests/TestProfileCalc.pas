@@ -50,7 +50,6 @@ procedure TTestProfileCalc.Test_Erf_ZeroSigma_ReturnsZero;
 begin
   // sigma~0 is degenerate; with small sigma the integration step dx=0.05
   // is large relative to sigma, so a small residual accumulates.
-  // Test that result is close to zero (within integration error).
   Assert.AreEqual(Single(0), Erf(0.001, 0), 0.05, 'Near-zero sigma at x=0');
 end;
 
@@ -121,7 +120,6 @@ begin
   Assert.AreEqual(Single(10.0), ModelValue(S, nil, 0, 0, 2, 1, False));
 end;
 
-// Model(True) keeps a paired parameter at P.V.
 procedure TTestProfileCalc.Test_ModelValue_ReturnsP_WhenPaired;
 var
   S: TStacksData;
@@ -132,8 +130,6 @@ begin
   Assert.AreEqual(Single(10.0), ModelValue(S, nil, 0, 0, 2, 1, True));
 end;
 
-// A table made for N = 2 after N was raised to 3 is never read past its end;
-// it is ignored as a whole, in every period.
 procedure TTestProfileCalc.Test_ModelValue_ReturnsP_WhenTableShorterThanN;
 var
   S: TStacksData;
@@ -146,7 +142,6 @@ begin
       'period ' + Period.ToString);
 end;
 
-// Model expands tables for periodic stacks only.
 procedure TTestProfileCalc.Test_ModelValue_ReturnsP_ForSinglePeriodStack;
 var
   S: TStacksData;
@@ -249,8 +244,6 @@ begin
     Result.C[i] := C[i];
 end;
 
-// The demo ML(30x2)P3 "Target": Si thickness graded through 30 periods. The
-// depth profile must carry the per-period values the calculation uses.
 procedure TTestProfileCalc.Test_BuildLayers_Gradient_ThicknessPerPeriod;
 var
   S: TStacksData;
@@ -266,8 +259,6 @@ begin
   Assert.AreEqual(Single(2.33), L[29].r, 'density has no gradient');
 end;
 
-// PrepareLayers counts a gradient's periods from 1 in the stack it belongs to,
-// and applies it only to its own (stack, layer, parameter).
 procedure TTestProfileCalc.Test_BuildLayers_Gradient_CountsPeriodsInItsOwnStack;
 var
   S: TStacksData;

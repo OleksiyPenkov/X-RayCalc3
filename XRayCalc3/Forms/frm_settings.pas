@@ -101,7 +101,6 @@ type
     procedure edBenchmarkDirButtonClick(Sender: TObject);
 
   private
-//    procedure SetPanelFontColor(Value: Graphics.TColor);
 
   public
     procedure LoadSetting;
@@ -195,7 +194,6 @@ end;
 
 procedure TfrmSettings.ShowHelpClick(Sender: TObject);
 begin
-//  HtmlHelp(Application.Handle, PChar(TConfig.SystemFileName[sfAppHelp]), HH_HELP_CONTEXT, pcSetPages.ActivePage.HelpContext);
 end;
 
 procedure TfrmSettings.SaveSettingsClick(Sender: TObject);
@@ -208,12 +206,9 @@ end;
 
 procedure TfrmSettings.FormShow(Sender: TObject);
 begin
-//  SetWindowPos(Handle,HWND_TOPMOST,Top,Left,0,0,SWP_NOSIZE);
-//  SetFocus;
   LoadSetting;
 end;
 
-//
 procedure TfrmSettings.tvSectionsChange(Sender: TObject; Node: TTreeNode);
 begin
   pcSetPages.ActivePageIndex := tvSections.Selected.Index;
@@ -245,7 +240,6 @@ begin
 end;
 
 
-// ============================================================================
 
 procedure TfrmSettings.edBenchmarkDirButtonClick(Sender: TObject);
 var
@@ -263,7 +257,6 @@ end;
 
 procedure TfrmSettings.edTimeOutChange(Sender: TObject);
 begin
-//
 end;
 
 end.

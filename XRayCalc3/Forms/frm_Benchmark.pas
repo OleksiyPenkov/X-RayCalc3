@@ -32,11 +32,9 @@ type
     FLine: Integer;
     FFileName: string;
     FOnProgress: Boolean;
-    { Private declarations }
 
   procedure SendCancelMessage;
   public
-    { Public declarations }
     procedure Clear(const N: integer);
     procedure AddValue(const n: integer; Val: string);
     procedure AddFile(const Name: string);

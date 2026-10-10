@@ -1,7 +1,5 @@
 ﻿ (* *****************************************************************************
   *
-  *   X-Ray Calc CMD
-  *
   *   Copyright (C) 2001-2022 Oleksiy Penkov
   *   e-mail: oleksiy.penkov@gmail.com
   *
@@ -12,7 +10,6 @@ unit cmd_unit_calc;
 interface
 
 uses
-//  FastMM4,
   Classes,
   cmd_unit_types,
   math_complex,
@@ -80,7 +77,6 @@ uses
   Math,
   cmd_math_globals;
 
-  { TCalc }
 
 function TCalc.CalcChiSquare: Single;
 var
@@ -92,8 +88,6 @@ begin
   for I := 0 to High(FResult) do
   begin
     Bare := Sqr((Log10(FData[i].r) - Log10(FResult[i].r))/Log10(FResult[i].r));
-    // The bare data-to-fit disagreement, reported beside the angle-weighted
-    // sum that is actually minimised
     Plain := Plain + Bare;
     Result := Result + Bare * Exp(FData[i].t);
   end;
@@ -252,17 +246,10 @@ begin
               end;
     cmLambda: begin
                 CalcLambda(FCD.StartL, FCD.EndL, FCD.Theta, FCD.N);
-//                Convolute(FCD.DW);
               end;
   end;
 end;
 
-{ Delegates to unit_universal_refcalc.RefCalcStandalone, extracted from this
-  method: same roughness functions, the same use of FCD.RF/FCD.P, and the
-  same order of the S and P passes - only the RF source differed (this
-  method read FCD.RF directly; RefCalcStandalone takes it as a parameter).
-  Both now carry the cancellation-free (eps - 1) + sin^2(grazing) form, as
-  TCalc.RefCalc in Shared/Math/unit_calc.pas (precision-followups, Task 5). }
 function TCalc.RefCalc(t, Lambda:single; ALayers: TLayers): single;
 begin
   Result := RefCalcStandalone(t, Lambda, ALayers, FCD.P, FCD.RF);

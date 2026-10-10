@@ -89,7 +89,6 @@ uses
 const
   ClassicalElectronRadius = 0.54014E-5;  // r_e * N_A / pi (lambda in A, rho in g/cm3): c * f1 = 2*delta
 
-{ TLayeredModel }
 
 procedure TLayeredModel.AddLayers(const StackID: integer; Data: TLayersData);
 begin
@@ -127,11 +126,8 @@ begin
   inc(CurrentLayer, Count);
 end;
 
-{ A model refilled for every particle of a fit gets the same name strings
-  again and again. Assigning one anyway bumps the reference count of a string
-  every worker thread shares - an interlocked write to one cache line from all
-  of them - and that alone kept the parallel model build from scaling. The
-  name is only replaced when it is a different string. }
+{ Reassigning shared name strings makes worker threads contend on the same
+  reference-count cache line, even when the name does not change. }
 procedure TLayeredModel.SetName(Index: Integer; const Name: string);
 begin
   if Pointer(FLayerNames[Index]) <> Pointer(Name) then
@@ -198,11 +194,8 @@ var
   i: Integer;
   Na, Nro: Single;
 begin
-  { The materials hold f1, f2 read at the wavelength of the first Generate.
-    A model generated again at another wavelength - the Lambda scan does it
-    once per point - reads them again at that one; until 3.9.3 the first
-    wavelength's f1, f2 were used for the whole scan and an absorption edge
-    inside it was missed. A fit generates at one wavelength and keeps them. }
+{ Cached f1/f2 must be refreshed for Lambda scans, or absorption edges
+  inside the scan are missed. Fits at one wavelength keep the cache. }
   if (Length(FMaterials) > 0) and (Lambda <> FLambda) then
     for i := 0 to High(FMaterials) do
       ReadHenke(FMaterials[i].Name, 0, Lambda, FMaterials[i].f, Na, Nro);
@@ -232,7 +225,7 @@ begin
     if FLayers[i].ro <> 0 then
       l_ro := FLayers[i].ro
     else
-      l_ro := FMaterials[CurrentMaterial].ro;   // use default value for density
+      l_ro := FMaterials[CurrentMaterial].ro;
 
     Key := Cardinal(FStackIDs[i]) shl 16 or FLayerIDs[i];
     if FProfileIndex.TryGetValue(Key, Indices) then
@@ -254,11 +247,8 @@ begin
     FLayers[i].delta := FMaterials[CurrentMaterial].f.re * c;
   end;
 
-  { The substrate follows the layers' rule: its own density when one is
-    given, the Henke bulk density when it is 0. Until 3.9.1 the substrate
-    density was ignored and the bulk value always used; projects saved before
-    then are loaded with it reset to 0 (TXRCProjectTree.ProjectLoadNode), so
-    they compute as they always did. }
+{ Projects saved before 3.9.1 load the substrate density as 0
+  (TXRCProjectTree.ProjectLoadNode), preserving their bulk-density result. }
   UseLayerMaterial(High(FLayers));
   if FLayers[High(FLayers)].ro <> 0 then
     l_ro := FLayers[High(FLayers)].ro
@@ -391,7 +381,6 @@ begin
   FLayers[0].delta := 0;
 
   CurrentLayer := 1;
-  // FMaterials and FMaterialIndex preserved for caching
 end;
 
 procedure TLayeredModel.LoadFromFile(const FileName: string);

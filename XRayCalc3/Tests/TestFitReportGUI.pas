@@ -1,8 +1,5 @@
 unit TestFitReportGUI;
 
-(* Result - Fit report: the input unit_FitReportGUI builds from the chart's two
-   curves - resampled onto the measured angles, halved on a 2theta chart, the
-   measured curve at the solved scale - and the near-bound list. *)
 
 interface
 
@@ -71,8 +68,6 @@ begin
   Assert.AreEqual(2.0, Double(Inp.Measured[1].t), 1E-9);
 end;
 
-{ The same curve as data and model: every order's calc/meas is 1. A Bragg
-  peak of a 50 A period at 1.5406 A sits near theta 0.88 deg. }
 procedure TTestFitReportGUI.Report_OnIdenticalCurves_OrdersRatioIsOne;
 var
   C: TDataArray;
@@ -136,10 +131,10 @@ begin
     S.Stacks[0].Layers[0].P[p].max := 10;
     S.Stacks[0].Layers[0].P[p].V := 5;
   end;
-  S.Stacks[0].Layers[0].P[1].V := 9.7;        // 3 % from max
-  S.Stacks[0].Layers[0].P[2].V := 0.2;        // 2 % from min, but frozen
+  S.Stacks[0].Layers[0].P[1].V := 9.7;
+  S.Stacks[0].Layers[0].P[2].V := 0.2;
   S.Stacks[0].Layers[0].P[2].Fixed := True;
-  S.Stacks[0].Layers[0].P[3].V := 0.4;        // 4 % from min
+  S.Stacks[0].Layers[0].P[3].V := 0.4;
 
   NB := NearBounds(S);
   Assert.AreEqual(2, Integer(Length(NB)));

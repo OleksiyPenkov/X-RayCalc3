@@ -12,9 +12,7 @@
 
 unit unit_Updater;
 
-(* Help - Check for update: the latest GitHub release, and its setup downloaded
-   and checked against the SHA-256 GitHub records for the asset. Network calls
-   block; the caller runs them off the main thread. The installer itself is run
+(* Network calls block; the caller runs them off the main thread. The installer itself is run
    by the main form, which has to close first. *)
 
 interface
@@ -22,13 +20,12 @@ interface
 type
   TReleaseInfo = record
     Version: string;    // the tag without a leading 'v', e.g. 3.10.0
-    PageURL: string;    // the release page on GitHub
-    SetupName: string;  // '' when the release carries no setup
+    PageURL: string;
+    SetupName: string;
     SetupURL: string;
     Sha256: string;     // hex; '' when GitHub gives no digest
   end;
 
-/// Reads a GitHub /releases/latest response. Raises when it is not one.
 function ParseRelease(const Json: string): TReleaseInfo;
 
 /// True when Remote is a later version than Local. Both are dotted numbers
@@ -36,11 +33,8 @@ function ParseRelease(const Json: string): TReleaseInfo;
 /// number never makes an update.
 function IsNewer(const Remote, Local: string): Boolean;
 
-/// Fetches and parses the latest release. Raises on any network error.
 function FetchLatestRelease(const URL: string): TReleaseInfo;
 
-/// Downloads the setup to the temp directory and returns its path. Raises,
-/// deleting the file, when its SHA-256 differs from the one GitHub records.
 function DownloadSetup(const Info: TReleaseInfo): string;
 
 implementation
@@ -164,7 +158,7 @@ begin
   Error := '';
   Client := NewClient;
   try
-    Client.ResponseTimeout := 10 * 60 * 1000;   // the setup is ~11 MB
+    Client.ResponseTimeout := 10 * 60 * 1000;
     Stream := TFileStream.Create(Result, fmCreate);
     try
       try

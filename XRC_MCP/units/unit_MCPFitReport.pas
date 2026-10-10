@@ -12,20 +12,7 @@
 
 unit unit_MCPFitReport;
 
-(* The numbers a client needs to judge a fit, computed on the server.
-
-   With points_inline_max at 0 a fit result carries no curves, and an agent with
-   no file access used to rebuild the judgement by recomputing the fitted model
-   with calc_reflectivity and reading peaks off two long lists in its context:
-   about sixty thousand tokens per fit, and the step three rounds of agent fits
-   got wrong. Everything here is what that reconstruction was for - the Bragg
-   orders measured against calculated, the plateau edge, the fringe contrast,
-   the residual by band - taken from the two curves the job already has.
-
-   There is no verdict and no threshold anywhere in this unit. The fitting skill
-   states what a good fit looks like; the server states what the numbers are.
-
-   Two rules are worth saying out loud, because a search for maxima at large
+(* Two rules are worth saying out loud, because a search for maxima at large
    gets both of them wrong:
 
    - An order is looked for where the period says it must be, in the window
@@ -62,13 +49,9 @@ type
   end;
 
 const
-  /// The fitting range is split into this many equal bands of theta.
   REPORT_BANDS = 8;
-  /// The background is the median of the last this many fitted points.
   REPORT_BACKGROUND_POINTS = 100;
-  /// An order counts as visible when it stands this far above the background.
   REPORT_VISIBLE_FACTOR = 3;
-  /// Points reported between the start of the range and the first minimum.
   REPORT_EDGE_POINTS = 3;
   /// A fringe extremum is registered once the curve has turned back by this
   /// factor from the last one: a hysteresis that keeps the count of fringes
@@ -90,17 +73,10 @@ type
     Mean, Rms: Double;
   end;
 
-/// <summary>The report's bands, what its "bands" entry is written from and
-/// what the GUI's residual strip draws. Empty when the range has no width.</summary>
 function ReportBands(const Inp: TFitReportInput): TArray<TReportBand>;
 
-/// <summary>The median of the last REPORT_BACKGROUND_POINTS values of the
-/// curve (all of them when it is shorter), which is what an order is called
-/// visible against. 0 for an empty curve.</summary>
 function ReportBackground(const C: unit_Types.TDataArray): Double;
 
-/// <summary>True when R stands above Floor (REPORT_VISIBLE_FACTOR x background),
-/// by more than a rounding step of the Single a curve is stored in.</summary>
 function AboveFloor(const R, Floor: Double): Boolean; inline;
 
 /// <summary>The median of A, which is sorted in place. 0 for an empty array.</summary>
@@ -112,8 +88,6 @@ function MedianOf(var A: TArray<Double>): Double;
 /// two report "not computable" the same way.</summary>
 function NumOrNull(Value: Double; Valid: Boolean): TJSONValue;
 
-/// <summary>Num / Den, or JSON null when Den is not positive. The division is
-/// never performed on a zero.</summary>
 function RatioOrNull(Num, Den: Double): TJSONValue;
 
 implementation
@@ -122,7 +96,6 @@ uses
   System.SysUtils, System.Math, System.Generics.Collections,
   unit_MCPErrors, unit_MCPCalc;
 
-{ ------------------------------------------------------------- helpers -- }
 
 function NumOrNull(Value: Double; Valid: Boolean): TJSONValue;
 begin
@@ -183,7 +156,6 @@ begin
   Result := MedianOf(Tail);
 end;
 
-/// Index of the point nearest Theta. -1 for an empty curve.
 function NearestIndex(const C: unit_Types.TDataArray; Theta: Double): Integer;
 var
   i: Integer;
@@ -199,10 +171,7 @@ begin
     end;
 end;
 
-{ --------------------------------------------------------------- orders -- }
 
-/// One order: where it should be, where the two curves put it, and how far
-/// apart they are in height. Nil when the window holds no point of either curve.
 function OrderJSON(const Inp: TFitReportInput; Order: Integer;
   Lo, Hi, Theta, Background: Double): TJSONObject;
 var
@@ -232,7 +201,6 @@ begin
   end;
 end;
 
-/// Every order of the period that falls inside the fitted range.
 function OrdersJSON(const Inp: TFitReportInput; Background: Double): TJSONArray;
 var
   Order: Integer;
@@ -267,16 +235,12 @@ begin
   end;
 end;
 
-{ ----------------------------------------------------------------- edge -- }
 
-/// The first minimum of the calculated curve: the foot of the plateau edge,
-/// where the total-reflection region ends and the first fringe begins.
-/// -1 when the curve only falls.
 /// A minimum counts once the curve has risen REPORT_FRINGE_HYSTERESIS above
 /// it, the rule the fringe finder uses: a multilayer's plateau can wiggle by a
 /// fraction of a per cent between the critical angles of its materials
-/// (CoC5: 0.1 % at theta 0.207), and taking the first such wiggle for the
-/// first fringe put every edge point on the plateau (until 3.9.4).
+/// (CoC5: 0.1 % at theta 0.207); taking that wiggle for the first fringe
+/// puts every edge point on the plateau.
 function FirstMinimumIndex(const C: unit_Types.TDataArray): Integer;
 var
   i, MinIdx: Integer;
@@ -292,11 +256,6 @@ begin
       Exit(MinIdx);
 end;
 
-/// Three points evenly spaced over the plateau edge - at a quarter, a half and
-/// three quarters of the way from the start of the range to the first minimum -
-/// with the measured and the calculated value at each. This is the stretch the
-/// scale was chosen on, so a ratio far from 1 here says the normalisation is
-/// wrong rather than the model.
 function EdgeJSON(const Inp: TFitReportInput): TJSONValue;
 var
   Obj, Point: TJSONObject;
@@ -340,7 +299,6 @@ begin
   end;
 end;
 
-{ -------------------------------------------------------------- fringes -- }
 
 type
   /// <summary>One Kiessig fringe between two Bragg orders, as a pair of grid
@@ -386,7 +344,7 @@ begin
       else if (C[i].r > 0) and
               (C[ExtremeIdx].r > REPORT_FRINGE_HYSTERESIS * C[i].r) then
       begin
-        PendingMax := ExtremeIdx;        // waiting for the minimum after it
+        PendingMax := ExtremeIdx;
         ExtremeIdx := i;
         Rising := False;
       end;
@@ -462,9 +420,6 @@ begin
   end;
 end;
 
-/// The Kiessig fringes between the first and the second order: each secondary
-/// maximum over the minimum that follows it, measured against calculated.
-///
 /// The contrast is local on purpose. The global largest maximum over the global
 /// smallest minimum of the stretch is a number an order of magnitude bigger,
 /// because the curve falls by decades between two orders and that fall has
@@ -522,11 +477,7 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------------- bands -- }
 
-/// The fitting range in REPORT_BANDS equal bands of theta, each with the mean
-/// and the rms of log10(R_calc / I_meas) over its points: where in angle the
-/// model sits above the data and where below, in decades.
 function ReportBands(const Inp: TFitReportInput): TArray<TReportBand>;
 var
   Sum, SumSq: array [0 .. REPORT_BANDS - 1] of Double;
@@ -598,7 +549,6 @@ begin
   end;
 end;
 
-{ --------------------------------------------------------------- report -- }
 
 function FitReportJSON(const Inp: TFitReportInput): TJSONObject;
 var

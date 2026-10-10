@@ -32,11 +32,9 @@ type
     procedure FormShow(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
   private
-    { Private declarations }
     FData : PProjectData;
     FTransparency: Integer;
   public
-    { Public declarations }
     property Data: PProjectData read FData write FData;
     { The curve's transparency in percent: set before ShowModal, read after OK.
       It lives on the chart series, not in the project data. }

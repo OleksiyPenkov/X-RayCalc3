@@ -9,7 +9,6 @@ type
   [TestFixture]
   TTestAxisLimit = class
   public
-    { Accepted input }
     [Test] procedure Test_Parse_LowerCaseExponent;
     [Test] procedure Test_Parse_UpperCaseExponent;
     [Test] procedure Test_Parse_Mantissa;
@@ -17,7 +16,6 @@ type
     [Test] procedure Test_Parse_SurroundingSpaces;
     [Test] procedure Test_Parse_PlainDecimal;
 
-    { Rejected input - every one of these used to reach the axis }
     [Test] procedure Test_Reject_Empty;
     [Test] procedure Test_Reject_Garbage;
     [Test] procedure Test_Reject_HalfTypedExponent;
@@ -27,12 +25,10 @@ type
     [Test] procedure Test_Reject_AboveAxisMaximum;
     [Test] procedure Test_Reject_UnderflowsSingle;
 
-    { Formatting }
     [Test] procedure Test_Format_WholeMantissa;
     [Test] procedure Test_Format_FractionalMantissa;
     [Test] procedure Test_Format_Default;
 
-    { The drop-down list must agree with the parser }
     [Test] procedure Test_ListItems_AllParseAndRoundTrip;
   end;
 
@@ -72,8 +68,6 @@ procedure TTestAxisLimit.Test_Parse_CommaDecimalSeparator;
 var
   V: Single;
 begin
-  // A user on a comma-decimal locale types 3,5E-8 - StrToFloat with the
-  // invariant settings would reject it, so the parser normalises first.
   Assert.IsTrue(TryParseAxisLimit('3,5E-8', AXIS_MAX, V), 'accepted');
   Assert.AreEqual(Single(3.5E-8), V, 1E-12);
 end;
@@ -112,7 +106,6 @@ procedure TTestAxisLimit.Test_Reject_HalfTypedExponent;
 var
   V: Single;
 begin
-  // What the old OnChange handler saw after the second keystroke of '1e-8'.
   Assert.IsFalse(TryParseAxisLimit('1e', AXIS_MAX, V));
   Assert.IsFalse(TryParseAxisLimit('1e-', AXIS_MAX, V));
 end;
@@ -136,7 +129,6 @@ procedure TTestAxisLimit.Test_Reject_AtAxisMaximum;
 var
   V: Single;
 begin
-  // Minimum = Maximum leaves the axis with no range.
   Assert.IsFalse(TryParseAxisLimit('1', AXIS_MAX, V));
 end;
 
@@ -144,7 +136,6 @@ procedure TTestAxisLimit.Test_Reject_AboveAxisMaximum;
 var
   V: Single;
 begin
-  // The first keystroke of '5E-7' on the old handler.
   Assert.IsFalse(TryParseAxisLimit('5', AXIS_MAX, V));
 end;
 

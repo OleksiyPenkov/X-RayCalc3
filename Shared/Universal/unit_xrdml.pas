@@ -1,7 +1,5 @@
 (* *****************************************************************************
   *
-  *   X-Ray Calc 3
-  *
   *   Copyright (C) 2026 Oleksiy Penkov
   *   e-mail: oleksiypenkov@intl.zju.edu.cn
   *
@@ -10,24 +8,6 @@
   *
   ****************************************************************************** *)
 
-/// <summary>
-///   Reads a PANalytical / Malvern XRDML file (schema 1.0 to 2.x) into one
-///   measured curve. No VCL: the GUI's project panel and XRC_MCP's inbox share
-///   it. The file's own facts come with the curve, so a caller need not guess
-///   the angle axis or the wavelength.
-///
-///   What differs between schema versions, and how it is handled:
-///   - Intensities are in a "counts" element (raw detector counts; a sibling
-///     "beamAttenuationFactors" list, when present, is multiplied in) or in an
-///     "intensities" element (already corrected; the factors are not applied
-///     again). Both spellings occur in current 1.6 files.
-///   - Positions of the scanned axis are "startPosition"/"endPosition"
-///     (equidistant), or an explicit "listPositions", or a single
-///     "commonPosition" (a fixed axis, never the curve's abscissa).
-///   - Counting time is "commonCountingTime" or a per-point "countingTimes"
-///     list. Intensity is counts per second, then normalised to 1 at the
-///     maximum (PeakRate keeps the counts per second that 1 stands for); a
-///     zero count is floored the way the text importers floor it.
 ///   - The wavelength: a file measured with the K-Alpha doublet through an
 ///     optic that passes both lines (no monochromator, mirror not hybrid)
 ///     implies the ratio-weighted pair, (kAlpha1 + r kAlpha2) / (1 + r), not
@@ -35,14 +15,6 @@
 ///     1.540598 would be 0.08 % short. Lambda is that value when the file says
 ///     "K-Alpha" and gives the ratio, kAlpha1 otherwise, and LambdaRule says
 ///     which. The caller may still prefer its own wavelength.
-///   - The abscissa is the "2Theta" positions element wherever it appears among
-///     the positions; a scan without one (a rocking curve) uses "Omega" and
-///     says so in XAxis.
-///   - Elements are matched by local name, so a file whose elements carry a
-///     namespace prefix reads the same as one with a default namespace.
-///   External entities are never resolved (a crafted file cannot read local
-///   files through the parser).
-/// </summary>
 unit unit_xrdml;
 
 interface
@@ -57,12 +29,12 @@ type
     Curve: TDataArray;         // t = angle on XAxis (deg), r = intensity normalised to 1 at the maximum
     PeakRate: Double;          // counts per second at the maximum, the value r = 1 stands for
     XAxis: string;             // '2Theta' or 'Omega'
-    ScanAxis: string;          // the scan element's scanAxis: '2Theta-Omega', 'Omega', ...
-    ScanMode: string;          // 'Continuous', 'Pre-set time', ...
-    Status: string;            // 'Completed', 'Aborted', '' when the file does not say
+    ScanAxis: string;
+    ScanMode: string;
+    Status: string;
     SampleId: string;
     Lambda: Double;            // the wavelength the file implies, Angstrom; 0 when it has none
-    LambdaRule: string;        // how Lambda was chosen, for the header and the caller
+    LambdaRule: string;
     KAlpha1, KAlpha2: Double;  // as written; 0 when absent
     Ratio: Double;             // ratioKAlpha2KAlpha1; 0 when absent
     Intended: string;          // usedWavelength@intended: 'K-Alpha', 'K-Alpha1', ...
@@ -70,33 +42,27 @@ type
     Anode: string;
     Detector: string;          // diffractedBeamPath/detector@name
     ReadOutPeriod: Double;     // the detector's readOutPeriod in s; 0 when absent
-    ZerosFloored: Integer;     // points with a non-positive count, floored
+    ZerosFloored: Integer;
     FirstNonPositive: Integer; // index in Curve of the one at the lowest angle; -1 when there is none
-    PeakIndex: Integer;        // index in Curve of the maximum (r = 1)
+    PeakIndex: Integer;
     PeakCounts: Double;        // the number in the file at the maximum, x attenuation factor when there is one
     RawPeakRate: Double;       // counts per second the detector itself saw at most: no attenuation factor
-    RawPeakCounts: Double;     // the number in the file at that point
+    RawPeakCounts: Double;
     RawPeakIndex: Integer;     // index in Curve of that point (= PeakIndex without attenuation factors)
     IntensityUnit: string;     // the counts/intensities element's unit attribute, '' when absent
     CountingTime: Double;      // the common counting time in s; 0 when per-point
-    StartTime: string;         // the scan header's startTimeStamp, as written
+    StartTime: string;
     SchemaVersion: string;     // '1.6' from the namespace, or the root's version attribute
     Corrected: Boolean;        // True: the file held "intensities", i.e. already corrected
     AttenuationApplied: Boolean;
     Points: Integer;
-    /// <summary>Header lines for a data node or a measurement, each starting
-    /// with '*' the way counter-file headers do.</summary>
     function DescriptionLines: TArray<string>;
   end;
 
-/// <summary>True for a ".xrdml" extension, case-insensitively.</summary>
 function IsXRDMLFile(const FileName: string): Boolean;
 
-/// <summary>Reads the first scan of the file. Raises EXRDMLError with a message
-/// naming the missing or malformed element.</summary>
 function ReadXRDMLFile(const FileName: string): TXRDMLScan;
 
-/// <summary>The same for a document held in a string (tests, clipboard).</summary>
 function ReadXRDMLText(const Text: string): TXRDMLScan;
 
 /// <summary>A count of zero is a real reading at the tail of an XRR scan, but a
@@ -115,7 +81,6 @@ uses
 const
   XRDML_EXT = '.xrdml';
 
-{ ------------------------------------------------------------------ helpers -- }
 
 function IsXRDMLFile(const FileName: string): Boolean;
 begin
@@ -157,7 +122,6 @@ begin
     Result := Trim(VarToStr(N.Attributes[Name]));
 end;
 
-/// The 'positions' child whose axis attribute is Axis; nil when there is none.
 function PositionsOf(const DataPoints: IXMLNode; const Axis: string): IXMLNode;
 var
   I: Integer;
@@ -179,8 +143,6 @@ begin
     raise EXRDMLError.CreateFmt('%s is not a number: "%s"', [What, S]);
 end;
 
-/// A whitespace-separated list of numbers, as the counts and the position
-/// lists are written. Tabs and line breaks count as separators too.
 function ParseList(const S, What: string): TArray<Double>;
 var
   I, Start, N, Len: Integer;
@@ -222,7 +184,6 @@ begin
     Result := Copy(URI, P + 1, MaxInt);
 end;
 
-{ ------------------------------------------------------------------- parsing -- }
 
 function ReadScan(const XML: IXMLDocument): TXRDMLScan;
 var
@@ -270,7 +231,6 @@ begin
     if (Child(Beam, 'xRayMirror') <> nil) and SameText(Attr(Child(Beam, 'xRayMirror'), 'hybrid'), 'true') then
       Result.Monochromatic := True;
   end;
-  { the wavelength the file implies }
   if (Result.KAlpha1 > 0) and (Result.KAlpha2 > 0) and (Result.Ratio > 0) and
      SameText(Result.Intended, 'K-Alpha') and not Result.Monochromatic then
   begin
@@ -296,7 +256,6 @@ begin
       Result.ReadOutPeriod := ParseNumber(ChildText(Child(Beam, 'detector'), 'readOutPeriod'), 'readOutPeriod');
   end;
 
-  { the first scan that carries data points; a batch file holds several }
   Scan := nil;
   DataPoints := nil;
   for I := 0 to Measurement.ChildNodes.Count - 1 do
@@ -321,7 +280,6 @@ begin
   if Header <> nil then
     Result.StartTime := ChildText(Header, 'startTimeStamp');
 
-  { intensities: raw "counts" (factors apply) or corrected "intensities" }
   CountsNode := Child(DataPoints, 'counts');
   Result.Corrected := False;
   if CountsNode = nil then
@@ -375,7 +333,6 @@ begin
   else
     raise EXRDMLError.CreateFmt('The %s positions carry neither start/end nor listPositions', [Result.XAxis]);
 
-  { counting time: one for all, or one per point; none leaves raw counts }
   SetLength(Times, 0);
   Result.CountingTime := 0;
   if Child(DataPoints, 'commonCountingTime') <> nil then
@@ -415,16 +372,12 @@ begin
   end;
   Result.Points := N;
 
-  { the curve a reflectivity fit wants: floored, then 1 at the maximum. The
-    peak rate is taken before the normalisation, so it is the raw counts per
-    second the detector saw, the number a saturation check needs. }
   Result.ZerosFloored := 0;
   Result.FirstNonPositive := -1;
   for I := 0 to N - 1 do
     if Result.Curve[I].r <= 0 then
     begin
       Inc(Result.ZerosFloored);
-      { the one at the lowest angle, whichever way the file was scanned }
       if (Result.FirstNonPositive < 0) or (Angles[I] < Angles[Result.FirstNonPositive]) then
         Result.FirstNonPositive := I;
     end;
@@ -536,7 +489,6 @@ begin
   end;
 end;
 
-{ ---------------------------------------------------------------- TXRDMLScan -- }
 
 function TXRDMLScan.DescriptionLines: TArray<string>;
 var

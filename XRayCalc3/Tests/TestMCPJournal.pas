@@ -88,7 +88,6 @@ var
 begin
   J := TJournal.Create(FTemp);
   try
-    // A journal left behind by an earlier run must survive the next write.
     TFile.WriteAllBytes(J.Path, TEncoding.UTF8.GetBytes(ExistingLine + #10));
     J.LogCall('a_tool', nil, nil, nil, 3);
     Lines := TFile.ReadAllLines(J.Path, TEncoding.UTF8);
@@ -118,7 +117,6 @@ begin
   try
     Data := TJSONObject.Create;
     try
-      // 'ts' inside the payload must not collide with the record's own 'ts'.
       Data.AddPair('ts', 'payload-not-a-timestamp');
       Data.AddPair('job', 'fit-1');
       J.LogEvent('job_started', Data);

@@ -1,25 +1,5 @@
 unit TestLFPSOPoly;
 
-{ TLFPSO_Poly.InitialPolynomes - seeding the fitted polynomial from the depth
-  profile the model already carries.
-
-  Set_Init_XPoly only ever wrote the constant term, and SetLength grew the rest
-  of the coefficient array to zero. A free fit recovers from that, because XSeed
-  scatters the higher orders over Xrange. A frozen one cannot: freezing pins
-  min = max = V, Xrange[0] is then 0, every higher order derives from it
-  (Xrange[p] := Xrange[0] / TP(p)), Rand(0) returns 0 - and the coefficients stay
-  on whatever SetStructure left them. Left at zero, a graded stack is fitted as
-  an ungraded one.
-
-  Test_SeededGradient_SurvivesAFrozenFit is the invariant that matters: it needs
-  the GUI's Henke tables and passes with a note when they are not installed, the
-  way TestLFPSOProgress does.
-
-  Section 3 covers a second subject in the same unit: the index basis of the
-  per-layer arrays. X, V, abest and Counts all hold one slot per DECLARED layer
-  - Init_Domains sizes them from FLayersCount := Inp.Total - and two places used
-  to index them by period count instead. Neither can misbehave until a model has
-  two or more stacks with N > 1, which is the ordinary depth-graded mirror. }
 
 interface
 
@@ -77,7 +57,6 @@ type
     [Setup]    procedure Setup;
     [TearDown] procedure TearDown;
 
-    { 1 - the seeding itself }
     [Test] procedure Test_Seed_HigherOrdersComeFromTheProfile;
     [Test] procedure Test_Seed_ConstantTermStaysTheLiveValue;
     [Test] procedure Test_Seed_MatchesByIdentityNotPosition;
@@ -86,11 +65,9 @@ type
     [Test] procedure Test_Seed_PairedAndSinglePeriodStayScalar;
     [Test] procedure Test_Seed_TooManyCoefficientsAreTruncated;
 
-    { 2 - the invariant the user cares about }
     [Test] procedure Test_SeededGradient_SurvivesAFrozenFit;
     [Test] procedure Test_SeededGradient_SurvivesAPartlyFrozenFit;
 
-    { 3 - the index basis of the per-layer arrays, with several repeating stacks }
     [Test] procedure Test_Polynomes_SecondRepeatingStackReadsItsOwnSlots;
     [Test] procedure Test_Polynomes_SinglePeriodStackIsSkippedNotSpecialCased;
     [Test] procedure Test_Counts_AreOnePerDeclaredLayer;
@@ -109,24 +86,20 @@ const
   HENKE_DB_PATH = 'd:\SoftwareStorage\X-RayCalc3\Henke';
   CU_KA         = 1.5406;
 
-  { Test 1 - the two-stack structure. Stack 0 is periodic (N > 1), stack 1 is
-    a single layer with N = 1. }
   S0_L0_H = 40.0;  S0_L0_S = 3.0;  S0_L0_R = 2.33;
   S0_L1_H = 20.0;  S0_L1_S = 3.0;  S0_L1_R = 10.20;
   S1_L0_H = 55.0;  S1_L0_S = 4.0;  S1_L0_R = 2.00;
 
-  { Distinctive coefficients - nothing a zero-filled array could produce. }
   C_S0L1_H1 =  0.75;   C_S0L1_H2 = -0.0125;
   C_S0L0_S1 =  0.25;
-  C_S1L0_H1 =  3.5;    // stack 1 has N = 1: must never be written
-  C_S0L1_R1 =  9.0;    // rho of layer 1 is Paired: must never be written
-  C_S0L0_R1 =  7.0;    // authored as ffExp: not in this basis, must be ignored
+  C_S1L0_H1 =  3.5;
+  C_S0L1_R1 =  9.0;
+  C_S0L0_R1 =  7.0;
   C_LONG_1  =  0.4;    C_LONG_2 = 0.03;  C_LONG_3 = 0.002;
 
-  { Test 2 - the graded Si/Mo stack. }
   G_PERIODS = 8;
-  G_H1      = 40.0;    // Si thickness of the first period
-  G_GRAD    = -0.8;    // ... and how much it loses per period
+  G_H1      = 40.0;
+  G_GRAD    = -0.8;
   G_S1      = 3.0;     G_R1 = 2.33;
   G_H2      = 20.0;    G_S2 = 3.0;  G_R2 = 10.20;
   G_SUB_S   = 3.0;     G_SUB_R = 2.33;
@@ -136,8 +109,8 @@ const
     well off the truth, so the swarm has real work to do on a free parameter
     while the gradient is pinned. }
   P_GRAD      = -0.8;   // A per period, against 40 A layers
-  P_CAP_TRUE  = 30.0;   // what the measurement really has
-  P_CAP_START = 45.0;   // ... and where the fit is told to start
+  P_CAP_TRUE  = 30.0;
+  P_CAP_START = 45.0;
   P_CAP_S     = 3.0;    P_CAP_R = 2.20;
   P_NMAX      = 12;
   P_POP       = 8;
@@ -149,7 +122,7 @@ const
     that advances by period count stands at 1 + 4 = 5 when it reaches stack 2
     and reads slots 5, 6 and 7 - one wrong layer, then two past the end. }
   M_S0_N = 1;   M_S1_N = 4;   M_S2_N = 3;
-  M_LAYERS = 6;                          // 1 + 2 + 3 declared layers
+  M_LAYERS = 6;
 
   M_S0_L0_H = 25.0;
   M_S1_L0_H = 40.0;   M_S1_L1_H = 20.0;
@@ -162,7 +135,6 @@ const
 
   M_SIGMA = 3.0;   M_RHO = 5.0;
 
-{ TTestablePoly }
 
 function TTestablePoly.GetX: TPopulation;
 begin
@@ -204,7 +176,6 @@ begin
   SetParams(Value);
 end;
 
-{ ---------------- fixture ---------------- }
 
 procedure TTestLFPSOPoly.Setup;
 begin
@@ -252,8 +223,6 @@ begin
   Result.PolyFactor := 10;
 end;
 
-{ Stack 0: N = 5, two layers. Stack 1: N = 1, one layer.
-  Flat Index runs 0, 1 over stack 0 and 2 over stack 1. }
 function TTestLFPSOPoly.MakeTwoStackStructure: TFitStructure;
 var
   p: Integer;
@@ -298,7 +267,6 @@ begin
     Result.Stacks[1].Layers[0].P[p].max := 60.0;
   end;
 
-  { Rho of stack 0 / layer 1 is paired: Set_Init_XPoly leaves it scalar. }
   Result.Stacks[0].Layers[1].P[3].Paired := True;
 
   Result.Subs.Material := 'Si';
@@ -313,42 +281,41 @@ function TTestLFPSOPoly.MakeProfiles: TProfileFunctions;
 begin
   SetLength(Result, 5);
 
-  Result[0].Func    := ffPoly;                 // stack 0, layer 1, H
+  Result[0].Func    := ffPoly;
   Result[0].Subj    := ptH;
   Result[0].StackID := 0;
   Result[0].LayerID := 1;
   Result[0].C       := [S0_L1_H, C_S0L1_H1, C_S0L1_H2];
 
-  Result[1].Func    := ffPoly;                 // stack 0, layer 0, sigma
+  Result[1].Func    := ffPoly;
   Result[1].Subj    := ptS;
   Result[1].StackID := 0;
   Result[1].LayerID := 0;
   Result[1].C       := [S0_L0_S, C_S0L0_S1];
 
-  Result[2].Func    := ffExp;                  // not this basis - ignore
+  Result[2].Func    := ffExp;
   Result[2].Subj    := ptRho;
   Result[2].StackID := 0;
   Result[2].LayerID := 0;
   Result[2].C       := [S0_L0_R, C_S0L0_R1];
 
-  Result[3].Func    := ffPoly;                 // stack 1 has N = 1 - no orders
+  Result[3].Func    := ffPoly;
   Result[3].Subj    := ptH;
   Result[3].StackID := 1;
   Result[3].LayerID := 0;
   Result[3].C       := [S1_L0_H, C_S1L0_H1];
 
-  Result[4].Func    := ffPoly;                 // stack 0, layer 1, rho: Paired
+  Result[4].Func    := ffPoly;
   Result[4].Subj    := ptRho;
   Result[4].StackID := 0;
   Result[4].LayerID := 1;
   Result[4].C       := [S0_L1_R, C_S0L1_R1];
 end;
 
-{ ---------------- 1: the seeding ---------------- }
 
 procedure TTestLFPSOPoly.Test_Seed_HigherOrdersComeFromTheProfile;
 begin
-  FPSO.TestSetParams(MakeParams(2));            // MO = 3
+  FPSO.TestSetParams(MakeParams(2));
   FPSO.InitialPolynomes := MakeProfiles;
   FPSO.TestSetStructure(MakeTwoStackStructure);
 
@@ -367,7 +334,6 @@ var
   Profiles: TProfileFunctions;
 begin
   Profiles := MakeProfiles;
-  { The stored constant is stale - the structure has been edited since. }
   Profiles[0].C[0] := 999.0;
   Profiles[1].C[0] := 999.0;
 
@@ -387,8 +353,6 @@ begin
   FPSO.InitialPolynomes := MakeProfiles;
   FPSO.TestSetStructure(MakeTwoStackStructure);
 
-  { Profile 0 is the first record handed over but belongs to Index 1.
-    Positional matching would land it on Index 0. }
   Assert.AreEqual(Single(0.0), FPSO.GetX[0][0][1][1], 1E-6,
     'layer 0 H has no profile of its own and must stay flat');
   Assert.AreEqual(Single(C_S0L1_H1), FPSO.GetX[0][1][1][1], 1E-6,
@@ -403,7 +367,6 @@ begin
   FPSO.InitialPolynomes := MakeProfiles;
   FPSO.TestSetStructure(MakeTwoStackStructure);
 
-  { Stack 0 / layer 1 sigma: nothing was supplied for it. }
   Assert.AreEqual(Single(S0_L1_S), FPSO.GetX[0][1][2][0], 1E-6,
     'its constant term is still the live value');
   for k := 1 to High(FPSO.GetX[0][1][2]) do
@@ -419,7 +382,6 @@ begin
   FPSO.InitialPolynomes := MakeProfiles;
   FPSO.TestSetStructure(MakeTwoStackStructure);
 
-  { Stack 0 / layer 0 rho was authored as an exponential. }
   for k := 1 to High(FPSO.GetX[0][0][3]) do
     Assert.AreEqual(Single(0.0), FPSO.GetX[0][0][3][k], 1E-6,
       Format('an ffExp profile must not seed order %d', [k]));
@@ -449,7 +411,7 @@ begin
   Profiles := MakeProfiles;
   Profiles[0].C := [S0_L1_H, C_LONG_1, C_LONG_2, C_LONG_3];
 
-  FPSO.TestSetParams(MakeParams(1));            // MO = 2: orders 0 and 1 only
+  FPSO.TestSetParams(MakeParams(1));
   FPSO.InitialPolynomes := Profiles;
   FPSO.TestSetStructure(MakeTwoStackStructure);
 
@@ -459,7 +421,6 @@ begin
     'order 1 is copied');
 end;
 
-{ ---------------- 2: the frozen graded fit ---------------- }
 
 function TTestLFPSOPoly.MakeCalcParams: TCalcThreadParams;
 begin
@@ -527,8 +488,6 @@ begin
   Result[0].C       := [G_H1, G_GRAD];
 end;
 
-{ The measurement: the graded model run through the engine on the grid the fit
-  will use. }
 function TTestLFPSOPoly.MakeGradedExpData(const ACalcParams: TCalcThreadParams): TDataArray;
 var
   Calc: TCalc;
@@ -594,10 +553,6 @@ begin
     [AStackID, ALayerID, Ord(ASubj) + 1]));
 end;
 
-{ Freeze every parameter of a graded stack, seed the gradient, run a short fit
-  and read the gradient back. An empty range cannot move a coefficient off the
-  value SetStructure gave it, so whatever comes back is the seed - zero before
-  this fix, the supplied gradient after it. }
 procedure TTestLFPSOPoly.Test_SeededGradient_SurvivesAFrozenFit;
 var
   PSO: TTestablePoly;
@@ -613,11 +568,11 @@ begin
 
   CalcParams := MakeCalcParams;
   S := MakeGradedStructure;
-  CollapseFixed(S);           // freezing, exactly as the orchestrator does it
+  CollapseFixed(S);
 
   PSO := TTestablePoly.Create;
   try
-    PSO.Params           := MakeParams(1);     // MO = 2: constant + gradient
+    PSO.Params           := MakeParams(1);
     PSO.Limit            := 1E-7;
     PSO.ExpValues        := MakeGradedExpData(CalcParams);
     PSO.Seed             := G_SEED;
@@ -641,18 +596,12 @@ begin
   end;
 end;
 
-{ The same graded, fully frozen Si/Mo stack, but with a free capping layer on
-  top of it. This is the workflow the freeze feature exists for: pin the part
-  of the structure you already trust and let the rest move. Because the cap is
-  free, a particle other than the seeded leader X[0] wins FindTheBest, and
-  abest then carries THAT particle's copy of the frozen gradient. }
 function TTestLFPSOPoly.MakePartlyFrozenStructure: TFitStructure;
 var
   p: Integer;
 begin
   SetLength(Result.Stacks, 2);
 
-  { Stack 0 - the graded multilayer, every parameter frozen. }
   Result.Stacks[0].ID := 0;
   Result.Stacks[0].N  := G_PERIODS;
   SetLength(Result.Stacks[0].Layers, 2);
@@ -717,8 +666,6 @@ begin
   Result[0].C       := [G_H1, P_GRAD];
 end;
 
-{ The measurement for the partly frozen fit: the graded stack exactly as it is
-  frozen, under a cap of the thickness the fit has to find. }
 function TTestLFPSOPoly.MakePartlyFrozenExpData(const ACalcParams: TCalcThreadParams): TDataArray;
 var
   Calc: TCalc;
@@ -817,26 +764,19 @@ begin
 
     Final := PSO.GetStructure;
 
-    { The precondition, asserted rather than assumed: a particle other than the
-      seeded leader won, and won by improving the free parameter. X[0] holds
-      the cap at P_CAP_START and, being the leader, never moves off it, so a
-      cap nearer the truth can only have come from another particle's solution.
-      Without the empty-range guard this is exactly what cannot happen: the
-      leader is the only particle that still carries the gradient, nothing can
-      out-score it, pbest and gbest stay pinned to it, and the swarm converges
-      back onto the starting cap instead of the right one. }
+    { X[0] holds the cap at P_CAP_START and, being the leader, never moves
+      off it, so a cap nearer the truth can only have come from another
+      particle's solution. }
     Assert.IsTrue(Abs(Final.Stacks[1].Layers[0].P[1].V - P_CAP_START) > 1E-3,
       Format('a free particle must have won the fit: the cap is still at its ' +
         'starting %g, so abest is the leader''s own solution',
         [Final.Stacks[1].Layers[0].P[1].V]));
 
-    { The frozen constants are untouched, as an empty range demands. }
     Assert.AreEqual(Single(G_H1), Final.Stacks[0].Layers[0].P[1].V, 1E-4,
       'the frozen Si thickness stayed put');
     Assert.AreEqual(Single(G_H2), Final.Stacks[0].Layers[1].P[1].V, 1E-4,
       'the frozen Mo thickness stayed put');
 
-    { And so is the gradient. }
     Reported := FindPoly(PSO.GetPoly, 0, 0, ptH);
     Assert.IsTrue(Length(Reported.C) >= 2,
       Format('the fit must report a polynomial, got %d coefficients',
@@ -851,11 +791,7 @@ begin
   end;
 end;
 
-{ ---------------- 3: index basis with several repeating stacks ---------------- }
 
-{ Stack 0 is a single-period cap, stacks 1 and 2 both repeat, with different N
-  and different layer counts. Rho of stack 2 / layer 1 is paired, so it has no
-  polynomial and must not be reported. }
 function TTestLFPSOPoly.MakeMultiStackStructure: TFitStructure;
 
   procedure SetLayer(var L: TLayerData; const AMaterial: string;
@@ -906,8 +842,6 @@ begin
     Result.Subs.P[p].New(3.0);
 end;
 
-{ A distinct H gradient for every layer of both repeating stacks, so the
-  coefficients a record carries identify the slot it was read from. }
 function TTestLFPSOPoly.MakeMultiStackProfiles: TProfileFunctions;
 
   procedure SetPoly(var R: TFuncProfileRec; const AStackID, ALayerID: Word;
@@ -958,30 +892,23 @@ begin
       [AStackID, ALayerID]));
 end;
 
-{ GetPolynomes walked Base by the stack's period count, but abest has one slot
-  per declared layer. One repeating stack among N = 1 neighbours is safe, which
-  is why this never showed up; a SECOND repeating stack starts reading from
-  1 + 4 = 5 instead of 3 and runs off the end of a six-slot array. }
 procedure TTestLFPSOPoly.Test_Polynomes_SecondRepeatingStackReadsItsOwnSlots;
 var
   Polys: TProfileFunctions;
 begin
-  FPSO.TestSetParams(MakeParams(1));            // MO = 2: constant + gradient
+  FPSO.TestSetParams(MakeParams(1));
   FPSO.InitialPolynomes := MakeMultiStackProfiles;
   FPSO.TestSetStructure(MakeMultiStackStructure);
   FPSO.SeedAbestFromLeader;
 
   Polys := FPSO.GetPoly;
 
-  { Stack 1 reports 2 layers x 3 parameters; stack 2 reports 3 x 3 less the
-    one paired rho. Stack 0 repeats once and reports nothing. }
   Assert.AreEqual(6 + 8, Length(Polys),
     'every non-paired parameter of both repeating stacks is reported once');
 
   AssertPolyIsLayers(Polys, 1, 0, M_S1_L0_H, M_S1_L0_G);
   AssertPolyIsLayers(Polys, 1, 1, M_S1_L1_H, M_S1_L1_G);
 
-  { The second repeating stack - the one a period-counted Base cannot reach. }
   AssertPolyIsLayers(Polys, 2, 0, M_S2_L0_H, M_S2_L0_G);
   AssertPolyIsLayers(Polys, 2, 1, M_S2_L1_H, M_S2_L1_G);
   AssertPolyIsLayers(Polys, 2, 2, M_S2_L2_H, M_S2_L2_G);
@@ -990,9 +917,6 @@ begin
     'a paired parameter has no polynomial of its own');
 end;
 
-{ The N = 1 branch is a "nothing to report" shortcut, not an indexing special
-  case: once Base advances by layer count in both branches the two are the same
-  arithmetic, and the cap must simply be absent from the result. }
 procedure TTestLFPSOPoly.Test_Polynomes_SinglePeriodStackIsSkippedNotSpecialCased;
 var
   Polys: TProfileFunctions;
@@ -1010,9 +934,6 @@ begin
       Format('stack 0 has N = 1 and no gradient, yet record %d claims it', [i]));
 end;
 
-{ Counts is read as Counts[LayerIndex] by CheckLimitsP's Eval, so it is sized
-  and filled on the declared-layer basis - not the period-expanded one, which
-  made it TotalNP = 1 + 8 + 9 = 18 entries long. }
 procedure TTestLFPSOPoly.Test_Counts_AreOnePerDeclaredLayer;
 begin
   FPSO.TestSetParams(MakeParams(1));
@@ -1023,10 +944,6 @@ begin
     'Counts is indexed by declared layer, so it has Total entries, not TotalNP');
 end;
 
-{ And each of those entries is its OWN stack's period count. Built period by
-  period, the second repeating stack's layers read the first one's N, so Eval
-  scanned the polynomial over the wrong number of periods and the range walk
-  zeroed gradients it should have kept. }
 procedure TTestLFPSOPoly.Test_Counts_EveryLayerCarriesItsOwnStackPeriodCount;
 var
   Counts: TIntArray;
@@ -1035,8 +952,6 @@ begin
   FPSO.InitialPolynomes := MakeMultiStackProfiles;
   FPSO.TestSetStructure(MakeMultiStackStructure);
 
-  { Length is Test_Counts_AreOnePerDeclaredLayer's job; this one is about what
-    the six entries a layer index can reach actually say. }
   Counts := FPSO.GetCounts;
 
   Assert.AreEqual(Integer(M_S0_N), Integer(Counts[0]), 'layer 0 is stack 0');

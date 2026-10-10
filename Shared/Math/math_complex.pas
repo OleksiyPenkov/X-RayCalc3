@@ -21,113 +21,62 @@ type
     Re, Im: single;
   end;
 
-{-------- Conversions & Extractions ---------}
 
-{ Convert R and I to complex }
 function ToComplex(R, I: single): TComplex;
-{ return real part of Z }
-{ return imag part of Z }
 function Imag(Z: TComplex): single;
 
-{---------- Utility functions -----------------}
 
-{ true if S is a valid complex string }
 function IsValidComplexString(const S: string): boolean;
-{ true if Z is a valid complex number }
 function IsValidComplexNumber(Z: TComplex): boolean;
-{ retun boolean as string }
 function BoolToString(B: boolean): string;
-{ convert Complex to a string }
 function ComplexToString(Z: TComplex): string;
-{ convert string to a TComplex }
 function StringToComplex(const S: String): TComplex;
 
-{------ Standard operators (+,-,*,/) for complex numbers ----}
 
-{ add two complex numbers }
 function AddZZ(const Z, Z2: TComplex): TComplex; inline;
-{ add a complex and a real }
 function AddZR(const Z: TComplex; R: single): TComplex; inline;
-{ subtract two complex numbers }
 function SubZZ(const Z, Z2: TComplex): TComplex; inline;
-{ subtract Z.re from R (Z - R) }
 function SubZR(const Z: TComplex;const R: single): TComplex; inline;
-{ subtract R from Z.re (R - Z) }
 function SubRZ(const R: single;const Z: TComplex): TComplex; inline;
-{ multiply two complex numbers }
 function MulZZ(const Z, Z2: TComplex): TComplex; inline;
-{ multiply a real and a complex }
 function MulRZ(const R: single;const Z: TComplex): TComplex; inline;
-{ divide Z with R ( Z/R ) - let compiler handle divbyzero }
 function DivZR(const Z: TComplex;const R: single): TComplex; inline;
-{ divide R with Z ( R/Z) - let compiler handle divbyzero }
 function DivRZ(const R: single;const Z: TComplex): TComplex; inline;
-{ divide two complex numbers }
 function DivZZ(const Z1, Z2: TComplex): TComplex; inline;
 
-{--------- Specific functions ----------------}
 
-{ return absolute value of Z. ( sqrt(x*x + y*y)) }
 function AbsZ(const Z: TComplex): single; inline;
-{ same as AbsZ }
 function ModZ(const Z: TComplex): single; inline;
 { return the argument of Z in radians }
 function ArgZ(Z: TComplex): single;
-{ return conjugate of Z (  conjugate( x + iy ) := x - iy ) }
 function ConjugateZ(Z: TComplex): TComplex;
-{ return the square of the absolute value of Z }
 function NormZ(Z: TComplex): single;
-{ return negated value of complex number }
 function NegZ(Z: TComplex): TComplex;
-{ test for equality }
 function EqualZZ(Z, Z2: TComplex): boolean;
 
-{----------- Trig. and hyperbolic functions ----------}
 
-{ return the cosine of Z }
 function CosZ(Z: TComplex): TComplex;
-{ return the hyperbolic cosine of Z }
 function CoshZ(Z: TComplex): TComplex;
-{ return the sine of Z }
 function SinZ(Z: TComplex): TComplex;
-{ return the Arcsine of Z }
 function ArcSinZ(Z: TComplex): TComplex;
-{ return the hyperbolic sine of Z }
 function SinhZ(Z: TComplex): TComplex;
-{ return the hyperbolic arcsine of Z }
 function ArcSinhZ(Z: TComplex): TComplex;
-{ return the tan of Z }
 function TanZ(Z: TComplex): TComplex;
-{ return the arctan of Z }
 function ArcTanZ(Z: TComplex): TComplex;
-{ return the arccos of Z }
 function ArcCosZ(Z: TComplex): TComplex;
-{ retun the hyperbolic tan of Z }
 function TanhZ(Z: TComplex): TComplex;
-{ return the hyperbolic arctan of Z }
 function ArcTanhZ(Z: TComplex): TComplex;
 
-{------ Math. functions -------------------}
 
-{ returns e raised to Z  (e^Z) }
 function ExpZ(const Z: TComplex): TComplex; inline;
-{ returns the natural log of Z }
 function LnZ(Z: TComplex): TComplex;
-{ retuns the base 10 log of Z }
 function Log10Z(Z: TComplex): TComplex;
-{ return the complex number built from rect.coords. Range and Theta }
 function PolarZ(Range, Angle: single): TComplex;
-{ return the rectangular coordinates of Z }
 procedure RectangularZ(Z: TComplex; var Range, Angle: single);
-{ return the Square root of Z }
 function SqrtZ(Z: TComplex): TComplex;
-{ return Z^Z2 }
 function PowZZ(Z, Z2: TComplex): TComplex;
-{ return Z^R (R is int) }
 function PowZR1(Z: TComplex; R: integer): TComplex;
-{ return Z^R (R is real) }
 function PowZR2(Z: TComplex; R: single): TComplex;
-{ return R^Z }
 function PowRZ(R: single; Z: TComplex): TComplex;
 
 implementation
@@ -135,16 +84,13 @@ implementation
 const
   InvTwoLn10 = 0.2171472409516259;  // 1/(2*ln(10)), for ln-to-log10 conversion
 
-{========================= Conversion ========================================}
 
-{ Convert R and I to complex }
 function ToComplex(R, I: single): TComplex;
 begin
   Result.Re := R;
   Result.Im := I;
 end;
 
-{ true if S is a valid complex string }
 function IsValidComplexString(const S: string): boolean;
 begin
   Result := True;
@@ -156,7 +102,6 @@ begin
   end;
 end;
 
-{ true if Z is a valid complex number }
 function IsValidComplexNumber(Z: TComplex): boolean;
 begin
   Result := True;
@@ -168,7 +113,6 @@ begin
   end;
 end;
 
-{ return boolean as string }
 function BoolToString(B: boolean): string;
 const
   Bool: array [False .. True] of string = ('False', 'True');
@@ -176,46 +120,12 @@ begin
   Result := Bool[B];
 end;
 
-{ convert Z to a string }
-{ Will raise EConvertError on failure. Call IsValidComplexNumber
-  first to avoid this situation. }
 
 function ComplexToString(Z: TComplex): string;
 begin
   Result := Format('(%s ,%si)', [FloatToStr(Z.Re), FloatToStr(Z.Im)]);
 end;
 
-{ convert string S to a TComplex }
-{
-  Accepts any input that StrToFloat does, with these additions:
-  1. Im and re part must be separated by any nonnumerical character
-  2. If the re part has a sign, it cannot be separated from the number
-  (i.e - 3.4 is invalid; -3.4 is OK). The im part sign can be separate
-  from the numerical body, although it isn't recommended.
-
-  Examples of valid input:
-  +7.8,-0.56E-12
-  +7.8  -             0.56E-12
-  (+7.8,-0.56E-12)
-  (     +7.8      ,         -     0.56E-12      )
-  +7.8    +   .   5    6  E  -  1  2
-  etc...
-
-  Examples of invalid input:
-  +7.8-0.56E-12 ( numbers can't stick together)
-  + 7.8,-0.56E-12 ( first '+' must be connected with the number )
-  +(-7.8) -0.56E-12 ( multiple signs or paranthesis in number not supported.
-  etc...
-
-  4. The global variable DecimalSeparator (the dot in the examples) controls
-  what character is actually used for separating the integral and fractional
-  parts of a number. This setting is controlled by the current settings in
-  the registry. If you are uncertain what separator your country use,
-  check Control Panel | Country | Numbers.
-
-  5. Will raise an EConvertError (unhandled) if input isn't valid.
-  To avoid this, call IsValidComplexString first.
-}
 
 function StringToComplex(const S: string): TComplex;
 var
@@ -223,7 +133,6 @@ var
   s1, s2: string;
 begin
   s1 := Trim(S);
-  // Strip surrounding parentheses if present
   if (Length(s1) > 0) and (s1[1] = '(') then
     s1 := Copy(s1, 2, Length(s1) - 2);
 
@@ -232,7 +141,6 @@ begin
   begin
     s2 := Trim(Copy(s1, p + 1, MaxInt));
     s1 := Trim(Copy(s1, 1, p - 1));
-    // Remove trailing 'i' from imaginary part
     if (Length(s2) > 0) and (s2[Length(s2)] = 'i') then
       s2 := Trim(Copy(s2, 1, Length(s2) - 1));
     Result.Re := StrToFloat(s1);
@@ -244,76 +152,64 @@ begin
   end;
 end;
 
-{ return real part of Z }
 function Real(Z: TComplex): single;
 begin
   Result := Z.Re;
 end;
 
-{ return imag part of Z }
 function Imag(Z: TComplex): single;
 begin
   Result := Z.Im;
 end;
 
-{=========================== Standard Operators ===============================}
 
-{ add two complex numbers: (x + yi) + (v + wi) = (x + v) + i(y + w) }
 function AddZZ(const Z, Z2: TComplex): TComplex;
 begin
   Result.Re := Z.Re + Z2.Re;
   Result.Im := Z.Im + Z2.Im;
 end;
 
-{ add a complex and a real: r + (x + yi) = (r + x) + yi }
 function AddZR(const Z: TComplex; R: single): TComplex;
 begin
   Result.Re := R + Z.Re;
   Result.Im := Z.Im;
 end;
 
-{ subtract two complex numbers: (x + yi) - (v + wi) = (x - v) + i(y -  w) }
 function SubZZ(const Z, Z2: TComplex): TComplex;
 begin
   Result.Re := Z.Re - Z2.Re;
   Result.Im := Z.Im - Z2.Im;
 end;
 
-{ subtract Z.re from R: (x +yi) - r = (x-r) + yi }
 function SubZR(const Z: TComplex; const R: single): TComplex;
 begin
   Result.Re := Z.Re - R;
   Result.Im := Z.Im;
 end;
 
-{ subtract R from Z.re: r - (x + yi) = (r-x) - yi }
 function SubRZ(const R: single;const Z: TComplex): TComplex;
 begin
   Result := SubZZ(ToComplex(R, 0), Z);
 end;
 
-{ multiply two complex numbers: (x + yi) * ( v + wi) = (xv - yw) + i(xw +yv) }
 function MulZZ(const Z, Z2: TComplex): TComplex;
 begin
   Result.Re := Z.Re * Z2.Re - Z.Im * Z2.Im;
   Result.Im := Z.Re * Z2.Im + Z.Im * Z2.Re;
 end;
 
-{ multiply a real and a complex: r(x+yi) = rx + ryi }
 function MulRZ(const R: single;const Z: TComplex): TComplex;
 begin
   Result.Re := R * Z.Re;
   Result.Im := R * Z.Im;
 end;
 
-{ divide Z with R ( Z/R ) - let compiler handle divbyzero: (x+yi) / r := x/r + yi/r }
 function DivZR(const Z: TComplex;const  R: single): TComplex;
 begin
   Result.Re := Z.Re / R;
   Result.Im := Z.Im / R;
 end;
 
-{ divide R with Z ( R/Z): r/(x + yi) = r*(x - yi)/(x² + y²) }
 function DivRZ(const R: single;const Z: TComplex): TComplex;
 var
   d: single;
@@ -331,53 +227,43 @@ begin
   Result.Im := (Z1.Im * Z2.Re - Z1.Re * Z2.Im) / d;
 end;
 
-{============================== Misc. complex specific =======================}
-{ return absolute value of Z. ( sqrt(x*x + y*y)) }
 function AbsZ(const Z: TComplex): single;
 begin
   Result := Sqrt(Z.Re * Z.Re + Z.Im * Z.Im);
 end;
 
-{ same as AbsZ }
 function ModZ(const Z: TComplex): single;
 begin
   Result := AbsZ(Z);
 end;
 
-{ return the argument of Z in radians: z = x + yi -> arctan(y/x) }
 function ArgZ(Z: TComplex): single;
 begin
   Result := FastArcTan2(Z.Im, Z.Re);
 end;
 
-{ return conjugate of Z (  (x + iy)~ = x - iy ) }
 function ConjugateZ(Z: TComplex): TComplex;
 begin
   Result.Re := Z.Re;
   Result.Im := -Z.Im;
 end;
 
-{ return the square of the absolute value of Z:  |x + yi|^2 }
 function NormZ(Z: TComplex): single;
 begin
   Result := Z.Re * Z.Re + Z.Im * Z.Im;
 end;
 
-{ return negated value of complex number: x + yi = -x - yi }
 function NegZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(-Z.Re, -Z.Im);
 end;
 
-{ test for equality }
 function EqualZZ(Z, Z2: TComplex): boolean;
 begin
   Result := ((Z.Re = Z2.Re) and (Z.Im = Z2.Im));
 end;
 
-{===================================== Trigonometric ==========================}
 
-{ return the cosine of Z }
 function CosZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(FastCos(Z.Re) * Neslib.FastMath.Cosh(Z.Im), -(FastSin(Z.Re) * Neslib.FastMath.Sinh(Z.Im)));
@@ -390,13 +276,11 @@ begin
                       Neslib.FastMath.ArcSin(Z.Re) * Neslib.FastMath.ArcSinh(Z.Im));
 end;
 
-{ return the hyperbolic cosine of Z }
 function CoshZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(Neslib.FastMath.Cosh(Z.Re) * FastCos(Z.Im), Neslib.FastMath.Sinh(Z.Re) * FastSin(Z.Im));
 end;
 
-{ return the sine of Z }
 function SinZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(FastSin(Z.Re) * Neslib.FastMath.Cosh(Z.Im), FastCos(Z.Re) * Neslib.FastMath.Sinh(Z.Im));
@@ -409,13 +293,11 @@ begin
                       Neslib.FastMath.ArcCos(Z.Re) * Neslib.FastMath.ArcSinh(Z.Im));
 end;
 
-{ return the hyperbolic sine of Z }
 function SinhZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(Neslib.FastMath.Sinh(Z.Re) * FastCos(Z.Im), Neslib.FastMath.Cosh(Z.Re) * FastSin(Z.Im));
 end;
 
-{ return the hyperbolic arcsine of Z }
 function ArcSinhZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(-Z.Im, Z.Re);
@@ -423,7 +305,6 @@ begin
   Result := ToComplex(Result.Im, -Result.Re);
 end;
 
-{ return the tan of Z }
 function TanZ(Z: TComplex): TComplex;
 var
   x, y, t: single;
@@ -434,7 +315,6 @@ begin
   Result := ToComplex(t * FastSin(x), t * Neslib.FastMath.Sinh(y));
 end;
 
-{ return the arctan of Z. }
 function ArcTanZ(Z: TComplex): TComplex;
 var
   x, y, t: single;
@@ -445,7 +325,6 @@ begin
   Result := ToComplex(t * Neslib.FastMath.ArcSin(x), t * Neslib.FastMath.ArcSinh(y));
 end;
 
-{ retun the hyperbolic tan of Z: tanh(z) = sinh(2x)/(cosh(2x)+cos(2y)) + i*sin(2y)/(cosh(2x)+cos(2y)) }
 function TanhZ(Z: TComplex): TComplex;
 var
   x, y, t: single;
@@ -464,9 +343,7 @@ begin
   Result := ToComplex(Result.Im, -Result.Re);
 end;
 
-{==================================== Math Functions ==========================}
 
-{ returns e raised to Z:  e^(x + yi) }
 function ExpZ(const Z: TComplex): TComplex;
 var
   x, s, c: single;
@@ -485,60 +362,37 @@ begin
   Result.Im := x * s;
 end;
 
-{ returns the natural log of Z:  Ln(x + iy) }
 function LnZ(Z: TComplex): TComplex;
 begin
   Result := ToComplex(FastLn(AbsZ(Z)), ArgZ(Z));
 end;
 
-{ retuns the base 10 log of Z:  log(x+yi) }
 function Log10Z(Z: TComplex): TComplex;
 begin
   Result := ToComplex(InvTwoLn10 * FastLn(NormZ(Z)), ArgZ(Z));
 end;
 
-{ returns the complex number given by the rectangular coordinates Range and Angle:
-  z = r(cos(angle) + i FastSin(angle))
-  Range is the length of the straight line extending from 0,0i to the point x,yi
-  Angle is the angle in radians between the real axis and the point x,yi
-  }
+{ Angle is in radians between the real axis and the point x,yi. }
 function PolarZ(Range, Angle: single): TComplex;
 begin
   Result := ToComplex(Range * FastCos(Angle), Range * FastSin(Angle));
 end;
 
-{ returns the rectangular coordinates Range and Angle of the complex number Z
-  (see explanation above) }
 procedure RectangularZ(Z: TComplex; var Range, Angle: single);
 begin
   Angle := ArgZ(Z);
   Range := AbsZ(Z);
 end;
 
-{ The reciprocal square root SqrtZ's small ("interference") component needs.
-  Until 2026-09-28 (Task 3's first commit) this was
-  Neslib.FastMath.InverseSqrt (SSE rsqrtss, ~12 bits, no Newton refinement,
-  ~3.7e-4 relative error): below the critical angle, where that component
-  carries the evanescent reflectivity, its
-  approximation noise could exceed a small physical signal (see
-  TestCalcPhysics.Delta_ResolvesADensityChangeBelowTheSingleStepOfEps,
-  2026-09-28-precision-followups Task 2/3). The author's <= 10% CPU-fit-speed
-  rule was applied to this together with TCalc.RefCalc's exact phase
-  functions (Task 3): alone this candidate cost only ~1.6-2.8%, but combined
-  with the phase change the representative fit measured ~11.7-12.3% slower -
-  over budget for the phase change alone (~9.3%), so the author decided to
-  accept the combined ~12% for the accuracy this buys (2026-09-28-precision-
-  followups, Task 3, fix round 2). 1 / System.Sqrt is a plain value-parameter
-  call: System.Sqrt is declared once per platform (Extended on Win32,
-  Double on Win64, both by implicit widening from the Single argument, no
-  var-parameter overload split the way System.SineCosine has), so this needs
-  no platform-conditional code. }
+{ SqrtZ's small component carries the evanescent reflectivity below the
+  critical angle. SSE rsqrtss has only ~12 bits and no Newton refinement;
+  its approximation noise can exceed a small physical signal. The exact
+  reciprocal square root is deliberate, despite the CPU-fit speed cost. }
 function ExactInverseSqrt(const X: Single): Single; inline;
 begin
   Result := 1 / System.Sqrt(X);
 end;
 
-{ return the Square root of Z: sqrt(x+yi) }
 function SqrtZ(Z: TComplex): TComplex;
 var
   LValue: Single;
@@ -563,7 +417,6 @@ begin
   end;
 end;
 
-{ return Z^Z2: (x+yi)^(v+wi) }
 function PowZZ(Z, Z2: TComplex): TComplex;
 var
   LogF, Phase: TComplex;
@@ -582,13 +435,11 @@ begin
   end;
 end;
 
-{ return Z^R (R is int): (x+yi)^r }
 function PowZR1(Z: TComplex; R: integer): TComplex;
 begin
   Result := PowZZ(Z, ToComplex(Trunc(R), 0));
 end;
 
-{ return Z^R (R is real): (x +yi)^r = |z|^r * (cos(r*arg) + i*sin(r*arg)) }
 function PowZR2(Z: TComplex; R: single): TComplex;
 var
   lnAbs, arg, mag: single;
@@ -603,7 +454,6 @@ begin
   end;
 end;
 
-{ return R^Z: r^(x + yi) }
 function PowRZ(R: single; Z: TComplex): TComplex;
 begin
   Result := PowZZ(ToComplex(R, 0), Z);

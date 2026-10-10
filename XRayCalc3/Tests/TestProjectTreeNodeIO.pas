@@ -1,8 +1,6 @@
 unit TestProjectTreeNodeIO;
 
-(* TXRCProjectTree node streaming, specifically the variant-record trap.
-
-   TProjectData is a variant record: prItem's ID, CurveID, Color, Active and
+(* TProjectData is a variant record: prItem's ID, CurveID, Color, Active and
    Visible share memory with prExtension's Enabled, FromFit, ExtType, StackID,
    LayerID, PolyCount and Poly. ProjectSaveNode writes the extension fields for
    every node, so ProjectLoadNode has to read them for every node - but it may
@@ -12,11 +10,7 @@ unit TestProjectTreeNodeIO;
    and the reader alias the same bytes and cancel each other out. The test below
    therefore writes a project, patches the extension slots of a DATA item to
    sentinel values the way an older build's layout would have left them, and
-   then loads it: the item's own fields must be untouched.
-
-   This is the bug that dropped the linked measured curve from every pre-2026
-   project - the data node came back with an ID matching neither [STATE]
-   LinkedData nor its own data_<ID>.dat, so RecoverDataCurves deleted it. *)
+   then loads it: the item's own fields must be untouched. *)
 
 interface
 
@@ -39,8 +33,6 @@ type
     [Test] procedure ModelFromVersion7_LoadsWithBulkSubstrateDensity;
     [Test] procedure ModelFromVersion8_KeepsItsSubstrateDensity;
     [Test] procedure LegacySubstrateDensity_LeavesOtherTextAlone;
-    { Only the two root groups are renamed on load; an item called
-      "Data 3.dat" or "Models compared" keeps its title. }
     [Test] procedure ItemTitles_WithDataOrModels_SurviveLoad;
   private
     function LoadModelData(const FileName: string; Version: Integer): string;
@@ -58,7 +50,6 @@ const
     any one of them shows up. }
   DATA_ID = 1689165507;
 
-  { What an older build's byte layout would leave in those slots. }
   SENTINEL_ENABLED = 1;
   SENTINEL_EXTTYPE = 2;
   SENTINEL_LAYERID = $7F7F7F7F;
@@ -78,7 +69,6 @@ begin
     TDirectory.Delete(FTemp, True);
 end;
 
-{ Models group > one model > one gradient extension; Data group > one data item. }
 function TTestProjectTreeNodeIO.WriteProject(const ADataID: Integer): string;
 var
   Tree: TXRCProjectTree;

@@ -105,6 +105,15 @@ claude mcp add -s user xrc -- "<path>\_Out\BIN\XRC_MCP.exe" --workdir "<experime
 Details, argument shapes and the smoke test are in [`XRC_MCP/README.md`](XRC_MCP/README.md);
 the requirements and design notes are in `docs/superpowers/specs/`.
 
+## Code comments
+
+Comments are not allowed by default; they must prove their right to exist.
+Accuracy and relevance alone do not justify a comment.
+Keep a comment only when it explains a non-obvious constraint, hazard, or decision
+that the code does not express. Remove code narration, decorative headings,
+history notes, and commented-out code. Preserve legal notices and compiler or tool
+directives. Pass this policy verbatim to subagents that write or edit code.
+
 ## History
 
 The branch `master` carries the development history since 2023. The repository's earlier public

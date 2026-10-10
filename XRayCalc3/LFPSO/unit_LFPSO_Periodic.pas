@@ -20,8 +20,7 @@ type
   TLFPSO_Periodic = class (TLFPSO_BASE)
     private
       { Per-stack period range, indexed like FStructure.Stacks. An entry with
-        Max <= Min (the default) holds the stack at its start period, which is
-        what the GUI always does; SetPeriodRange opens it. }
+        Max <= Min (the default) holds the stack at its start period. }
       FPeriodMin: TArray<Double>;
       FPeriodMax: TArray<Double>;
     protected
@@ -37,7 +36,7 @@ type
       /// instead of being held at its start value: NormalizeD then rescales
       /// the stack's layers only when their sum leaves that range, to the
       /// nearer bound. AMax &lt;= AMin restores the hold. Call after Structure
-      /// is set; the GUI never calls it, so its fits are unchanged.</summary>
+      /// is set.</summary>
       procedure SetPeriodRange(StackIndex: Integer; AMin, AMax: Double);
   end;
 
@@ -47,7 +46,6 @@ uses
   System.SysUtils,
   Neslib.FastMath;
 
-{ TLFPSO Periodic}
 
 procedure TLFPSO_Periodic.UpdateLFPSO(const t: integer);
 var
@@ -57,16 +55,15 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 1 to High(X) do // for every member of the population
+  for i := 1 to High(X) do
   begin
-    // 30% chance: Levy toward random peer for exploration diversity
     if Random < 0.3 then
       randIdx := Random(Length(X))
     else
-      randIdx := -1;  // use gbest
+      randIdx := -1;
 
-    for j := 0 to High(V[i]) do  //for every layer
-      for k := 1 to 3 do         // for H, s, rho
+    for j := 0 to High(V[i]) do
+      for k := 1 to 3 do
       begin
         if randIdx >= 0 then
           LTarget := X[randIdx][j][k][0]
@@ -91,10 +88,10 @@ var
 begin
   ApplyCFactor(c1, c2);
 
-  for i := 0 to High(V) do          // for every member of the population
+  for i := 0 to High(V) do
   begin
-    for j := 0 to High(V[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
+    for j := 0 to High(V[i]) do
+      for k := 1 to 3 do
       begin
         V[i][j][k][0] := Omega(t, FTMax) * V[i][j][k][0]  +
                       c1 * Random * (pbest[j][k][0] - X[i][j][k][0]) +
@@ -112,7 +109,7 @@ begin
     Exit;
   if StackIndex >= Length(FPeriodMin) then
   begin
-    SetLength(FPeriodMin, StackIndex + 1);   // new entries are 0/0: held
+    SetLength(FPeriodMin, StackIndex + 1);
     SetLength(FPeriodMax, StackIndex + 1);
   end;
   FPeriodMin[StackIndex] := AMin;
@@ -123,12 +120,10 @@ end;
   inside the range SetPeriodRange opened - without moving any thickness outside
   its own [Xmin, Xmax]. The correction is spread over the layers in proportion
   to their thickness, so that with room everywhere the ratio between them is
-  kept exactly as the plain rescaling did; a layer that reaches its bound stops
+  kept; a layer that reaches its bound stops
   there and the remainder goes to the others, and a fixed thickness
   (Xmin = Xmax) never moves. A period the bounds cannot reach is left at the
-  nearest sum they allow rather than forced. Before 2026-09-16 one factor was
-  applied to every layer, which drove thicknesses through their bounds - and
-  below zero when the pull-back was large - in fit_xrr results. }
+  nearest sum they allow rather than forced. }
 procedure TLFPSO_Periodic.NormalizeD(const ParticleIndex: integer);
 var
   i, j, Pass: integer;
@@ -168,7 +163,7 @@ begin
 
   for I := 0 to High(FStructure.Stacks) do
   begin
-    if FStructure.Stacks[i].N = 1 then    // if not periodic stack
+    if FStructure.Stacks[i].N = 1 then
     begin
        Inc(Index, Length(FStructure.Stacks[i].Layers));
        Continue;
@@ -191,7 +186,6 @@ begin
 
     if (i < Length(FPeriodMin)) and (FPeriodMax[i] > FPeriodMin[i]) then
     begin
-      // a free period: touch the layers only when their sum leaves the range
       if Dreal < FPeriodMin[i] then
         Target := FPeriodMin[i]
       else if Dreal > FPeriodMax[i] then
@@ -258,16 +252,13 @@ procedure TLFPSO_Periodic.XSeed;
 var
   i, j, k: integer;
 begin
-  for i := 1 to High(X) do          // for every member of the population
+  for i := 1 to High(X) do
   begin
-    for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
+    for j := 0 to High(X[i]) do
+      for k := 1 to 3 do
       begin
         X[i][j][k][0] := X[0][j][k][0] + Rand(XRange[0][j][k][0] * FFitParams.Ksxr);
-        { Clamp the seed as TLFPSO_Irregular.XSeed does through CheckLimits:
-          a seed outside its bounds was evaluated as it stood, and when it
-          scored best - after a shake, or with range_seed off - the fit ended
-          on a value the client never allowed (fit_xrr, 2026-09-16). }
+        { The seed is evaluated before any update checks its limits. }
         if X[i][j][k][0] < Xmin[0][j][k][0] then
           X[i][j][k][0] := Xmin[0][j][k][0]
         else if X[i][j][k][0] > Xmax[0][j][k][0] then
@@ -282,11 +273,11 @@ procedure TLFPSO_Periodic.RangeSeed;
 var
   i, j, k: integer;
 begin
-  for i := 0 to High(X) do          // for every member of the population
+  for i := 0 to High(X) do
   begin
-    for j := 0 to High(X[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
-       X[i][j][k][0] := Xmin[0][j][k][0] + Random * XRange[0][j][k][0];   // min + Random * (min-max)
+    for j := 0 to High(X[i]) do
+      for k := 1 to 3 do
+       X[i][j][k][0] := Xmin[0][j][k][0] + Random * XRange[0][j][k][0];
     NormalizeD(i);
   end;
 end;
@@ -298,9 +289,9 @@ begin
   MultiplyVector(Xrange, FFitParams.Vmax, Vmax);
   MultiplyVector(Vmax, -1, Vmin);
 
-  for i := 0 to High(V) do          // for every member of the population
-    for j := 0 to High(V[i]) do     //for every layer
-      for k := 1 to 3 do            // for H, s, rho
+  for i := 0 to High(V) do
+    for j := 0 to High(V[i]) do
+      for k := 1 to 3 do
         V[i][j][k][0] := Random * (Vmax[0][j][k][0] - Vmin[0][j][k][0]) + Vmin[0][j][k][0];
 end;
 

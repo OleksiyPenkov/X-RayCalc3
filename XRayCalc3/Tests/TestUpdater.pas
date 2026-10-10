@@ -12,8 +12,6 @@
 
 unit TestUpdater;
 
-(* Help - Check for update: the version comparison and the reading of a GitHub
-   /releases/latest answer. No network. *)
 
 interface
 

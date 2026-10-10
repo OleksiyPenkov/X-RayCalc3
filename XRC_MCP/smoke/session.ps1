@@ -1,23 +1,4 @@
 <#
-    session.ps1 - end-to-end smoke session for XRC_MCP.exe.
-
-    Drives one live JSON-RPC-over-stdio session against _Out\BIN\XRC_MCP.exe in a
-    throwaway work directory and calls every one of the 18 tools at least once.
-    Long-running tools are driven the way a client drives them: submit, poll
-    job_status until the state is terminal, then job_result; one job is submitted
-    only to be stopped with cancel_job.
-
-    Checks (the first failure exits non-zero with a message):
-      * tools/list names exactly the 18 expected tools
-      * calc_reflectivity puts the first Ru/C Bragg peak at 0.687 deg +/- 0.01
-        (refraction-corrected; the Bragg-law estimate 0.644 deg is not what the
-        engine gives)
-      * optimize_mirror twice with the same seed -> identical figure of merit
-      * fit_xrr twice with the same seed -> identical chi-squared and structure
-      * load_project with "..\..\x.xrcx" -> error code path_outside_workdir
-      * the inbox is byte-for-byte unchanged (SHA-256 before and after)
-      * log\calls.jsonl holds exactly one "tool" line per tools/call request sent
-
     The inbox is built BEFORE the server starts, from a curve produced by a
     separate preparation run of the same exe in its own work directory, so the
     session's journal counts only the session's own calls.
@@ -35,11 +16,10 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# ---------------------------------------------------------------- infrastructure
 
 $script:Proc      = $null
 $script:NextId    = 100
-$script:CallCount = 0          # tools/call requests sent - the journal must match
+$script:CallCount = 0
 
 function Say([string] $Text) { Write-Host $Text }
 
@@ -102,8 +82,6 @@ function Send-Rpc([string] $Method, $Params, [switch] $Notification, [int] $Time
     return $resp
 }
 
-# Calls one tool and returns the parsed payload object. -ExpectError demands an
-# isError result and returns the error object instead.
 function Invoke-Tool([string] $Name, $Arguments, [switch] $ExpectError, [int] $TimeoutSec = 300) {
     if ($null -eq $Arguments) { $Arguments = @{} }
     $script:CallCount++
@@ -136,10 +114,7 @@ function Wait-JobDone([string] $JobId, [int] $TimeoutSec = 300) {
     }
 }
 
-# ---------------------------------------------------------------- the test model
 
-# The Ru/C multilayer the plan uses throughout: d = 68.5 A, gamma = 0.215,
-# N = 30, Ru buffer, SiO2 substrate.
 function New-Ruc([double] $DRu = 14.7, [double] $DC = 53.8) {
     return [ordered]@{
         substrate = [ordered]@{ material = 'SiO2'; density = 2.2; sigma = 3.0 }
@@ -178,7 +153,6 @@ $EXPECTED_TOOLS = @(
     'get_measurement', 'assess_xrr', 'save_project', 'load_project', 'list_projects'
 )
 
-# ---------------------------------------------------------------- 0. locate the exe
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 if (-not $Exe) { $Exe = Join-Path $repoRoot '_Out\BIN\XRC_MCP.exe' }
@@ -197,11 +171,7 @@ Say "  exe     : $Exe"
 Say "  workdir : $work"
 Say ''
 
-# ------------------------------------------- 1. build the inbox BEFORE the server
 
-# A separate one-shot run of the same exe, in its own work directory, produces a
-# calculated Ru/C curve; that curve becomes the measured file in the session's
-# read-only inbox.
 Say '[prep] generating the measured curve'
 $prepReq = @(
     '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}',
@@ -241,7 +211,6 @@ Say "[prep] inbox\S1 prepared:"
 $inboxBefore | ForEach-Object { Say "         $_" }
 Say ''
 
-# ---------------------------------------------------------------- 2. the session
 
 Start-Server $Exe $work
 
@@ -257,7 +226,6 @@ $extra   = @($names | Where-Object { $_ -notin $EXPECTED_TOOLS })
 if ($missing.Count -or $extra.Count) { Fail "tools/list mismatch. missing: $($missing -join ',') extra: $($extra -join ',')" }
 Say "[1/18] tools/list  : $($names.Count) tools, all expected names present"
 
-# --- the four reference tools ------------------------------------------------
 $desc = Invoke-Tool 'describe_server' @{}
 Say "[2/18] describe_server   : version $($desc.server.version), git $($desc.server.git_revision), engine $($desc.server.xraycalc3_exe_version)"
 
@@ -272,7 +240,6 @@ Say "[4/18] optical_constants : Ru delta=$($oc.delta) beta=$($oc.beta) rho=$($oc
 $tpl = Invoke-Tool 'list_templates' @{}
 Say "[5/18] list_templates    : $(@($tpl.templates).Count) templates"
 
-# --- calc_reflectivity: the Bragg-peak check ---------------------------------
 $calc = Invoke-Tool 'calc_reflectivity' ([ordered]@{
     structure = (New-Ruc); lambda = 1.5406; theta_min = 0.1; theta_max = 4.0
     points = 2000; max_inline_points = 0 })
@@ -283,7 +250,6 @@ if ([Math]::Abs($peak1 - 0.687) -gt 0.01) {
 }
 Say "[6/18] calc_reflectivity : first Bragg peak $peak1 deg (R=$($calc.bragg_peaks[0].r_peak)), theta_c=$($calc.critical_angle_deg), $($calc.points) points"
 
-# --- evaluate_lines ----------------------------------------------------------
 $ev = Invoke-Tool 'evaluate_lines' ([ordered]@{
     structure = (New-Ruc)
     lines     = @([ordered]@{ name = 'B'; lambda = 67.6 }, [ordered]@{ name = 'Si'; lambda = 7.126 })
@@ -291,7 +257,6 @@ $ev = Invoke-Tool 'evaluate_lines' ([ordered]@{
 if ([double]::IsNaN([double]$ev.fom)) { Fail 'evaluate_lines returned a NaN figure of merit' }
 Say "[7/18] evaluate_lines    : fom=$($ev.fom), Si theta_bragg=$($ev.lines[1].theta_bragg_deg) deg"
 
-# --- optimize_mirror twice with the same seed --------------------------------
 $optFoms = @()
 foreach ($run in 1, 2) {
     $sub = Invoke-Tool 'optimize_mirror' ([ordered]@{ config = $OPT_CONFIG; seed = 12345; top_k = 2 })
@@ -306,7 +271,6 @@ if ($optFoms[0] -ne $optFoms[1]) {
 }
 Say "[9/18] job_status/job_result: both optimize runs report fom = $($optFoms[0]) (identical)"
 
-# --- cancel_job on a job submitted only to be stopped ------------------------
 $bigConfig = [ordered]@{
     lines        = $OPT_CONFIG['lines']
     element_pool = $OPT_CONFIG['element_pool']
@@ -322,7 +286,6 @@ $st = Wait-JobDone $big.job_id 120
 if ($st.state -ne 'cancelled') { Fail "the cancelled job ended '$($st.state)', expected 'cancelled'" }
 Say "[10/18] cancel_job       : $($big.job_id) cancel returned '$($cancel.state)', job settled 'cancelled' at iteration $($st.iteration)"
 
-# --- fit_xrr twice with the same seed ----------------------------------------
 $fitArgs = [ordered]@{
     structure      = (New-Ruc 13.5 55.0)
     measurement_id = 'S1/xrr.dat'
@@ -374,7 +337,6 @@ if ($null -ne $res.report.fringes) {
 } 
 Say "[12/18] fit determinism  : both runs report chi2 = $($fitChi[0]) and the same fitted structure"
 
-# the same fit on the curve smoothed once (Data - Smooth): echoed, and a different fit
 $smoothArgs = [ordered]@{}
 foreach ($k in $fitArgs.Keys) { $smoothArgs[$k] = $fitArgs[$k] }
 $smoothArgs.smooth = [ordered]@{ passes = 1 }
@@ -388,7 +350,6 @@ if (($res.smooth.passes -ne 1) -or ($res.smooth.window -ne 5)) {
 if ([double] $res.chi2_start -eq [double] $fitChiStart) { Fail 'fit_xrr with smooth scored the start model exactly as the raw curve does: the curve was not smoothed' }
 Say "[12/18] fit smooth       : $($sub.job_id) smooth=$($res.smooth | ConvertTo-Json -Compress) chi2_start=$($res.chi2_start) (raw $fitChiStart)"
 
-# --- job_wait: one call in place of a poll per turn --------------------------
 $sub = Invoke-Tool 'fit_xrr' $fitArgs
 $w   = Invoke-Tool 'job_wait' ([ordered]@{ job_id = $sub.job_id; wait_s = 120 }) -TimeoutSec 180
 if ($w.state -ne 'finished') { Fail "job_wait returned state '$($w.state)', expected 'finished'" }
@@ -399,8 +360,6 @@ if ([double] $res.chi2 -ne $fitChi[0]) {
 }
 Say "[13/18] job_wait         : $($sub.job_id) finished after $($w.waited_s) s in one call (chi2 $($res.chi2))"
 
-# a wait that runs out: the job is still going and says so, and the id is
-# still good afterwards
 $big = Invoke-Tool 'optimize_mirror' ([ordered]@{ config = $bigConfig; seed = 424; top_k = 1 })
 $w   = Invoke-Tool 'job_wait' ([ordered]@{ job_id = $big.job_id; wait_s = 1 }) -TimeoutSec 60
 if (($w.state -ne 'running') -and ($w.state -ne 'queued')) {
@@ -412,13 +371,11 @@ $st = Wait-JobDone $big.job_id 120
 if ($st.state -ne 'cancelled') { Fail "the job waited on then cancelled ended '$($st.state)'" }
 Say "        job_wait ceiling: '$($w.state)' after $($w.waited_s) s, then cancelled"
 
-# a wait on an id this server has never seen is answered, not refused
 $w = Invoke-Tool 'job_wait' ([ordered]@{ job_id = 'fit-19700101-000000-dead'; wait_s = 30 })
 if ($w.state -ne 'unknown') { Fail "job_wait on an unknown id returned '$($w.state)'" }
 if ([double] $w.waited_s -gt 1) { Fail "job_wait on an unknown id waited $($w.waited_s) s" }
 Say "        job_wait unknown: '$($w.state)' after $($w.waited_s) s"
 
-# --- "scale": "auto", the GUI's Data - Normalize Auto -------------------------
 $autoArgs = [ordered]@{}
 foreach ($k in $fitArgs.Keys) { $autoArgs[$k] = $fitArgs[$k] }
 $autoArgs.scale = 'auto'
@@ -444,7 +401,6 @@ if ([double] $res.scale -ne $autoScale) {
 }
 Say "        scale auto      : $($res.scale) at theta $($res.scale_theta) deg from $($res.scale_counts) counts (the boolean and the string agree)"
 
-# --- the inbox tools ---------------------------------------------------------
 $meas = Invoke-Tool 'list_measurements' @{}
 $specimens = @($meas.specimens)
 if ($specimens.Count -lt 1) { Fail 'list_measurements found no specimen in the inbox' }
@@ -456,7 +412,6 @@ $one = Invoke-Tool 'get_measurement' @{ measurement_id = 'S1/xrr.dat'; max_point
 if ($one.points_returned -gt 100) { Fail "get_measurement returned $($one.points_returned) points for max_points 100" }
 Say "[15/18] get_measurement  : $($one.points) points in the file, $($one.points_returned) returned, lambda $($one.lambda), theta_unit $($one.theta_unit)"
 
-# A two-column file: every rate check answers "unknown", nothing is invented.
 $qa = Invoke-Tool 'assess_xrr' @{ measurement_id = 'S1/xrr.dat' }
 if (-not $qa.checks.counting) { Fail 'assess_xrr returned no counting check' }
 if ($qa.checks.counting.verdict -ne 'unknown') { Fail "assess_xrr on a two-column file gave counting verdict '$($qa.checks.counting.verdict)', expected 'unknown'" }
@@ -464,7 +419,6 @@ if ($qa.checks.zeros.verdict -ne 'unknown') { Fail "assess_xrr on a two-column f
 if (-not $qa.summary_text) { Fail 'assess_xrr returned no summary_text' }
 Say "[16/18] assess_xrr       : verdict $($qa.verdict), $($qa.points) points, plateau/first order $($qa.checks.plateau_vs_first_order.value) ($($qa.checks.plateau_vs_first_order.verdict))"
 
-# --- the project tools -------------------------------------------------------
 $save = Invoke-Tool 'save_project' ([ordered]@{
     structure = (New-Ruc); name = 'smoke'; overwrite = $true
     lambda = 1.5406; theta_min = 0.1; theta_max = 4.0; points = 400
@@ -475,7 +429,6 @@ $load = Invoke-Tool 'load_project' @{ name = 'smoke' }
 if ($load.structure.stacks[0].N -ne 30) { Fail "load_project returned N = $($load.structure.stacks[0].N), expected 30" }
 Say "[18/18] load_project     : $($load.structure.stacks[0].N) periods, $($load.structure.stacks[0].layers.Count) layers per period"
 
-# The sandbox check: a path that climbs out of the work directory.
 $bad = Invoke-Tool 'load_project' @{ path = '..\..\x.xrcx' } -ExpectError
 if ($bad.code -ne 'path_outside_workdir') {
     Fail "load_project '..\..\x.xrcx' returned code '$($bad.code)', expected 'path_outside_workdir'"
@@ -489,12 +442,10 @@ Say "        list_projects   : $($projList.Count) project(s), first '$($projList
 
 Stop-Server
 
-# ---------------------------------------------------------------- 3. after checks
 
 Say ''
 Say '--- post-session checks ---'
 
-# The inbox is the one folder the server must never write to.
 $inboxAfter = Get-ChildItem -LiteralPath $inboxDir -File |
     Sort-Object Name |
     ForEach-Object { '{0}={1}' -f $_.Name, (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }

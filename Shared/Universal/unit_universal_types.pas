@@ -17,21 +17,11 @@ const
   // four periods. 0 in a configuration means "use this".
   DEFAULT_N_REF = 50;
 
-  // A line reflecting less than this is scored as dark and carries
-  // PENALTY_DARK: a channel of under a couple of per cent is not a channel. It
-  // stays a per-call parameter - this is only what a caller gets for saying
-  // nothing - and every front end reads it from here.
   DEFAULT_R_MIN_THRESHOLD = 0.02;
 
-  // What a configuration of 0 means: 200 points per line, and a window chosen
-  // per line rather than a fixed half-range (DEFAULT_SCAN_HALF_RANGE is what a
-  // fixed window falls back to, and the widest an adaptive one is widened to).
   DEFAULT_SCAN_POINTS     = 200;
   DEFAULT_SCAN_HALF_RANGE = 5.0;
 
-  // The scan grid of one line: the configured scan_points is a floor, the step
-  // is never coarser than the kinematic reference width over
-  // POINTS_PER_FWHM_REF, and SCAN_POINTS_MAX caps what that asks for.
   POINTS_PER_FWHM_REF = 10;
   SCAN_POINTS_MAX     = 20000;
 
@@ -52,52 +42,44 @@ const
   // this much of 1. It matters only for a window a client made wide enough to
   // reach a neighbouring order; the adaptive window is far narrower than that.
   ORDER_ONE_TOLERANCE = 0.5;
-  LAYERS_PER_PERIOD = 2; // bilayer v1.0
+  LAYERS_PER_PERIOD = 2;
 
 type
-  // Per-element cached Henke data
   TElementData = record
     Name: string;
     AtomicMass: Single;   // A (g/mol)
     BulkDensity: Single;  // rho (g/cm3)
   end;
 
-  // Cached f1/f2 at a specific wavelength for one element
   THenkeCacheEntry = record
     f1, f2: Single;
   end;
 
-  // XRF emission line definition
   TXRFLine = record
     Name: string;
     Lambda: Single;       // characteristic wavelength in Angstroms
-    Weight: Single;       // relative weight in FoM
+    Weight: Single;
   end;
 
-  // Result of evaluating one target wavelength
   TTargetResult = record
     RPeak: Single;        // peak reflectivity (0..1)
     FWHM: Single;         // angular FWHM in degrees
     ThetaBragg: Single;   // kinematic Bragg angle in degrees, asin(lambda/2d)
     Valid: Boolean;        // false if lambda/2d > 1 (no Bragg peak)
-    // What the peak search actually did, per line (TUniversalFitness.MeasureLine):
     ThetaPeak: Single;    // refraction-corrected centre of the scan, degrees
     ScanHalf: Single;     // half-range added either side of the angle pair, deg
     ScanStep: Single;     // grid step of that scan, degrees
-    ScanPointsUsed: Integer; // points the peak was searched over
+    ScanPointsUsed: Integer;
   end;
 
   TTargetResults = array of TTargetResult;
 
-  // Range parameter (min/max bounds)
   TParamRange = record
     Min, Max: Single;
   end;
 
-  // Template sub-layer thickness type
   TThicknessType = (ttGamma, ttOneMinusGamma, ttFixed);
 
-  // One sub-layer in a material pair template
   TTemplateLayer = record
     Material: string;
     ThicknessType: TThicknessType;
@@ -106,34 +88,29 @@ type
     Density: Single;         // bulk density (g/cm3)
   end;
 
-  // Capping layer definition (one variant)
   TTemplateCap = record
-    Name: string;             // display name (e.g. "Si", "Ru")
+    Name: string;
     Material: string;
     Sigma: Single;            // interface roughness (Angstroms)
     Density: Single;          // bulk density (g/cm3)
     ThicknessRange: TParamRange; // optimizable thickness range (Angstroms)
   end;
 
-  // A complete template for one material pair
   TTemplatePair = record
     Key: string;              // "Mo/Si" - lookup key
-    Description: string;      // human-readable description
+    Description: string;
     Layers: array of TTemplateLayer;
     GammaReduction: Single;   // sum of fixed thicknesses subtracted from gamma layer
     OneMinusGammaReduction: Single; // sum of fixed thicknesses subtracted from 1-gamma layer
     Caps: array of TTemplateCap;  // cap variants (empty = no cap)
   end;
 
-  // Library of all loaded templates
   TTemplateLibrary = array of TTemplatePair;
 
-  // Composition fractions for one layer role
   TCompositionGenes = array of Single; // length = element_pool count, sum = 1.0
 
-  // Full genome for one particle
   TGenome = record
-    Composition: array [0..LAYERS_PER_PERIOD-1] of TCompositionGenes; // per-layer fractions
+    Composition: array [0..LAYERS_PER_PERIOD-1] of TCompositionGenes;
     d: Single;              // period thickness (A)
     Gamma: Single;          // reflector/period ratio
     N: Single;              // number of periods (float, rounded for eval)
@@ -143,7 +120,6 @@ type
     DensityFactor: array [0..LAYERS_PER_PERIOD-1] of Single; // per-layer density multiplier
   end;
 
-  // Velocity vector (same shape as genome)
   TVelocity = record
     Composition: array [0..LAYERS_PER_PERIOD-1] of TCompositionGenes;
     d: Single;
@@ -155,20 +131,18 @@ type
     DensityFactor: array [0..LAYERS_PER_PERIOD-1] of Single;
   end;
 
-  // One particle in the swarm
   TParticle = record
-    X: TGenome;           // current position
-    V: TVelocity;         // velocity
-    PBest: TGenome;       // personal best position
+    X: TGenome;
+    V: TVelocity;
+    PBest: TGenome;
     PBestFoM: Single;     // personal best FoM (negated for minimization)
     CurrentFoM: Single;   // current FoM (negated)
-    TargetResults: TTargetResults; // per-target evaluation results
+    TargetResults: TTargetResults;
   end;
 
   PParticle = ^TParticle;
   TParticleArray = array of TParticle;
 
-  // Structure configuration from JSON
   TStructureConfig = record
     StructureType: string;  // 'bilayer'
     LayersPerPeriod: Integer;
@@ -184,11 +158,10 @@ type
     CapVariantCount: Integer;        // number of cap variants (0 = no cap)
   end;
 
-  // Fitness configuration from JSON
   TFitnessConfig = record
-    wR: Single;             // weight for R_peak
-    wFWHM: Single;          // weight for FWHM penalty
-    RMinThreshold: Single;  // minimum acceptable R_peak
+    wR: Single;
+    wFWHM: Single;
+    RMinThreshold: Single;
     Polarization: TPolarisation;
     DeltaTheta: Single;     // beam divergence FWHM in degrees (0 = ideal)
     ThetaMin: Single;       // minimum Bragg angle in degrees (skip total reflection zone)
@@ -198,7 +171,6 @@ type
     NRef: Integer;          // periods in the FWHM reference (0 = DEFAULT_N_REF)
   end;
 
-  // Optimizer configuration from JSON
   TOptimizerConfig = record
     Population: Integer;
     Iterations: Integer;
@@ -214,7 +186,6 @@ type
     Idx1, Idx2: Integer;
   end;
 
-  // Full configuration
   TUniversalConfig = record
     Lines: array of TXRFLine;
     ElementPool: array of string;
@@ -229,7 +200,6 @@ type
     TemplatePath: string;     // path to template JSON file (empty = no templates)
   end;
 
-  // Optimizer state (for checkpoint/resume)
   TOptState = record
     Iteration: Integer;
     GBest: TGenome;
@@ -240,7 +210,6 @@ type
     Particles: TParticleArray;
   end;
 
-// Utility functions
 function CreateGenome(PoolSize: Integer): TGenome;
 function CreateVelocity(PoolSize: Integer): TVelocity;
 function NRound(Value: Single): Integer;

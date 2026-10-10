@@ -5,13 +5,6 @@
   * Copyright (C) 2008-2023 Oleksiy Penkov (aka Koreec)
   *
   * Author(s)           Nick Rymanov     nrymanov@gmail.com
-  * Created
-  * Description         Строка редактирования с поддержкой автокомплита
-  *
-  * $Id: unit_AutoCompleteEdit.pas 785 2010-09-17 09:06:06Z nrymanov@gmail.com $
-  *
-  * History
-  *
   ****************************************************************************** *)
 
 unit unit_AutoCompleteEdit;
@@ -58,7 +51,6 @@ type
 
 implementation
 
-{ TMHLAutoCompleteEdit }
 
 constructor TMHLAutoCompleteEdit.Create(AOwner: TComponent);
 begin

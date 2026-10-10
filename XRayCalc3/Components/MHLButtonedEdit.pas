@@ -5,13 +5,6 @@
   * Copyright (C) 2008-2023 Oleksiy Penkov (aka Koreec)
   *
   * Author(s)           Nick Rymanov (nrymanov@gmail.com)
-  * Created             05.07.2010
-  * Description         TButtonedEdit, без правой кнопки и загружающий картинку для левой кнопки из ресурсов.
-  *
-  * $Id: MHLButtonedEdit.pas 785 2010-09-17 09:06:06Z nrymanov@gmail.com $
-  *
-  * History
-  *
   ****************************************************************************** *)
 
 unit MHLButtonedEdit;
@@ -66,10 +59,8 @@ type
     property Enabled;
     property Font;
     property HideSelection;
-    ///property Images;
     property ImeMode;
     property ImeName;
-    //property LeftButton;
     property MaxLength;
     property OEMConvert;
     property NumbersOnly;
@@ -105,7 +96,6 @@ type
     property OnKeyPress;
     property OnKeyUp;
     property OnGesture;
-    ///property OnLeftButtonClick;
     property OnMouseActivate;
     property OnMouseDown;
     property OnMouseEnter;
@@ -131,7 +121,6 @@ type
     property Visible default True;
   end;
 
-{ TMHLButtonedEdit }
 
 class constructor TMHLButtonedEdit.Create;
 var

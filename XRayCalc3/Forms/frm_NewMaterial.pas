@@ -51,12 +51,10 @@ type
       var CanSelect: Boolean);
     procedure btnMaterialClick(Sender: TObject);
   private
-    { Private declarations }
     col, row: Integer;
 
     function NewElement: boolean;
   public
-    { Public declarations }
   end;
 
 var
