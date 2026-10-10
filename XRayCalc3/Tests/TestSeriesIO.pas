@@ -35,7 +35,7 @@ implementation
 
 uses
   unit_SeriesIO, unit_types, VclTee.Series, Clipbrd,
-  System.SysUtils, System.IOUtils, System.Classes;
+  System.SysUtils, System.IOUtils, System.Classes, VCLTee.TeEngine;
 
 
 procedure TTestSeriesIO.Setup;

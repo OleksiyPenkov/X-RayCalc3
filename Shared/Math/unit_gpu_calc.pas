@@ -30,6 +30,14 @@ uses
 type
   EGpuError = class(Exception);
 
+  /// <summary>The likelihood kernel's per-point inputs (spec section 2), on the
+  /// angles TGpuEvaluator.Setup was given.</summary>
+  TGpuLikInputs = record
+    LnData: TArray<Single>;  // ln D_i (true natural log); never read where InvN < 0
+    InvN: TArray<Single>;    // 1/N_i; 0 when the curve has no counts; -1 leaves the point out
+    FMin2: Single;           // f_min squared: V_min = 1/N_i + FMin2
+  end;
+
   TGpuEvaluator = class
   private type
     TParamsCB = packed record
@@ -39,11 +47,12 @@ type
       RF, PartOffset: UINT;
       ChiNorm, Pad: Single;
       SolveScale: UINT;
-      ScaleWindow, Pad2, Pad3: Single;
+      ScaleWindow, FMin2, Pad3: Single;
     end;
   private class var
     FLock: TCriticalSection;
     FReflectCode, FChiCode: TBytes;
+    FLogLikCode: TBytes;
     FProbed, FProbeOK: Boolean;
     FProbeName, FProbeError: string;
     FProbeTick: UInt64;
@@ -65,16 +74,20 @@ type
     FCB: ID3D11Buffer;
     FLayers, FSinG, FWeights, FLogData, FPointWeight, FCurve, FChiBuf: ID3D11Buffer;
     FChiStage, FRowStage: ID3D11Buffer;
-    FSRV: array [0..4] of ID3D11ShaderResourceView;
+    FSRV: array [0..7] of ID3D11ShaderResourceView;
     FUAV: array [0..1] of ID3D11UnorderedAccessView;
     FParams: TParamsCB;
     FNLay, FNAng, FNPart, FChunk: Integer;
     FStepsPerDispatch: Int64;
     FAdapterName: string;
+    FLogLik: ID3D11ComputeShader;
+    FNuis, FLnData, FInvN: ID3D11Buffer;
+    FLikReady: Boolean;
     FInSelfCheck: Boolean;
     class procedure Check(HR: HRESULT; const What: string); static;
     class procedure CompileShaders; static;
     class function CompileEntry(const Entry: AnsiString; Strict: Boolean): TBytes; static;
+    class procedure CompileLogLik; static;
     function Structured(ElemSize, Count: UINT; Bind: UINT; Init: Pointer): ID3D11Buffer;
     function Staging(Size: UINT): ID3D11Buffer;
     procedure SetOffset(Offset, Count: Integer);
@@ -96,6 +109,17 @@ type
     /// after particle, each model surface first: delta (1 - Re epsilon),
     /// e.im, thickness, sigma. Chi receives one chi-squared per particle.</summary>
     procedure Evaluate(const Layers: TArray<Single>; var Chi: TArray<Single>);
+    /// <summary>Adds the likelihood kernel to a Setup evaluator: Lik is on the
+    /// angles of Setup's Inputs, and the kernel sums ChiFirst..ChiLast as
+    /// ChiSquare does. Call it again after every Setup, which drops it.</summary>
+    procedure SetupLikelihood(const Lik: TGpuLikInputs);
+    /// <summary>Layers as for Evaluate. Nuisance holds NPart records of four
+    /// Singles: scale (10^LogScale, not the log), background, f squared,
+    /// unused. Cost receives, per particle, CurveLikelihood's Cost over
+    /// ChiFirst..ChiLast, to single precision. Raises EGpuError before
+    /// SetupLikelihood.</summary>
+    procedure EvaluateLikelihood(const Layers, Nuisance: TArray<Single>;
+      var Cost: TArray<Single>);
     /// <summary>The raw (unconvolved, Limit-clamped) curve of one particle of
     /// the last Evaluate, for TCalc.FinishRawCurve.</summary>
     function RawCurve(Particle: Integer): TArray<Single>;
@@ -105,8 +129,9 @@ type
     /// <summary>Angle x layer steps per dispatch. Set before Setup.</summary>
     property StepsPerDispatch: Int64 read FStepsPerDispatch write FStepsPerDispatch;
     property ParticlesPerDispatch: Integer read FChunk;
-    /// <summary>Process-wide one-shot failure on the N-th Evaluate.
-    /// Self-check evaluations must not consume the caller's count.</summary>
+    /// <summary>Process-wide one-shot failure on the N-th Evaluate or
+    /// EvaluateLikelihood. Self-check evaluations must not consume the
+    /// caller's count.</summary>
     class property FailAfter: Integer read FFailAfter write FFailAfter;
     /// <summary>'precise' or 'ieee_strict'; empty until a check succeeds.</summary>
     class property ShaderMode: string read FShaderMode;
@@ -159,7 +184,7 @@ const
         float Pad;
         uint  SolveScale;
         float ScaleWindow;// |log10 scale| bound; 0 pins it
-        float Pad2;
+        float FMin2;       // f_min^2 (LogLik)
         float Pad3;
     };
 
@@ -168,6 +193,9 @@ const
     StructuredBuffer<float>  Weights     : register(t2);
     StructuredBuffer<float>  LogData     : register(t3);
     StructuredBuffer<float>  PointWeight : register(t4);
+    StructuredBuffer<float4> Nuis        : register(t5);  // per particle: scale, background, f^2, unused
+    StructuredBuffer<float>  LnData      : register(t6);  // ln D (LogLik)
+    StructuredBuffer<float>  InvN        : register(t7);  // 1/N; 0 without counts; < 0 leaves the point out
     RWStructuredBuffer<float> Curve      : register(u0);  // raw R, particle-major
     RWStructuredBuffer<float> Chi        : register(u1);
 
@@ -346,15 +374,77 @@ const
             }
             GroupMemoryBarrierWithGroupSync();
         }
-        if (gtid.x == 0)
+        // With the scale solved the sum is taken again, at a, as w (d + a)^2:
+        // never negative. S2 + 2 a S1 + a^2 S0 is the same number on paper, but
+        // one point with R within 1e-5 of 1 has w = 1e10, every term is then
+        // near 1e9 and their sum, near 1e2, is rounding noise of either sign in
+        // single precision - and a negative chi2 wins every comparison of a fit.
+        float t0 = P0[0], t1 = P1[0], t2 = P2[0];
+        GroupMemoryBarrierWithGroupSync();      // all have read before P0 is reused
+        float c = 0;
+        if (SolveScale != 0)
         {
             float a = 0;
-            if (SolveScale != 0 && P0[0] > 0)
-                a = clamp(-P1[0] / P0[0], -ScaleWindow, ScaleWindow);
-            Chi[p] = (P2[0] + 2 * a * P1[0] + a * a * P0[0]) * ChiNorm;
+            if (t0 > 0)
+                a = clamp(-t1 / t0, -ScaleWindow, ScaleWindow);
+            for (uint i2 = ChiFirst + gtid.x; i2 <= ChiLast; i2 += CHI_THREADS)
+            {
+                float r = 0;
+                for (uint k = 0; k < WinSize; ++k)
+                    r += Curve[base + i2 - ConvN + k] * Weights[k];
+                if (r != 0)
+                {
+                    float lr = 0.434294481903 * log(r);
+                    float e = (LogData[i2] - lr + a) / lr;
+                    c += PointWeight[i2] * e * e;
+                }
+            }
         }
+        else if (gtid.x == 0)
+            c = t2;
+        P0[gtid.x] = c;
+        GroupMemoryBarrierWithGroupSync();
+        for (uint s3 = CHI_THREADS / 2; s3 > 0; s3 >>= 1)
+        {
+            if (gtid.x < s3)
+                P0[gtid.x] += P0[gtid.x + s3];
+            GroupMemoryBarrierWithGroupSync();
+        }
+        if (gtid.x == 0)
+            Chi[p] = P0[0] * ChiNorm;
     }
 
+    // unit_Likelihood.CurveLikelihood's Cost, one particle per group: over the
+    // points kept, r^2 / V + ln(V / Vmin) with r = ln D - ln(s R + b),
+    // V = 1/N + f^2 and Vmin = 1/N + fmin^2 (1/N = 0 without counts). R is the
+    // convolved curve, as in ChiSquare.
+    [numthreads(CHI_THREADS, 1, 1)]
+    void LogLik(uint3 gtid : SV_GroupThreadID, uint3 grp : SV_GroupID)
+    {
+        uint p = grp.x + PartOffset;
+        uint base = p * NAng;
+        float4 nu = Nuis[p];
+        float c = 0;
+        for (uint i = ChiFirst + gtid.x; i <= ChiLast; i += CHI_THREADS)
+        {
+            float n1 = InvN[i];
+            if (n1 < 0) continue;
+            float r = 0;
+            for (uint k = 0; k < WinSize; ++k)
+                r += Curve[base + i - ConvN + k] * Weights[k];
+            float res = LnData[i] - log(nu.x * r + nu.y);
+            float v = n1 + nu.z;
+            c += res * res / v + log(v / (n1 + FMin2));
+        }
+        P0[gtid.x] = c;
+        GroupMemoryBarrierWithGroupSync();
+        for (uint h = CHI_THREADS / 2; h > 0; h >>= 1)
+        {
+            if (gtid.x < h) P0[gtid.x] += P0[gtid.x + h];
+            GroupMemoryBarrierWithGroupSync();
+        }
+        if (gtid.x == 0) Chi[p] = P0[0];
+    }
     ''';
 
 
@@ -419,6 +509,17 @@ begin
       FReflectCode := Reflect;
       FChiCode := Chi;
     end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+class procedure TGpuEvaluator.CompileLogLik;
+begin
+  FLock.Enter;
+  try
+    if Length(FLogLikCode) = 0 then
+      FLogLikCode := CompileEntry('LogLik', FStrict);
   finally
     FLock.Leave;
   end;
@@ -542,6 +643,7 @@ begin
         FStrict := True;
         FReflectCode := nil;
         FChiCode := nil;
+        FLogLikCode := nil;     // recompiled lazily again if a likelihood fit needs it
         CompileShaders;
         Check(FDev.CreateComputeShader(@FReflectCode[0], Length(FReflectCode), nil, FReflect),
           'CreateComputeShader(Reflect, IEEE strict)');
@@ -555,6 +657,7 @@ begin
           FStrict := False;
           FReflectCode := nil;
           FChiCode := nil;
+          FLogLikCode := nil;
           raise;
         end;
         Worst := FSelfCheckErrorWorst;
@@ -573,6 +676,7 @@ begin
         FStrict := False;
         FReflectCode := nil;
         FChiCode := nil;
+        FLogLikCode := nil;
         FSelfCheckFailMsg := Format('GPU self-check failed: mean/worst |log10 R/R_ref| ' +
           '%.2e/%.2e with precise and %.2e/%.2e with IEEE strictness',
           [FirstErr, FirstWorst, Err, Worst]);
@@ -649,6 +753,10 @@ begin
      (Int64(NPart) * Length(Inputs.Theta) * 4 > MAX_BUFFER_BYTES) then
     raise EGpuError.CreateFmt('%d particles x %d layers x %d angles do not fit ' +
       'in GPU buffers', [NPart, NLay, Length(Inputs.Theta)]);
+  FLikReady := False;           // SetupLikelihood sizes its buffers for this Setup
+  FSRV[5] := nil;
+  FSRV[6] := nil;
+  FSRV[7] := nil;
   FNLay := NLay;
   FNAng := Length(Inputs.Theta);
   FNPart := NPart;
@@ -853,6 +961,40 @@ begin
   RunKernels(Layers, FChi, Chi);
 end;
 
+procedure TGpuEvaluator.SetupLikelihood(const Lik: TGpuLikInputs);
+begin
+  FLikReady := False;           // any failure below must leave EvaluateLikelihood refusing
+  if FNPart = 0 then
+    raise EGpuError.Create('SetupLikelihood before Setup');
+  if (Length(Lik.LnData) <> FNAng) or (Length(Lik.InvN) <> FNAng) then
+    raise EGpuError.CreateFmt('SetupLikelihood: %d ln D and %d 1/N values for %d angles',
+      [Length(Lik.LnData), Length(Lik.InvN), FNAng]);
+  CompileLogLik;
+  if FLogLik = nil then
+    Check(FDev.CreateComputeShader(@FLogLikCode[0], Length(FLogLikCode), nil, FLogLik),
+      'CreateComputeShader(LogLik)');
+  FParams.FMin2 := Lik.FMin2;
+  FNuis   := Structured(16, FNPart, D3D11_BIND_SHADER_RESOURCE, nil);
+  FLnData := Structured(4, FNAng, D3D11_BIND_SHADER_RESOURCE, @Lik.LnData[0]);
+  FInvN   := Structured(4, FNAng, D3D11_BIND_SHADER_RESOURCE, @Lik.InvN[0]);
+  Check(FDev.CreateShaderResourceView(FNuis, nil, FSRV[5]), 'SRV(nuisance)');
+  Check(FDev.CreateShaderResourceView(FLnData, nil, FSRV[6]), 'SRV(ln data)');
+  Check(FDev.CreateShaderResourceView(FInvN, nil, FSRV[7]), 'SRV(1/N)');
+  FLikReady := True;
+end;
+
+procedure TGpuEvaluator.EvaluateLikelihood(const Layers, Nuisance: TArray<Single>;
+  var Cost: TArray<Single>);
+begin
+  if not FLikReady then
+    raise EGpuError.Create('EvaluateLikelihood before SetupLikelihood');
+  if Length(Nuisance) <> 4 * FNPart then
+    raise EGpuError.CreateFmt('EvaluateLikelihood: %d nuisance values for %d particles',
+      [Length(Nuisance), FNPart]);
+  FCtx.UpdateSubresource(FNuis, 0, nil, @Nuisance[0], 0, 0);
+  RunKernels(Layers, FLogLik, Cost);
+end;
+
 function TGpuEvaluator.RawCurve(Particle: Integer): TArray<Single>;
 var
   Box: D3D11_BOX;
@@ -895,6 +1037,7 @@ begin
   try
     FReflectCode := nil;
     FChiCode := nil;
+    FLogLikCode := nil;
     FStrict := False;
     FSelfChecked := False;
     FShaderMode := '';

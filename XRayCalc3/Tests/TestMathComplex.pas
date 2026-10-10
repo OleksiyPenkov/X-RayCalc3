@@ -92,7 +92,7 @@ type
 implementation
 
 uses
-  System.SysUtils, System.Math;
+  Neslib.FastMath, System.SysUtils, System.Math;
 
 
 procedure TTestMathComplex.CheckComplex(const Expected, Actual: TComplex; Eps: Single);

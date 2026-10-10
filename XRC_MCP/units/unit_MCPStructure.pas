@@ -107,7 +107,7 @@ function ValidateMaterials(const S: TFitStructure): string;
 implementation
 
 uses
-  System.Math, System.IOUtils,
+  System.Math, System.IOUtils, System.Generics.Collections,
   unit_MCPErrors, unit_consts, unit_Config;
 
 

@@ -80,7 +80,7 @@ object frmCalcSettings: TfrmCalcSettings
       Margins.Top = 3
       Margins.Right = 3
       Margins.Bottom = 3
-      Caption = ' TW'#967'2'
+      Caption = ' '#952'W'#967'2'
       StyleElements = [seFont, seClient, seBorder]
     end
     object rgFittingMode: TRzRadioGroup

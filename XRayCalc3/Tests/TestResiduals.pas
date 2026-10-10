@@ -4,7 +4,7 @@ unit TestResiduals;
 interface
 
 uses
-  DUnitX.TestFramework, System.SysUtils, System.Math, System.JSON,
+  DUnitX.TestFramework, System.SysUtils, System.Math, System.JSON, System.Generics.Collections,
   unit_Types, unit_MCPFitReport, unit_FitReportGUI, unit_Residuals;
 
 type

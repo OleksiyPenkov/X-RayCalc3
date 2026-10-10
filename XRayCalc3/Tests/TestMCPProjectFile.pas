@@ -5,11 +5,11 @@ interface
 
 uses
   DUnitX.TestFramework, System.SysUtils, System.Classes, System.IOUtils,
-  System.JSON, System.Zip, System.IniFiles,
+  System.JSON, System.Zip, System.IniFiles, System.Generics.Collections,
   VirtualTrees, VirtualTrees.Types,
   unit_Types, unit_XRCProjectTree,
   unit_MCPSandbox, unit_MCPErrors, unit_MCPTools, unit_MCPStructure,
-  unit_MCPProjectFile, unit_ToolsFiles, unit_Config, unit_consts;
+  unit_MCPProjectFile, unit_ToolsFiles, unit_Config, unit_consts, unit_UncertFiles;
 
 type
   [TestFixture]
@@ -48,6 +48,10 @@ type
     [Test] procedure SaveProject_FromJob_ExplicitRangeAndPointsKeepPrecedence;
     [Test] procedure SaveProject_InboxCurve_PeriodicStructure_WritesMode1;
     [Test] procedure SaveProject_NoCurve_SingleLayers_WritesMode0;
+    [Test] procedure ReadXRCX_HandsOverIDsDataNoteAndFreePeriod;
+    [Test] procedure ReadXRCX_NoData_DataIDIsMinusOne;
+    [Test] procedure WriteXRCX_HeldPeriod_WritesNoFreePeriodKeys;
+    [Test] procedure ReadXRCX_SaysWhetherTheCurveIsLinked;
   end;
 
 implementation
@@ -811,6 +815,88 @@ begin
   finally
     Args.Free;
   end;
+end;
+
+{ What the uncertainty tool needs beyond the model and the curve. }
+procedure TTestMCPProjectFile.ReadXRCX_HandsOverIDsDataNoteAndFreePeriod;
+var
+  P, R: TXRCXProject;
+  Path: string;
+begin
+  Path := TPath.Combine(FTemp, 'uncert.xrcx');
+  P := SampleProject;
+  P.DataNote := '* Sample: A'#13#10'* Source file: D:\data\XRR 1.xrdml';
+  P.Params.LFPSO.FreePeriod := True;
+  P.Params.LFPSO.PeriodWindow := 0.05;
+  WriteXRCX(Path, P);
+  R := ReadXRCX(Path);
+  Assert.AreEqual(XRCX_MODEL_ID, R.ModelID, 'model ID');
+  Assert.AreEqual(XRCX_DATA_ID, R.DataID, 'data ID');
+  Assert.AreEqual(P.DataNote, R.DataNote, 'data note');
+  Assert.AreEqual(0, R.CalcMode, 'a theta scan');
+  Assert.IsTrue(R.Params.LFPSO.FreePeriod, 'free period');
+  Assert.AreEqual(0.05, Double(R.Params.LFPSO.PeriodWindow), 1E-6, 'period window as a fraction');
+end;
+
+procedure TTestMCPProjectFile.ReadXRCX_NoData_DataIDIsMinusOne;
+var
+  P, R: TXRCXProject;
+  Path: string;
+begin
+  Path := TPath.Combine(FTemp, 'nodata.xrcx');
+  P := SampleProject;
+  P.DataTitle := '';
+  P.DataCurve := nil;
+  WriteXRCX(Path, P);
+  R := ReadXRCX(Path);
+  Assert.AreEqual(-1, R.DataID);
+  Assert.IsFalse(R.Params.LFPSO.FreePeriod, 'held unless the project says otherwise');
+  Assert.AreEqual(0.1, Double(R.Params.LFPSO.PeriodWindow), 1E-6, 'the GUI''s default window');
+end;
+
+procedure TTestMCPProjectFile.WriteXRCX_HeldPeriod_WritesNoFreePeriodKeys;
+var
+  Path: string;
+  INF: TMemIniFile;
+begin
+  Path := TPath.Combine(FTemp, 'held.xrcx');
+  WriteXRCX(Path, SampleProject);
+  INF := ParamsOf(Path);
+  try
+    Assert.IsFalse(INF.ValueExists('FIT', 'FreePeriod'), 'a held period leaves params.dsc as it always was');
+    Assert.IsFalse(INF.ValueExists('FIT', 'PeriodWindow'));
+  finally
+    INF.Free;
+  end;
+end;
+
+{ ReadXRCX falls back to the first data node when none is linked, which suits
+  the server; the main program fits only a linked curve, so the uncertainty
+  tool must be able to tell the two apart. }
+procedure TTestMCPProjectFile.ReadXRCX_SaysWhetherTheCurveIsLinked;
+var
+  Path: string;
+  INF: TMemIniFile;
+  Lines: TStringList;
+  R: TXRCXProject;
+begin
+  Path := TPath.Combine(FTemp, 'linked.xrcx');
+  WriteXRCX(Path, SampleProject);
+  Assert.IsTrue(ReadXRCX(Path).DataLinked, 'the curve the project links');
+
+  INF := ParamsOf(Path);
+  Lines := TStringList.Create;
+  try
+    INF.DeleteKey('STATE', 'LinkedData');
+    INF.GetStrings(Lines);
+    Assert.AreEqual('', WriteEntries(Path, ['params.dsc'], [Lines.Text]));
+  finally
+    Lines.Free;
+    INF.Free;
+  end;
+  R := ReadXRCX(Path);
+  Assert.IsFalse(R.DataLinked, 'nothing is linked');
+  Assert.AreEqual(XRCX_DATA_ID, R.DataID, 'the first curve is still handed over, as before');
 end;
 
 initialization

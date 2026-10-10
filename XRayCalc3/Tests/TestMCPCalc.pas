@@ -42,6 +42,7 @@ implementation
 
 uses
   System.SysUtils, System.Math, System.JSON, System.IOUtils, System.Classes,
+  System.Generics.Collections,
   unit_Types, unit_MCPCalc, unit_MCPStructure, unit_MCPMaterials, unit_MCPErrors;
 
 const

@@ -10,7 +10,7 @@ unit unit_universal_refcalc;
 interface
 
 uses
-  System.SysUtils, System.Math,
+  Neslib.FastMath, System.SysUtils, System.Math,
   math_complex, cmd_unit_types;
 
 function RefCalcStandalone(t, Lambda: Single; ALayers: TLayers;

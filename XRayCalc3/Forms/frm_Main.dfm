@@ -994,6 +994,12 @@ object frmMain: TfrmMain
         Enabled = False
         Visible = False
       end
+      object miToolsSepUncertainty: TMenuItem
+        Caption = '-'
+      end
+      object miToolsUncertainty: TMenuItem
+        Action = actCalcUncertainty
+      end
     end
     object Calc2: TMenuItem
       Caption = 'Help'
@@ -2158,6 +2164,11 @@ object frmMain: TfrmMain
       Category = 'Calc'
       Caption = 'Batch jobs Fitting'
       OnExecute = actCalcFitJobsExecute
+    end
+    object actCalcUncertainty: TAction
+      Category = 'Tools'
+      Caption = 'Parameter uncertainties...'
+      OnExecute = actCalcUncertaintyExecute
     end
     object FitExportJSON: TAction
       Category = 'Result'

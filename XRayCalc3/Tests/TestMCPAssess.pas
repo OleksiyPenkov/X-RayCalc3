@@ -52,7 +52,7 @@ type
 implementation
 
 uses
-  unit_Config;
+  System.Generics.Collections, unit_Config;
 
 const
   EX_POINTS         = 3182;

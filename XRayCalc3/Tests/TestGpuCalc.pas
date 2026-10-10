@@ -39,6 +39,7 @@ type
     [Test] procedure GpuRawCurve_CloseToDoublePrecision;
     [Test] procedure Chi_MatchesTheCpuEngine_EveryWeighting;
     [Test] procedure Chi_MatchesTheCpuEngine_WithTheScaleSolved;
+    [Test] procedure Chi_ScaleSolved_OnePointOutweighingTheRest_IsNotRoundingNoise;
     [Test] procedure SplitDispatches_GiveTheSameAnswer;
     [Test] procedure Fit_OnTheGpu_ImprovesAndNamesTheDevice;
     [Test] procedure Fit_WithoutUseGpu_StaysOnTheCpu;
@@ -46,6 +47,10 @@ type
     [Test] procedure Fit_ParticleBuildFails_OnTheGpu_FallsBackToTheCpu;
     [Test] procedure Fit_ParticleBuildFails_OnTheCpu_RaisesInsteadOfHanging;
 
+    [Test] procedure LogLik_MatchesCurveLikelihood_OnTheGpuCurve;
+    [Test] procedure LogLik_SplitDispatches_GiveTheSameAnswer;
+    [Test] procedure LogLik_LeavesTheClassicChiUnchanged;
+    [Test] procedure LogLik_BeforeSetupLikelihood_Raises;
     [Test] procedure PackModelLayers_MatchesPack;
 
     [Test] procedure SelfCheck_PassesWithPrecise;
@@ -67,6 +72,7 @@ uses
   unit_Config,
   unit_LFPSO_Base,
   unit_LFPSO_Periodic,
+  unit_Likelihood,
   unit_MCPTools,
   unit_ToolsReference;
 
@@ -211,6 +217,79 @@ end;
 function Jitter(p: Integer): Single;
 begin
   Result := 0.04 * ((p mod 9) / 8 - 0.5);
+end;
+
+const
+  LIK_NMIN = 10;
+  LIK_FMIN = 0.01;
+
+{ Counts for Data at a peak rate of 1e6, so that the high-angle points fall
+  below LIK_NMIN; point 5 has no count and point 7 has three. }
+function LikCounts(const Data: TDataArray): TArray<Double>;
+var
+  i: Integer;
+begin
+  SetLength(Result, Length(Data));
+  for i := 0 to High(Data) do
+    Result[i] := Round(Data[i].r * 1E6);
+  Result[5] := 0;
+  Result[7] := 3;
+end;
+
+function LikNuisance(p: Integer): TNuisance;
+begin
+  Result.LogScale := 0.02 * (p - 4);
+  Result.Background := 1E-8 * p;
+  Result.F := LIK_FMIN + 0.01 * p;
+end;
+
+function NuisanceBuffer(Count: Integer): TArray<Single>;
+var
+  p: Integer;
+  N: TNuisance;
+begin
+  SetLength(Result, 4 * Count);
+  for p := 0 to Count - 1 do
+  begin
+    N := LikNuisance(p);
+    Result[4 * p]     := Power(10, N.LogScale);
+    Result[4 * p + 1] := N.Background;
+    Result[4 * p + 2] := Sqr(N.F);
+    Result[4 * p + 3] := 0;
+  end;
+end;
+
+{ The kernel's per-point inputs, written by hand from CurveLikelihood's rule.
+  An excluded point carries a NaN ln D: if the kernel ever read one, that
+  particle's cost would come back NaN. }
+function LikInputs(const Data: TDataArray; const Counts: TArray<Double>): TGpuLikInputs;
+var
+  i: Integer;
+  Used: Boolean;
+begin
+  SetLength(Result.LnData, Length(Data));
+  SetLength(Result.InvN, Length(Data));
+  for i := 0 to High(Data) do
+  begin
+    if Length(Counts) > 0 then
+      Used := (Counts[i] > 0) and (Counts[i] >= LIK_NMIN) and (Data[i].r > 0)
+    else
+      Used := Data[i].r > 0;
+    if Used then
+    begin
+      Result.LnData[i] := Ln(Data[i].r);
+      if Length(Counts) > 0 then
+        Result.InvN[i] := 1 / Counts[i]
+      else
+        Result.InvN[i] := 0;
+    end
+    else
+    begin
+      Result.LnData[i] := NaN;
+      Result.InvN[i] := -1;
+    end;
+  end;
+  Result.FMin2 := Sqr(LIK_FMIN);
 end;
 
 
@@ -1059,6 +1138,275 @@ begin
       end;
     end;
   finally
+    Model.Free;
+  end;
+end;
+
+{ A weight near 1E10 makes the solved-scale sum subtract terms near 1E9
+  to obtain a result near 1E2, below Single precision. The heavy point is
+  made here by its weight; the reference uses Double on the GPU's own curve. }
+procedure TTestGpuCalc.Chi_ScaleSolved_OnePointOutweighingTheRest_IsNotRoundingNoise;
+const
+  HEAVY = 500;
+var
+  Data: TDataArray;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  In_: TGpuEvalInputs;
+  Layers, Chi: TArray<Single>;
+  NLay, i: Integer;
+  S0, S1, S2, W, D, LR, A, Expected: Double;
+begin
+  if not Ready then Exit;
+
+  Model := TLayeredModel.Create;
+  Model.Init;
+  Data := MakeData(0, cmS, rfError, 3);
+  for i := 0 to High(Data) do
+    Data[i].r := Data[i].r * 1.3;
+  Calc := NewCalc(Data, nil, 0, cmS, rfError);
+  G := TGpuEvaluator.Create;
+  try
+    Calc.SolveScale := True;
+    Calc.ScaleWindowLog := Log10(1.5);
+    FillModel(Model, 0.001, 3);
+    Model.Generate(CU_KA);
+    NLay := Length(Model.LayersDirect);
+    In_ := Calc.GpuInputs(0);
+    In_.PointWeight[HEAVY] := In_.PointWeight[HEAVY] * 1E14;
+    G.Setup(In_, NLay, 1, cmS, rfError, CU_KA, 1, LIMIT);
+    SetLength(Layers, 4 * NLay);
+    Pack(Model, Layers, 0);
+    G.Evaluate(Layers, Chi);
+
+    Calc.FinishRawCurve(G.RawCurve(0));
+    S0 := 0; S1 := 0; S2 := 0;
+    for i := In_.ChiFirst to In_.ChiLast do
+      if Calc.Results[i].r <> 0 then
+      begin
+        LR := Ln(Calc.Results[i].r) / Ln(10);
+        W := In_.PointWeight[i] / Sqr(LR);
+        D := In_.LogData[i] - LR;
+        S2 := S2 + W * D * D;
+        S1 := S1 + W * D;
+        S0 := S0 + W;
+      end;
+    A := EnsureRange(-S1 / S0, -In_.ScaleWindow, In_.ScaleWindow);
+    Expected := (S2 + 2 * A * S1 + A * A * S0) * In_.ChiNorm;
+    Assert.IsTrue(S0 > 1E12, Format('the heavy point dominates: S0 = %g', [S0]));
+    Assert.IsTrue(Expected > 0.01, Format('and the rest still disagrees: %g', [Expected]));
+    Assert.AreEqual(Expected, Double(Chi[0]), 0.03 * Expected,
+      Format('the GPU against the sum in Double (S0 = %g)', [S0]));
+  finally
+    G.Free;
+    Calc.Model := nil;
+    Calc.Free;
+    Model.Free;
+  end;
+end;
+
+{ Use the GPU's own curve as the Double reference to isolate likelihood
+  convolution, exclusions and summation from Parratt's Single precision. }
+procedure TTestGpuCalc.LogLik_MatchesCurveLikelihood_OnTheGpuCurve;
+const
+  PARTICLES = 9;
+var
+  Data, Curve: TDataArray;
+  Counts: TArray<Double>;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Inputs: TGpuEvalInputs;
+  Layers, Cost: TArray<Single>;
+  p, NLay, Case_: Integer;
+  DT: Single;
+  Expected: Double;
+begin
+  if not Ready then Exit;
+
+  Model := TLayeredModel.Create;
+  Model.Init;
+  try
+    for Case_ := 0 to 3 do
+    begin
+      if Case_ and 1 = 1 then DT := 0.01 else DT := 0;
+      Data := MakeData(DT, cmS, rfError, 3);
+      if Case_ and 2 = 2 then
+        Counts := LikCounts(Data)
+      else
+        Counts := nil;
+      Calc := NewCalc(Data, nil, DT, cmS, rfError);
+      G := TGpuEvaluator.Create;
+      try
+        FillModel(Model, 0, 3);
+        Model.Generate(CU_KA);
+        NLay := Length(Model.LayersDirect);
+        Inputs := Calc.GpuInputs(0);
+        G.Setup(Inputs, NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
+        G.SetupLikelihood(LikInputs(Data, Counts));
+        SetLength(Layers, 4 * NLay * PARTICLES);
+        for p := 0 to PARTICLES - 1 do
+        begin
+          FillModel(Model, Jitter(p), 3);
+          Model.Generate(CU_KA);
+          PackModelLayers(Model.LayersDirect, Layers, p);
+        end;
+        G.EvaluateLikelihood(Layers, NuisanceBuffer(PARTICLES), Cost);
+        Assert.AreEqual(PARTICLES, Integer(Length(Cost)));
+        for p := 0 to PARTICLES - 1 do
+        begin
+          Calc.FinishRawCurve(G.RawCurve(p));
+          Curve := Copy(Calc.Results);
+          Expected := CurveLikelihood(Data, Curve, Counts, Inputs.ChiFirst, Inputs.ChiLast,
+            LIK_NMIN, LikNuisance(p), LIK_FMIN).Cost;
+          Assert.IsFalse(IsNan(Cost[p]),
+            Format('case %d, particle %d: NaN - an excluded point was read', [Case_, p]));
+          Assert.AreEqual(Expected, Double(Cost[p]), 2E-4 * Max(1, Abs(Expected)),
+            Format('case %d (DT %g, counts %s), particle %d',
+              [Case_, DT, BoolToStr(Length(Counts) > 0, True), p]));
+        end;
+      finally
+        G.Free;
+        Calc.Free;
+      end;
+    end;
+  finally
+    Model.Free;
+  end;
+end;
+
+procedure TTestGpuCalc.LogLik_SplitDispatches_GiveTheSameAnswer;
+const
+  PARTICLES = 50;
+var
+  Data: TDataArray;
+  Counts: TArray<Double>;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  Whole, Split: TGpuEvaluator;
+  Layers, Nuis, CostWhole, CostSplit: TArray<Single>;
+  p, NLay: Integer;
+begin
+  if not Ready then Exit;
+
+  Data := MakeData(0.01, cmS, rfError, 3);
+  Counts := LikCounts(Data);
+  Model := TLayeredModel.Create;
+  Model.Init;
+  Calc := NewCalc(Data, nil, 0.01, cmS, rfError);
+  Whole := TGpuEvaluator.Create;
+  Split := TGpuEvaluator.Create;
+  try
+    FillModel(Model, 0, 3);
+    Model.Generate(CU_KA);
+    NLay := Length(Model.LayersDirect);
+    Whole.Setup(Calc.GpuInputs(0), NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
+    Whole.SetupLikelihood(LikInputs(Data, Counts));
+    Split.StepsPerDispatch := Int64(7) * NLay * Length(Data);
+    Split.Setup(Calc.GpuInputs(0), NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
+    Split.SetupLikelihood(LikInputs(Data, Counts));
+    Assert.AreEqual(7, Split.ParticlesPerDispatch);
+
+    SetLength(Layers, 4 * NLay * PARTICLES);
+    for p := 0 to PARTICLES - 1 do
+    begin
+      FillModel(Model, Jitter(p), 3);
+      Model.Generate(CU_KA);
+      PackModelLayers(Model.LayersDirect, Layers, p);
+    end;
+    Nuis := NuisanceBuffer(PARTICLES);
+    Whole.EvaluateLikelihood(Layers, Nuis, CostWhole);
+    Split.EvaluateLikelihood(Layers, Nuis, CostSplit);
+    for p := 0 to PARTICLES - 1 do
+      Assert.AreEqual(CostWhole[p], CostSplit[p], 'cost of particle ' + IntToStr(p));
+  finally
+    Split.Free;
+    Whole.Free;
+    Calc.Free;
+    Model.Free;
+  end;
+end;
+
+procedure TTestGpuCalc.LogLik_LeavesTheClassicChiUnchanged;
+const
+  PARTICLES = 9;
+var
+  Data: TDataArray;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Layers, Before, After, Cost: TArray<Single>;
+  p, NLay: Integer;
+begin
+  if not Ready then Exit;
+
+  Data := MakeData(0.01, cmS, rfError, 3);
+  Model := TLayeredModel.Create;
+  Model.Init;
+  Calc := NewCalc(Data, PeakyMovAvg(Data), 0.01, cmS, rfError);
+  G := TGpuEvaluator.Create;
+  try
+    FillModel(Model, 0, 3);
+    Model.Generate(CU_KA);
+    NLay := Length(Model.LayersDirect);
+    G.Setup(Calc.GpuInputs(1), NLay, PARTICLES, cmS, rfError, CU_KA, 1, LIMIT);
+    SetLength(Layers, 4 * NLay * PARTICLES);
+    for p := 0 to PARTICLES - 1 do
+    begin
+      FillModel(Model, Jitter(p), 3);
+      Model.Generate(CU_KA);
+      PackModelLayers(Model.LayersDirect, Layers, p);
+    end;
+    G.Evaluate(Layers, Before);
+    G.SetupLikelihood(LikInputs(Data, LikCounts(Data)));
+    G.EvaluateLikelihood(Layers, NuisanceBuffer(PARTICLES), Cost);
+    G.Evaluate(Layers, After);
+    for p := 0 to PARTICLES - 1 do
+      Assert.AreEqual(Before[p], After[p], 'chi2 of particle ' + IntToStr(p));
+  finally
+    G.Free;
+    Calc.Free;
+    Model.Free;
+  end;
+end;
+
+procedure TTestGpuCalc.LogLik_BeforeSetupLikelihood_Raises;
+var
+  Data: TDataArray;
+  Model: TLayeredModel;
+  Calc: TCalc;
+  G: TGpuEvaluator;
+  Layers, Cost: TArray<Single>;
+  NLay: Integer;
+begin
+  if not Ready then Exit;
+
+  Data := MakeData(0, cmS, rfError, 3);
+  Model := TLayeredModel.Create;
+  Model.Init;
+  Calc := NewCalc(Data, nil, 0, cmS, rfError);
+  G := TGpuEvaluator.Create;
+  try
+    FillModel(Model, 0, 3);
+    Model.Generate(CU_KA);
+    NLay := Length(Model.LayersDirect);
+    G.Setup(Calc.GpuInputs(0), NLay, 2, cmS, rfError, CU_KA, 1, LIMIT);
+    SetLength(Layers, 4 * NLay * 2);
+    PackModelLayers(Model.LayersDirect, Layers, 0);
+    PackModelLayers(Model.LayersDirect, Layers, 1);
+    Assert.WillRaise(
+      procedure begin G.EvaluateLikelihood(Layers, NuisanceBuffer(2), Cost); end,
+      EGpuError, 'no SetupLikelihood yet');
+    G.SetupLikelihood(LikInputs(Data, nil));
+    G.EvaluateLikelihood(Layers, NuisanceBuffer(2), Cost);
+    G.Setup(Calc.GpuInputs(0), NLay, 2, cmS, rfError, CU_KA, 1, LIMIT);
+    Assert.WillRaise(
+      procedure begin G.EvaluateLikelihood(Layers, NuisanceBuffer(2), Cost); end,
+      EGpuError, 'a new Setup needs a new SetupLikelihood');
+  finally
+    G.Free;
+    Calc.Free;
     Model.Free;
   end;
 end;

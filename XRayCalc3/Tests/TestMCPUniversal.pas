@@ -58,6 +58,7 @@ implementation
 
 uses
   System.SysUtils, System.JSON, System.IOUtils, System.Math,
+  System.Generics.Collections,
   System.Classes, System.SyncObjs,
   math_complex,
   unit_Config,

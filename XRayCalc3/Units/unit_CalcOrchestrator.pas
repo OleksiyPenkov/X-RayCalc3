@@ -116,7 +116,7 @@ type
 implementation
 
 uses
-  Winapi.Windows,
+  Winapi.Windows, System.UITypes,
   Vcl.Controls,
   unit_DataProcessing, unit_SeriesIO,
   unit_LFPSO_Periodic, unit_LFPSO_Irregular, unit_LFPSO_Poly,

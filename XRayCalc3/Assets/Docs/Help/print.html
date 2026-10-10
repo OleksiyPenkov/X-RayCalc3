@@ -1030,14 +1030,14 @@
   <tr><td><strong>SeedR</strong></td><td>Start the swarm spread uniformly over each parameter's [Min, Max] instead of scattered around the start model (&plusmn;Ksxr of the range). Applies only at the start of a fit. Greyed out in Polynomial mode, which always seeds around the start model</td><td>Checked (unchecked for a project that did not store it)</td></tr>
   <tr><td><strong>Smooth</strong></td><td>Irregular mode only: keep each parameter's period-to-period profile smooth (moving average over the Smoothing window) during the search</td><td>Unchecked</td></tr>
   <tr><td><strong>PW &chi;&sup2;</strong></td><td>Point-weighted chi-square calculation</td><td>Checked</td></tr>
-  <tr><td><strong>TW &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
+  <tr><td><strong>&theta;W &chi;&sup2;</strong></td><td>Theta-weighted chi-square function</td><td>None</td></tr>
   <tr><td><strong>Solve scale in &chi;&sup2;</strong></td><td>Score every candidate structure at the measured scale that suits it best, within the window, instead of at the anchored scale (see <a href="#solved-scale">Solving the Measured Scale</a>)</td><td>Checked</td></tr>
   <tr><td><strong>Window</strong></td><td>How far the solved scale may move from the anchored one, as a fraction: the scale stays between 1/(1&nbsp;+&nbsp;w) and (1&nbsp;+&nbsp;w) times the anchor; 0 pins it</td><td>0.2</td></tr>
   <tr><td><strong>Free period &plusmn; %</strong></td><td>Periodic mode only: lets the period of every stack with N&nbsp;&gt;&nbsp;1 move within that percentage of its start value, instead of holding it (see <a href="#fit-modes">Periodic Mode</a>). Saved with the project</td><td>Unchecked, 10</td></tr>
 </table>
 
-<h3>Theta-Weighted Chi-Square (TW &chi;&sup2;)</h3>
-<p>Controls how the chi-square metric weights different angular regions. &theta; here is the value on the chart axis &mdash; 2&theta; when the 2&theta; box is checked &mdash; so the absolute &chi;&sup2; with a TW weight differs by a constant factor between the two axes:</p>
+<h3>Theta-Weighted Chi-Square (&theta;W &chi;&sup2;)</h3>
+<p>Controls how the chi-square metric weights different angular regions. &theta; here is the value on the chart axis &mdash; 2&theta; when the 2&theta; box is checked &mdash; so the absolute &chi;&sup2; with a &theta;W weight differs by a constant factor between the two axes:</p>
 <table>
   <tr><th>Option</th><th>Effect</th></tr>
   <tr><td>None</td><td>Equal weight across all angles</td></tr>
@@ -1054,7 +1054,7 @@
 <h3>General</h3>
 <table>
   <tr><th>Parameter</th><th>Description</th><th>Default</th></tr>
-  <tr><td><strong>Tolerance</strong></td><td>Fitting stops when the best weighted &chi;&sup2; (as shown, with the PW, TW and scale settings) falls below this value</td><td>0.005</td></tr>
+  <tr><td><strong>Tolerance</strong></td><td>Fitting stops when the best weighted &chi;&sup2; (as shown, with the PW, &theta;W and scale settings) falls below this value</td><td>0.005</td></tr>
   <tr><td><strong>Constriction factor</strong></td><td>Use Clerc-Kennedy constriction coefficient (&chi; &asymp; 0.73) instead of linear inertia decay. Analytically guarantees convergence. See <a href="#constriction">details below</a>.</td><td>Checked</td></tr>
   <tr><td><strong>Seed</strong></td><td>Random seed of the fits that follow. Blank draws a new one for every run. Every fit records the seed it used (<code>seed</code> in the project's fit record and in <strong>Export fit results</strong>); type it here, with the same settings and model, to repeat that fit. The same seed repeats a fit exactly on the same device (CPU or the same GPU), not to the last digit across devices. Not saved with the project</td><td>Blank</td></tr>
 </table>
@@ -1195,8 +1195,8 @@
 <h3>Peak Weight Function (PW &chi;&sup2;)</h3>
 <p>Specifically designed for periodic multilayer mirrors. Parameters of the periodic stack primarily affect the intensity of primary diffraction peaks, while Kiessig fringes are affected by the substrate and surface layers. The peak weight concentrates the fit on the primary features of the curve. The measured curve is averaged over a moving window of 5&nbsp;% of its points (stored in the project, not editable in the program; the first half-window of points always gets weight 1); a point that stands more than three times above that average &mdash; a Bragg peak &mdash; gets the weight &omega;<sub>peak</sub>&nbsp;=&nbsp;I<sub>exp</sub>&nbsp;/&nbsp;average, every other point the weight 1. Unchecked, &omega;<sub>peak</sub>&nbsp;=&nbsp;1 everywhere.</p>
 
-<h3>Incidence-Angle Weight Function (TW &chi;&sup2;)</h3>
-<p>Allows concentration of the fitting process on distinct segments of the XRR curve by weighting different angular regions differently: &omega;<sub>&theta;</sub> is 1, &theta;&sup2;, &theta;, &radic;&theta;, 1/&theta;&sup2; or 1/&radic;&theta; as set in the <a href="#fit-params">TW &chi;&sup2; list</a>.</p>
+<h3>Incidence-Angle Weight Function (&theta;W &chi;&sup2;)</h3>
+<p>Allows concentration of the fitting process on distinct segments of the XRR curve by weighting different angular regions differently: &omega;<sub>&theta;</sub> is 1, &theta;&sup2;, &theta;, &radic;&theta;, 1/&theta;&sup2; or 1/&radic;&theta; as set in the <a href="#fit-params">&theta;W &chi;&sup2; list</a>.</p>
 
 <h3>Plain &chi;&sup2;</h3>
 <p>The Chart Info bar also shows the <strong>plain &chi;&sup2;</strong>: the same sum with both weights set to 1. It is never minimised; it reports the bare disagreement between data and model on the same scale as the &chi;&sup2;, so that fits made with different weight settings can still be compared.</p>
@@ -1207,7 +1207,7 @@
   <li>Displayed in the Chart Info bar as both current and best values, beside the scale it was taken at</li>
   <li>Calculated on the logarithm of the intensity, so that the reflectivity's fall over many decades does not leave the high-angle part of the curve without weight</li>
   <li>Each residual is relative to log&nbsp;I<sub>calc</sub>: the points where the reflectivity is close to 1, near and below the critical angle, weigh the most</li>
-  <li>The value depends on the weights, so &chi;&sup2; values are comparable only between fits made with the same PW, TW and scale settings; the plain &chi;&sup2; removes the weights but not the scale</li>
+  <li>The value depends on the weights, so &chi;&sup2; values are comparable only between fits made with the same PW, &theta;W and scale settings; the plain &chi;&sup2; removes the weights but not the scale</li>
 </ul>
 
 <h2 id="solved-scale">Solving the Measured Scale</h2>
@@ -1224,7 +1224,7 @@
 <div class="note">
   <strong>&chi;&sup2;(a) = S<sub>2</sub> + 2a&thinsp;S<sub>1</sub> + a&sup2;&thinsp;S<sub>0</sub>, &emsp; a* = &minus;S<sub>1</sub> / S<sub>0</sub></strong>
 </div>
-<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and TW weights, and the factor 1/(log&nbsp;I<sub>calc</sub>)&sup2; that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
+<p>where S<sub>0</sub>, S<sub>1</sub> and S<sub>2</sub> are the sums over the points of W, W&thinsp;d and W&thinsp;d&sup2;, W being the weight the &chi;&sup2; gives a point: the PW and &theta;W weights, and the factor 1/(log&nbsp;I<sub>calc</sub>)&sup2; that makes every residual a relative one. The best offset a* is minus the weighted mean residual &mdash; the shift that centres the residuals on zero. It is found exactly, in the same pass that computes the &chi;&sup2;, so the option adds no dimension to the swarm and costs no time. Every candidate is scored at its own a*: the scale is <em>profiled out</em> rather than fitted, and the swarm searches the structure alone.</p>
 <p>The weight explains why the scale matters so much. Because each residual is divided by log&nbsp;I<sub>calc</sub>, the points near and below the critical angle, where the reflectivity is close to 1 and its logarithm close to 0, weigh the most &mdash; and they are also the points that footprint and alignment errors affect most.</p>
 
 <h3>The window</h3>

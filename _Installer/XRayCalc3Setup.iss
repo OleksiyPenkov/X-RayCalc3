@@ -1,7 +1,7 @@
-﻿; Run deploy.sh first to stage files into deploy/
+; Run deploy.sh first to stage files into deploy/
 
 #define MyAppName "X-Ray Calc 3"
-#define MyAppVersion "3.9.5"
+#define MyAppVersion "3.9.6"
 #define MyAppPublisher "Oleksiy Penkov"
 #define MyAppExeName32 "XRayCalc3.exe"
 #define MyAppExeName64 "XRayCalc3.x64.exe"
@@ -40,18 +40,25 @@ Source: "deploy\Win64\XRC_MCP.exe";                 DestDir: "{app}"; Flags: ign
 ; the server does not start without its XRF line table beside it
 Source: "deploy\Win64\xrf_lines.json";              DestDir: "{app}"; Flags: ignoreversion
 
+Source: "deploy\Win64\XRCUncert.x64.exe";           DestDir: "{app}"; Flags: ignoreversion
+Source: "deploy\Win32\XRCUncert.exe";               DestDir: "{app}"; Flags: ignoreversion
+Source: "deploy\Help\XRCUncert\*";                   DestDir: "{app}\Help\XRCUncert";    Flags: ignoreversion
+
 Source: "deploy\Henke\*";                            DestDir: "{app}\Henke";            Flags: ignoreversion
 Source: "deploy\Examples\*";                         DestDir: "{app}\Examples";          Flags: ignoreversion
 Source: "deploy\Help\UserManual.html";               DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\style.css";                     DestDir: "{app}\Help";              Flags: ignoreversion
 Source: "deploy\Help\*.html";                        DestDir: "{app}\Help";              Flags: ignoreversion
-Source: "deploy\Help\images\*";                      DestDir: "{app}\Help\images";       Flags: ignoreversion
+Source: "deploy\Help\images\*";                       DestDir: "{app}\Help\images";       Flags: ignoreversion
+; the manual draws its toolbar/menu icons from images\icons (44 png)
+Source: "deploy\Help\images\icons\*";                 DestDir: "{app}\Help\images\icons"; Flags: ignoreversion
 Source: "deploy\XRayCalc3_Icon.ico";                 DestDir: "{app}";                   Flags: ignoreversion
 Source: "deploy\XRayCalc3_x64_Icon.ico";             DestDir: "{app}";                   Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"
 Name: "{group}\{#MyAppName} x32"; Filename: "{app}\XRayCalc3.exe"; IconFilename: "{app}\XRayCalc3_Icon.ico"
+Name: "{group}\Parameter uncertainties"; Filename: "{app}\XRCUncert.x64.exe"
 Name: "{group}\User Manual";             Filename: "{app}\Help\UserManual.html"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName} x64";        Filename: "{app}\XRayCalc3.x64.exe"; IconFilename: "{app}\XRayCalc3_x64_Icon.ico"; Tasks: desktopicon

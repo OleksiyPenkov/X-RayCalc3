@@ -15,6 +15,9 @@
         <Projects Include="XRFCalc\XRFCalc.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="XRCUncert\XRCUncert.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="XRC_MCP\XRC_MCP.dproj">
             <Dependencies/>
         </Projects>
@@ -62,6 +65,15 @@
     <Target Name="XRFCalc:Make">
         <MSBuild Projects="XRFCalc\XRFCalc.dproj" Targets="Make"/>
     </Target>
+    <Target Name="XRCUncert">
+        <MSBuild Projects="XRCUncert\XRCUncert.dproj"/>
+    </Target>
+    <Target Name="XRCUncert:Clean">
+        <MSBuild Projects="XRCUncert\XRCUncert.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="XRCUncert:Make">
+        <MSBuild Projects="XRCUncert\XRCUncert.dproj" Targets="Make"/>
+    </Target>
     <Target Name="XRC_MCP">
         <MSBuild Projects="XRC_MCP\XRC_MCP.dproj"/>
     </Target>
@@ -72,13 +84,13 @@
         <MSBuild Projects="XRC_MCP\XRC_MCP.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;xrccmd;XRFCalc;XRC_MCP"/>
+        <CallTarget Targets="XRayCalc3;XRayCalcVisualControls;xrccmd;XRFCalc;XRCUncert;XRC_MCP"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;xrccmd:Clean;XRFCalc:Clean;XRC_MCP:Clean"/>
+        <CallTarget Targets="XRayCalc3:Clean;XRayCalcVisualControls:Clean;xrccmd:Clean;XRFCalc:Clean;XRCUncert:Clean;XRC_MCP:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;xrccmd:Make;XRFCalc:Make;XRC_MCP:Make"/>
+        <CallTarget Targets="XRayCalc3:Make;XRayCalcVisualControls:Make;xrccmd:Make;XRFCalc:Make;XRCUncert:Make;XRC_MCP:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

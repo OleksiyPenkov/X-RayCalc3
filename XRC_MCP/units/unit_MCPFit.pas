@@ -191,7 +191,7 @@ procedure RunFitJob(Job: TJob; const Req: TFitRequest);
 implementation
 
 uses
-  System.SysUtils, System.Math, System.IOUtils,
+  System.SysUtils, System.Math, System.IOUtils, System.Generics.Collections,
   unit_materials, unit_calc, unit_gpu_calc, unit_DataProcessing,
   unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly, unit_LFPSO_Irregular,
   unit_MCPCalc, unit_MCPErrors, unit_MCPFitReport, unit_MCPInbox,
@@ -2557,9 +2557,19 @@ procedure WriteFitProject(const Path: string; const Req: TFitRequest;
   const CalcCurve: unit_Types.TDataArray; const Title: string);
 var
   P: TXRCXProject;
+  n: Integer;
 begin
   P := Default(TXRCXProject);
   P.Params     := FitXRCXParams(Req);
+  { A freed period, as the GUI's Free period setting: one window for every
+    stack, the widest side of the bounds as a fraction of the start period. }
+  P.Params.LFPSO.FreePeriod := Length(Req.PeriodRefs) > 0;
+  if P.Params.LFPSO.FreePeriod then
+    P.Params.LFPSO.PeriodWindow := 0;
+  for n := 0 to High(Req.PeriodRefs) do
+    P.Params.LFPSO.PeriodWindow := System.Math.Max(P.Params.LFPSO.PeriodWindow,
+      System.Math.Max(Req.PeriodRefs[n].Max - Req.PeriodRefs[n].StartD,
+        Req.PeriodRefs[n].StartD - Req.PeriodRefs[n].Min) / Req.PeriodRefs[n].StartD);
   P.ModelTitle := Title;
   if Req.Scale = 1.0 then
     P.Note := Format('fit_xrr on %s', [Req.DataTitle])

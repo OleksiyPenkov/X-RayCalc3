@@ -278,7 +278,7 @@ uses
   System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
   unit_xrdml, unit_CurveStyle, unit_SaveBeforeDialog,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
-  editor_JSON, frm_ExtensionType, unit_ProjectVersion;
+  editor_JSON, frm_ExtensionType, unit_ProjectVersion, unit_UncertKeep;
 
 {$R *.dfm}
 
@@ -1891,6 +1891,11 @@ begin
     FProject.SaveToFile(FProjectDir + PROJECT_FILE_NAME);
 
     SeriesToFile(ActiveModelSeries, FProjectDir + 'calc.dat');
+
+    { The uncertainty tool writes its entries into the project file while the
+      project is open here; they are taken from it at the last moment before
+      it is replaced. }
+    KeepToolEntries(FProjectFileName, FProjectDir);
 
     if FileExists(FileName) then
       DeleteFile(FileName);

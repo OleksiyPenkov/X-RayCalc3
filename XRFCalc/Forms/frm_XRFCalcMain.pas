@@ -102,7 +102,7 @@ var
 implementation
 
 uses
-  System.Win.Registry, System.IniFiles, Winapi.ShlObj, Winapi.ShellAPI,
+  System.Win.Registry, System.IniFiles, System.UITypes, Winapi.ShlObj, Winapi.ShellAPI,
   ClipBrd, Vcl.Imaging.pngimage,
   unit_universal_io;
 

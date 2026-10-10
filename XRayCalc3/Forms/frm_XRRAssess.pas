@@ -62,7 +62,7 @@ var
 implementation
 
 uses
-  Vcl.Clipbrd, System.Math;
+  Vcl.Clipbrd, System.Math, System.Generics.Collections;
 
 {$R *.dfm}
 

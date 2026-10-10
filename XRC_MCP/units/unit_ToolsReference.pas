@@ -22,7 +22,7 @@ procedure RegisterReferenceTools(Registry: TToolRegistry);
 implementation
 
 uses
-  System.SysUtils, System.Math, System.JSON,
+  System.SysUtils, System.Math, System.JSON, System.Generics.Collections,
   unit_universal_types, unit_universal_templates,
   unit_MCPVersion, unit_MCPErrors, unit_MCPUnits, unit_MCPSandbox,
   unit_MCPMaterials, unit_MCPUniversal, unit_MCPFit, unit_gpu_calc;
