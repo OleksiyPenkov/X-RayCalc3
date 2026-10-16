@@ -359,6 +359,9 @@ if ([double] $res.chi2 -ne $fitChi[0]) {
     Fail "the fit driven by job_wait scored chi2 $($res.chi2), the polled one $($fitChi[0])"
 }
 Say "[13/18] job_wait         : $($sub.job_id) finished after $($w.waited_s) s in one call (chi2 $($res.chi2))"
+$fitJobId    = $sub.job_id
+$fitJobChi   = [double] $res.chi2
+$fitJobTyped = $res.fitted_structure
 
 $big = Invoke-Tool 'optimize_mirror' ([ordered]@{ config = $bigConfig; seed = 424; top_k = 1 })
 $w   = Invoke-Tool 'job_wait' ([ordered]@{ job_id = $big.job_id; wait_s = 1 }) -TimeoutSec 60
@@ -423,7 +426,29 @@ $save = Invoke-Tool 'save_project' ([ordered]@{
     structure = (New-Ruc); name = 'smoke'; overwrite = $true
     lambda = 1.5406; theta_min = 0.1; theta_max = 4.0; points = 400
     note = 'written by XRC_MCP\smoke\session.ps1' })
-Say "[17/18] save_project     : $($save.file) ($($save.size) bytes, project version $($save.version))"
+if ($save.fit_record -ne 'none') { Fail "save_project without a job reported fit_record '$($save.fit_record)', expected 'none'" }
+Say "[17/18] save_project     : $($save.file) ($($save.size) bytes, project version $($save.version), fit_record $($save.fit_record))"
+
+$saveFit = Invoke-Tool 'save_project' ([ordered]@{
+    name = 'smoke-fit'; overwrite = $true; curves = [ordered]@{ job_id = $fitJobId } })
+if ($saveFit.fit_record -ne 'FITRESULT') { Fail "save_project from job $fitJobId without a structure reported fit_record '$($saveFit.fit_record)', expected 'FITRESULT'" }
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $work $saveFit.file))
+try {
+    $reader = New-Object System.IO.StreamReader(($zip.Entries | Where-Object { $_.Name -eq 'params.dsc' }).Open())
+    $paramsText = $reader.ReadToEnd()
+    $reader.Dispose()
+} finally { $zip.Dispose() }
+if ($paramsText -notmatch '(?m)^chiSquared=(.+)$') { Fail 'the project saved from the job has no [FITRESULT] chiSquared' }
+$savedChi = [double]::Parse($Matches[1].Trim(), [Globalization.CultureInfo]::InvariantCulture)
+if ([math]::Abs($savedChi - $fitJobChi) -gt [math]::Abs($fitJobChi) * 1e-5) {
+    Fail "[FITRESULT] chiSquared = $savedChi, job_result chi2 = $fitJobChi"
+}
+if ($paramsText -match '\[LASTFIT\]') { Fail 'the project saved from the job has a [LASTFIT] section' }
+$saveTyped = Invoke-Tool 'save_project' ([ordered]@{
+    name = 'smoke-typed'; overwrite = $true; structure = $fitJobTyped; curves = [ordered]@{ job_id = $fitJobId } })
+if ($saveTyped.fit_record -ne 'LASTFIT') { Fail "save_project with the rounded fitted_structure reported fit_record '$($saveTyped.fit_record)', expected 'LASTFIT'" }
+Say "        fit record      : job $fitJobId -> FITRESULT chiSquared $savedChi (chi2 $fitJobChi); typed from job_result -> $($saveTyped.fit_record)"
 
 $load = Invoke-Tool 'load_project' @{ name = 'smoke' }
 if ($load.structure.stacks[0].N -ne 30) { Fail "load_project returned N = $($load.structure.stacks[0].N), expected 30" }

@@ -75,6 +75,7 @@ uses
   unit_Residuals in 'Units\unit_Residuals.pas',
   unit_ResidualStrip in 'Units\unit_ResidualStrip.pas',
   unit_CalcOrchestrator in 'Units\unit_CalcOrchestrator.pas',
+  unit_FitRecord in 'Units\unit_FitRecord.pas',
   unit_StaleExtDialog in 'Units\unit_StaleExtDialog.pas',
   unit_SaveBeforeDialog in 'Units\unit_SaveBeforeDialog.pas',
   unit_BatchRunner in 'Units\unit_BatchRunner.pas',

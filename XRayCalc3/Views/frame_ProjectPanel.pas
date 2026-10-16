@@ -94,7 +94,7 @@ type
     FIgnoreFocusChange: Boolean;
     FProjectVersion: Byte;
     { The last fit's record (TCalcOrchestrator.BuildFitRecord), as compact
-      JSON; '' when the project has none. Saved as [FITRESULT] in params.dsc. }
+      JSON; '' when the project has none. Saved by unit_FitRecord.WriteFitRecord. }
     FFitRecord: string;
 
     FModelsRoot: PVirtualNode;
@@ -222,6 +222,7 @@ type
     function  IsProfileEnabled: Boolean;
     function  HasFitExtensions: Boolean;
     procedure ClearFitExtensions;
+    function  FitRecordDescribesModel: Boolean;
     procedure CreateFitGradientExtensions(const P: TProfileFunctions);
     procedure UpdateFitGradientExtensions(const P: TProfileFunctions);
     procedure MatchToStructure;
@@ -278,7 +279,7 @@ uses
   System.Win.ComObj, System.IOUtils, System.JSON, AbUtils,
   unit_xrdml, unit_CurveStyle, unit_SaveBeforeDialog,
   editor_proj_item, editor_ProfileFunction, editor_ProfileTable,
-  editor_JSON, frm_ExtensionType, unit_ProjectVersion, unit_UncertKeep;
+  editor_JSON, frm_ExtensionType, unit_ProjectVersion, unit_UncertKeep, unit_FitRecord;
 
 {$R *.dfm}
 
@@ -288,42 +289,6 @@ const
   { Edge of the project tree markers at 96 dpi, matching the 41 px wide first
     column of the tree. }
   TreeMarkSize = 16;
-
-  FIT_RECORD_SECTION = 'FITRESULT';
-
-{ [FITRESULT]: the numbers a reader of params.dsc looks for, one per key, and
-  the whole record as Record=<json>, which is what the program reads back. A
-  project without a fit has no section. }
-procedure WriteFitRecord(INF: TMemIniFile; const RecordJSON: string);
-const
-  KEYS: array [0 .. 12] of string = ('chiSquared', 'chiSquaredRecalc',
-    'chiSquaredPlain', 'chi2Scale', 'scaleRatio', 'scaleClamped', 'fittingMode',
-    'fitDate', 'fittingSeconds', 'fittingDevice', 'seed', 'version', 'dataItem');
-var
-  Rec: TJSONValue;
-  V: TJSONValue;
-  Key: string;
-begin
-  INF.EraseSection(FIT_RECORD_SECTION);
-  if RecordJSON = '' then
-    Exit;
-  Rec := TJSONObject.ParseJSONValue(RecordJSON);
-  try
-    if Rec is TJSONObject then
-      for Key in KEYS do
-      begin
-        V := TJSONObject(Rec).GetValue(Key);
-        if V is TJSONString then
-          INF.WriteString(FIT_RECORD_SECTION, Key, V.Value)
-        else if V <> nil then
-          INF.WriteString(FIT_RECORD_SECTION, Key, V.ToJSON);
-      end;
-  finally
-    Rec.Free;
-  end;
-  INF.WriteString(FIT_RECORD_SECTION, 'Record', RecordJSON);
-end;
-
 
 function ModelBinToJSON(const FileName: string): string;
 { Parses old X-RayCalc model_*.bin files (VirtualTreeView binary format).
@@ -871,7 +836,7 @@ begin
     FProjectVersion := INF.ReadInteger('INFO', 'Version', 0);
 
     FCalcSettings.LoadAdvancedParams(INF, FFitParams);
-    FFitRecord := INF.ReadString(FIT_RECORD_SECTION, 'Record', '');
+    FFitRecord := ReadFitRecord(INF);
   finally
     INF.Free;
   end;
@@ -1111,7 +1076,7 @@ begin
     SaveCurveStyles(INF);
 
     FCalcSettings.SaveAdvancedParams(INF, FFitParams);
-    WriteFitRecord(INF, FFitRecord);
+    WriteFitRecord(INF, FFitRecord, FitRecordDescribesModel);
     INF.UpdateFile;
     Result := True;
   finally
@@ -2111,6 +2076,12 @@ begin
     end;
     Node := FProject.GetNextSibling(Node);
   end;
+end;
+
+function TfrmProjectPanel.FitRecordDescribesModel: Boolean;
+begin
+  Result := (FFitRecord <> '') and (FProject.ActiveModel <> nil) and
+    FitRecordMatches(FFitRecord, Structure.ToFitStructure, GetProfileFunctions);
 end;
 
 function TfrmProjectPanel.HasFitExtensions: Boolean;

@@ -134,6 +134,7 @@
         <DCCReference Include="TestXRDML.pas"/>
         <DCCReference Include="TestMCPInbox.pas"/>
         <DCCReference Include="..\Components\unit_XRCProjectTree.pas"/>
+        <DCCReference Include="..\Units\unit_FitRecord.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPProjectFile.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_MCPTools.pas"/>
         <DCCReference Include="..\..\XRC_MCP\units\unit_ToolsFiles.pas"/>
@@ -230,6 +231,7 @@
         <DCCReference Include="TestUncertSession.pas"/>
         <DCCReference Include="..\..\XRCUncert\Units\unit_UncertThread.pas"/>
         <DCCReference Include="TestUncertThread.pas"/>
+        <DCCReference Include="TestFitRecord.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

@@ -62,6 +62,18 @@ const
 
   FIT_TOP_K_RULE = TOP_K_RULE;
 
+  FIT_RECORD_RULE =
+    'A finished fit_xrr job writes a fit record into its fit.xrcx: the GUI''s record ' +
+    '(Result - Export fit results) with "application": "XRC_MCP", the server ' +
+    'version and the job_id, chiSquared = chi2, chiSquaredRecalc = chi2_recalc, ' +
+    'chiSquaredPlain = chi2_plain, chi2Scale = chi2_scale, scaleRatio and ' +
+    'scaleClamped = scale_ratio and scale_clamped, at full precision, and the ' +
+    'fitted structure (and polynomials of a profile fit). params.dsc holds it as ' +
+    '[FITRESULT] only while the active model is that structure value for value; ' +
+    'otherwise as [LASTFIT] with "modelChanged": true and no per-key values. ' +
+    'save_project with curves.job_id and no structure keeps the job''s model and ' +
+    'so [FITRESULT]; its result says which section was written in "fit_record".';
+
   ENGINE_DESCRIPTION =
     'X-Ray Calc 3 (Shared/Math, XRayCalc3/LFPSO, Shared/Universal) compiled into this binary';
 
@@ -190,6 +202,7 @@ begin
     Result.AddPair('chi2_plain', FIT_CHI2_PLAIN);
     Result.AddPair('free_parameters', FIT_FREE_PARAMETERS);
     Result.AddPair('top_k_rule', FIT_TOP_K_RULE);
+    Result.AddPair('fit_record', FIT_RECORD_RULE);
   except
     Result.Free;
     raise;

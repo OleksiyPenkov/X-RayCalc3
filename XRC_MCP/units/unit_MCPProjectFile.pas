@@ -57,7 +57,7 @@ interface
 
 uses
   System.SysUtils, System.Classes,
-  unit_Types;
+  unit_Types, unit_FitRecord;
 
 type
   TXRCXCalcParams = record
@@ -113,6 +113,9 @@ type
       keeps its curves in 2theta (DataCurve, CalcCurve are then 2theta, and
       the calculation runs with K = 2). WriteXRCX always writes theta. }
     TwoTheta: Boolean;
+    { unit_FitRecord's record; WriteXRCX puts it in [FITRESULT] or [LASTFIT] by
+      comparing it with XRCData and Extensions, ReadXRCX takes it from either. }
+    FitRecord: string;
   end;
 
 const
@@ -129,7 +132,14 @@ function DefaultCalcParams: TXRCXCalcParams;
 
 function DataCurveName(ID: Integer): string;
 
-procedure WriteXRCX(const Path: string; const P: TXRCXProject);
+function WriteXRCX(const Path: string; const P: TXRCXProject): TFitRecordPlace;
+
+/// <summary>The extensions as the profile functions the engine applies: C[0]
+/// from the layer's own value, as TfrmProjectPanel.GetProfileFunctions takes it,
+/// since the file does not store it. An extension whose layer S does not have
+/// is left out.</summary>
+function ExtensionProfiles(const S: TFitStructure;
+  const Ext: TArray<TXRCXProfileExt>): TProfileFunctions;
 
 function ReadXRCX(const Path: string): TXRCXProject;
 
@@ -354,7 +364,8 @@ begin
   Result.LFPSO.MaxPOrder       := Result.PolyOrder;
 end;
 
-procedure WriteParams(const FileName: string; const P: TXRCXProject);
+function WriteParams(const FileName: string; const P: TXRCXProject;
+  Matches: Boolean): TFitRecordPlace;
 var
   INF: TMemIniFile;
   C: TXRCXCalcParams;
@@ -421,6 +432,7 @@ begin
     INF.WriteString('LFPSO', 'Ksxr', FS(C.LFPSO.Ksxr));
     INF.WriteInteger('LFPSO', 'PolyFactor', C.LFPSO.PolyFactor);
 
+    Result := WriteFitRecord(INF, P.FitRecord, Matches);
     INF.UpdateFile;
   finally
     INF.Free;
@@ -501,6 +513,7 @@ begin
     P.Version   := INF.ReadInteger('INFO', 'Version', 0);
     ActiveModel := INF.ReadInteger('STATE', 'ActiveModel', -1);
     LinkedData  := INF.ReadInteger('STATE', 'LinkedData', -1);
+    P.FitRecord := ReadFitRecord(INF);
   finally
     INF.Free;
   end;
@@ -826,13 +839,51 @@ begin
 end;
 
 
-procedure WriteXRCX(const Path: string; const P: TXRCXProject);
+function ExtensionProfiles(const S: TFitStructure;
+  const Ext: TArray<TXRCXProfileExt>): TProfileFunctions;
+var
+  i, c, n: Integer;
+begin
+  SetLength(Result, Length(Ext));
+  n := 0;
+  for i := 0 to High(Ext) do
+  begin
+    if (Ext[i].StackID < 0) or (Ext[i].StackID > High(S.Stacks)) or
+       (Ext[i].LayerID < 0) or (Ext[i].LayerID > High(S.Stacks[Ext[i].StackID].Layers)) or
+       (Length(Ext[i].Coeffs) = 0) then
+      Continue;
+    Result[n].Func := ffPoly;
+    Result[n].Subj := Ext[i].Subj;
+    Result[n].StackID := Ext[i].StackID;
+    Result[n].LayerID := Ext[i].LayerID;
+    SetLength(Result[n].C, Length(Ext[i].Coeffs));
+    for c := 0 to High(Ext[i].Coeffs) do
+      Result[n].C[c] := Ext[i].Coeffs[c];
+    Result[n].C[0] := S.Stacks[Ext[i].StackID].Layers[Ext[i].LayerID].P[Ord(Ext[i].Subj) + 1].V;
+    Inc(n);
+  end;
+  SetLength(Result, n);
+end;
+
+function ProjectFitRecordMatches(const P: TXRCXProject): Boolean;
+var
+  S: TFitStructure;
+  Info: TStructureInfo;
+begin
+  if P.FitRecord = '' then
+    Exit(False);
+  S := StructureFromXRCData(P.XRCData, Info);
+  Result := FitRecordMatches(P.FitRecord, S, ExtensionProfiles(S, P.Extensions));
+end;
+
+function WriteXRCX(const Path: string; const P: TXRCXProject): TFitRecordPlace;
 var
   Dir, TmpPath: string;
 begin
   Dir := NewTempDir;
   try
-    WriteParams(TPath.Combine(Dir, PARAMETERS_FILE_NAME), P);
+    Result := WriteParams(TPath.Combine(Dir, PARAMETERS_FILE_NAME), P,
+      ProjectFitRecordMatches(P));
     WriteTree(TPath.Combine(Dir, PROJECT_FILE_NAME), P);
     WriteCurveText(TPath.Combine(Dir, CALC_CURVE_NAME), P.CalcCurve,
       '2Theta', 'Reflectivity', 'deg');

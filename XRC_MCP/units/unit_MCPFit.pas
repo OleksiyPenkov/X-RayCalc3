@@ -192,10 +192,13 @@ implementation
 
 uses
   System.SysUtils, System.Math, System.IOUtils, System.Generics.Collections,
+  System.Diagnostics,
+  unit_consts,
   unit_materials, unit_calc, unit_gpu_calc, unit_DataProcessing,
   unit_LFPSO_Base, unit_LFPSO_Periodic, unit_LFPSO_Poly, unit_LFPSO_Irregular,
   unit_MCPCalc, unit_MCPErrors, unit_MCPFitReport, unit_MCPInbox,
-  unit_MCPProjectFile, unit_MCPSandbox, unit_MCPUnits;
+  unit_MCPProjectFile, unit_MCPSandbox, unit_MCPUnits, unit_MCPVersion,
+  unit_FitRecord;
 
 const
   PARAM_NAMES: array [1 .. 3] of string = ('thickness', 'sigma', 'density');
@@ -2552,24 +2555,107 @@ begin
   end;
 end;
 
+{ The GUI's Free period setting from the server's period bounds: one window
+  for every stack, the widest side of the bounds as a fraction of the start
+  period. }
+function FitProjectSettings(const Req: TFitRequest): TFitParams;
+var
+  n: Integer;
+begin
+  Result := FitXRCXParams(Req).LFPSO;
+  Result.FreePeriod := Length(Req.PeriodRefs) > 0;
+  if Result.FreePeriod then
+    Result.PeriodWindow := 0;
+  for n := 0 to High(Req.PeriodRefs) do
+    Result.PeriodWindow := System.Math.Max(Result.PeriodWindow,
+      System.Math.Max(Req.PeriodRefs[n].Max - Req.PeriodRefs[n].StartD,
+        Req.PeriodRefs[n].StartD - Req.PeriodRefs[n].Min) / Req.PeriodRefs[n].StartD);
+end;
+
+function FittingModeOf(const Req: TFitRequest): TFittingMode;
+begin
+  if Req.Irregular then
+    Result := fmIrregular
+  else if Req.Profile then
+    Result := fmPoly
+  else
+    Result := fmPeriodic;
+end;
+
+/// The record TCalcOrchestrator.BuildFitRecord writes, with the keys the job
+/// has a value for: no "resumed" (a job never resumes) and no "calcParams"
+/// (the GUI's are its calculation settings, the job's scan is the measured
+/// angles).
+function JobFitRecord(const Job: TJob; const Req: TFitRequest;
+  const Fitted: TFitStructure; const Poly: TProfileFunctions;
+  const Chi2, Chi2Recalc, Chi2Plain, ScaleLog: Double; ScaleClamped: Boolean;
+  const Device: string; FitSeconds: Double): string;
+var
+  R: TJSONObject;
+  Mode: TFittingMode;
+  Settings: TFitParams;
+  Platform, Started: string;
+  Hour, Min, Sec, MSec: Word;
+begin
+  Mode := FittingModeOf(Req);
+  Settings := FitProjectSettings(Req);
+  {$IFDEF WIN64} Platform := 'Win64'; {$ELSE} Platform := 'Win32'; {$ENDIF}
+  DecodeTime(FitSeconds / SecsPerDay, Hour, Min, Sec, MSec);
+
+  R := TJSONObject.Create;
+  try
+    R.AddPair('application', 'XRC_MCP');
+    R.AddPair('version', ServerVersionString);
+    R.AddPair('platform', Platform);
+    R.AddPair('projectVersion', TJSONNumber.Create(CURRENT_PROJECT_VERSION));
+    R.AddPair('job_id', Job.Id);
+    Started := Job.StartedUTC;
+    if Started <> '' then
+      R.AddPair('fitDate', Started);
+    R.AddPair('fittingDuration', Format('%2.2d:%2.2d:%2.2d', [Hour, Min, Sec]));
+    R.AddPair('fittingSeconds', TJSONNumber.Create(RoundTo(FitSeconds, -3)));
+    R.AddPair('fittingDevice', Device);
+    R.AddPair('seed', TJSONNumber.Create(Job.Seed));
+    R.AddPair('fittingMode', FITTING_MODE_NAMES[Mode]);
+    if Mode = fmIrregular then
+      R.AddPair('startFromTables', TJSONBool.Create(Req.StartProfiles));
+    R.AddPair('model', Job.Id);
+    if Req.DataTitle <> '' then
+      R.AddPair('dataItem', Req.DataTitle);
+
+    R.AddPair('chiSquared', FitRecordNumber(Chi2));
+    R.AddPair('chiSquaredRecalc', FitRecordNumber(Chi2Recalc));
+    R.AddPair('chiSquaredPlain', FitRecordNumber(Chi2Plain));
+    if Req.Fit.SolveScale then
+    begin
+      R.AddPair('chi2Scale', 'solved');
+      R.AddPair('scaleRatio', TJSONNumber.Create(RoundTo(Power(10, ScaleLog), -6)));
+      R.AddPair('scaleClamped', TJSONBool.Create(ScaleClamped));
+    end
+    else
+      R.AddPair('chi2Scale', 'anchored');
+
+    R.AddPair('chi2Weighting', Chi2WeightingJSON(Settings, Req.PointWeight));
+    R.AddPair('rMin', FitRecordNumber(Req.RMin));
+    R.AddPair('fitParams', FitSettingsJSON(Settings, Mode));
+    R.AddPair('structure', FitStructureJSON(Fitted));
+    if Mode = fmPoly then
+      R.AddPair('polynomials', FitPolynomialsJSON(Poly));
+    Result := R.ToJSON;
+  finally
+    R.Free;
+  end;
+end;
+
 procedure WriteFitProject(const Path: string; const Req: TFitRequest;
   const Fitted: TFitStructure; const Poly: TProfileFunctions;
-  const CalcCurve: unit_Types.TDataArray; const Title: string);
+  const CalcCurve: unit_Types.TDataArray; const Title, FitRecord: string);
 var
   P: TXRCXProject;
-  n: Integer;
 begin
   P := Default(TXRCXProject);
   P.Params     := FitXRCXParams(Req);
-  { A freed period, as the GUI's Free period setting: one window for every
-    stack, the widest side of the bounds as a fraction of the start period. }
-  P.Params.LFPSO.FreePeriod := Length(Req.PeriodRefs) > 0;
-  if P.Params.LFPSO.FreePeriod then
-    P.Params.LFPSO.PeriodWindow := 0;
-  for n := 0 to High(Req.PeriodRefs) do
-    P.Params.LFPSO.PeriodWindow := System.Math.Max(P.Params.LFPSO.PeriodWindow,
-      System.Math.Max(Req.PeriodRefs[n].Max - Req.PeriodRefs[n].StartD,
-        Req.PeriodRefs[n].StartD - Req.PeriodRefs[n].Min) / Req.PeriodRefs[n].StartD);
+  P.Params.LFPSO := FitProjectSettings(Req);
   P.ModelTitle := Title;
   if Req.Scale = 1.0 then
     P.Note := Format('fit_xrr on %s', [Req.DataTitle])
@@ -2586,6 +2672,7 @@ begin
   P.CalcCurve  := CalcCurve;
   P.DataTitle  := Req.DataTitle;
   P.DataCurve  := Req.Data;
+  P.FitRecord  := FitRecord;
   WriteXRCX(Path, P);
 end;
 
@@ -2610,6 +2697,8 @@ var
   Res, JFiles, JSmooth, Report: TJSONObject;
   RepInp: TFitReportInput;
   EngineName: string;
+  FitWatch: TStopwatch;
+  FitSeconds: Double;
 begin
   if Job = nil then
     raise EMCPError.Create('internal', 'The fit job body was called without a job');
@@ -2685,7 +2774,9 @@ begin
       { Synchronously on this worker thread. Run drives its own Parallel.For and
         drains the resulting thread messages itself, exactly as the GUI's
         TFittingThread lets it. }
+      FitWatch := TStopwatch.StartNew;
       L.Run(FitCalcParams(Req));
+      FitSeconds := FitWatch.Elapsed.TotalSeconds;
 
       { A run that was asked to stop leaves no result: the job manager records a
         body that returns without one as cancelled, and everything already
@@ -2760,7 +2851,9 @@ begin
     WriteCurveFile(ResidualPath, Residual, 'theta_deg',
       Format('log10_I_plus_log10_scale_ratio_minus_log10_R(scale_ratio=%.8g)',
              [Power(10, ScaleLogFit)], FitFmt));
-  WriteFitProject(XRCXPath, Req, Fitted, Poly, CalcCurve, Job.Id);
+  WriteFitProject(XRCXPath, Req, Fitted, Poly, CalcCurve, Job.Id,
+    JobFitRecord(Job, Req, Fitted, Poly, Chi2, Chi2Recalc, Chi2Plain,
+      ScaleLogFit, ClampedFit, DeviceUsed, FitSeconds));
 
   Res := TJSONObject.Create;
   try

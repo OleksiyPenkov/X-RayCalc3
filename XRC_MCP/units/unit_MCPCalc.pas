@@ -59,6 +59,10 @@ type
     Points: Integer;
     Polarization: unit_Types.TPolarisation;
     RMin: Double;                    // TCalc.Limit, the floor R is clamped to
+    { What the GUI's PrepareCalc hands TCalc beside the structure: the active
+      model's gradients, and the per-period tables when a Table extension is on. }
+    Profiles: TProfileFunctions;
+    ExpandTables: Boolean;
   end;
 
 const
@@ -259,7 +263,9 @@ begin
 
     Calc.ExpValues := ThetaGrid(Req);
     // TCalc.Destroy frees this (unit_calc.pas:324) - do not free it here.
-    Calc.Model := BuildLayeredModel(Req.Structure);
+    Calc.Model := BuildLayeredModel(Req.Structure, Req.ExpandTables);
+    if Length(Req.Profiles) > 0 then
+      Calc.Model.Profiles := Req.Profiles;
 
     // Single thread keeps the worker layout reproducible regardless of core count.
     Calc.MaxThreads := 1;

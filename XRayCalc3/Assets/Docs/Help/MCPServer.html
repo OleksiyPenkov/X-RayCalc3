@@ -233,7 +233,7 @@
     <th style="width:170px">Tool</th>
     <th>Description</th>
   </tr>
-  <tr><td><code>save_project</code></td><td>Writes <code>projects\&lt;name&gt;.xrcx</code> that opens in the GUI with no conversion: the structure as the active model, the calculated curve beside it (without a job: &lambda; = 1.54043&nbsp;&Aring; unless given, &theta; 0.05&ndash;5&deg;, 2000 points, <strong>s</strong> polarization as the GUI's <code>params.dsc</code> has it &mdash; so it can differ from a default <code>calc_reflectivity</code> curve, which is <code>sp</code>), and optionally a measured curve (an inbox id or a job's curves via <code>curves.job_id</code>). A project saved from a fit job carries the job's own fit settings, so it opens as the fit that ran. Refuses to overwrite unless <code>overwrite: true</code>.</td></tr>
+  <tr><td><code>save_project</code></td><td>Writes <code>projects\&lt;name&gt;.xrcx</code> that opens in the GUI with no conversion: the structure as the active model, the calculated curve beside it (without a job: &lambda; = 1.54043&nbsp;&Aring; unless given, &theta; 0.05&ndash;5&deg;, 2000 points, <strong>s</strong> polarization as the GUI's <code>params.dsc</code> has it &mdash; so it can differ from a default <code>calc_reflectivity</code> curve, which is <code>sp</code>), and optionally a measured curve (an inbox id or a job's curves via <code>curves.job_id</code>). A project saved from a fit job carries the job's own fit settings, so it opens as the fit that ran. With <code>curves.job_id</code>, <code>structure</code> is optional: without it the project holds the job's fitted structure, its gradients and its fit record exactly as <code>fit.xrcx</code> has them, with no rounding, and <code>params.dsc</code> gets <code>[FITRESULT]</code>. A <code>structure</code> typed from the rounded <code>job_result</code> numbers is not the fitted structure, so the record goes to <code>[LASTFIT]</code> with <code>"modelChanged": true</code>. The result's <code>fit_record</code> is <code>"FITRESULT"</code>, <code>"LASTFIT"</code> or <code>"none"</code>. Refuses to overwrite unless <code>overwrite: true</code>.</td></tr>
   <tr><td><code>load_project</code></td><td>Reads a project back: the active model's structure in the structure JSON, its profile extensions, the calculation parameters (angles always as &theta;), and a summary of the embedded curves.</td></tr>
   <tr><td><code>list_projects</code></td><td>The <code>.xrcx</code> files in <code>projects\</code> with size, SHA-256 and modified time. Nothing is written.</td></tr>
 </table>
@@ -250,7 +250,7 @@
   <li><code>fit_xrr</code> with the period of stack 0 and both layer thicknesses free, <code>smooth: {"passes": 1}</code>, <code>theta_range: {"min": 0.3, "max": 4.0}</code>, <code>seed: 1</code> &rarr; <code>job_id: "fit-20260922-143012-a1b2"</code>.</li>
   <li><code>job_wait</code> until <code>finished</code> (tens of seconds on the CPU, much less on a GPU; the result's <code>elapsed_s</code> and <code>iterations_run</code> give the real cost).</li>
   <li><code>job_result</code> &rarr; <code>fitted_structure</code> (d is <code>report.period_A</code>; &Gamma; follows from the layer thicknesses), <code>chi2</code>, and the path of <code>fit.xrcx</code>.</li>
-  <li><code>save_project</code> with <code>name: "RuC-07-fit"</code> and <code>curves.job_id: "fit-20260922-143012-a1b2"</code> &rarr; <code>projects\RuC-07-fit.xrcx</code>, which you open in X-Ray Calc 3 to inspect and refit.</li>
+  <li><code>save_project</code> with <code>name: "RuC-07-fit"</code> and <code>curves.job_id: "fit-20260922-143012-a1b2"</code>, and no <code>structure</code> &rarr; <code>projects\RuC-07-fit.xrcx</code> with the fitted structure at full precision and <code>"fit_record": "FITRESULT"</code>, which you open in X-Ray Calc 3 to inspect and refit, or attach to the ELN with its &chi;&sup2;.</li>
 </ol>
 
 <div class="tip">
@@ -269,7 +269,7 @@
 
 <h2 id="smoke-test">Smoke Test</h2>
 
-<p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 18 tools over one live stdio session (jobs are submitted, polled, waited for with <code>job_wait</code> and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>
+<p>The repository ships an end-to-end check, <code>XRC_MCP\smoke\session.ps1</code>. It starts the server in a throwaway working directory, calls every one of the 18 tools over one live stdio session (jobs are submitted, polled, waited for with <code>job_wait</code> and read; one is cancelled), and checks the Ru/C Bragg-peak angle, seed determinism of the optimizer and the fit, the <code>path_outside_workdir</code> refusal, the fit record of <code>save_project</code> (<code>"none"</code> without a job, <code>"FITRESULT"</code> with the job's own model and its <code>chi2</code> as <code>chiSquared</code>, <code>"LASTFIT"</code> with the rounded <code>fitted_structure</code>), that the inbox is byte-identical afterwards, and that the journal holds exactly one line per call.</p>
 
 <pre>pwsh -File XRC_MCP\smoke\session.ps1</pre>
 

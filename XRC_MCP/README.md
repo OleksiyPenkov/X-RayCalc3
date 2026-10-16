@@ -71,6 +71,17 @@ Without a job the defaults stay, except that `[FIT] Mode` is 1 (periodic) when t
 repeating stack and 0 (irregular) otherwise. Before, every saved project carried Mode 0 with 100
 iterations and a population of 1000, whatever fit had produced it.
 
+**Fit record since 2026-10-16:** a finished `fit_xrr` job writes the GUI's fit record into `fit.xrcx`
+(`unit_FitRecord`, shared with the GUI): `"application": "XRC_MCP"`, the server version, the `job_id`,
+`chiSquared` = `chi2`, `chiSquaredRecalc` = `chi2_recalc`, `chiSquaredPlain` = `chi2_plain`,
+`chi2Scale`, `scaleRatio`, `scaleClamped`, the fit settings and the fitted structure (with the
+polynomials of a profile fit), at full precision. `params.dsc` holds it as `[FITRESULT]` only while
+the active model is that structure value for value; otherwise as `[LASTFIT]` with
+`"modelChanged": true` and no per-key values. `save_project` takes `structure` as optional with
+`curves.job_id`: without it the project is the job's model, gradients and record, digit for digit,
+and gets `[FITRESULT]`; a structure typed from the rounded `job_result` gets `[LASTFIT]`. Its result
+reports `"fit_record"`: `"FITRESULT"`, `"LASTFIT"` or `"none"`.
+
 **`job_wait` since 2026-09-18:** `job_wait` blocks until a job reaches a final state or
 `wait_s` seconds have passed (default 300, at most 900) and returns the `job_status` object plus
 `waited_s`. One call replaces a poll per turn: a fit of several hundred seconds used to cost two

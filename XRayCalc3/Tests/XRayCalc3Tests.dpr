@@ -87,6 +87,7 @@ uses
   unit_MCPInbox in '..\..\XRC_MCP\units\unit_MCPInbox.pas',
   TestMCPInbox in 'TestMCPInbox.pas',
   unit_XRCProjectTree in '..\Components\unit_XRCProjectTree.pas',
+  unit_FitRecord in '..\Units\unit_FitRecord.pas',
   unit_MCPProjectFile in '..\..\XRC_MCP\units\unit_MCPProjectFile.pas',
   unit_MCPTools in '..\..\XRC_MCP\units\unit_MCPTools.pas',
   unit_ToolsFiles in '..\..\XRC_MCP\units\unit_ToolsFiles.pas',
@@ -168,7 +169,8 @@ uses
   unit_UncertSession in '..\..\Shared\Bayes\unit_UncertSession.pas',
   TestUncertSession in 'TestUncertSession.pas',
   unit_UncertThread in '..\..\XRCUncert\Units\unit_UncertThread.pas',
-  TestUncertThread in 'TestUncertThread.pas';
+  TestUncertThread in 'TestUncertThread.pas',
+  TestFitRecord in 'TestFitRecord.pas';
 
 {$R *.res}
 

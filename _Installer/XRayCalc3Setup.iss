@@ -1,7 +1,7 @@
 ; Run deploy.sh first to stage files into deploy/
 
 #define MyAppName "X-Ray Calc 3"
-#define MyAppVersion "3.9.6"
+#define MyAppVersion "3.9.7"
 #define MyAppPublisher "Oleksiy Penkov"
 #define MyAppExeName32 "XRayCalc3.exe"
 #define MyAppExeName64 "XRayCalc3.x64.exe"

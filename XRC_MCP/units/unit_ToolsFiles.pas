@@ -34,7 +34,7 @@ uses
   unit_Types,
   unit_MCPErrors, unit_MCPInbox, unit_MCPSandbox, unit_MCPUnits,
   unit_MCPStructure, unit_MCPCalc, unit_MCPProjectFile, unit_MCPAssess,
-  unit_MCPFit, unit_consts;
+  unit_MCPFit, unit_consts, unit_FitRecord;
 
 
 function AssessMeasurementJSON(const Params: TJSONObject): TJSONObject;
@@ -302,12 +302,13 @@ begin
 end;
 
 procedure LoadRequestedCurve(const Curves: TJSONObject; var Proj: TXRCXProject;
-  out FromJob: Boolean);
+  out FromJob: Boolean; out Job: TXRCXProject);
 var
   MeasId, JobId, JobFile, JobXRCX: string;
   M: TMeasurement;
 begin
   FromJob := False;
+  Job := Default(TXRCXProject);
   if Curves = nil then
     Exit;
   MeasId := Trim(JSONArgs.OptStr(Curves, 'measurement_id', ''));
@@ -342,7 +343,8 @@ begin
     JobXRCX := WorkDir.ResolvePath(TPath.Combine(TPath.Combine('jobs', JobId), 'fit.xrcx'), False);
     if TFile.Exists(JobXRCX) then
     begin
-      Proj.Params := ReadXRCX(JobXRCX).Params;
+      Job := ReadXRCX(JobXRCX);
+      Proj.Params := Job.Params;
       FromJob := True;
     end;
   end;
@@ -362,15 +364,20 @@ function SaveProjectResult(const Params: TJSONObject): TJSONObject;
 var
   Req: TCalcRequest;
   Used: TFitStructure;
-  Proj: TXRCXProject;
+  Proj, Job: TXRCXProject;
+  JS: TJSONObject;
   Bad, Name, FileName: string;
-  FromJob: Boolean;
+  FromJob, Typed: Boolean;
+  Place: TFitRecordPlace;
 begin
   Proj := Default(TXRCXProject);
   Proj.Params := DefaultCalcParams;
 
   Req := Default(TCalcRequest);
-  Req.Structure := StructureFromJSON(JSONArgs.ReqObj(Params, 'structure'), Req.Info);
+  JS := JSONArgs.OptObj(Params, 'structure');
+  Typed := JS <> nil;
+  if Typed then
+    Req.Structure := StructureFromJSON(JS, Req.Info);
 
   Name := ValidateProjectName(JSONArgs.ReqStr(Params, 'name'));
   FileName := WorkDir.ResolvePath(TPath.Combine('projects', Name + PROJECT_EXT), True);
@@ -380,15 +387,25 @@ begin
         [Name, PROJECT_EXT]),
       WorkDir.RelativePath(FileName));
 
+  { The curve first: a job curve brings the job's parameter block with it,
+    which is then the default for everything the client does not say. }
+  LoadRequestedCurve(JSONArgs.OptObj(Params, 'curves'), Proj, FromJob, Job);
+
+  if not Typed then
+  begin
+    if not FromJob then
+      raise EMCPError.Create('invalid_argument',
+        '"structure" is required unless "curves.job_id" names a finished fit_xrr job');
+    Req.Structure := StructureFromXRCData(Job.XRCData, Req.Info);
+    Req.ExpandTables := Job.TableExtension;
+    Req.Profiles := ExtensionProfiles(Req.Structure, Job.Extensions);
+  end;
+
   Bad := ValidateMaterials(Req.Structure);
   if Bad <> '' then
     raise EMCPError.Create('unknown_material',
       Format('No Henke table for material "%s"', [Bad]),
       'list_materials enumerates the names this server knows');
-
-  { The curve first: a job curve brings the job's parameter block with it,
-    which is then the default for everything the client does not say. }
-  LoadRequestedCurve(JSONArgs.OptObj(Params, 'curves'), Proj, FromJob);
 
   if FromJob then
   begin
@@ -433,9 +450,17 @@ begin
 
   Proj.ModelTitle := Name;
   Proj.Note := JSONArgs.OptStr(Params, 'note', '');
-  // The densities the engine used, not the ones omitted from the request: the
-  // file then says exactly what produced the curve stored beside it.
-  Proj.XRCData := StructureToXRCData(Used, Req.Info);
+  if Typed then
+    // The densities the engine used, not the ones omitted from the request: the
+    // file then says exactly what produced the curve stored beside it.
+    Proj.XRCData := StructureToXRCData(Used, Req.Info)
+  else
+  begin
+    Proj.XRCData := Job.XRCData;
+    Proj.Extensions := Job.Extensions;
+    Proj.TableExtension := Job.TableExtension;
+  end;
+  Proj.FitRecord := Job.FitRecord;
 
   Proj.Params.Lambda       := Req.Lambda;
   Proj.Params.ThetaStart   := Req.ThetaMin;
@@ -448,7 +473,7 @@ begin
     Proj.Params.Polarisation := 1;
   Proj.Params.MinLimit     := Req.RMin;
 
-  WriteXRCX(FileName, Proj);
+  Place := WriteXRCX(FileName, Proj);
 
   Result := TJSONObject.Create;
   try
@@ -457,6 +482,7 @@ begin
     Result.AddPair('size', TJSONNumber.Create(FileSizeOf(FileName)));
     Result.AddPair('version', TJSONNumber.Create(CURRENT_PROJECT_VERSION));
     Result.AddPair('lambda_used', JSONArgs.Num(Req.Lambda));
+    Result.AddPair('fit_record', FIT_RECORD_PLACE_NAMES[Place]);
   except
     Result.Free;
     raise;
@@ -585,9 +611,12 @@ procedure RegisterProjectTools(Registry: TToolRegistry);
 var
   Schema, Curves: TJSONObject;
 begin
-  Schema := SchemaObject(['structure', 'name']);
+  Schema := SchemaObject(['name']);
   AddRefProp(Schema, 'structure', 'The layer structure to store, in the form ' +
-    'calc_reflectivity takes.', StructureSchema);
+    'calc_reflectivity takes. Optional with "curves.job_id": without it the ' +
+    'project holds the job''s fitted structure, its profile extensions and its ' +
+    'fit record exactly as the job''s fit.xrcx has them, with no rounding.',
+    StructureSchema);
   AddProp(Schema, 'name', 'string',
     'File name under projects\, without a path. Letters, digits and "_-. ()#" ' +
     'only; ".xrcx" is appended when it is missing. The name is also the title ' +
@@ -606,7 +635,8 @@ begin
     'engine mode, iterations, population, chi-squared weighting, resolution ' +
     'width, wavelength and angular range), so it opens in the GUI as that ' +
     'fit; "theta_min", "theta_max", "points", "delta_theta" and "lambda" ' +
-    'given explicitly still win.');
+    'given explicitly still win. It also takes the job''s fit record (see ' +
+    '"fit_record" in the result).');
   AddRefProp(Schema, 'curves',
     'Optional measured curve to store beside the calculated one, as a data ' +
     'node the GUI plots. Give either "measurement_id" or "job_id", not both.',
@@ -642,7 +672,13 @@ begin
     'ones the engine used rather than the ones asked for: a layer whose ' +
     'density was omitted gets the Henke bulk value, and so does a substrate ' +
     'whose density was omitted; a substrate density that is given is kept ' +
-    'and used, as it has been since 3.9.1. The file ' +
+    'and used, as it has been since 3.9.1. With "curves.job_id" the job''s fit ' +
+    'record goes into params.dsc: as [FITRESULT] (the chi-squareds one per key, ' +
+    'which the ELN reads) when the stored model is, value for value, the ' +
+    'structure the fit ended on - always so without "structure" - and otherwise ' +
+    'as [LASTFIT] with "modelChanged": true and no per-key values, which is what ' +
+    'a structure typed from the rounded job_result numbers gets. The result''s ' +
+    '"fit_record" says which: "FITRESULT", "LASTFIT" or "none". The file ' +
     'lands in projects\<name>.xrcx and its SHA-256 and size are reported.',
     Schema,
     function(const Params: TJSONObject): TJSONObject

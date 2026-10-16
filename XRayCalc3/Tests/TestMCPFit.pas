@@ -101,6 +101,11 @@ type
     [Test] procedure Fit_Cancelled_StopsAndLeavesNoResult;
     [Test] procedure Fit_P2_02_FreePeriod_StaysInsideBounds;
     [Test] procedure SaveProject_FromFitJob_CarriesTheJobsFitSettings;
+    [Test] procedure FitRecord_PeriodicJob_FitXRCXHasFitResult;
+    [Test] procedure FitRecord_SaveProject_JobWithoutStructure_KeepsTheFit;
+    [Test] procedure FitRecord_SaveProject_RoundedStructure_LastFitOnly;
+    [Test] procedure FitRecord_SaveProject_WithoutJob_NoRecord;
+    [Test] procedure FitRecord_ProfileJob_PolynomialsArePartOfTheStructure;
 
     [Test] procedure Scale_Auto_RecoversAKnownMultiplier;
     [Test] procedure Scale_Auto_ReportsTheAngleAndTheCounts;
@@ -168,7 +173,7 @@ uses
   System.Generics.Collections,
   System.Zip, System.IniFiles, unit_MCPTools, unit_ToolsFiles,
   unit_Config, unit_MCPErrors, unit_MCPCalc, unit_MCPProjectFile,
-  unit_DataProcessing, unit_ToolsJobs, unit_gpu_calc;
+  unit_DataProcessing, unit_ToolsJobs, unit_gpu_calc, unit_FitRecord;
 
 const
   TRUE_STRUCTURE =
@@ -2185,6 +2190,319 @@ begin
   finally
     A.Free;
   end;
+end;
+
+function ParamsDsc(const XRCXPath: string): TMemIniFile;
+var
+  Dir: string;
+begin
+  Dir := TPath.Combine(WorkDir.Root, 'x_' + Copy(TGUID.NewGuid.ToString, 2, 8));
+  TDirectory.CreateDirectory(Dir);
+  TZipFile.ExtractZipFile(XRCXPath, Dir);
+  Result := TMemIniFile.Create(TPath.Combine(Dir, 'params.dsc'));
+end;
+
+function SectionValues(INF: TMemIniFile; const Section: string): string;
+var
+  SL: TStringList;
+begin
+  SL := TStringList.Create;
+  try
+    INF.ReadSectionValues(Section, SL);
+    Result := SL.Text;
+  finally
+    SL.Free;
+  end;
+end;
+
+function SaveProjectCall(const ArgsJSON: string; out ProjectFile: string): string;
+var
+  Args, Saved: TJSONObject;
+  Reg: TToolRegistry;
+begin
+  Args := TJSONObject.ParseJSONValue(ArgsJSON) as TJSONObject;
+  try
+    Reg := TToolRegistry.Create;
+    try
+      RegisterFileTools(Reg);
+      Saved := Reg.Execute('save_project', Args);
+      try
+        ProjectFile := TPath.Combine(WorkDir.Root, Saved.GetValue<string>('file'));
+        Result := Saved.GetValue<string>('fit_record');
+      finally
+        Saved.Free;
+      end;
+    finally
+      Reg.Free;
+    end;
+  finally
+    Args.Free;
+  end;
+end;
+
+function Relative(const Expected: Double): Double;
+begin
+  Result := Abs(Expected) * 1E-5 + 1E-12;
+end;
+
+procedure AssertLastFitOnly(const ProjectFile: string);
+var
+  INF: TMemIniFile;
+  Keys: TStringList;
+  Rec: TJSONObject;
+begin
+  INF := ParamsDsc(ProjectFile);
+  Keys := TStringList.Create;
+  try
+    Assert.IsFalse(INF.SectionExists(FIT_RECORD_SECTION), 'no [FITRESULT]');
+    INF.ReadSection(LAST_FIT_SECTION, Keys);
+    Assert.AreEqual('Record'#13#10, Keys.Text, '[LASTFIT] holds Record= only');
+    Rec := TJSONObject.ParseJSONValue(INF.ReadString(LAST_FIT_SECTION, 'Record', '')) as TJSONObject;
+    try
+      Assert.IsTrue(Rec.GetValue<Boolean>(MODEL_CHANGED_KEY), '"modelChanged": true');
+    finally
+      Rec.Free;
+    end;
+  finally
+    Keys.Free;
+    INF.Free;
+  end;
+end;
+
+procedure TTestMCPFit.FitRecord_PeriodicJob_FitXRCXHasFitResult;
+var
+  Res, R: TJSONObject;
+  INF: TMemIniFile;
+  XRCX, Rec: string;
+  P: TXRCXProject;
+  S: TFitStructure;
+  Info: TStructureInfo;
+  i: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON);
+  try
+    XRCX := TPath.Combine(WorkDir.Root, Res.GetValue<string>('files.xrcx'));
+    INF := ParamsDsc(XRCX);
+    try
+      Assert.IsTrue(INF.SectionExists(FIT_RECORD_SECTION), '[FITRESULT] in fit.xrcx');
+      Assert.IsFalse(INF.SectionExists(LAST_FIT_SECTION), 'no [LASTFIT]');
+      Assert.AreEqual(Res.GetValue<Double>('chi2'),
+        StrToFloat(INF.ReadString(FIT_RECORD_SECTION, 'chiSquared', ''), TFormatSettings.Invariant),
+        Relative(Res.GetValue<Double>('chi2')), 'chiSquared is the chi2 of job_result');
+      Rec := INF.ReadString(FIT_RECORD_SECTION, 'Record', '');
+    finally
+      INF.Free;
+    end;
+
+    R := TJSONObject.ParseJSONValue(Rec) as TJSONObject;
+    try
+      Assert.AreEqual('XRC_MCP', R.GetValue<string>('application'));
+      Assert.AreEqual(Res.GetValue<string>('job_id'), R.GetValue<string>('job_id'));
+      Assert.AreEqual('Periodic', R.GetValue<string>('fittingMode'));
+      Assert.AreEqual(Res.GetValue<Integer>('seed'), R.GetValue<Integer>('seed'));
+      Assert.AreEqual(Res.GetValue<string>('device_used'), R.GetValue<string>('fittingDevice'));
+      Assert.AreEqual(Res.GetValue<Double>('chi2_recalc'), R.GetValue<Double>('chiSquaredRecalc'),
+        Relative(Res.GetValue<Double>('chi2_recalc')), 'chi2_recalc');
+      Assert.AreEqual(Res.GetValue<Double>('chi2_plain'), R.GetValue<Double>('chiSquaredPlain'),
+        Relative(Res.GetValue<Double>('chi2_plain')), 'chi2_plain');
+      Assert.AreEqual(Res.GetValue<string>('chi2_scale'), R.GetValue<string>('chi2Scale'));
+      Assert.AreEqual(Res.GetValue<Double>('scale_ratio'), R.GetValue<Double>('scaleRatio'),
+        Relative(Res.GetValue<Double>('scale_ratio')), 'scale_ratio');
+      Assert.IsTrue(Res.GetValue<Boolean>('scale_clamped') = R.GetValue<Boolean>('scaleClamped'),
+        'scale_clamped');
+      Assert.IsNull(R.GetValue('polynomials'), 'a periodic fit has no polynomials');
+      for i := 0 to 1 do
+      begin
+        Assert.AreEqual(
+          Res.GetValue<string>(Format('fitted_structure.stacks[0].layers[%d].material', [i])),
+          R.GetValue<string>(Format('structure.stacks[0].layers[%d].material', [i])));
+        Assert.AreEqual(
+          Res.GetValue<Double>(Format('fitted_structure.stacks[0].layers[%d].thickness', [i])),
+          R.GetValue<Double>(Format('structure.stacks[0].layers[%d].thickness.value', [i])),
+          1E-4, 'the fitted thickness');
+      end;
+    finally
+      R.Free;
+    end;
+
+    P := ReadXRCX(XRCX);
+    Assert.AreEqual(Rec, P.FitRecord, 'ReadXRCX reads the record back');
+    S := StructureFromXRCData(P.XRCData, Info);
+    Assert.IsTrue(FitRecordMatches(P.FitRecord, S, ExtensionProfiles(S, P.Extensions)),
+      'Record= holds the structure fit.xrcx stores as the model');
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure TTestMCPFit.FitRecord_SaveProject_JobWithoutStructure_KeepsTheFit;
+var
+  Res: TJSONObject;
+  JobId, JobXRCX, ProjectFile: string;
+  Chi2: Double;
+  Job, Saved: TXRCXProject;
+  A, B: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON);
+  try
+    JobId := Res.GetValue<string>('job_id');
+    JobXRCX := TPath.Combine(WorkDir.Root, Res.GetValue<string>('files.xrcx'));
+    Chi2 := Res.GetValue<Double>('chi2');
+  finally
+    Res.Free;
+  end;
+
+  Assert.AreEqual('FITRESULT', SaveProjectCall(Format(
+    '{"name":"from_job","curves":{"job_id":"%s"}}', [JobId]), ProjectFile));
+
+  Job := ReadXRCX(JobXRCX);
+  Saved := ReadXRCX(ProjectFile);
+  Assert.AreEqual(Job.XRCData, Saved.XRCData, 'the job''s fitted structure, digit for digit');
+  Assert.AreEqual('from_job', Saved.ModelTitle);
+
+  A := ParamsDsc(ProjectFile);
+  B := ParamsDsc(JobXRCX);
+  try
+    Assert.AreEqual(SectionValues(B, FIT_RECORD_SECTION), SectionValues(A, FIT_RECORD_SECTION),
+      'the [FITRESULT] of fit.xrcx');
+    Assert.AreEqual(Chi2,
+      StrToFloat(A.ReadString(FIT_RECORD_SECTION, 'chiSquared', ''), TFormatSettings.Invariant),
+      Relative(Chi2), 'chiSquared is the chi2 of job_result');
+    Assert.IsFalse(A.SectionExists(LAST_FIT_SECTION), 'no [LASTFIT]');
+  finally
+    B.Free;
+    A.Free;
+  end;
+end;
+
+procedure TTestMCPFit.FitRecord_SaveProject_RoundedStructure_LastFitOnly;
+var
+  Res: TJSONObject;
+  JobId, Typed, ProjectFile: string;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON);
+  try
+    JobId := Res.GetValue<string>('job_id');
+    Typed := Res.GetValue('fitted_structure').ToJSON;
+  finally
+    Res.Free;
+  end;
+
+  Assert.AreEqual('LASTFIT', SaveProjectCall(Format(
+    '{"name":"typed","structure":%s,"curves":{"job_id":"%s"}}', [Typed, JobId]),
+    ProjectFile));
+  AssertLastFitOnly(ProjectFile);
+end;
+
+procedure TTestMCPFit.FitRecord_SaveProject_WithoutJob_NoRecord;
+var
+  ProjectFile: string;
+  INF: TMemIniFile;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Assert.AreEqual('none', SaveProjectCall(
+    '{"name":"plain","structure":' + START_STRUCTURE + '}', ProjectFile));
+  INF := ParamsDsc(ProjectFile);
+  try
+    Assert.IsFalse(INF.SectionExists(FIT_RECORD_SECTION), 'no [FITRESULT]');
+    Assert.IsFalse(INF.SectionExists(LAST_FIT_SECTION), 'no [LASTFIT]');
+  finally
+    INF.Free;
+  end;
+end;
+
+procedure TTestMCPFit.FitRecord_ProfileJob_PolynomialsArePartOfTheStructure;
+var
+  Res, R: TJSONObject;
+  JobId, JobXRCX, Typed, ProjectFile: string;
+  Chi2: Double;
+  Job, Saved: TXRCXProject;
+  INF: TMemIniFile;
+  i, c: Integer;
+begin
+  if not HenkeTablesPresent then
+  begin
+    Assert.Pass('Henke tables not installed on this machine');
+    Exit;
+  end;
+
+  Res := RunFit(7, SyntheticCurveJSON, '', ',"profile":true',
+    PROFILE_POPULATION, PROFILE_ITERATIONS);
+  try
+    Assert.AreEqual('TLFPSO_Poly', Res.GetValue<string>('engine'));
+    JobId := Res.GetValue<string>('job_id');
+    JobXRCX := TPath.Combine(WorkDir.Root, Res.GetValue<string>('files.xrcx'));
+    Typed := Res.GetValue('fitted_structure').ToJSON;
+    Chi2 := Res.GetValue<Double>('chi2');
+  finally
+    Res.Free;
+  end;
+
+  Job := ReadXRCX(JobXRCX);
+  Assert.IsTrue(Length(Job.Extensions) > 0, 'the fit left its gradients in fit.xrcx');
+  INF := ParamsDsc(JobXRCX);
+  try
+    Assert.IsTrue(INF.SectionExists(FIT_RECORD_SECTION), '[FITRESULT] in fit.xrcx');
+    Assert.AreEqual(Chi2,
+      StrToFloat(INF.ReadString(FIT_RECORD_SECTION, 'chiSquared', ''), TFormatSettings.Invariant),
+      Relative(Chi2));
+    Assert.AreEqual('Polynomial', INF.ReadString(FIT_RECORD_SECTION, 'fittingMode', ''));
+  finally
+    INF.Free;
+  end;
+  R := TJSONObject.ParseJSONValue(Job.FitRecord) as TJSONObject;
+  try
+    Assert.AreEqual(Length(Job.Extensions), (R.GetValue('polynomials') as TJSONArray).Count,
+      'one polynomial per gradient');
+  finally
+    R.Free;
+  end;
+
+  Assert.AreEqual('FITRESULT', SaveProjectCall(Format(
+    '{"name":"profile_from_job","curves":{"job_id":"%s"}}', [JobId]), ProjectFile));
+  Saved := ReadXRCX(ProjectFile);
+  Assert.AreEqual(Job.XRCData, Saved.XRCData);
+  Assert.AreEqual(Length(Job.Extensions), Length(Saved.Extensions), 'the gradients travel too');
+  for i := 0 to High(Job.Extensions) do
+    for c := 1 to High(Job.Extensions[i].Coeffs) do
+      Assert.AreEqual(Double(Job.Extensions[i].Coeffs[c]), Double(Saved.Extensions[i].Coeffs[c]),
+        0, Format('gradient %d coefficient %d', [i, c]));
+
+  Assert.AreEqual('LASTFIT', SaveProjectCall(Format(
+    '{"name":"profile_typed","structure":%s,"curves":{"job_id":"%s"}}', [Typed, JobId]),
+    ProjectFile));
+  AssertLastFitOnly(ProjectFile);
+
+  Assert.AreEqual(Ord(frpFitResult),
+    Ord(WriteXRCX(TPath.Combine(WorkDir.Root, 'same_gradients.xrcx'), Job)),
+    'the job''s model with its own gradients');
+  Job.Extensions[0].Coeffs[1] := Job.Extensions[0].Coeffs[1] + 0.01;
+  Assert.AreEqual(Ord(frpLastFit),
+    Ord(WriteXRCX(TPath.Combine(WorkDir.Root, 'other_gradient.xrcx'), Job)),
+    'one polynomial coefficient changed');
 end;
 
 

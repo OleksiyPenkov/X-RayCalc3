@@ -64,6 +64,7 @@ uses
   unit_ToolsCalc in 'units\unit_ToolsCalc.pas',
   unit_MCPInbox in 'units\unit_MCPInbox.pas',
   unit_XRCProjectTree in '..\XRayCalc3\Components\unit_XRCProjectTree.pas',
+  unit_FitRecord in '..\XRayCalc3\Units\unit_FitRecord.pas',
   unit_MCPProjectFile in 'units\unit_MCPProjectFile.pas',
   unit_MCPFit in 'units\unit_MCPFit.pas',
   unit_MCPFitReport in 'units\unit_MCPFitReport.pas',

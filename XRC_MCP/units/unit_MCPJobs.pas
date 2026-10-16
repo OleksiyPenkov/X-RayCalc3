@@ -98,6 +98,7 @@ type
     procedure SetCancelRequested(Value: Boolean);
     procedure SetResultObj(Value: TJSONObject);
     function GetElapsedMs: Int64;
+    function GetStartedUTC: string;
     function GetHasResult: Boolean;
   public
     constructor Create(const AId: string; AKind: TJobKind; const ADir: string);
@@ -128,6 +129,7 @@ type
     property BestValue: Double read GetBestValue write SetBestValue;
     property LastMessage: string read GetLastMessage write SetLastMessage;
     property ElapsedMs: Int64 read GetElapsedMs;
+    property StartedUTC: string read GetStartedUTC;
     property HasResult: Boolean read GetHasResult;
     /// <summary>Polled by the body; set by Cancel and by the manager's
     /// destructor. Interlocked, so it needs no lock.</summary>
@@ -583,6 +585,16 @@ begin
   FLock.Enter;
   try
     Result := FStopwatch.ElapsedMilliseconds;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TJob.GetStartedUTC: string;
+begin
+  FLock.Enter;
+  try
+    Result := FStartedUTC;
   finally
     FLock.Leave;
   end;
