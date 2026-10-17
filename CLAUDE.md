@@ -149,7 +149,7 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
 - **DUnitX**: `$(BDS)\source\DunitX`
 - **OmniThreadLibrary**: `D:\DelphiProjects\_Libraries\OmniThreadLibrary` (on the IDE library
   path for Win32 and Win64), a git clone of gabr42/OmniThreadLibrary checked out at the tag
-  **`release-3.08`** (April 2026). **3.08 or later is required for Win64.** Older checkouts cast
+  **`release-3.09`** (October 2026). **3.09 or later is required.** Older checkouts cast
   code pointers to `Cardinal` in `TOmniTaskExecutor.GetMethodAddrAndSignature` (`OtlTaskControl.pas`),
   which truncates a 64-bit pointer: the task pool never answers and `Parallel.&For`/`Parallel.ForEach`
   hang for ever, so every Win64 build that runs the universal optimizer or the LFPSO fit —
@@ -157,20 +157,11 @@ claude mcp add -s user xrc -- "D:\DelphiProjects\X-RayCalc\X-RayCalc3_Working\_O
   iteration 0 and cannot shut down. Win32 is unaffected, so the test suite passes either way.
   Upstream fixed it in commit 220e9d03 ("fixed bad 64-bit pointer casts"), included in 3.08.
   The IDE packages for Studio 37.0 are built from `packages\Delphi 13 Florence`.
-  **Patched build required:** the clone is on branch `xrc-unregisterwaitex` (release-3.08 + three commits,
-  0cc7a66f, f3627653 and 60b128c5), published in the fork `OleksiyPenkov/OmniThreadLibrary` (the
-  clone's `origin`; gabr42's repository is the remote `upstream`). The same fixes are offered upstream as PRs #229 (closes
-  issue #227, `TWaitFor`) and #230 (closes #228, `ReceiveWait`), opened 2026-10-08. 60b128c5 (`OtlComm.pas`): `ReceiveWait` could dequeue a message and
-  still return False after a spurious wake-up, so a pool worker dropped `MSG_RUN` and a `Parallel.For`
-  waited for ever (a rare full-suite hang, job thread in `TOmniParallelSimpleLoop.InternalExecute`).
-  Stock 3.08 (and upstream master as of 2026-10-08) has two races in `TWaitFor`
-  (`OtlSync.pas`) on its 64+ handle path, which the thread-pool manager takes once it has 60+ workers
-  (back-to-back fits on a 30+-core machine): `UnregisterWaitHandles` uses `UnregisterWait`, which does not
-  wait for a callback in flight, and `RegisterWaitHandles` fills the list a registered callback already
-  reads. Either one kills the process with 0x0EEDFADE (exit 222) or an access violation (139) — in the
-  tests, the GUI and XRC_MCP alike. The patches use `UnregisterWaitEx(h, INVALID_HANDLE_VALUE)` and hold
-  `FAwaitedLock` while registering. Keep them when moving to a newer OTL unless upstream has merged both PRs;
-  after changing the clone, rebuild the IDE packages and every project.
+  The clone's `origin` points to `https://github.com/gabr42/OmniThreadLibrary.git`; no fork is required.
+  Release 3.09 includes our fixes from PRs #229 (`TWaitFor` races on the 64+ handle path)
+  and #230 (`ReceiveWait`/`SendWait` losing a message after a spurious wake-up).
+  These prevent crashes and hangs during back-to-back fits on machines with many cores.
+  After changing the clone, rebuild the IDE packages and every project.
   Any thread that runs `Parallel.For` and pumps no messages must call `DrainThreadMessages`
   (`Shared/Math/unit_otl_drain.pas`) after every loop: OTL frees a task's control only from the
   creating thread's messages, ~12 MB per loop otherwise. And such a thread must end its `Execute` with
