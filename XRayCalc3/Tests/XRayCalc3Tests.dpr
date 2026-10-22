@@ -170,7 +170,9 @@ uses
   TestUncertSession in 'TestUncertSession.pas',
   unit_UncertThread in '..\..\XRCUncert\Units\unit_UncertThread.pas',
   TestUncertThread in 'TestUncertThread.pas',
-  TestFitRecord in 'TestFitRecord.pas';
+  TestFitRecord in 'TestFitRecord.pas',
+  unit_HenkeLocation in '..\Units\unit_HenkeLocation.pas',
+  TestHenkeLocation in 'TestHenkeLocation.pas';
 
 {$R *.res}
 

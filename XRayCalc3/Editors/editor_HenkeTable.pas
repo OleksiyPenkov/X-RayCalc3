@@ -52,12 +52,14 @@ var
 implementation
 
 uses
-  frm_MaterialSelector;
+  frm_MaterialSelector, unit_HenkeLocation;
 
 {$R *.dfm}
 
 procedure TedtrHenkeTable.btnSaveClick(Sender: TObject);
 begin
+  if not EnsureHenkeDirWritable then
+    Exit;
   WriteHenkeTable(edMaterial.Text, edN.Value, edRo.Value, FTable);
 end;
 

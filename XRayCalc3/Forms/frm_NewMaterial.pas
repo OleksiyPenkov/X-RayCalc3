@@ -67,7 +67,7 @@ uses
   unit_config,
   math_complex,
   math_globals,
-  System.UITypes, frm_MaterialSelector;
+  System.UITypes, frm_MaterialSelector, unit_HenkeLocation;
 
 {$R *.dfm}
 
@@ -86,6 +86,9 @@ begin
       mtError, [mbOK], 0);
     Exit;
   end;
+  if not EnsureHenkeDirWritable then
+    Exit;
+
   if FileExists(TConfig.SystemDir[sdHenke] + Edit1.Text + '.bin') and
      (MessageDlg(Format('Material %s already exists. Replace it?', [Edit1.Text]),
        mtConfirmation, [mbYes, mbNo], 0) <> mrYes) then

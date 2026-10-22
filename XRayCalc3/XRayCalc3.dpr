@@ -19,6 +19,7 @@ uses
   unit_xrdml in '..\Shared\Universal\unit_xrdml.pas',
   unit_DataProcessing in 'Units\unit_DataProcessing.pas',
   unit_FileUtils in 'Units\unit_FileUtils.pas',
+  unit_HenkeLocation in 'Units\unit_HenkeLocation.pas',
   unit_helpers in 'Units\unit_helpers.pas',
   unit_consts in 'Units\unit_consts.pas',
   unit_XRCStructure in 'Components\unit_XRCStructure.pas',

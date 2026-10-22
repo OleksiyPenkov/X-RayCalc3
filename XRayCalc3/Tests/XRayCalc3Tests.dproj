@@ -232,6 +232,8 @@
         <DCCReference Include="..\..\XRCUncert\Units\unit_UncertThread.pas"/>
         <DCCReference Include="TestUncertThread.pas"/>
         <DCCReference Include="TestFitRecord.pas"/>
+        <DCCReference Include="..\Units\unit_HenkeLocation.pas"/>
+        <DCCReference Include="TestHenkeLocation.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
