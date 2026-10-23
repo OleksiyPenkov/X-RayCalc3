@@ -385,6 +385,28 @@ begin
     'Highest theta in degrees to fit (default: the last measured point).');
 end;
 
+procedure AddStackProp(Schema: TJSONObject; const Description: string);
+var
+  Prop, AsIndex, AsName: TJSONObject;
+  Alternatives, Names: TJSONArray;
+begin
+  AsIndex := TJSONObject.Create;
+  AsIndex.AddPair('type', 'integer');
+  Names := TJSONArray.Create;
+  Names.Add('cap');
+  Names.Add('buffer');
+  AsName := TJSONObject.Create;
+  AsName.AddPair('type', 'string');
+  AsName.AddPair('enum', Names);
+  Alternatives := TJSONArray.Create;
+  Alternatives.AddElement(AsIndex);
+  Alternatives.AddElement(AsName);
+  Prop := TJSONObject.Create;
+  Prop.AddPair('anyOf', Alternatives);
+  Prop.AddPair('description', Description);
+  (Schema.GetValue('properties') as TJSONObject).AddPair('stack', Prop);
+end;
+
 function FitFreeItemSchema: TJSONObject;
 var
   Names: TJSONObject;
@@ -400,7 +422,7 @@ begin
     'other targets are listed so that asking for them is answered with ' +
     '"not_fittable" rather than silently ignored.',
     ['layer', 'period', 'substrate', 'scale', 'background', 'resolution']);
-  AddProp(Result, 'stack', 'integer',
+  AddStackProp(Result,
     'Index in "stacks", counted from the substrate up; or the string "cap" or ' +
     '"buffer" to address those layers ("period" takes an index only).');
   AddProp(Result, 'layer', 'integer',
@@ -424,7 +446,7 @@ begin
     'of a repeating stack whose period is in "free" (Angstrom, "parameter" ' +
     'optional). Anything else is refused with "not_fittable".',
     ['layer', 'period', 'substrate', 'scale', 'background', 'resolution']);
-  AddProp(Result, 'stack', 'integer',
+  AddStackProp(Result,
     'Index in "stacks" from the substrate up, or "cap" or "buffer".');
   AddProp(Result, 'layer', 'integer', 'Index of the layer inside that stack.');
   AddEnumProp(Result, 'parameter',
@@ -554,7 +576,7 @@ var
   Arr: TJSONArray;
 begin
   Obj := SchemaObject(['parameters']);
-  AddProp(Obj, 'stack', 'integer',
+  AddStackProp(Obj,
     'Index in "stacks" from the substrate up, or "cap" or "buffer".');
   AddProp(Obj, 'layer', 'integer', 'Index of the layer inside that stack.');
   Names := TJSONObject.Create;
